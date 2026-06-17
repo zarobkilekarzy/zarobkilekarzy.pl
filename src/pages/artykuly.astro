@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import { getCollection } from 'astro:content';
+import { CATEGORY_LABELS, CATEGORY_ORDER } from '../lib/categories';
+
+const articles = (await getCollection('articles')).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+const total = articles.length;
+---
+
+<BaseLayout
+  title="Baza artykułów — zarobkilekarzy.pl"
+  description="Katalog odnośników do ogólnodostępnych materiałów o wynagrodzeniach w ochronie zdrowia: prasy, raportów i danych publicznych."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Baza źródeł</p>
+      <h1>Baza artykułów</h1>
+      <p class="lead">
+        Katalog odnośników do ogólnodostępnych materiałów — prasy, raportów i
+        danych publicznych. Filtruj według tematu; każdy wpis prowadzi do
+        oryginalnego źródła.
+      </p>
+
+      <div class="filters" role="group" aria-label="Filtruj artykuły według tematu">
+        <button class="filter-btn active" data-filter="all">Wszystkie</button>
+        {
+          CATEGORY_ORDER.map((c) => (
+            <button class="filter-btn" data-filter={c}>
+              {CATEGORY_LABELS[c]}
+            </button>
+          ))
+        }
+      </div>
+
+      <p class="muted" id="result-count" style="font-size:0.9rem">
+        Wyświetlono {total} z {total} artykułów
+      </p>
+
+      <div class="article-list" id="article-list">
+        {articles.map((a) => <ArticleCard article={a} />)}
+      </div>
+
+      <p class="source-note" style="margin-top:2rem">
+        Każdy wpis prowadzi do oryginalnego, ogólnodostępnego źródła. Pozycje z
+        tagiem „do weryfikacji" wymagają ręcznego potwierdzenia treści przed
+        publikacją. Instrukcja dodawania artykułu — w pliku <code>README.md</code>.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline>
+  (function () {
+    var buttons = document.querySelectorAll('.filter-btn');
+    var items = document.querySelectorAll('#article-list .article');
+    var count = document.getElementById('result-count');
+    var total = items.length;
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var f = btn.getAttribute('data-filter');
+        buttons.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var shown = 0;
+        items.forEach(function (it) {
+          var match = f === 'all' || it.getAttribute('data-category') === f;
+          it.classList.toggle('is-hidden', !match);
+          if (match) shown++;
+        });
+        if (count) {
+          count.textContent = 'Wyświetlono ' + shown + ' z ' + total + ' artykułów';
+        }
+      });
+    });
+  })();
+</script>

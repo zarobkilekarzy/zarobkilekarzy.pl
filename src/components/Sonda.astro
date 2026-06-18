@@ -2,6 +2,10 @@
 // Sonda opinii (niereprezentatywna). Wyniki zbiorcze: anonimowe liczniki w Cloudflare
 // KV przez endpoint /api/sonda. Lokalnie lub bez bindingu KV: graceful fallback
 // (po głosie pokazujemy podziękowanie, bez wyników).
+//
+// Ochrona antybotowa (opcjonalna): jeśli serwer ma skonfigurowany Turnstile, GET zwraca
+// `turnstileSiteKey` i front renderuje widżet; głos wymaga wtedy ważnego tokenu. Bez
+// konfiguracji widżet się nie pojawia, a głosowanie działa jak dotąd.
 ---
 
 <section class="section section-alt" id="sonda">
@@ -22,6 +26,9 @@
         <button class="sonda-btn" data-vote="nie">Nie</button>
         <button class="sonda-btn" data-vote="nie-wiem">Trudno powiedzieć</button>
       </div>
+
+      <div class="sonda-turnstile" hidden></div>
+      <p class="sonda-hint" role="alert" hidden></p>
 
       <div class="sonda-results" hidden>
         <div class="sres-row" data-k="tak">
@@ -49,27 +56,38 @@
   const KEY = 'sonda-ai-rutyna-v1';
   const API = '/api/sonda';
   const LABELS = { tak: 'Tak', nie: 'Nie', 'nie-wiem': 'Trudno powiedzieć' };
+  const TURNSTILE_API = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
   const root = document.getElementById('sonda');
   if (root) {
     const btns = [...root.querySelectorAll('.sonda-btn')];
     const optionsEl = root.querySelector('.sonda-options');
+    const turnstileEl = root.querySelector('.sonda-turnstile');
+    const hintEl = root.querySelector('.sonda-hint');
     const resultsEl = root.querySelector('.sonda-results');
     const thanksEl = root.querySelector('.sonda-thanks');
-    const noteEl = root.querySelector('.sonda-note');
     const totalEl = root.querySelector('.sres-total');
 
-    const getCounts = async () => {
+    let tsToken = null;            // aktualny token Turnstile (null = brak/wygasł)
+    let tsWidgetId = null;         // id wyrenderowanego widżetu (do reset)
+    let turnstileEnabled = false;  // czy serwer wymaga tokenu (ustawiane po wczytaniu configu)
+    let done = false;              // głos już oddany / wyniki pokazane → blokuj ponowne
+
+    const showHint = (msg) => { hintEl.textContent = msg; hintEl.hidden = !msg; };
+
+    const loadConfig = async () => {
       try { const r = await fetch(API); if (!r.ok) return null; return await r.json(); } catch (e) { return null; }
     };
-    const postVote = async (choice) => {
+    const postVote = async (choice, token) => {
       try {
-        const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ choice }) });
-        if (!r.ok) return null;
-        return await r.json();
-      } catch (e) { return null; }
+        const body = token ? { choice, turnstileToken: token } : { choice };
+        const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await r.json().catch(() => null);
+        return { ok: r.ok, status: r.status, data };
+      } catch (e) { return { ok: false, status: 0, data: null }; }
     };
 
     const showResults = (counts, mine) => {
+      done = true;
       const total = (counts.tak || 0) + (counts.nie || 0) + (counts['nie-wiem'] || 0);
       resultsEl.querySelectorAll('.sres-row').forEach((row) => {
         const k = row.getAttribute('data-k');
@@ -81,33 +99,88 @@
       });
       totalEl.textContent = 'Łącznie głosów: ' + total + (mine ? ' · Twój głos: ' + LABELS[mine] : '');
       optionsEl.hidden = true;
+      turnstileEl.hidden = true;
+      showHint('');
       thanksEl.hidden = true;
       resultsEl.hidden = false;
     };
 
     const showThanksFallback = (mine) => {
+      done = true;
       btns.forEach((b) => { b.disabled = true; if (b.getAttribute('data-vote') === mine) b.classList.add('chosen'); });
+      turnstileEl.hidden = true;
+      showHint('');
       thanksEl.hidden = false;
     };
 
+    const loadScript = (src) => new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.async = true; s.defer = true; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+
+    const initTurnstile = async (siteKey) => {
+      try {
+        await loadScript(TURNSTILE_API);
+        // poczekaj aż globalne `turnstile` będzie gotowe (maks. ~5 s)
+        await new Promise((res) => {
+          if (window.turnstile) return res();
+          const iv = setInterval(() => { if (window.turnstile) { clearInterval(iv); res(); } }, 50);
+          setTimeout(() => { clearInterval(iv); res(); }, 5000);
+        });
+        if (!window.turnstile) return false;
+        turnstileEl.hidden = false;
+        tsWidgetId = window.turnstile.render(turnstileEl, {
+          sitekey: siteKey,
+          callback: (token) => { tsToken = token; showHint(''); },
+          'expired-callback': () => { tsToken = null; },
+          'error-callback': () => { tsToken = null; },
+        });
+        return true;
+      } catch (e) { return false; }
+    };
+
+    // Listenery podpinamy SYNCHRONICZNIE — klik nigdy nie przepadnie, nawet zanim
+    // wczyta się config czy widżet (stan `turnstileEnabled`/`tsToken` czytamy w chwili kliknięcia).
+    btns.forEach((b) => {
+      b.addEventListener('click', async () => {
+        if (done) return;
+        const choice = b.getAttribute('data-vote');
+        if (turnstileEnabled && !tsToken) {
+          showHint('Trwa weryfikacja antybotowa — spróbuj za chwilę.');
+          return;
+        }
+        showHint('');
+        try { localStorage.setItem(KEY, choice); } catch (e) {}
+        btns.forEach((x) => (x.disabled = true));
+        const res = await postVote(choice, tsToken);
+        if (res.ok && res.data) {
+          showResults(res.data, choice);
+        } else if (res.status === 403) {
+          // odrzucony token — pozwól spróbować ponownie
+          try { localStorage.removeItem(KEY); } catch (e) {}
+          tsToken = null;
+          if (tsWidgetId && window.turnstile) window.turnstile.reset(tsWidgetId);
+          btns.forEach((x) => (x.disabled = false));
+          showHint('Weryfikacja nie powiodła się — spróbuj ponownie.');
+        } else {
+          showThanksFallback(choice);
+        }
+      });
+    });
+
+    // Tło: jeśli już głosowano — pokaż wyniki; w przeciwnym razie ewentualnie włącz Turnstile.
     (async () => {
       let voted = null;
       try { voted = localStorage.getItem(KEY); } catch (e) {}
+      const cfg = await loadConfig();
       if (voted) {
-        const c = await getCounts();
-        if (c) showResults(c, voted); else showThanksFallback(voted);
+        if (cfg) showResults(cfg, voted); else showThanksFallback(voted);
+        return;
       }
+      const siteKey = cfg && cfg.turnstileSiteKey;
+      if (siteKey) turnstileEnabled = await initTurnstile(siteKey);
     })();
-
-    btns.forEach((b) => {
-      b.addEventListener('click', async () => {
-        const choice = b.getAttribute('data-vote');
-        try { localStorage.setItem(KEY, choice); } catch (e) {}
-        btns.forEach((x) => (x.disabled = true));
-        const c = await postVote(choice);
-        if (c) showResults(c, choice); else showThanksFallback(choice);
-      });
-    });
   }
 </script>
 
@@ -121,6 +194,8 @@
   .sonda-btn:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
   .sonda-btn:disabled { cursor: default; opacity: 0.65; }
   .sonda-btn.chosen { background: var(--brand); border-color: var(--brand); color: #fff; opacity: 1; }
+  .sonda-turnstile:not([hidden]) { margin-top: 1.1rem; }
+  .sonda-hint:not([hidden]) { margin: 0.8rem 0 0; font-size: 0.9rem; color: var(--alert); }
   .sonda-results:not([hidden]) { display: flex; flex-direction: column; gap: 0.85rem; max-width: 520px; margin-top: 2.25rem; }
   .sres-top { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 0.3rem; }
   .sres-pct { font-family: var(--font-mono); font-weight: 500; }

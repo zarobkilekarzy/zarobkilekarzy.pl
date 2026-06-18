@@ -81,6 +81,19 @@ konto Cloudflare maintainera (sekrety w GitHub Actions, deploy uruchamiany
 ręcznie). **Fork nie potrzebuje ich do niczego.** Sonda i basic-auth to funkcje
 Cloudflare — lokalny `npm run dev` działa bez nich i bez żadnych sekretów.
 
+### Zmienne środowiskowe (opcjonalne, Cloudflare Pages)
+
+Wszystkie są opcjonalne — bez nich strona i sonda działają (fail-open / fallback):
+
+| Zmienna | Rola |
+|---|---|
+| `BASIC_AUTH_PASS` | hasło basic-auth „strony w budowie" (gdy `BASIC_AUTH_ENABLED` ≠ `false`) |
+| `TURNSTILE_SITE_KEY` | publiczny klucz [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) — antybot sondy |
+| `TURNSTILE_SECRET_KEY` | tajny klucz Turnstile (weryfikacja po stronie serwera) |
+
+Ochrona sondy włącza się tylko gdy ustawiono **oba** klucze Turnstile. Turnstile
+nie zapisuje adresów IP — spójnie z polityką prywatności.
+
 ## Zasady redakcyjne (ważne)
 
 Projekt celowo trzyma framing **jawności publicznych pieniędzy**, nie ataku na zawód:

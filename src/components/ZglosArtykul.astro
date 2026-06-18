@@ -1,0 +1,80 @@
+---
+interface Props {
+  urls?: string[];
+}
+const { urls = [] } = Astro.props;
+const norm = (u: string) =>
+  u.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('#')[0].split('?')[0].replace(/\/+$/, '');
+const known = Array.from(new Set(urls.map(norm)));
+---
+
+<section class="section" id="zglos" data-known={JSON.stringify(known)}>
+  <div class="container">
+    <div class="zglos">
+      <p class="eyebrow">Pomóż nam</p>
+      <h2>Zgłoś artykuł</h2>
+      <p class="muted" style="max-width:62ch">
+        Znasz materiał pasujący do bazy (zarobki, kontrakty, jawność, kolejki)? Podaj link
+        — sprawdzimy i dodamy. Zgłoszenie wysyłasz e-mailem; <strong>nie zapisujemy żadnych
+        danych poza Twoją wiadomością</strong>.
+      </p>
+
+      <div class="field">
+        <label for="zglos-url">Link do artykułu / źródła</label>
+        <input type="url" id="zglos-url" placeholder="https://..." autocomplete="off" />
+        <p class="zglos-dup" hidden>⚠ Ten link wygląda na już obecny w bazie — sprawdź listę powyżej.</p>
+      </div>
+      <div class="field">
+        <label for="zglos-note">Krótki opis / dlaczego pasuje (opcjonalnie)</label>
+        <textarea id="zglos-note" rows="3"></textarea>
+      </div>
+      <button type="button" class="btn btn-primary" id="zglos-send">Wyślij zgłoszenie e-mailem</button>
+      <p class="muted" style="font-size:0.85rem;margin-top:0.8rem">
+        Otworzy się Twój program pocztowy z gotową wiadomością do
+        <strong>zglos@zarobkilekarzy.pl</strong>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<script>
+  (() => {
+    const root = document.getElementById('zglos');
+    if (!root) return;
+    let known = [];
+    try { known = JSON.parse(root.dataset.known || '[]'); } catch (e) {}
+    const norm = (u) =>
+      u.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('#')[0].split('?')[0].replace(/\/+$/, '');
+    const input = document.getElementById('zglos-url');
+    const dup = root.querySelector('.zglos-dup');
+    const note = document.getElementById('zglos-note');
+    const send = document.getElementById('zglos-send');
+
+    const isDup = () => {
+      const v = norm(input.value || '');
+      const d = !!v && known.includes(v);
+      if (dup) dup.hidden = !d;
+      return d;
+    };
+    input && input.addEventListener('input', isDup);
+
+    send && send.addEventListener('click', () => {
+      const url = (input.value || '').trim();
+      if (!url) { input.focus(); return; }
+      isDup();
+      const subject = 'Zgłoszenie artykułu do zarobkilekarzy.pl';
+      const body = 'Proponowany link:\n' + url + '\n\nOpis / dlaczego pasuje:\n' + ((note && note.value) || '(brak)') + '\n';
+      window.location.href = 'mailto:zglos@zarobkilekarzy.pl?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    });
+  })();
+</script>
+
+<style>
+  .zglos { max-width: 640px; }
+  .zglos h2 { margin-top: 0.3rem; }
+  .zglos .field { margin: 1rem 0; }
+  .zglos label { display: block; font-size: 0.88rem; font-weight: 500; margin-bottom: 0.35rem; }
+  .zglos input[type='url'], .zglos textarea { width: 100%; padding: 0.65rem 0.8rem; border: 1px solid var(--line-2); border-radius: var(--radius); font-family: var(--font-sans); font-size: 0.95rem; color: var(--ink); }
+  .zglos input:focus, .zglos textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-50); }
+  .zglos-dup { margin: 0.5rem 0 0; font-size: 0.88rem; color: var(--alert); }
+</style>

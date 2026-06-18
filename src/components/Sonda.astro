@@ -1,0 +1,134 @@
+---
+// Sonda opinii (niereprezentatywna). Wyniki zbiorcze: anonimowe liczniki w Cloudflare
+// KV przez endpoint /api/sonda. Lokalnie lub bez bindingu KV: graceful fallback
+// (po głosie pokazujemy podziękowanie, bez wyników).
+---
+
+<section class="section section-alt" id="sonda">
+  <div class="container">
+    <div class="sonda">
+      <p class="eyebrow">Sonda (niereprezentatywna)</p>
+      <h2>AI do rutyny, lekarz do pacjenta</h2>
+      <p class="sonda-q">
+        Czy AI powinna przejmować najprostsze, powtarzalne czynności — recepty na
+        leki stałe, proste skierowania i zwolnienia — by odciążyć lekarzy?
+      </p>
+      <p class="sonda-sub">
+        Mniej rutyny to większa dostępność dla pacjenta i mniejsza presja na wzrost stawek.
+      </p>
+
+      <div class="sonda-options" role="group" aria-label="Odpowiedzi sondy">
+        <button class="sonda-btn" data-vote="tak">Tak</button>
+        <button class="sonda-btn" data-vote="nie">Nie</button>
+        <button class="sonda-btn" data-vote="nie-wiem">Trudno powiedzieć</button>
+      </div>
+
+      <div class="sonda-results" hidden>
+        <div class="sres-row" data-k="tak">
+          <span class="sres-top"><span class="sres-label">Tak</span><span class="sres-pct">0%</span></span>
+          <span class="sres-track"><span class="sres-fill"></span></span>
+        </div>
+        <div class="sres-row" data-k="nie">
+          <span class="sres-top"><span class="sres-label">Nie</span><span class="sres-pct">0%</span></span>
+          <span class="sres-track"><span class="sres-fill"></span></span>
+        </div>
+        <div class="sres-row" data-k="nie-wiem">
+          <span class="sres-top"><span class="sres-label">Trudno powiedzieć</span><span class="sres-pct">0%</span></span>
+          <span class="sres-track"><span class="sres-fill"></span></span>
+        </div>
+        <p class="sres-total muted"></p>
+      </div>
+
+      <p class="sonda-thanks" hidden>Dziękujemy za głos. To sonda opinii, nie badanie reprezentatywne.</p>
+      <p class="sonda-note">Twój głos zapisujemy w tej przeglądarce; wyniki zbiorcze są anonimowe.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  const KEY = 'sonda-ai-rutyna-v1';
+  const API = '/api/sonda';
+  const LABELS = { tak: 'Tak', nie: 'Nie', 'nie-wiem': 'Trudno powiedzieć' };
+  const root = document.getElementById('sonda');
+  if (root) {
+    const btns = [...root.querySelectorAll('.sonda-btn')];
+    const optionsEl = root.querySelector('.sonda-options');
+    const resultsEl = root.querySelector('.sonda-results');
+    const thanksEl = root.querySelector('.sonda-thanks');
+    const noteEl = root.querySelector('.sonda-note');
+    const totalEl = root.querySelector('.sres-total');
+
+    const getCounts = async () => {
+      try { const r = await fetch(API); if (!r.ok) return null; return await r.json(); } catch (e) { return null; }
+    };
+    const postVote = async (choice) => {
+      try {
+        const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ choice }) });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch (e) { return null; }
+    };
+
+    const showResults = (counts, mine) => {
+      const total = (counts.tak || 0) + (counts.nie || 0) + (counts['nie-wiem'] || 0);
+      resultsEl.querySelectorAll('.sres-row').forEach((row) => {
+        const k = row.getAttribute('data-k');
+        const n = counts[k] || 0;
+        const pct = total ? Math.round((n / total) * 100) : 0;
+        row.querySelector('.sres-pct').textContent = pct + '%';
+        row.querySelector('.sres-fill').style.width = pct + '%';
+        row.classList.toggle('mine', k === mine);
+      });
+      totalEl.textContent = 'Łącznie głosów: ' + total + (mine ? ' · Twój głos: ' + LABELS[mine] : '');
+      optionsEl.hidden = true;
+      thanksEl.hidden = true;
+      resultsEl.hidden = false;
+    };
+
+    const showThanksFallback = (mine) => {
+      btns.forEach((b) => { b.disabled = true; if (b.getAttribute('data-vote') === mine) b.classList.add('chosen'); });
+      thanksEl.hidden = false;
+    };
+
+    (async () => {
+      let voted = null;
+      try { voted = localStorage.getItem(KEY); } catch (e) {}
+      if (voted) {
+        const c = await getCounts();
+        if (c) showResults(c, voted); else showThanksFallback(voted);
+      }
+    })();
+
+    btns.forEach((b) => {
+      b.addEventListener('click', async () => {
+        const choice = b.getAttribute('data-vote');
+        try { localStorage.setItem(KEY, choice); } catch (e) {}
+        btns.forEach((x) => (x.disabled = true));
+        const c = await postVote(choice);
+        if (c) showResults(c, choice); else showThanksFallback(choice);
+      });
+    });
+  }
+</script>
+
+<style>
+  .sonda { max-width: 720px; }
+  .sonda h2 { margin-top: 0.3rem; }
+  .sonda-q { font-size: 1.15rem; font-weight: 500; color: var(--ink); margin: 0.5rem 0 0.4rem; }
+  .sonda-sub { color: var(--ink-soft); margin: 0 0 1.25rem; }
+  .sonda-options { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .sonda-btn { padding: 0.7rem 1.4rem; border: 1px solid var(--line-2); background: #fff; color: var(--ink); border-radius: var(--radius); font-family: var(--font-sans); font-size: 0.98rem; font-weight: 500; cursor: pointer; transition: all 0.15s ease; }
+  .sonda-btn:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+  .sonda-btn:disabled { cursor: default; opacity: 0.65; }
+  .sonda-btn.chosen { background: var(--brand); border-color: var(--brand); color: #fff; opacity: 1; }
+  .sonda-results { display: flex; flex-direction: column; gap: 0.85rem; max-width: 520px; }
+  .sres-top { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 0.3rem; }
+  .sres-pct { font-family: var(--font-mono); font-weight: 500; }
+  .sres-track { display: block; height: 14px; background: var(--paper-2); border-radius: 999px; overflow: hidden; }
+  .sres-fill { display: block; height: 100%; width: 0; background: var(--ink-soft); border-radius: 999px; transition: width 0.4s ease; }
+  .sres-row.mine .sres-fill { background: var(--brand); }
+  .sres-row.mine .sres-label { font-weight: 500; }
+  .sres-total { margin: 0.4rem 0 0; font-size: 0.85rem; }
+  .sonda-thanks { margin: 1.1rem 0 0; font-weight: 500; color: var(--brand-700); }
+  .sonda-note { margin: 0.9rem 0 0; font-size: 0.85rem; color: var(--ink-faint); }
+</style>

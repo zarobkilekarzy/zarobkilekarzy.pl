@@ -35,6 +35,29 @@ jobs:
           npx --yes wrangler@3.90.0 pages project list | grep -qw zarobkilekarzy \
             || npx --yes wrangler@3.90.0 pages project create zarobkilekarzy --production-branch=main
 
+      - name: Ensure SONDA_KV (KV namespace + binding)
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set +e
+          WR="npx --yes wrangler@3.90.0"
+          LIST=$($WR kv:namespace list 2>/dev/null)
+          ID=$(node -e "try{const a=JSON.parse(process.argv[1]||'[]');const m=a.find(n=>n.title&&n.title.includes('SONDA_KV'));process.stdout.write(m?m.id:'')}catch(e){}" "$LIST")
+          if [ -z "$ID" ]; then
+            echo "Namespace nie istnieje — tworzę SONDA_KV…"
+            OUT=$($WR kv:namespace create SONDA_KV 2>&1); echo "$OUT"
+            ID=$(printf '%s' "$OUT" | grep -oiE '[0-9a-f]{32}' | head -1)
+          fi
+          if [ -z "$ID" ]; then
+            echo "::warning::Nie udało się utworzyć/znaleźć KV SONDA_KV — token API prawdopodobnie nie ma uprawnienia 'Workers KV Storage:Edit'. Deploy przejdzie; sonda działa bez wyników do czasu naprawy."
+            exit 0
+          fi
+          grep -q 'binding = "SONDA_KV"' wrangler.toml \
+            || printf '\n[[kv_namespaces]]\nbinding = "SONDA_KV"\nid = "%s"\n' "$ID" >> wrangler.toml
+          echo "SONDA_KV gotowe (id=$ID) — binding dopisany do wrangler.toml na czas deployu."
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:

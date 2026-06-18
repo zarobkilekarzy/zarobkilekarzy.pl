@@ -58,19 +58,16 @@ example: false        # true = wpis poglądowy
 ---
 ```
 
-Wpisy `example: true` to placeholdery — **przed publikacją zastąp je realnymi,
-ogólnodostępnymi źródłami** i usuń przykładowe pliki.
+Dla realnych wpisów ustaw `example: false` (wartość domyślna). Pełne zasady
+redakcyjne i checklist wpisu znajdziesz w [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Do dokończenia
+## Roadmap (dobre na pierwszy wkład)
 
-- [ ] Podmienić przykładowe artykuły (`example: true`) na realne źródła
-- [ ] Uzupełnić dane liczbowe na `/dane` (każda liczba ze źródłem)
 - [ ] Podłączyć formularz poparcia (`/dzialaj`) do backendu z double opt-in i RODO
       (np. Supabase + Cloudflare Turnstile)
+- [ ] Uzupełniać dane liczbowe na `/dane` — każda liczba ze źródłem
 - [ ] Dodać wykresy na `/dane` na podstawie danych ze źródeł
-- [ ] Uzupełnić markery `[... do uzupełnienia]` w treści
-- [ ] Dodać grafiki OG (udostępnianie w social media)
-- [ ] Uzupełnić adres e-mail kontaktowy / sprostowania
+- [ ] Rozbudowywać bazę artykułów o nowe, publiczne źródła
 
 ## Deployment
 
@@ -78,6 +75,11 @@ Statyczny output (`./dist`) działa na dowolnym hostingu statycznym. Zalecane:
 
 - **Cloudflare Pages** lub **Netlify** (darmowy tier, własna domena `zarobkilekarzy.pl`)
 - build command: `npm run build`, katalog: `dist`
+
+Dołączony workflow `.github/workflows/deploy.yml` i `wrangler.toml` celują w
+konto Cloudflare maintainera (sekrety w GitHub Actions, deploy uruchamiany
+ręcznie). **Fork nie potrzebuje ich do niczego.** Sonda i basic-auth to funkcje
+Cloudflare — lokalny `npm run dev` działa bez nich i bez żadnych sekretów.
 
 ## Zasady redakcyjne (ważne)
 
@@ -90,3 +92,25 @@ Projekt celowo trzyma framing **jawności publicznych pieniędzy**, nie ataku na
 
 To nie jest porada prawna — przed publikacją materiałów o konkretnych podmiotach
 skonsultuj się z prawnikiem.
+
+## Współtworzenie
+
+To projekt **open source** — wkład mile widziany. Najczęstszy: dodanie artykułu
+do bazy (link do publicznego źródła). Zanim wyślesz PR, przeczytaj:
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — jak dodać artykuł, środowisko lokalne,
+  proces PR i **zasady redakcyjne** (kluczowe),
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — kodeks postępowania.
+
+Nie chcesz ruszać kodu? Otwórz Issue — „Propozycja artykułu" albo „Błąd lub
+sprostowanie".
+
+## Licencja
+
+Podwójna licencja:
+
+- **Kod** — [MIT](LICENSE).
+- **Treść** (artykuły, teksty, opisy) — [CC BY 4.0](LICENSE-CONTENT.md).
+
+Cytowane materiały źródłowe pozostają własnością ich wydawców — korzystamy z
+prawa cytatu.

@@ -13,15 +13,38 @@ import Footer from '../components/Footer.astro';
 interface Props {
   title?: string;
   description?: string;
+  image?: string;
 }
 
 const {
   title = 'zarobkilekarzy.pl — jawność wynagrodzeń w ochronie zdrowia',
   description =
     'Obywatelska inicjatywa na rzecz jawności publicznych pieniędzy w ochronie zdrowia. Dane, źródła i postulat jawnego rejestru wynagrodzeń lekarzy.',
+  image = '/og-image.png',
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(image, Astro.site);
+
+const orgSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'zarobkilekarzy.pl',
+  url: Astro.site?.toString(),
+  logo: new URL('/favicon.png', Astro.site).toString(),
+  description:
+    'Obywatelska inicjatywa na rzecz jawności publicznych pieniędzy w ochronie zdrowia.',
+};
+
+const siteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'zarobkilekarzy.pl',
+  url: Astro.site?.toString(),
+  inLanguage: 'pl-PL',
+  description:
+    'Dane, źródła i postulat jawnego rejestru wynagrodzeń lekarzy ze środków publicznych.',
+};
 ---
 
 <!doctype html>
@@ -30,6 +53,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <meta name="theme-color" content="#0f4c81" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -41,6 +66,16 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content="pl_PL" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="zarobkilekarzy.pl — jawność wynagrodzeń w ochronie zdrowia" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <script type="application/ld+json" set:html={JSON.stringify(orgSchema).replace(/</g, '\\u003c')} />
+    <script type="application/ld+json" set:html={JSON.stringify(siteSchema).replace(/</g, '\\u003c')} />
   </head>
   <body>
     <a href="#main" class="skip-link">Przejdź do treści</a>

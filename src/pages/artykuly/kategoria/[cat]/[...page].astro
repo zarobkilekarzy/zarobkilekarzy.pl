@@ -1,0 +1,22 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getCollection } from 'astro:content';
+import ArticlesView from '../../../../components/ArticlesView.astro';
+import { CATEGORY_ORDER } from '../../../../lib/categories';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const PAGE_SIZE = 8;
+  const all = (await getCollection('articles')).sort(
+    (a, b) => b.data.date.getTime() - a.data.date.getTime()
+  );
+  return CATEGORY_ORDER.flatMap((cat) => {
+    const items = all.filter((a) => a.data.category === cat);
+    return paginate(items, { params: { cat }, pageSize: PAGE_SIZE });
+  });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+const { cat } = Astro.params;
+---
+
+<ArticlesView page={page} activeCategory={cat} basePath={`/artykuly/kategoria/${cat}`} />

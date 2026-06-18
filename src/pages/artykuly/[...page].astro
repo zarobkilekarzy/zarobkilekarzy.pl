@@ -1,0 +1,17 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getCollection } from 'astro:content';
+import ArticlesView from '../../components/ArticlesView.astro';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const PAGE_SIZE = 8;
+  const all = (await getCollection('articles')).sort(
+    (a, b) => b.data.date.getTime() - a.data.date.getTime()
+  );
+  return paginate(all, { pageSize: PAGE_SIZE });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+---
+
+<ArticlesView page={page} activeCategory={null} basePath="/artykuly" />

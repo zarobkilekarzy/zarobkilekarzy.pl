@@ -1,0 +1,152 @@
+---
+import type { Page } from 'astro';
+import type { CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArticleCard from './ArticleCard.astro';
+import ZglosArtykul from './ZglosArtykul.astro';
+import { CATEGORY_LABELS, CATEGORY_ORDER } from '../lib/categories';
+
+interface Props {
+  page: Page<CollectionEntry<'articles'>>;
+  activeCategory?: string | null;
+  basePath: string;
+}
+const { page, activeCategory = null, basePath } = Astro.props;
+
+// Pełna lista URL-i do wykrywania duplikatów w „Zgłoś artykuł" — niezależnie od
+// bieżącej strony/kategorii.
+const allUrls = (await getCollection('articles')).map((a) => a.data.url);
+
+const activeKey = activeCategory ?? 'all';
+const filters = [
+  { key: 'all', label: 'Wszystkie', href: '/artykuly' },
+  ...CATEGORY_ORDER.map((c) => ({
+    key: c,
+    label: CATEGORY_LABELS[c],
+    href: `/artykuly/kategoria/${c}`,
+  })),
+];
+
+const catLabel = activeCategory ? CATEGORY_LABELS[activeCategory] : null;
+const suffix = page.currentPage > 1 ? ` — strona ${page.currentPage}` : '';
+const title =
+  (catLabel
+    ? `${catLabel} — baza artykułów · zarobkilekarzy.pl`
+    : 'Baza artykułów — zarobkilekarzy.pl') + suffix;
+const description = catLabel
+  ? `Artykuły z kategorii „${catLabel}" — odnośniki do ogólnodostępnych źródeł o wynagrodzeniach w ochronie zdrowia.`
+  : 'Katalog odnośników do ogólnodostępnych materiałów o wynagrodzeniach w ochronie zdrowia: prasy, raportów i danych publicznych.';
+
+// Polska odmiana rzeczownika „artykuł".
+const plArt = (n: number) =>
+  n === 1
+    ? 'artykuł'
+    : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)
+      ? 'artykuły'
+      : 'artykułów';
+
+const pageHref = (n: number) => (n === 1 ? basePath : `${basePath}/${n}`);
+const pageNums = Array.from({ length: page.lastPage }, (_, i) => i + 1);
+const prevHref = page.currentPage > 1 ? pageHref(page.currentPage - 1) : null;
+const nextHref = page.currentPage < page.lastPage ? pageHref(page.currentPage + 1) : null;
+---
+
+<BaseLayout title={title} description={description}>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Baza źródeł</p>
+      <h1>Baza artykułów</h1>
+      <p class="lead">
+        Katalog odnośników do ogólnodostępnych materiałów — prasy, raportów i
+        danych publicznych. Wybierz temat; każdy wpis prowadzi do oryginalnego źródła.
+      </p>
+
+      <div class="filters" role="group" aria-label="Filtruj artykuły według tematu">
+        {
+          filters.map((f) => (
+            <a
+              class:list={['filter-btn', { active: f.key === activeKey }]}
+              href={f.href}
+              aria-current={f.key === activeKey ? 'page' : undefined}
+            >
+              {f.label}
+            </a>
+          ))
+        }
+      </div>
+
+      <p class="muted" style="font-size:0.9rem">
+        {catLabel ? `${catLabel}: ` : ''}{page.total} {plArt(page.total)}
+        {page.lastPage > 1 ? ` · strona ${page.currentPage} z ${page.lastPage}` : ''}
+      </p>
+
+      <div class="article-list">
+        {
+          page.data.length ? (
+            page.data.map((a) => <ArticleCard article={a} />)
+          ) : (
+            <p class="muted">Brak artykułów w tej kategorii.</p>
+          )
+        }
+      </div>
+
+      {
+        page.lastPage > 1 && (
+          <nav class="pagination" aria-label="Paginacja artykułów">
+            {prevHref ? (
+              <a class="page-btn" href={prevHref} aria-label="Poprzednia strona">
+                ‹
+              </a>
+            ) : (
+              <span class="page-btn is-disabled" aria-hidden="true">
+                ‹
+              </span>
+            )}
+            {pageNums.map((n) => (
+              <a
+                class:list={['page-btn', { active: n === page.currentPage }]}
+                href={pageHref(n)}
+                aria-label={`Strona ${n}`}
+                aria-current={n === page.currentPage ? 'page' : undefined}
+              >
+                {n}
+              </a>
+            ))}
+            {nextHref ? (
+              <a class="page-btn" href={nextHref} aria-label="Następna strona">
+                ›
+              </a>
+            ) : (
+              <span class="page-btn is-disabled" aria-hidden="true">
+                ›
+              </span>
+            )}
+          </nav>
+        )
+      }
+
+      <p class="source-note" style="margin-top:2rem">
+        Każdy wpis prowadzi do oryginalnego, ogólnodostępnego źródła. Pozycje z
+        tagiem „do weryfikacji" wymagają ręcznego potwierdzenia treści przed
+        publikacją. Instrukcja dodawania artykułu — w pliku <code>README.md</code>.
+      </p>
+    </div>
+  </section>
+
+  <ZglosArtykul urls={allUrls} />
+</BaseLayout>
+
+<style>
+  .filters .filter-btn { text-decoration: none; display: inline-flex; align-items: center; }
+  .pagination { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; align-items: center; margin-top: 2rem; }
+  .page-btn {
+    min-width: 2.4rem; border: 1px solid var(--line-2); background: #fff; color: var(--ink-soft);
+    padding: 0.45rem 0.7rem; border-radius: var(--radius); font-family: var(--font-sans);
+    font-size: 0.9rem; font-weight: 500; line-height: 1; text-align: center; text-decoration: none;
+    transition: all 0.15s ease;
+  }
+  .page-btn:hover:not(.active):not(.is-disabled) { border-color: var(--brand); color: var(--brand); }
+  .page-btn.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .page-btn.is-disabled { opacity: 0.4; pointer-events: none; }
+</style>

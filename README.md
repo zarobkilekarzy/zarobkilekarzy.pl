@@ -1,4 +1,6 @@
-# zarobkilekarzy.pl
+<p align="center">
+  <img src=".github/readme-banner.png" alt="zarobkilekarzy.pl — jawność wynagrodzeń w ochronie zdrowia" width="100%">
+</p>
 
 Obywatelska inicjatywa na rzecz **jawności wynagrodzeń w ochronie zdrowia**.
 Serwis informacyjny: dane, baza ogólnodostępnych artykułów i postulat jawnego

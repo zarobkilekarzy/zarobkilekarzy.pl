@@ -10,7 +10,7 @@ const articles = defineCollection({
     title: z.string(),
     // Nazwa wydawcy/źródła, np. "Najwyższa Izba Kontroli", "dziennik ogólnopolski".
     source: z.string(),
-    sourceType: z.enum(['prasa', 'raport', 'analiza', 'dane', 'wideo']),
+    sourceType: z.enum(['prasa', 'raport', 'analiza', 'dane', 'wideo', 'social']),
     // Pełny adres do oryginalnego, ogólnodostępnego materiału.
     url: z.string().url(),
     date: z.coerce.date(),

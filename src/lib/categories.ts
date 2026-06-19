@@ -14,6 +14,7 @@ export const SOURCE_TYPE_LABELS = {
   analiza: 'Analiza',
   dane: 'Dane publiczne',
   wideo: 'Materiał wideo',
+  social: 'Wpis na X',
 } as const;
 
 export const CATEGORY_ORDER = [

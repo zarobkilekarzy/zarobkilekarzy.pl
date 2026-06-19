@@ -6,6 +6,8 @@ import '@fontsource/ibm-plex-serif/latin-ext-500.css';
 import '@fontsource/ibm-plex-serif/latin-ext-600.css';
 import '@fontsource/ibm-plex-mono/latin-ext-400.css';
 import '@fontsource/ibm-plex-mono/latin-ext-500.css';
+// Główny font tekstowy — preload pliku woff2, by ograniczyć FOUT i opóźnienie LCP.
+import bodyFontUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2?url';
 import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
@@ -52,6 +54,7 @@ const siteSchema = {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preload" href={bodyFontUrl} as="font" type="font/woff2" crossorigin />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="theme-color" content="#0f4c81" />
@@ -59,6 +62,12 @@ const siteSchema = {
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <meta name="robots" content="index,follow" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="zarobkilekarzy.pl — baza źródeł"
+      href="/rss.xml"
+    />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="zarobkilekarzy.pl" />
     <meta property="og:title" content={title} />
@@ -76,6 +85,7 @@ const siteSchema = {
     <meta name="twitter:image" content={ogImage} />
     <script type="application/ld+json" set:html={JSON.stringify(orgSchema).replace(/</g, '\\u003c')} />
     <script type="application/ld+json" set:html={JSON.stringify(siteSchema).replace(/</g, '\\u003c')} />
+    <slot name="head" />
   </head>
   <body>
     <a href="#main" class="skip-link">Przejdź do treści</a>

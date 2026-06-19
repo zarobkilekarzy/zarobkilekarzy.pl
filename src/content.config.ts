@@ -12,7 +12,7 @@ const articles = defineCollection({
     source: z.string(),
     sourceType: z.enum(['prasa', 'raport', 'analiza', 'dane', 'wideo', 'social']),
     // Pełny adres do oryginalnego, ogólnodostępnego materiału.
-    url: z.string().url(),
+    url: z.url(),
     date: z.coerce.date(),
     excerpt: z.string(),
     category: z.enum([

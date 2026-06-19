@@ -16,6 +16,7 @@ interface Props {
   title?: string;
   description?: string;
   image?: string;
+  noindex?: boolean;
 }
 
 const {
@@ -23,6 +24,7 @@ const {
   description =
     'Obywatelska inicjatywa na rzecz jawności publicznych pieniędzy w ochronie zdrowia. Dane, źródła i postulat jawnego rejestru wynagrodzeń lekarzy.',
   image = '/og-image.png',
+  noindex = false,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -62,7 +64,7 @@ const siteSchema = {
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <meta name="robots" content="index,follow" />
+    <meta name="robots" content={noindex ? 'noindex,follow' : 'index,follow'} />
     <link
       rel="alternate"
       type="application/rss+xml"
@@ -95,5 +97,46 @@ const siteSchema = {
       <slot />
     </main>
     <Footer />
+    <script>
+      // Liczniki przejść do źródeł: pokaż liczby (1 cache'owany GET /api/clicks)
+      // i policz kliknięcie w kartę (beacon POST, raz na ~12 h na slug w tej
+      // przeglądarce). Bez ciasteczek, bez danych osobowych. No-op, gdy na
+      // stronie nie ma kart artykułów lub gdy D1 nie jest jeszcze podpięte.
+      (async () => {
+        const badges = document.querySelectorAll('.article-clicks[data-clicks-for]');
+        if (badges.length) {
+          try {
+            const res = await fetch('/api/clicks');
+            if (res.ok) {
+              const { counts } = await res.json();
+              badges.forEach((el) => {
+                const n = (counts && counts[el.dataset.clicksFor]) || 0;
+                if (n > 0) {
+                  el.textContent = n + ' ↗';
+                  el.title = 'Przejścia do źródła: ' + n;
+                  el.hidden = false;
+                }
+              });
+            }
+          } catch (e) {}
+        }
+        document.addEventListener('click', (e) => {
+          const t = e.target;
+          if (!(t instanceof Element)) return;
+          const a = t.closest('a.article-link[data-slug]');
+          if (!a) return;
+          const slug = a.dataset.slug;
+          try {
+            const key = 'clk:' + slug;
+            const now = Date.now();
+            if (now - (Number(localStorage.getItem(key)) || 0) < 12 * 3600 * 1000) return;
+            localStorage.setItem(key, String(now));
+          } catch (e) {}
+          try {
+            navigator.sendBeacon('/api/clicks', JSON.stringify({ slug }));
+          } catch (e) {}
+        });
+      })();
+    </script>
   </body>
 </html>

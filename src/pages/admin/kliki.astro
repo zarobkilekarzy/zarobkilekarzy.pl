@@ -1,0 +1,92 @@
+---
+// Wewnętrzny podgląd liczby przejść do źródeł (liczniki z D1, endpoint
+// /api/clicks). Dane są publiczne (te same liczby widać przy kartach), więc
+// strona nie wymaga logowania — jest tylko `noindex`, żeby nie trafiła do
+// wyszukiwarek. Sortowanie i liczby dociągane po stronie klienta.
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const articles = (await getCollection('articles')).sort((a, b) =>
+  a.data.title.localeCompare(b.data.title, 'pl')
+);
+---
+
+<BaseLayout
+  title="Przejścia do źródeł — panel · zarobkilekarzy.pl"
+  description="Wewnętrzny podgląd liczby kliknięć w linki artykułów."
+  noindex={true}
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Panel wewnętrzny</p>
+      <h1>Przejścia do źródeł</h1>
+      <p class="lead">
+        Liczba kliknięć w linki artykułów (liczniki w Cloudflare D1). Odświeżane
+        co ~minutę; dane zbiorcze, bez śledzenia osób.
+      </p>
+      <p class="muted" id="klik-sum" style="font-size: 0.9rem">Ładowanie…</p>
+
+      <table class="klik-table">
+        <thead>
+          <tr><th>#</th><th>Kliknięć</th><th>Artykuł</th><th>Źródło</th></tr>
+        </thead>
+        <tbody id="klik-rows">
+          {
+            articles.map((a) => (
+              <tr data-slug={a.id} data-n="0">
+                <td class="rank" />
+                <td class="cnt" data-cnt>—</td>
+                <td>
+                  <a href={a.data.url} target="_blank" rel="noopener noreferrer">
+                    {a.data.title}
+                  </a>
+                </td>
+                <td class="muted">{a.data.source}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <script>
+    (async () => {
+      const tbody = document.getElementById('klik-rows');
+      const rows = Array.from(tbody.querySelectorAll('tr[data-slug]'));
+      let counts = {};
+      try {
+        const r = await fetch('/api/clicks');
+        if (r.ok) counts = (await r.json()).counts || {};
+      } catch (e) {}
+
+      let total = 0;
+      rows.forEach((tr) => {
+        const n = counts[tr.dataset.slug] || 0;
+        total += n;
+        tr.dataset.n = String(n);
+        tr.querySelector('[data-cnt]').textContent = String(n);
+      });
+
+      rows
+        .sort((a, b) => Number(b.dataset.n) - Number(a.dataset.n))
+        .forEach((tr, i) => {
+          tr.querySelector('.rank').textContent = String(i + 1);
+          tbody.appendChild(tr);
+        });
+
+      document.getElementById('klik-sum').textContent =
+        `${rows.length} artykułów · ${total} przejść łącznie`;
+    })();
+  </script>
+
+  <style>
+    .klik-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.95rem; }
+    .klik-table th, .klik-table td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .klik-table th { color: var(--ink-soft); font-weight: 600; font-size: 0.85rem; }
+    .klik-table .rank, .klik-table .cnt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .klik-table .cnt { font-weight: 600; color: var(--brand); }
+    .klik-table a { text-decoration: none; }
+    .klik-table a:hover { text-decoration: underline; }
+  </style>
+</BaseLayout>

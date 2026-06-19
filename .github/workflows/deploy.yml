@@ -1,8 +1,10 @@
 name: Deploy to Cloudflare Pages
 
-# Deploy on demand — uruchamiany ręcznie (Actions → Run workflow, albo `gh workflow run deploy.yml`).
-# Push na main NIE deployuje automatycznie.
+# Deploy: automatycznie po pushu na `main` ORAZ ręcznie (workflow_dispatch).
+# Aby run leciał jako bot (a nie jako Ty), pushuj na main przez `npm run push:bot`.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -57,6 +59,29 @@ jobs:
           grep -q 'binding = "SONDA_KV"' wrangler.toml \
             || printf '\n[[kv_namespaces]]\nbinding = "SONDA_KV"\nid = "%s"\n' "$ID" >> wrangler.toml
           echo "SONDA_KV gotowe (id=$ID) — binding dopisany do wrangler.toml na czas deployu."
+
+      - name: Ensure CLICKS_DB (D1 database + binding)
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set +e
+          WR="npx --yes wrangler@3.90.0"
+          LIST=$($WR d1 list --json 2>/dev/null)
+          ID=$(node -e "try{const a=JSON.parse(process.argv[1]||'[]');const m=a.find(d=>d.name==='zarobki-clicks');process.stdout.write(m?(m.uuid||m.database_id||''):'')}catch(e){}" "$LIST")
+          if [ -z "$ID" ]; then
+            echo "D1 nie istnieje — tworzę zarobki-clicks…"
+            OUT=$($WR d1 create zarobki-clicks 2>&1); echo "$OUT"
+            ID=$(printf '%s' "$OUT" | grep -oiE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
+          fi
+          if [ -z "$ID" ]; then
+            echo "::warning::Nie udało się utworzyć/znaleźć D1 zarobki-clicks — token API zapewne bez uprawnienia 'D1:Edit'. Deploy przejdzie; liczniki nieaktywne do czasu naprawy."
+            exit 0
+          fi
+          grep -q 'binding = "CLICKS_DB"' wrangler.toml \
+            || printf '\n[[d1_databases]]\nbinding = "CLICKS_DB"\ndatabase_name = "zarobki-clicks"\ndatabase_id = "%s"\n' "$ID" >> wrangler.toml
+          echo "CLICKS_DB gotowe (id=$ID) — binding dopisany do wrangler.toml na czas deployu. Tabelę utworzy Function leniwie."
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3

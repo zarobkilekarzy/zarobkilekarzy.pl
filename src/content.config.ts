@@ -48,6 +48,7 @@ const zarobki = defineCollection({
       'stawka',       // stawki rynkowe zł/h, dyżury
       'porownanie',   // Polska na tle UE/OECD, koszt hipotetyczny
       'rezydent',     // regulowane pensje rezydentów
+      'zadluzenie',   // dług publicznych szpitali
     ]),
     kwota: z.number(),
     jednostka: z.enum(['zł/mc', 'zł/h', 'zł/dzień', 'zł/rok', 'zł/dyżur', 'mies.', 'mld zł', 'lek./1000', '%', 'x']),

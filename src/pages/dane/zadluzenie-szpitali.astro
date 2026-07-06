@@ -1,0 +1,81 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import { getCollection } from 'astro:content';
+
+const dlug = (await getCollection('zarobki'))
+  .filter((z) => z.data.grupa === 'zadluzenie')
+  .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
+
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+---
+
+<BaseLayout
+  title="Zadłużenie szpitali — zarobkilekarzy.pl"
+  description="Dług publicznych szpitali sięga 34 mld zł i idzie nie na inwestycje, lecz na bieżącą działalność — głównie wynagrodzenia. To pensje wypłacane na kredyt, który spłacamy ze środków publicznych."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane">Dane</a> · Zadłużenie szpitali</p>
+      <h1>Zadłużenie szpitali: pensje wypłacane na kredyt</h1>
+      <p class="lead">
+        Dług publicznych szpitali sięga <strong>34 mld zł</strong> i przez lata się nie
+        zmniejsza. Kluczowe: te pieniądze idą <strong>nie na inwestycje, lecz na bieżącą
+        działalność — głównie wynagrodzenia</strong>. To znaczy, że część pensji jest de
+        facto wypłacana <strong>na kredyt</strong>, który ostatecznie spłaca podatnik.
+      </p>
+
+      <div class="data-grid">
+        {dlug.map((z) => (
+          <div class="data-card">
+            <p class="k">{z.data.etykieta}</p>
+            <p class="v">{fmt(z.data.kwota).replace('.', ',')} {z.data.jednostka}</p>
+            <p class="src">
+              {z.data.uwaga && <span>{z.data.uwaga} · </span>}
+              <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50); margin-top: 1.5rem">
+        <p>
+          <strong>Skąd ten dług?</strong> Zobowiązania publicznych szpitali nie służą
+          strategicznym inwestycjom, lecz finansowaniu <strong>bieżącej działalności</strong> —
+          przede wszystkim kosztów wynagrodzeń. Same wydatki na personel podczas dyżurów
+          potrafią stanowić <strong>70–80% kosztów</strong> placówki, a w skrajnych
+          przypadkach — jak przyznaje minister zdrowia — <strong>na pensje idzie do 106%
+          budżetu</strong> szpitala. Kolejne ustawowe podwyżki (od 1 lipca) dokładają do
+          tego obciążenia.
+        </p>
+        <p>
+          Ponieważ zadłużone szpitale tracą zdolność kredytową, na spłatę wymagalnych
+          zobowiązań biorą <strong>pożyczki</strong> od instytucji finansowych — czyli
+          zadłużają się dalej, by wypłacić bieżące pensje. W praktyce część wynagrodzeń jest
+          finansowana długiem, który i tak spłaca się ze środków publicznych (dotacje,
+          oddłużanie). Płacimy więc <strong>dwa razy</strong>: raz za pracę, drugi raz za
+          odsetki od tego, że nie było na nią pieniędzy.
+        </p>
+      </div>
+
+      <p class="source-note">
+        Dług 34 mld zł i jego charakter (bieżąca działalność, nie inwestycje) —
+        <a href="https://www.rp.pl/ochrona-zdrowia/art44638431-rosnie-zadluzenie-publicznych-szpitali-to-juz-34-mld-zlotych" target="_blank" rel="noopener noreferrer">Rzeczpospolita</a>;
+        wynagrodzenia jako główny koszt i pożyczki na spłatę —
+        <a href="https://www.egospodarka.pl/197895,Szpitale-pod-sciana-Od-1-lipca-rosna-pensje-medykow-a-zadluzenie-juz-dlawi-placowki,1,24,1.html" target="_blank" rel="noopener noreferrer">eGospodarka</a>,
+        <a href="https://politykazdrowotna.com/artykul/zadluzenie-szpitali-n2230555" target="_blank" rel="noopener noreferrer">Polityka Zdrowotna</a>;
+        „do 106% budżetu na pensje” —
+        <a href="https://www.rynekzdrowia.pl/Polityka-zdrowotna/Ministra-zdrowia-w-niektorych-szpitalach-pensje-pochlaniaja-106-proc-budzetu-Resort-chce-limitu,284133,14.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>.
+        NIK: zadłużenie lecznic nie zmienia się od lat.
+      </p>
+
+      <p class="pager"><a href="/dane/budzet-nfz">← Budżet NFZ</a> · <a href="/dane">Wszystkie dane →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>

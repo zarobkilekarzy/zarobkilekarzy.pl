@@ -3,6 +3,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import ShareRow from '../components/ShareRow.astro';
 import DisclaimerZarobki from '../components/DisclaimerZarobki.astro';
 
+const stats = [
+  { n: '308 tys.', u: 'zł / dzień', cap: 'Rekordowy dzień neurochirurga — więcej niż dniówka Messiego.', href: '/dane/rekordy', hot: true },
+  { n: '316 079', u: 'zł / mc', cap: 'Najwyższy kontrakt — w regionie, którego szpitale mają 1,4 mld zł długu.', href: '/dane/rekordy', hot: true },
+  { n: '0', u: 'rejestrów', cap: 'Publicznych rejestrów sumujących wypłaty jednego lekarza. To sedno problemu.', href: '/postulat', core: true },
+  { n: '~75%', u: 'na kontrakcie', cap: 'Lekarzy rozlicza się na B2B — a kwot tych kontraktów nikt nie publikuje.', href: '/dane/rozklad-wynagrodzen' },
+  { n: '4,2', u: 'miesiąca', cap: 'Kolejka do specjalisty — mimo budżetu NFZ realnie ×2 od 2015 r.', href: '/dane/kolejki' },
+  { n: '34', u: 'mld zł', cap: 'Dług szpitali — idzie głównie na pensje wypłacane „na kredyt”.', href: '/dane/zadluzenie-szpitali' },
+  { n: '7', u: 'miejsc', cap: 'Rezydenckich na chirurgię plastyczną — w całym kraju, przy 7 chętnych na miejsce.', href: '/dane/wedlug-specjalizacji' },
+  { n: '2–3×', u: 'więcej w DE', cap: 'Tyle więcej zarabia niemiecki specjalista na etacie — jawnie, według taryfy.', href: '/analizy/zarobki-lekarzy-niemcy-polska' },
+];
+
 const podstrony = [
   { href: '/dane/rozklad-wynagrodzen', t: 'Rozkład wynagrodzeń', d: 'Od pensji rezydenta po górny 1% — cała rozpiętość, per forma zatrudnienia.' },
   { href: '/dane/wedlug-specjalizacji', t: 'Według specjalizacji', d: 'Pensja rezydenta, stawka rynkowa, miejsca i konkurencja — dla 15 dziedzin.' },
@@ -33,11 +44,20 @@ const podstrony = [
 
       <DisclaimerZarobki />
 
-      <div class="data-grid kpi">
-        <div class="data-card"><p class="k">Budżet NFZ (2025)</p><p class="v">~220 mld zł</p><p class="src"><a href="/dane/budzet-nfz">rozbicie →</a></p></div>
-        <div class="data-card"><p class="k">Lekarze na kontraktach (B2B)</p><p class="v">~75%</p><p class="src">łatwe do łączenia w kilku placówkach</p></div>
-        <div class="data-card"><p class="k">Kolejka do specjalisty</p><p class="v">4,2 mies.</p><p class="src"><a href="/dane/kolejki">a wydatki →</a></p></div>
-        <div class="data-card"><p class="k">Publiczne rejestry wynagrodzeń</p><p class="v">0</p><p class="src">stan obecny — nasz <a href="/postulat">postulat</a></p></div>
+      <p class="eyebrow" style="margin-top: 0.5rem">Na start</p>
+      <h2 style="margin-top: 0.1rem">Osiem liczb, które pokazują skalę</h2>
+      <p class="muted" style="max-width: 62ch; margin: 0.35rem 0 0.25rem">
+        Najmocniejsze dane z całego serwisu w jednym miejscu. Kliknij dowolną, by wejść
+        głębiej — z pełnym rozbiciem i źródłami.
+      </p>
+      <div class="stats-grid">
+        {stats.map((s) => (
+          <a class={`dstat${s.hot ? ' is-hot' : ''}${s.core ? ' is-core' : ''}`} href={s.href}>
+            <span class="dstat-num">{s.n}<span class="dstat-unit">{s.u}</span></span>
+            <span class="dstat-cap">{s.cap}</span>
+            <span class="dstat-go" aria-hidden="true">→</span>
+          </a>
+        ))}
       </div>
 
       <div class="stat-callout">
@@ -49,7 +69,7 @@ const podstrony = [
         </div>
       </div>
 
-      <h2 style="margin-top: 2.5rem">Przeglądaj dane</h2>
+      <h2 style="margin-top: 2.5rem">Przeglądaj wszystkie dane</h2>
       <div class="hub-grid">
         {podstrony.map((p) => (
           <a class="hub-card" href={p.href}>
@@ -75,7 +95,16 @@ const podstrony = [
 
 <style>
   .updated { font-size: 0.82rem; color: var(--ink-faint); margin: -0.25rem 0 1.25rem; }
-  .kpi { margin-bottom: 2rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin: 1rem 0 2rem; }
+  .dstat { position: relative; display: flex; flex-direction: column; gap: 0.55rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.3rem 1.35rem 2.5rem; text-decoration: none; transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
+  .dstat:hover { border-color: var(--brand); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,76,129,0.1); }
+  .dstat.is-hot { border-left: 5px solid var(--alert); }
+  .dstat.is-core { border-left: 5px solid var(--brand); }
+  .dstat-num { font-family: var(--font-mono); font-size: clamp(1.9rem, 5.5vw, 2.6rem); font-weight: 700; color: var(--brand); line-height: 1; }
+  .dstat.is-hot .dstat-num { color: var(--alert); }
+  .dstat-unit { display: block; font-family: var(--font-sans); font-size: 0.8rem; font-weight: 500; color: var(--ink-faint); margin-top: 0.3rem; }
+  .dstat-cap { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; }
+  .dstat-go { position: absolute; left: 1.35rem; bottom: 1rem; color: var(--brand); font-weight: 700; }
   .stat-callout { display: flex; gap: 1.25rem; align-items: center; background: var(--alert-50); border-left: 5px solid var(--alert); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 1.5rem 1.75rem; margin: 1.5rem 0 2rem; }
   .stat-callout-num { font-family: var(--font-mono); font-size: clamp(2.4rem, 7vw, 3.4rem); font-weight: 500; color: var(--alert); line-height: 1; flex-shrink: 0; }
   .stat-callout-quote { font-family: var(--font-serif); font-size: 1.1rem; line-height: 1.5; color: var(--ink); margin: 0 0 0.5rem; }

@@ -158,4 +158,9 @@ export const ogPages: Record<string, OgPage> = {
     title: 'O projekcie',
     subtitle: 'Obywatelski watchdog jawności pieniędzy publicznych w ochronie zdrowia. Po stronie pacjentów i uczciwych lekarzy.',
   },
+  'prywatnosc': {
+    tag: 'Informacje',
+    title: 'Prywatność',
+    subtitle: 'Postulujemy jawność pieniędzy publicznych, nie danych prywatnych — także u siebie. Jak strona obchodzi się z danymi.',
+  },
 };

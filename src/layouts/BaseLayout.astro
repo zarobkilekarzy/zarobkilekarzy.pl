@@ -28,9 +28,21 @@ const {
   noindex = false,
 } = Astro.props;
 
-// Obraz OG: jawny `image` z propsów > dynamiczny per-strona (ogPages) > domyślny.
-const routeKey = Astro.url.pathname.replace(/^\/+|\/+$/g, '') || 'home';
-const resolvedImage = image ?? (ogPages[routeKey] ? `/og/${routeKey}.png` : '/og-image.png');
+// Obraz OG: jawny `image` z propsów > dynamiczny per-strona (ogPages). Dla tras
+// dynamicznych (paginacja artykułów, kategorie) dziedziczymy OG najbliższego rodzica
+// z mapy (np. artykuly/2 → artykuly). Brak trafienia → navy karta strony głównej —
+// nigdy biały statyczny fallback (ten wisiał w cache X jako „stara karta").
+const rawKey = Astro.url.pathname.replace(/^\/+|\/+$/g, '') || 'home';
+const ogKey = (() => {
+  const parts = rawKey.split('/');
+  while (parts.length) {
+    const k = parts.join('/');
+    if (ogPages[k]) return k;
+    parts.pop();
+  }
+  return 'home';
+})();
+const resolvedImage = image ?? `/og/${ogKey}.png`;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(resolvedImage, Astro.site);
@@ -83,6 +95,7 @@ const siteSchema = {
     <meta property="og:url" content={canonical} />
     <meta property="og:locale" content="pl_PL" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@zarobkilekarzy" />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />

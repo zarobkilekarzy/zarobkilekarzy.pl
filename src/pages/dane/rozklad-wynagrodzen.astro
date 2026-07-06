@@ -1,0 +1,69 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import { getCollection } from 'astro:content';
+
+const rozklad = (await getCollection('zarobki'))
+  .filter((z) => z.data.grupa === 'rozklad')
+  .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
+
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+---
+
+<BaseLayout
+  title="Rozkład wynagrodzeń lekarzy — zarobkilekarzy.pl"
+  description="Od pensji rezydenta po rekordowe kontrakty — rozpiętość wynagrodzeń lekarzy jest ogromna. Każda liczba ze źródłem."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane">Dane</a> · Rozkład</p>
+      <h1>Rozkład wynagrodzeń lekarzy</h1>
+      <p class="lead">
+        Od pensji rezydenta po rekordowe kontrakty — rozpiętość jest ogromna. Połowa lekarzy
+        zarabia ponad 25 tys. zł, a wąska elita przekracza 100 tys. zł miesięcznie. Uwaga:
+        dane AOTMiT widzą zarobki tylko <strong>na poziomie jednej placówki</strong>.
+      </p>
+
+      <div class="data-grid">
+        {rozklad.map((z) => (
+          <div class="data-card">
+            <p class="k">{z.data.etykieta}</p>
+            <p class="v">{z.data.kwota >= 100000 ? '> ' : ''}{fmt(z.data.kwota)} {z.data.jednostka}</p>
+            <p class="src">
+              {z.data.uwaga && <span>{z.data.uwaga} · </span>}
+              <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <h2 style="margin-top: 2.5rem">Skala wieloetatowości</h2>
+      <p class="muted" style="max-width: 64ch; margin-top: 0.5rem">
+        Ile placówek przypada na jednego lekarza? <strong>Nie wiadomo</strong> — bo nie
+        istnieje rejestr sumujący pracę jednego lekarza w różnych miejscach (to właśnie
+        nasz <a href="/postulat">postulat</a>). Skalę widać jednak pośrednio:
+      </p>
+      <ul style="max-width: 64ch; padding-left: 1.25rem; line-height: 1.65">
+        <li>ok. <strong>75% lekarzy</strong> rozlicza się na kontraktach (B2B), które łatwo łączyć w kilku placówkach naraz;</li>
+        <li>AOTMiT widzi zarobki tylko „na poziomie jednej placówki” — a po zsumowaniu kontraktów odsetek zarabiających ponad 100 tys. zł/mc rośnie z <strong>1,2% do 5–10%</strong>.</li>
+      </ul>
+      <p class="source-note">
+        Źródła: dane AOTMiT (za
+        <a href="https://www.rp.pl/ochrona-zdrowia/art44466691-625-lekarzy-w-polsce-zarabia-powyzej-100-tys-zl-dotarlismy-do-wyliczen" target="_blank" rel="noopener noreferrer">Rzeczpospolitą</a>);
+        <a href="/mechanizmy">mechanizmy i źródła</a>.
+      </p>
+
+      <p class="source-note">
+        Nie publikujemy liczb „z pamięci”. Dopóki pole nie ma źródła, pozostaje oznaczone jako „—”.
+      </p>
+
+      <p class="pager"><a href="/dane/kolejki">← Kolejki</a> · <a href="/dane/rekordy">Rekordowe rozliczenia →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>

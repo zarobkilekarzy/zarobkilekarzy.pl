@@ -1,0 +1,88 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import { getCollection } from 'astro:content';
+
+const stawki = (await getCollection('zarobki'))
+  .filter((z) => z.data.grupa === 'stawka')
+  .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
+
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+---
+
+<BaseLayout
+  title="Stawki godzinowe lekarzy — zarobkilekarzy.pl"
+  description="Stawki godzinowe lekarzy: od ustawowego minimum na etacie po kontrakty B2B do 300 zł/h w dziedzinach deficytowych. Oferta to nie to samo co wypłata."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane">Dane</a> · Stawki</p>
+      <h1>Stawki godzinowe: minimum ustawowe kontra rynek</h1>
+      <p class="lead">
+        Różnica między tym, co gwarantuje etat w publicznym szpitalu, a stawkami
+        kontraktowymi B2B jest dwu-, trzykrotna. Kluczowe zastrzeżenie: większość
+        publikowanych stawek to <strong>oferty z ogłoszeń</strong>, nie realne wypłaty.
+      </p>
+
+      <div class="table-wrap">
+        <table class="rate-table">
+          <thead>
+            <tr><th>Pozycja</th><th>Stawka</th><th>Rok</th><th>Źródło</th></tr>
+          </thead>
+          <tbody>
+            {stawki.map((z) => (
+              <tr>
+                <th scope="row">
+                  <span class="rate-name">{z.data.etykieta}</span>
+                  {z.data.uwaga && <span class="rate-note">{z.data.uwaga}</span>}
+                </th>
+                <td class="num">
+                  {fmt(z.data.kwota)} {z.data.jednostka}
+                  <span class={`badge ${z.data.status === 'exact' ? 'b-exact' : 'b-est'}`}>{z.data.status}</span>
+                </td>
+                <td class="num">{z.data.rok}</td>
+                <td><a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout" style="border-left-color: var(--brand); margin-top: 1.5rem">
+        <p>
+          <strong>Oferta ≠ wypłata.</strong> Stawki OZZL to kwoty <em>oferowane</em> w
+          ogłoszeniach (ok. 90% ofert prywatnych) — systematycznie wyższe od median
+          realnych wypłat. Najtwardsza liczba o faktycznych wypłatach ze środków
+          publicznych to mediana ok. <strong>17 tys. zł/mc</strong> (dane płatnika, AOTMiT).
+          Że płatnik nie publikuje wypłat per specjalizacja — to sam w sobie argument o
+          nieprzejrzystości.
+        </p>
+      </div>
+
+      <p class="pager"><a href="/dane/pensje-rezydentow">← Pensje rezydentów</a> · <a href="/dane/polska-na-tle-ue">Polska na tle UE →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .rate-table { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 0.92rem; }
+  .rate-table thead th { text-align: left; padding: 0.7rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); }
+  .rate-table tbody th { text-align: left; padding: 0.7rem 0.9rem; font-weight: 500; max-width: 34ch; }
+  .rate-table td { padding: 0.7rem 0.9rem; vertical-align: top; }
+  .rate-table td.num { font-family: var(--font-mono); white-space: nowrap; }
+  .rate-table tbody tr { border-bottom: 1px solid var(--line); }
+  .rate-table tbody tr:last-child { border-bottom: none; }
+  .rate-name { display: block; color: var(--ink); }
+  .rate-note { display: block; font-size: 0.76rem; color: var(--ink-soft); font-weight: 400; margin-top: 0.15rem; }
+  .badge { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.4rem; border-radius: 999px; font-size: 0.66rem; font-weight: 600; font-family: var(--font-sans); }
+  .b-exact { background: #e6f0e6; color: #2f6b32; }
+  .b-est { background: #fdf0e0; color: #a8620a; }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+</style>

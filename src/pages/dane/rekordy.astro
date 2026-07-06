@@ -1,0 +1,108 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import { getCollection } from 'astro:content';
+
+const rekordy = (await getCollection('zarobki'))
+  .filter((z) => z.data.grupa === 'rekord')
+  .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
+
+const miesieczne = rekordy.filter((z) => z.data.jednostka === 'zł/mc');
+const roczne = rekordy.filter((z) => z.data.jednostka === 'zł/rok');
+
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+---
+
+<BaseLayout
+  title="Rekordowe rozliczenia lekarzy — zarobkilekarzy.pl"
+  description="Udokumentowane rekordy rozliczeń ze środków publicznych: od 316 tys. zł miesięcznie po miliony rocznie. Bez nazwisk — opisujemy mechanizm, nie osobę."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane">Dane</a> · Rekordy</p>
+      <h1>Rekordowe rozliczenia</h1>
+      <p class="lead">
+        Udokumentowane, oźródłowane rekordy — z odpowiedzi urzędów, oświadczeń majątkowych
+        (jawnych z mocy prawa) i doniesień prasowych. <strong>Nie podajemy nazwisk</strong> —
+        opisujemy rolę, dziedzinę i region. Mechanizm, nie osoba.
+      </p>
+
+      <div class="callout" style="border-left-color: var(--brand)">
+        <p>
+          Te liczby to <strong>pojedyncze umowy albo roczne dochody z oświadczeń</strong> —
+          żaden rejestr nie sumuje ich po jednej osobie (PWZ). To właśnie luka, którą chcemy
+          zamknąć: <a href="/postulat">jawny rejestr wynagrodzeń</a>.
+        </p>
+      </div>
+
+      <h2 style="margin-top: 2rem">Miesięczne rozliczenia (NFZ / kontrakty)</h2>
+      <div class="rec-list">
+        {miesieczne.map((z) => (
+          <div class="rec">
+            <div class="rec-num">{fmt(z.data.kwota)}<span class="rec-unit">{z.data.jednostka}</span></div>
+            <div class="rec-body">
+              <p class="rec-label">{z.data.etykieta}</p>
+              <p class="rec-meta">
+                {z.data.forma && <span class="chip">{z.data.forma}</span>}
+                {z.data.rola && <span>{z.data.rola}</span>}
+                {z.data.region && <span> · {z.data.region}</span>}
+              </p>
+              {z.data.uwaga && <p class="rec-note">{z.data.uwaga}</p>}
+              <p class="rec-src"><a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a></p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 style="margin-top: 2.5rem">Roczne dochody (oświadczenia majątkowe)</h2>
+      <div class="rec-list">
+        {roczne.map((z) => (
+          <div class="rec">
+            <div class="rec-num">{fmt(z.data.kwota)}<span class="rec-unit">{z.data.jednostka}</span></div>
+            <div class="rec-body">
+              <p class="rec-label">{z.data.etykieta}</p>
+              <p class="rec-meta">
+                {z.data.rola && <span>{z.data.rola}</span>}
+                {z.data.region && <span> · {z.data.region}</span>}
+                {z.data.statusFaktu === 'zarzut' && <span class="chip chip-alert">zarzut</span>}
+              </p>
+              {z.data.uwaga && <p class="rec-note">{z.data.uwaga}</p>}
+              <p class="rec-src"><a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a></p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p class="source-note" style="margin-top: 1.5rem">
+        <strong>Uczciwie:</strong> dochód z oświadczenia majątkowego (praktyka indywidualna)
+        nie jest tożsamy z „kontraktem NFZ” — część praktyk rozlicza się prywatnie. Kwoty
+        rozliczeń to fakty; ewentualne zarzuty w postępowaniach oznaczamy osobno i traktujemy
+        jako <strong>nieudowodnione</strong>.
+      </p>
+
+      <p class="pager"><a href="/dane/rozklad-wynagrodzen">← Rozkład</a> · <a href="/dane/wedlug-specjalizacji">Według specjalizacji →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .rec-list { display: flex; flex-direction: column; gap: 1rem; margin: 1.25rem 0; }
+  .rec { display: flex; gap: 1.25rem; align-items: flex-start; background: var(--bg); border: 1px solid var(--line); border-left: 4px solid var(--alert); border-radius: 0 var(--radius) var(--radius) 0; padding: 1rem 1.25rem; }
+  .rec-num { font-family: var(--font-mono); font-size: clamp(1.4rem, 4vw, 1.9rem); font-weight: 600; color: var(--alert); line-height: 1.1; white-space: nowrap; flex-shrink: 0; }
+  .rec-unit { display: block; font-size: 0.72rem; color: var(--ink-faint); font-weight: 400; }
+  .rec-body { min-width: 0; }
+  .rec-label { font-weight: 600; color: var(--ink); margin: 0 0 0.25rem; }
+  .rec-meta { font-size: 0.86rem; color: var(--ink-soft); margin: 0 0 0.35rem; }
+  .rec-note { font-size: 0.84rem; color: var(--ink-soft); margin: 0 0 0.35rem; line-height: 1.5; }
+  .rec-src { font-size: 0.8rem; margin: 0; }
+  .chip { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--paper-2); font-size: 0.72rem; margin-right: 0.4rem; }
+  .chip-alert { background: var(--alert-50); color: var(--alert); font-weight: 600; }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+  @media (max-width: 520px) { .rec { flex-direction: column; gap: 0.4rem; } }
+</style>

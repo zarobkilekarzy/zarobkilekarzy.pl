@@ -1,0 +1,83 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import { getCollection } from 'astro:content';
+
+const por = (await getCollection('zarobki'))
+  .filter((z) => z.data.grupa === 'porownanie')
+  .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
+
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+---
+
+<BaseLayout
+  title="Polska na tle UE/OECD — zarobkilekarzy.pl"
+  description="Liczba lekarzy w Polsce jest bliska średniej OECD, a problemem jest dostępność, nie headcount. Ile kosztowałoby płacenie polskim lekarzom niemieckich stawek?"
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane">Dane</a> · Porównania</p>
+      <h1>Polska na tle UE i OECD</h1>
+      <p class="lead">
+        Wbrew obiegowej opinii liczba lekarzy w Polsce jest <strong>bliska średniej
+        OECD</strong>. Wąskim gardłem nie jest sam headcount, lecz <strong>dostępność,
+        struktura i rozmieszczenie</strong>.
+      </p>
+
+      <div class="data-grid">
+        {por.map((z) => (
+          <div class="data-card">
+            <p class="k">{z.data.etykieta}</p>
+            <p class="v">{fmt(z.data.kwota).replace('.', ',')} {z.data.jednostka}</p>
+            <p class="src">
+              {z.data.uwaga && <span>{z.data.uwaga} · </span>}
+              <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <h2 style="margin-top: 2.5rem">Eksperyment myślowy: niemieckie stawki</h2>
+      <p class="muted" style="max-width: 64ch; margin-top: 0.5rem">
+        Ile kosztowałoby płacenie polskim lekarzom niemieckich stawek? To
+        <strong>szacunek</strong>, nie prognoza — pokazuje skalę, o jakiej mówimy.
+      </p>
+      <div class="stat-callout">
+        <span class="stat-callout-num">~60 mld zł</span>
+        <div class="stat-callout-body">
+          <p class="stat-callout-note">
+            rocznie — przy niemieckiej średniej płacy (~98 750 €/rok) dla 141 193 polskich
+            lekarzy z bezpośrednią opieką nad pacjentem. To <strong>~30% kosztów świadczeń
+            NFZ</strong> (plan 2026: ~201 mld zł). Widełki skrajne (dolna–górna stawka
+            taryfy) dają 41–87 mld zł.
+          </p>
+          <p class="stat-callout-src">
+            Szacunek własny; liczy tylko płacę zasadniczą brutto (pomija dyżury, składki
+            pracodawcy, siłę nabywczą). Źródła:
+            <a href="https://www.marburger-bund.de/sites/default/files/tarifvertraege/2025-06/25-06-16%20TV-%C3%84rzte%20VKA%20i.d.F.%2010.%20%C3%84ndTV.pdf" target="_blank" rel="noopener noreferrer">taryfa Marburger Bund (TV‑Ärzte/VKA)</a>,
+            <a href="https://www.praktischarzt.de/arzt/gehalt-arzt/" target="_blank" rel="noopener noreferrer">StepStone Gehaltsreport</a>,
+            liczba lekarzy — GUS 2024,
+            plan NFZ 2026 (<a href="/dane/budzet-nfz">zob. budżet</a>).
+          </p>
+        </div>
+      </div>
+
+      <p class="pager"><a href="/dane/stawki">← Stawki</a> · <a href="/dane">Wszystkie dane →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .stat-callout { display: flex; gap: 1.25rem; align-items: center; background: var(--alert-50); border-left: 5px solid var(--alert); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 1.5rem 1.75rem; margin: 1.25rem 0 2rem; }
+  .stat-callout-num { font-family: var(--font-mono); font-size: clamp(2rem, 6vw, 3rem); font-weight: 500; color: var(--alert); line-height: 1; flex-shrink: 0; }
+  .stat-callout-note { font-size: 1rem; line-height: 1.55; color: var(--ink); margin: 0 0 0.5rem; }
+  .stat-callout-src { font-size: 0.82rem; color: var(--ink-soft); margin: 0; }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+  @media (max-width: 600px) { .stat-callout { flex-direction: column; align-items: flex-start; gap: 0.6rem; } }
+</style>

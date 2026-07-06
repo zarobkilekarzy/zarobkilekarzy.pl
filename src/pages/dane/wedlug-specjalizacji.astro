@@ -1,0 +1,125 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import { getCollection } from 'astro:content';
+
+const spec = (await getCollection('specjalizacje')).sort(
+  (a, b) => a.data.kolejnosc - b.data.kolejnosc,
+);
+
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+
+function konkText(d: (typeof spec)[number]['data']): string {
+  if (d.konkurencja != null) return `${d.konkurencja.toFixed(2).replace('.', ',')}×`;
+  if (d.konkurencjaZrodlo) return '< 1';
+  return '—';
+}
+---
+
+<BaseLayout
+  title="Zarobki a miejsca — według specjalizacji — zarobkilekarzy.pl"
+  description="Pensja rezydenta, stawka rynkowa, liczba miejsc i konkurencja — per specjalizacja. Najwięcej chętnych bije się o dziedziny, w których państwo dopłaca najmniej."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane">Dane</a> · Według specjalizacji</p>
+      <h1>Zarobki a miejsca — według specjalizacji</h1>
+      <p class="lead">
+        Zestawienie czterech liczb dla każdej dziedziny: <strong>regulowana pensja
+        rezydenta</strong> (ile płaci państwo w trakcie szkolenia), <strong>stawka
+        rynkowa</strong>, <strong>liczba miejsc</strong> szkoleniowych i
+        <strong>konkurencja</strong> (chętnych na miejsce).
+      </p>
+
+      <div class="callout" style="border-left-color: var(--brand)">
+        <p>
+          <strong>Mechanizm, który widać w danych:</strong> państwo i rynek ciągną w
+          przeciwne strony. Najwięcej osób bije się o dziedziny, w których państwo dopłaca
+          rezydentowi <strong>najmniej</strong> (chirurgia plastyczna, dermatologia,
+          endokrynologia) — bo to one są najlepiej płatne <strong>później, na rynku</strong>.
+          Tam, gdzie państwo dopłaca więcej i otwiera więcej miejsc (interna, medycyna
+          ratunkowa, patomorfologia), chętnych jest <strong>mniej niż miejsc</strong>.
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th>Specjalizacja</th>
+              <th>Pensja rezydenta<span class="th-tag th-exact">exact</span></th>
+              <th>Stawka rynkowa<span class="th-tag th-est">szacunek</span></th>
+              <th>Miejsca<br /><span class="th-sub">rez. / ogółem</span></th>
+              <th>Chętnych<br />na miejsce</th>
+            </tr>
+          </thead>
+          <tbody>
+            {spec.map((s) => (
+              <tr class={s.data.priorytetowa ? 'is-prio' : 'is-nonprio'}>
+                <th scope="row">
+                  <span class="spec-name">{s.data.nazwa}</span>
+                  <span class="spec-flag">{s.data.priorytetowa ? 'priorytetowa' : 'nie‑priorytetowa'}</span>
+                </th>
+                <td class="num">{fmt(s.data.pensjaRezydent)} zł</td>
+                <td class="num">{s.data.stawkaRynkowa ? `${s.data.stawkaRynkowa} zł/h` : '—'}</td>
+                <td class="num">{s.data.miejscaRezydenckie ?? '—'} / {s.data.miejscaOgolem ?? '—'}</td>
+                <td class="num konk">{konkText(s.data)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p class="legend-note">
+        <strong>Pensja rezydenta</strong> — kwota dokładna, brutto, 1.–2. rok, od 1 VII 2026
+        (rozporządzenie MZ). <strong>Stawka rynkowa</strong> — SZACUNEK: stawka oferowana w
+        ogłoszeniach (~90% ofert prywatnych), nie realna wypłata; nie każda dziedzina ma
+        wiarygodną próbę. <strong>Miejsca</strong> — wykaz CMKP, sesja jesień 2025.
+        <strong>Chętnych/miejsce</strong> — dane dyr. CMKP; CMKP ujawnił tylko czołówkę i
+        grupę „&lt; 1” — dla środka stawki („—”) współczynnika nie opublikowano.
+      </p>
+
+      <p class="source-note">
+        Źródła: pensje rezydentów (od 1 VII 2026) —
+        <a href="https://www.prawo.pl/zdrowie/ile-zarabia-lekarz-rezydent-w-2026-r-rozporzadzenie,1544065.html" target="_blank" rel="noopener noreferrer">rozporządzenie MZ (Prawo.pl)</a>;
+        miejsca —
+        <a href="https://www.cmkp.edu.pl/wp-content/uploads/2025/08/Liczba-miejsc-szkoleniowych-jesien-2025.pdf" target="_blank" rel="noopener noreferrer">wykaz CMKP, jesień 2025</a>;
+        konkurencja —
+        <a href="https://beautyrazem.pl/chirurgia-plastyczna-i-dermatologia-na-czele-najbardziej-obleganych-specjalizacji-lekarskich/" target="_blank" rel="noopener noreferrer">dane dyr. CMKP prof. Filipiaka (10.12.2025)</a>;
+        stawki oferowane —
+        <a href="https://www.cowzdrowiu.pl/aktualnosci/post/ozzl-stawki-godzinowe-lekarzy-rosna-ale-nieadekwatnie-do-inflacji" target="_blank" rel="noopener noreferrer">OZZL 2022</a> /
+        <a href="https://www.money.pl/gospodarka/lekarze-pokazali-stawki-nawet-300-zl-za-godzine-pracy-7297816292112416a.html" target="_blank" rel="noopener noreferrer">OZZL 2023 (Money.pl)</a>.
+      </p>
+
+      <p class="pager"><a href="/dane">← Wszystkie dane</a> · <a href="/dane/pensje-rezydentow">Pensje rezydentów →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .spec-table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.92rem; }
+  .spec-table thead th { text-align: right; padding: 0.75rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); vertical-align: bottom; }
+  .spec-table thead th:first-child { text-align: left; }
+  .th-sub { font-weight: 400; color: var(--ink-faint); font-size: 0.75rem; }
+  .th-tag { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.4rem; border-radius: 999px; font-size: 0.66rem; font-weight: 600; vertical-align: middle; }
+  .th-exact { background: #e6f0e6; color: #2f6b32; }
+  .th-est { background: #fdf0e0; color: #a8620a; }
+  .spec-table tbody th { text-align: left; padding: 0.7rem 0.9rem; font-weight: 500; }
+  .spec-table td { text-align: right; padding: 0.7rem 0.9rem; font-family: var(--font-mono); white-space: nowrap; }
+  .spec-table tbody tr { border-bottom: 1px solid var(--line); }
+  .spec-table tbody tr:last-child { border-bottom: none; }
+  .spec-name { display: block; color: var(--ink); }
+  .spec-flag { display: block; font-size: 0.72rem; font-family: var(--font-sans); font-weight: 400; margin-top: 0.1rem; }
+  .is-nonprio .spec-flag { color: var(--alert); }
+  .is-prio .spec-flag { color: var(--ink-faint); }
+  .konk { font-weight: 600; }
+  .legend-note { font-size: 0.82rem; color: var(--ink-soft); max-width: 70ch; margin: 0.5rem 0 1rem; line-height: 1.5; }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+</style>

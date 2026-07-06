@@ -1,0 +1,94 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import { getCollection } from 'astro:content';
+
+const spec = await getCollection('specjalizacje');
+const prio = spec.filter((s) => s.data.priorytetowa).map((s) => s.data.nazwa).sort();
+const nonprio = spec.filter((s) => !s.data.priorytetowa).map((s) => s.data.nazwa).sort();
+---
+
+<BaseLayout
+  title="Pensje rezydentów — zarobkilekarzy.pl"
+  description="Regulowana pensja rezydenta zależy od tego, czy dziedzina jest priorytetowa. Paradoks: państwo dopłaca najmniej tam, gdzie rynek płaci najwięcej."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane">Dane</a> · Pensje rezydentów</p>
+      <h1>Pensje rezydentów — jedyna „dokładna” liczba</h1>
+      <p class="lead">
+        Wynagrodzenie rezydenta jest <strong>regulowane rozporządzeniem</strong> — to jedyna
+        precyzyjna kwota „zł per specjalizacja” w polskim systemie (reszta to szacunki z
+        ankiet i ogłoszeń). Zależy od jednego: czy dziedzina jest <strong>priorytetowa</strong>.
+      </p>
+
+      <div class="tier-grid">
+        <div class="tier">
+          <p class="tier-tag">dziedzina priorytetowa</p>
+          <p class="tier-num">11 654,76 zł</p>
+          <p class="tier-sub">brutto/mc, 1.–2. rok · po 2 latach 12 714,29 zł</p>
+          <p class="tier-desc">Państwo dopłaca <strong>więcej</strong> i otwiera więcej miejsc — bo brakuje chętnych.</p>
+        </div>
+        <div class="tier">
+          <p class="tier-tag">dziedzina nie‑priorytetowa</p>
+          <p class="tier-num">10 595,24 zł</p>
+          <p class="tier-sub">brutto/mc, 1.–2. rok · po 2 latach 10 913,10 zł</p>
+          <p class="tier-desc">Państwo dopłaca <strong>mniej</strong> — a i tak tłok, bo dziedzina jest dochodowa później.</p>
+        </div>
+      </div>
+
+      <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+        <p>
+          <strong>Paradoks:</strong> najwięcej kandydatów bije się o dziedziny
+          <strong>nie‑priorytetowe</strong> (dermatologia, chirurgia plastyczna,
+          endokrynologia) — czyli te, w których państwo dopłaca rezydentowi
+          <strong>najmniej</strong>. Dopłata państwa goni deficyt; rynek nagradza dokładnie
+          te dziedziny, które państwo traktuje jako niepriorytetowe.
+          <a href="/dane/wedlug-specjalizacji">Zobacz pełne zestawienie →</a>
+        </p>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <h3>Priorytetowe</h3>
+          <ul>{prio.map((n) => <li>{n}</li>)}</ul>
+        </div>
+        <div>
+          <h3>Nie‑priorytetowe</h3>
+          <ul>{nonprio.map((n) => <li>{n}</li>)}</ul>
+        </div>
+      </div>
+
+      <p class="source-note">
+        Kwoty regulowane od 1 VII 2026 —
+        <a href="https://www.prawo.pl/zdrowie/ile-zarabia-lekarz-rezydent-w-2026-r-rozporzadzenie,1544065.html" target="_blank" rel="noopener noreferrer">rozporządzenie MZ (Prawo.pl)</a>;
+        lista dziedzin priorytetowych —
+        <a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20220002814" target="_blank" rel="noopener noreferrer">Dz.U. 2022 poz. 2814</a>
+        (neurologia dodana:
+        <a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20230001503" target="_blank" rel="noopener noreferrer">Dz.U. 2023 poz. 1503</a>).
+      </p>
+
+      <p class="pager"><a href="/dane/wedlug-specjalizacji">← Według specjalizacji</a> · <a href="/dane/stawki">Stawki godzinowe →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+  .tier { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.25rem 1.4rem; }
+  .tier-tag { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-soft); margin: 0 0 0.4rem; }
+  .tier-num { font-family: var(--font-mono); font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 600; color: var(--brand); margin: 0; }
+  .tier-sub { font-size: 0.82rem; color: var(--ink-faint); margin: 0.2rem 0 0.6rem; }
+  .tier-desc { font-size: 0.9rem; color: var(--ink-soft); margin: 0; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1.75rem 0 1rem; }
+  .two-col h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+  .two-col ul { padding-left: 1.1rem; margin: 0; line-height: 1.7; font-size: 0.92rem; color: var(--ink-soft); }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+  @media (max-width: 600px) { .tier-grid, .two-col { grid-template-columns: 1fr; } }
+</style>

@@ -18,6 +18,25 @@ const legend = [
   { c: '#ec4740', n: 'Kolejka do lekarza', v: '4,2 mies.', d: '+24% dłużej' },
 ];
 const poly = (pts) => pts.map((p) => p.join(',')).join(' ');
+
+// Dłuższa perspektywa — realne, zweryfikowane serie roczne. Dziury = „—".
+// min = minimalne wynagrodzenie brutto (zł/mc, stawka styczniowa);
+// infl = średnioroczna inflacja GUS (%); nfz = plan/koszty NFZ (mld zł).
+const fmtZl = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+const szereg: { rok: number; min: number; infl: string; nfz: string }[] = [
+  { rok: 2015, min: 1750, infl: '−0,9', nfz: '≈ 68' },
+  { rok: 2016, min: 1850, infl: '−0,6', nfz: '≈ 71' },
+  { rok: 2017, min: 2000, infl: '2,0', nfz: '≈ 75' },
+  { rok: 2018, min: 2100, infl: '1,6', nfz: '≈ 79' },
+  { rok: 2019, min: 2250, infl: '2,3', nfz: '—' },
+  { rok: 2020, min: 2600, infl: '3,4', nfz: '—' },
+  { rok: 2021, min: 2800, infl: '5,1', nfz: '≈ 120' },
+  { rok: 2022, min: 3010, infl: '14,4', nfz: '—' },
+  { rok: 2023, min: 3490, infl: '11,4', nfz: '≈ 144' },
+  { rok: 2024, min: 4242, infl: '3,6', nfz: '≈ 190' },
+  { rok: 2025, min: 4666, infl: '3,6', nfz: '≈ 220' },
+  { rok: 2026, min: 4806, infl: '—', nfz: '≈ 217' },
+];
 ---
 
 <BaseLayout
@@ -87,6 +106,59 @@ const poly = (pts) => pts.map((p) => p.join(',')).join(' ');
         Zob. też <a href="/dane/kolejki">kolejki a wydatki</a> i <a href="/dane/budzet-nfz">budżet NFZ</a>.
       </p>
 
+      <h2 style="margin-top: 2.5rem">Dłuższa perspektywa: pieniądze, inflacja i płaca minimalna</h2>
+      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
+        Ta sama historia w dłuższym oknie i w liczbach bezwzględnych — z <strong>inflacją</strong>
+        i <strong>płacą minimalną</strong> jako punktem odniesienia. Gdzie brakuje spójnych danych
+        rocznych, zostawiamy „—”.
+      </p>
+      <div class="table-wrap">
+        <table class="hist">
+          <thead>
+            <tr>
+              <th>Rok</th>
+              <th class="num">Płaca minimalna<br /><span class="th-sub">zł/mc brutto</span></th>
+              <th class="num">Inflacja<br /><span class="th-sub">średnioroczna</span></th>
+              <th class="num">Budżet NFZ<br /><span class="th-sub">mld zł</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {szereg.map((r) => (
+              <tr>
+                <th scope="row">{r.rok}</th>
+                <td class="num">{fmtZl(r.min)} zł</td>
+                <td class="num">{r.infl}{r.infl !== '—' ? '%' : ''}</td>
+                <td class="num">{r.nfz}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+        <p>
+          <strong>Nawet po odjęciu inflacji pieniędzy jest realnie więcej — a kolejki i tak
+          rosną.</strong> Płaca minimalna wzrosła w tym czasie z 1 750 do 4 806 zł
+          (<strong>×2,7</strong>), a budżet NFZ ok. <strong>×3,2</strong>. Skumulowana
+          inflacja 2015–2025 to jednak „tylko” ~+55%, więc <strong>realnie budżet i tak się
+          mniej więcej podwoił</strong>. Mimo to kolejka do specjalisty się wydłużyła. To
+          ważny niuans: część „wzrostu pieniędzy” zjada inflacja i ustawowe podwyżki
+          powiązane z płacą minimalną — ale <strong>nie cała</strong>. Realnych pieniędzy
+          przybyło, a dostępności dla pacjenta nie.
+        </p>
+      </div>
+      <p class="source-note">
+        Płaca minimalna — rozporządzenia Rady Ministrów (w 2023 i 2024 obowiązywały dwie
+        stawki, druga od lipca: 3 600 zł i 4 300 zł; w tabeli — styczniowa);
+        <a href="https://wskazniki.gofin.pl/wskaznik/75/minimalne-wynagrodzenie-za-prace" target="_blank" rel="noopener noreferrer">zestawienie</a>.
+        Inflacja — średnioroczny wskaźnik cen GUS
+        (<a href="https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/" target="_blank" rel="noopener noreferrer">GUS</a>);
+        2026 — rok w toku. Budżet NFZ —
+        <a href="https://www.gov.pl/web/zdrowie/plany-finansowe-nfz" target="_blank" rel="noopener noreferrer">plany finansowe NFZ</a>
+        (2015–2018 = koszty świadczeń; 2021 = plan, wykonanie z Funduszem COVID ≈ 141 mld;
+        2023–2026 = plan). Składka (mediana) i dopłata z kieszeni — na infografice powyżej;
+        spójnych serii rocznych GUS nie publikuje.
+      </p>
+
       <p class="pager"><a href="/dane">← Wszystkie dane</a> · <a href="/dane/zadluzenie-szpitali">Zadłużenie szpitali →</a></p>
     </div>
   </section>
@@ -102,5 +174,14 @@ const poly = (pts) => pts.map((p) => p.join(',')).join(' ');
   .info-fig { margin: 1.5rem 0 1rem; }
   .info-fig svg { width: 100%; height: auto; display: block; border-radius: var(--radius-lg); }
   .info-fig svg text { font-family: var(--font-sans); }
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .hist { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 0.94rem; }
+  .hist thead th { text-align: right; padding: 0.65rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); vertical-align: bottom; }
+  .hist thead th:first-child { text-align: left; }
+  .th-sub { font-weight: 400; color: var(--ink-faint); font-size: 0.72rem; }
+  .hist tbody th { text-align: left; padding: 0.55rem 0.9rem; font-weight: 600; font-family: var(--font-mono); }
+  .hist td { text-align: right; padding: 0.55rem 0.9rem; font-family: var(--font-mono); white-space: nowrap; }
+  .hist tbody tr { border-bottom: 1px solid var(--line); }
+  .hist tbody tr:last-child { border-bottom: none; }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
 </style>

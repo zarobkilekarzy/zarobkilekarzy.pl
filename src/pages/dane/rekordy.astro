@@ -9,8 +9,9 @@ const rekordy = (await getCollection('zarobki'))
   .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
 
 const podium = rekordy.filter((z) => z.data.jednostka === 'zł/dzień');
-const miesieczne = rekordy.filter((z) => z.data.jednostka === 'zł/mc');
-const roczne = rekordy.filter((z) => z.data.jednostka === 'zł/rok');
+const byKwota = (a, b) => b.data.kwota - a.data.kwota;
+const miesieczne = rekordy.filter((z) => z.data.jednostka === 'zł/mc').sort(byKwota);
+const roczne = rekordy.filter((z) => z.data.jednostka === 'zł/rok').sort(byKwota);
 
 const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
 

@@ -8,6 +8,7 @@ const rekordy = (await getCollection('zarobki'))
   .filter((z) => z.data.grupa === 'rekord')
   .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
 
+const podium = rekordy.filter((z) => z.data.jednostka === 'zł/dzień');
 const miesieczne = rekordy.filter((z) => z.data.jednostka === 'zł/mc');
 const roczne = rekordy.filter((z) => z.data.jednostka === 'zł/rok');
 
@@ -29,6 +30,24 @@ const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
       </p>
 
       <DisclaimerZarobki />
+
+      {podium.map((z) => (
+        <div class="podium">
+          <div class="podium-badge">🥇 1. miejsce na podium</div>
+          <p class="podium-label">{z.data.etykieta}</p>
+          <p class="podium-line">
+            <span class="podium-num">300 tys. zł</span>
+            <span class="podium-per">DZIENNIE</span>
+          </p>
+          <p class="podium-sub">— czyli nawet <strong>26 tys. zł za godzinę</strong>.</p>
+          <p class="podium-meta">
+            <span class="chip chip-alert">zarzut — sprawa w toku</span>
+            {z.data.rola} · {z.data.region}
+          </p>
+          <p class="podium-note">{z.data.uwaga}</p>
+          <p class="rec-src"><a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a></p>
+        </div>
+      ))}
 
       <h2 style="margin-top: 2rem">Miesięczne rozliczenia (NFZ / kontrakty)</h2>
       <div class="rec-list">
@@ -96,6 +115,15 @@ const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
   .rec-meta { font-size: 0.86rem; color: var(--ink-soft); margin: 0 0 0.35rem; }
   .rec-note { font-size: 0.84rem; color: var(--ink-soft); margin: 0 0 0.35rem; line-height: 1.5; }
   .rec-src { font-size: 0.8rem; margin: 0; }
+  .podium { background: linear-gradient(180deg, var(--alert-50), var(--bg)); border: 2px solid var(--alert); border-radius: var(--radius-lg); padding: 1.5rem 1.75rem; margin: 1.5rem 0 2rem; }
+  .podium-badge { display: inline-block; background: var(--alert); color: #fff; font-weight: 700; font-size: 0.82rem; padding: 0.2rem 0.7rem; border-radius: 999px; margin-bottom: 0.75rem; }
+  .podium-label { font-weight: 600; color: var(--ink); margin: 0 0 0.35rem; font-size: 1.05rem; }
+  .podium-line { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; margin: 0.25rem 0; }
+  .podium-num { font-family: var(--font-mono); font-size: clamp(2.4rem, 9vw, 4rem); font-weight: 700; color: var(--alert); line-height: 1; }
+  .podium-per { font-family: var(--font-sans); font-weight: 800; font-size: clamp(1.4rem, 5vw, 2.2rem); letter-spacing: 0.08em; color: var(--alert); text-transform: uppercase; border-bottom: 4px solid var(--alert); padding-bottom: 2px; }
+  .podium-sub { font-size: 1.05rem; color: var(--ink); margin: 0.4rem 0 0.6rem; }
+  .podium-meta { font-size: 0.86rem; color: var(--ink-soft); margin: 0 0 0.5rem; }
+  .podium-note { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
   .chip { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--paper-2); font-size: 0.72rem; margin-right: 0.4rem; }
   .chip-alert { background: var(--alert-50); color: var(--alert); font-weight: 600; }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }

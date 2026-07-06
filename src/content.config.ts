@@ -50,7 +50,7 @@ const zarobki = defineCollection({
       'rezydent',     // regulowane pensje rezydentów
     ]),
     kwota: z.number(),
-    jednostka: z.enum(['zł/mc', 'zł/h', 'zł/rok', 'zł/dyżur', 'mies.', 'mld zł', 'lek./1000', '%', 'x']),
+    jednostka: z.enum(['zł/mc', 'zł/h', 'zł/dzień', 'zł/rok', 'zł/dyżur', 'mies.', 'mld zł', 'lek./1000', '%', 'x']),
     forma: z.enum(['etat', 'kontrakt', 'umowa cywilnoprawna', 'oświadczenie majątkowe', '—']).optional(),
     rola: z.string().optional(),
     specjalizacja: z.string().optional(),

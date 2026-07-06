@@ -1,64 +1,163 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareRow from '../../components/ShareRow.astro';
+
+// Infografika: indeks 2021 = 100 (wartości odczytane z przygotowanej grafiki).
+const series = [
+  { c: '#6aa9e0', pts: [[120,509],[250,476],[380,476],[510,432],[640,342],[770,322],[900,304]] },
+  { c: '#ef8b7b', pts: [[120,485],[250,476],[380,456],[510,432],[640,408],[770,384],[900,362]] },
+  { c: '#f3c14e', pts: [[120,485],[250,476],[380,454],[510,445],[640,384]] },
+  { c: '#ec4740', pts: [[250,476],[380,454],[510,469],[640,423],[770,423]] },
+];
+const years = [[120,'2020'],[250,'2021'],[380,'2022'],[510,'2023'],[640,'2024'],[770,'2025'],[900,'2026']];
+const yaxis = [[520,'80'],[476,'100'],[432,'120'],[388,'140'],[344,'160'],[300,'180']];
+const legend = [
+  { c: '#6aa9e0', n: 'Budżet NFZ', v: '201 mld', d: '×2,1' },
+  { c: '#ef8b7b', n: 'Składka zdrowotna (mediana / rok)', v: '6 909 zł', d: '+58%' },
+  { c: '#f3c14e', n: 'Dopłata z własnej kieszeni / os.', v: '1 270 zł', d: '+48%' },
+  { c: '#ec4740', n: 'Kolejka do lekarza', v: '4,2 mies.', d: '+24% dłużej' },
+];
+const poly = (pts) => pts.map((p) => p.join(',')).join(' ');
+
+// Dłuższa perspektywa — realne, zweryfikowane serie roczne. Dziury = „—".
+// min = minimalne wynagrodzenie brutto (zł/mc, styczniowe); infl = średnioroczna inflacja GUS (%);
+// nfz = plan/koszty NFZ (mld zł); kol = średni czas oczekiwania (WHC Barometr, mies.).
+const fmtZl = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+const szereg: { rok: number; min: number; infl: string; nfz: string; kol: string }[] = [
+  { rok: 2015, min: 1750, infl: '−0,9', nfz: '≈ 68', kol: '~2,8' },
+  { rok: 2016, min: 1850, infl: '−0,6', nfz: '≈ 71', kol: '—' },
+  { rok: 2017, min: 2000, infl: '2,0', nfz: '≈ 75', kol: '3,0' },
+  { rok: 2018, min: 2100, infl: '1,6', nfz: '≈ 79', kol: '3,7' },
+  { rok: 2019, min: 2250, infl: '2,3', nfz: '—', kol: '~3,3' },
+  { rok: 2020, min: 2600, infl: '3,4', nfz: '—', kol: '—' },
+  { rok: 2021, min: 2800, infl: '5,1', nfz: '≈ 120', kol: '2,9' },
+  { rok: 2022, min: 3010, infl: '14,4', nfz: '—', kol: '—' },
+  { rok: 2023, min: 3490, infl: '11,4', nfz: '≈ 144', kol: '3,5' },
+  { rok: 2024, min: 4242, infl: '3,6', nfz: '≈ 190', kol: '4,2' },
+  { rok: 2025, min: 4666, infl: '3,6', nfz: '≈ 220', kol: '4,2' },
+  { rok: 2026, min: 4806, infl: '—', nfz: '≈ 217', kol: '—' },
+];
 ---
 
 <BaseLayout
-  title="Kolejki a wydatki — zarobkilekarzy.pl"
-  description="Budżet NFZ rośnie skokowo, a średni czas oczekiwania do specjalisty nie maleje. Same pieniądze nie kupują krótszych kolejek."
+  title="Pieniądze rosną, kolejka nie maleje — zarobkilekarzy.pl"
+  description="Budżet NFZ rośnie skokowo, rosną składka i dopłaty z kieszeni — a kolejka do lekarza zamiast maleć, też rośnie. Cztery wymiary systemu i dłuższa perspektywa z inflacją."
 >
   <section class="section">
     <div class="container">
       <p class="eyebrow"><a href="/dane">Dane</a> · Kolejki</p>
-      <h1>Więcej pieniędzy, nie krótsze kolejki</h1>
+      <h1>Pieniądze rosną, kolejka nie maleje</h1>
       <p class="lead">
-        Budżet NFZ rośnie skokowo — a średni czas oczekiwania do specjalisty nie maleje.
-        Dwie linie, te same lata (2023–2025): pieniądze kontra kolejki.
+        Budżet NFZ rośnie skokowo, rosną składka i dopłaty z własnej kieszeni — a średni czas
+        oczekiwania do lekarza zamiast maleć, <strong>też rośnie</strong>. Same pieniądze nie
+        kupują krótszych kolejek.
       </p>
 
-      <div class="dual-chart">
-        <svg viewBox="0 0 640 300" role="img" aria-label="W latach 2023–2025 budżet NFZ rośnie ze 144 do 220 mld zł, a średni czas oczekiwania do specjalisty utrzymuje się na poziomie ok. 4 miesięcy (3,7 → 4,3 → 4,2).">
-          <line x1="80" y1="40" x2="560" y2="40" stroke="#e4eaf0" stroke-width="1"></line>
-          <line x1="80" y1="145" x2="560" y2="145" stroke="#e4eaf0" stroke-width="1"></line>
-          <line x1="80" y1="250" x2="560" y2="250" stroke="#cfdae3" stroke-width="1"></line>
-          <text x="70" y="44" text-anchor="end" font-size="12" fill="#51637a">240</text>
-          <text x="70" y="149" text-anchor="end" font-size="12" fill="#51637a">120</text>
-          <text x="70" y="254" text-anchor="end" font-size="12" fill="#51637a">0</text>
-          <text x="572" y="44" text-anchor="start" font-size="12" fill="#51637a">6</text>
-          <text x="572" y="149" text-anchor="start" font-size="12" fill="#51637a">3</text>
-          <text x="572" y="254" text-anchor="start" font-size="12" fill="#51637a">0</text>
-          <text x="80" y="274" text-anchor="middle" font-size="13" fill="#51637a">2023</text>
-          <text x="320" y="274" text-anchor="middle" font-size="13" fill="#51637a">2024</text>
-          <text x="560" y="274" text-anchor="middle" font-size="13" fill="#51637a">2025</text>
-          <polyline points="80,124 320,84 560,58" fill="none" stroke="#0f4c81" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline>
-          <circle cx="80" cy="124" r="4" fill="#0f4c81"></circle>
-          <circle cx="320" cy="84" r="4" fill="#0f4c81"></circle>
-          <circle cx="560" cy="58" r="4" fill="#0f4c81"></circle>
-          <text x="80" y="112" text-anchor="middle" font-size="12" fill="#0f4c81">144</text>
-          <text x="320" y="72" text-anchor="middle" font-size="12" fill="#0f4c81">190</text>
-          <text x="556" y="48" text-anchor="end" font-size="12" fill="#0f4c81">220 mld</text>
-          <polyline points="80,121 320,100 560,103" fill="none" stroke="#b3261e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline>
-          <circle cx="80" cy="121" r="4" fill="#b3261e"></circle>
-          <circle cx="320" cy="100" r="4" fill="#b3261e"></circle>
-          <circle cx="560" cy="103" r="4" fill="#b3261e"></circle>
-          <text x="92" y="134" text-anchor="start" font-size="12" fill="#b3261e">3,7</text>
-          <text x="320" y="118" text-anchor="middle" font-size="12" fill="#b3261e">4,3</text>
-          <text x="556" y="120" text-anchor="end" font-size="12" fill="#b3261e">4,2 mies.</text>
-        </svg>
-        <div class="dual-legend">
-          <span class="dl-item"><span class="dl-dot" style="background:#0f4c81"></span>Budżet NFZ (mld zł)</span>
-          <span class="dl-item"><span class="dl-dot" style="background:#b3261e"></span>Kolejka do specjalisty (mies.)</span>
-        </div>
-      </div>
+      <figure class="info-fig">
+        <svg viewBox="0 0 1000 620" role="img" xmlns="http://www.w3.org/2000/svg"
+          aria-label="Indeks 2021=100 dla lat 2020–2026. Budżet NFZ rośnie ×2,1 (do 201 mld zł), składka zdrowotna +58% (mediana 6909 zł/rok), dopłata z własnej kieszeni +48% (1270 zł/os.), a kolejka do lekarza +24% (4,2 miesiąca). Zamiast maleć, kolejka rośnie.">
+          <rect x="0" y="0" width="1000" height="620" fill="#16385c"></rect>
+          <text x="120" y="52" fill="#ffffff" font-size="20" font-weight="700">zarobkilekarzy.pl</text>
+          <text x="900" y="52" fill="#9fb0c4" font-size="16" text-anchor="end">ochrona zdrowia · 2020–2026</text>
+          <text x="120" y="100" font-size="36" font-weight="800">
+            <tspan fill="#ffffff">Pieniądze rosną. </tspan><tspan fill="#ec4740">Kolejka nie maleje.</tspan>
+          </text>
+          <text x="120" y="132" fill="#cdd6e0" font-size="17">Cztery wymiary systemu, indeks 2021 = 100. Wszystko, co płacisz — w górę. Kolejka też.</text>
 
+          {legend.map((l, i) => (
+            <g>
+              <rect x="120" y={168 + i * 27} width="15" height="15" rx="3" fill={l.c}></rect>
+              <text x="145" y={180 + i * 27} fill="#e6ecf2" font-size="15" font-weight="600">{l.n}</text>
+              <text x="660" y={180 + i * 27} fill={l.c} font-size="15" font-weight="700">{l.v}</text>
+              <text x="770" y={180 + i * 27} fill="#9fb0c4" font-size="14">{l.d}</text>
+            </g>
+          ))}
+
+          {yaxis.map(([y, lab]) => (
+            <text x="100" y={Number(y) + 5} fill="#7f92a8" font-size="13" text-anchor="end">{lab}</text>
+          ))}
+          <line x1="120" y1="476" x2="900" y2="476" stroke="#3a5a7d" stroke-width="1" stroke-dasharray="2 4"></line>
+          <text x="900" y="470" fill="#7f92a8" font-size="13" text-anchor="end">100 = poziom 2021</text>
+          {years.map(([x, lab]) => (
+            <text x={x} y="548" fill="#9fb0c4" font-size="14" text-anchor="middle">{lab}</text>
+          ))}
+
+          {series.map((s) => (
+            <>
+              <polyline points={poly(s.pts)} fill="none" stroke={s.c} stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+              {s.pts.map((p) => <circle cx={p[0]} cy={p[1]} r="4.5" fill={s.c}></circle>)}
+              <circle cx={s.pts[s.pts.length - 1][0]} cy={s.pts[s.pts.length - 1][1]} r="7" fill={s.c} opacity="0.35"></circle>
+            </>
+          ))}
+
+          <text x="120" y="592" font-size="20" font-weight="800">
+            <tspan fill="#ffffff">Gdyby pieniądze działały, czerwona linia by </tspan><tspan fill="#ec4740">spadała</tspan><tspan fill="#ffffff">. Zamiast tego — rośnie.</tspan>
+          </text>
+        </svg>
+      </figure>
+      <p class="source-note">
+        Indeks 2021 = 100. Wymiary: budżet NFZ ×2,1 (2020→2026); składka zdrowotna — mediana
+        roczna +58%; dopłata z własnej kieszeni na osobę +48% (2020→2024); kolejka do
+        specjalisty +24% (2021→2025). Kolejka 2020 — brak Barometru (pandemia).
+        Źródła: <a href="https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/narodowy-rachunek-zdrowia-2022,4,13.html" target="_blank" rel="noopener noreferrer">GUS — Narodowy Rachunek Zdrowia</a> (mediana składki, dopłaty),
+        <a href="https://www.gov.pl/web/zdrowie/plany-finansowe-nfz" target="_blank" rel="noopener noreferrer">plan finansowy NFZ</a> (budżet),
+        <a href="https://www.rynekzdrowia.pl/Polityka-zdrowotna/Barometr-Watch-Health-Care-sredni-czas-oczekiwania-na-leczenie-w-2025-r-to-ponad-4-miesiace,279890,14.html" target="_blank" rel="noopener noreferrer">Barometr WHC</a> (kolejka).
+      </p>
+
+      <h2 style="margin-top: 2.5rem">Dłuższa perspektywa: pieniądze, inflacja, płaca minimalna i kolejka</h2>
+      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
+        Ta sama historia w dłuższym oknie i w liczbach bezwzględnych — z <strong>inflacją</strong>,
+        <strong>płacą minimalną</strong> i <strong>kolejką</strong>. Gdzie brakuje spójnych danych
+        rocznych, zostawiamy „—”.
+      </p>
+      <div class="table-wrap">
+        <table class="hist">
+          <thead>
+            <tr>
+              <th>Rok</th>
+              <th class="num">Płaca minimalna<br /><span class="th-sub">zł/mc brutto</span></th>
+              <th class="num">Inflacja<br /><span class="th-sub">średnioroczna</span></th>
+              <th class="num">Budżet NFZ<br /><span class="th-sub">mld zł</span></th>
+              <th class="num">Kolejka<br /><span class="th-sub">mies. (WHC)</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {szereg.map((r) => (
+              <tr>
+                <th scope="row">{r.rok}</th>
+                <td class="num">{fmtZl(r.min)} zł</td>
+                <td class="num">{r.infl}{r.infl !== '—' ? '%' : ''}</td>
+                <td class="num">{r.nfz}</td>
+                <td class="num">{r.kol}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
         <p>
-          <strong>Wniosek:</strong> mimo dziesiątek miliardów więcej kolejki się nie
-          skróciły — a nawet wydłużyły (3,7 → 4,2 mies.). Wzrost budżetu idzie głównie na
-          <strong>wynagrodzenia</strong>, nie na większą dostępność świadczeń. Same
-          pieniądze nie kupują krótszych kolejek.
+          <strong>Nawet po odjęciu inflacji pieniędzy jest realnie więcej — a kolejki i tak
+          rosną.</strong> Płaca minimalna wzrosła z 1 750 do 4 806 zł (<strong>×2,7</strong>),
+          a budżet NFZ ok. <strong>×3,2</strong>. Skumulowana inflacja 2015–2025 to jednak
+          „tylko” ~+55%, więc <strong>realnie budżet i tak się mniej więcej podwoił</strong>.
+          Mimo to czas oczekiwania nie spadł — z ~2,8 mies. (2015) do ok. <strong>4,2 mies.</strong>
+          (2024–2025). Realnych pieniędzy przybyło, a dostępności dla pacjenta nie.
         </p>
       </div>
+      <p class="source-note">
+        Płaca minimalna — rozporządzenia Rady Ministrów (w 2023 i 2024 obowiązywały dwie
+        stawki, druga od lipca: 3 600 zł i 4 300 zł; w tabeli — styczniowa);
+        <a href="https://wskazniki.gofin.pl/wskaznik/75/minimalne-wynagrodzenie-za-prace" target="_blank" rel="noopener noreferrer">zestawienie</a>.
+        Inflacja — średnioroczny wskaźnik cen GUS
+        (<a href="https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/" target="_blank" rel="noopener noreferrer">GUS</a>);
+        2026 — rok w toku. Budżet NFZ —
+        <a href="https://www.gov.pl/web/zdrowie/plany-finansowe-nfz" target="_blank" rel="noopener noreferrer">plany finansowe NFZ</a>
+        (2015–2018 = koszty świadczeń; 2021 = plan, wykonanie z Funduszem COVID ≈ 141 mld;
+        2023–2026 = plan). Kolejka — <a href="http://www.korektorzdrowia.pl/barometr/raporty/" target="_blank" rel="noopener noreferrer">Barometr WHC (Fundacja Watch Health Care)</a>,
+        różne edycje (badane w różnych miesiącach — stąd wahania; „~” = wartość przybliżona).
+        Składka (mediana) i dopłata z kieszeni — na infografice powyżej; spójnych serii
+        rocznych GUS nie publikuje.
+      </p>
 
       <h2 style="margin-top: 2.5rem">Kolejka zależy od specjalizacji</h2>
       <p class="muted" style="max-width: 64ch; margin-top: 0.5rem">
@@ -83,18 +182,14 @@ import ShareRow from '../../components/ShareRow.astro';
           <div class="q-bar"><div class="q-fill" style="width:38%"></div></div>
         </div>
       </div>
-
       <p class="source-note">
-        Źródła: budżet — plany finansowe NFZ (<a href="/dane/budzet-nfz">zob. budżet</a>);
-        średni czas oczekiwania —
-        <a href="https://www.rynekzdrowia.pl/Polityka-zdrowotna/Barometr-Watch-Health-Care-sredni-czas-oczekiwania-na-leczenie-w-2025-r-to-ponad-4-miesiace,279890,14.html" target="_blank" rel="noopener noreferrer">Barometr WHC</a>
-        (2023 ~3,7 mies, 2024 ~4,3, 2025 ~4,2); czasy wg specjalności —
+        Czasy wg specjalności —
         <a href="https://www.gazetaprawna.pl/biznes/zdrowie/artykuly/11155472,kolejkidolekarzynfz2025.html" target="_blank" rel="noopener noreferrer">dane NFZ (Gazeta Prawna)</a>;
         terminy —
         <a href="https://terminyleczenia.nfz.gov.pl/" target="_blank" rel="noopener noreferrer">Informator NFZ</a>.
       </p>
 
-      <p class="pager"><a href="/dane/budzet-nfz">← Budżet NFZ</a> · <a href="/dane/rozklad-wynagrodzen">Rozkład wynagrodzeń →</a></p>
+      <p class="pager"><a href="/dane/budzet-nfz">← Budżet NFZ</a> · <a href="/dane/zadluzenie-szpitali">Zadłużenie szpitali →</a></p>
     </div>
   </section>
 
@@ -106,12 +201,18 @@ import ShareRow from '../../components/ShareRow.astro';
 </BaseLayout>
 
 <style>
-  .dual-chart { margin: 1.25rem 0; max-width: 820px; }
-  .dual-chart svg { width: 100%; height: auto; display: block; }
-  .dual-chart svg text { font-family: var(--font-sans); }
-  .dual-legend { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-top: 0.5rem; font-size: 0.85rem; color: var(--ink-soft); }
-  .dl-item { display: inline-flex; align-items: center; gap: 0.4rem; }
-  .dl-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .info-fig { margin: 1.5rem 0 1rem; }
+  .info-fig svg { width: 100%; height: auto; display: block; border-radius: var(--radius-lg); }
+  .info-fig svg text { font-family: var(--font-sans); }
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .hist { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 0.94rem; }
+  .hist thead th { text-align: right; padding: 0.65rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); vertical-align: bottom; }
+  .hist thead th:first-child { text-align: left; }
+  .th-sub { font-weight: 400; color: var(--ink-faint); font-size: 0.72rem; }
+  .hist tbody th { text-align: left; padding: 0.55rem 0.9rem; font-weight: 600; font-family: var(--font-mono); }
+  .hist td { text-align: right; padding: 0.55rem 0.9rem; font-family: var(--font-mono); white-space: nowrap; }
+  .hist tbody tr { border-bottom: 1px solid var(--line); }
+  .hist tbody tr:last-child { border-bottom: none; }
   .queues { display: flex; flex-direction: column; gap: 1.1rem; margin: 1.5rem 0 1.25rem; }
   .q-row { display: block; }
   .q-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.35rem; }

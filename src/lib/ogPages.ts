@@ -89,6 +89,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Lejek kształcenia lekarzy',
     subtitle: 'Miejsc przybywa, ale 2/3–3/4 miejsc specjalizacyjnych co roku stoi pustych. Wąskie gardło jest strukturalne.',
   },
+  'analizy/poz-pieniadz-za-pacjenta': {
+    tag: 'Analiza',
+    title: 'POZ: pieniądz za zarejestrowanego pacjenta',
+    subtitle: 'Kapitacja jest jawna co do grosza — a i tak nie wiadomo, ile zostaje lekarzowi. Publiczny strumień policzalny, wynik nieprzejrzysty.',
+  },
 
   // — Mechanizmy —
   'mechanizmy': {

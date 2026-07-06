@@ -8,6 +8,43 @@ const dlug = (await getCollection('zarobki'))
   .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
 
 const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+
+// Zweryfikowane statystyki skali — do siatki kart (neutralne, nie alarmowe).
+const skala = [
+  {
+    v: '298', u: 'szpitali', opis: 'ma zobowiązania <strong>wymagalne</strong> (przeterminowane) — to ponad połowa (53%) wszystkich publicznych.',
+    src: 'Rzeczpospolita', url: 'https://www.rp.pl/ochrona-zdrowia/art44638431-rosnie-zadluzenie-publicznych-szpitali-to-juz-34-mld-zlotych',
+  },
+  {
+    v: '91%', u: 'na minusie', opis: 'szpitali powiatowych zamknęło 2025 r. <strong>stratą</strong> na działalności podstawowej — na plusie tylko 19 z 207.',
+    src: 'Menedżer Zdrowia', url: 'https://www.termedia.pl/mz/Finanse-szpitali-powiatowych-systematyczne-narastanie-strat-,66853.html',
+  },
+  {
+    v: '~½', u: 'placówek', opis: 'zbadanych szpitali ma <strong>dług większy niż wartość całego majątku</strong>.',
+    src: 'Rynek Zdrowia', url: 'https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Az-trudno-uwierzyc-W-polowie-zbadanych-szpitali-dlug-przekracza-wartosc-majatku,283326,1.html',
+  },
+  {
+    v: '344', u: 'mln zł', opis: 'to same <strong>odsetki</strong> od długów szpitali powiatowych (2025) — koszty finansowe były 7× większe niż ich przychody finansowe.',
+    src: 'Menedżer Zdrowia', url: 'https://www.termedia.pl/mz/Finanse-szpitali-powiatowych-systematyczne-narastanie-strat-,66853.html',
+  },
+  {
+    v: '5,5–10', u: 'mld zł', opis: 'tyle pochłonie <strong>oddłużanie</strong> publicznych szpitali w perspektywie dekady — z pieniędzy publicznych.',
+    src: 'Prawo.pl', url: 'https://www.prawo.pl/zdrowie/jak-oddluzyc-polskie-szpitale-raport-zdrowie-ponad-dlugi,1543437.html',
+  },
+];
+
+// „Lista wstydu” — pojedyncze szpitale z największą roczną stratą netto (wstępny wynik 2024,
+// dane MZ zebrane przez Menedżera Zdrowia). MZ publikuje długi tylko zbiorczo (po województwach).
+const listaWstydu = [
+  { rola: 'Woj. Szpital Specjalistyczny im. M. Pirogowa', miasto: 'Łódź', kwota: 88013861 },
+  { rola: 'Woj. Szpital Specjalistyczny im. kard. Wyszyńskiego', miasto: 'Lublin', kwota: 79949350 },
+  { rola: 'Woj. Szpital Specjalistyczny im. NMP', miasto: 'Częstochowa', kwota: 54576624 },
+  { rola: 'Szpital Wojewódzki im. Jana Pawła II', miasto: 'Bełchatów', kwota: 51320479, hot: true },
+  { rola: 'Woj. Szpital Zespolony im. J. Śniadeckiego', miasto: 'Białystok', kwota: 47555530 },
+  { rola: 'Wojewódzki Szpital Zespolony', miasto: 'Płock', kwota: 45119750 },
+  { rola: 'Woj. Szpital Specjalistyczny im. M. Skłodowskiej-Curie', miasto: 'Zgierz', kwota: 43297412 },
+  { rola: 'Samodzielny Publiczny ZOZ', miasto: 'Sanok', kwota: 39857634 },
+];
 ---
 
 <BaseLayout
@@ -69,6 +106,65 @@ const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
         NIK: zadłużenie lecznic nie zmienia się od lat.
       </p>
 
+      <h2 style="margin-top: 2.75rem">Skala w liczbach</h2>
+      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
+        34 mld zł to suma zbiorcza. Dopiero rozbicie pokazuje, jak głęboki jest problem —
+        i jak bardzo dług przestał być wyjątkiem, a stał się <em>normalnym</em> sposobem
+        finansowania bieżącej działalności.
+      </p>
+      <div class="skala-grid">
+        {skala.map((s) => (
+          <div class="skala-card">
+            <p class="skala-v">{s.v} <span class="skala-u">{s.u}</span></p>
+            <p class="skala-opis" set:html={s.opis} />
+            <p class="skala-src"><a href={s.url} target="_blank" rel="noopener noreferrer">{s.src}</a></p>
+          </div>
+        ))}
+      </div>
+      <p class="source-note" style="margin-top: 0.9rem">
+        Zakres bywa różny: dane o stratach i odsetkach dotyczą <strong>szpitali powiatowych</strong>
+        (próba wg Menedżera Zdrowia), zobowiązania wymagalne i suma 34 mld zł — ogółu publicznych
+        SPZOZ. Mimo różnych prób obraz jest zbieżny: <strong>dług jest strukturalny, nie incydentalny</strong>.
+      </p>
+
+      <h2 style="margin-top: 2.75rem">Które szpitale? „Lista wstydu”</h2>
+      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+        Ministerstwo Zdrowia podaje długi <strong>tylko zbiorczo</strong> (po województwach) — nie
+        per placówka. Pojedyncze szpitale widać jednak przez ich <strong>roczny wynik</strong>: oto
+        osiem z największą stratą netto za 2024 r. (dane wstępne MZ).
+      </p>
+      <div class="table-wrap">
+        <table class="lw">
+          <thead>
+            <tr><th>#</th><th>Szpital</th><th>Strata netto (2024)</th></tr>
+          </thead>
+          <tbody>
+            {listaWstydu.map((s, i) => (
+              <tr class={s.hot ? 'is-hot' : ''}>
+                <td class="lw-rank">{i + 1}</td>
+                <th scope="row">{s.rola}<span class="lw-city">{s.miasto}</span></th>
+                <td class="lw-num">{fmt(s.kwota)} zł</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="callout quiet">
+        <p>
+          Zwróć uwagę na <strong>#4 — Bełchatów</strong>. To ten sam szpital, w którym ujawniono
+          <strong>rekordowe kontrakty</strong> (urolog 151 097 zł/mc, ortopeda 142 032 zł/mc). Placówka
+          z czwartą największą roczną stratą w kraju wypłaca jedne z najwyższych stawek — a widać to
+          tylko dlatego, że akurat ten szpital je <a href="/dane/rekordy">ujawnił</a>. Ile podobnych
+          zestawień kryje się tam, gdzie stawek się nie publikuje, <strong>nie wiadomo</strong>.
+        </p>
+      </div>
+      <p class="source-note">
+        Ranking strat netto pojedynczych szpitali (wstępny wynik 2024) —
+        <a href="https://www.termedia.pl/mz/Lista-wstydu-,63573.html" target="_blank" rel="noopener noreferrer">„Lista wstydu”, Menedżer Zdrowia</a> (dane MZ);
+        cztery z pierwszej dziesiątki to szpitale z woj. łódzkiego (Łódź, Bełchatów, Zgierz).
+        Długi zbiorczo (po województwach) — <a href="https://www.gov.pl/web/zdrowie/zadluzenie-spzoz" target="_blank" rel="noopener noreferrer">Ministerstwo Zdrowia</a>.
+      </p>
+
       <p class="pager"><a href="/dane/budzet-nfz">← Budżet NFZ</a> · <a href="/dane">Wszystkie dane →</a></p>
     </div>
   </section>
@@ -79,3 +175,28 @@ const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .skala-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin: 1.25rem 0 0; }
+  .skala-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.25rem; }
+  .skala-v { font-family: var(--font-mono); font-size: 2rem; font-weight: 600; color: var(--ink); margin: 0 0 0.5rem; line-height: 1; }
+  .skala-u { font-family: var(--font-sans); font-size: 0.9rem; font-weight: 500; color: var(--ink-soft); }
+  .skala-opis { font-size: 0.9rem; color: var(--ink); line-height: 1.5; margin: 0 0 0.6rem; }
+  .skala-opis :global(strong) { font-weight: 600; }
+  .skala-src { font-size: 0.78rem; margin: 0; }
+  .skala-src a { color: var(--ink-faint); }
+  .skala-src a:hover { color: var(--brand); }
+
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .lw { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 0.94rem; }
+  .lw thead th { text-align: left; padding: 0.7rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); }
+  .lw tbody th { text-align: left; padding: 0.7rem 0.9rem; font-weight: 600; }
+  .lw td { padding: 0.7rem 0.9rem; vertical-align: top; }
+  .lw tbody tr { border-bottom: 1px solid var(--line); }
+  .lw tbody tr:last-child { border-bottom: none; }
+  .lw-rank { font-family: var(--font-mono); color: var(--ink-faint); width: 2.5ch; }
+  .lw-city { display: block; font-size: 0.8rem; font-weight: 400; color: var(--ink-soft); margin-top: 0.1rem; }
+  .lw-num { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; text-align: right; }
+  .lw tr.is-hot { background: var(--alert-50); }
+  .lw tr.is-hot th, .lw tr.is-hot .lw-num, .lw tr.is-hot .lw-rank { color: var(--alert); }
+</style>

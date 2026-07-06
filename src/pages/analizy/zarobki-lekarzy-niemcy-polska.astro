@@ -2,6 +2,13 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareRow from '../../components/ShareRow.astro';
 import DisclaimerZarobki from '../../components/DisclaimerZarobki.astro';
+import { getCollection } from 'astro:content';
+
+// Dane porównawcze UE/OECD (liczba lekarzy, dostępność) — z kolekcji.
+const por = (await getCollection('zarobki'))
+  .filter((z) => z.data.grupa === 'porownanie')
+  .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
 
 // Wynagrodzenie zasadnicze specjalisty (Facharzt / lékař-specialista), brutto/mc.
 // Kursy orient.: 1 EUR ≈ 4,29 zł, 1 CZK ≈ 0,18 zł (NBP). Kwoty zaokrąglone.
@@ -27,6 +34,29 @@ const kraje = [
     specNote: '6 586 – 11 008 € (Facharzt, szpitale publiczne)',
     jawne: true, jawneNote: 'Kollektivvertrag — tabele publiczne',
   },
+];
+
+// Drabina kariery u sąsiadów — zasadnicze brutto/mc w przeliczeniu na zł.
+// Niemcy: taryfa TV-Ärzte/VKA (szpitale komunalne, od 1 VIII 2025). Austria: Kollektivvertrag.
+const drabina = [
+  { stopien: 'Rezydent (Assistenzarzt)', de: '24,1 – 30,9 tys.', at: '23,7 – 39,9 tys.' },
+  { stopien: 'Specjalista (Facharzt)', de: '31,8 – 40,8 tys.', at: '28,3 – 47,2 tys.' },
+  { stopien: 'Starszy specjalista (Oberarzt)', de: '39,8 – 45,5 tys.', at: '—' },
+  { stopien: 'Z-ca ordynatora (leit. Oberarzt)', de: '46,8 – 50,2 tys.', at: '—' },
+];
+// Czechy — po ujawnieniu stawek szpitalnych (2025).
+const czechy = [
+  { rola: 'Lekarz-specjalista (średnia)', pln: '~28 200 zł', czk: '157 443 CZK' },
+  { rola: 'Ordynator (primář)', pln: '~35 000 zł', czk: '~194 000 CZK' },
+  { rola: 'Najlepiej zarabiający', pln: '>49 000 zł', czk: 'wg ujawnionych danych' },
+];
+// Polska — ta sama drabina, ale jawny jest tylko jej dół. Brutto/mc.
+const polska = [
+  { rola: 'Rezydent (regulowane)', kwota: '10 595 – 11 655 zł', jaw: 'jawne (ustawa)' },
+  { rola: 'Specjalista — etat, minimum ustawowe', kwota: '12 910 zł', jaw: 'jawne (ustawa)' },
+  { rola: 'Specjalista — mediana etatu (AOTMiT)', kwota: '23 666 zł', jaw: 'agregat, nie os.' },
+  { rola: 'Specjalista — mediana kontraktu (AOTMiT)', kwota: '25 595 zł', jaw: 'agregat, nie os.' },
+  { rola: 'Rekordowy kontrakt (urolog, Bełchatów)', kwota: '151 097 zł', jaw: 'niejawne', hot: true },
 ];
 ---
 
@@ -89,7 +119,7 @@ const kraje = [
         Austria — <a href="https://www.medi-karriere.at/medizinische-berufe/arzt-gehalt/" target="_blank" rel="noopener noreferrer">medi-karriere.at (Kollektivvertrag 2025)</a>.
       </p>
 
-      <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+      <div class="callout alert">
         <p>
           <strong>Wszędzie jawnie — tylko u nas nie.</strong> W Czechach, Niemczech i Austrii
           płace lekarzy wynikają z <strong>publicznych układów zbiorowych</strong>: każdy
@@ -99,6 +129,89 @@ const kraje = [
           tu najbardziej wstydliwa, lecz to, że <strong>nie da się jej poznać</strong>.
         </p>
       </div>
+
+      <h2 style="margin-top: 2.5rem">Drabina taryfowa: co u sąsiadów widać w tabeli</h2>
+      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+        U sąsiadów każdy stopień kariery ma <strong>jawną stawkę</strong>. Poniżej pełne
+        widełki wynagrodzenia zasadniczego (brutto/mc, w przeliczeniu na złote) — od rezydenta
+        po zastępcę ordynatora.
+      </p>
+
+      <h3 class="cmp-h3">Niemcy i Austria — taryfa krok po kroku</h3>
+      <div class="table-wrap">
+        <table class="cmp">
+          <thead>
+            <tr><th>Stopień</th><th>Niemcy (zł/mc)</th><th>Austria (zł/mc)</th></tr>
+          </thead>
+          <tbody>
+            {drabina.map((r) => (
+              <tr>
+                <th scope="row">{r.stopien}</th>
+                <td class="num">{r.de}</td>
+                <td class="num">{r.at}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">
+        Niemcy — taryfa <a href="https://www.marburger-bund.de/sites/default/files/tarifvertraege/2025-06/25-06-16%20TV-%C3%84rzte%20VKA%20i.d.F.%2010.%20%C3%84ndTV.pdf" target="_blank" rel="noopener noreferrer">TV-Ärzte/VKA (Marburger Bund)</a>,
+        stan od 1 VIII 2025; kliniki uniwersyteckie (TdL) mają zbliżone stawki, u góry do ~12 350 €.
+        Austria — <a href="https://www.medi-karriere.at/medizinische-berufe/arzt-gehalt/" target="_blank" rel="noopener noreferrer">medi-karriere.at (Kollektivvertrag 2025)</a>;
+        „—” = brak jednoznacznej widełki dla tego stopnia w źródle. Kurs ~4,29 zł/€.
+      </p>
+
+      <h3 class="cmp-h3">Czechy — po ujawnieniu stawek (2025)</h3>
+      <div class="table-wrap">
+        <table class="cmp">
+          <thead>
+            <tr><th>Pozycja</th><th>≈ zł / mc</th><th>W walucie</th></tr>
+          </thead>
+          <tbody>
+            {czechy.map((r) => (
+              <tr>
+                <th scope="row">{r.rola}</th>
+                <td class="num">{r.pln}</td>
+                <td class="cmp-note-cell">{r.czk}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">
+        Czechy — <a href="https://www.money.pl/gospodarka/ujawnili-zarobki-w-czeskich-szpitalach-takie-pensje-dostaja-lekarze-7287494267615328a.html" target="_blank" rel="noopener noreferrer">Money.pl / zpravy.kurzy.cz (2025)</a>.
+        Kurs ~0,18 zł/CZK. Czescy lekarze wywalczyli jawne stawki otwartą drogą (protesty
+        „Děkujeme, odcházíme”, 2011).
+      </p>
+
+      <h2 style="margin-top: 2.5rem">Polska: od jawnego minimum do niejawnego rekordu</h2>
+      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+        Ta sama drabina po polsku — z jedną różnicą: <strong>jawny jest tylko jej dół</strong>.
+        Rezydent i etatowe minimum wynikają z ustawy; mediany AOTMiT to agregat, nie kwota
+        konkretnej osoby; a rekordowy kontrakt ujrzał światło dzienne tylko dlatego, że jeden
+        szpital wyłamał się z milczenia.
+      </p>
+      <div class="table-wrap">
+        <table class="cmp">
+          <thead>
+            <tr><th>Pozycja (Polska)</th><th>zł / mc</th><th>Jawność</th></tr>
+          </thead>
+          <tbody>
+            {polska.map((r) => (
+              <tr class={r.hot ? 'is-pl' : ''}>
+                <th scope="row">{r.rola}</th>
+                <td class="num">{r.kwota}</td>
+                <td class="cmp-note-cell">{r.jaw}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">
+        Polskie kwoty — zob. <a href="/dane/pensje-rezydentow">pensje rezydentów</a>,
+        <a href="/dane/rozklad-wynagrodzen">rozkład wynagrodzeń</a> (AOTMiT, rozporządzenie MZ) i
+        <a href="/dane/rekordy">rekordy</a>. Bywały kontrakty jeszcze wyższe (do 316 tys. zł/mc).
+      </p>
 
       <h2 style="margin-top: 2.5rem">Więcej — ale nie przez dosypywanie</h2>
       <p>
@@ -114,7 +227,69 @@ const kraje = [
         cichy rynek kontraktów. U nas najpierw musi być widać, <strong>dokąd idą pieniądze</strong>.
       </p>
 
+      <h2 style="margin-top: 2.5rem">A lekarzy nie brakuje bardziej niż u sąsiadów</h2>
+      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
+        Wbrew obiegowej opinii liczba lekarzy w Polsce jest <strong>bliska średniej OECD</strong>.
+        Wąskim gardłem nie jest sam headcount, lecz <strong>dostępność, struktura i rozmieszczenie</strong>
+        (zob. <a href="/analizy/dlaczego-brakuje-lekarzy">dlaczego brakuje lekarzy</a>).
+      </p>
+      <div class="data-grid">
+        {por.map((z) => (
+          <div class="data-card">
+            <p class="k">{z.data.etykieta}</p>
+            <p class="v">{fmt(z.data.kwota).replace('.', ',')} {z.data.jednostka}</p>
+            <p class="src">
+              {z.data.uwaga && <span>{z.data.uwaga} · </span>}
+              <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
+            </p>
+          </div>
+        ))}
+      </div>
+
       <DisclaimerZarobki />
+
+      <h2 id="eksperyment-stawki" style="margin-top: 2.5rem">Eksperyment: ile kosztowałyby niemieckie stawki</h2>
+      <p class="muted" style="max-width: 64ch; margin-top: 0.5rem">
+        Skoro w Niemczech płacą tyle — ile kosztowałoby płacenie tego polskim lekarzom? To
+        <strong>szacunek</strong>, nie prognoza — pokazuje skalę, o jakiej mówimy.
+      </p>
+      <div class="stat-callout">
+        <span class="stat-callout-num">~60 mld zł</span>
+        <div class="stat-callout-body">
+          <p class="stat-callout-note">
+            rocznie — przy niemieckiej średniej płacy (~98 750 €/rok) dla 141 193 polskich
+            lekarzy z bezpośrednią opieką nad pacjentem. To <strong>~30% kosztów świadczeń
+            NFZ</strong> (plan 2026: ~201 mld zł). Widełki skrajne (dolna–górna stawka taryfy)
+            dają 41–87 mld zł.
+          </p>
+          <p class="stat-callout-src">
+            Szacunek własny; liczy tylko płacę zasadniczą brutto (pomija dyżury, składki
+            pracodawcy, siłę nabywczą). Źródła:
+            <a href="https://www.marburger-bund.de/sites/default/files/tarifvertraege/2025-06/25-06-16%20TV-%C3%84rzte%20VKA%20i.d.F.%2010.%20%C3%84ndTV.pdf" target="_blank" rel="noopener noreferrer">taryfa Marburger Bund (TV‑Ärzte/VKA)</a>,
+            <a href="https://www.praktischarzt.de/arzt/gehalt-arzt/" target="_blank" rel="noopener noreferrer">StepStone Gehaltsreport</a>,
+            liczba lekarzy — GUS 2024, plan NFZ 2026 (<a href="/dane/budzet-nfz">zob. budżet</a>).
+          </p>
+        </div>
+      </div>
+      <div class="callout quiet">
+        <p>
+          <strong>I z czym to zestawić: płace już dziś są największą pozycją.</strong> W samym
+          budżecie NFZ koszt ustawy podwyżkowej to ok. <a href="/dane/budzet-nfz">25–30%
+          całości</a>. W szpitalach wynagrodzenia pochłaniają <em>większość</em> przychodów —
+          rządowa narracja mówi nawet o <strong>~80%</strong>, a i ostrożniejszy rachunek
+          <strong>samych rezydentów</strong> (ankieta w 321 szpitalach) daje <strong>55% na cały
+          personel medyczny</strong> i <strong>23% na samych lekarzy</strong> (dla porównania:
+          USA 56%, Niemcy 60%). Tak czy inaczej płace to <strong>gros wydatków</strong> —
+          dołożenie kolejnych 60 mld nie byłoby więc „wyrównaniem zbyt niskich pensji”, lecz
+          ogromnym narzutem na pozycję, która i tak już dominuje.
+        </p>
+        <p class="source-note" style="margin-top: 0.6rem">
+          Udział pensji w budżecie NFZ (~25%) —
+          <a href="https://dorzeczy.pl/ekonomia/745455/podwyzki-dla-lekarzy-leszczyna-zdradzila-szczegoly-budzetu-nfz.html" target="_blank" rel="noopener noreferrer">min. Leszczyna, Do Rzeczy</a>;
+          udział pensji w szpitalach (55% personel / 23% lekarze — kontra dla „~80%”) —
+          <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Rezydenci-sprawdzili-ile-szpitale-wydaja-na-pensje-lekarzy-Wynik-moze-zaskoczyc,272870,1.html" target="_blank" rel="noopener noreferrer">badanie Porozumienia Rezydentów OZZL / Rynek Zdrowia</a>.
+        </p>
+      </div>
 
       <div class="callout">
         <p>
@@ -128,14 +303,14 @@ const kraje = [
         </p>
       </div>
 
-      <div class="callout">
+      <div class="callout quiet">
         <p>
           <strong>Uczciwie o metodzie.</strong> Porównujemy <em>wynagrodzenie zasadnicze</em>
           (bez dyżurów, dodatków i różnic siły nabywczej). Kwoty czeskie to średnie z premiami,
           niemieckie i austriackie — widełki taryfowe; polskie kontraktowe to mediany, nie
           total osoby. Chodzi o rząd wielkości i — przede wszystkim — o <strong>model</strong>:
-          jawna taryfa vs niejawny kontrakt. Zob. też
-          „<a href="/dane/polska-na-tle-ue">ile kosztowałyby niemieckie stawki</a>”.
+          jawna taryfa vs niejawny kontrakt. Zob. też wyżej —
+          „<a href="#eksperyment-stawki">ile kosztowałyby niemieckie stawki</a>”.
         </p>
       </div>
 
@@ -156,6 +331,9 @@ const kraje = [
   .cmp thead th { text-align: left; padding: 0.7rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); }
   .cmp tbody th { text-align: left; padding: 0.7rem 0.9rem; font-weight: 700; vertical-align: top; }
   .cmp td { padding: 0.7rem 0.9rem; vertical-align: top; }
+  .cmp td.num { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; }
+  .cmp .cmp-note-cell { font-size: 0.82rem; color: var(--ink-soft); }
+  .cmp-h3 { margin: 1.75rem 0 0.25rem; font-size: 1.02rem; color: var(--ink); }
   .cmp tbody tr { border-bottom: 1px solid var(--line); }
   .cmp tbody tr:last-child { border-bottom: none; }
   .cmp tr.is-pl { background: var(--alert-50); }
@@ -165,5 +343,10 @@ const kraje = [
   .cmp-jaw { white-space: nowrap; }
   .jaw-yes { color: #2f7a34; font-weight: 700; }
   .jaw-no { color: var(--alert); font-weight: 700; }
+  .stat-callout { display: flex; gap: 1.25rem; align-items: center; background: var(--brand-50); border-left: 5px solid var(--brand); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 1.5rem 1.75rem; margin: 1.25rem 0 0.75rem; }
+  .stat-callout-num { font-family: var(--font-mono); font-size: clamp(2rem, 6vw, 3rem); font-weight: 500; color: var(--brand); line-height: 1; flex-shrink: 0; }
+  .stat-callout-note { font-size: 1rem; line-height: 1.55; color: var(--ink); margin: 0 0 0.5rem; }
+  .stat-callout-src { font-size: 0.82rem; color: var(--ink-soft); margin: 0; }
+  @media (max-width: 600px) { .stat-callout { flex-direction: column; align-items: flex-start; gap: 0.6rem; } }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
 </style>

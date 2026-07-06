@@ -6,7 +6,7 @@ url: "https://www.rmf24.pl/regiony/trojmiasto/news-fikcyjne-swiadczenia-medyczne
 date: 2024-08-08
 category: "kontrakty"
 tags: ["rozliczenia", "nadużycia", "NFZ"]
-excerpt: "Do NFZ trafiło blisko 3500 zgłoszeń pacjentów o świadczeniach wykazanych na ich kontach, których nie wykonano; ponad połowę potwierdzono. Fundusz żądał zwrotu środków publicznych."
+excerpt: "Do NFZ trafiło blisko 3500 zgłoszeń pacjentów o świadczeniach wykazanych na ich kontach, których nie wykonano; prawie połowę (ponad 1600) potwierdzono. Fundusz żądał zwrotu środków publicznych."
 example: false
 ---
 

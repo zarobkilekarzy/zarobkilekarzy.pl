@@ -3,110 +3,139 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareRow from '../../components/ShareRow.astro';
 import DisclaimerZarobki from '../../components/DisclaimerZarobki.astro';
 
-// Taryfa TV-Ärzte/VKA (szpitale komunalne), zasadnicze brutto/mc, od 1 VIII 2025
-// (Marburger Bund). Kurs ~4,29 PLN/EUR (NBP). PLN zaokrąglone.
-const kurs = 4.29;
-const de = [
-  { rola: 'Assistenzarzt (rezydent)', euro: '5 610 – 7 211', pln: '24,1 – 30,9 tys.' },
-  { rola: 'Facharzt (specjalista)', euro: '7 404 – 9 509', pln: '31,8 – 40,8 tys.' },
-  { rola: 'Oberarzt (starszy specjalista)', euro: '9 274 – 10 599', pln: '39,8 – 45,5 tys.' },
-  { rola: 'leitender Oberarzt (z-ca ordynatora)', euro: '10 909 – 11 689', pln: '46,8 – 50,2 tys.' },
+// Wynagrodzenie zasadnicze specjalisty (Facharzt / lékař-specialista), brutto/mc.
+// Kursy orient.: 1 EUR ≈ 4,29 zł, 1 CZK ≈ 0,18 zł (NBP). Kwoty zaokrąglone.
+const kraje = [
+  {
+    kraj: 'Polska', pl: true,
+    spec: '12 910 zł · ~25 595 zł',
+    specNote: 'etat (minimum ustawowe) · mediana kontraktu',
+    jawne: false, jawneNote: 'jawny tylko niski etat — kontraktów nikt nie publikuje',
+  },
+  {
+    kraj: 'Czechy', spec: '~28 200 zł',
+    specNote: '157 443 CZK (chirurg-specjalista, średnia)',
+    jawne: true, jawneNote: 'tabele/ujawniane publicznie',
+  },
+  {
+    kraj: 'Niemcy', spec: '~31,8 – 40,8 tys. zł',
+    specNote: '7 404 – 9 509 € (Facharzt, taryfa TV-Ärzte)',
+    jawne: true, jawneNote: 'układ zbiorowy Marburger Bund',
+  },
+  {
+    kraj: 'Austria', spec: '~28,3 – 47,2 tys. zł',
+    specNote: '6 586 – 11 008 € (Facharzt, szpitale publiczne)',
+    jawne: true, jawneNote: 'Kollektivvertrag — tabele publiczne',
+  },
 ];
 ---
 
 <BaseLayout
-  title="Zarobki lekarzy: Niemcy a Polska — zarobkilekarzy.pl"
-  description="Porównanie wynagrodzeń lekarzy w Niemczech (taryfa TV-Ärzte) i w Polsce. W Niemczech pensje są wysokie i jawne w tabelach taryfowych; w Polsce niski, jawny etat uzupełniają nieprzejrzyste kontrakty."
+  title="Zarobki lekarzy: Polska na tle sąsiadów — zarobkilekarzy.pl"
+  description="Polska, Czechy, Niemcy, Austria — ile zarabia lekarz i czy płace są jawne. W całym regionie wynagrodzenia wynikają z jawnych taryf; Polska jest wyjątkiem — realny dochód ukrywa niejawny kontrakt."
 >
   <section class="section">
     <div class="container">
-      <p class="eyebrow"><a href="/analizy">Analizy</a> · Niemcy a Polska</p>
-      <h1>Zarobki lekarzy: Niemcy a Polska</h1>
+      <p class="eyebrow"><a href="/analizy">Analizy</a> · Polska na tle sąsiadów</p>
+      <h1>Zarobki lekarzy: Polska na tle sąsiadów</h1>
       <p class="lead">
-        W Niemczech wynagrodzenia lekarzy w szpitalach publicznych są nie tylko wyższe, ale
-        i <strong>w pełni jawne</strong> — wynikają z ogólnodostępnych tabel taryfowych.
-        W Polsce niski, jawny etat uzupełniają <strong>nieprzejrzyste kontrakty</strong>.
-        Ta różnica w jawności jest równie ważna jak różnica w kwotach.
+        Czechy, Niemcy, Austria — u sąsiadów lekarze zarabiają więcej. Łatwo wyciągnąć z tego
+        wniosek „trzeba dosypać”. To błąd. Polska już dokłada rekordowo — a kolejki nie maleją,
+        bo pieniądz <strong>wycieka w niejawnych kontraktach</strong>. Przewaga sąsiadów nie
+        leży w większym budżecie, lecz w <strong>jawności</strong>: płacą z <strong>publicznych
+        taryf</strong>, które każdy może policzyć. Polska jest wyjątkiem — jawny jest tylko
+        niski etat, a realny dochód domyka niejawny kontrakt. Naszym zdaniem to <strong>jawność,
+        nie kolejne miliardy</strong>, pozwoli płacić lekarzom przeciętnie więcej — z tego, co
+        już mamy.
       </p>
 
-      <h2>Niemcy: taryfa TV-Ärzte (szpitale komunalne)</h2>
+      <h2>Specjalista: ile zarabia i czy wiadomo</h2>
       <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
-        Wynagrodzenie zasadnicze brutto miesięcznie, według układu zbiorowego dla lekarzy
-        szpitali komunalnych (VKA), stan od 1 sierpnia 2025. Każdy w Niemczech może sprawdzić
-        w tabeli, ile zarabia lekarz na danym stanowisku.
+        Wynagrodzenie zasadnicze brutto miesięcznie, w przeliczeniu na złote. To nie total
+        (bez dyżurów i dodatków) — chodzi o rząd wielkości i o to, <em>czy w ogóle da się to
+        sprawdzić</em>.
       </p>
       <div class="table-wrap">
         <table class="cmp">
-          <thead><tr><th>Stanowisko</th><th>€ brutto / mc</th><th>≈ zł / mc</th></tr></thead>
+          <thead>
+            <tr><th>Kraj</th><th>Specjalista (brutto/mc)</th><th>Płace jawne?</th></tr>
+          </thead>
           <tbody>
-            {de.map((r) => (
-              <tr><th scope="row">{r.rola}</th><td class="num">{r.euro} €</td><td class="num">{r.pln} zł</td></tr>
+            {kraje.map((k) => (
+              <tr class={k.pl ? 'is-pl' : ''}>
+                <th scope="row">{k.kraj}</th>
+                <td>
+                  <span class="cmp-val">{k.spec}</span>
+                  <span class="cmp-note">{k.specNote}</span>
+                </td>
+                <td class="cmp-jaw">
+                  {k.jawne
+                    ? <span class="jaw-yes">✓ tak</span>
+                    : <span class="jaw-no">✗ nie</span>}
+                  <span class="cmp-note">{k.jawneNote}</span>
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
       </div>
       <p class="source-note">
-        Taryfa TV-Ärzte/VKA — układ zbiorowy
-        <a href="https://www.marburger-bund.de/sites/default/files/tarifvertraege/2025-06/25-06-16%20TV-%C3%84rzte%20VKA%20i.d.F.%2010.%20%C3%84ndTV.pdf" target="_blank" rel="noopener noreferrer">Marburger Bund (źródło pierwotne)</a>;
-        przystępne tabele i kalkulator —
-        <a href="https://oeffentlicher-dienst.info/aerzte/" target="_blank" rel="noopener noreferrer">oeffentlicher-dienst.info</a>.
-        Kliniki uniwersyteckie (TdL) mają zbliżone stawki, u góry do ~12 350 € (leitender Oberarzt).
-        Przeliczenie po kursie ~4,29 PLN/EUR (NBP); PLN zaokrąglone.
-      </p>
-      <p class="source-note" style="margin-top: -0.35rem">
-        <strong>O wiarygodności źródła:</strong> oeffentlicher-dienst.info to prywatny
-        serwis (ISAR S.A.S.) reprodukujący <em>oficjalne</em> tabele taryfowe niemieckiej
-        służby publicznej. Kwoty powyżej podajemy za układem zbiorowym Marburger Bund
-        (źródło pierwotne), z którym serwis jest zgodny.
+        Rezydent (dla porównania, brutto/mc): Polska 10 595–11 655 zł; Niemcy (Assistenzarzt)
+        5 610–7 211 € (~24–31 tys. zł); Austria (Assistenzarzt) 5 518–9 310 € (~24–40 tys. zł).
+        Kursy orient.: 1 EUR ≈ 4,29 zł, 1 CZK ≈ 0,18 zł.
+        Źródła: Polska — <a href="/dane/rozklad-wynagrodzen">rozkład wynagrodzeń</a> (AOTMiT, rozporządzenie MZ);
+        Czechy — <a href="https://www.money.pl/gospodarka/ujawnili-zarobki-w-czeskich-szpitalach-takie-pensje-dostaja-lekarze-7287494267615328a.html" target="_blank" rel="noopener noreferrer">Money.pl / zpravy.kurzy.cz (2025)</a>;
+        Niemcy — <a href="https://www.marburger-bund.de/sites/default/files/tarifvertraege/2025-06/25-06-16%20TV-%C3%84rzte%20VKA%20i.d.F.%2010.%20%C3%84ndTV.pdf" target="_blank" rel="noopener noreferrer">Marburger Bund (TV-Ärzte/VKA)</a>;
+        Austria — <a href="https://www.medi-karriere.at/medizinische-berufe/arzt-gehalt/" target="_blank" rel="noopener noreferrer">medi-karriere.at (Kollektivvertrag 2025)</a>.
       </p>
 
-      <h2 style="margin-top: 2.5rem">Polska: niski etat, wysoki kontrakt</h2>
-      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
-        Dla porównania — polskie wynagrodzenia (brutto/mc). Etatowe minimum jest ustawowe i
-        jawne; ale większość dochodu wielu lekarzy pochodzi z kontraktów, których kwot
-        <strong>nikt nie publikuje</strong>.
-      </p>
-      <div class="table-wrap">
-        <table class="cmp">
-          <thead><tr><th>Pozycja (Polska)</th><th>zł / mc</th><th>≈ € / mc</th></tr></thead>
-          <tbody>
-            <tr><th scope="row">Rezydent (regulowane)</th><td class="num">10 595 – 11 655 zł</td><td class="num">2 470 – 2 720 €</td></tr>
-            <tr><th scope="row">Specjalista — etat, minimum ustawowe</th><td class="num">12 910 zł</td><td class="num">3 010 €</td></tr>
-            <tr><th scope="row">Specjalista — mediana etatu (AOTMiT)</th><td class="num">23 666 zł</td><td class="num">5 520 €</td></tr>
-            <tr><th scope="row">Specjalista — mediana kontraktu (AOTMiT)</th><td class="num">25 595 zł</td><td class="num">5 970 €</td></tr>
-            <tr class="hot"><th scope="row">Rekordowy kontrakt (urolog, Łódź)</th><td class="num">151 097 zł</td><td class="num">~35 200 €</td></tr>
-          </tbody>
-        </table>
+      <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+        <p>
+          <strong>Wszędzie jawnie — tylko u nas nie.</strong> W Czechach, Niemczech i Austrii
+          płace lekarzy wynikają z <strong>publicznych układów zbiorowych</strong>: każdy
+          może sprawdzić w tabeli, ile zarabia specjalista na danym stopniu. W Polsce jawny
+          jest wyłącznie <strong>niski etat</strong> (12 910 zł) — a realny dochód, płynący z
+          kontraktów i wielu placówek, <strong>pozostaje ukryty</strong>. To nie kwota jest
+          tu najbardziej wstydliwa, lecz to, że <strong>nie da się jej poznać</strong>.
+        </p>
       </div>
-      <p class="source-note">
-        Polskie kwoty — zob. <a href="/dane/pensje-rezydentow">pensje rezydentów</a>,
-        <a href="/dane/rozklad-wynagrodzen">rozkład wynagrodzeń</a> i
-        <a href="/dane/rekordy">rekordy</a>.
+
+      <h2 style="margin-top: 2.5rem">Więcej — ale nie przez dosypywanie</h2>
+      <p>
+        Skoro sąsiedzi płacą więcej, może po prostu wydajemy za mało? Liczby przeczą. Budżet
+        NFZ sięga już <a href="/dane/budzet-nfz"><strong>~220 mld zł</strong></a>, a sama ustawa
+        podwyżkowa pochłania <strong>~72 mld zł</strong> — blisko 30% całości. Mimo to pacjent
+        czeka do specjalisty średnio <a href="/dane/kolejki"><strong>4,2 miesiąca</strong></a>,
+        a dług szpitali (<a href="/dane/zadluzenie-szpitali"><strong>34 mld zł</strong></a>) idzie
+        głównie na wynagrodzenia. <strong>Im więcej dolewamy do nieprzejrzystego systemu, tym
+        więcej wycieka</strong>: pojedyncze kontrakty <a href="/dane/rekordy">rozliczają 300–350
+        tys. zł/mc</a>. Czechy nie „dosypały” — płacą <strong>jawnie</strong>, z policzalnych
+        taryf wywalczonych otwartą drogą (protesty „Děkujeme, odcházíme”, 2011), a nie przez
+        cichy rynek kontraktów. U nas najpierw musi być widać, <strong>dokąd idą pieniądze</strong>.
       </p>
 
       <DisclaimerZarobki />
 
-      <div class="callout" style="border-left-color: var(--brand)">
+      <div class="callout">
         <p>
-          <strong>Sedno nie jest tylko w kwocie — jest w jawności.</strong> Niemiecki
-          <em>Facharzt</em> zarabia na etacie ok. 2–3× więcej niż polski specjalista z
-          minimum ustawowego — ale co ważniejsze, jego wynagrodzenie <strong>wynika z
-          jawnej tabeli</strong>. W Polsce jawny jest tylko niski etat; realny dochód
-          domykają kontrakty, dyżury i praca w wielu placówkach — których kwot nie da się
-          zsumować ani sprawdzić. Rekordowy polski kontrakt (151 tys. zł/mc, a bywało
-          316 tys.) <strong>przewyższa niemieckiego zastępcę ordynatora kilkukrotnie</strong> —
-          tyle że w Niemczech taka kwota byłaby widoczna w tabeli, a w Polsce pozostaje
-          niejawna.
+          <strong>Nie za mało — tylko źle.</strong> Polski lekarz zarabia ok. <strong>3×
+          średniej krajowej</strong>, a system łącznie wydaje na zdrowie rekordowe sumy. Problem
+          nie w tym, że pula jest za mała, lecz że <strong>nie widać, dokąd płynie</strong> —
+          więc płynie źle: nieliczni inkasują fortuny z wielu niejawnych kontraktów, gdy pacjent
+          czeka miesiącami. <strong>Jawność i otwarte dane</strong> pozwoliłyby gospodarować tym,
+          co już mamy, i płacić lekarzom <strong>przeciętnie więcej — bez dosypywania do
+          budżetu</strong>. Najpierw trzeba zobaczyć pieniądz, żeby dało się nim zarządzać.
         </p>
       </div>
 
       <div class="callout">
         <p>
           <strong>Uczciwie o metodzie.</strong> Porównujemy <em>wynagrodzenie zasadnicze</em>
-          (bez dyżurów, dodatków i różnic siły nabywczej). Niemiecki lekarz również dorabia na
-          dyżurach; polski etatowiec też ma dodatki. Chodzi o rząd wielkości i — przede
-          wszystkim — o <strong>model</strong>: taryfa jawna vs kontrakt niejawny. Zob. też
-          eksperyment „<a href="/dane/polska-na-tle-ue">ile kosztowałyby niemieckie stawki</a>”.
+          (bez dyżurów, dodatków i różnic siły nabywczej). Kwoty czeskie to średnie z premiami,
+          niemieckie i austriackie — widełki taryfowe; polskie kontraktowe to mediany, nie
+          total osoby. Chodzi o rząd wielkości i — przede wszystkim — o <strong>model</strong>:
+          jawna taryfa vs niejawny kontrakt. Zob. też
+          „<a href="/dane/polska-na-tle-ue">ile kosztowałyby niemieckie stawki</a>”.
         </p>
       </div>
 
@@ -123,13 +152,18 @@ const de = [
 
 <style>
   .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
-  .cmp { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 0.94rem; }
-  .cmp thead th { text-align: right; padding: 0.7rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); }
-  .cmp thead th:first-child { text-align: left; }
-  .cmp tbody th { text-align: left; padding: 0.7rem 0.9rem; font-weight: 500; }
-  .cmp td { text-align: right; padding: 0.7rem 0.9rem; font-family: var(--font-mono); white-space: nowrap; }
+  .cmp { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.94rem; }
+  .cmp thead th { text-align: left; padding: 0.7rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); }
+  .cmp tbody th { text-align: left; padding: 0.7rem 0.9rem; font-weight: 700; vertical-align: top; }
+  .cmp td { padding: 0.7rem 0.9rem; vertical-align: top; }
   .cmp tbody tr { border-bottom: 1px solid var(--line); }
   .cmp tbody tr:last-child { border-bottom: none; }
-  .cmp tr.hot th, .cmp tr.hot td { color: var(--alert); font-weight: 600; }
+  .cmp tr.is-pl { background: var(--alert-50); }
+  .cmp tr.is-pl th, .cmp tr.is-pl .jaw-no { color: var(--alert); }
+  .cmp-val { display: block; font-family: var(--font-mono); font-weight: 600; }
+  .cmp-note { display: block; font-size: 0.76rem; color: var(--ink-soft); margin-top: 0.15rem; }
+  .cmp-jaw { white-space: nowrap; }
+  .jaw-yes { color: #2f7a34; font-weight: 700; }
+  .jaw-no { color: var(--alert); font-weight: 700; }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
 </style>

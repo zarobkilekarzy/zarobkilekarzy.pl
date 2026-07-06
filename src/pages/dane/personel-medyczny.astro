@@ -16,6 +16,64 @@ const kontrakty = personel
 const fmt = (n: number) => new Intl.NumberFormat('pl-PL', { useGrouping: 'always' }).format(n);
 // Czy w opisie grupy pojawia się „pielęgniarka” — do delikatnego wyróżnienia wiersza.
 const dotPiel = (s: string) => /piel|położn/i.test(s);
+
+// Pozostałe zawody: liczebność (EXACT, rejestry/GUS) + rynek (SZACUNEK, Sedlak/branża) +
+// miejsce w siatce. Tabela inline (wzorem stawki.astro) — każda liczba z własnym źródłem.
+interface ZawodRow {
+  zawod: string;
+  liczba: string; liczbaUwaga: string; liczbaUrl: string; liczbaZrodlo: string;
+  rynek: string; rynekUwaga: string; rynekUrl?: string; rynekZrodlo?: string;
+  grupa: string;
+}
+const pozostale: ZawodRow[] = [
+  {
+    zawod: 'Ratownik medyczny',
+    liczba: '11,4 tys.', liczbaUwaga: 'w zespołach ratownictwa (PRM); pełnej liczby uprawnionych brak — rejestr KIRM w budowie',
+    liczbaUrl: 'https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/14/9/1/pomoc_dorazna_i_ratownictwo_medyczne_w_2024_r.pdf', liczbaZrodlo: 'GUS 2024',
+    rynek: '9 850 zł', rynekUwaga: 'mediana całkowitego brutto; mała próba (64 os.)',
+    rynekUrl: 'https://wynagrodzenia.pl/moja-placa/ile-zarabia-ratownik-medyczny', rynekZrodlo: 'Sedlak, I 2026',
+    grupa: '6 (×0,94)',
+  },
+  {
+    zawod: 'Diagnosta laboratoryjny',
+    liczba: '18 168', liczbaUwaga: 'z prawem wykonywania zawodu (31.12.2023)',
+    liczbaUrl: 'https://www.rynekzdrowia.pl/Polityka-zdrowotna/W-Polsce-jest-ponad-18-tys-diagnostow-laboratoryjnych-Minister-zdrowia-zapoznala-sie-z-najnowszymi-danymi,253823,14.html', liczbaZrodlo: 'KIDL',
+    rynek: '7 820 zł', rynekUwaga: 'mediana całkowitego brutto; próba 150 os.',
+    rynekUrl: 'https://wynagrodzenia.pl/moja-placa/ile-zarabia-diagnosta-laboratoryjny', rynekZrodlo: 'Sedlak, I 2026',
+    grupa: '5 lub 2 (ze spec.)',
+  },
+  {
+    zawod: 'Fizjoterapeuta',
+    liczba: 'ponad 75 tys.', liczbaUwaga: 'z NFZ pracuje tylko <29 tys.',
+    liczbaUrl: 'https://www.rynekzdrowia.pl/Uslugi-medyczne/W-Polsce-pracuje-ponad-75-tys-fizjoterapeutow-W-ramach-umow-z-NFZ-tylko-29-tys,241671,8.html', liczbaZrodlo: 'KIF',
+    rynek: '7 690 zł', rynekUwaga: 'mediana całkowitego brutto; próba 342 os.',
+    rynekUrl: 'https://wynagrodzenia.pl/moja-placa/ile-zarabia-fizjoterapeuta', rynekZrodlo: 'Sedlak, I 2026',
+    grupa: '6 / 5 / 2',
+  },
+  {
+    zawod: 'Farmaceuta',
+    liczba: '39,6 tys.', liczbaUwaga: 'z PWZ; 26,2 tys. pracuje w aptekach',
+    liczbaUrl: 'https://mgr.farm/aktualnosci/mamy-prawie-40-tys-farmaceutow-w-polsce-ilu-pracuje-z-pacjentami/', liczbaZrodlo: 'GUS 2024',
+    rynek: '5,5–10+ tys.', rynekUwaga: 'apteka otwarta — poza ustawą; szacunek branżowy',
+    rynekUrl: 'https://farmacjapraktyczna.pl/aktualnosci/raporty-i-sondy/ile-zarabia-farmaceuta-w-polsce-aktualny-raport', rynekZrodlo: 'Farmacja Praktyczna',
+    grupa: '5 / 2 (szpital)',
+  },
+  {
+    zawod: 'Położna',
+    liczba: '43 965 / 30 682', liczbaUwaga: 'zarejestrowanych / zatrudnionych (31.12.2025)',
+    liczbaUrl: 'https://nipip.pl/liczba-pielegniarek-poloznych-zarejestrowanych-zatrudnionych/', liczbaZrodlo: 'NIPiP',
+    rynek: '~5 455 zł', rynekUwaga: 'średnia netto (ankieta NIPiP) — inny pomiar niż brutto obok',
+    rynekUrl: 'https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf', rynekZrodlo: 'NIPiP',
+    grupa: '2 / 5 / 6 (jak piel.)',
+  },
+  {
+    zawod: 'Psycholog kliniczny',
+    liczba: '1 258', liczbaUwaga: 'specjalistów; ogółu psychologów w OZ nie da się ustalić — brak rejestru zawodu',
+    liczbaUrl: 'https://www.rynekzdrowia.pl/Psychiatria/1258-psychologow-klinicznych-w-Polsce-Ma-byc-100-proc-wiecej-specjalistow-Padl-krotki-termin,267986,16.html', liczbaZrodlo: 'MZ 2025',
+    rynek: '—', rynekUwaga: 'brak twardej mediany zawodowej z ogólnodostępnego źródła',
+    grupa: '5 / 2',
+  },
+];
 ---
 
 <BaseLayout
@@ -154,6 +212,50 @@ const dotPiel = (s: string) => /piel|położn/i.test(s);
         którzy z tych środków są opłacani — to sedno <a href="/postulat">naszego postulatu</a>.
       </p>
 
+      <h2 style="margin-top: 2.5rem">Pozostałe zawody: liczebność i rynek</h2>
+      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
+        Krótki przegląd reszty personelu medycznego. <strong>Liczebność</strong> pochodzi z rejestrów
+        zawodowych i GUS (dokładna). <strong>Rynek</strong> to mediana/widełki
+        <em>całkowitego</em> wynagrodzenia z raportów płacowych (szacunek na małych próbach) — inny
+        pomiar niż ustawowe minimum zasadnicze z siatki wyżej. Miejsce w siatce zależy od
+        wykształcenia i specjalizacji.
+      </p>
+      <div class="table-wrap">
+        <table class="rate-table">
+          <thead>
+            <tr><th>Zawód</th><th>Liczebność</th><th>Rynek (mediana / widełki)</th><th class="num">Grupa</th></tr>
+          </thead>
+          <tbody>
+            {pozostale.map((z) => (
+              <tr>
+                <th scope="row">{z.zawod}</th>
+                <td>
+                  <span class="cell-v">{z.liczba}</span>
+                  <span class="cell-note">{z.liczbaUwaga} · <a href={z.liczbaUrl} target="_blank" rel="noopener noreferrer">{z.liczbaZrodlo}</a></span>
+                </td>
+                <td>
+                  <span class="cell-v">{z.rynek}{z.rynek !== '—' && <span class="badge b-est">szacunek</span>}</span>
+                  <span class="cell-note">
+                    {z.rynekUwaga}
+                    {z.rynekUrl && <> · <a href={z.rynekUrl} target="_blank" rel="noopener noreferrer">{z.rynekZrodlo}</a></>}
+                  </span>
+                </td>
+                <td class="num wsp">{z.grupa}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="callout" style="border-left-color: var(--brand); margin-top: 1.25rem">
+        <p>
+          <strong>Uwaga: „rynek” to nie to samo co minimum z siatki.</strong> Mediany rynkowe
+          (Sedlak) mieszają sektor publiczny z prywatnym i osoby spoza etatu, a próby są małe —
+          bywają <strong>niższe</strong> niż ustawowe minimum zasadnicze w podmiocie leczniczym.
+          Nie są ze sobą sprzeczne: to dwa różne pomiary. GUS nie publikuje przeciętnych płac w
+          rozbiciu na te zawody, więc twarda pozostaje tylko siatka ustawowa.
+        </p>
+      </div>
+
       <p class="source-note" style="margin-top: 1.5rem">
         Nie publikujemy liczb „z pamięci”. Dopóki pole nie ma źródła, pozostaje oznaczone jako „—”.
       </p>
@@ -182,6 +284,8 @@ const dotPiel = (s: string) => /piel|położn/i.test(s);
   .rate-table tbody tr.is-piel { background: color-mix(in srgb, var(--brand) 6%, transparent); }
   .rate-name { display: block; color: var(--ink); }
   .rate-note { display: block; font-size: 0.76rem; color: var(--ink-soft); font-weight: 400; margin-top: 0.15rem; }
+  .cell-v { display: block; font-family: var(--font-mono); color: var(--ink); white-space: nowrap; }
+  .cell-note { display: block; font-size: 0.74rem; color: var(--ink-soft); line-height: 1.4; margin-top: 0.2rem; max-width: 34ch; }
   .wsp { color: var(--ink-soft); font-size: 0.86rem; }
   .u { font-family: var(--font-sans); font-size: 0.72rem; color: var(--ink-faint); }
   .src-link { display: block; font-family: var(--font-sans); font-size: 0.72rem; margin-top: 0.2rem; font-weight: 500; }

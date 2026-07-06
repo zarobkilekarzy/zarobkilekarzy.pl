@@ -1,0 +1,344 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+
+// Historia rocznej stawki kapitacyjnej lekarza POZ (kwota bazowa, współczynnik 1,0).
+// Wartość obowiązująca w głównej części roku; w niektórych latach rosła skokowo w ciągu
+// roku (przypis pod tabelą). Źródła: kolejne zarządzenia Prezesa NFZ w sprawie POZ.
+const fmt = (n: number) =>
+  new Intl.NumberFormat('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+const historia = [
+  { rok: 2018, zl: 154.2, zm: '—', uwaga: 'od XI 2018' },
+  { rok: 2019, zl: 162.6, zm: '+5,4%', uwaga: 'rosła 156,60 → 159,00 → 162,60' },
+  { rok: 2020, zl: 171.0, zm: '+5,2%', uwaga: 'od IX 2020' },
+  { rok: 2021, zl: 171.0, zm: '0%', uwaga: 'bez zmian' },
+  { rok: 2022, zl: 178.8, zm: '+4,6%', uwaga: 'od IV 2022' },
+  { rok: 2023, zl: 204.36, zm: '+14,3%', uwaga: 'od VII 2023 — ustawowe podwyżki płac' },
+  { rok: 2024, zl: 204.36, zm: '0%', uwaga: 'utrzymana' },
+  { rok: 2025, zl: 215.28, zm: '+5,3%', uwaga: 'zarz. 22/2025 i 34/2025' },
+  { rok: 2026, zl: 226.08, zm: '+5,0%', uwaga: 'zarz. 8/2026' },
+];
+
+// Stawka bazowa 2026 i współczynniki korygujące wiekowe (zarządzenie 22/2025/DSOZ, § 23 ust. 2).
+const BAZA_2026 = 226.08;
+const wspolczynniki = [
+  { grupa: 'do 2. roku życia', w: 4.0 },
+  { grupa: '3–6 lat', w: 2.8 },
+  { grupa: '7–19 lat', w: 1.3 },
+  { grupa: '20–39 lat', w: 1.0 },
+  { grupa: '40–65 lat', w: 1.34 },
+  { grupa: '66–75 lat', w: 2.7 },
+  { grupa: 'powyżej 75 lat', w: 3.4 },
+  { grupa: 'podopieczny DPS / placówki', w: 3.1 },
+];
+const wsp = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n)).replace('.', ',');
+---
+
+<BaseLayout
+  title="POZ: publiczny pieniądz policzalny co do grosza — wynik nieprzejrzysty — zarobkilekarzy.pl"
+  description="Lekarz POZ dostaje z NFZ jawną, roczną stawkę za każdego zapisanego pacjenta. Stawki, współczynniki wieku, historia 2018–2026 i ile publicznego pieniądza wisi na jednej liście — z twardych zarządzeń NFZ. Wiemy, ile wpływa na listę; nie wiemy, ile zostaje lekarzowi."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/analizy">Analizy</a> · POZ</p>
+      <h1>Publiczny pieniądz policzalny co do grosza — wynik nieprzejrzysty</h1>
+      <p class="lead">
+        Ze wszystkich pieniędzy, jakie NFZ wypłaca lekarzom, akurat te w podstawowej opiece
+        zdrowotnej są <strong>najłatwiejsze do policzenia</strong>: to jawna, roczna stawka za
+        każdego zapisanego pacjenta. A jednocześnie — jedne z <strong>najbardziej
+        nieprzejrzystych</strong>, gdy zapytać „ile z tego zostaje konkretnemu lekarzowi”. Ten
+        sam strumień jest naraz najbardziej i najmniej jawny — zależnie od tego, o co spytasz.
+      </p>
+
+      <div class="callout" style="border-left-color: var(--brand)">
+        <p>
+          Kapitacja pokazuje problem jawności w pigułce: państwo publikuje stawkę na jednego
+          pacjenta <strong>co do grosza</strong>, ale nigdzie nie sumuje, ile łącznie ze
+          środków publicznych trafia do jednego lekarza. <strong>Wiemy, ile wpływa na listę —
+          nie wiemy, ile zostaje.</strong>
+        </p>
+      </div>
+
+      <div class="prose">
+        <h2>Nie za wizytę — za obecność na liście</h2>
+        <p>
+          Lekarz POZ nie jest opłacany od wizyty. Pacjent składa <strong>deklarację
+          wyboru</strong>, trafia na „aktywną listę”, i od tego momentu za każdą osobę z listy
+          świadczeniodawca dostaje co miesiąc 1/12 rocznej stawki kapitacyjnej — <strong>także
+          za pacjentów, którzy przez cały rok się nie pojawili</strong>. Stawkę mnoży się przez
+          współczynnik wieku: dziecko i senior „ważą” kilkukrotnie więcej niż dorosły w sile
+          wieku.
+        </p>
+        <div class="callout quiet">
+          <p style="margin: 0">
+            Rozliczenie (zarządzenie NFZ): należność = liczba pacjentów z listy ×
+            <strong>1/12 kapitacyjnej stawki rocznej</strong> × współczynnik wieku. To stawka
+            <strong>roczna</strong>, nie miesięczna — częsty błąd w opisach (pomyłka ×12).
+          </p>
+        </div>
+        <p>
+          To nie jest patologia — to świadomy model: kapitacja ma premiować <strong>opiekę nad
+          całą populacją i profilaktykę</strong>, a nie mnożenie wizyt. Ważne jest co innego:
+          ile ten strumień waży i jak rośnie.
+        </p>
+
+        <h3>Ile wynosi — i jak rosła</h3>
+        <p>
+          Bazowa stawka roczna za pacjenta (współczynnik 1,0) wzrosła w nominale
+          z <strong>154,20 zł</strong> (2018) do <strong>226,08 zł</strong> (2026) —
+          o <strong>+46,6%</strong> w osiem lat, z największym skokiem w 2023 r.
+        </p>
+        <div class="table-wrap">
+          <table class="hist">
+            <thead>
+              <tr>
+                <th>Rok</th>
+                <th class="num">Stawka roczna<br /><span class="th-sub">zł / pacjent</span></th>
+                <th class="num">Zmiana<br /><span class="th-sub">r/r</span></th>
+                <th>Uwaga</th>
+              </tr>
+            </thead>
+            <tbody>
+              {historia.map((r) => (
+                <tr>
+                  <th scope="row">{r.rok}</th>
+                  <td class="num">{fmt(r.zl)} zł</td>
+                  <td class="num">{r.zm}</td>
+                  <td class="note-cell">{r.uwaga}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="source-note">
+          Kwota bazowa (współczynnik 1,0) obowiązująca w głównej części roku; w latach
+          2018–2020 rosła skokowo także w ciągu roku. Wartości z kolejnych zarządzeń Prezesa NFZ
+          w sprawie warunków umów POZ — m.in.
+          <a href="https://podyplomie.pl/aktualnosci/nowe-stawki-w-poz-pelna-lista" target="_blank" rel="noopener noreferrer">zestawienie stawek POZ</a>,
+          <a href="https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/dodatek-za-wielochorobowosc-wchodzi-do-poz-wzrosly-tez-stawki-w-opiece-koordynowanej,8436.html" target="_blank" rel="noopener noreferrer">NFZ (stawki 2023)</a>,
+          zarządzenia 22/2025/DSOZ, 34/2025/DSOZ i 8/2026/DSOZ (stawka 2026 = 226,08 zł;
+          z certyfikatem akredytacyjnym 228,36 zł).
+        </p>
+
+        <h3>Współczynniki wieku — kto „waży” najwięcej</h3>
+        <p>
+          Tę samą stawkę bazową mnoży się przez współczynnik zależny od wieku pacjenta.
+          Najmłodsi i najstarsi są dla praktyki kilkukrotnie „cenniejsi” niż dorosły w sile wieku.
+        </p>
+        <div class="table-wrap">
+          <table class="hist">
+            <thead>
+              <tr>
+                <th>Grupa wieku pacjenta</th>
+                <th class="num">Współczynnik</th>
+                <th class="num">zł / rok<br /><span class="th-sub">stawka 2026</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {wspolczynniki.map((w) => (
+                <tr>
+                  <th scope="row">{w.grupa}</th>
+                  <td class="num">×{wsp(w.w)}</td>
+                  <td class="num">{fmt(BAZA_2026 * w.w)} zł</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="source-note">
+          Zarządzenie Nr 22/2025/DSOZ Prezesa NFZ, § 23 ust. 2 (współczynniki lekarza POZ).
+          Stawka bazowa 2026 = 226,08 zł. Analogiczne, niższe stawki obowiązują pielęgniarkę POZ
+          (55,32 zł/rok) i położną POZ (36,72 zł/rok).
+        </p>
+
+        <h2>Ile publicznego pieniądza wisi na jednej liście</h2>
+        <p>
+          Limit aktywnej listy to ok. <strong>2 500 pacjentów</strong> na lekarza. Sama
+          kapitacja lekarska z pełnej listy — <em>przed</em> opieką koordynowaną, budżetem
+          powierzonym i poradami rozliczanymi osobno — to:
+        </p>
+        <div class="calc">
+          <div class="calc-row"><span>2 500 pacjentów × 226,08 zł (współczynnik 1,0)</span><span class="calc-v">565 200 zł / rok</span></div>
+          <div class="calc-row"><span>przy realnym średnim współczynniku wieku ≈ 1,6</span><span class="calc-v">≈ 900 tys. zł / rok</span></div>
+          <div class="calc-row calc-tot"><span>czyli miesięcznie na jedną listę</span><span class="calc-v">≈ 75 tys. zł / mies.</span></div>
+        </div>
+        <div class="callout quiet">
+          <p style="margin: 0">
+            To <strong>przychód praktyki z samej kapitacji</strong>, nie dochód lekarza. Z tej
+            kwoty świadczeniodawca opłaca personel (pielęgniarka, rejestracja), lokal, sprzęt,
+            składki i podatek. <strong>Ile zostaje właścicielowi — nie wynika z żadnego
+            rejestru.</strong> Publiczna strona równania jest policzalna co do grosza; prywatna —
+            nie.
+          </p>
+        </div>
+        <p class="source-note">
+          Model, nie pomiar. Współczynnik 1,6 to szacunek średniej ważonej dla struktury wieku
+          listy (dzieci i seniorzy podnoszą średnią powyżej 1,0). Limit listy ~2 500 — warunek
+          NFZ; w uzasadnionych przypadkach większa za zgodą Funduszu.
+        </p>
+
+        <h2>Skala — dokąd trafia ten strumień</h2>
+        <div class="fact-grid">
+          <div class="fact">
+            <span class="fact-num">22,64 mld zł</span>
+            <span class="fact-cap">Wydatki NFZ na POZ w 2025 r. — ok. <strong>10,5%</strong> wszystkich kosztów świadczeń.</span>
+          </div>
+          <div class="fact">
+            <span class="fact-num">12,2 tys.</span>
+            <span class="fact-cap">Specjalistów <strong>medycyny rodzinnej</strong> — trzon POZ (rejestr NIL, 31.12.2024). Świadczeń POZ udzielają też interniści i pediatrzy.</span>
+          </div>
+          <div class="fact">
+            <span class="fact-num">187 mln</span>
+            <span class="fact-cap">Porad udzielonych w POZ w 2024 r. (GUS).</span>
+          </div>
+          <div class="fact">
+            <span class="fact-num">~2 500</span>
+            <span class="fact-cap">Górny limit pacjentów na aktywnej liście jednego lekarza.</span>
+          </div>
+        </div>
+        <p class="source-note">
+          POZ 2025 = 22,64 mld zł (sprawozdanie Rady NFZ) —
+          <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Rada-NFZ-przyjela-sprawozdanie-za-2025-r-Ponad-22-mld-zl-na-POZ-i-1-4-mln-bilansow-zdrowia,286203,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>;
+          udział 10,5% wg planu 2026. Porady —
+          <a href="https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/13/9/1/ambulatoryjna_opieka_zdrowotna_w_2024_r..pdf" target="_blank" rel="noopener noreferrer">GUS, Ambulatoryjna opieka zdrowotna 2024</a>.
+          Specjaliści medycyny rodzinnej (12 216; z I stopniem 12 512) — Naczelna Izba Lekarska,
+          „Zestawienie nr 4”, stan 31.12.2024
+          (<a href="https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne" target="_blank" rel="noopener noreferrer">NIL</a>).
+          NFZ nie publikuje jednej zbiorczej liczby „lekarzy POZ”.
+        </p>
+
+        <h2>Niskie wejście, wysoki pułap</h2>
+        <p>
+          Tu robi się ciekawie. Do większości lukratywnych dziedzin prowadzi <strong>6 lat
+          studiów + 5–6 lat rezydentury</strong> w wąskim gardle konkursu. Do POZ ścieżka jest
+          <strong>szersza</strong> — ustawa o POZ (art. 6) dopuszcza:
+        </p>
+        <ul class="req">
+          <li><strong>Specjalistę medycyny rodzinnej</strong> — albo lekarza w trakcie tej specjalizacji.</li>
+          <li>Lekarza z <strong>II stopniem specjalizacji z medycyny ogólnej</strong>.</li>
+          <li><strong>Pediatrę</strong> — pod warunkiem ukończenia kursu z medycyny rodzinnej (opieka tylko nad pacjentami do 18. r.ż.).</li>
+          <li><strong>Internistę</strong> (lub I stopień medycyny ogólnej) — udzielającego świadczeń POZ przejściowo, pod warunkiem kursu.</li>
+        </ul>
+        <div class="callout quiet">
+          <p style="margin: 0">
+            Obowiązek kursu z medycyny rodzinnej dla internistów i pediatrów
+            <strong>wchodzi w życie 1 stycznia 2027 r.</strong> (termin był kilkukrotnie
+            przesuwany — pierwotnie 2017, potem 2024, obecnie 31 grudnia 2026). Kursu
+            <strong>nie muszą</strong> robić lekarze, którzy udzielali świadczeń POZ przez co
+            najmniej 10 lat.
+          </p>
+        </div>
+        <p>
+          A pułap przychodu jest wysoki. Pełna lista (~2 500 pacjentów), przy realnym średnim
+          współczynniku wieku, to <strong>rzędu 900 tys. zł rocznie</strong> z samej kapitacji
+          lekarskiej — zanim doliczy się opiekę koordynowaną, budżet powierzony i porady.
+          Relatywnie dostępne wejście spotyka się z jednym z wyższych pułapów przychodu w systemie.
+        </p>
+        <p class="source-note">
+          Ustawa z dnia 27 października 2017 r. o podstawowej opiece zdrowotnej, art. 6
+          (tekst jednolity Dz.U. 2025 poz. 515) —
+          <a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20170002217" target="_blank" rel="noopener noreferrer">ISAP</a>.
+        </p>
+
+        <h2>Uczciwie — czego kapitacja nie mówi</h2>
+        <p>
+          Trzeba postawić granicę, żeby nie przekłamać obrazu. Liczba <strong>~900 tys. zł</strong>
+          to <strong>przychód praktyki, nie dochód lekarza</strong>. Do tego:
+        </p>
+        <ul class="mech">
+          <li>
+            <strong>Duża część lekarzy POZ to nie właściciele.</strong> Są etatowcami lub
+            kontraktowcami w cudzej przychodni i zarabiają zwykłe pensje — wysoki pułap dotyczy
+            <strong>właścicieli dużych list i przychodni</strong>, nie każdego lekarza POZ.
+          </li>
+          <li>
+            <strong>Koszty bywają realne i rosnące.</strong> Wzrost stawek w latach 2023–2026
+            w dużej mierze pokrywał ustawowe podwyżki płac personelu — nie „wpadał do kieszeni”.
+          </li>
+          <li>
+            <strong>Model ma sens.</strong> Opłacanie za objętą opieką populację, a nie za
+            liczbę wizyt, jest w ochronie zdrowia uznaną i racjonalną konstrukcją.
+          </li>
+        </ul>
+        <p>
+          Dlatego nie twierdzimy, że „lekarze POZ zarabiają za dużo”. Twierdzimy coś innego i
+          znacznie prostszego: <strong>nie da się tego sprawdzić</strong>.
+        </p>
+
+        <h2>Dlaczego to argument za rejestrem — a nie przeciw lekarzom POZ</h2>
+        <p>
+          Kapitacja jest najczystszym dowodem, że <strong>jawność jest wykonalna</strong>.
+          Skoro państwo potrafi opublikować stawkę na jednego pacjenta co do grosza, potrafi
+          też zsumować, ile łącznie ze środków publicznych trafia do jednego numeru
+          <strong>PWZ</strong> — z kapitacji, kontraktów w szpitalu, dyżurów i innych umów
+          naraz. Brakuje nie danych. Brakuje <strong>rejestru</strong>, który by je zsumował.
+        </p>
+        <p>
+          Taki rejestr działałby w obie strony. Pokazałby, gdzie strumienie publiczne kumulują
+          się u jednej osoby — ale też <strong>ochronił uczciwego lekarza POZ</strong> z małej
+          miejscowości przed podejrzeniem, że „pewnie zgarnia fortunę”, gdy realnie ledwie
+          utrzymuje praktykę. Nieprzejrzystość nie służy pacjentowi ani rzetelnemu lekarzowi —
+          służy tylko tym, którzy mają coś do ukrycia.
+        </p>
+
+        <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+          <p>
+            <strong>To nie jest problem braku danych — to problem braku rejestru.</strong>
+            Stawka kapitacyjna dowodzi, że państwo umie liczyć pieniądz publiczny co do grosza.
+            Wystarczy powiązać te wypłaty z numerem PWZ i zsumować. Dopóki tego nie ma, o
+            „wysokich zarobkach w POZ” można tylko spekulować — a spekulacja krzywdzi tak samo
+            pacjenta, jak i uczciwego lekarza.
+          </p>
+        </div>
+
+        <p class="source-note">
+          Postulat rejestru łącznego wynagrodzenia ze środków publicznych po numerze PWZ — zob.
+          <a href="/postulat">Postulat</a>. Stawki i współczynniki — zarządzenia Prezesa NFZ
+          w sprawie POZ (22/2025/DSOZ, 34/2025/DSOZ, 8/2026/DSOZ); definicja lekarza POZ —
+          ustawa o POZ, art. 6.
+        </p>
+      </div>
+
+      <p class="pager"><a href="/analizy">← Wszystkie analizy</a> · <a href="/dane">Wszystkie dane →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .mech { padding-left: 1.25rem; }
+  .mech li { margin: 0.7rem 0; line-height: 1.6; }
+  .req { max-width: 68ch; margin: 1rem 0; padding-left: 1.1rem; }
+  .req li { margin: 0.4rem 0; line-height: 1.55; }
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .hist { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.9rem; }
+  .hist thead th { text-align: right; padding: 0.6rem 0.8rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; border-bottom: 2px solid var(--line); vertical-align: bottom; }
+  .hist thead th:first-child { text-align: left; }
+  .th-sub { font-weight: 400; color: var(--ink-faint); font-size: 0.7rem; }
+  .hist tbody th { text-align: left; padding: 0.5rem 0.8rem; font-weight: 600; font-family: var(--font-mono); }
+  .hist td { text-align: right; padding: 0.5rem 0.8rem; font-family: var(--font-mono); white-space: nowrap; }
+  .hist td.note-cell { text-align: left; font-family: var(--font-sans); white-space: normal; color: var(--ink-soft); font-size: 0.82rem; }
+  .hist tbody tr { border-bottom: 1px solid var(--line); }
+  .hist tbody tr:last-child { border-bottom: none; }
+  .calc { border: 1px solid var(--line); border-radius: var(--radius-lg); margin: 1.25rem 0 1rem; overflow: hidden; }
+  .calc-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.7rem 1.1rem; border-bottom: 1px solid var(--line); }
+  .calc-row:last-child { border-bottom: none; }
+  .calc-row span:first-child { color: var(--ink-soft); font-size: 0.92rem; }
+  .calc-v { font-family: var(--font-mono); font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .calc-tot { background: var(--paper-2); }
+  .calc-tot .calc-v { color: var(--brand); font-size: 1.05rem; }
+  .fact-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin: 1.25rem 0 0.75rem; }
+  .fact { display: flex; flex-direction: column; gap: 0.4rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+  .fact-num { font-family: var(--font-mono); font-size: clamp(1.5rem, 4vw, 1.9rem); font-weight: 700; color: var(--brand); line-height: 1; }
+  .fact-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.5; }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+  @media (max-width: 600px) {
+    .calc-row { flex-direction: column; gap: 0.15rem; }
+    .calc-v { align-self: flex-end; }
+  }
+</style>

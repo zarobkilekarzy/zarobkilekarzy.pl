@@ -1,0 +1,197 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import { getCollection } from 'astro:content';
+
+const personel = (await getCollection('zarobki')).filter((z) => z.data.grupa === 'personel');
+const drabina = personel
+  .filter((z) => z.data.forma === 'etat')
+  .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
+const kontrakty = personel
+  .filter((z) => z.data.forma === 'kontrakt')
+  .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
+
+// useGrouping: 'always' — spójna spacja tysięczna także dla kwot 4-cyfrowych
+// (drabina krzyżuje próg 10 000 zł w jednej kolumnie, więc 9 081 zł ma być jak 12 910 zł).
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL', { useGrouping: 'always' }).format(n);
+// Czy w opisie grupy pojawia się „pielęgniarka” — do delikatnego wyróżnienia wiersza.
+const dotPiel = (s: string) => /piel|położn/i.test(s);
+---
+
+<BaseLayout
+  title="Zarobki innych pracowników ochrony zdrowia — zarobkilekarzy.pl"
+  description="Pielęgniarki, ratownicy, diagności, fizjoterapeuci — drabina taryfowa ustawy o najniższym wynagrodzeniu obok zarobków lekarzy. Każda liczba ze źródłem."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane">Dane</a> · Inni pracownicy OZ</p>
+      <h1>Inni pracownicy ochrony zdrowia — obok lekarzy</h1>
+      <p class="lead">
+        Lekarze to nie cały system. Pielęgniarki i położne są <strong>najliczniejszą</strong>
+        grupą zawodową w ochronie zdrowia, obok nich pracują ratownicy, diagności, fizjoterapeuci,
+        farmaceuci i opiekunowie. Ich płace na etacie reguluje jedna <strong>ustawowa siatka</strong> —
+        i to jest ważny kontrapunkt: tę część wynagrodzeń <strong>znamy</strong>.
+      </p>
+
+      <div class="callout" style="border-left-color: var(--brand); background: var(--brand-50, #eef4fa)">
+        <p>
+          <strong>To siatka minimum wynagrodzenia zasadniczego na etacie — i jest jawna.</strong>
+          Wynagrodzenia zasadnicze pracowników na umowie o pracę w podmiotach leczniczych ustala
+          <a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20170001473" target="_blank" rel="noopener noreferrer">ustawa z 8 czerwca 2017 r.</a>:
+          co roku 1 lipca <strong>współczynnik pracy × kwota bazowa</strong> (przeciętne wynagrodzenie GUS
+          z poprzedniego roku, od 1.07.2026 — <strong>8 903,56 zł</strong>). To odróżnia tę część systemu
+          od <a href="/dane/rozklad-wynagrodzen">niejawnych kontraktów B2B</a>, na których rozlicza się
+          większość lekarzy-specjalistów — i których kwot nikt nie publikuje.
+        </p>
+      </div>
+
+      <h2 style="margin-top: 2.5rem">Drabina taryfowa: minimum zasadnicze od 1 lipca 2026</h2>
+      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
+        Gdzie w siatce stoją poszczególne zawody. Kwoty to ustawowe <strong>minimum
+        wynagrodzenia zasadniczego</strong> na etacie — <strong>bez</strong> dyżurów, dodatków
+        (za wysługę lat, nocny, funkcyjny) i nadgodzin. Realne wypłaty są zwykle wyższe.
+      </p>
+      <div class="table-wrap">
+        <table class="rate-table">
+          <thead>
+            <tr><th>Grupa i zawody</th><th class="num">Współczynnik</th><th class="num">Min. zasadnicze</th></tr>
+          </thead>
+          <tbody>
+            {drabina.map((z) => (
+              <tr class={dotPiel(z.data.etykieta) ? 'is-piel' : ''}>
+                <th scope="row">
+                  <span class="rate-name">{z.data.etykieta}</span>
+                  {z.data.uwaga && <span class="rate-note">{z.data.uwaga}</span>}
+                </th>
+                <td class="num wsp">×{z.data.wspolczynnik?.toLocaleString('pl-PL')}</td>
+                <td class="num">
+                  {fmt(z.data.kwota)} <span class="u">zł/mc</span>
+                  <a class="src-link" href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer" aria-label={`Źródło: ${z.data.zrodloNazwa}`}>źródło</a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">
+        Współczynniki wg załącznika do ustawy (potwierdzone przez NIPiP i LEX); kwoty od 1.07.2026 =
+        współczynnik × 8 903,56 zł (kwota bazowa, komunikat GUS z 9.02.2026). Pełna siatka 10 grup i
+        potwierdzenie kwot:
+        <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Od-dzis-12-910-zl-zl-dla-lekarzy-11-485-zl-dla-pielegniarek-1-lipca-podwyzki-medykow,286085,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>,
+        <a href="https://www.lex.pl/podwyzki-wynagrodzen-w-ochronie-zdrowia-od-1-lipca-2026-r,36183.html" target="_blank" rel="noopener noreferrer">LEX</a>.
+        Pielęgniarka/położna trafia do grupy 2, 5 albo 6 zależnie od wykształcenia i specjalizacji
+        (<a href="https://nipip.pl/pytania-zwiazane-z-ustawa-o-sposobie-ustalania-najnizszego-wynagrodzenia/" target="_blank" rel="noopener noreferrer">NIPiP</a>).
+      </p>
+
+      <h2 style="margin-top: 2.5rem">Pielęgniarki i położne — najliczniejsza grupa</h2>
+      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
+        To najliczniejszy zawód w systemie — i najstarszy demograficznie. Kontekst, w którym
+        trzeba czytać powyższe kwoty:
+      </p>
+      <div class="stat-cards">
+        <div class="scard">
+          <p class="sn">333 336</p>
+          <p class="sc">pielęgniarek w rejestrze (+ 43 965 położnych) — łącznie <strong>377 301</strong>.</p>
+          <p class="ss"><a href="https://nipip.pl/liczba-pielegniarek-poloznych-zarejestrowanych-zatrudnionych/" target="_blank" rel="noopener noreferrer">NIPiP, 31.12.2025</a></p>
+        </div>
+        <div class="scard">
+          <p class="sn">~220 tys.</p>
+          <p class="sc">pielęgniarek pracuje <strong>bezpośrednio z pacjentem</strong> — czyli co trzecia z rejestru realnie nie pracuje przy pacjencie.</p>
+          <p class="ss"><a href="https://www.bankier.pl/wiadomosc/Polska-wciaz-ma-powazny-problem-Srednia-wieku-pielegniarek-to-55-lat-9131321.html" target="_blank" rel="noopener noreferrer">dane GUS 2024</a></p>
+        </div>
+        <div class="scard">
+          <p class="sn">5,9 <span class="vs">vs</span> 9,2</p>
+          <p class="sc">pielęgniarek na 1000 mieszkańców: <strong>Polska</strong> kontra średnia <strong>OECD</strong> — jeden z najniższych wskaźników.</p>
+          <p class="ss"><a href="https://www.rynekzdrowia.pl/Polityka-zdrowotna/Zaskakujace-dane-o-lekarzach-pielegniarkach-i-opiekunach-Srednia-OECD-kontra-olbrzymie-niedobory,277962,14.html" target="_blank" rel="noopener noreferrer">OECD Health at a Glance 2025</a></p>
+        </div>
+        <div class="scard">
+          <p class="sn">34%</p>
+          <p class="sc">pracujących pielęgniarek osiągnęło już <strong>wiek emerytalny</strong> (2023); do 2030 r. — nawet 65%.</p>
+          <p class="ss"><a href="https://www.rynekzdrowia.pl/Polityka-zdrowotna/NIPiP-alarmuje-34-proc-pracujacych-pielegniarek-osiagnelo-juz-wiek-emerytalny,255032,14.html" target="_blank" rel="noopener noreferrer">NIPiP</a></p>
+        </div>
+      </div>
+      <p class="muted" style="max-width: 68ch; margin-top: 1.25rem">
+        Średni wiek pielęgniarki to dziś <strong>ok. 55 lat</strong>, a samorząd prognozuje spadek
+        liczby zatrudnionych o <strong>ok. 36 tys. do 2030 r.</strong> przy braku zastępowalności
+        pokoleń (<a href="https://nipip.pl/do-2030-roku-liczba-pielegniarek-i-poloznych-zmniejszy-sie-o-ponad-26-tysiecy-alarmuje-samorzad-zawodowy-informacja-prasowa/" target="_blank" rel="noopener noreferrer">NIPiP</a>).
+        Uczciwy kontrapunkt: w statystykach OECD polskie pielęgniarki zarabiają
+        <strong>ok. 160% średniej krajowej</strong> — relatywnie wysoko, ale wobec
+        <a href="/analizy/zarobki-lekarzy-polska-sasiedzi">niskiej polskiej średniej</a>, tej samej
+        niskiej bazy, o której mówimy przy lekarzach
+        (<a href="https://www.gazetaprawna.pl/praca/artykuly/9672490,polskie-pielegniarki-najlepiej-wynagradzane-w-europie-oto-smutna-praw.html" target="_blank" rel="noopener noreferrer">OECD / Gazeta Prawna</a>).
+      </p>
+
+      <h2 style="margin-top: 2.5rem">Poza etatem: kontrakty pielęgniarskie</h2>
+      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
+        Tak jak lekarze, część pielęgniarek rozlicza się na kontrakcie (B2B) — i tak jak przy
+        lekarzach, tych stawek <strong>nie obejmuje ustawa</strong> ani żaden publiczny rejestr.
+        Poniższe kwoty to <strong>oferty z ogłoszeń i szacunki portali branżowych</strong>, nie
+        wypłaty.
+      </p>
+      <div class="table-wrap">
+        <table class="rate-table">
+          <thead><tr><th>Pozycja</th><th class="num">Stawka</th><th>Źródło</th></tr></thead>
+          <tbody>
+            {kontrakty.map((z) => (
+              <tr>
+                <th scope="row">
+                  <span class="rate-name">{z.data.etykieta}</span>
+                  {z.data.uwaga && <span class="rate-note">{z.data.uwaga}</span>}
+                </th>
+                <td class="num">
+                  {fmt(z.data.kwota)} {z.data.jednostka}
+                  <span class="badge b-est">szacunek</span>
+                </td>
+                <td><a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">
+        Kwot kontraktów nikt nie publikuje — dotyczy to całego personelu, nie tylko lekarzy.
+        Jawność wynagrodzeń ze środków publicznych powinna obejmować <strong>wszystkich</strong>,
+        którzy z tych środków są opłacani — to sedno <a href="/postulat">naszego postulatu</a>.
+      </p>
+
+      <p class="source-note" style="margin-top: 1.5rem">
+        Nie publikujemy liczb „z pamięci”. Dopóki pole nie ma źródła, pozostaje oznaczone jako „—”.
+      </p>
+
+      <p class="pager"><a href="/dane/rozklad-wynagrodzen">← Rozkład wynagrodzeń</a> · <a href="/dane/rekordy">Rekordowe rozliczenia →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .rate-table { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 0.92rem; }
+  .rate-table thead th { text-align: left; padding: 0.7rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); }
+  .rate-table thead th.num { text-align: right; }
+  .rate-table tbody th { text-align: left; padding: 0.7rem 0.9rem; font-weight: 500; max-width: 40ch; }
+  .rate-table td { padding: 0.7rem 0.9rem; vertical-align: top; }
+  .rate-table td.num { font-family: var(--font-mono); white-space: nowrap; text-align: right; }
+  .rate-table tbody tr { border-bottom: 1px solid var(--line); }
+  .rate-table tbody tr:last-child { border-bottom: none; }
+  .rate-table tbody tr.is-piel { background: color-mix(in srgb, var(--brand) 6%, transparent); }
+  .rate-name { display: block; color: var(--ink); }
+  .rate-note { display: block; font-size: 0.76rem; color: var(--ink-soft); font-weight: 400; margin-top: 0.15rem; }
+  .wsp { color: var(--ink-soft); font-size: 0.86rem; }
+  .u { font-family: var(--font-sans); font-size: 0.72rem; color: var(--ink-faint); }
+  .src-link { display: block; font-family: var(--font-sans); font-size: 0.72rem; margin-top: 0.2rem; font-weight: 500; }
+  .badge { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.4rem; border-radius: 999px; font-size: 0.66rem; font-weight: 600; font-family: var(--font-sans); }
+  .b-est { background: #fdf0e0; color: #a8620a; }
+  .stat-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin: 1.25rem 0 0.5rem; }
+  .scard { display: flex; flex-direction: column; gap: 0.4rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+  .sn { font-family: var(--font-mono); font-size: clamp(1.7rem, 4.5vw, 2.2rem); font-weight: 700; color: var(--brand); line-height: 1; margin: 0; }
+  .sn .vs { font-family: var(--font-sans); font-size: 0.8rem; font-weight: 500; color: var(--ink-faint); }
+  .sc { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .ss { font-size: 0.78rem; margin: 0.1rem 0 0; }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+</style>

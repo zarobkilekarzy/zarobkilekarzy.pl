@@ -49,9 +49,12 @@ const zarobki = defineCollection({
       'porownanie',   // Polska na tle UE/OECD, koszt hipotetyczny
       'rezydent',     // regulowane pensje rezydentów
       'zadluzenie',   // dług publicznych szpitali
+      'personel',     // inni pracownicy OZ — drabina taryfowa ustawy (piel., ratownicy, diagności…)
     ]),
     kwota: z.number(),
     jednostka: z.enum(['zł/mc', 'zł/h', 'zł/dzień', 'zł/rok', 'zł/dyżur', 'mies.', 'mld zł', 'lek./1000', '%', 'x']),
+    // Współczynnik pracy z załącznika do ustawy o najniższym wynagrodzeniu (grupa 'personel').
+    wspolczynnik: z.number().optional(),
     forma: z.enum(['etat', 'kontrakt', 'umowa cywilnoprawna', 'oświadczenie majątkowe', '—']).optional(),
     rola: z.string().optional(),
     specjalizacja: z.string().optional(),

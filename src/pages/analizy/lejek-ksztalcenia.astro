@@ -1,6 +1,22 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareRow from '../../components/ShareRow.astro';
+import { getCollection } from 'astro:content';
+
+// Miejsca per specjalizacja (jesień 2025) — z kolekcji; pozarez = ogółem − rezydenckie.
+const spec = (await getCollection('specjalizacje'))
+  .filter((s) => s.data.miejscaRezydenckie != null && s.data.miejscaOgolem != null)
+  .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc)
+  .map((s) => ({
+    nazwa: s.data.nazwa,
+    rez: s.data.miejscaRezydenckie!,
+    poza: s.data.miejscaOgolem! - s.data.miejscaRezydenckie!,
+    og: s.data.miejscaOgolem!,
+    konk: s.data.konkurencja,
+    konkZ: s.data.konkurencjaZrodlo,
+  }));
+const konkText = (d: (typeof spec)[number]) =>
+  d.konk != null ? `${d.konk.toFixed(2).replace('.', ',')}×` : d.konkZ ? '< 1' : '—';
 
 const nabor = [
   { rok: 'jesień 2022', of: '16 173', ob: '4 180' },
@@ -121,6 +137,71 @@ const nabor = [
           <a href="https://pulsmedycyny.pl/system-ochrony-zdrowia/ksztalcenie/rezydentury-jesien-2024-opublikowano-ostateczne-wyniki-rekrutacji/" target="_blank" rel="noopener noreferrer">Puls Medycyny</a>;
           LEK/LEW —
           <a href="https://www.rp.pl/zdrowie/art44618561-lekarze-z-ukrainy-i-bialorusi-oblewaja-polski-egzamin-medyczny" target="_blank" rel="noopener noreferrer">Rzeczpospolita</a>.
+        </p>
+
+        <h2>Miejsca rezydenckie vs pozarezydenckie — i gdzie wraca nepotyzm</h2>
+        <p>
+          Specjalizację zdobywa się na dwa sposoby. <strong>Tryb rezydencki</strong> — pensję
+          płaci Ministerstwo Zdrowia. <strong>Tryb pozarezydencki</strong> — koszt ponosi
+          placówka (dawniej bywał to „wolontariat”, czyli praca za darmo; dziś umowa musi
+          przewidywać co najmniej minimalną stawkę). Na oba tryby rekrutuje się tak samo —
+          <strong>według wyniku Lekarskiego Egzaminu Końcowego (LEK)</strong>. Egzamin jest
+          więc formalną, obiektywną bramką.
+        </p>
+        <div class="table-wrap">
+          <table class="cmp">
+            <thead>
+              <tr><th>Specjalizacja</th><th>Chętnych<br />na miejsce</th><th>Rezydenckie</th><th>Pozarezydenckie</th><th>Razem</th></tr>
+            </thead>
+            <tbody>
+              {spec.map((s) => (
+                <tr>
+                  <th scope="row">{s.nazwa}</th>
+                  <td class="num">{konkText(s)}</td>
+                  <td class="num hot">{s.rez}</td>
+                  <td class="num">{s.poza}</td>
+                  <td class="num">{s.og}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="source-note">
+          Miejsca — wykaz CMKP, sesja jesień 2025 (pozarezydenckie = ogółem − rezydenckie);
+          konkurencja — dane dyr. CMKP (jesień 2025). Zob. też
+          <a href="/dane/wedlug-specjalizacji">zarobki i miejsca wg specjalizacji</a>.
+        </p>
+        <p>
+          Zwróć uwagę na górę tabeli. Na najbardziej obleganych dziedzinach miejsc jest w
+          ogóle mało, a te finansowane przez państwo — rezydenckie — to <strong>garstka</strong>:
+          chirurgia plastyczna to <strong>7 miejsc rezydenckich w całym kraju</strong>,
+          endokrynologia 25, dermatologia 35 — przy 6–7 chętnych na miejsce. Kto nie zmieści
+          się w tej garstce, zostaje z opcją <strong>pozarezydencką</strong>: bez pensji z MZ,
+          na koszt placówki, która musi chcieć go przyjąć. <strong>Nie każdego na to stać i nie
+          każdy ma tam dojście.</strong>
+        </p>
+        <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+          <p>
+            <strong>I tu wraca nepotyzm.</strong> Dopóki o miejscu decyduje wynik LEK, gra jest
+            obiektywna. Problem zaczyna się tam, gdzie egzamin ustępuje <strong>decyzji
+            człowieka</strong>: w trybie pozarezydenckim (to placówka wybiera i finansuje), przy
+            wyborze konkretnego ośrodka, a zwłaszcza w planowanych przez MZ reformach, które
+            mają dać dyrektorom szpitali <strong>więcej swobody</strong> w doborze lekarzy.
+            Wtedy wraca dobór „po znajomości” i „więzami krwi”. To nie jest zarzut wyssany z
+            palca — ostrzega przed tym <strong>sam samorząd lekarski</strong>, mówiąc wprost o
+            „powrocie nepotyzmu”; przed uregulowaniem trybów o najlepszych miejscach decydowała
+            elita profesorów. Egzamin broni uczciwości ról; wszędzie tam, gdzie go obchodzimy,
+            wraca układ.
+          </p>
+        </div>
+        <p class="source-note">
+          Dwa tryby specjalizacji i finansowanie —
+          <a href="https://www.rynekzdrowia.pl/Nauka/Likwidacja-wolontariatu-zagraza-szkoleniu-mlodych-lekarzy-w-trybie-pozarezydenckim,219515,9.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>,
+          <a href="https://www.prawo.pl/zdrowie/rezydentura-szkolenia-specjalizacyjne-lekarzy,518615.html" target="_blank" rel="noopener noreferrer">Prawo.pl</a>;
+          ostrzeżenie o „powrocie nepotyzmu” przy reformie trybów (stanowisko samorządu lekarskiego) —
+          <a href="https://www.rp.pl/rynek-zdrowia/art43769421-mlodych-lekarzy-czekaja-zmiany-czy-to-powrot-nepotyzmu-czy-wsparcie-malych-osrodkow" target="_blank" rel="noopener noreferrer">Rzeczpospolita</a>,
+          <a href="https://www.pulshr.pl/rynek-zdrowia/miedzy-dostepnoscia-a-nepotyzmem-spor-w-ministerstwie-zdrowia,117018.html" target="_blank" rel="noopener noreferrer">PulsHR</a>.
+          To udokumentowana obawa i zarzut z debaty, nie prawomocne ustalenie.
         </p>
       </div>
 

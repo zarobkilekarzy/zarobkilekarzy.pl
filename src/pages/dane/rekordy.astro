@@ -25,6 +25,28 @@ const liga = [
   { rank: 5, name: 'Lewandowski', club: 'FC Barcelona', val: '242 000 zł', w: 66 },
   { rank: 6, name: 'Yamal', club: 'FC Barcelona', val: '194 000 zł', w: 53 },
 ];
+
+// Źródłowa tabela: 10 najwyższych wynagrodzeń personelu medycznego szpitali wojewódzkich
+// Mazowsza (2025), wg formy zatrudnienia. Kwoty zaokrąglone do zł. eb/en = etat brutto/netto,
+// k = kontrakt brutto, ub/un = umowa cywilnoprawna brutto/netto. kx = umowa rozwiązana (**).
+const woj2025 = [
+  { lp: 1, eb: 101384, en: 58447, k: 316079, kx: true, ub: 100147, un: 81520 },
+  { lp: 2, eb: 97736, en: 56177, k: 258400, kx: true, ub: 62600, un: 50956 },
+  { lp: 3, eb: 93928, en: 54440, k: 231738, ub: 51980, un: 38795 },
+  { lp: 4, eb: 90473, en: 52389, k: 210301, ub: 49710, un: 40464 },
+  { lp: 5, eb: 87129, en: 50226, k: 199100, ub: 43200, un: 28253 },
+  { lp: 6, eb: 86145, en: 49960, k: 198204, ub: 35167, un: 25403 },
+  { lp: 7, eb: 81046, en: 47025, k: 197229, ub: 33820, un: 27529 },
+  { lp: 8, eb: 79807, en: 45930, k: 188775, ub: 32580, un: 23534 },
+  { lp: 9, eb: 78712, en: 45412, k: 178638, ub: 32010, un: 23122 },
+  { lp: 10, eb: 74737, en: 43111, k: 174636, ub: 31752, un: 22936 },
+];
+
+// Anonimowy rozkład: roczne dochody radnych-lekarzy z jawnych oświadczeń majątkowych
+// (oddolne zestawienie; każda kwota do sprawdzenia w BIP właściwej jednostki). Malejąco.
+const radniDochody = [1491932, 1334692, 1212738, 1065886, 1040192, 1024636, 987192, 969570, 935753, 916009, 844387, 806843, 719721, 718902, 711179, 707986, 685544, 587746, 581708];
+const radniStat = { n: 19, mediana: 916009, srednia: 912769, min: 581708, max: 1491932, przychodMax: 3918517 };
+const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zawód)
 ---
 
 <BaseLayout
@@ -113,6 +135,51 @@ const liga = [
         ))}
       </div>
 
+      <h2 style="margin-top: 2.5rem">Skąd te liczby: pełna tabela wojewódzka (2025)</h2>
+      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+        Rekord 316 079 zł nie jest wyrwany z kontekstu — to szczyt oficjalnego zestawienia
+        <strong>10 najwyższych wynagrodzeń</strong> w szpitalach wojewódzkich Mazowsza, wg formy
+        zatrudnienia. Widać w nim rzecz kluczową: <strong>kontrakt (B2B) bije etat i umowę
+        cywilnoprawną kilkukrotnie</strong> — i to właśnie kontraktów kwot nikt zwykle nie ujawnia.
+      </p>
+      <div class="table-wrap">
+        <table class="woj">
+          <thead>
+            <tr>
+              <th rowspan="2">L.p.</th>
+              <th colspan="2">Etat (umowa o pracę)</th>
+              <th rowspan="2" class="woj-kh">Kontrakt<br /><span class="woj-sub">za mies.</span></th>
+              <th colspan="2">Umowa cywilnoprawna</th>
+            </tr>
+            <tr>
+              <th class="woj-sub2">brutto</th><th class="woj-sub2">netto</th>
+              <th class="woj-sub2">brutto</th><th class="woj-sub2">netto</th>
+            </tr>
+          </thead>
+          <tbody>
+            {woj2025.map((r) => (
+              <tr>
+                <td class="woj-lp">{r.lp}</td>
+                <td class="num">{fmt(r.eb)}</td>
+                <td class="num woj-netto">{fmt(r.en)}</td>
+                <td class="num woj-k">{fmt(r.k)}{r.kx ? '**' : ''}</td>
+                <td class="num">{fmt(r.ub)}</td>
+                <td class="num woj-netto">{fmt(r.un)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">
+        Kwoty w zł/mc, zaokrąglone do złotego. <strong>*</strong> kwota wypłacona jednej osobie:
+        wszystkie cykliczne dodatki i dyżury (bez nagród jubileuszowych, odpraw, „trzynastek”,
+        premii i wypłat jednorazowych). <strong>**</strong> umowa rozwiązana. Etat ma wysokie
+        obciążenia — stąd duża różnica brutto/netto; dla kontraktu (B2B) źródło podaje jedną kwotę,
+        bez rozbicia. Źródło: zestawienie Urzędu Marszałkowskiego
+        Woj. Mazowieckiego za
+        <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Kacprzyk-nie-byl-rekordzista-W-szpitalach-mazowieckich-mozna-zarobic-nawet-316-tys-zl-miesiecznie,285578,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>.
+      </p>
+
       <h2 style="margin-top: 2.5rem">Roczne dochody (oświadczenia majątkowe)</h2>
       <div class="rec-list">
         {roczne.map((z) => (
@@ -137,6 +204,73 @@ const liga = [
         nie jest tożsamy z „kontraktem NFZ” — część praktyk rozlicza się prywatnie. Kwoty
         rozliczeń to fakty; ewentualne zarzuty w postępowaniach oznaczamy osobno i traktujemy
         jako <strong>nieudowodnione</strong>.
+      </p>
+
+      <h2 style="margin-top: 2.75rem">Jawne — a i tak niewidoczne</h2>
+      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+        Bywa, że dochód lekarza jest <strong>jawny z mocy prawa</strong> — u <strong>radnych-lekarzy</strong>,
+        bo pełnią funkcję publiczną i składają oświadczenia majątkowe. Poniżej 19 takich rocznych
+        dochodów z praktyki lekarskiej (bez nazwisk). Sęk w tym, że widać je <em>tylko dlatego</em>,
+        że akurat są radnymi.
+      </p>
+
+      <p class="okno-q">Czyj dochód ze środków publicznych <strong>w ogóle da się sprawdzić?</strong></p>
+      <div class="okno">
+        <div class="okno-card is-yes">
+          <div class="okno-head"><span class="okno-mark">✓</span> Widać</div>
+          <p class="okno-who">Lekarz, który jest <strong>radnym</strong></p>
+          <p class="okno-count">garstka — te 19 kwot wyżej</p>
+          <p class="okno-desc">Pełni funkcję publiczną, więc składa <strong>jawne oświadczenie majątkowe</strong> (BIP). Dlatego jego dochód można poznać.</p>
+        </div>
+        <div class="okno-card is-no">
+          <div class="okno-head"><span class="okno-mark">✗</span> Nie widać</div>
+          <p class="okno-who"><strong>Każdy inny</strong> lekarz</p>
+          <p class="okno-count">~164 892 wykonujących zawód</p>
+          <p class="okno-desc">Ta sama praca, ten sam publiczny NFZ — ale <strong>żaden publiczny rejestr</strong> nie pokazuje, ile zarabia.</p>
+        </div>
+      </div>
+      <p class="okno-cap">
+        Różnica nie leży w pracy ani w pieniądzach — tylko w tym, że jednego widać <em>przez przypadek</em>
+        (bo jest radnym). <strong>Rejestr po numerze PWZ</strong> pokazywałby tak samo <strong>wszystkich</strong>.
+      </p>
+      <p class="source-note">
+        Liczba lekarzy wykonujących zawód — rejestr <strong>NIL</strong> (stan 16 I 2026), zob.
+        <a href="/analizy/zarobki-lekarzy-polska-sasiedzi">lejek liczby lekarzy</a>.
+      </p>
+
+      <div class="callout quiet">
+        <p style="margin: 0">
+          <strong>19 dochodów, rocznie:</strong> mediana <strong>~916 tys. zł</strong> · średnia
+          <strong>~913 tys. zł</strong> · rozrzut od <strong>582 tys.</strong> do
+          <strong>1,49 mln zł</strong>. U części sam przychód (obrót) sięgał <strong>3,9 mln zł</strong>.
+        </p>
+      </div>
+      <div class="dist">
+        {radniDochody.map((d) => (
+          <div class={`dist-row${d === radniStat.mediana ? ' is-med' : ''}`}>
+            <div class="dist-track"><div class="dist-bar" style={`width:${Math.round((d / radniStat.max) * 100)}%`}></div></div>
+            <span class="dist-val">{fmt(d)} zł{d === radniStat.mediana ? ' · mediana' : ''}</span>
+          </div>
+        ))}
+      </div>
+
+      <div class="callout">
+        <p>
+          <strong>To nie kwoty są tu sednem — lecz to, że są jawne, a mimo to rozsypane.</strong>
+          Te ~20 dochodów widać przez <strong>przypadek pełnienia funkcji</strong>. Dla ~164 892
+          lekarzy wykonujących zawód nie ma nawet tego okna — choć płaci im ten sam publiczny NFZ.
+          Rejestr powiązany z numerem <a href="/postulat">PWZ</a> zsumowałby to systemowo, dla
+          każdego, w jeden dzień. Ktoś już liczy to <strong>ręcznie, po omacku</strong> — bo
+          państwo takiego rejestru nie prowadzi.
+        </p>
+      </div>
+      <p class="source-note">
+        <strong>Metoda i zastrzeżenia.</strong> Oddolne zestawienie z <strong>jawnych oświadczeń
+        majątkowych</strong> radnych-lekarzy (dokumenty publiczne w BIP właściwych jednostek) —
+        każdą kwotę można sprawdzić u źródła; jedną (Piotrków Tryb.) potwierdziliśmy z naszą bazą.
+        To <strong>dochód</strong> z działalności lekarskiej, nie przychód/obrót. To
+        <strong>grupa wyselekcjonowana</strong> (radni-lekarze), nie losowa próba — pokazuje
+        rozpiętość i lukę jawności, nie „medianę typowego lekarza”. Bez nazwisk — mechanizm, nie osoba.
       </p>
 
       <p class="pager"><a href="/dane/rozklad-wynagrodzen">← Rozkład</a> · <a href="/dane/wedlug-specjalizacji">Według specjalizacji →</a></p>
@@ -188,6 +322,39 @@ const liga = [
   .lm-fill.is-docfill { background: var(--alert); }
   .lm-fill.is-over { background: repeating-linear-gradient(90deg, var(--ink-soft) 0 10px, var(--paper-2) 10px 14px); }
   .lm-over { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 0.62rem; font-weight: 700; color: var(--ink); background: rgba(255,255,255,0.7); padding: 0 3px; border-radius: 3px; }
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .woj { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.9rem; }
+  .woj thead th { padding: 0.5rem 0.7rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; border-bottom: 2px solid var(--line); text-align: right; }
+  .woj thead th[colspan] { text-align: center; border-bottom: 1px solid var(--line); }
+  .woj-sub, .woj-sub2 { font-weight: 400; color: var(--ink-faint); font-size: 0.72rem; }
+  .woj-kh { border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: var(--alert-50); color: var(--alert); }
+  .woj td { padding: 0.5rem 0.7rem; font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+  .woj-lp { color: var(--ink-faint); text-align: center; }
+  .woj-netto { color: var(--ink-soft); }
+  .woj-k { font-weight: 700; color: var(--alert); background: var(--alert-50); border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+  .woj tbody tr { border-bottom: 1px solid var(--line); }
+  .woj tbody tr:last-child { border-bottom: none; }
+  .okno-q { font-size: 1.05rem; font-weight: 600; color: var(--ink); margin: 1.25rem 0 0.75rem; }
+  .okno { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.75rem; }
+  .okno-card { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+  .okno-card.is-yes { border-left: 4px solid #2f7a34; background: #f2f8f3; }
+  .okno-card.is-no { border-left: 4px solid var(--alert); background: var(--alert-50); }
+  .okno-head { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem; }
+  .okno-card.is-yes .okno-head { color: #2f7a34; }
+  .okno-card.is-no .okno-head { color: var(--alert); }
+  .okno-mark { font-size: 1.05rem; }
+  .okno-who { font-size: 1.05rem; font-weight: 600; color: var(--ink); margin: 0 0 0.1rem; }
+  .okno-count { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 0.5rem; }
+  .okno-desc { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .okno-cap { max-width: 68ch; font-size: 0.92rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
+  @media (max-width: 560px) { .okno { grid-template-columns: 1fr; } }
+  .dist { display: flex; flex-direction: column; gap: 4px; margin: 1rem 0 0.75rem; max-width: 620px; }
+  .dist-row { display: flex; align-items: center; gap: 0.75rem; }
+  .dist-track { flex: 1; background: var(--paper-2); border-radius: 3px; height: 15px; overflow: hidden; }
+  .dist-bar { height: 100%; background: var(--ink-soft); border-radius: 3px; min-width: 3px; }
+  .dist-row.is-med .dist-bar { background: var(--brand); }
+  .dist-val { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); white-space: nowrap; min-width: 13ch; text-align: right; }
+  .dist-row.is-med .dist-val { color: var(--brand); font-weight: 600; }
   @media (max-width: 520px) {
     .rec { flex-direction: column; gap: 0.4rem; }
     .rec-num { min-width: 0; text-align: left; }

@@ -9,6 +9,30 @@ const stawki = (await getCollection('zarobki'))
   .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
 
 const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+
+// Wyliczony przychód za godzinę (prywatna praktyka) wg województw — HireDoc 2024.
+// Kolejność kolumn: ginekolog, dermatolog, endokrynolog, psychiatra, stomatolog.
+const wojKol = ['ginekolog', 'dermatolog', 'endokrynolog', 'psychiatra', 'stomatolog'];
+const woj: [string, number[]][] = [
+  ['dolnośląskie', [572, 384, 413, 387, 136]],
+  ['kujawsko-pomorskie', [432, 554, 469, 474, 146]],
+  ['łódzkie', [450, 454, 436, 378, 109]],
+  ['lubelskie', [475, 354, 416, 297, 136]],
+  ['lubuskie', [442, 482, 590, 368, 153]],
+  ['małopolskie', [422, 446, 402, 343, 104]],
+  ['mazowieckie', [450, 436, 484, 337, 187]],
+  ['opolskie', [443, 565, 437, 231, 81]],
+  ['podkarpackie', [532, 467, 470, 411, 108]],
+  ['podlaskie', [429, 407, 434, 330, 106]],
+  ['pomorskie', [457, 464, 448, 389, 200]],
+  ['śląskie', [405, 392, 378, 346, 142]],
+  ['świętokrzyskie', [552, 412, 397, 449, 134]],
+  ['warmińsko-mazurskie', [461, 455, 324, 287, 125]],
+  ['wielkopolskie', [564, 501, 578, 403, 122]],
+  ['zachodniopomorskie', [395, 333, 303, 330, 137]],
+];
+// max w każdej kolumnie (do podświetlenia)
+const wojMax = wojKol.map((_, i) => Math.max(...woj.map((r) => r[1][i])));
 ---
 
 <BaseLayout
@@ -90,6 +114,41 @@ const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
         środków publicznych.
       </p>
 
+      <h2 style="margin-top: 2.5rem">Per specjalizacja i województwo (HireDoc)</h2>
+      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
+        Ten sam wyliczony przychód za godzinę prywatnej praktyki, w rozbiciu na województwa.
+        Wartości najwyższe w kolumnie są <span style="color:var(--brand);font-weight:600">wyróżnione</span>.
+        To wciąż <strong>szacunek potencjału</strong> z prywatnej praktyki, nie wypłata ani
+        stawka kontraktowa.
+      </p>
+      <div class="table-wrap">
+        <table class="rate-table woj-table">
+          <thead>
+            <tr>
+              <th>Województwo</th>
+              {wojKol.map((k) => <th class="num">{k}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {woj.map(([nazwa, vals]) => (
+              <tr>
+                <th scope="row">{nazwa}</th>
+                {vals.map((v, i) => (
+                  <td class={`num${v === wojMax[i] ? ' wmax' : ''}`}>{v} zł</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">
+        Źródło: <a href="https://hiredoc.com/reports/pl/hiredoc-wynagrodzenia-lekarzy-2024.pdf" target="_blank" rel="noopener noreferrer">HireDoc „Wynagrodzenia lekarzy 2024”</a>
+        (Docplanner) — wyliczenie z cen i czasu wizyt (ZnanyLekarz). Najwyższe stawki: woj.
+        wielkopolskie, kujawsko-pomorskie i lubuskie; najniższe: zachodniopomorskie. Uwaga:
+        różnice między dziedzinami wynikają głównie z czasu wizyty (stomatolog trwa najdłużej,
+        stąd najniższy przychód/h mimo drogich wizyt).
+      </p>
+
       <p class="pager"><a href="/dane/pensje-rezydentow">← Pensje rezydentów</a> · <a href="/dane/polska-na-tle-ue">Polska na tle UE →</a></p>
     </div>
   </section>
@@ -115,5 +174,9 @@ const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
   .badge { display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.4rem; border-radius: 999px; font-size: 0.66rem; font-weight: 600; font-family: var(--font-sans); }
   .b-exact { background: #e6f0e6; color: #2f6b32; }
   .b-est { background: #fdf0e0; color: #a8620a; }
+  .woj-table { min-width: 640px; font-size: 0.88rem; }
+  .woj-table thead th.num { text-align: right; font-size: 0.78rem; }
+  .woj-table td.num { padding: 0.5rem 0.7rem; }
+  .woj-table .wmax { color: var(--brand); font-weight: 700; }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
 </style>

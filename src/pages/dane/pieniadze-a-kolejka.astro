@@ -1,0 +1,106 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+
+// Indeks 2021 = 100. Wartości odczytane z przygotowanej infografiki.
+const series = [
+  { c: '#6aa9e0', pts: [[120,509],[250,476],[380,476],[510,432],[640,342],[770,322],[900,304]] },
+  { c: '#ef8b7b', pts: [[120,485],[250,476],[380,456],[510,432],[640,408],[770,384],[900,362]] },
+  { c: '#f3c14e', pts: [[120,485],[250,476],[380,454],[510,445],[640,384]] },
+  { c: '#ec4740', pts: [[250,476],[380,454],[510,469],[640,423],[770,423]] },
+];
+const years = [[120,'2020'],[250,'2021'],[380,'2022'],[510,'2023'],[640,'2024'],[770,'2025'],[900,'2026']];
+const yaxis = [[520,'80'],[476,'100'],[432,'120'],[388,'140'],[344,'160'],[300,'180']];
+const legend = [
+  { c: '#6aa9e0', n: 'Budżet NFZ', v: '201 mld', d: '×2,1' },
+  { c: '#ef8b7b', n: 'Składka zdrowotna (mediana / rok)', v: '6 909 zł', d: '+58%' },
+  { c: '#f3c14e', n: 'Dopłata z własnej kieszeni / os.', v: '1 270 zł', d: '+48%' },
+  { c: '#ec4740', n: 'Kolejka do lekarza', v: '4,2 mies.', d: '+24% dłużej' },
+];
+const poly = (pts) => pts.map((p) => p.join(',')).join(' ');
+---
+
+<BaseLayout
+  title="Pieniądze rosną, kolejka nie maleje — infografika — zarobkilekarzy.pl"
+  description="Cztery wymiary systemu ochrony zdrowia, indeks 2021 = 100: budżet NFZ, składka, dopłaty z kieszeni i kolejka. Wszystko, co płacisz — w górę. Kolejka też."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane">Dane</a> · Infografika</p>
+      <h1>Pieniądze rosną, kolejka nie maleje</h1>
+      <p class="lead">
+        Cztery wymiary systemu w jednym obrazie, indeks 2021 = 100. Rośnie budżet NFZ, rośnie
+        składka, rosną dopłaty z własnej kieszeni — a kolejka do lekarza zamiast maleć,
+        <strong>też rośnie</strong>.
+      </p>
+
+      <figure class="info-fig">
+        <svg viewBox="0 0 1000 620" role="img" xmlns="http://www.w3.org/2000/svg"
+          aria-label="Indeks 2021=100 dla lat 2020–2026. Budżet NFZ rośnie ×2,1 (do 201 mld zł), składka zdrowotna +58% (mediana 6909 zł/rok), dopłata z własnej kieszeni +48% (1270 zł/os.), a kolejka do lekarza +24% (4,2 miesiąca). Zamiast maleć, kolejka rośnie.">
+          <rect x="0" y="0" width="1000" height="620" fill="#16385c"></rect>
+          <text x="120" y="52" fill="#ffffff" font-size="20" font-weight="700">zarobkilekarzy.pl</text>
+          <text x="900" y="52" fill="#9fb0c4" font-size="16" text-anchor="end">ochrona zdrowia · 2020–2026</text>
+          <text x="120" y="100" font-size="36" font-weight="800">
+            <tspan fill="#ffffff">Pieniądze rosną. </tspan><tspan fill="#ec4740">Kolejka nie maleje.</tspan>
+          </text>
+          <text x="120" y="132" fill="#cdd6e0" font-size="17">Cztery wymiary systemu, indeks 2021 = 100. Wszystko, co płacisz — w górę. Kolejka też.</text>
+
+          {legend.map((l, i) => (
+            <g>
+              <rect x="120" y={168 + i * 27} width="15" height="15" rx="3" fill={l.c}></rect>
+              <text x="145" y={180 + i * 27} fill="#e6ecf2" font-size="15" font-weight="600">{l.n}</text>
+              <text x="660" y={180 + i * 27} fill={l.c} font-size="15" font-weight="700">{l.v}</text>
+              <text x="770" y={180 + i * 27} fill="#9fb0c4" font-size="14">{l.d}</text>
+            </g>
+          ))}
+
+          {yaxis.map(([y, lab]) => (
+            <text x="100" y={Number(y) + 5} fill="#7f92a8" font-size="13" text-anchor="end">{lab}</text>
+          ))}
+          <line x1="120" y1="476" x2="900" y2="476" stroke="#3a5a7d" stroke-width="1" stroke-dasharray="2 4"></line>
+          <text x="900" y="470" fill="#7f92a8" font-size="13" text-anchor="end">100 = poziom 2021</text>
+          {years.map(([x, lab]) => (
+            <text x={x} y="548" fill="#9fb0c4" font-size="14" text-anchor="middle">{lab}</text>
+          ))}
+
+          {series.map((s) => (
+            <>
+              <polyline points={poly(s.pts)} fill="none" stroke={s.c} stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+              {s.pts.map((p) => <circle cx={p[0]} cy={p[1]} r="4.5" fill={s.c}></circle>)}
+              <circle cx={s.pts[s.pts.length - 1][0]} cy={s.pts[s.pts.length - 1][1]} r="7" fill={s.c} opacity="0.35"></circle>
+            </>
+          ))}
+
+          <text x="120" y="592" font-size="20" font-weight="800">
+            <tspan fill="#ffffff">Gdyby pieniądze działały, czerwona linia by </tspan><tspan fill="#ec4740">spadała</tspan><tspan fill="#ffffff">. Zamiast tego — rośnie.</tspan>
+          </text>
+        </svg>
+      </figure>
+
+      <p class="source-note">
+        Indeks 2021 = 100. Wymiary: budżet NFZ ×2,1 (2020→2026); składka zdrowotna — mediana
+        roczna +58%; dopłata z własnej kieszeni na osobę +48% (2020→2024); kolejka do
+        specjalisty +24% (2021→2025). Kolejka 2020 — brak Barometru (pandemia).
+        Źródła: <a href="https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/narodowy-rachunek-zdrowia-2022,4,13.html" target="_blank" rel="noopener noreferrer">GUS — Narodowy Rachunek Zdrowia</a> (mediana składki, dopłaty),
+        <a href="https://www.gov.pl/web/zdrowie/plany-finansowe-nfz" target="_blank" rel="noopener noreferrer">plan finansowy NFZ</a> (budżet),
+        <a href="https://www.rynekzdrowia.pl/Polityka-zdrowotna/Barometr-Watch-Health-Care-sredni-czas-oczekiwania-na-leczenie-w-2025-r-to-ponad-4-miesiace,279890,14.html" target="_blank" rel="noopener noreferrer">Barometr WHC</a> (kolejka).
+        Zob. też <a href="/dane/kolejki">kolejki a wydatki</a> i <a href="/dane/budzet-nfz">budżet NFZ</a>.
+      </p>
+
+      <p class="pager"><a href="/dane">← Wszystkie dane</a> · <a href="/dane/zadluzenie-szpitali">Zadłużenie szpitali →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .info-fig { margin: 1.5rem 0 1rem; }
+  .info-fig svg { width: 100%; height: auto; display: block; border-radius: var(--radius-lg); }
+  .info-fig svg text { font-family: var(--font-sans); }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+</style>

@@ -105,6 +105,16 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Apteka i recepta: pieniądz, którego nikt nie sumuje',
     subtitle: 'Refundacja, wyłudzenia, receptomaty, kolejka po receptę — wszystko zbiega się na numerze PWZ, a nikt tego nie łączy ani nie publikuje.',
   },
+  'analizy/covid-pieniadz-publiczny': {
+    tag: 'Analiza',
+    title: 'COVID-19: miliardy bez jawnego rozliczenia',
+    subtitle: '~190 mld zł przez Fundusz COVID, ~9 mld dodatków wypłaconych bez kontroli, 15 tys. zł za 30 minut pracy. Nie o szczepionkach — o pieniądzu, którego nikt nie zsumował.',
+  },
+  'analizy/ucieczka-lekarzy': {
+    tag: 'Analiza · Kadry',
+    title: 'Zarezerwowane dla lekarzy — rynek „urody”, który wyciąga ich z kolejki',
+    subtitle: 'Państwo oddaje lekarzom wyłączność na dochodową medycynę estetyczną. Skoro tylko oni mogą, a gotówka bije NFZ — rezerwacja przeciąga ich od pacjenta. Bodziec stworzony przez państwo, nie zarzut wobec lekarzy.',
+  },
 
   // — Mechanizmy —
   'mechanizmy': {

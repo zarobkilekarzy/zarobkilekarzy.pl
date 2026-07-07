@@ -12,6 +12,7 @@ import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import { ogPages } from '../lib/ogPages';
+import { lastmodFor, normalizePath } from '../lib/pageDates.mjs';
 
 interface Props {
   title?: string;
@@ -66,6 +67,108 @@ const siteSchema = {
   description:
     'Dane, źródła i postulat jawnego rejestru wynagrodzeń lekarzy ze środków publicznych.',
 };
+
+// Wydawca powtarzany w kilku schematach (Article/Dataset) — jedna definicja.
+const publisher = {
+  '@type': 'Organization',
+  name: 'zarobkilekarzy.pl',
+  url: Astro.site?.toString(),
+  logo: {
+    '@type': 'ImageObject',
+    url: new URL('/favicon.png', Astro.site).toString(),
+  },
+};
+
+// Dane strukturalne generowane automatycznie z URL — bez propsów per-strona:
+//  • BreadcrumbList — dla stron zagnieżdżonych (widoczny trop to „eyebrow"),
+//  • Article       — teksty redakcyjne (/analizy, /mechanizmy),
+//  • Dataset       — strony danych (/dane) → kwalifikacja do Google Dataset Search.
+// Nazwa strony do schematów = tytuł bez sufiksu „ — zarobkilekarzy.pl".
+const headline = title.replace(/\s*—\s*zarobkilekarzy\.pl\s*$/, '').trim();
+const norm = normalizePath(Astro.url.pathname);
+const segs = norm === '/' ? [] : norm.slice(1).split('/');
+const nested = segs.length >= 2;
+const modified = lastmodFor(Astro.url.pathname);
+
+const SECTION_LABELS = {
+  dane: 'Dane',
+  analizy: 'Analizy',
+  mechanizmy: 'Mechanizmy',
+};
+
+// noindex (np. /admin) nie dostają żadnych danych strukturalnych.
+const wantSchema = !noindex && nested;
+const isArticle = wantSchema && (segs[0] === 'analizy' || segs[0] === 'mechanizmy');
+const isDataset = wantSchema && segs[0] === 'dane';
+
+let breadcrumbSchema = null;
+if (wantSchema) {
+  const crumbs = [{ name: 'Strona główna', url: Astro.site?.toString() }];
+  let acc = '';
+  segs.forEach((s, i) => {
+    acc += `/${s}`;
+    const last = i === segs.length - 1;
+    crumbs.push({
+      name: last ? headline : (SECTION_LABELS[s] ?? s),
+      url: new URL(acc, Astro.site).toString(),
+    });
+  });
+  breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.name,
+      item: c.url,
+    })),
+  };
+}
+
+const articleSchema = isArticle
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline,
+      description,
+      inLanguage: 'pl-PL',
+      image: ogImage.toString(),
+      mainEntityOfPage: canonical.toString(),
+      author: publisher,
+      publisher,
+      ...(modified ? { datePublished: modified, dateModified: modified } : {}),
+    }
+  : null;
+
+const datasetSchema = isDataset
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: headline,
+      description,
+      url: canonical.toString(),
+      inLanguage: 'pl-PL',
+      isAccessibleForFree: true,
+      license: 'https://creativecommons.org/licenses/by/4.0/',
+      creator: publisher,
+      publisher,
+      spatialCoverage: { '@type': 'Place', name: 'Polska' },
+      keywords: [
+        'wynagrodzenia lekarzy',
+        'NFZ',
+        'ochrona zdrowia',
+        'dane publiczne',
+        'jawność',
+        'Polska',
+      ],
+      ...(modified ? { dateModified: modified } : {}),
+    }
+  : null;
+
+// Wszystkie schematy w jednej tablicy — render jedną pętlą (mniej powtórzeń).
+const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetSchema].filter(
+  Boolean,
+);
 ---
 
 <!doctype html>
@@ -105,8 +208,9 @@ const siteSchema = {
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
-    <script type="application/ld+json" set:html={JSON.stringify(orgSchema).replace(/</g, '\\u003c')} />
-    <script type="application/ld+json" set:html={JSON.stringify(siteSchema).replace(/</g, '\\u003c')} />
+    {jsonLd.map((schema) => (
+      <script type="application/ld+json" set:html={JSON.stringify(schema).replace(/</g, '\\u003c')} />
+    ))}
     <slot name="head" />
   </head>
   <body>

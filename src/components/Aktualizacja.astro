@@ -1,27 +1,33 @@
 ---
 // Dateline „ostatnia aktualizacja" dla stron redakcyjnych (analizy, mechanizmy).
-// Data ręczna (prop `data`, ISO 'RRRR-MM-DD') — bumpowana przy MERYTORYCZNEJ zmianie
-// treści, nie przy literówce. Ręcznie, bo build leci w CI z płytkim checkoutem
-// (git log per-plik dałby wszędzie datę ostatniego commita). Emituje też
-// <time datetime> — czytelny sygnał świeżości dla czytelnika i wyszukiwarki.
+// Data pochodzi z centralnej mapy `pageDates` (jedno źródło prawdy: ta sama data
+// zasila też Article JSON-LD i <lastmod> w sitemapie). Prop `data` pozwala nadpisać
+// ręcznie, ale zwykle wystarczy <Aktualizacja /> — datę czytamy po ścieżce URL.
+// Emituje <time datetime> — czytelny sygnał świeżości dla czytelnika i wyszukiwarki.
+import { lastmodFor } from '../lib/pageDates.mjs';
+
 interface Props {
-  data: string;        // 'RRRR-MM-DD'
+  data?: string;       // 'RRRR-MM-DD' — opcjonalne nadpisanie mapy
   zrodla?: string;     // opcjonalny dopisek, np. „ · dane AOTMiT (02.2026)"
 }
 const { data, zrodla } = Astro.props;
+const iso = data ?? lastmodFor(Astro.url.pathname);
 
 // Południe lokalne, by uniknąć przesunięcia dnia przy strefach czasowych.
-const d = new Date(`${data}T12:00:00`);
-const czytelna = new Intl.DateTimeFormat('pl-PL', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-}).format(d);
+const czytelna = iso
+  ? new Intl.DateTimeFormat('pl-PL', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date(`${iso}T12:00:00`))
+  : null;
 ---
 
+{iso && (
 <p class="aktualizacja">
-  Ostatnia aktualizacja: <time datetime={data}><strong>{czytelna}</strong></time>{zrodla}
+  Ostatnia aktualizacja: <time datetime={iso}><strong>{czytelna}</strong></time>{zrodla}
 </p>
+)}
 
 <style>
   .aktualizacja {

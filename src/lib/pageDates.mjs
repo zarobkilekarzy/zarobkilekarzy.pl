@@ -24,7 +24,16 @@ export const pageDates = {
   '/mechanizmy/samorzad-nil': '2026-07-07',
   '/mechanizmy/dyzury-i-gotowosc': '2026-07-06',
   // Dane (tabele/zestawienia — bump przy zmianie liczb/zakresu).
+  '/dane': '2026-07-07',
+  '/dane/budzet-nfz': '2026-07-07',
+  '/dane/kolejki': '2026-07-06',
+  '/dane/pensje-rezydentow': '2026-07-06',
+  '/dane/personel-medyczny': '2026-07-07',
+  '/dane/rekordy': '2026-07-07',
+  '/dane/rozklad-wynagrodzen': '2026-07-07',
+  '/dane/stawki': '2026-07-06',
   '/dane/wedlug-specjalizacji': '2026-07-07',
+  '/dane/zadluzenie-szpitali': '2026-07-06',
 };
 
 // Normalizacja ścieżki: bez końcowego „/", z wiodącym „/". '/dane/x/' → '/dane/x'.

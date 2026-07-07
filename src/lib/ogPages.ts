@@ -100,6 +100,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'POZ: pieniądz za zarejestrowanego pacjenta',
     subtitle: 'Kapitacja jest jawna co do grosza — a i tak nie wiadomo, ile zostaje lekarzowi. Publiczny strumień policzalny, wynik nieprzejrzysty.',
   },
+  'analizy/apteka-pieniadz-publiczny': {
+    tag: 'Analiza',
+    title: 'Apteka i recepta: pieniądz, którego nikt nie sumuje',
+    subtitle: 'Refundacja, wyłudzenia, receptomaty, kolejka po receptę — wszystko zbiega się na numerze PWZ, a nikt tego nie łączy ani nie publikuje.',
+  },
 
   // — Mechanizmy —
   'mechanizmy': {

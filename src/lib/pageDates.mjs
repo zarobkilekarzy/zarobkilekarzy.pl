@@ -14,6 +14,7 @@ export const pageDates = {
   '/analizy/poz-pieniadz-za-pacjenta': '2026-07-07',
   '/analizy/dlaczego-brakuje-lekarzy': '2026-07-07',
   '/analizy/zarobki-lekarzy-polska-sasiedzi': '2026-07-07',
+  '/analizy/apteka-pieniadz-publiczny': '2026-07-07',
   // Mechanizmy (strony wyjaśniające).
   '/mechanizmy/reglamentacja-dostepu': '2026-07-07',
   '/mechanizmy/kontrakt-vs-etat': '2026-07-07',

@@ -9,10 +9,10 @@
 // konfiguracją). Publiczny klucz zwracamy w GET, by front mógł wyrenderować widżet.
 const CHOICES = ['tak', 'nie', 'nie-wiem'];
 
-const json = (obj, status = 200) =>
+const json = (obj, status = 200, cache = 'no-store') =>
   new Response(JSON.stringify(obj), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': cache },
   });
 
 const read = async (kv) => {
@@ -55,7 +55,15 @@ export const onRequest = async (context) => {
 
   if (request.method === 'GET') {
     const counts = await read(kv);
-    return json({ ...counts, turnstileSiteKey: turnstileOn ? siteKey : null });
+    // Cache na brzegu CF (jak w /api/clicks): powtórne odsłony idą z cache — bez
+    // wywołania Funkcji i bez odczytu KV — co trzyma zużycie w darmowym planie.
+    // Świeżo oddany głos i tak renderuje się z odpowiedzi POST (niecache'owanej),
+    // więc ≤30 s „nieświeżości" liczb dotyczy tylko wracających gości.
+    return json(
+      { ...counts, turnstileSiteKey: turnstileOn ? siteKey : null },
+      200,
+      'public, max-age=30'
+    );
   }
 
   if (request.method === 'POST') {

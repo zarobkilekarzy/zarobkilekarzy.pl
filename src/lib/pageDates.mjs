@@ -23,6 +23,8 @@ export const pageDates = {
   '/mechanizmy/rozliczenia-nfz': '2026-07-06',
   '/mechanizmy/samorzad-nil': '2026-07-07',
   '/mechanizmy/dyzury-i-gotowosc': '2026-07-06',
+  // Dane (tabele/zestawienia — bump przy zmianie liczb/zakresu).
+  '/dane/wedlug-specjalizacji': '2026-07-07',
 };
 
 // Normalizacja ścieżki: bez końcowego „/", z wiodącym „/". '/dane/x/' → '/dane/x'.

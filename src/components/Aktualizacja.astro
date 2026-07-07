@@ -1,0 +1,32 @@
+---
+// Dateline „ostatnia aktualizacja" dla stron redakcyjnych (analizy, mechanizmy).
+// Data ręczna (prop `data`, ISO 'RRRR-MM-DD') — bumpowana przy MERYTORYCZNEJ zmianie
+// treści, nie przy literówce. Ręcznie, bo build leci w CI z płytkim checkoutem
+// (git log per-plik dałby wszędzie datę ostatniego commita). Emituje też
+// <time datetime> — czytelny sygnał świeżości dla czytelnika i wyszukiwarki.
+interface Props {
+  data: string;        // 'RRRR-MM-DD'
+  zrodla?: string;     // opcjonalny dopisek, np. „ · dane AOTMiT (02.2026)"
+}
+const { data, zrodla } = Astro.props;
+
+// Południe lokalne, by uniknąć przesunięcia dnia przy strefach czasowych.
+const d = new Date(`${data}T12:00:00`);
+const czytelna = new Intl.DateTimeFormat('pl-PL', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+}).format(d);
+---
+
+<p class="aktualizacja">
+  Ostatnia aktualizacja: <time datetime={data}><strong>{czytelna}</strong></time>{zrodla}
+</p>
+
+<style>
+  .aktualizacja {
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    margin: 0.35rem 0 1.5rem;
+  }
+</style>

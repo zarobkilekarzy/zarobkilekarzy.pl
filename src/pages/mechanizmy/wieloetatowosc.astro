@@ -1,85 +1,256 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareRow from '../../components/ShareRow.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+
+// Trzy warunki, które muszą zajść naraz, by jeden lekarz mógł sumować placówki
+// bez limitu i bez wiedzy kogokolwiek. Każdy oźródłowany na powiązanej podstronie.
+const warunki = [
+  {
+    t: 'Kontrakt zamiast etatu — bez limitu godzin',
+    d: 'Etat wiąże Kodeks pracy: 48 h/tydzień (z „opt-out” do ~78 h). Kontrakt (B2B lub umowa cywilnoprawna) jest <strong>poza tymi limitami</strong> — można legalnie sumować placówki bez górnej granicy godzin. A na kontrakcie rozlicza się ok. <strong>73% specjalistów</strong>.',
+    href: '/mechanizmy/kontrakt-vs-etat',
+    hrefT: 'Kontrakt vs etat',
+  },
+  {
+    t: 'Brak wspólnego rejestru — każdy widzi tylko swój wycinek',
+    d: 'Żadna instytucja nie zestawia godzin ani wypłat jednego numeru <a href="/slownik#pwz">PWZ</a> z różnych miejsc. Sama AOTMiT przyznaje, że widzi zarobki wyłącznie <strong>„na poziomie jednej placówki”</strong>. Suma po osobie nie istnieje w żadnej bazie.',
+    href: '/analizy/jedno-pwz',
+    hrefT: 'Jeden lekarz, wiele strumieni',
+  },
+  {
+    t: 'Deficyt winduje popyt — nikt nie pyta o inne posady',
+    d: 'Gdy w deficytowej dziedzinie brakuje rąk, dyrektorzy <strong>licytują się o lekarza</strong> i biorą każdego, kto obsadzi dyżur — nie sprawdzając, gdzie jeszcze pracuje i ile już ma godzin. Niedobór jest paliwem, nie hamulcem.',
+    href: '/analizy/dlaczego-brakuje-lekarzy',
+    hrefT: 'Dlaczego brakuje lekarzy',
+  },
+];
+
+// „Ile to naprawdę 331 h/mc” — słupki skalowane do fizycznego sufitu 720 h
+// (24 h × 30 dni). Liczby: pełny etat ≈ 168 h; wykazane w aferze ≈ 331 h.
+const MAX_H = 720;
+const godziny = [
+  { lab: 'Pełny etat (40 h/tydz.)', h: 168, ref: true },
+  { lab: 'Wykazane w aferze — średnio', h: 331, hot: true },
+  { lab: 'Doba × 30 dni (fizyczny sufit)', h: 720, ref: true },
+];
+const pct = (h: number) => Math.round((h / MAX_H) * 100);
 ---
 
 <BaseLayout
   title="Wieloetatowość i równoległe kontrakty — zarobkilekarzy.pl"
-  description="Ten sam lekarz może jednocześnie rozliczać kontrakty w kilku placówkach. Bez wspólnego rejestru nikt nie widzi łącznego wynagrodzenia ani realnej liczby godzin."
+  description="Ten sam lekarz może w tym samym miesiącu rozliczać kontrakty w kilku publicznych placówkach naraz. Każda widzi tylko swój wycinek — łącznych godzin ani łącznej wypłaty nie sumuje nikt."
 >
   <section class="section">
     <div class="container">
       <p class="eyebrow"><a href="/mechanizmy">Mechanizmy</a> · Wieloetatowość</p>
       <h1>Wieloetatowość i równoległe kontrakty</h1>
-      <div class="prose">
+      <Aktualizacja data="2026-07-07" />
+      <p class="lead">
+        Ten sam lekarz może w tym samym miesiącu rozliczać kontrakty w <strong>kilku
+        publicznych placówkach naraz</strong>. Każda widzi tylko swój wycinek — łącznych
+        godzin ani łącznej wypłaty nie sumuje nikt. Dopóki nie ma rejestru po numerze
+        <a href="/slownik#pwz">PWZ</a>, „ile realnie pracował i ile dostał ze środków
+        publicznych” pozostaje <strong>niepoliczalne</strong>.
+      </p>
+
+      <div class="callout" style="border-left-color: var(--brand)">
         <p>
-          Ten sam lekarz może jednocześnie rozliczać kontrakty w kilku placówkach.
-          Bez wspólnego rejestru żadna instytucja nie widzi pełnego obrazu — ani
-          łącznego wynagrodzenia ze środków publicznych, ani realnej liczby godzin.
-          AOTMiT przyznaje, że widzi zarobki tylko „na poziomie jednej placówki”
-          (<a href="https://www.rp.pl/ochrona-zdrowia/art44466691-625-lekarzy-w-polsce-zarabia-powyzej-100-tys-zl-dotarlismy-do-wyliczen" target="_blank" rel="noopener noreferrer">Rzeczpospolita</a>;
-          zob. też <a href="https://www.termedia.pl/mz/Dlaczego-pracuja-po-kilkadziesiat-godzin-Bo-moga,55246.html" target="_blank" rel="noopener noreferrer">Menedżer Zdrowia</a>).
+          <strong>Nikt nie widzi pełnego obrazu.</strong> AOTMiT — agencja, która zbiera dane
+          o wynagrodzeniach — przyznaje, że widzi je wyłącznie <strong>„na poziomie jednej
+          placówki”</strong>. Ten sam lekarz w drugim, trzecim i czwartym miejscu to dla
+          systemu <strong>osobne, niepowiązane rekordy</strong>.
         </p>
+      </div>
+      <p class="source-note">
+        „Na poziomie jednej placówki” — AOTMiT, za
+        <a href="https://www.rp.pl/ochrona-zdrowia/art44466691-625-lekarzy-w-polsce-zarabia-powyzej-100-tys-zl-dotarlismy-do-wyliczen" target="_blank" rel="noopener noreferrer">Rzeczpospolitą</a>;
+        zob. też <a href="https://www.termedia.pl/mz/Dlaczego-pracuja-po-kilkadziesiat-godzin-Bo-moga,55246.html" target="_blank" rel="noopener noreferrer">Menedżer Zdrowia</a>.
+      </p>
 
-        <div class="callout">
-          <p>
-            <strong>Przykład — głośna sprawa z 2026 r.</strong> Znany warszawski lekarz,
-            rezydent bez specjalizacji koordynujący szpitalny oddział ratunkowy, rozliczył
-            w rok ok. <strong>1,6 mln zł</strong> z umów w <strong>czterech</strong>
-            publicznych placówkach naraz. Wykazano przy tym <strong>3976 godzin</strong>
-            pracy w rok — średnio <strong>331 godzin miesięcznie</strong>, czyli ~11 godzin
-            dziennie bez ani jednego dnia wolnego. To fizycznie niewykonalne — a
-            <strong>nie wychwycił tego żaden rejestr</strong>: każda placówka widziała
-            tylko swój wycinek.
-          </p>
-          <p>
-            I to nie był pełny obraz. Już w trakcie afery okazało się, że ten sam lekarz
-            dorabiał w <strong>kolejnym</strong> warszawskim szpitalu — jako zastępca
-            koordynatora SOR (od lutego 2026). Tam <strong>w samym marcu wykazał 290
-            godzin</strong> i ponad <strong>104 tys. zł</strong> (stawka 350–400 zł/godz.
-            plus 25 tys. zł dodatku funkcyjnego za miesiąc). To prawie 10 godzin dziennie
-            przez cały miesiąc — w jednym miejscu, a placówka jest tylko jedną z jego posad.
-            Po zsumowaniu wszystkich kontraktów łączny czas pracy znów staje się nierealny —
-            i znów <strong>nikt go nie sumuje</strong>. Problemem nie jest stawka, lecz brak
-            rejestru łączącego godziny i wypłaty jednego lekarza w wielu miejscach.
+      <div class="prose">
+        <h2>Dlaczego to w ogóle możliwe</h2>
+        <p>
+          Wieloetatowość sama w sobie nie jest nadużyciem — problemem jest to, że jej suma
+          jest <strong>niewidoczna</strong>. Żeby jeden lekarz mógł sumować placówki bez
+          limitu i bez wiedzy kogokolwiek, muszą zajść trzy warunki naraz. W polskim systemie
+          zachodzą wszystkie.
+        </p>
+      </div>
+
+      <div class="reasons">
+        {warunki.map((w, i) => (
+          <div class="reason">
+            <span class="reason-n">{i + 1}</span>
+            <div class="reason-body">
+              <p class="reason-t">{w.t}</p>
+              <p class="reason-d" set:html={w.d} />
+              <a class="reason-link" href={w.href}>{w.hrefT} →</a>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p class="source-note">
+        Udział kontraktów (73% specjalistów) i brak limitu godzin — zob.
+        <a href="/mechanizmy/kontrakt-vs-etat">kontrakt vs etat</a>; niedobór jako winda popytu —
+        <a href="/analizy/dlaczego-brakuje-lekarzy">dlaczego brakuje lekarzy</a>.
+      </p>
+
+      <div class="prose">
+        <h2>Głośna sprawa z 2026 r. — co pokazała</h2>
+        <p>
+          Najlepiej widać ten mechanizm na sprawie, która w 2026 r. obiegła media. Nie chodzi
+          w niej o stawkę — chodzi o to, że <strong>żaden rejestr nie zsumował</strong> ani
+          godzin, ani wypłat jednej osoby rozproszonych po kilku szpitalach.
+        </p>
+      </div>
+
+      <h3 class="viz-h">331 godzin miesięcznie — ile to naprawdę</h3>
+      <div class="hours">
+        {godziny.map((g) => (
+          <div class="h-row">
+            <span class="h-lab">{g.lab}</span>
+            <div class="h-track">
+              <div class={`h-bar${g.hot ? ' h-bar-hot' : ''}${g.ref ? ' h-bar-ref' : ''}`} style={`width:${pct(g.h)}%`}>
+                <span class="h-val">{g.h} h</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p class="viz-cap">
+        <strong>331 h miesięcznie</strong> to ~11 godzin każdego dnia miesiąca — <strong>bez
+        ani jednego dnia wolnego</strong>. A to zaledwie <strong>cztery z pięciu</strong>
+        placówek, w których ten sam lekarz był rozliczany.
+      </p>
+
+      <div class="callout">
+        <p>
+          <strong>1,6 mln zł w rok, cztery placówki, jeden lekarz.</strong> Znany warszawski
+          lekarz — rezydent bez specjalizacji koordynujący szpitalny oddział ratunkowy —
+          rozliczył w rok ok. <strong>1,6 mln zł</strong> z umów w <strong>czterech</strong>
+          publicznych placówkach naraz. Wykazano przy tym <strong>3976 godzin</strong> pracy —
+          średnio <strong>331 godzin miesięcznie</strong>. Nie wychwycił tego żaden rejestr:
+          każda placówka widziała tylko swój wycinek.
+        </p>
+        <p>
+          I to nie był pełny obraz. Już w trakcie afery okazało się, że ten sam lekarz dorabiał
+          w <strong>piątym</strong> warszawskim szpitalu — jako zastępca koordynatora SOR (od
+          lutego 2026). Tam <strong>w samym marcu wykazał 290 godzin</strong> i ponad
+          <strong>104 tys. zł</strong> (stawka 350–400 zł/godz. plus 25 tys. zł dodatku
+          funkcyjnego za miesiąc). Po dołożeniu tych godzin do średniej z czterech pozostałych
+          miejsc łączny czas pracy przekracza to, co mieści doba — a mimo to
+          <strong>nikt go nie sumuje</strong>. Problemem nie jest stawka, lecz brak rejestru
+          łączącego godziny i wypłaty jednego lekarza w wielu miejscach.
+        </p>
+      </div>
+      <p class="source-note">
+        Sprawa 1,6 mln zł (2025) opisana m.in. przez
+        <a href="https://tvn24.pl/tvnwarszawa/ursynow/warszawa-lekarz-radny-zarobil-1-6-miliona-kontrola-w-szpitalu-i-interwencja-naczelnej-izby-lekarskiej-st9096506" target="_blank" rel="noopener noreferrer">TVN Warszawa</a>,
+        <a href="https://www.polsatnews.pl/wiadomosc/2026-06-15/16-mln-zl-w-rok-dla-lekarza-bez-specjalizacji-warszawa-zapowiada-kontrole/" target="_blank" rel="noopener noreferrer">Polsat News</a>
+        i <a href="https://wydarzenia.interia.pl/kraj/news-afera-wokol-zarobkow-warszawskiego-lekarza-nil-wszczyna-post,nId,23496601" target="_blank" rel="noopener noreferrer">Interię</a>;
+        dorabianie w piątym szpitalu (290 godz. w samym marcu) —
+        <a href="https://www.polsatnews.pl/wiadomosc/2026-06-18/lekarz-milioner-dorabial-w-innym-szpitalu-ponadstandardowe-wynagrodzenie/" target="_blank" rel="noopener noreferrer">Polsat News (18.06.2026)</a>.
+        Świadomie pomijamy nazwisko — opisujemy mechanizm, nie osobę.
+      </p>
+
+      <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+        <p>
+          <strong>To nie był specjalista — to rezydent.</strong> Lekarz z tej sprawy był
+          <strong>rezydentem</strong>, czyli lekarzem w trakcie specjalizacji, bez ukończonego
+          szkolenia. Mimo to koordynował szpitalny oddział ratunkowy i — według relacji
+          pracowników — <strong>podejmował się najcięższych przypadków</strong> („czerwona
+          strefa” SOR), których jako rezydent nie powinien prowadzić samodzielnie; błędy
+          musieli korygować inni. Co więcej, funkcjonowanie SOR miał koordynować, <strong>zanim
+          w ogóle uzyskał prawo wykonywania zawodu</strong> — PWZ otrzymał 6 listopada 2024 r.,
+          a grupę organizującą pracę oddziału założono kilka miesięcy wcześniej.
+        </p>
+        <p>
+          To druga warstwa tego samego braku kontroli: rejestr nie sumuje ani godzin i wypłat,
+          ani tego, <strong>czy pracujący faktycznie ma uprawnienia</strong> do tego, co robi.
+          To zarzuty i relacje — sprawę bada prokuratura i izba lekarska.
+        </p>
+      </div>
+      <p class="source-note">
+        Rezydent bez PWZ zarządzający SOR i podejmujący najcięższe przypadki —
+        <a href="https://dorzeczy.pl/kraj/908950/afera-w-szpitalu-poludniowym-kacprzyk-zarzadzal-sor-em-bez-uprawnien.html" target="_blank" rel="noopener noreferrer">Do Rzeczy</a>,
+        <a href="https://wpolityce.pl/polityka/764039-lekarz-z-partii-tuska-mial-uczyc-sie-zawodu-na-ludziach" target="_blank" rel="noopener noreferrer">wPolityce</a>;
+        data uzyskania PWZ (6.11.2024) —
+        <a href="https://www.rynekzdrowia.pl/Polityka-zdrowotna/Lekarz-milioner-nadal-moze-wystawiac-recepty-i-L4-Naczelna-Izba-Lekarska-komentuje,285724,14.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>.
+        To zarzuty i relacje świadków, nie prawomocne ustalenia.
+      </p>
+
+      <div class="prose">
+        <h2>Druga sprawa — ta sama arytmetyka, tyle że jawna</h2>
+        <p>
+          Nie każdy taki przypadek to zarzut — i następny pokazuje dlaczego. Dyrektorka
+          szpitala powiatowego w Łosicach (Mazowsze, ok. 7 tys. mieszkańców) wykazała w
+          oświadczeniu majątkowym za 2025 r. ok. <strong>1,7 mln zł brutto z pracy</strong>:
+          ~437 tys. zł za kierowanie szpitalem i ~<strong>1,3 mln zł z dyżurów
+          lekarskich</strong> (do tego ~111 tys. zł emerytury). 72-letnia pediatra i neonatolog
+          dyżuruje — jak tłumaczy — bo inaczej oddziału dziecięcego <strong>nie miałby kto
+          obsadzić</strong>. Stawka jak u wszystkich lekarzy w tym szpitalu: <strong>205
+          zł/godz.</strong>
+        </p>
+        <div class="callout quiet">
+          <p style="margin: 0">
+            <strong>Policzmy.</strong> 1,3 mln zł z dyżurów ÷ 205 zł/godz. = <strong>ponad
+            6 300 godzin</strong> w rok — średnio <strong>~17 godzin każdej doby</strong>, bez
+            ani jednego dnia wolnego, obok codziennej pracy dyrektora do 15:35. Nawet jeśli
+            część dyżurów płatna jest wyżej (więc godzin byłoby nieco mniej), rachunek i tak
+            opisuje obłożenie trudne do wyobrażenia. To <strong>nasze wyliczenie</strong> z
+            zadeklarowanej kwoty i stawki 205 zł/godz. — nie oficjalna liczba godzin.
           </p>
         </div>
+        <p>
+          A teraz sedno: <strong>to nie jest zarzut</strong>. Rzecz jest jawna, zadeklarowana
+          i — jak przekonuje dyrektorka — ratująca oddział. Tyle że tę sprawę w ogóle widać
+          <strong>tylko dlatego, że dyrektor musi złożyć oświadczenie majątkowe</strong>.
+          Lekarz na zwykłym kontrakcie — a tak rozlicza się ok. <strong>73% specjalistów</strong>
+          — nie składa żadnego. Tam identyczna suma jest równie realna i równie niepoliczalna,
+          tyle że <strong>nikt jej nie zobaczy</strong>. Jawność nie jest tu karą dla lekarza —
+          jest jedyną różnicą między sprawą, o której wiemy, a tysiącami, o których nie.
+        </p>
         <p class="source-note">
-          Sprawa 1,6 mln zł (2025) opisana m.in. przez
-          <a href="https://tvn24.pl/tvnwarszawa/ursynow/warszawa-lekarz-radny-zarobil-1-6-miliona-kontrola-w-szpitalu-i-interwencja-naczelnej-izby-lekarskiej-st9096506" target="_blank" rel="noopener noreferrer">TVN Warszawa</a>,
-          <a href="https://www.polsatnews.pl/wiadomosc/2026-06-15/16-mln-zl-w-rok-dla-lekarza-bez-specjalizacji-warszawa-zapowiada-kontrole/" target="_blank" rel="noopener noreferrer">Polsat News</a>
-          i <a href="https://wydarzenia.interia.pl/kraj/news-afera-wokol-zarobkow-warszawskiego-lekarza-nil-wszczyna-post,nId,23496601" target="_blank" rel="noopener noreferrer">Interię</a>;
-          dorabianie w kolejnym szpitalu (290 godz. w samym marcu) —
-          <a href="https://www.polsatnews.pl/wiadomosc/2026-06-18/lekarz-milioner-dorabial-w-innym-szpitalu-ponadstandardowe-wynagrodzenie/" target="_blank" rel="noopener noreferrer">Polsat News (18.06.2026)</a>.
-          Świadomie pomijamy nazwisko — opisujemy mechanizm, nie osobę.
+          Dyrektorka szpitala powiatowego w Łosicach — oświadczenie majątkowe za 2025 r.
+          (~1,7 mln zł z pracy: ~437 tys. funkcja + ~1,3 mln dyżury; stawka 205 zł/godz.):
+          <a href="https://wiadomosci.wp.pl/zarobila-1-7-mln-zl-lekarka-reaguje-emocjonalnie-na-doniesienia-najwieksza-przykrosc-7299590488942592a" target="_blank" rel="noopener noreferrer">Wirtualna Polska</a>,
+          <a href="https://www.money.pl/praca/zarobila-prawie-1-7-mln-zl-w-rok-jako-lekarz-i-dyrektor-szpital-ma-rekordowe-zyski-7298147642693632a.html" target="_blank" rel="noopener noreferrer">Money.pl</a>,
+          <a href="https://warszawa.tvp.pl/93970265/rekordowe-zarobi-dyrektorki-szpitala-powiatowego-wiekszosc-z-dyzurow-lekarskich" target="_blank" rel="noopener noreferrer">TVP Warszawa</a>;
+          obrona „gdyby nie jej dyżury, oddział pediatryczny trzeba byłoby zamknąć” —
+          <a href="https://www.rdc.pl/aktualnosci/mazowsze/wysokie-zarobki-dyrektor-szpitala-w-losicach-gdyby-nie-jej-dyzury-szpital-bylby-do-zamkniecia_7T36mzU8QnJLdBMBsDMb" target="_blank" rel="noopener noreferrer">Radio dla Ciebie</a>.
+          Świadomie pomijamy nazwisko (osoba publiczna) — opisujemy mechanizm i jego jawność, nie osobę.
+          Wyliczenie godzin jest nasze, z zadeklarowanej kwoty i stawki 205 zł/godz.
         </p>
 
-        <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+        <h2>Czego te sprawy dowodzą — a czego nie</h2>
+        <ul class="mech">
+          <li>
+            <strong>Nie każdy wieloetatowiec nadużywa.</strong> Wielu lekarzy pracuje w kilku
+            miejscach uczciwie — łatając dziury w grafikach, których inaczej nie ma kim obsadzić.
+            Problemem jest <strong>niewidzialność sumy</strong>, nie sama wieloetatowość.
+          </li>
+          <li>
+            <strong>To nie zarzut wobec osoby, lecz opis konstrukcji systemu.</strong> Dlatego
+            nie podajemy nazwiska. Ten sam brak rejestru, który pozwala ukryć fortunę, obciąża
+            też podejrzeniem <strong>uczciwych lekarzy</strong> — bo skoro nie widać sumy, każdą
+            można sobie dopowiedzieć.
+          </li>
+          <li>
+            <strong>Fakt ≠ zarzut.</strong> Część ustaleń z tej sprawy to wciąż zarzuty i
+            relacje — bada je prokuratura i izba lekarska. Twardy, bezsporny jest sam mechanizm:
+            <strong>sumy nikt nie liczy</strong>.
+          </li>
+        </ul>
+        <div class="callout" style="border-left-color: var(--brand); background: var(--brand-50)">
           <p>
-            <strong>To nie był specjalista — to rezydent.</strong> Lekarz z tej sprawy był
-            <strong>rezydentem</strong>, czyli lekarzem w trakcie specjalizacji, bez
-            ukończonego szkolenia. Mimo to koordynował szpitalny oddział ratunkowy i —
-            według relacji pracowników — <strong>podejmował się najcięższych przypadków</strong>
-            („czerwona strefa” SOR), których jako rezydent nie powinien prowadzić
-            samodzielnie; błędy musieli korygować inni. Co więcej, funkcjonowanie SOR miał
-            koordynować, <strong>zanim w ogóle uzyskał prawo wykonywania zawodu</strong> —
-            PWZ otrzymał 6 listopada 2024 r., a grupę organizującą pracę oddziału założono
-            kilka miesięcy wcześniej.
-          </p>
-          <p>
-            To pokazuje drugą warstwę tego samego braku kontroli: rejestr nie sumuje ani
-            godzin i wypłat, ani tego, <strong>czy pracujący faktycznie ma uprawnienia</strong>
-            do tego, co robi. To zarzuty i relacje — sprawę bada prokuratura i izba lekarska.
+            <strong>Rozwiązaniem nie jest zakaz pracy w wielu miejscach — jest jej jawność.</strong>
+            Wystarczy powiązać godziny i wypłaty ze środków publicznych z numerem
+            <strong>PWZ</strong> i zsumować je po osobie. Wtedy widać i tego, kto rozlicza
+            niemożliwe godziny, i tego, kto po prostu ratuje grafik sąsiedniego powiatu.
+            <a href="/postulat">Poznaj postulat →</a>
           </p>
         </div>
-        <p class="source-note">
-          Rezydent bez PWZ zarządzający SOR i podejmujący najcięższe przypadki —
-          <a href="https://dorzeczy.pl/kraj/908950/afera-w-szpitalu-poludniowym-kacprzyk-zarzadzal-sor-em-bez-uprawnien.html" target="_blank" rel="noopener noreferrer">Do Rzeczy</a>,
-          <a href="https://wpolityce.pl/polityka/764039-lekarz-z-partii-tuska-mial-uczyc-sie-zawodu-na-ludziach" target="_blank" rel="noopener noreferrer">wPolityce</a>;
-          data uzyskania PWZ (6.11.2024) —
-          <a href="https://www.rynekzdrowia.pl/Polityka-zdrowotna/Lekarz-milioner-nadal-moze-wystawiac-recepty-i-L4-Naczelna-Izba-Lekarska-komentuje,285724,14.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>.
-          To zarzuty i relacje świadków, nie prawomocne ustalenia.
-        </p>
       </div>
 
       <p class="pager"><a href="/mechanizmy">← Wszystkie mechanizmy</a> · <a href="/mechanizmy/dyzury-i-gotowosc">Dyżur „pod telefonem” →</a></p>
@@ -94,5 +265,28 @@ import ShareRow from '../../components/ShareRow.astro';
 </BaseLayout>
 
 <style>
+  .reasons { display: flex; flex-direction: column; gap: 0.85rem; margin: 1.25rem 0 0.75rem; max-width: 760px; }
+  .reason { display: flex; gap: 1rem; align-items: flex-start; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+  .reason-n { flex: none; width: 1.9rem; height: 1.9rem; background: var(--paper-2); color: var(--brand); border-radius: 999px; font-family: var(--font-mono); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .reason-body { min-width: 0; }
+  .reason-t { font-weight: 600; color: var(--ink); margin: 0 0 0.3rem; }
+  .reason-d { font-size: 0.92rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.4rem; }
+  .reason-link { font-size: 0.85rem; font-weight: 600; color: var(--brand); text-decoration: none; }
+  .reason-link:hover { text-decoration: underline; }
+
+  .viz-h { margin: 2.4rem 0 0.9rem; font-size: 1.15rem; color: var(--ink); }
+  .hours { display: flex; flex-direction: column; gap: 0.9rem; margin: 0 0 0.75rem; max-width: 680px; }
+  .h-row { display: flex; flex-direction: column; gap: 0.3rem; }
+  .h-lab { font-size: 0.86rem; color: var(--ink-soft); }
+  .h-track { background: var(--paper-2); border-radius: var(--radius); overflow: hidden; }
+  .h-bar { min-width: 3.5rem; padding: 0.4rem 0.7rem; border-radius: var(--radius); text-align: right; box-sizing: border-box; }
+  .h-bar-ref { background: var(--line-2); }
+  .h-bar-hot { background: var(--alert); }
+  .h-val { font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; color: #fff; }
+  .h-bar-ref .h-val { color: var(--ink); }
+  .viz-cap { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.55; max-width: 68ch; margin: 0.5rem 0 0; }
+
+  .mech { padding-left: 1.25rem; max-width: 70ch; }
+  .mech li { margin: 0.7rem 0; line-height: 1.6; }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
 </style>

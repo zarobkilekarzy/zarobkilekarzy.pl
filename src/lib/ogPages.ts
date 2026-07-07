@@ -1,7 +1,8 @@
 // Źródło prawdy dla dynamicznych obrazów OG (Open Graph / Twitter card).
 // Klucz = trasa bez wiodącego „/" ('home' dla strony głównej). Wartość steruje
 // tym, co pojawia się na obrazie 1200×630 generowanym w buildzie przez satori.
-// Strony spoza tej mapy dostają domyślny /og-image.png (fallback w BaseLayout).
+// Trasy spoza tej mapy dziedziczą OG najbliższego rodzica, a przy jego braku
+// kartę strony głównej /og/home.png (fallback w BaseLayout) — nigdy statycznego pliku.
 
 export interface OgPage {
   title: string;      // duży nagłówek (serif)
@@ -88,6 +89,11 @@ export const ogPages: Record<string, OgPage> = {
     tag: 'Analiza',
     title: 'Lejek kształcenia lekarzy',
     subtitle: 'Miejsc przybywa, ale 2/3–3/4 miejsc specjalizacyjnych co roku stoi pustych. Wąskie gardło jest strukturalne.',
+  },
+  'analizy/lekarze-ze-wschodu': {
+    tag: 'Analiza',
+    title: 'Lekarze ze wschodu — kogo wpuszczamy',
+    subtitle: 'Lekarze spoza UE wchodzą do zawodu decyzją ministra, z pominięciem izb i weryfikacji dyplomu. Mechanizm, liczby i luki jawności.',
   },
   'analizy/poz-pieniadz-za-pacjenta': {
     tag: 'Analiza',

@@ -115,6 +115,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Zarezerwowane dla lekarzy — rynek „urody”, który wyciąga ich z kolejki',
     subtitle: 'Państwo oddaje lekarzom wyłączność na dochodową medycynę estetyczną. Skoro tylko oni mogą, a gotówka bije NFZ — rezerwacja przeciąga ich od pacjenta. Bodziec stworzony przez państwo, nie zarzut wobec lekarzy.',
   },
+  'analizy/nil-a-kontrakty-lekarskie': {
+    tag: 'Analiza · Samorząd',
+    title: 'Naczelna Izba Lekarska a kontrakty lekarskie',
+    subtitle: 'Kontraktów samorząd nie wprowadził — zrobił to związek zawodowy i ustawodawca. NIL ani ich nie forsuje, ani przeciw nim nie protestuje: broni prawa do kontraktu, lecz krytykuje nadużycia. Rozwiązaniem nie jest likwidacja formy, lecz jawność łącznej kwoty po numerze PWZ.',
+  },
 
   // — Mechanizmy —
   'mechanizmy': {

@@ -35,7 +35,7 @@ export const pageDates = {
   '/dane/rozklad-wynagrodzen': '2026-07-07',
   '/dane/stawki': '2026-07-06',
   '/dane/wedlug-specjalizacji': '2026-07-07',
-  '/dane/zadluzenie-szpitali': '2026-07-06',
+  '/dane/zadluzenie-szpitali': '2026-07-07',
 };
 
 // Normalizacja ścieżki: bez końcowego „/", z wiodącym „/". '/dane/x/' → '/dane/x'.

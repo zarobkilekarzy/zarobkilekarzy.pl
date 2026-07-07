@@ -58,6 +58,34 @@ const polska = [
   { rola: 'Specjalista — mediana kontraktu (AOTMiT)', kwota: '25 595 zł', jaw: 'agregat, nie os.' },
   { rola: 'Rekordowy kontrakt (urolog, Bełchatów)', kwota: '151 097 zł', jaw: 'niejawne', hot: true },
 ];
+
+// Uproszczony opis modeli OZ: jak finansowany, co w płacach lekarzy jawne, co prywatne/ukryte.
+const systemy = [
+  {
+    kraj: 'Polska', pl: true,
+    model: 'Jeden publiczny płatnik — NFZ, finansowany ze składki zdrowotnej. Szpitale w większości publiczne, obok rosnącego sektora prywatnego.',
+    jawne: 'Ustawowe minimum etatu i pensje rezydentów (ustawa o najniższym wynagrodzeniu + rozporządzenie MZ).',
+    niejawne: 'Kontrakty B2B (~73% specjalistów), ich stawki i praca w wielu placówkach naraz — nikt nie sumuje ich po jednym lekarzu.',
+  },
+  {
+    kraj: 'Czechy',
+    model: 'Powszechne ubezpieczenie w kilku kasach (zdravotní pojišťovny); świadczenia w większości publiczne.',
+    jawne: 'Urząd statystyczny (ČSÚ) publikuje przeciętne płace lekarzy — w 2024 r. ~124 775 CZK brutto/mc w lecznictwie zamkniętym; po ujawnieniu 2025 znane też stawki szpitalne.',
+    niejawne: 'Prywatne dopłaty za standard ponadpodstawowy — margines systemu.',
+  },
+  {
+    kraj: 'Niemcy',
+    model: 'Ubezpieczenie ustawowe GKV (~90% ludności) + prywatne PKV (~10%); składki od wynagrodzeń. Ambulatorium rozlicza Kassenärztliche Vereinigung.',
+    jawne: 'Płace lekarzy szpitalnych z układu zbiorowego (Marburger Bund / TV-Ärzte) — pełna tabela taryfowa, stopień po stopniu.',
+    niejawne: 'Dochód lekarzy z własną praktyką i od pacjentów PKV mniej widoczny — ale i tak liczony z publicznych cenników (EBM/GOÄ).',
+  },
+  {
+    kraj: 'Austria',
+    model: 'Społeczne ubezpieczenie zdrowotne (ÖGK i kasy branżowe), szpitale publiczne. Lekarz kasowy (Kassenarzt) kontra prywatny (Wahlarzt); ~38% ma dodatkowe ubezpieczenie prywatne.',
+    jawne: 'Płace w szpitalach publicznych z Kollektivvertrag — tabele publiczne.',
+    niejawne: 'Honoraria prywatne (Wahlarzt) — poza taryfą, negocjowane z pacjentem.',
+  },
+];
 ---
 
 <BaseLayout
@@ -129,6 +157,41 @@ const polska = [
           tu najbardziej wstydliwa, lecz to, że <strong>nie da się jej poznać</strong>.
         </p>
       </div>
+
+      <h2 style="margin-top: 2.5rem">Jak to w ogóle działa u sąsiadów — i co widać</h2>
+      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+        Uproszczony obraz każdego systemu: jak jest finansowany, co w płacach lekarzy jest
+        <strong>jawne</strong>, a co zostaje <strong>prywatne albo ukryte</strong>. Wspólny
+        mianownik sąsiadów: baza wynagrodzenia pochodzi z <strong>publicznej taryfy lub układu
+        zbiorowego</strong> — więc jest policzalna. W Polsce jawny jest tylko dół drabiny.
+      </p>
+      <div class="sys-grid">
+        {systemy.map((s) => (
+          <div class={`sys-card${s.pl ? ' is-pl' : ''}`}>
+            <p class="sys-kraj">{s.kraj}{s.pl && <span class="sys-flag">wyjątek</span>}</p>
+            <p class="sys-model">{s.model}</p>
+            <div class="sys-row sys-yes">
+              <span class="sys-ic" aria-hidden="true">✓</span>
+              <span><strong>Jawne:</strong> {s.jawne}</span>
+            </div>
+            <div class="sys-row sys-no">
+              <span class="sys-ic" aria-hidden="true">✗</span>
+              <span><strong>Niejawne / prywatne:</strong> {s.niejawne}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p class="source-note">
+        Opis modeli — Komisja Europejska / OECD, „State of Health in the EU”, profile systemów
+        zdrowia 2025 (Polska, Czechy, Niemcy, Austria):
+        <a href="https://health.ec.europa.eu/state-health-eu/country-health-profiles/country-health-profiles-2025_en" target="_blank" rel="noopener noreferrer">health.ec.europa.eu</a>.
+        Czechy — płace lekarzy publikuje urząd statystyczny
+        (<a href="https://csu.gov.cz/healthcare-personnel-and-their-wages" target="_blank" rel="noopener noreferrer">ČSÚ</a>).
+        Niemcy — taryfa
+        <a href="https://www.marburger-bund.de/sites/default/files/tarifvertraege/2025-06/25-06-16%20TV-%C3%84rzte%20VKA%20i.d.F.%2010.%20%C3%84ndTV.pdf" target="_blank" rel="noopener noreferrer">Marburger Bund (TV‑Ärzte/VKA)</a>.
+        Austria — Kollektivvertrag; udział ubezpieczeń prywatnych (~38%, 2023):
+        <a href="https://www.workinaustria.com/en/your-personal-guide/health-social-services/health-insurance/" target="_blank" rel="noopener noreferrer">workinaustria.com</a>.
+      </p>
 
       <h2 style="margin-top: 2.5rem">Drabina taryfowa: co u sąsiadów widać w tabeli</h2>
       <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
@@ -349,4 +412,17 @@ const polska = [
   .stat-callout-src { font-size: 0.82rem; color: var(--ink-soft); margin: 0; }
   @media (max-width: 600px) { .stat-callout { flex-direction: column; align-items: flex-start; gap: 0.6rem; } }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+
+  .sys-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1.25rem 0 0.75rem; }
+  .sys-card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
+  .sys-card.is-pl { border-color: var(--alert); background: var(--alert-50); }
+  .sys-kraj { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 600; color: var(--ink); margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+  .sys-flag { font-family: var(--font-sans); font-size: 0.64rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--alert); background: #fff; border: 1px solid var(--alert); padding: 0.1rem 0.45rem; border-radius: 999px; }
+  .sys-model { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .sys-row { display: flex; gap: 0.5rem; font-size: 0.85rem; line-height: 1.45; }
+  .sys-row strong { color: var(--ink); }
+  .sys-ic { flex: none; font-weight: 700; line-height: 1.4; }
+  .sys-yes .sys-ic { color: #2f7a34; }
+  .sys-no .sys-ic { color: var(--alert); }
+  .sys-no { color: var(--ink-soft); }
 </style>

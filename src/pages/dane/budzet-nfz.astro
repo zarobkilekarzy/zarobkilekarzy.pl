@@ -1,82 +1,202 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareRow from '../../components/ShareRow.astro';
+import { getCollection } from 'astro:content';
+
+// Liczby i źródła z kolekcji (single source of truth) — tu tylko warstwa prezentacji.
+const budzet = (await getCollection('zarobki')).filter((z) => z.data.grupa === 'budzet');
+const b = Object.fromEntries(budzet.map((z) => [z.id, z.data]));
+const kw = (id: string) => b[id]?.kwota ?? 0;
+const url = (id: string) => b[id]?.zrodloUrl ?? '#';
+
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+const rr = (cur: number, prev: number) => {
+  const v = ((cur - prev) / prev) * 100;
+  return (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1).replace('.', ',') + '%';
+};
+
+// Budżet NFZ rok po roku + koszt ustawy o najniższym wynagrodzeniu (udział wg źródła).
+const lata = [
+  { rok: '2023', b: kw('budzet-nfz-2023'), place: null, udzial: '—', plan: false, src: url('budzet-nfz-2023') },
+  { rok: '2024', b: kw('budzet-nfz-2024'), place: null, udzial: '—', plan: false, src: url('budzet-nfz-2024') },
+  { rok: '2025', b: kw('budzet-nfz-2025'), place: kw('budzet-place-2025'), udzial: '≈ ¼', plan: false, src: url('budzet-nfz-2025') },
+  { rok: '2026', b: kw('budzet-nfz-2026-plan'), place: kw('budzet-place-2026'), udzial: '≈ ⅓', plan: true, src: url('budzet-nfz-2026-plan') },
+];
+const maxB = Math.max(...lata.map((x) => x.b));
+const rows = lata.map((x, i) => ({ ...x, zmiana: i === 0 ? '—' : rr(x.b, lata[i - 1].b) }));
+
+// Ciekawostki — każda z liczbą i źródłem z kolekcji.
+const poz = 22.64; // wydatki NFZ na POZ 2025 (zob. /analizy/poz-pieniadz-za-pacjenta)
 ---
 
 <BaseLayout
-  title="Budżet NFZ i wynagrodzenia — zarobkilekarzy.pl"
-  description="Budżet NFZ rośnie skokowo, ale znaczną część wzrostu pochłaniają ustawowe wynagrodzenia, nie nowe świadczenia. Każda liczba ze źródłem."
+  title="Budżet NFZ rok po roku — ile zjadają płace — zarobkilekarzy.pl"
+  description="Budżet NFZ w liczbach: 144 → 190 → 220 → 217 mld zł (2023–2026). Ile z tego pochłania ustawa płacowa (58 → 72 mld), jak rośnie luka i dotacja z budżetu państwa. Tabela, wykres i ciekawostki — każda liczba ze źródłem."
 >
   <section class="section">
     <div class="container">
       <p class="eyebrow"><a href="/dane">Dane</a> · Budżet</p>
-      <h1>Budżet NFZ i wynagrodzenia rok po roku</h1>
+      <h1>Budżet NFZ rok po roku</h1>
       <p class="lead">
-        Budżet NFZ rośnie skokowo, ale znaczną część wzrostu pochłaniają ustawowe
-        wynagrodzenia, nie nowe świadczenia. Ciemniejsza część słupka to koszt ustawy
-        o najniższym wynagrodzeniu — pokazany dla lat z opublikowanym kosztem (2025–2026).
+        Budżet NFZ rośnie skokowo — z <strong>144 mld zł (2023)</strong> do
+        ok. <strong>220 mld zł (2025)</strong>. Ale coraz większą część tego wzrostu pochłaniają
+        <strong>ustawowe płace</strong>, a nie nowe świadczenia dla pacjenta. W planie na 2026 r.
+        budżet nawet <strong>przestał rosnąć</strong>, choć koszt samych podwyżek dalej skacze.
       </p>
 
+      <!-- 1. WYKRES + TABELA -->
+      <p class="kicker"><span class="kicker-num">01</span> Budżet i płace w słupkach</p>
       <div class="nfz-chart">
-        <div class="nfz-row">
-          <div class="nfz-meta"><span class="nfz-year">2023</span><span class="nfz-val">~144 mld zł</span></div>
-          <div class="nfz-bar"><div class="nfz-fill" style="width:60%"></div></div>
-        </div>
-        <div class="nfz-row">
-          <div class="nfz-meta"><span class="nfz-year">2024</span><span class="nfz-val">~190 mld zł</span></div>
-          <div class="nfz-bar"><div class="nfz-fill" style="width:79%"></div></div>
-        </div>
-        <div class="nfz-row">
-          <div class="nfz-meta"><span class="nfz-year">2025</span><span class="nfz-val">~220 mld zł · w tym ~58 mld płace</span></div>
-          <div class="nfz-bar"><div class="nfz-fill" style="width:92%"><span class="nfz-wage" style="width:26%"></span></div></div>
-        </div>
-        <div class="nfz-row">
-          <div class="nfz-meta"><span class="nfz-year">2026 (plan)</span><span class="nfz-val">~217 mld zł · w tym ~72 mld płace</span></div>
-          <div class="nfz-bar"><div class="nfz-fill is-plan" style="width:90%"><span class="nfz-wage" style="width:33%"></span></div></div>
-        </div>
+        {rows.map((r) => (
+          <div class="nfz-row">
+            <div class="nfz-meta">
+              <span class="nfz-year">{r.rok}{r.plan ? ' (plan)' : ''}</span>
+              <span class="nfz-val">
+                {fmt(r.b)} mld zł{r.place ? <> · w tym <strong>~{fmt(r.place)} mld płace</strong></> : ''}
+              </span>
+            </div>
+            <div class="nfz-bar">
+              <div class={`nfz-fill${r.plan ? ' is-plan' : ''}`} style={`width:${(r.b / maxB) * 100}%`}>
+                {r.place && <span class="nfz-wage" style={`width:${(r.place / r.b) * 100}%`}></span>}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
       <div class="dual-legend">
         <span class="dl-item"><span class="dl-dot" style="background:var(--brand)"></span>Budżet NFZ ogółem</span>
-        <span class="dl-item"><span class="dl-dot" style="background:#0a3556"></span>w tym ustawowe płace</span>
+        <span class="dl-item"><span class="dl-dot" style="background:#0a3556"></span>w tym koszt ustawy płacowej</span>
       </div>
+
+      <div class="table-wrap">
+        <table class="bud">
+          <thead>
+            <tr>
+              <th>Rok</th>
+              <th class="num">Budżet NFZ</th>
+              <th class="num">Zmiana r/r</th>
+              <th class="num">Ustawa płacowa</th>
+              <th class="num">Udział płac</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr class={r.plan ? 'is-plan-row' : ''}>
+                <th scope="row">{r.rok}{r.plan ? <span class="row-sub">plan</span> : ''}</th>
+                <td class="num">{fmt(r.b)} mld</td>
+                <td class="num">{r.zmiana}</td>
+                <td class="num">{r.place ? `~${fmt(r.place)} mld` : 'b/d'}</td>
+                <td class="num">{r.udzial}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">
+        Budżet NFZ: <a href={url('budzet-nfz-2023')} target="_blank" rel="noopener noreferrer">2023</a> ·
+        <a href={url('budzet-nfz-2024')} target="_blank" rel="noopener noreferrer">2024</a> ·
+        <a href={url('budzet-nfz-2025')} target="_blank" rel="noopener noreferrer">2025</a> ·
+        <a href={url('budzet-nfz-2026-plan')} target="_blank" rel="noopener noreferrer">2026 (plan)</a>.
+        Rok 2025 to plan ostateczny <em>plus</em> ponad 5 mld zł nadwykonań; 2026 to plan — stąd
+        porównanie r/r częściowo zestawia wykonanie z planem. „Ustawa płacowa" = koszt ustawy
+        o najniższym wynagrodzeniu w OZ (<a href={url('budzet-place-2025')} target="_blank" rel="noopener noreferrer">2025</a>,
+        <a href={url('budzet-place-2026')} target="_blank" rel="noopener noreferrer">2026</a>); udział wg charakterystyki źródeł (¼ → ~⅓).
+      </p>
+
+      <!-- 2. CO ZJADA WZROST -->
+      <p class="kicker" style="margin-top: 2.75rem"><span class="kicker-num">02</span> Dokąd idzie wzrost</p>
+      <h2 class="sec-h">Wzrost budżetu w dużej części „zjadają" podwyżki</h2>
       <p class="nfz-insight">
-        Sam wzrost w dużej części „zjadają” podwyżki: koszt ustawy o najniższym
-        wynagrodzeniu to <strong>~58 mld zł w 2025 r. (¼ budżetu NFZ)</strong> i ma sięgnąć
-        <strong>~72 mld zł — ok. 30% budżetu — w 2026 r.</strong> Ogółem wynagrodzenia pochłaniają
-        <strong>~69% wzrostu nakładów</strong> na ochronę zdrowia. Mimo rosnącego budżetu
-        luka się powiększa — z ok. <strong>16 mld zł (2026)</strong> ku ok.
-        <strong>21 mld zł (2027)</strong> — więc mniej zostaje na nowe świadczenia dla
-        pacjentów.
+        Koszt ustawy o najniższym wynagrodzeniu to <strong>~{fmt(kw('budzet-place-2025'))} mld zł
+        w 2025 r. (≈ ¼ budżetu NFZ)</strong> i ma sięgnąć <strong>~{fmt(kw('budzet-place-2026'))} mld zł
+        — blisko ⅓ budżetu — w 2026 r.</strong> Ogółem wynagrodzenia pochłaniają
+        <strong>~69% wzrostu nakładów</strong> na ochronę zdrowia. Mimo rosnącego budżetu luka się
+        powiększa — z ok. <strong>{fmt(kw('budzet-luka-2026'))} mld zł (2026)</strong> ku ok.
+        <strong>{fmt(kw('budzet-luka-2027'))} mld zł (2027)</strong> — więc mniej zostaje na nowe
+        świadczenia dla pacjentów.
       </p>
       <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
         <p>
           <strong>Dotacja z budżetu państwa rośnie — a i tak nie wystarcza.</strong>
-          Dopłata do NFZ zwiększa się z 18,3 mld zł (plan 2025) do <strong>26 mld zł
-          (plan 2026)</strong>, a na 2027 r. zapowiadane jest już ok. <strong>35 mld zł</strong>;
-          mimo to plan finansowy <strong>ledwo się domyka, bez żadnej rezerwy</strong>. Luka
-          i tak rośnie — z ok. 16 mld zł (2026) ku ok. <strong>21 mld zł w 2027 r.</strong>
-          Coraz większa część systemu jest finansowana nie ze składki, a z dotacji i długu.
+          Dopłata do NFZ zwiększa się z 18,3 mld zł (plan 2025) do <strong>{fmt(kw('budzet-dotacja-2026'))} mld zł
+          (plan 2026)</strong> — o <strong>~42%</strong> — a na 2027 r. zapowiadane jest już ok.
+          <strong>35 mld zł</strong>; mimo to plan finansowy <strong>ledwo się domyka, bez żadnej
+          rezerwy</strong>. Coraz większą część systemu finansuje nie składka, lecz dotacja i dług.
         </p>
       </div>
       <p class="source-note">
-        Dopłata z budżetu państwa (26 mld zł — plan 2026; ~35 mld zł — zapowiedź 2027) —
-        <a href="https://www.portalsamorzadowy.pl/ochrona-zdrowia/nfz-ledwo-domyka-budzet-plan-finansowy-na-2026-r-nie-zostawia-zadnej-rezerwy,620819.html" target="_blank" rel="noopener noreferrer">Portal Samorządowy</a>,
-        <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Przyszloroczny-plan-NFZ-z-dziura-na-21-mld-zl-Za-brak-pieniedzy-zaplaca-pacjenci,285429,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>.
-      </p>
-      <p class="source-note">
-        Źródła: budżet NFZ —
-        <a href="https://www.gov.pl/web/zdrowie/plany-finansowe-nfz" target="_blank" rel="noopener noreferrer">gov.pl</a>,
-        <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/NFZ-pokazal-budzet-na-2023-rok-Przychody-wyzsze-o-30-mld-zl,234345,1.html" target="_blank" rel="noopener noreferrer">2023</a> /
-        <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Ostateczny-plan-finansowy-NFZ-na-2025-r-przekroczyl-220-mld-zl-Nadwykonania-ponad-5-mld-zl,281696,1.html" target="_blank" rel="noopener noreferrer">2025</a> /
-        <a href="https://www.money.pl/gospodarka/plan-finansowy-nfz-na-2026-rok-czy-26-mld-dotacji-wystarczy-7174359862155968a.html" target="_blank" rel="noopener noreferrer">2026</a>;
-        koszt ustawy płacowej (~58 mld zł = ¼ w 2025 → ~72 mld zł ≈ 30% budżetu w 2026; ~69% wzrostu nakładów) —
-        <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/W-2026-r-spor-o-wynagrodzenia-wroci-jak-bumerang-Czy-to-ostatnia-taka-fala-podwyzek-dla-medykow,279223,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>,
-        <a href="https://www.money.pl/finanse/mniej-swiadczen-za-wieksze-pieniadze-punkt-krytyczny-w-nfz-7297494544201728a.html" target="_blank" rel="noopener noreferrer">Money.pl</a>;
-        luka 2026–2027 —
-        <a href="https://www.rp.pl/rynek-zdrowia/art44627201-budzet-nfz-sie-nie-spina-w-przyszlym-roku-bedzie-jeszcze-gorzej" target="_blank" rel="noopener noreferrer">Rzeczpospolita</a>.
+        Koszt ustawy płacowej (~58 mld = ¼ w 2025 → ~72 mld ≈ ⅓ w 2026; ~69% wzrostu nakładów) —
+        <a href={url('budzet-place-2025')} target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>,
+        <a href={url('budzet-place-2026')} target="_blank" rel="noopener noreferrer">Money.pl</a>.
+        Dotacja (26 mld — plan 2026; ~35 mld — zapowiedź 2027) i „plan bez rezerwy" —
+        <a href={url('budzet-dotacja-2026')} target="_blank" rel="noopener noreferrer">Portal Samorządowy</a>.
+        Luka 2026–2027 —
+        <a href={url('budzet-luka-2026')} target="_blank" rel="noopener noreferrer">Rzeczpospolita</a>.
       </p>
 
-      <p class="pager"><a href="/dane">← Wszystkie dane</a> · <a href="/dane/kolejki">Kolejki vs wydatki →</a></p>
+      <!-- 3. CIEKAWOSTKI -->
+      <p class="kicker" style="margin-top: 2.75rem"><span class="kicker-num">03</span> Czego nie widać w jednej liczbie</p>
+      <h2 class="sec-h">Cztery liczby, które zmieniają obraz</h2>
+      <div class="tidbits">
+        <div class="tid">
+          <span class="tid-num">~69 gr</span>
+          <p class="tid-txt">z każdej złotówki <strong>wzrostu</strong> nakładów idzie na podwyżki
+            płac, nie na nowe świadczenia (wynagrodzenia = ~69% przyrostu nakładów).</p>
+        </div>
+        <div class="tid">
+          <span class="tid-num">3×</span>
+          <p class="tid-txt">tyle, co cały NFZ-owy budżet <a href="/analizy/poz-pieniadz-za-pacjenta">POZ</a>
+            (~{fmt(poz)} mld zł), kosztuje sama ustawa płacowa w 2026 r. (~{fmt(kw('budzet-place-2026'))} mld zł).</p>
+        </div>
+        <div class="tid">
+          <span class="tid-num">−1,4%</span>
+          <p class="tid-txt">plan 2026 ({fmt(kw('budzet-nfz-2026-plan'))} mld) <strong>nie urósł</strong>
+            względem wykonania 2025 ({fmt(kw('budzet-nfz-2025'))} mld) — a udział płac skoczył z ¼ do ~⅓.</p>
+        </div>
+        <div class="tid">
+          <span class="tid-num">+42%</span>
+          <p class="tid-txt">o tyle rośnie dotacja z budżetu państwa (18,3 → {fmt(kw('budzet-dotacja-2026'))} mld zł) —
+            coraz mniej systemu finansuje składka, coraz więcej dotacja i dług.</p>
+        </div>
+      </div>
+      <p class="source-note">
+        Porównanie do POZ: wydatki NFZ na POZ 2025 ≈ 22,64 mld zł — zob.
+        <a href="/analizy/poz-pieniadz-za-pacjenta">POZ: publiczny pieniądz</a>. Pozostałe liczby — źródła jak wyżej.
+      </p>
+
+      <!-- 4. PODZIAŁ / WIĘCEJ -->
+      <p class="kicker" style="margin-top: 2.75rem"><span class="kicker-num">04</span> Ta sama pula — z innej strony</p>
+      <h2 class="sec-h">Budżet to jeden kadr. Reszta jest obok</h2>
+      <p class="sec-intro">
+        Ta strona pokazuje <strong>sam budżet</strong> i to, ile zjadają płace. Co ten pieniądz
+        realnie daje pacjentowi, dokąd wycieka i czy w ogóle jest go za mało — rozpisaliśmy osobno,
+        żeby każdą tezę dało się sprawdzić u źródła:
+      </p>
+      <div class="more">
+        <a class="more-card" href="/dane/kolejki">
+          <span class="more-k">Pieniądze a kolejka →</span>
+          <span class="more-d">Budżet ×2,1 od 2015 r., a kolejka do specjalisty i tak rośnie. Pięć wymiarów w czasie.</span>
+        </a>
+        <a class="more-card" href="/dane/zadluzenie-szpitali">
+          <span class="more-k">Zadłużenie szpitali →</span>
+          <span class="more-d">Dług 34 mld zł idzie nie na inwestycje, lecz na bieżące pensje — „na kredyt".</span>
+        </a>
+        <a class="more-card" href="/analizy/zarobki-lekarzy-polska-sasiedzi">
+          <span class="more-k">Czy to za mało? →</span>
+          <span class="more-d">Polska na tle sąsiadów: rekordowy budżet, a problem nie w kwocie, lecz w jawności.</span>
+        </a>
+        <a class="more-card" href="/dane/rozklad-wynagrodzen">
+          <span class="more-k">Ile zostaje lekarzowi →</span>
+          <span class="more-d">Rozkład wynagrodzeń — i luka pomiaru, przez którą nie wiadomo, ile realnie inkasuje jeden lekarz.</span>
+        </a>
+      </div>
+
+      <p class="source-note" style="margin-top: 1.75rem">
+        Nie publikujemy liczb „z pamięci”. Dopóki pole nie ma źródła, pozostaje oznaczone jako „—”.
+        Kwoty w mld zł zaokrąglone; pełne wartości i źródła — pod tabelą i przy każdym akapicie.
+      </p>
+
+      <p class="pager"><a href="/dane">← Wszystkie dane</a> · <a href="/dane/kolejki">Pieniądze a kolejka →</a></p>
     </div>
   </section>
 
@@ -88,19 +208,49 @@ import ShareRow from '../../components/ShareRow.astro';
 </BaseLayout>
 
 <style>
-  .nfz-chart { display: flex; flex-direction: column; gap: 1.1rem; margin: 1.25rem 0; }
+  .kicker { display: flex; align-items: center; gap: 0.6rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand); margin: 0 0 0.75rem; }
+  .kicker-num { font-family: var(--font-mono); font-size: 0.72rem; color: #fff; background: var(--brand); border-radius: 999px; width: 1.55rem; height: 1.55rem; display: inline-flex; align-items: center; justify-content: center; letter-spacing: 0; }
+  .sec-h { margin: 0 0 0.6rem; }
+  .sec-intro { max-width: 66ch; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.6; margin: 0 0 1.5rem; }
+  .sec-intro strong { color: var(--ink); }
+
+  .nfz-chart { display: flex; flex-direction: column; gap: 1.1rem; margin: 0.5rem 0 1rem; }
   .nfz-row { display: block; }
   .nfz-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.35rem; }
   .nfz-year { font-family: var(--font-mono); font-size: 0.92rem; color: var(--ink-soft); }
   .nfz-bar { background: var(--paper-2); border-radius: var(--radius); height: 26px; width: 100%; }
   .nfz-fill { position: relative; display: block; height: 100%; background: var(--brand); border-radius: var(--radius); min-width: 4px; }
-  .nfz-fill.is-plan { opacity: 0.5; }
+  .nfz-fill.is-plan { opacity: 0.55; }
   .nfz-wage { position: absolute; left: 0; top: 0; height: 100%; background: #0a3556; border-radius: var(--radius) 0 0 var(--radius); }
   .nfz-val { font-family: var(--font-mono); font-size: 0.95rem; white-space: nowrap; }
-  .nfz-insight { font-size: 1.02rem; color: var(--ink); margin: 0.5rem 0 1rem; max-width: 64ch; }
+  .nfz-val strong { color: var(--ink); }
+  .nfz-insight { font-size: 1.02rem; color: var(--ink); margin: 0.5rem 0 1rem; max-width: 66ch; }
   .nfz-insight strong { color: var(--alert); }
-  .dual-legend { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-top: 0.5rem; font-size: 0.85rem; color: var(--ink-soft); }
+  .dual-legend { display: flex; gap: 1.25rem; flex-wrap: wrap; margin: 0.25rem 0 0.5rem; font-size: 0.85rem; color: var(--ink-soft); }
   .dl-item { display: inline-flex; align-items: center; gap: 0.4rem; }
   .dl-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .bud { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 0.92rem; }
+  .bud thead th { text-align: right; padding: 0.6rem 0.85rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; border-bottom: 2px solid var(--line); }
+  .bud thead th:first-child { text-align: left; }
+  .bud tbody th { text-align: left; padding: 0.55rem 0.85rem; font-weight: 600; font-family: var(--font-mono); }
+  .bud td { text-align: right; padding: 0.55rem 0.85rem; font-family: var(--font-mono); white-space: nowrap; }
+  .bud tbody tr { border-bottom: 1px solid var(--line); }
+  .bud tbody tr:last-child { border-bottom: none; }
+  .bud .is-plan-row { background: var(--paper); color: var(--ink-soft); }
+  .row-sub { display: inline-block; font-family: var(--font-sans); font-weight: 400; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin-left: 0.4rem; }
+
+  .tidbits { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; margin: 0.5rem 0 0.75rem; }
+  .tid { background: var(--bg); border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: var(--radius-lg); padding: 1.15rem 1.25rem; }
+  .tid-num { font-family: var(--font-mono); font-size: clamp(1.7rem, 4.5vw, 2.1rem); font-weight: 700; color: var(--brand); line-height: 1; display: block; margin-bottom: 0.5rem; }
+  .tid-txt { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .tid-txt strong { color: var(--ink); }
+
+  .more { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.85rem; margin: 0 0 0; }
+  .more-card { display: flex; flex-direction: column; gap: 0.35rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.05rem 1.2rem; text-decoration: none; transition: border-color 0.15s ease, transform 0.15s ease; }
+  .more-card:hover { border-color: var(--brand); transform: translateY(-2px); }
+  .more-k { font-weight: 600; color: var(--brand); font-size: 0.98rem; }
+  .more-d { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.45; }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
 </style>

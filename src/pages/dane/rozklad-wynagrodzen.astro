@@ -8,30 +8,186 @@ const rozklad = (await getCollection('zarobki'))
   .filter((z) => z.data.grupa === 'rozklad')
   .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
 
+// Liczby i źródła pozostają w kolekcji (single source of truth); tu tylko warstwa prezentacji.
+const byId = Object.fromEntries(rozklad.map((z) => [z.id, z.data]));
+
 const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+const ratio = (a: number, b: number) => (a / b).toFixed(1).replace('.', ',');
+
+// Dzienny wykres rozpiętości — cztery „zwykłe" punkty na wspólnej osi 0–30 tys. zł/mc.
+const AXIS = 30000;
+const dzienne = [
+  { id: 'rozklad-rezydent',         label: 'Rezydent',          forma: 'etat',       tone: 'etat' },
+  { id: 'rozklad-mediana-zlecenie', label: 'Mediana zlecenia',  forma: 'umowa cyw.', tone: 'zlec' },
+  { id: 'rozklad-mediana-etat',     label: 'Mediana etatu',     forma: 'etat',       tone: 'etat' },
+  { id: 'rozklad-mediana-kontrakt', label: 'Mediana kontraktu', forma: 'kontrakt',   tone: 'kontrakt' },
+]
+  .map((r) => ({ ...r, d: byId[r.id] }))
+  .filter((r) => r.d);
+
+const top = byId['rozklad-top-100k'];
+const rez = byId['rozklad-rezydent']?.kwota ?? 0;
+const medKontrakt = byId['rozklad-mediana-kontrakt']?.kwota ?? 0;
+
+// Osie percentowe „luki pomiaru" (0–10%).
+const P_AXIS = 10;
+const widziane = 1.4; // 1,2% kontraktów + 0,2% etatów
+const bandLo = 5;
+const bandHi = 10;
 ---
 
 <BaseLayout
-  title="Rozkład wynagrodzeń lekarzy — zarobkilekarzy.pl"
-  description="Od pensji rezydenta po rekordowe kontrakty — rozpiętość wynagrodzeń lekarzy jest ogromna. Każda liczba ze źródłem."
+  title="Rozkład wynagrodzeń lekarzy — od rezydenta po górny 1% — zarobkilekarzy.pl"
+  description="Cała rozpiętość na jednej osi: od pensji rezydenta (~9,8 tys.) przez mediany etatu i kontraktu (~24–26 tys.) po górny 1% powyżej 100 tys. zł/mc. I luka pomiaru: każda liczba to jedna umowa, nie jeden lekarz. Każda cyfra ze źródłem."
 >
   <section class="section">
     <div class="container">
       <p class="eyebrow"><a href="/dane">Dane</a> · Rozkład</p>
       <h1>Rozkład wynagrodzeń lekarzy</h1>
       <p class="lead">
-        Od pensji rezydenta po rekordowe kontrakty — rozpiętość jest ogromna. Połowa lekarzy
-        zarabia ponad 25 tys. zł, a wąska elita przekracza 100 tys. zł miesięcznie. Uwaga:
-        dane AOTMiT widzą zarobki tylko <strong>na poziomie jednej placówki</strong>.
+        Od pensji rezydenta po rekordowe kontrakty rozpiętość jest ogromna: połowa specjalistów
+        zarabia z jednej umowy ponad <strong>25 tys. zł</strong>, a wąska elita przekracza
+        <strong>100 tys. zł miesięcznie</strong>. Ale najważniejsze jest to, czego na tym wykresie
+        <em>nie widać</em> — bo dane widzą lekarza tylko <strong>w jednej placówce naraz</strong>.
       </p>
 
       <DisclaimerZarobki />
+    </div>
+  </section>
 
-      <h2 style="margin-top: 1.5rem">Jak rozliczają się lekarze: etat vs kontrakt</h2>
-      <p class="muted" style="max-width: 64ch; margin-top: 0.5rem">
-        Zdecydowana większość lekarzy w ochronie zdrowia rozlicza się na
-        <strong>kontraktach (B2B)</strong>, nie na etacie. To właśnie kontrakty łatwo
-        łączyć w wielu placówkach naraz — i to ich kwot <strong>nikt nie publikuje</strong>.
+  <!-- 1. WYKRES ROZPIĘTOŚCI ------------------------------------------------ -->
+  <section class="section band-soft">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">01</span> Cała rozpiętość na jednej osi</p>
+      <h2 class="sec-h">Ta sama profesja — od 9,8 do ponad 100 tys.</h2>
+      <p class="sec-intro">
+        Cztery „zwykłe" punkty rozkładu na jednej osi (miesięcznie brutto, z jednej umowy). Już tu,
+        <strong>zanim dojdziemy do górnego 1%</strong>, sama forma zatrudnienia rozciąga wynagrodzenie
+        o ponad <strong>{ratio(medKontrakt, rez)}×</strong> — od rezydenta do mediany kontraktu.
+      </p>
+
+      <div class="rk-chart" role="img" aria-label={`Rozpiętość wynagrodzeń: ${dzienne.map((r) => `${r.label} ${fmt(r.d.kwota)} złotych`).join(', ')}. Skala do 30 tysięcy złotych miesięcznie.`}>
+        {dzienne.map((r) => (
+          <div class="rk-row">
+            <div class="rk-head">
+              <span class="rk-label">{r.label}</span>
+              <span class={`rk-forma is-${r.tone}`}>{r.forma}</span>
+            </div>
+            <div class="rk-track">
+              <div class={`rk-fill is-${r.tone}`} style={`width:${Math.min(100, (r.d.kwota / AXIS) * 100)}%`}></div>
+            </div>
+            <div class="rk-val">{fmt(r.d.kwota)} <small>zł/mc</small></div>
+          </div>
+        ))}
+        <div class="rk-axis" aria-hidden="true">
+          <span>0</span><span>10 tys.</span><span>20 tys.</span><span>30 tys.</span>
+        </div>
+      </div>
+      <p class="source-note">
+        Wartości <strong>median</strong> pojedynczej umowy oraz średnia rezydenta — dane AOTMiT (02.2026),
+        za <a href={dzienne[3]?.d.zrodloUrl} target="_blank" rel="noopener noreferrer">Pulsem Medycyny</a> i
+        <a href={byId['rozklad-mediana-etat']?.zrodloUrl} target="_blank" rel="noopener noreferrer">Rzeczpospolitą</a>.
+        Mediana = połowa umów powyżej, połowa poniżej tej kwoty. Oś do 30 tys. zł/mc.
+      </p>
+
+      <!-- 2. SKALA SIĘ URYWA -->
+      <div class="rk-escape">
+        <div class="rk-escape-lead">
+          <span class="rk-escape-tag">a potem skala się urywa</span>
+          <p class="rk-escape-h">Górny <strong>~1%</strong> nie mieści się na tym wykresie.</p>
+        </div>
+        <div class="rk-escape-fig">
+          <div class="rk-escape-bar" aria-hidden="true">
+            <div class="rk-escape-fill"></div>
+            <span class="rk-escape-arrow">→</span>
+          </div>
+          <div class="rk-escape-num">
+            <span class="rk-escape-big">≥ {fmt(top?.kwota ?? 100000)} <small>zł/mc</small></span>
+            <div class="rk-escape-chips">
+              <span class="rk-chip">≈ {ratio(top?.kwota ?? 0, medKontrakt)}× mediany kontraktu</span>
+              <span class="rk-chip">≈ {ratio(top?.kwota ?? 0, rez)}× pensji rezydenta</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="source-note">
+        <strong>625 kontraktów</strong> (1,2%) i 49 etatów (0,2%) przekroczyło 100 tys. zł/mc w skali kraju —
+        dane AOTMiT (02.2026), za
+        <a href={top?.zrodloUrl} target="_blank" rel="noopener noreferrer">Rzeczpospolitą</a>.
+        To pułap dla <em>jednej</em> umowy i wartość otwarta od góry — górna granica nie jest znana.
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. LUKA POMIARU ------------------------------------------------------ -->
+  <section class="section">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">02</span> Luka pomiaru</p>
+      <h2 class="sec-h">Każda liczba to jedna umowa — nie jeden lekarz</h2>
+      <p class="sec-intro">
+        To jest sedno. Publikowane liczby (mediana, próg 100 tys.) opisują <strong>pojedynczą umowę
+        w jednej placówce</strong>. Nikt nie sumuje wynagrodzeń jednego lekarza z kilku miejsc naraz —
+        a właśnie dlatego prawdziwy rozkład jest <strong>przesunięty w górę</strong> względem tego, co widać.
+      </p>
+
+      <div class="gap">
+        <p class="gap-cap">Odsetek lekarzy powyżej 100 tys. zł/mc</p>
+        <div class="gap-track" aria-hidden="true">
+          <div class="gap-measured" style={`width:${(widziane / P_AXIS) * 100}%`}></div>
+          <div class="gap-band" style={`left:${(bandLo / P_AXIS) * 100}%; width:${((bandHi - bandLo) / P_AXIS) * 100}%`}></div>
+        </div>
+        <div class="gap-ticks" aria-hidden="true"><span>0%</span><span>5%</span><span>10%</span></div>
+        <div class="gap-legend">
+          <span class="gap-li"><i class="gap-dot solid"></i> <strong>1,2%</strong> — co dziś liczy AOTMiT (jedna umowa)</span>
+          <span class="gap-li"><i class="gap-dot band"></i> <strong>5–10%</strong> — szacunek po zsumowaniu kontraktów z wielu placówek</span>
+        </div>
+      </div>
+      <p class="gap-note">
+        Różnica między słupkiem a pasmem to <strong>luka pomiaru</strong> — lekarze, których żadna
+        pojedyncza umowa nie przekracza progu, więc dziś są niewidoczni, choć łącznie inkasują więcej.
+      </p>
+
+      <!-- schemat sumowania -->
+      <div class="sum">
+        <p class="sum-cap">Dlaczego suma znika z rejestru <span class="sum-flag">schemat, nie dane</span></p>
+        <div class="sum-flow">
+          <div class="sum-src">
+            <div class="sum-chip">Placówka A<small>kontrakt · &lt; 100 tys.</small></div>
+            <div class="sum-chip">Placówka B<small>dyżury · &lt; 100 tys.</small></div>
+            <div class="sum-chip">Placówka C<small>poradnia · &lt; 100 tys.</small></div>
+          </div>
+          <div class="sum-op">Σ</div>
+          <div class="sum-out">
+            <div class="sum-pwz">jeden lekarz · <strong>1 numer PWZ</strong></div>
+            <div class="sum-total">&gt; 100 tys. zł/mc</div>
+          </div>
+        </div>
+        <p class="sum-foot">
+          AOTMiT liczy <strong>każdą umowę osobno</strong>. Żadna z osobna nie przebija progu — więc
+          suma, którą realnie inkasuje jedna osoba, <strong>nie pojawia się w żadnej statystyce</strong>.
+        </p>
+      </div>
+
+      <div class="callout" style="border-left-color: var(--brand)">
+        <p>
+          Dlatego mówimy wprost, ile <strong>nie wiemy</strong>: po zsumowaniu kontraktów odsetek
+          zarabiających ponad 100 tys. zł/mc mógłby wzrosnąć z <strong>1,2% do 5–10%</strong> — ale
+          dokładnej liczby <strong>nie da się podać</strong>, bo nie istnieje rejestr, który
+          sumowałby wypłaty po numerze <a href="/postulat">PWZ</a>. To luka, nie oszacowanie.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. ETAT CZY KONTRAKT ------------------------------------------------- -->
+  <section class="section band-soft">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">03</span> Forma zatrudnienia</p>
+      <h2 class="sec-h">Etat czy kontrakt — i dlaczego to decyduje o (nie)jawności</h2>
+      <p class="sec-intro">
+        Wynagrodzenie na <strong>etacie</strong> wynika z ustawy i jest znane. Ale ~3 na 4
+        specjalistów rozlicza się na <strong>kontraktach (B2B)</strong> — a to właśnie kontrakty
+        łatwo łączyć w wielu placówkach naraz i to ich kwot <strong>nikt nie publikuje</strong>.
       </p>
       <div class="ek-bar" role="img" aria-label="Około 73% specjalistów rozlicza się na kontrakcie, około 27% na umowie o pracę.">
         <div class="ek-seg ek-kontrakt" style="width:73%"><span>~73%<small>kontrakt (B2B)</small></span></div>
@@ -39,10 +195,9 @@ const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
       </div>
       <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
         <p>
-          <strong>Kwot kontraktów nie znamy — bo nie są publikowane.</strong> Wynagrodzenia
-          na etacie wynikają z ustawy i są znane; ale <strong>~3 na 4 specjalistów</strong>
-          rozlicza się na kontraktach B2B (dane AOTMiT), których stawki i łączne kwoty pozostają
-          <strong>niejawne</strong>. Publikowane mediany (np. 25 595 zł) to dane AOTMiT
+          <strong>Kwot kontraktów nie znamy — bo nie są publikowane.</strong> Płace etatowe wynikają
+          z ustawy; ale <strong>~73% specjalistów</strong> rozlicza się na kontraktach B2B (dane AOTMiT),
+          których stawki i łączne kwoty pozostają <strong>niejawne</strong>. Publikowane mediany to dane
           o <em>pojedynczej</em> umowie — nie o tym, ile realnie inkasuje jeden lekarz.
         </p>
       </div>
@@ -52,46 +207,59 @@ const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
         Na rynku ofert prywatnych udział B2B jest jeszcze wyższy — umowa o pracę to
         <strong>poniżej 6% ofert</strong> (<a href="https://hiredoc.com/pl/raport" target="_blank" rel="noopener noreferrer">HireDoc, Q3 2025</a>).
       </p>
+    </div>
+  </section>
 
-      <h2 style="margin-top: 2.5rem">Rozpiętość: od rezydenta po górny 1%</h2>
-      <div class="data-grid">
-        {rozklad.map((z) => (
-          <div class="data-card">
-            <p class="k">{z.data.etykieta}</p>
-            <p class="v">{z.data.kwota >= 100000 ? '> ' : ''}{fmt(z.data.kwota)} {z.data.jednostka}</p>
-            <p class="src">
-              {z.data.uwaga && <span>{z.data.uwaga} · </span>}
-              <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
-            </p>
-          </div>
-        ))}
+  <!-- 5. UCZCIWIE ---------------------------------------------------------- -->
+  <section class="section">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">04</span> Uczciwie</p>
+      <h2 class="sec-h">Co te liczby mówią, a czego nie</h2>
+      <div class="prose">
+        <ul class="mech">
+          <li>
+            <strong>Te liczby raczej zaniżają niż zawyżają obraz.</strong> To wartości pojedynczych
+            umów; realny łączny dochód jednego lekarza z środków publicznych jest zwykle wyższy — nie niższy.
+          </li>
+          <li>
+            <strong>Wysokie pułapy dotyczą wąskiej grupy.</strong> Ponad 100 tys. zł/mc z jednej umowy to
+            1,2% kontraktów. Większość lekarzy jest bliżej mediany — a rezydent zaczyna od ~9,8 tys.
+          </li>
+          <li>
+            <strong>Nie twierdzimy, że „lekarze zarabiają za dużo".</strong> Twierdzimy coś prostszego:
+            <strong>nie da się tego sprawdzić</strong> — bo publiczny pieniądz nie jest sumowany po osobie.
+          </li>
+        </ul>
+        <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+          <p>
+            <strong>To nie jest problem braku danych — to problem braku rejestru.</strong> Państwo zna
+            każdą umowę z osobna. Wystarczy powiązać wypłaty z numerem <strong>PWZ</strong> i zsumować.
+            Dopóki tego nie ma, o „górnym 1%" można tylko spekulować — a spekulacja krzywdzi tak samo
+            pacjenta, jak i uczciwego lekarza.
+          </p>
+        </div>
       </div>
 
-      <h2 style="margin-top: 2.5rem">Skala wieloetatowości</h2>
-      <p class="muted" style="max-width: 64ch; margin-top: 0.5rem">
-        Ile placówek przypada na jednego lekarza? <strong>Nie wiadomo</strong> — bo nie
-        istnieje rejestr sumujący pracę jednego lekarza w różnych miejscach (to właśnie
-        nasz <a href="/postulat">postulat</a>). Skalę widać jednak pośrednio:
-      </p>
-      <ul style="max-width: 64ch; padding-left: 1.25rem; line-height: 1.65">
-        <li>ok. <strong>73% specjalistów</strong> rozlicza się na kontraktach (B2B), które łatwo łączyć w kilku placówkach naraz;</li>
-        <li>AOTMiT widzi zarobki tylko „na poziomie jednej placówki” — a po zsumowaniu kontraktów odsetek zarabiających ponad 100 tys. zł/mc rośnie z <strong>1,2% do 5–10%</strong>.</li>
-      </ul>
-      <p class="source-note">
-        Źródła: dane AOTMiT (za
-        <a href="https://www.rp.pl/ochrona-zdrowia/art44466691-625-lekarzy-w-polsce-zarabia-powyzej-100-tys-zl-dotarlismy-do-wyliczen" target="_blank" rel="noopener noreferrer">Rzeczpospolitą</a>);
-        <a href="/mechanizmy">mechanizmy i źródła</a>.
-      </p>
-
-      <p class="source-note">
-        Nie publikujemy liczb „z pamięci”. Dopóki pole nie ma źródła, pozostaje oznaczone jako „—”.
-      </p>
+      <div class="more">
+        <a class="more-card" href="/dane/rekordy">
+          <span class="more-k">Rekordy</span>
+          <span class="more-d">Udokumentowane rekordowe rozliczenia — bez nazwisk.</span>
+        </a>
+        <a class="more-card" href="/mechanizmy/wieloetatowosc">
+          <span class="more-k">Wieloetatowość</span>
+          <span class="more-d">Mechanizm, który sprawia, że suma znika z rejestru.</span>
+        </a>
+        <a class="more-card" href="/postulat">
+          <span class="more-k">Postulat</span>
+          <span class="more-d">Jawny rejestr łącznego wynagrodzenia po numerze PWZ.</span>
+        </a>
+      </div>
 
       <p class="pager"><a href="/dane/kolejki">← Kolejki</a> · <a href="/dane/personel-medyczny">Inni pracownicy OZ →</a></p>
     </div>
   </section>
 
-  <section class="section">
+  <section class="section band-soft">
     <div class="container">
       <ShareRow heading="Pomóż nagłośnić sprawę:" />
     </div>
@@ -99,11 +267,104 @@ const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
 </BaseLayout>
 
 <style>
-  .ek-bar { display: flex; height: 68px; border-radius: var(--radius); overflow: hidden; margin: 1.25rem 0 1rem; border: 1px solid var(--line); }
+  /* sekcje i nagłówki — własny rytm, nie generyczne h2 jak na innych podstronach */
+  .band-soft { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .section { padding: 3rem 0; }
+  .kicker { display: flex; align-items: center; gap: 0.6rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand); margin: 0 0 0.5rem; }
+  .kicker-num { font-family: var(--font-mono); font-size: 0.72rem; color: #fff; background: var(--brand); border-radius: 999px; width: 1.55rem; height: 1.55rem; display: inline-flex; align-items: center; justify-content: center; letter-spacing: 0; }
+  .sec-h { margin: 0 0 0.6rem; }
+  .sec-intro { max-width: 66ch; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.6; margin: 0 0 1.5rem; }
+  .sec-intro strong { color: var(--ink); }
+
+  /* --- wykres rozpiętości --- */
+  .rk-chart { margin: 0 0 0.75rem; }
+  .rk-row { display: grid; grid-template-columns: minmax(96px, 168px) 1fr auto; align-items: center; gap: 0.75rem 1rem; padding: 0.55rem 0; }
+  .rk-head { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+  .rk-label { font-weight: 600; font-size: 0.94rem; line-height: 1.2; }
+  .rk-forma { align-self: flex-start; font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.1rem 0.45rem; border-radius: 999px; }
+  .rk-forma.is-etat { background: var(--paper-2); color: var(--ink-soft); }
+  .rk-forma.is-zlec { background: #e6f2f3; color: var(--teal); }
+  .rk-forma.is-kontrakt { background: var(--brand-50); color: var(--brand-700); }
+  .rk-track { height: 30px; background: var(--paper-2); border-radius: var(--radius); overflow: hidden; }
+  .rk-fill { height: 100%; border-radius: var(--radius); min-width: 3px; transition: width 0.3s ease; }
+  .rk-fill.is-etat { background: linear-gradient(90deg, #5a7799, #45607f); }
+  .rk-fill.is-zlec { background: var(--teal); }
+  .rk-fill.is-kontrakt { background: linear-gradient(90deg, var(--brand), var(--brand-700)); }
+  .rk-val { font-family: var(--font-mono); font-weight: 600; font-size: 1.02rem; white-space: nowrap; text-align: right; }
+  .rk-val small { font-family: var(--font-sans); font-weight: 400; font-size: 0.72rem; color: var(--ink-faint); }
+  .rk-axis { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); margin-left: calc(168px + 1rem); padding-top: 0.4rem; border-top: 1px dashed var(--line-2); }
+
+  /* --- „skala się urywa" --- */
+  .rk-escape { display: grid; grid-template-columns: 1fr; gap: 1rem; background: var(--ink); color: #fff; border-radius: var(--radius-lg); padding: 1.5rem 1.6rem; margin: 1.75rem 0 0.75rem; }
+  .rk-escape-tag { display: inline-block; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #ffd9d6; background: rgba(179,38,30,0.35); padding: 0.15rem 0.55rem; border-radius: 999px; margin-bottom: 0.5rem; }
+  .rk-escape-h { font-family: var(--font-serif); font-size: clamp(1.25rem, 3.4vw, 1.7rem); line-height: 1.2; margin: 0; }
+  .rk-escape-h strong { color: #ff9a94; }
+  .rk-escape-fig { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
+  .rk-escape-bar { position: relative; flex: 1 1 200px; height: 34px; min-width: 160px; background: rgba(255,255,255,0.1); border-radius: var(--radius); overflow: visible; }
+  .rk-escape-fill { height: 100%; width: 100%; background: linear-gradient(90deg, rgba(255,154,148,0.55), var(--alert)); border-radius: var(--radius); -webkit-mask: repeating-linear-gradient(90deg, #000 0 14px, transparent 14px 20px) right/40px 100% no-repeat, linear-gradient(#000 0 0) left/calc(100% - 40px) 100% no-repeat; mask: repeating-linear-gradient(90deg, #000 0 14px, transparent 14px 20px) right/40px 100% no-repeat, linear-gradient(#000 0 0) left/calc(100% - 40px) 100% no-repeat; }
+  .rk-escape-arrow { position: absolute; right: -0.35rem; top: 50%; transform: translateY(-50%); color: #ff9a94; font-size: 1.4rem; font-weight: 700; }
+  .rk-escape-num { display: flex; flex-direction: column; gap: 0.5rem; }
+  .rk-escape-big { font-family: var(--font-mono); font-weight: 700; font-size: clamp(1.5rem, 5vw, 2.2rem); line-height: 1; color: #fff; }
+  .rk-escape-big small { font-family: var(--font-sans); font-weight: 400; font-size: 0.8rem; color: rgba(255,255,255,0.7); }
+  .rk-escape-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .rk-chip { font-family: var(--font-mono); font-size: 0.78rem; color: #fff; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); padding: 0.25rem 0.6rem; border-radius: 999px; }
+
+  /* --- luka pomiaru (widełki %) --- */
+  .gap { margin: 0.5rem 0 0.75rem; }
+  .gap-cap { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 0.5rem; font-weight: 600; }
+  .gap-track { position: relative; height: 42px; background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .gap-measured { position: absolute; left: 0; top: 0; height: 100%; background: var(--brand); border-radius: var(--radius) 0 0 var(--radius); }
+  .gap-band { position: absolute; top: 0; height: 100%; background: repeating-linear-gradient(45deg, var(--alert-50), var(--alert-50) 8px, #f6d3d1 8px, #f6d3d1 16px); border-left: 2px solid var(--alert); border-right: 2px solid var(--alert); }
+  .gap-ticks { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); padding-top: 0.35rem; }
+  .gap-legend { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.8rem; }
+  .gap-li { font-size: 0.88rem; color: var(--ink-soft); display: flex; align-items: center; gap: 0.5rem; }
+  .gap-li strong { color: var(--ink); font-family: var(--font-mono); }
+  .gap-dot { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  .gap-dot.solid { background: var(--brand); }
+  .gap-dot.band { background: repeating-linear-gradient(45deg, var(--alert-50), var(--alert-50) 4px, #f6d3d1 4px, #f6d3d1 8px); border: 1px solid var(--alert); }
+  .gap-note { font-size: 0.9rem; color: var(--ink-soft); max-width: 64ch; margin: 0.75rem 0 0; }
+
+  /* --- schemat sumowania --- */
+  .sum { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.25rem 1.35rem; margin: 1.75rem 0 1rem; background: var(--bg); }
+  .sum-cap { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin: 0 0 1rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .sum-flag { font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); background: var(--paper-2); border: 1px solid var(--line); padding: 0.1rem 0.5rem; border-radius: 999px; }
+  .sum-flow { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .sum-src { display: flex; flex-direction: column; gap: 0.5rem; flex: 1 1 220px; }
+  .sum-chip { display: flex; flex-direction: column; background: var(--paper); border: 1px solid var(--line-2); border-radius: var(--radius); padding: 0.5rem 0.8rem; font-weight: 600; font-size: 0.9rem; }
+  .sum-chip small { font-family: var(--font-mono); font-weight: 400; font-size: 0.74rem; color: var(--ink-faint); margin-top: 0.1rem; }
+  .sum-op { font-family: var(--font-serif); font-size: 2rem; color: var(--ink-faint); flex: none; padding: 0 0.3rem; }
+  .sum-out { flex: 1 1 200px; background: var(--alert-50); border: 1px solid var(--alert); border-radius: var(--radius); padding: 0.75rem 1rem; }
+  .sum-pwz { font-size: 0.85rem; color: var(--ink-soft); }
+  .sum-pwz strong { color: var(--ink); }
+  .sum-total { font-family: var(--font-mono); font-weight: 700; font-size: clamp(1.35rem, 4.5vw, 1.75rem); color: var(--alert); line-height: 1.1; margin-top: 0.15rem; }
+  .sum-foot { font-size: 0.9rem; color: var(--ink-soft); max-width: 66ch; margin: 1rem 0 0; }
+
+  /* --- etat vs kontrakt --- */
+  .ek-bar { display: flex; height: 68px; border-radius: var(--radius); overflow: hidden; margin: 0 0 1rem; border: 1px solid var(--line); }
   .ek-seg { display: flex; align-items: center; justify-content: center; min-width: 0; }
   .ek-seg span { display: flex; flex-direction: column; align-items: center; line-height: 1.15; font-family: var(--font-mono); font-weight: 600; font-size: 1.15rem; }
   .ek-seg small { font-family: var(--font-sans); font-weight: 400; font-size: 0.72rem; opacity: 0.9; margin-top: 2px; }
   .ek-kontrakt { background: var(--brand); color: #fff; }
   .ek-etat { background: var(--paper-2); color: var(--ink-soft); }
-  @media (max-width: 520px) { .ek-seg span { font-size: 0.95rem; } .ek-seg small { font-size: 0.62rem; } }
+
+  /* --- uczciwie + linki --- */
+  .mech { padding-left: 1.25rem; max-width: 68ch; }
+  .mech li { margin: 0.7rem 0; line-height: 1.6; }
+  .more { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; margin: 1.75rem 0 0; }
+  .more-card { display: flex; flex-direction: column; gap: 0.3rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1rem 1.15rem; text-decoration: none; transition: border-color 0.15s ease, transform 0.15s ease; }
+  .more-card:hover { border-color: var(--brand); transform: translateY(-2px); }
+  .more-k { font-weight: 600; color: var(--brand); font-size: 0.95rem; }
+  .more-d { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.45; }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+
+  @media (max-width: 620px) {
+    .rk-row { grid-template-columns: 1fr auto; }
+    .rk-head { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 0.5rem; }
+    .rk-track { grid-column: 1; }
+    .rk-val { grid-column: 2; }
+    .rk-axis { margin-left: 0; }
+    .ek-seg span { font-size: 0.95rem; } .ek-seg small { font-size: 0.62rem; }
+    .sum-op { align-self: center; transform: rotate(90deg); }
+    .sum-src, .sum-out { flex-basis: 100%; }
+  }
 </style>

@@ -120,6 +120,16 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Naczelna Izba Lekarska a kontrakty lekarskie',
     subtitle: 'Kontraktów samorząd nie wprowadził — zrobił to związek zawodowy i ustawodawca. NIL ani ich nie forsuje, ani przeciw nim nie protestuje: broni prawa do kontraktu, lecz krytykuje nadużycia. Rozwiązaniem nie jest likwidacja formy, lecz jawność łącznej kwoty po numerze PWZ.',
   },
+  'analizy/zarobki-dyrektorow-szpitali': {
+    tag: 'Analiza · Dyrektorzy',
+    title: 'Zarobki dyrektorów szpitali są jawne',
+    subtitle: 'Oświadczenia majątkowe pokazują pensje kadry zarządzającej co do złotówki — z mocy prawa od 1997 r. To odwrotność ukrytych kontraktów. Problem nie w tajemnicy, lecz w tym, co ta jawność odsłania: kumulację funkcji, pensje rosnące mimo długu i lukę między SPZOZ a spółką.',
+  },
+  'analizy/komin-placowy': {
+    tag: 'Analiza · Pojęcia',
+    title: 'Co to jest komin płacowy',
+    subtitle: 'Rażąco wysoka płaca jednej osoby, „wystająca” ponad resztę. Ustawa kominowa miała je ścinać — działa jednak tam, gdzie pieniądz i tak widać (jawna pensja na etacie), a jest ślepa na najwyższy komin w ochronie zdrowia: kontrakt sumowany po placówkach.',
+  },
 
   // — Mechanizmy —
   'mechanizmy': {

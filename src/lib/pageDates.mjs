@@ -18,6 +18,8 @@ export const pageDates = {
   '/analizy/covid-pieniadz-publiczny': '2026-07-07',
   '/analizy/ucieczka-lekarzy': '2026-07-07',
   '/analizy/nil-a-kontrakty-lekarskie': '2026-07-07',
+  '/analizy/zarobki-dyrektorow-szpitali': '2026-07-08',
+  '/analizy/komin-placowy': '2026-07-08',
   // Mechanizmy (strony wyjaśniające).
   '/mechanizmy/reglamentacja-dostepu': '2026-07-07',
   '/mechanizmy/kontrakt-vs-etat': '2026-07-07',
@@ -27,7 +29,7 @@ export const pageDates = {
   '/mechanizmy/samorzad-nil': '2026-07-07',
   '/mechanizmy/dyzury-i-gotowosc': '2026-07-06',
   // Dane (tabele/zestawienia — bump przy zmianie liczb/zakresu).
-  '/dane': '2026-07-07',
+  '/dane': '2026-07-08',
   '/dane/budzet-nfz': '2026-07-07',
   '/dane/kolejki': '2026-07-06',
   '/dane/pensje-rezydentow': '2026-07-06',
@@ -36,7 +38,7 @@ export const pageDates = {
   '/dane/rozklad-wynagrodzen': '2026-07-07',
   '/dane/stawki': '2026-07-06',
   '/dane/wedlug-specjalizacji': '2026-07-07',
-  '/dane/zadluzenie-szpitali': '2026-07-07',
+  '/dane/zadluzenie-szpitali': '2026-07-08',
 };
 
 // Normalizacja ścieżki: bez końcowego „/", z wiodącym „/". '/dane/x/' → '/dane/x'.

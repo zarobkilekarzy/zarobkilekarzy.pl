@@ -39,7 +39,8 @@ const skala = [
 const listaWstydu = [
   { rola: 'Woj. Szpital Specjalistyczny im. M. Pirogowa', miasto: 'Łódź', kwota: 88013861 },
   { rola: 'Woj. Szpital Specjalistyczny im. kard. Wyszyńskiego', miasto: 'Lublin', kwota: 79949350 },
-  { rola: 'Woj. Szpital Specjalistyczny im. NMP', miasto: 'Częstochowa', kwota: 54576624 },
+  { rola: 'Woj. Szpital Specjalistyczny im. NMP', miasto: 'Częstochowa', kwota: 54576624,
+    dlug: 'Faktyczny dług placówki: <strong>172 mln zł</strong> zobowiązań <strong>wymagalnych</strong> (31.12.2025; 175 mln na 31.03.2026), ok. <strong>289 mln zł</strong> ogółem — <strong>jeden z trzech najbardziej zadłużonych szpitali w Polsce</strong>. Podlega marszałkowi woj. śląskiego; strata za 2025 urosła już do ~85 mln zł, a same koszty obsługi długu do 43 mln zł.' },
   { rola: 'Szpital Wojewódzki im. Jana Pawła II', miasto: 'Bełchatów', kwota: 51320479, hot: true },
   { rola: 'Woj. Szpital Zespolony im. J. Śniadeckiego', miasto: 'Białystok', kwota: 47555530 },
   { rola: 'Wojewódzki Szpital Zespolony', miasto: 'Płock', kwota: 45119750 },
@@ -142,8 +143,10 @@ const listaWstydu = [
       <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
         Ministerstwo Zdrowia podaje długi <strong>tylko zbiorczo</strong> (po województwach) — nie
         per placówka. Pojedyncze szpitale widać jednak przez ich <strong>roczny wynik</strong>: oto
-        dziesięć z największą stratą netto za 2024 r. (dane wstępne MZ). Na dole — <strong>Kalisz</strong>,
-        odwrotny przypadek: zysk na papierze, a dług ukryty.
+        dziesięć z największą stratą netto za 2024 r. (dane wstępne MZ). Przy <strong>Częstochowie</strong>
+        (#3) pokazujemy dodatkowo <strong>faktyczny dług placówki</strong> — rzadki wyjątek, bo akurat
+        ujawnił go organ prowadzący. Na dole — <strong>Kalisz</strong>, odwrotny przypadek: zysk na
+        papierze, a dług ukryty.
       </p>
       <div class="table-wrap">
         <table class="lw">
@@ -154,7 +157,7 @@ const listaWstydu = [
             {listaWstydu.map((s, i) => (
               <tr class={s.hot ? 'is-hot' : ''}>
                 <td class="lw-rank">{i + 1}</td>
-                <th scope="row">{s.rola}<span class="lw-city">{s.miasto}</span></th>
+                <th scope="row">{s.rola}<span class="lw-city">{s.miasto}</span>{s.dlug && <span class="lw-dlug" set:html={s.dlug} />}</th>
                 <td class="lw-num">{fmt(s.kwota)} zł</td>
               </tr>
             ))}
@@ -186,6 +189,14 @@ const listaWstydu = [
         (sprawozdanie, KRS), a mimo to zalegał <strong>37 mln zł</strong> wobec pielęgniarek: dowód, że
         sam wynik netto nie pokazuje ukrytych zobowiązań.
         Długi zbiorczo (po województwach) — <a href="https://www.gov.pl/web/zdrowie/zadluzenie-spzoz" target="_blank" rel="noopener noreferrer">Ministerstwo Zdrowia</a>.
+        Faktyczny dług Woj. Szpitala Specjalistycznego im. NMP w Częstochowie („Parkitka”, organ
+        prowadzący: marszałek woj. śląskiego): zobowiązania wymagalne ~172 mln zł (31.12.2025), 175 mln
+        na 31.03.2026, strata ~85 mln zł (2025), obsługa długu 43 mln zł, „jeden z trzech najbardziej
+        zadłużonych szpitali w Polsce” —
+        <a href="https://zdrowie.dziennik.pl/aktualnosci/artykuly/599197,parkitka-szpital-czestochowa-lekarze-dyzury.html" target="_blank" rel="noopener noreferrer">Dziennik.pl</a>,
+        <a href="https://zycieczestochowy.pl/85-mln-zl-dlugu-zajecia-komornicze-i-plan-ratunkowy-dyrekcja-szpitala-na-parkitce-rozmawiala-z-mediami/" target="_blank" rel="noopener noreferrer">Życie Częstochowy</a>;
+        zobowiązania ogółem ~289 mln zł (31.12.2025) — dane marszałka woj. śląskiego, przywołane w
+        <a href="https://x.com/JerzyPolaczek/status/2074742367060394337" target="_blank" rel="noopener noreferrer">interpelacji poselskiej (X)</a>.
       </p>
 
       <h2 id="kalisz" style="margin-top: 2.75rem">Jeden szpital, cała mechanika: Kalisz</h2>
@@ -286,6 +297,8 @@ const listaWstydu = [
   .lw tbody tr:last-child { border-bottom: none; }
   .lw-rank { font-family: var(--font-mono); color: var(--ink-faint); width: 2.5ch; }
   .lw-city { display: block; font-size: 0.8rem; font-weight: 400; color: var(--ink-soft); margin-top: 0.1rem; }
+  .lw-dlug { display: block; font-size: 0.8rem; font-weight: 400; color: var(--alert); line-height: 1.5; margin-top: 0.4rem; padding: 0.5rem 0.65rem; background: var(--alert-50); border-radius: var(--radius); }
+  .lw-dlug :global(strong) { font-weight: 700; }
   .lw-num { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; text-align: right; }
   .lw tr.is-hot { background: var(--alert-50); }
   .lw tr.is-hot th, .lw tr.is-hot .lw-num, .lw tr.is-hot .lw-rank { color: var(--alert); }

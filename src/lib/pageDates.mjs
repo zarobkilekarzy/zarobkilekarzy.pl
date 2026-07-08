@@ -9,8 +9,8 @@
 export const pageDates = {
   // Analizy (długie teksty redakcyjne).
   '/analizy/jedno-pwz': '2026-07-07',
-  '/analizy/lejek-ksztalcenia': '2026-07-06',
-  '/analizy/lekarze-ze-wschodu': '2026-07-07',
+  '/analizy/lejek-ksztalcenia': '2026-07-08',
+  '/analizy/lekarze-ze-wschodu': '2026-07-08',
   '/analizy/poz-pieniadz-za-pacjenta': '2026-07-07',
   '/analizy/dlaczego-brakuje-lekarzy': '2026-07-07',
   '/analizy/zarobki-lekarzy-polska-sasiedzi': '2026-07-07',

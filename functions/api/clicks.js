@@ -43,7 +43,9 @@ export const onRequest = async (context) => {
       for (const r of results || []) counts[r.slug] = r.count;
       // Cache na brzegu CF: powtórne wejścia idą z cache (bez wywołania Funkcji
       // i bez zapytania do D1) — trzyma koszt w granicach darmowego planu.
-      return json({ counts }, 200, 'public, max-age=60');
+      // Dłuższy TTL = rzadsze rewalidacje = mniej wywołań Funkcji; liczba przejść
+      // do źródeł spokojnie może być „nieświeża" do 10 min.
+      return json({ counts }, 200, 'public, max-age=600');
     } catch (e) {
       return json({ counts: {} }, 200, 'public, max-age=30');
     }

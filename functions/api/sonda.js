@@ -58,11 +58,13 @@ export const onRequest = async (context) => {
     // Cache na brzegu CF (jak w /api/clicks): powtórne odsłony idą z cache — bez
     // wywołania Funkcji i bez odczytu KV — co trzyma zużycie w darmowym planie.
     // Świeżo oddany głos i tak renderuje się z odpowiedzi POST (niecache'owanej),
-    // więc ≤30 s „nieświeżości" liczb dotyczy tylko wracających gości.
+    // więc ≤5 min „nieświeżości" liczb dotyczy tylko wracających gości. Dłuższy
+    // TTL = rzadsze rewalidacje = mniej wywołań Funkcji (sonda jest na stronie
+    // głównej, więc to główny konsument limitu).
     return json(
       { ...counts, turnstileSiteKey: turnstileOn ? siteKey : null },
       200,
-      'public, max-age=30'
+      'public, max-age=300'
     );
   }
 

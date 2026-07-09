@@ -17,7 +17,7 @@ export const pageDates = {
   '/analizy/apteka-pieniadz-publiczny': '2026-07-07',
   '/analizy/covid-pieniadz-publiczny': '2026-07-07',
   '/analizy/ucieczka-lekarzy': '2026-07-07',
-  '/analizy/nil-a-kontrakty-lekarskie': '2026-07-07',
+  '/analizy/nil-a-kontrakty-lekarskie': '2026-07-09',
   '/analizy/zarobki-dyrektorow-szpitali': '2026-07-08',
   '/analizy/komin-placowy': '2026-07-08',
   // Mechanizmy (strony wyjaśniające).
@@ -34,7 +34,7 @@ export const pageDates = {
   '/dane/kolejki': '2026-07-06',
   '/dane/pensje-rezydentow': '2026-07-06',
   '/dane/personel-medyczny': '2026-07-07',
-  '/dane/rekordy': '2026-07-07',
+  '/dane/rekordy': '2026-07-09',
   '/dane/rozklad-wynagrodzen': '2026-07-07',
   '/dane/stawki': '2026-07-06',
   '/dane/wedlug-specjalizacji': '2026-07-07',

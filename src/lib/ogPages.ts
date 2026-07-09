@@ -77,8 +77,8 @@ export const ogPages: Record<string, OgPage> = {
   },
   'analizy/zarobki-lekarzy-polska-sasiedzi': {
     tag: 'Analiza',
-    title: 'Zarobki lekarzy: Polska na tle sąsiadów',
-    subtitle: 'Czechy, Niemcy, Austria — u sąsiadów płace jawne w taryfie. U nas realny dochód ukrywa niejawny kontrakt.',
+    title: 'Zarobki lekarzy: Polska na tle Europy',
+    subtitle: 'Czechy, Niemcy, Austria, Szwecja — płace jawne z taryf, w Szwecji imiennie. U nas dochód ukrywa niejawny kontrakt.',
   },
   'analizy/dlaczego-brakuje-lekarzy': {
     tag: 'Analiza',

@@ -11,45 +11,83 @@ const por = (await getCollection('zarobki'))
   .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
 const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
 
-// Wynagrodzenie zasadnicze specjalisty (Facharzt / lékař-specialista), brutto/mc.
-// Kursy orient.: 1 EUR ≈ 4,29 zł, 1 CZK ≈ 0,18 zł (NBP). Kwoty zaokrąglone.
-const kraje = [
+// Jawność płac — spektrum, nie zero-jedynkowo. Etykieta + kolor.
+const JAW = {
+  no:   { label: '✗ nie',       cls: 'jaw-no' },
+  part: { label: '~ częściowo', cls: 'jaw-part' },
+  yes:  { label: '✓ tak',       cls: 'jaw-yes' },
+  best: { label: '✓ imiennie',  cls: 'jaw-best' },
+} as const;
+type JawKind = keyof typeof JAW;
+
+// Wynagrodzenie zasadnicze/przeciętne specjalisty, brutto/mc.
+// Kursy orient.: 1 EUR ≈ 4,29 zł, 1 CZK ≈ 0,18 zł, 1 SEK ≈ 0,39 zł. Kwoty zaokrąglone.
+const kraje: { kraj: string; pl?: boolean; spec: string; specNote: string; jawne: JawKind; jawneNote: string }[] = [
   {
     kraj: 'Polska', pl: true,
     spec: '12 910 zł · ~25 595 zł',
     specNote: 'etat (minimum ustawowe) · mediana kontraktu',
-    jawne: false, jawneNote: 'jawny tylko niski etat — kontraktów nikt nie publikuje',
+    jawne: 'no', jawneNote: 'jawny tylko niski etat — kontraktów nikt nie publikuje',
   },
   {
-    kraj: 'Czechy', spec: '~28 200 zł',
-    specNote: '157 443 CZK (chirurg-specjalista, średnia)',
-    jawne: true, jawneNote: 'tabele/ujawniane publicznie',
+    kraj: 'Czechy', spec: '~22 700 zł',
+    specNote: '126 109 CZK (przeciętna, sektor publiczny — ÚZIS 2024)',
+    jawne: 'part', jawneNote: 'jawna siatka bazowa; łączną kwotę robią niejawne dyżury',
   },
   {
     kraj: 'Niemcy', spec: '~31,8 – 40,8 tys. zł',
     specNote: '7 404 – 9 509 € (Facharzt, taryfa TV-Ärzte)',
-    jawne: true, jawneNote: 'układ zbiorowy Marburger Bund',
+    jawne: 'yes', jawneNote: 'układ zbiorowy Marburger Bund',
   },
   {
     kraj: 'Austria', spec: '~28,3 – 47,2 tys. zł',
-    specNote: '6 586 – 11 008 € (Facharzt, szpitale publiczne)',
-    jawne: true, jawneNote: 'Kollektivvertrag — tabele publiczne',
+    specNote: '6 586 – 11 008 € (Facharzt, szpitale publiczne; ×14/rok)',
+    jawne: 'yes', jawneNote: 'Kollektivvertrag — tabele publiczne',
+  },
+  {
+    kraj: 'Szwecja', spec: '~38 200 zł',
+    specNote: '98 000 SEK (specjalista, SCB 2024; bez dyżurów)',
+    jawne: 'best', jawneNote: 'z mocy konstytucji (offentlighetsprincipen)',
   },
 ];
 
-// Drabina kariery u sąsiadów — zasadnicze brutto/mc w przeliczeniu na zł.
-// Niemcy: taryfa TV-Ärzte/VKA (szpitale komunalne, od 1 VIII 2025). Austria: Kollektivvertrag.
-const drabina = [
-  { stopien: 'Rezydent (Assistenzarzt)', de: '24,1 – 30,9 tys.', at: '23,7 – 39,9 tys.' },
-  { stopien: 'Specjalista (Facharzt)', de: '31,8 – 40,8 tys.', at: '28,3 – 47,2 tys.' },
-  { stopien: 'Starszy specjalista (Oberarzt)', de: '39,8 – 45,5 tys.', at: '—' },
-  { stopien: 'Z-ca ordynatora (leit. Oberarzt)', de: '46,8 – 50,2 tys.', at: '—' },
+// Pięć krajów w jednym rzucie oka: model, forma pracy, jawność, gęstość lekarzy.
+const przeglad: { kraj: string; pl?: boolean; model: string; forma: string; jaw: JawKind; jawTxt: string; gest: string; gestNote?: string }[] = [
+  { kraj: 'Polska', pl: true, model: 'Składka → jeden płatnik (NFZ)', forma: 'kontrakt B2B (~73% specjalistów)', jaw: 'no', jawTxt: 'tylko dół drabiny', gest: '3,4–3,9', gestNote: '3,9 zawyżone metodą GUS' },
+  { kraj: 'Czechy', model: 'Bismarck — 7 kas (VZP ~56%)', forma: 'etat: plat (publ.) / mzda (spółki)', jaw: 'part', jawTxt: 'jawna baza, nie całość', gest: '~4,1' },
+  { kraj: 'Niemcy', model: 'Bismarck — GKV (~88%) + PKV', forma: 'etat szpitalny lub własna praktyka', jaw: 'yes', jawTxt: 'pełna taryfa etatu', gest: '~4,5' },
+  { kraj: 'Austria', model: 'Bismarck — ÖGK (~82%) + kasy', forma: 'etat lub praktyka (Kassen-/Wahlarzt)', jaw: 'yes', jawTxt: 'tabele landowe', gest: '~5,4', gestNote: 'realnie ~4,3 (wlicza szkolących się)' },
+  { kraj: 'Szwecja', model: 'Beveridge — podatek (21 regionów)', forma: 'etat u regionu', jaw: 'best', jawTxt: 'imiennie z mocy prawa', gest: '~4,3' },
 ];
-// Czechy — po ujawnieniu stawek szpitalnych (2025).
+
+// Oś jawności — od ukrytego kontraktu (Polska) po jawny rejestr (Szwecja).
+const jawnoscOs: { poz: string; txt: string; tier: JawKind }[] = [
+  { poz: 'Polska', tier: 'no', txt: 'Widać tylko dół drabiny — jawny niski etat i pensja rezydenta. Realny dochód domyka niejawny kontrakt.' },
+  { poz: 'Czechy', tier: 'part', txt: 'Jawna siatka bazowa (rozporządzenie rządu), ale łączną kwotę „robią" nieujawniane nadgodziny i dyżury.' },
+  { poz: 'Niemcy · Austria', tier: 'yes', txt: 'Jawne taryfy i tabele etatu, stopień po stopniu. Poufne zostają kontrakty ordynatorów i dochody praktyk.' },
+  { poz: 'Szwecja', tier: 'best', txt: 'Pensja lekarza publicznego jawna imiennie — z mocy konstytucji. Każdy może ją sprawdzić, bez podania powodu.' },
+];
+
+// Drabina kariery u sąsiadów — zasadnicze brutto/mc: złote + oryginalna waluta (€).
+// Niemcy: taryfa TV-Ärzte/VKA (szpitale komunalne, od 1 VIII 2025). Austria: Kollektivvertrag (×14/rok).
+const drabina = [
+  { stopien: 'Rezydent (Assistenzarzt)', dePln: '24,1 – 30,9 tys. zł', deCur: '5 610 – 7 211 €', atPln: '23,7 – 39,9 tys. zł', atCur: '5 518 – 9 310 €' },
+  { stopien: 'Specjalista (Facharzt)', dePln: '31,8 – 40,8 tys. zł', deCur: '7 404 – 9 509 €', atPln: '28,3 – 47,2 tys. zł', atCur: '6 586 – 11 008 €' },
+  { stopien: 'Starszy specjalista (Oberarzt)', dePln: '39,8 – 45,5 tys. zł', deCur: '9 274 – 10 599 €', atPln: '—', atCur: '' },
+  { stopien: 'Z-ca ordynatora (leit. Oberarzt)', dePln: '46,8 – 50,2 tys. zł', deCur: '10 909 – 11 689 €', atPln: '—', atCur: '' },
+];
+// Czechy — niska baza tabelowa vs realna średnia (różnicę robią dyżury/nadgodziny). Brutto/mc.
 const czechy = [
-  { rola: 'Lekarz-specjalista (średnia)', pln: '~28 200 zł', czk: '157 443 CZK' },
-  { rola: 'Ordynator (primář)', pln: '~35 000 zł', czk: '~194 000 CZK' },
-  { rola: 'Najlepiej zarabiający', pln: '>49 000 zł', czk: 'wg ujawnionych danych' },
+  { rola: 'Baza tabelowa specjalisty (nař. 341/2017)', pln: '~9 200 zł', czk: '50 980 CZK' },
+  { rola: 'Przeciętna, sektor publiczny (ÚZIS 2024)', pln: '~22 700 zł', czk: '126 109 CZK' },
+  { rola: 'Region deficytowy (Ústecki)', pln: '~26 800 zł', czk: '~149 000 CZK' },
+  { rola: 'Ujawnione stawki (np. chirurg)', pln: '~28 200 zł', czk: '157 443 CZK' },
+];
+// Szwecja — etat u regionu; SCB (średnia, brutto/mc, BEZ dyżurów jour/beredskap).
+const szwecja = [
+  { rola: 'Staż (AT-läkare)', pln: '~16 300 zł', sek: '41 700 SEK' },
+  { rola: 'Rezydent (ST-läkare)', pln: '~23 000 zł', sek: '58 900 SEK' },
+  { rola: 'Specjalista (specialistläkare)', pln: '~38 200 zł', sek: '98 000 SEK' },
 ];
 // Polska — ta sama drabina, ale jawny jest tylko jej dół. Brutto/mc.
 const polska = [
@@ -57,61 +95,87 @@ const polska = [
   { rola: 'Specjalista — etat, minimum ustawowe', kwota: '12 910 zł', jaw: 'jawne (ustawa)' },
   { rola: 'Specjalista — mediana etatu (AOTMiT)', kwota: '23 666 zł', jaw: 'agregat, nie os.' },
   { rola: 'Specjalista — mediana kontraktu (AOTMiT)', kwota: '25 595 zł', jaw: 'agregat, nie os.' },
-  { rola: 'Rekordowy kontrakt (urolog, Bełchatów)', kwota: '151 097 zł', jaw: 'niejawne', hot: true },
+  { rola: 'Najwyższy udokumentowany kontrakt (ortopeda, Mazowsze)', kwota: '316 079 zł', jaw: 'niejawne', hot: true },
 ];
 
-// Uproszczony opis modeli OZ: jak finansowany, co w płacach lekarzy jawne, co prywatne/ukryte.
+// Profil każdego kraju: meta (szybkie fakty), 2 akapity opisu (HTML), jawne/niejawne.
 const systemy = [
   {
     kraj: 'Polska', pl: true,
-    model: 'Jeden publiczny płatnik — NFZ, finansowany ze składki zdrowotnej. Szpitale w większości publiczne, obok rosnącego sektora prywatnego.',
+    meta: ['Model: Bismarck (NFZ)', 'Wydatki: ~6–7% PKB', 'Forma: kontrakt B2B'],
+    opis: [
+      'Jeden publiczny płatnik — <strong>NFZ</strong> — finansuje ochronę zdrowia ze składki zdrowotnej (model Bismarcka). Szpitale są w większości publiczne, ale najlepiej wyceniane procedury coraz częściej wędrują do sektora prywatnego. Na tle tej piątki Polska wydaje na zdrowie <strong>najmniej</strong> — rzędu 6–7% PKB, gdy pozostali 9,5–12,8%.',
+      'Około <strong>73% specjalistów</strong> pracuje nie na etacie, lecz na kontrakcie B2B. Ten sam lekarz sumuje etat, dyżury i kontrakty w wielu placówkach naraz — a państwo <strong>nie zlicza jego łącznego wynagrodzenia po numerze PWZ</strong>. Jawny jest tylko dół drabiny (ustawowe minimum etatu, pensje rezydentów); realny dochód domyka niejawny kontrakt, a udokumentowane rekordy sięgają <strong>316 tys. zł/mc</strong>.',
+    ],
     jawne: 'Ustawowe minimum etatu i pensje rezydentów (ustawa o najniższym wynagrodzeniu + rozporządzenie MZ).',
-    niejawne: 'Kontrakty B2B (~73% specjalistów), ich stawki i praca w wielu placówkach naraz — nikt nie sumuje ich po jednym lekarzu.',
+    niejawne: 'Kontrakty B2B (~73% specjalistów), ich stawki i praca w wielu placówkach naraz — nikt nie sumuje ich po jednym lekarzu (PWZ).',
   },
   {
     kraj: 'Czechy',
-    model: 'Powszechne ubezpieczenie w kilku kasach (zdravotní pojišťovny); świadczenia w większości publiczne.',
-    jawne: 'Urząd statystyczny (ČSÚ) publikuje przeciętne płace lekarzy — w 2024 r. ~124 775 CZK brutto/mc w lecznictwie zamkniętym; po ujawnieniu 2025 znane też stawki szpitalne.',
-    niejawne: 'Prywatne dopłaty za standard ponadpodstawowy — margines systemu.',
+    meta: ['Model: Bismarck (7 kas)', 'Wydatki: 9,5% PKB', 'Nadgodziny: limit 416 h/rok'],
+    opis: [
+      'Bismarck w wersji z <strong>7 kasami</strong> (dominuje państwowa VZP, ~56% ubezpieczonych); wydatki ~9,5% PKB, poniżej średniej UE. Brak realnego gatekeepingu — pacjent idzie wprost do specjalisty, stąd <strong>11–12 kontaktów z systemem rocznie</strong>, prawie dwa razy więcej niż w Niemczech. Szpitale kliniczne należą do państwa (płaca = <em>plat</em> wg rządowej tabeli), powiatowe często działają jako spółki (płaca = <em>mzda</em> z układu zbiorowego).',
+      'Baza tabelowa specjalisty jest niska (~50 tys. CZK), a realną przeciętną ~126 tys. CZK „robią" nadgodziny i dyżury. W 2023 rząd chciał podwoić dobrowolne nadgodziny (<strong>416 → 832 h/rok</strong>) — lekarze masowo wypowiedzieli zgody, a grudniowa ugoda cofnęła zmianę i dała podwyżki 5–15 tys. CZK. To echo słynnej akcji „Děkujeme, odcházíme" (2011), która wywalczyła jawne taryfy. Kadra się starzeje (śr. ~48 lat), a <strong>co piąty absolwent wyjeżdża</strong> — najczęściej do Niemiec.',
+    ],
+    jawne: 'Siatka bazowa lekarzy budżetowych — rozporządzenie rządu (nař. 341/2017 Sb.), klasy 12–16. Przeciętne płace publikuje urząd statystyczny (ÚZIS/ČSÚ): ~126 tys. CZK brutto/mc (2024).',
+    niejawne: 'Łączne wynagrodzenie konkretnego lekarza „robią" nadgodziny i dyżury (baza tabelowa to ~⅖ całości); płace w szpitalach-spółkach (mzda) — nietransparentne per osoba.',
   },
   {
     kraj: 'Niemcy',
-    model: 'Ubezpieczenie ustawowe GKV (~90% ludności) + prywatne PKV (~10%); składki od wynagrodzeń. Ambulatorium rozlicza Kassenärztliche Vereinigung.',
-    jawne: 'Płace lekarzy szpitalnych z układu zbiorowego (Marburger Bund / TV-Ärzte) — pełna tabela taryfowa, stopień po stopniu.',
-    niejawne: 'Dochód lekarzy z własną praktyką i od pacjentów PKV mniej widoczny — ale i tak liczony z publicznych cenników (EBM/GOÄ).',
+    meta: ['Model: Bismarck (GKV + PKV)', 'Wydatki: 11,8–12,8% PKB', 'Norma: 40 h/tydz.'],
+    opis: [
+      'Klasyczny Bismarck: ubezpieczenie ustawowe <strong>GKV obejmuje ~88%</strong> ludności, reszta ma prywatne PKV. Wydatki na zdrowie należą do najwyższych w UE (11,8–12,8% PKB). Pacjent GKV ma <strong>wolny wybór lekarza</strong> i może iść wprost do specjalisty bez skierowania — pod tym względem Niemcy to światowy wyjątek. Ambulatorium (prywatne praktyki) i szpital to dwa osobno rozliczane światy; stroną ambulatoryjną zarządza samorząd lekarski (Kassenärztliche Vereinigung).',
+      'Lekarz szpitalny jest etatowcem opłacanym wg <strong>jawnego układu zbiorowego</strong> (Marburger Bund / TV-Ärzte) — od rezydenta (Ä1) po zastępcę ordynatora (Ä4). Alternatywa to własna praktyka (niedergelassener Vertragsarzt), gdzie dochód to nadwyżka firmy, nie pensja. Na prowincji doskwiera <strong>Landarztmangel</strong> — brak lekarzy rodzinnych, łatany reglamentacją liczby praktyk (Bedarfsplanung). Zależność od zagranicy rośnie: <strong>15,6% czynnych lekarzy</strong> (2024) to obcokrajowcy.',
+    ],
+    jawne: 'Płace lekarzy szpitalnych z układu zbiorowego (Marburger Bund / TV-Ärzte) — pełna tabela taryfowa, stopień po stopniu (Ä1–Ä4).',
+    niejawne: 'Kontrakty ordynatorów (Chefarzt — poza taryfą, indywidualne, ~300 tys. €/rok) i dochody własnych praktyk (Vertragsärzte) — publikowane tylko zbiorczo, nie per lekarz.',
   },
   {
     kraj: 'Austria',
-    model: 'Społeczne ubezpieczenie zdrowotne (ÖGK i kasy branżowe), szpitale publiczne. Lekarz kasowy (Kassenarzt) kontra prywatny (Wahlarzt); ~38% ma dodatkowe ubezpieczenie prywatne.',
-    jawne: 'Płace w szpitalach publicznych z Kollektivvertrag — tabele publiczne.',
-    niejawne: 'Honoraria prywatne (Wahlarzt) — poza taryfą, negocjowane z pacjentem.',
+    meta: ['Model: Bismarck (ÖGK)', 'Wydatki: 11,7% PKB', 'Pensja: ×14 w roku'],
+    opis: [
+      'Bismarck po reformie 2020: dziewięć landowych kas scalono w jedną <strong>ÖGK (~82%)</strong> plus kasy branżowe; wydatki ~11,7% PKB (4. miejsce w OECD). Szpitale są w rękach landów, więc płace lekarzy szpitalnych różnią się regionalnie i są wypłacane <strong>14 razy w roku</strong>. Kluczowy austriacki podział: <strong>Kassenarzt</strong> rozlicza się z kasą (pacjent nie płaci), a <strong>Wahlarzt</strong> bierze zapłatę wprost od pacjenta, który odzyskuje z kasy „do 80% tarifu kasowego" — realnie ok. jednej trzeciej.',
+      'Liczba etatów kasowych jest reglamentowana i stoi w miejscu — stąd <strong>~311 nieobsadzonych miejsc</strong> (175 w medycynie ogólnej). W tym samym czasie liczba lekarzy czysto prywatnych (Wahlärzte) wzrosła o <strong>148% w 25 lat</strong>. To nie brak lekarzy jako takich — Austria ma ich formalnie najwięcej w UE — lecz <strong>ucieczka od gorzej płatnego systemu publicznego</strong> do prywatnego. Dokładnie ten mechanizm opisujemy w Polsce: nie za mało, tylko źle rozłożone.',
+    ],
+    jawne: 'Płace w szpitalach publicznych — tabele izb lekarskich (Ärztekammer) per land. Uwaga: 14 pensji rocznie.',
+    niejawne: 'Dochody praktyk (Kassen-/Wahlarzt) — sami Austriacy przyznają „mało przejrzystości dochodowej"; dane powstają dopiero ze zbiorczych, zanonimizowanych danych podatkowych.',
+  },
+  {
+    kraj: 'Szwecja',
+    meta: ['Model: Beveridge (podatek)', 'Wydatki: 11,2% PKB', 'Etat u regionu'],
+    opis: [
+      'Jedyny w tej piątce <strong>model Beveridge’a</strong>: ochronę zdrowia finansuje się z podatków (głównie regionalnego podatku dochodowego), a prowadzi ją <strong>21 regionów</strong> — nie ma płatnika-ubezpieczyciela typu NFZ. Wydatki ~11,2% PKB. Lekarz jest niemal zawsze <strong>etatowcem regionu</strong>, objętym układem zbiorowym. Gatekeeping jest miękki (do części specjalistów potrzebne skierowanie), a terminy reguluje gwarancja <em>vårdgaranti</em> (kontakt tego samego dnia, specjalista do 90 dni) — w praktyce słabo dotrzymywana.',
+      'Deficyt dotyczy przede wszystkim lekarzy rodzinnych (tylko ~1 na 7 lekarzy) i jest łatany drogimi lekarzami z agencji — <strong>hyrläkare</strong> — którzy kosztują regiony <strong>~9,3 mld SEK rocznie</strong>. To funkcjonalny odpowiednik naszych „wędrujących" kontraktów, tyle że w formie agencji, nie B2B. Około <strong>30% lekarzy wykształcono za granicą</strong> (m.in. w Polsce). A pensja etatowego lekarza publicznego jest <strong>jawna imiennie — z mocy konstytucji</strong>.',
+    ],
+    jawne: 'Wynagrodzenie etatowego lekarza publicznego jest jawne imiennie — z mocy konstytucji (offentlighetsprincipen): każdy może zażądać wykazu płac, bez podania powodu i anonimowo.',
+    niejawne: 'Stawki lekarzy z agencji (hyrläkare) i przychody prywatnych praktyk — mniej przejrzyste niż etat regionalny.',
   },
 ];
 ---
 
 <BaseLayout
-  title="Zarobki lekarzy: Polska na tle sąsiadów — zarobkilekarzy.pl"
-  description="Polska, Czechy, Niemcy, Austria — ile zarabia lekarz i czy płace są jawne. W całym regionie wynagrodzenia wynikają z jawnych taryf; Polska jest wyjątkiem — realny dochód ukrywa niejawny kontrakt."
+  title="Zarobki lekarzy: Polska na tle Europy — Czechy, Niemcy, Austria, Szwecja — zarobkilekarzy.pl"
+  description="Polska, Czechy, Niemcy, Austria, Szwecja — ile zarabia lekarz i czy płace są jawne. W całej Europie wynagrodzenia wynikają z jawnych taryf; w Szwecji są jawne imiennie. Polska jest wyjątkiem — realny dochód ukrywa niejawny kontrakt."
 >
   <section class="section">
     <div class="container">
-      <p class="eyebrow"><a href="/analizy/">Analizy</a> · Polska na tle sąsiadów</p>
-      <h1>Zarobki lekarzy: Polska na tle sąsiadów</h1>
+      <p class="eyebrow"><a href="/analizy/">Analizy</a> · Polska na tle Europy</p>
+      <h1>Zarobki lekarzy: Polska na tle Europy</h1>
       <Aktualizacja />
       <p class="lead">
-        Czechy, Niemcy, Austria — u sąsiadów lekarze zarabiają więcej. Łatwo wyciągnąć z tego
-        wniosek „trzeba dosypać”. To błąd. Polska już dokłada rekordowo — a kolejki nie maleją,
-        bo pieniądz <strong>wycieka w niejawnych kontraktach</strong>. Przewaga sąsiadów nie
-        leży w większym budżecie, lecz w <strong>jawności</strong>: płacą z <strong>publicznych
-        taryf</strong>, które każdy może policzyć. Polska jest wyjątkiem — jawny jest tylko
-        niski etat, a realny dochód domyka niejawny kontrakt. Naszym zdaniem to <strong>jawność,
-        nie kolejne miliardy</strong>, pozwoli płacić lekarzom przeciętnie więcej — z tego, co
-        już mamy.
+        Czechy, Niemcy, Austria, Szwecja — u sąsiadów i dalej w Europie lekarze zarabiają więcej.
+        Łatwo wyciągnąć z tego wniosek „trzeba dosypać”. To błąd. Polska już dokłada rekordowo — a
+        kolejki nie maleją, bo pieniądz <strong>wycieka w niejawnych kontraktach</strong>. Przewaga
+        innych nie leży w większym budżecie, lecz w <strong>jawności</strong>: płacą z
+        <strong>publicznych taryf</strong>, a w Szwecji pensja lekarza publicznego jest
+        <strong>jawna imiennie z mocy konstytucji</strong>. Polska jest wyjątkiem — jawny jest tylko
+        niski etat, a realny dochód domyka niejawny kontrakt. Naszym zdaniem to <strong>jawność, nie
+        kolejne miliardy</strong>, pozwoli płacić lekarzom przeciętnie więcej — z tego, co już mamy.
       </p>
 
       <h2>Specjalista: ile zarabia i czy wiadomo</h2>
       <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
-        Wynagrodzenie zasadnicze brutto miesięcznie, w przeliczeniu na złote. To nie total
+        Wynagrodzenie przeciętne/zasadnicze brutto miesięcznie, w przeliczeniu na złote. To nie total
         (bez dyżurów i dodatków) — chodzi o rząd wielkości i o to, <em>czy w ogóle da się to
         sprawdzić</em>.
       </p>
@@ -129,9 +193,7 @@ const systemy = [
                   <span class="cmp-note">{k.specNote}</span>
                 </td>
                 <td class="cmp-jaw">
-                  {k.jawne
-                    ? <span class="jaw-yes">✓ tak</span>
-                    : <span class="jaw-no">✗ nie</span>}
+                  <span class={JAW[k.jawne].cls}>{JAW[k.jawne].label}</span>
                   <span class="cmp-note">{k.jawneNote}</span>
                 </td>
               </tr>
@@ -141,79 +203,178 @@ const systemy = [
       </div>
       <p class="source-note">
         Rezydent (dla porównania, brutto/mc): Polska 10 595–11 655 zł; Niemcy (Assistenzarzt)
-        5 610–7 211 € (~24–31 tys. zł); Austria (Assistenzarzt) 5 518–9 310 € (~24–40 tys. zł).
-        Kursy orient.: 1 EUR ≈ 4,29 zł, 1 CZK ≈ 0,18 zł.
+        5 610–7 211 € (~24–31 tys. zł); Austria (Assistenzarzt) 5 518–9 310 € (~24–40 tys. zł);
+        Szwecja (ST-läkare) 58 900 SEK (~23 tys. zł); Czechy (baza tabelowa specjalisty) 50 980 CZK
+        (~9,2 tys. zł). Kursy orient.: 1 EUR ≈ 4,29 zł, 1 CZK ≈ 0,18 zł, 1 SEK ≈ 0,39 zł.
         Źródła: Polska — <a href="/dane/rozklad-wynagrodzen/">rozkład wynagrodzeń</a> (AOTMiT, rozporządzenie MZ);
-        Czechy — <a href="https://www.money.pl/gospodarka/ujawnili-zarobki-w-czeskich-szpitalach-takie-pensje-dostaja-lekarze-7287494267615328a.html" target="_blank" rel="noopener noreferrer">Money.pl / zpravy.kurzy.cz (2025)</a>;
+        Czechy — <a href="https://www.zdravotnickydenik.cz/2025/10/platy-a-mzdy-zdravotnictvi/" target="_blank" rel="noopener noreferrer">ÚZIS 2024 (Zdravotnický deník)</a>;
         Niemcy — <a href="https://www.marburger-bund.de/sites/default/files/tarifvertraege/2025-06/25-06-16%20TV-%C3%84rzte%20VKA%20i.d.F.%2010.%20%C3%84ndTV.pdf" target="_blank" rel="noopener noreferrer">Marburger Bund (TV-Ärzte/VKA)</a>;
-        Austria — <a href="https://www.medi-karriere.at/medizinische-berufe/arzt-gehalt/" target="_blank" rel="noopener noreferrer">medi-karriere.at (Kollektivvertrag 2025)</a>.
+        Austria — <a href="https://www.medi-karriere.at/medizinische-berufe/arzt-gehalt/" target="_blank" rel="noopener noreferrer">medi-karriere.at (Kollektivvertrag 2025)</a>;
+        Szwecja — <a href="https://www.scb.se/lonestatistik/lakare/" target="_blank" rel="noopener noreferrer">SCB (statystyka płac lekarzy, 2024)</a>.
       </p>
 
       <div class="callout alert">
         <p>
-          <strong>Wszędzie jawnie — tylko u nas nie.</strong> W Czechach, Niemczech i Austrii
-          płace lekarzy wynikają z <strong>publicznych układów zbiorowych</strong>: każdy
-          może sprawdzić w tabeli, ile zarabia specjalista na danym stopniu. W Polsce jawny
-          jest wyłącznie <strong>niski etat</strong> (12 910 zł) — a realny dochód, płynący z
-          kontraktów i wielu placówek, <strong>pozostaje ukryty</strong>. To nie kwota jest
-          tu najbardziej wstydliwa, lecz to, że <strong>nie da się jej poznać</strong>.
+          <strong>W całej Europie jawnie — tylko u nas nie.</strong> W Czechach, Niemczech, Austrii i
+          Szwecji baza wynagrodzenia lekarza wynika z <strong>publicznych taryf</strong>: każdy może
+          sprawdzić w tabeli, ile zarabia specjalista na danym stopniu. W Szwecji można nawet poznać
+          <strong>imienną pensję konkretnego lekarza</strong>. W Polsce jawny jest wyłącznie
+          <strong>niski etat</strong> (12 910 zł) — a realny dochód, płynący z kontraktów i wielu
+          placówek, <strong>pozostaje ukryty</strong>. To nie kwota jest tu najbardziej wstydliwa,
+          lecz to, że <strong>nie da się jej poznać</strong>.
         </p>
       </div>
 
-      <h2 style="margin-top: 2.5rem">Jak to w ogóle działa u sąsiadów — i co widać</h2>
+      <h2 style="margin-top: 2.5rem">Pięć krajów, jeden rzut oka</h2>
       <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
-        Uproszczony obraz każdego systemu: jak jest finansowany, co w płacach lekarzy jest
-        <strong>jawne</strong>, a co zostaje <strong>prywatne albo ukryte</strong>. Wspólny
-        mianownik sąsiadów: baza wynagrodzenia pochodzi z <strong>publicznej taryfy lub układu
-        zbiorowego</strong> — więc jest policzalna. W Polsce jawny jest tylko dół drabiny.
+        Jak każdy system jest finansowany, w jakiej formie pracuje lekarz, czy płace są jawne i ilu w
+        ogóle jest lekarzy. Dwa modele: <strong>Bismarck</strong> (składka + kasy — PL, CZ, DE, AT) i
+        <strong>Beveridge</strong> (podatek + regiony — SE). Różne modele, a jawność płac publicznych
+        i tak możliwa — więc to nie kwestia modelu finansowania, lecz woli ustawodawcy.
       </p>
-      <div class="sys-grid">
+      <div class="table-wrap">
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th>Kraj</th><th>Model finansowania</th><th>Forma pracy lekarza</th>
+              <th>Płace jawne?</th><th>Lekarze/1000</th>
+            </tr>
+          </thead>
+          <tbody>
+            {przeglad.map((r) => (
+              <tr class={r.pl ? 'is-pl' : ''}>
+                <th scope="row">{r.kraj}</th>
+                <td class="cmp-note-cell">{r.model}</td>
+                <td class="cmp-note-cell">{r.forma}</td>
+                <td class="cmp-jaw">
+                  <span class={JAW[r.jaw].cls}>{JAW[r.jaw].label}</span>
+                  <span class="cmp-note">{r.jawTxt}</span>
+                </td>
+                <td>
+                  <span class="cmp-val">{r.gest}</span>
+                  {r.gestNote && <span class="cmp-note">{r.gestNote}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">
+        Model i organizacja — Komisja Europejska / OECD, „State of Health in the EU”, profile systemów
+        zdrowia 2025:
+        <a href="https://health.ec.europa.eu/state-health-eu/country-health-profiles/country-health-profiles-2025_en" target="_blank" rel="noopener noreferrer">health.ec.europa.eu</a>.
+        Lekarze na 1000 (praktykujący) — OECD Health at a Glance (2022–2023), średnia UE ~4,2:
+        <a href="https://www.oecd.org/en/publications/2023/11/health-at-a-glance-2023_e04f8239/full-report/doctors-overall-number_40c5b5e5.html" target="_blank" rel="noopener noreferrer">OECD</a>.
+        Austria wygląda na „najgęstszą” tylko dlatego, że <strong>wlicza lekarzy w trakcie szkolenia i
+        podwójnie liczonych Wahlärztów</strong> — po zawężeniu do uprawnionych do samodzielnej praktyki
+        wychodzi ~4,32/1000 (<a href="https://de.statista.com/statistik/daten/studie/801005/umfrage/arztdichte-in-oesterreich/" target="_blank" rel="noopener noreferrer">Statista/OECD</a>).
+        Polskie 3,9 jest z kolei zawyżone zmianą metody GUS 2019–21 (realnie bliżej 3,4).
+      </p>
+
+      <h2 style="margin-top: 2.5rem">Jak to w ogóle działa w Europie — i co widać</h2>
+      <p class="muted" style="max-width: 72ch; margin-top: 0.5rem">
+        Każdy kraj osobno — jak działa system, jak pracuje i zarabia lekarz, i co w tym wynagrodzeniu
+        jest <strong>jawne</strong>, a co zostaje <strong>prywatne albo ukryte</strong>. Wspólny
+        mianownik pozostałych: baza wynagrodzenia pochodzi z <strong>publicznej taryfy lub układu
+        zbiorowego</strong>. Szwecja idzie najdalej — jawna jest <strong>imienna pensja</strong>;
+        w Polsce jawny jest tylko dół drabiny.
+      </p>
+      <div class="kraje-list">
         {systemy.map((s) => (
-          <div class={`sys-card${s.pl ? ' is-pl' : ''}`}>
-            <p class="sys-kraj">{s.kraj}{s.pl && <span class="sys-flag">wyjątek</span>}</p>
-            <p class="sys-model">{s.model}</p>
-            <div class="sys-row sys-yes">
-              <span class="sys-ic" aria-hidden="true">✓</span>
-              <span><strong>Jawne:</strong> {s.jawne}</span>
+          <article class={`kraj${s.pl ? ' is-pl' : ''}`}>
+            <div class="kraj-head">
+              <h3 class="kraj-name">{s.kraj}{s.pl && <span class="kraj-flag">wyjątek</span>}</h3>
+              <ul class="kraj-meta">{s.meta.map((m) => <li>{m}</li>)}</ul>
             </div>
-            <div class="sys-row sys-no">
-              <span class="sys-ic" aria-hidden="true">✗</span>
-              <span><strong>Niejawne / prywatne:</strong> {s.niejawne}</span>
+            {s.opis.map((p) => <p class="kraj-p" set:html={p} />)}
+            <div class="kraj-jaw">
+              <div class="jaw-box yes">
+                <p class="jaw-lbl"><span aria-hidden="true">✓</span> Jawne</p>
+                <p>{s.jawne}</p>
+              </div>
+              <div class="jaw-box no">
+                <p class="jaw-lbl"><span aria-hidden="true">✗</span> Niejawne / prywatne</p>
+                <p>{s.niejawne}</p>
+              </div>
             </div>
-          </div>
+          </article>
         ))}
       </div>
       <p class="source-note">
-        Opis modeli — Komisja Europejska / OECD, „State of Health in the EU”, profile systemów
-        zdrowia 2025 (Polska, Czechy, Niemcy, Austria):
-        <a href="https://health.ec.europa.eu/state-health-eu/country-health-profiles/country-health-profiles-2025_en" target="_blank" rel="noopener noreferrer">health.ec.europa.eu</a>.
-        Czechy — płace lekarzy publikuje urząd statystyczny
-        (<a href="https://csu.gov.cz/healthcare-personnel-and-their-wages" target="_blank" rel="noopener noreferrer">ČSÚ</a>).
-        Niemcy — taryfa
-        <a href="https://www.marburger-bund.de/sites/default/files/tarifvertraege/2025-06/25-06-16%20TV-%C3%84rzte%20VKA%20i.d.F.%2010.%20%C3%84ndTV.pdf" target="_blank" rel="noopener noreferrer">Marburger Bund (TV‑Ärzte/VKA)</a>.
-        Austria — Kollektivvertrag; udział ubezpieczeń prywatnych (~38%, 2023):
-        <a href="https://www.workinaustria.com/en/your-personal-guide/health-social-services/health-insurance/" target="_blank" rel="noopener noreferrer">workinaustria.com</a>.
+        Opis modeli — profile systemów zdrowia OECD/KE 2025
+        (<a href="https://health.ec.europa.eu/state-health-eu/country-health-profiles/country-health-profiles-2025_en" target="_blank" rel="noopener noreferrer">health.ec.europa.eu</a>).
+        Czechy — <a href="https://csu.gov.cz/pracovnici-a-mzdy-ve-zdravotnictvi" target="_blank" rel="noopener noreferrer">ČSÚ / ÚZIS</a>,
+        siatka bazowa: <a href="https://www.medijob.cz/platy-lekaru-2025/" target="_blank" rel="noopener noreferrer">nař. 341/2017 Sb.</a>.
+        Niemcy — <a href="https://www.marburger-bund.de/sites/default/files/tarifvertraege/2025-06/25-06-16%20TV-%C3%84rzte%20VKA%20i.d.F.%2010.%20%C3%84ndTV.pdf" target="_blank" rel="noopener noreferrer">Marburger Bund (TV-Ärzte/VKA)</a>.
+        Austria — Kassenarzt/Wahlarzt i wakaty kasowe:
+        <a href="https://kontrast.at/kassenarzt-wahlarzt-oesterreich/" target="_blank" rel="noopener noreferrer">kontrast.at</a>;
+        „mało przejrzystości dochodowej” — <a href="https://www.sozialversicherung.at/cdscontent/load?contentid=10008.795666&version=1746605890" target="_blank" rel="noopener noreferrer">IHS / Health System Watch (DVSV)</a>.
+        Szwecja — jawność płac publicznych (offentlighetsprincipen):
+        <a href="https://www.regeringen.se/sa-styrs-sverige/grundlagar-och-demokratiskt-deltagande/offentlighetsprincipen/" target="_blank" rel="noopener noreferrer">regeringen.se</a>.
+        Fakty „w praktyce”: Polska — <a href="/dane/rekordy/">rekordy kontraktów</a>;
+        Czechy — <a href="https://www.zdravotnickydenik.cz/2023/12/vlada-s-lekari-podepsali-dohodu-ukoncujici-protesty-lekaru/" target="_blank" rel="noopener noreferrer">ugoda rząd–lekarze 2023 (Zdravotnický deník)</a>;
+        Niemcy — <a href="https://www.bundesaerztekammer.de/baek/ueber-uns/aerztestatistik/2024" target="_blank" rel="noopener noreferrer">Ärztestatistik 2024 (15,6% obcokrajowców)</a>;
+        Szwecja — <a href="https://lakartidningen.se/nyheter/kostnaderna-for-hyrpersonal-i-varden-minskar-kraftigt-i-nastan-hela-landet/" target="_blank" rel="noopener noreferrer">hyrläkare 9,3 mld SEK (Läkartidningen)</a>.
       </p>
 
-      <h2 style="margin-top: 2.5rem">Drabina taryfowa: co u sąsiadów widać w tabeli</h2>
+      <h2 style="margin-top: 2.5rem">Oś jawności: od ukrytego kontraktu do jawnego rejestru</h2>
       <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
-        U sąsiadów każdy stopień kariery ma <strong>jawną stawkę</strong>. Poniżej pełne
-        widełki wynagrodzenia zasadniczego (brutto/mc, w przeliczeniu na złote) — od rezydenta
-        po zastępcę ordynatora.
+        Jawność płac ze środków publicznych to <strong>spektrum</strong>, nie zero-jedynkowo. Nawet u
+        „najlepszych” część dochodu (praktyki, kontrakty ordynatorów, lekarze z agencji) zostaje
+        poufna. Ale kierunek jest jasny — i pokazuje, gdzie Polska stoi.
+      </p>
+      <div class="jaw-os">
+        {jawnoscOs.map((j, i) => (
+          <div class={`jaw-step t-${j.tier}`}>
+            <div class="js-head">
+              <span class="js-rank" aria-hidden="true">{i + 1}</span>
+              <span class="js-kraj">{j.poz}</span>
+            </div>
+            <span class="js-txt">{j.txt}</span>
+          </div>
+        ))}
+      </div>
+      <div class="callout">
+        <p>
+          <strong>Szwecja to żywy dowód, że jawność jest możliwa i normalna.</strong> Nikt tam nie
+          twierdzi, że imienna pensja lekarza ze środków publicznych narusza prywatność — to
+          <strong>dokument urzędowy</strong>, dostępny na żądanie. Dokładnie o to postulujemy w Polsce:
+          <a href="/postulat/"><strong>jawny rejestr łącznego wynagrodzenia ze środków publicznych,
+          powiązany z numerem PWZ</strong></a> (nie z PESEL, bez danych prywatnych). Nie jako atak na
+          lekarzy — jako warunek, by dało się w ogóle zobaczyć, <strong>dokąd płyną pieniądze</strong>.
+        </p>
+      </div>
+      <p class="source-note">
+        Szwecja — offentlighetsprincipen (jawność dokumentów urzędowych, w tym płac sektora publicznego):
+        <a href="https://www.regeringen.se/sa-styrs-sverige/grundlagar-och-demokratiskt-deltagande/offentlighetsprincipen/" target="_blank" rel="noopener noreferrer">regeringen.se</a>,
+        <a href="https://www.st.org/rad-och-stod/lon/har-jag-ratt-att-fa-veta-mina-kollegors-loner" target="_blank" rel="noopener noreferrer">Fackförbundet ST (prawo do wglądu w płace)</a>.
+      </p>
+
+      <h2 style="margin-top: 2.5rem">Drabina taryfowa: co u innych widać w tabeli</h2>
+      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+        Każdy stopień kariery ma <strong>jawną stawkę</strong>. Poniżej pełne widełki wynagrodzenia
+        zasadniczego (brutto/mc) — w złotych i w oryginalnej walucie — od stażu/rezydenta po zastępcę
+        ordynatora.
       </p>
 
       <h3 class="cmp-h3">Niemcy i Austria — taryfa krok po kroku</h3>
       <div class="table-wrap">
         <table class="cmp">
           <thead>
-            <tr><th>Stopień</th><th>Niemcy (zł/mc)</th><th>Austria (zł/mc)</th></tr>
+            <tr><th>Stopień</th><th>Niemcy (brutto/mc)</th><th>Austria (brutto/mc)</th></tr>
           </thead>
           <tbody>
             {drabina.map((r) => (
               <tr>
                 <th scope="row">{r.stopien}</th>
-                <td class="num">{r.de}</td>
-                <td class="num">{r.at}</td>
+                <td>
+                  <span class="cmp-val">{r.dePln}</span>
+                  {r.deCur && <span class="cmp-note">{r.deCur}</span>}
+                </td>
+                <td>
+                  <span class="cmp-val">{r.atPln}</span>
+                  {r.atCur && <span class="cmp-note">{r.atCur}</span>}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -223,38 +384,72 @@ const systemy = [
         Niemcy — taryfa <a href="https://www.marburger-bund.de/sites/default/files/tarifvertraege/2025-06/25-06-16%20TV-%C3%84rzte%20VKA%20i.d.F.%2010.%20%C3%84ndTV.pdf" target="_blank" rel="noopener noreferrer">TV-Ärzte/VKA (Marburger Bund)</a>,
         stan od 1 VIII 2025; kliniki uniwersyteckie (TdL) mają zbliżone stawki, u góry do ~12 350 €.
         Austria — <a href="https://www.medi-karriere.at/medizinische-berufe/arzt-gehalt/" target="_blank" rel="noopener noreferrer">medi-karriere.at (Kollektivvertrag 2025)</a>;
-        „—” = brak jednoznacznej widełki dla tego stopnia w źródle. Kurs ~4,29 zł/€.
+        kwoty ×14/rok (13. i 14. pensja), różne między landami. „—” = brak jednoznacznej widełki dla
+        tego stopnia w źródle. Kurs ~4,29 zł/€.
       </p>
 
-      <h3 class="cmp-h3">Czechy — po ujawnieniu stawek (2025)</h3>
+      <h3 class="cmp-h3">Czechy — niska baza, resztę robią dyżury</h3>
       <div class="table-wrap">
         <table class="cmp">
           <thead>
-            <tr><th>Pozycja</th><th>≈ zł / mc</th><th>W walucie</th></tr>
+            <tr><th>Pozycja</th><th>Kwota (brutto/mc)</th></tr>
           </thead>
           <tbody>
             {czechy.map((r) => (
               <tr>
                 <th scope="row">{r.rola}</th>
-                <td class="num">{r.pln}</td>
-                <td class="cmp-note-cell">{r.czk}</td>
+                <td>
+                  <span class="cmp-val">{r.pln}</span>
+                  <span class="cmp-note">{r.czk}</span>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <p class="source-note">
-        Czechy — <a href="https://www.money.pl/gospodarka/ujawnili-zarobki-w-czeskich-szpitalach-takie-pensje-dostaja-lekarze-7287494267615328a.html" target="_blank" rel="noopener noreferrer">Money.pl / zpravy.kurzy.cz (2025)</a>.
-        Kurs ~0,18 zł/CZK. Czescy lekarze wywalczyli jawne stawki otwartą drogą (protesty
-        „Děkujeme, odcházíme”, 2011).
+        Czechy — baza tabelowa: rozporządzenie rządu nař. 341/2017 Sb.
+        (<a href="https://www.medijob.cz/platy-lekaru-2025/" target="_blank" rel="noopener noreferrer">medijob.cz</a>);
+        przeciętne płace: <a href="https://www.zdravotnickydenik.cz/2025/10/platy-a-mzdy-zdravotnictvi/" target="_blank" rel="noopener noreferrer">ÚZIS 2024 (Zdravotnický deník)</a>;
+        ujawnione stawki szpitalne: <a href="https://www.money.pl/gospodarka/ujawnili-zarobki-w-czeskich-szpitalach-takie-pensje-dostaja-lekarze-7287494267615328a.html" target="_blank" rel="noopener noreferrer">Money.pl / zpravy.kurzy.cz (2025)</a>.
+        Kurs ~0,18 zł/CZK. Uwaga: baza tabelowa to tylko ~⅖ realnej średniej — resztę stanowią
+        nadgodziny i dyżury, których <strong>nie publikuje się imiennie</strong>. Jawne stawki
+        wywalczono otwartą drogą (protesty „Děkujeme, odcházíme”, 2011).
+      </p>
+
+      <h3 class="cmp-h3">Szwecja — etat u regionu, płaca jawna imiennie</h3>
+      <div class="table-wrap">
+        <table class="cmp">
+          <thead>
+            <tr><th>Etap</th><th>Kwota (brutto/mc)</th></tr>
+          </thead>
+          <tbody>
+            {szwecja.map((r) => (
+              <tr>
+                <th scope="row">{r.rola}</th>
+                <td>
+                  <span class="cmp-val">{r.pln}</span>
+                  <span class="cmp-note">{r.sek}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">
+        Szwecja — <a href="https://www.scb.se/lonestatistik/lakare/" target="_blank" rel="noopener noreferrer">SCB (statystyka płac lekarzy, 2024)</a>:
+        średnia, brutto/mc, pełny etat, <strong>bez dodatków za dyżury</strong> (jour/beredskap) — realny
+        dochód dyżurującego jest wyraźnie wyższy. Starszy specjalista (överläkare) ~92–94 tys. SEK wg
+        agregatorów branżowych. Uwaga do przeliczeń: brak 13./14. pensji, a podatek marginalny specjalisty
+        przekracza 50% — wysokie brutto ≠ proporcjonalnie wysokie netto. Kurs ~0,39 zł/SEK.
       </p>
 
       <h2 style="margin-top: 2.5rem">Polska: od jawnego minimum do niejawnego rekordu</h2>
       <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
         Ta sama drabina po polsku — z jedną różnicą: <strong>jawny jest tylko jej dół</strong>.
-        Rezydent i etatowe minimum wynikają z ustawy; mediany AOTMiT to agregat, nie kwota
-        konkretnej osoby; a rekordowy kontrakt ujrzał światło dzienne tylko dlatego, że jeden
-        szpital wyłamał się z milczenia.
+        Rezydent i etatowe minimum wynikają z ustawy; mediany AOTMiT to agregat, nie kwota konkretnej
+        osoby; a rekordowy kontrakt ujrzał światło dzienne tylko dlatego, że jeden szpital wyłamał się z
+        milczenia.
       </p>
       <div class="table-wrap">
         <table class="cmp">
@@ -275,21 +470,24 @@ const systemy = [
       <p class="source-note">
         Polskie kwoty — zob. <a href="/dane/pensje-rezydentow/">pensje rezydentów</a>,
         <a href="/dane/rozklad-wynagrodzen/">rozkład wynagrodzeń</a> (AOTMiT, rozporządzenie MZ) i
-        <a href="/dane/rekordy/">rekordy</a>. Bywały kontrakty jeszcze wyższe (do 316 tys. zł/mc).
+        <a href="/dane/rekordy/">rekordy</a>. 316 079 zł/mc (ortopeda, ~90 operacji/mc) to najwyższy
+        udokumentowany kontrakt <strong>miesięczny</strong>; roczne dochody z oświadczeń majątkowych
+        sięgają 4,9 mln zł, a spółka neurochirurgów wystawiała szpitalom rachunki do 308 tys. zł/dzień
+        (zarzut, sprawa badana).
       </p>
 
       <h2 style="margin-top: 2.5rem">Więcej — ale nie przez dosypywanie</h2>
       <p>
-        Skoro sąsiedzi płacą więcej, może po prostu wydajemy za mało? Liczby przeczą. Budżet
-        NFZ sięga już <a href="/dane/budzet-nfz/"><strong>~220 mld zł</strong></a>, a sama ustawa
-        podwyżkowa pochłania <strong>~72 mld zł</strong> — ok. jedną trzecią całości. Mimo to pacjent
-        czeka do specjalisty średnio <a href="/dane/kolejki/"><strong>4,2 miesiąca</strong></a>,
-        a dług szpitali (<a href="/dane/zadluzenie-szpitali/"><strong>34 mld zł</strong></a>) idzie
-        głównie na wynagrodzenia. <strong>Im więcej dolewamy do nieprzejrzystego systemu, tym
-        więcej wycieka</strong>: pojedyncze kontrakty <a href="/dane/rekordy/">rozliczają do
-        316 tys. zł/mc</a>. Czechy nie „dosypały” — płacą <strong>jawnie</strong>, z policzalnych
-        taryf wywalczonych otwartą drogą (protesty „Děkujeme, odcházíme”, 2011), a nie przez
-        cichy rynek kontraktów. U nas najpierw musi być widać, <strong>dokąd idą pieniądze</strong>.
+        Skoro inni płacą więcej, może po prostu wydajemy za mało? Liczby przeczą. Budżet NFZ sięga już
+        <a href="/dane/budzet-nfz/"><strong>~220 mld zł</strong></a>, a sama ustawa podwyżkowa pochłania
+        <strong>~72 mld zł</strong> — ok. jedną trzecią całości. Mimo to pacjent czeka do specjalisty
+        średnio <a href="/dane/kolejki/"><strong>4,2 miesiąca</strong></a>, a dług szpitali
+        (<a href="/dane/zadluzenie-szpitali/"><strong>34 mld zł</strong></a>) idzie głównie na
+        wynagrodzenia. <strong>Im więcej dolewamy do nieprzejrzystego systemu, tym więcej wycieka</strong>:
+        pojedyncze kontrakty <a href="/dane/rekordy/">rozliczają do 316 tys. zł/mc</a>. Czechy nie
+        „dosypały” — płacą <strong>jawnie</strong>, z policzalnych taryf wywalczonych otwartą drogą
+        (protesty „Děkujeme, odcházíme”, 2011), a nie przez cichy rynek kontraktów. U nas najpierw musi
+        być widać, <strong>dokąd idą pieniądze</strong>.
       </p>
 
       <h2 style="margin-top: 2.5rem">A lekarzy nie brakuje bardziej niż u sąsiadów</h2>
@@ -309,6 +507,22 @@ const systemy = [
             </p>
           </div>
         ))}
+      </div>
+      <div class="callout quiet">
+        <p>
+          <strong>Austria to najlepszy dowód, że problemem nie jest sama liczba.</strong> Ma
+          <strong>najwięcej lekarzy w UE</strong> (~5,4/1000, choć to liczba zawyżona — wlicza
+          szkolących się), a mimo to <strong>brakuje jej lekarzy kasowych</strong>: ~311 nieobsadzonych
+          etatów kontraktowych z kasą (175 w medycynie ogólnej), gdy jednocześnie <strong>liczba
+          lekarzy czysto prywatnych (Wahlärzte) wzrosła o 148%</strong> w 25 lat. To nie brak rąk, lecz
+          <strong>ucieczka od gorzej płatnego systemu publicznego</strong> — dokładnie ten sam mechanizm,
+          o którym mówimy w Polsce: <em>nie za mało, tylko źle rozłożone</em>.
+        </p>
+        <p class="source-note" style="margin-top: 0.6rem">
+          Austria — Kassenarzt vs Wahlarzt, wakaty i wzrost o 148%:
+          <a href="https://kontrast.at/kassenarzt-wahlarzt-oesterreich/" target="_blank" rel="noopener noreferrer">kontrast.at</a>,
+          <a href="https://www.krankenversichern.at/wahlarzt-kassenarzt-statistiken/" target="_blank" rel="noopener noreferrer">krankenversichern.at (2025)</a>.
+        </p>
       </div>
 
       <DisclaimerZarobki />
@@ -373,10 +587,12 @@ const systemy = [
       <div class="callout quiet">
         <p>
           <strong>Uczciwie o metodzie.</strong> Porównujemy <em>wynagrodzenie zasadnicze</em>
-          (bez dyżurów, dodatków i różnic siły nabywczej). Kwoty czeskie to średnie z premiami,
-          niemieckie i austriackie — widełki taryfowe; polskie kontraktowe to mediany, nie
-          total osoby. Chodzi o rząd wielkości i — przede wszystkim — o <strong>model</strong>:
-          jawna taryfa vs niejawny kontrakt. Zob. też wyżej —
+          (bez dyżurów, dodatków i różnic siły nabywczej). Kwoty czeskie to przeciętne z premiami
+          (ÚZIS), niemieckie i austriackie — widełki taryfowe (Austria ×14 pensji), szwedzkie —
+          średnie zasadnicze bez dyżurów (przy podatku marginalnym &gt;50% i bez 13. pensji), a
+          polskie kontraktowe to mediany, nie total osoby. To celowo różne kategorie — dlatego nie
+          zestawiamy ich 1:1, lecz pokazujemy <strong>rząd wielkości</strong> i — przede wszystkim —
+          <strong>model</strong>: jawna taryfa vs niejawny kontrakt. Zob. też wyżej —
           „<a href="#eksperyment-stawki">ile kosztowałyby niemieckie stawki</a>”.
         </p>
       </div>
@@ -410,6 +626,8 @@ const systemy = [
   .cmp-jaw { white-space: nowrap; }
   .jaw-yes { color: #2f7a34; font-weight: 700; }
   .jaw-no { color: var(--alert); font-weight: 700; }
+  .jaw-part { color: #b6791f; font-weight: 700; }
+  .jaw-best { color: #1f7a4d; font-weight: 800; }
   .stat-callout { display: flex; gap: 1.25rem; align-items: center; background: var(--brand-50); border-left: 5px solid var(--brand); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 1.5rem 1.75rem; margin: 1.25rem 0 0.75rem; }
   .stat-callout-num { font-family: var(--font-mono); font-size: clamp(2rem, 6vw, 3rem); font-weight: 500; color: var(--brand); line-height: 1; flex-shrink: 0; }
   .stat-callout-note { font-size: 1rem; line-height: 1.55; color: var(--ink); margin: 0 0 0.5rem; }
@@ -417,16 +635,44 @@ const systemy = [
   @media (max-width: 600px) { .stat-callout { flex-direction: column; align-items: flex-start; gap: 0.6rem; } }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
 
-  .sys-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1.25rem 0 0.75rem; }
-  .sys-card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.15rem 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
-  .sys-card.is-pl { border-color: var(--alert); background: var(--alert-50); }
-  .sys-kraj { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 600; color: var(--ink); margin: 0; display: flex; align-items: center; gap: 0.5rem; }
-  .sys-flag { font-family: var(--font-sans); font-size: 0.64rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--alert); background: #fff; border: 1px solid var(--alert); padding: 0.1rem 0.45rem; border-radius: 999px; }
-  .sys-model { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
-  .sys-row { display: flex; gap: 0.5rem; font-size: 0.85rem; line-height: 1.45; }
-  .sys-row strong { color: var(--ink); }
-  .sys-ic { flex: none; font-weight: 700; line-height: 1.4; }
-  .sys-yes .sys-ic { color: #2f7a34; }
-  .sys-no .sys-ic { color: var(--alert); }
-  .sys-no { color: var(--ink-soft); }
+  /* Profile krajów — pełnoszerokie bloki (nie ciasne karty), by treść miała miejsce. */
+  .kraje-list { display: flex; flex-direction: column; gap: 1.1rem; margin: 1.25rem 0 0.75rem; }
+  .kraj { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.5rem 1.75rem; background: var(--bg); }
+  .kraj.is-pl { border-color: var(--alert); background: var(--alert-50); }
+  .kraj-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 0.9rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--line); }
+  .kraj-name { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 600; color: var(--ink); margin: 0; display: flex; align-items: center; gap: 0.6rem; }
+  .kraj-flag { font-family: var(--font-sans); font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--alert); background: #fff; border: 1px solid var(--alert); padding: 0.12rem 0.5rem; border-radius: 999px; }
+  .kraj-meta { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; }
+  .kraj-meta li { font-size: 0.72rem; color: var(--ink-soft); background: var(--paper-2); border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.65rem; white-space: nowrap; }
+  .kraj-p { font-size: 0.95rem; line-height: 1.62; color: var(--ink); margin: 0 0 0.7rem; max-width: 82ch; }
+  .kraj-p:last-of-type { margin-bottom: 1rem; }
+  .kraj-p strong { font-weight: 700; }
+  .kraj-jaw { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .jaw-box { background: var(--bg); border: 1px solid var(--line); border-left-width: 3px; border-radius: var(--radius-lg); padding: 0.85rem 1rem; font-size: 0.85rem; line-height: 1.5; }
+  .jaw-box.yes { border-left-color: #4a8f52; }
+  .jaw-box.no { border-left-color: var(--alert); }
+  .jaw-box p { margin: 0; color: var(--ink-soft); }
+  .jaw-lbl { font-weight: 700; color: var(--ink) !important; margin: 0 0 0.3rem !important; display: flex; align-items: center; gap: 0.4rem; }
+  .jaw-box.yes .jaw-lbl span { color: #2f7a34; font-weight: 800; }
+  .jaw-box.no .jaw-lbl span { color: var(--alert); font-weight: 800; }
+  @media (max-width: 620px) { .kraj { padding: 1.25rem 1.15rem; } .kraj-jaw { grid-template-columns: 1fr; } }
+
+  /* Oś jawności — drabina od ukrytego (czerwony) po jawny imiennie (zielony). */
+  .jaw-os { margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+  .jaw-step { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 1rem 1.25rem; padding: 0.95rem 1.15rem; border-left: 6px solid var(--line); align-items: baseline; }
+  .jaw-step + .jaw-step { border-top: 1px solid var(--line); }
+  .jaw-step .js-head { display: flex; align-items: center; gap: 0.55rem; }
+  .jaw-step .js-rank { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: #fff; background: var(--ink-soft); width: 1.4rem; height: 1.4rem; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .jaw-step .js-kraj { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 600; color: var(--ink); }
+  .jaw-step .js-txt { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.5; }
+  .jaw-step.t-no { border-left-color: var(--alert); background: var(--alert-50); }
+  .jaw-step.t-no .js-rank { background: var(--alert); }
+  .jaw-step.t-part { border-left-color: #d99a2b; }
+  .jaw-step.t-part .js-rank { background: #d99a2b; }
+  .jaw-step.t-yes { border-left-color: #4a8f52; }
+  .jaw-step.t-yes .js-rank { background: #4a8f52; }
+  .jaw-step.t-best { border-left-color: #1f7a4d; background: #eef7f1; }
+  .jaw-step.t-best .js-rank { background: #1f7a4d; }
+  .jaw-step.t-best .js-kraj { color: #1f7a4d; }
+  @media (max-width: 560px) { .jaw-step { grid-template-columns: 1fr; gap: 0.35rem; } }
 </style>

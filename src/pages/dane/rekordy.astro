@@ -9,23 +9,22 @@ const rekordy = (await getCollection('zarobki'))
   .filter((z) => z.data.grupa === 'rekord')
   .sort((a, b) => a.data.kolejnosc - b.data.kolejnosc);
 
-const podium = rekordy.filter((z) => z.data.jednostka === 'zł/dzień');
 const byKwota = (a, b) => b.data.kwota - a.data.kwota;
-const miesieczne = rekordy.filter((z) => z.data.jednostka === 'zł/mc').sort(byKwota);
+const dzienne = rekordy.filter((z) => z.data.jednostka === 'zł/dzień').sort(byKwota);
+const miesieczne = rekordy.filter((z) => z.data.jednostka === 'zł/mies.').sort(byKwota);
 const roczne = rekordy.filter((z) => z.data.jednostka === 'zł/rok').sort(byKwota);
 
 const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
 
-// Porównanie: dniówki gwiazd futbolu vs rekordowy dzień neurochirurga (308 tys. zł).
-// Pensja roczna ÷ 365; kursy 1 EUR=4,25 zł, 1 USD=3,65 zł, 1 GBP=4,90 zł.
-const liga = [
-  { rank: 1, name: 'Ronaldo', club: 'Al-Nassr', val: '2 350 000 zł', w: 100, over: true },
-  { rank: 2, name: 'Haaland', club: 'Manchester City', val: '367 000 zł', w: 100 },
-  { rank: 3, name: 'Neurochirurg', club: 'spółka / NFZ', val: '308 000 zł', w: 84, doc: true },
-  { rank: 4, name: 'Messi', club: 'Inter Miami', val: '283 000 zł', w: 77 },
-  { rank: 5, name: 'Lewandowski', club: 'FC Barcelona', val: '242 000 zł', w: 66 },
-  { rank: 6, name: 'Yamal', club: 'FC Barcelona', val: '194 000 zł', w: 53 },
-];
+// Trójka „skala" — najwyższy udokumentowany rekord w każdej jednostce czasu (dzień/miesiąc/rok).
+const heroDzien = dzienne[0];
+const heroMc = miesieczne[0];
+const heroRok = roczne[0];
+// Kotwica skali: mediana kontraktu specjalisty (AOTMiT 02.2026, EXACT) — zob. /dane/rozklad-wynagrodzen.
+const medianaKontrakt = 25595;
+const heroMcMult = Math.floor(heroMc.data.kwota / medianaKontrakt);
+// Szerokość paska rankingu = udział kwoty w maksimum danej grupy.
+const barW = (kwota: number, max: number) => Math.round((kwota / max) * 100);
 
 // Źródłowa tabela: 10 najwyższych wynagrodzeń personelu medycznego szpitali wojewódzkich
 // Mazowsza (2025), wg formy zatrudnienia. Kwoty zaokrąglone do zł. eb/en = etat brutto/netto,
@@ -67,109 +66,118 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
 
       <DisclaimerZarobki />
 
-      {podium.map((z) => (
-        <div class="podium">
-          <div class="podium-badge">🥇 1. miejsce na podium</div>
-          <p class="podium-label">{z.data.etykieta}</p>
-          <p class="podium-line">
-            <span class="podium-num">308 tys. zł</span>
-            <span class="podium-per">DZIENNIE</span>
-          </p>
-          <p class="podium-sub">— czyli nawet <strong>26 tys. zł za godzinę</strong>.</p>
-          <p class="podium-meta">
-            <span class="chip chip-alert">zarzut — sprawa w toku</span>
-            {z.data.rola} · {z.data.region}
-          </p>
-          <p class="podium-note">{z.data.uwaga}</p>
-          <p class="rec-src"><a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a></p>
+      <div class="skala">
+        <div class="skala-tile is-zarzut">
+          <div class="skala-eb">za godzinę</div>
+          <div class="skala-num">26 000<span class="skala-zl"> zł</span></div>
+          <p class="skala-who">Spółka neurochirurgów — 308 tys. zł za dzień pracy (Mogilno, Miastko)</p>
+          <p class="skala-foot"><span class="chip chip-alert">zarzut — sprawa w toku</span> <a href={heroDzien.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{heroDzien.data.zrodloNazwa}</a></p>
         </div>
-      ))}
+        <div class="skala-tile">
+          <div class="skala-eb">za miesiąc</div>
+          <div class="skala-num">{fmt(heroMc.data.kwota)}<span class="skala-zl"> zł</span></div>
+          <p class="skala-who">Kontrakt B2B — ortopeda, Ciechanów</p>
+          <p class="skala-foot"><a href={heroMc.data.zrodloUrl} target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a></p>
+        </div>
+        <div class="skala-tile">
+          <div class="skala-eb">za rok</div>
+          <div class="skala-num">{fmt(heroRok.data.kwota)}<span class="skala-zl"> zł</span></div>
+          <p class="skala-who">Dochód roczny — analiza oświadczeń majątkowych</p>
+          <p class="skala-foot"><a href={heroRok.data.zrodloUrl} target="_blank" rel="noopener noreferrer">Co w Zdrowiu</a></p>
+        </div>
+      </div>
+      <p class="skala-ctx">
+        Dla skali: najwyższy miesięczny kontrakt to <strong>ponad {heroMcMult}× mediana kontraktu
+        specjalisty</strong> — <a href="/dane/rozklad-wynagrodzen/">25 595 zł/mies., mediana AOTMiT (II 2026)</a>.
+      </p>
 
-      <div class="podium">
-        <div class="podium-badge">🕐 Rekord czasu pracy</div>
-        <p class="podium-label">Ten sam lekarz rozliczany w kilku miejscach naraz — bo nikt nie sumuje jego godzin</p>
-        <p class="podium-line">
-          <span class="podium-num">1000+</span>
-          <span class="podium-per">GODZIN / MIESIĄC</span>
-        </p>
-        <p class="podium-sub">
-          — w miesiącu, który ma najwyżej <strong>744 godziny</strong>. W skali roku wykazano
-          <strong>11 577 godzin</strong> (rok ma 8 760); bywały doby rozliczone na <strong>72 godziny</strong>.
-        </p>
-        <p class="podium-meta">
+      <div class="czas">
+        <div class="czas-head">
+          <span class="czas-eb"><i class="czas-clock" aria-hidden="true">🕐</i> Rekord czasu — nie pieniędzy</span>
           <span class="chip chip-alert">zarzut — sprawa w toku</span>
-          lekarz-kontraktowiec · szpital powiatowy w Braniewie (warmińsko-mazurskie)
+        </div>
+        <p class="czas-line"><span class="czas-num">1000+</span><span class="czas-per">godzin / miesiąc</span></p>
+        <p class="czas-sub">
+          W miesiącu, który ma najwyżej <strong>744 godziny</strong>; w skali roku wykazano
+          <strong>11 577 godzin</strong> (rok ma 8 760), a bywały doby rozliczone na <strong>72 godziny</strong>.
+          Ten sam lekarz rozliczany w kilku miejscach naraz — <strong>bo nikt nie sumuje jego godzin</strong>.
         </p>
-        <p class="podium-note">
-          Mechanizm: równoległe rozliczanie <strong>dwóch–trzech źródeł naraz</strong> — np. dyżur
-          w karetce i zabezpieczenie oddziału w tych samych godzinach. Roczne rozliczenie:
-          <strong>1 772 879,50 zł</strong>; szacowana strata szpitala <strong>~3,8 mln zł</strong>
-          w trzy lata. Ujawnił to dopiero <strong>nowy zarząd</strong> podczas weryfikacji wypłat;
-          sprawa trafiła do prokuratury (III 2025), lekarz sam się zwolnił (VII 2025) —
-          <strong>nikomu nie postawiono zarzutów</strong>. To w ogóle możliwe, bo <strong>żaden
-          rejestr nie sumuje godzin jednej osoby po numerze PWZ</strong> w różnych placówkach.
+        <p class="czas-note">
+          Roczne rozliczenie <strong>1 772 879,50 zł</strong>; szacowana strata szpitala
+          <strong>~3,8 mln zł</strong> w trzy lata. Ujawnił to dopiero nowy zarząd podczas weryfikacji
+          wypłat; sprawa trafiła do prokuratury (III 2025), lekarz sam się zwolnił (VII 2025) — nikomu
+          nie postawiono zarzutów. Możliwe, bo <strong>żaden rejestr nie sumuje godzin jednej osoby po
+          numerze PWZ</strong>. Szpital powiatowy w Braniewie (warmińsko-mazurskie).
         </p>
         <p class="rec-src"><a href="https://wydarzenia.interia.pl/kraj/news-lekarz-pracowal-72-godziny-na-dobe-to-bylo-wprost-dojenie-sz,nId,23511769" target="_blank" rel="noopener noreferrer">Interia</a></p>
       </div>
 
-      <h2 style="margin-top: 2.5rem">Neurochirurg w Lidze Mistrzów</h2>
-      <p class="muted" style="max-width: 66ch; margin-top: 0.5rem">
-        Dla skali — dniówki gwiazd światowego futbolu (pensja klubowa brutto 2025/26 ÷ 365
-        dni) zestawione z <strong>rekordowym dniem lekarza ze spółki</strong>. Rachunek za
-        jeden dzień pracy plasuje go między Haalandem a Messim.
-      </p>
-      <div class="liga">
-        {liga.map((r) => (
-          <div class={`lm-row${r.doc ? ' is-doc' : ''}`}>
-            <span class="lm-rank">{r.rank}</span>
-            <div class="lm-body">
-              <div class="lm-head">
-                <span class="lm-name">{r.name}</span>
-                <span class="lm-club">{r.club}</span>
-                <span class="lm-val">{r.val}</span>
-              </div>
-              <div class="lm-bar">
-                <div class={`lm-fill${r.over ? ' is-over' : ''}${r.doc ? ' is-docfill' : ''}`} style={`width:${r.w}%`}>
-                  {r.over && <span class="lm-over">poza skalą ↗</span>}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <p class="source-note">
-        Pensje klubowe brutto 2025/26 ÷ 365 dni; kursy: 1 EUR = 4,25 zł · 1 USD = 3,65 zł ·
-        1 GBP = 4,90 zł. Źródła: Capology, Forbes, Sportico; rekordowy dzień neurochirurga
-        (73 zabiegi w 12 godzin) —
-        <a href="https://www.rp.pl/ochrona-zdrowia/art44774891-300-tys-zl-za-dzien-pracy-tyle-mieli-zarabiac-neurochirurdzy-w-szpitalach" target="_blank" rel="noopener noreferrer">Rzeczpospolita</a> /
-        WP „afera kręgosłupowa”. To zarzut — sprawa w toku.
-      </p>
-
       <h2 style="margin-top: 2.5rem">Miesięczne rozliczenia (NFZ / kontrakty)</h2>
-      <div class="rec-list">
-        {miesieczne.map((z) => (
-          <div class="rec">
-            <div class="rec-num">{fmt(z.data.kwota)}<span class="rec-unit">{z.data.jednostka}</span></div>
-            <div class="rec-body">
-              <p class="rec-label">{z.data.etykieta}</p>
-              <p class="rec-meta">
-                {z.data.forma && <span class="chip">{z.data.forma}</span>}
-                {z.data.rola && <span>{z.data.rola}</span>}
+      <div class="rank">
+        {miesieczne.map((z, i) => (
+          <div class="rank-row">
+            <span class="rank-i">{i + 1}</span>
+            <div class="rank-main">
+              <div class="rank-top">
+                <span class="rank-label">{z.data.etykieta}</span>
+                <span class="rank-num">{fmt(z.data.kwota)}<span class="rank-unit"> {z.data.jednostka}</span></span>
+              </div>
+              <div class="rank-bar"><div class={`rank-fill${i === 0 ? ' is-top' : ''}`} style={`width:${barW(z.data.kwota, miesieczne[0].data.kwota)}%`}></div></div>
+              <p class="rank-meta">
+                {z.data.forma && z.data.forma !== '—' && <span class="chip">{z.data.forma}</span>}
+                {z.data.rola && <span class="rank-role">{z.data.rola}</span>}
                 {z.data.region && <span> · {z.data.region}</span>}
+                {z.data.statusFaktu === 'zarzut' && <span class="chip chip-alert">zarzut</span>}
+                <a class="rank-src" href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
               </p>
-              {z.data.uwaga && <p class="rec-note">{z.data.uwaga}</p>}
-              <p class="rec-src"><a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a></p>
+              {z.data.uwaga && <p class="rank-note">{z.data.uwaga}</p>}
             </div>
           </div>
         ))}
       </div>
 
-      <h2 style="margin-top: 2.5rem">Skąd te liczby: pełna tabela wojewódzka (2025)</h2>
+      <h2 style="margin-top: 2.5rem">Roczne rozliczenia</h2>
       <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
-        Rekord 316 079 zł nie jest wyrwany z kontekstu — to szczyt oficjalnego zestawienia
-        <strong>10 najwyższych wynagrodzeń</strong> w szpitalach wojewódzkich Mazowsza, wg formy
-        zatrudnienia. Widać w nim rzecz kluczową: <strong>kontrakt (B2B) bije etat i umowę
-        cywilnoprawną kilkukrotnie</strong> — i to właśnie kontraktów kwot nikt zwykle nie ujawnia.
+        Różne źródła tej samej prawdy: <strong>oświadczenia majątkowe</strong> (jawne z mocy prawa),
+        <strong>kontrakty</strong> i <strong>bezpośrednie wypłaty szpitali</strong>. Malejąco, wg kwoty.
+      </p>
+      <div class="rank">
+        {roczne.map((z, i) => (
+          <div class="rank-row">
+            <span class="rank-i">{i + 1}</span>
+            <div class="rank-main">
+              <div class="rank-top">
+                <span class="rank-label">{z.data.etykieta}</span>
+                <span class="rank-num">{fmt(z.data.kwota)}<span class="rank-unit"> {z.data.jednostka}</span></span>
+              </div>
+              <div class="rank-bar"><div class={`rank-fill${i === 0 ? ' is-top' : ''}`} style={`width:${barW(z.data.kwota, roczne[0].data.kwota)}%`}></div></div>
+              <p class="rank-meta">
+                {z.data.forma && z.data.forma !== '—' && <span class="chip">{z.data.forma}</span>}
+                {z.data.rola && <span class="rank-role">{z.data.rola}</span>}
+                {z.data.region && <span> · {z.data.region}</span>}
+                {z.data.statusFaktu === 'zarzut' && <span class="chip chip-alert">zarzut</span>}
+                <a class="rank-src" href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
+              </p>
+              {z.data.uwaga && <p class="rank-note">{z.data.uwaga}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p class="source-note" style="margin-top: 1.5rem">
+        <strong>Uczciwie:</strong> to różne miary — <strong>dochód</strong> z oświadczenia majątkowego
+        (praktyka indywidualna) nie jest tożsamy z <strong>wypłatą</strong> kontraktu czy etatu, a część
+        praktyk rozlicza się też prywatnie. Kwoty rozliczeń to fakty; ewentualne zarzuty w postępowaniach
+        oznaczamy osobno i traktujemy jako <strong>nieudowodnione</strong>.
+      </p>
+
+      <h2 style="margin-top: 2.75rem">Kontrakt bije etat: pełna tabela wojewódzka (2025)</h2>
+      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+        Jedno oficjalne zestawienie — <strong>10 najwyższych wynagrodzeń</strong> w szpitalach
+        wojewódzkich Mazowsza (2025), wg formy zatrudnienia — pokazuje sedno całej strony: za tę
+        samą pracę <strong>kontrakt (B2B) bije etat i umowę cywilnoprawną kilkukrotnie</strong>.
+        I to właśnie <strong>kwot kontraktowych nikt zwykle nie ujawnia</strong> — dlatego jawny
+        rejestr po numerze <a href="/postulat/">PWZ</a> zmieniłby tu wszystko.
       </p>
       <div class="table-wrap">
         <table class="woj">
@@ -200,39 +208,13 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
         </table>
       </div>
       <p class="source-note">
-        Kwoty w zł/mc, zaokrąglone do złotego. <strong>*</strong> kwota wypłacona jednej osobie:
+        Kwoty w zł/mies., zaokrąglone do złotego. <strong>*</strong> kwota wypłacona jednej osobie:
         wszystkie cykliczne dodatki i dyżury (bez nagród jubileuszowych, odpraw, „trzynastek”,
         premii i wypłat jednorazowych). <strong>**</strong> umowa rozwiązana. Etat ma wysokie
         obciążenia — stąd duża różnica brutto/netto; dla kontraktu (B2B) źródło podaje jedną kwotę,
         bez rozbicia. Źródło: zestawienie Urzędu Marszałkowskiego
         Woj. Mazowieckiego za
         <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Kacprzyk-nie-byl-rekordzista-W-szpitalach-mazowieckich-mozna-zarobic-nawet-316-tys-zl-miesiecznie,285578,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>.
-      </p>
-
-      <h2 style="margin-top: 2.5rem">Roczne dochody (oświadczenia majątkowe)</h2>
-      <div class="rec-list">
-        {roczne.map((z) => (
-          <div class="rec">
-            <div class="rec-num">{fmt(z.data.kwota)}<span class="rec-unit">{z.data.jednostka}</span></div>
-            <div class="rec-body">
-              <p class="rec-label">{z.data.etykieta}</p>
-              <p class="rec-meta">
-                {z.data.rola && <span>{z.data.rola}</span>}
-                {z.data.region && <span> · {z.data.region}</span>}
-                {z.data.statusFaktu === 'zarzut' && <span class="chip chip-alert">zarzut</span>}
-              </p>
-              {z.data.uwaga && <p class="rec-note">{z.data.uwaga}</p>}
-              <p class="rec-src"><a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a></p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <p class="source-note" style="margin-top: 1.5rem">
-        <strong>Uczciwie:</strong> dochód z oświadczenia majątkowego (praktyka indywidualna)
-        nie jest tożsamy z „kontraktem NFZ” — część praktyk rozlicza się prywatnie. Kwoty
-        rozliczeń to fakty; ewentualne zarzuty w postępowaniach oznaczamy osobno i traktujemy
-        jako <strong>nieudowodnione</strong>.
       </p>
 
       <h2 style="margin-top: 2.75rem">Kiedy jawność zadziałała — Włocławek</h2>
@@ -246,10 +228,29 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
         <div class="jc-head"><span class="jc-mark">✓</span> Szpital podał liczby, bo redakcja zapytała</div>
         <p class="jc-lead">
           <strong>315 lekarzy</strong>, a wśród nich najlepiej zarabiający rozliczył w 2025 r.
-          <strong>1 474 919 zł</strong> (~122 tys. zł/mc); w maju 2026 najwyższe miesięczne
+          <strong>1 474 919 zł</strong> (~122 tys. zł/mies.); w maju 2026 najwyższe miesięczne
           rozliczenie sięgnęło <strong>139 957 zł</strong> brutto — najwięcej w radiologii i
           kardiologii inwazyjnej, przy dyżurach <strong>350–400 zł/h</strong>. Na samych lekarzy
           poszło <strong>84,1 mln zł</strong>, czyli <strong>32,86%</strong> kosztów osobowych szpitala.
+        </p>
+        <div class="realne">
+          <div class="realne-stat">
+            <span class="realne-num">~22 tys.</span>
+            <span class="realne-lab">średnio na lekarza / mies.</span>
+          </div>
+          <div class="realne-x">× 6,3 →</div>
+          <div class="realne-stat is-rec">
+            <span class="realne-num">~140 tys.</span>
+            <span class="realne-lab">rekord miesięczny (V 2026)</span>
+          </div>
+        </div>
+        <p class="realne-cap">
+          <strong>To są realne pensje:</strong> 84,1 mln zł ÷ 315 lekarzy = <strong>~267 tys. zł rocznie
+          (~22 tys./mies.)</strong> średnio na lekarza — niemal tyle, co
+          <a href="/dane/rozklad-wynagrodzen/">mediana kontraktu specjalisty (25,6 tys.)</a>.
+          Najwyższe miesięczne rozliczenie (maj 2026) to <strong>139 957 zł — 6,3× średniej</strong>:
+          wąski margines, nie norma. (Średni koszt szpitala na lekarza — miesza pełne i częściowe etaty,
+          więc to rząd wielkości, nie wypłata konkretnej osoby.)
         </p>
         <div class="jc-split" role="img" aria-label="Z 315 lekarzy: 245 na kontraktach, 61 na etacie, 9 na innych umowach">
           <div class="jc-seg jc-seg-k" style="width:77.8%"><span>245 kontrakty</span></div>
@@ -313,8 +314,11 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
       <div class="dist">
         {radniDochody.map((d) => (
           <div class={`dist-row${d === radniStat.mediana ? ' is-med' : ''}`}>
-            <div class="dist-track"><div class="dist-bar" style={`width:${Math.round((d / radniStat.max) * 100)}%`}></div></div>
-            <span class="dist-val">{fmt(d)} zł{d === radniStat.mediana ? ' · mediana' : ''}</span>
+            <div class="dist-track">
+              <div class="dist-bar" style={`width:${Math.round((d / radniStat.max) * 100)}%`}></div>
+              {d === radniStat.mediana && <span class="dist-tag">mediana</span>}
+            </div>
+            <span class="dist-val">{fmt(d)} zł</span>
           </div>
         ))}
       </div>
@@ -350,43 +354,46 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
 </BaseLayout>
 
 <style>
-  .rec-list { display: flex; flex-direction: column; gap: 1rem; margin: 1.25rem 0; }
-  .rec { display: flex; gap: 1.25rem; align-items: flex-start; background: var(--bg); border: 1px solid var(--line); border-left: 4px solid var(--alert); border-radius: 0 var(--radius) var(--radius) 0; padding: 1rem 1.25rem; }
-  .rec-num { font-family: var(--font-mono); font-size: clamp(1.4rem, 4vw, 1.9rem); font-weight: 600; color: var(--alert); line-height: 1.1; white-space: nowrap; flex-shrink: 0; min-width: 12ch; text-align: right; }
-  .rec-unit { display: block; font-size: 0.72rem; color: var(--ink-faint); font-weight: 400; }
-  .rec-body { min-width: 0; }
-  .rec-label { font-weight: 600; color: var(--ink); margin: 0 0 0.25rem; }
-  .rec-meta { font-size: 0.86rem; color: var(--ink-soft); margin: 0 0 0.35rem; }
-  .rec-note { font-size: 0.84rem; color: var(--ink-soft); margin: 0 0 0.35rem; line-height: 1.5; }
-  .rec-src { font-size: 0.8rem; margin: 0; }
-  .podium { background: linear-gradient(180deg, var(--alert-50), var(--bg)); border: 2px solid var(--alert); border-radius: var(--radius-lg); padding: 1.5rem 1.75rem; margin: 1.5rem 0 2rem; }
-  .podium-badge { display: inline-block; background: var(--alert); color: #fff; font-weight: 700; font-size: 0.82rem; padding: 0.2rem 0.7rem; border-radius: 999px; margin-bottom: 0.75rem; }
-  .podium-label { font-weight: 600; color: var(--ink); margin: 0 0 0.35rem; font-size: 1.05rem; }
-  .podium-line { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; margin: 0.25rem 0; }
-  .podium-num { font-family: var(--font-mono); font-size: clamp(2.4rem, 9vw, 4rem); font-weight: 700; color: var(--alert); line-height: 1; }
-  .podium-per { font-family: var(--font-sans); font-weight: 800; font-size: clamp(1.4rem, 5vw, 2.2rem); letter-spacing: 0.08em; color: var(--alert); text-transform: uppercase; border-bottom: 4px solid var(--alert); padding-bottom: 2px; }
-  .podium-sub { font-size: 1.05rem; color: var(--ink); margin: 0.4rem 0 0.6rem; }
-  .podium-meta { font-size: 0.86rem; color: var(--ink-soft); margin: 0 0 0.5rem; }
-  .podium-note { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
   .chip { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--paper-2); font-size: 0.72rem; margin-right: 0.4rem; }
   .chip-alert { background: var(--alert-50); color: var(--alert); font-weight: 600; }
+  .rec-src { font-size: 0.8rem; margin: 0; }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
-  .liga { display: flex; flex-direction: column; gap: 0.85rem; margin: 1.25rem 0 0.75rem; }
-  .lm-row { display: flex; gap: 0.9rem; align-items: center; }
-  .lm-row.is-doc { background: var(--alert-50); border: 1px solid var(--alert); border-radius: var(--radius); padding: 0.6rem 0.75rem; margin: -0.2rem -0.75rem; }
-  .lm-rank { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 700; color: var(--ink-faint); width: 1.4ch; text-align: center; flex-shrink: 0; }
-  .lm-row.is-doc .lm-rank { color: var(--alert); }
-  .lm-body { flex: 1; min-width: 0; }
-  .lm-head { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
-  .lm-name { font-weight: 700; color: var(--ink); }
-  .lm-club { font-size: 0.82rem; color: var(--ink-soft); }
-  .lm-val { margin-left: auto; font-family: var(--font-mono); font-weight: 600; white-space: nowrap; }
-  .lm-row.is-doc .lm-name, .lm-row.is-doc .lm-val { color: var(--alert); }
-  .lm-bar { background: var(--paper-2); border-radius: var(--radius); height: 16px; width: 100%; overflow: hidden; }
-  .lm-fill { height: 100%; background: var(--ink-faint); border-radius: var(--radius); min-width: 4px; position: relative; }
-  .lm-fill.is-docfill { background: var(--alert); }
-  .lm-fill.is-over { background: repeating-linear-gradient(90deg, var(--ink-soft) 0 10px, var(--paper-2) 10px 14px); }
-  .lm-over { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 0.62rem; font-weight: 700; color: var(--ink); background: rgba(255,255,255,0.7); padding: 0 3px; border-radius: 3px; }
+
+  .skala { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.7rem; margin: 1.5rem 0 0.75rem; }
+  .skala-tile { background: var(--paper); border: 1px solid var(--line); border-top: 3px solid var(--brand); border-radius: var(--radius); padding: 0.85rem 0.95rem 0.8rem; }
+  .skala-tile.is-zarzut { border-top-color: var(--alert); }
+  .skala-eb { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+  .skala-num { font-family: var(--font-mono); font-size: clamp(1.25rem, 3.2vw, 1.7rem); font-weight: 700; color: var(--ink); line-height: 1.05; margin: 0.3rem 0 0.15rem; white-space: nowrap; }
+  .skala-zl { font-family: var(--font-sans); font-size: 0.8rem; font-weight: 400; color: var(--ink-soft); }
+  .skala-who { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.4; margin: 0 0 0.6rem; }
+  .skala-foot { font-size: 0.78rem; color: var(--ink-faint); margin: 0; }
+  .skala-ctx { max-width: 62ch; font-size: 0.92rem; color: var(--ink-soft); line-height: 1.55; margin: 0.25rem 0 0; }
+
+  .czas { background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.1rem 1.35rem; margin: 1.25rem 0 0.5rem; }
+  .czas-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+  .czas-eb { font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; }
+  .czas-clock { font-style: normal; }
+  .czas-line { display: flex; align-items: baseline; gap: 0.5rem; margin: 0.2rem 0 0.5rem; }
+  .czas-num { font-family: var(--font-mono); font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 700; color: var(--ink); line-height: 1; }
+  .czas-per { font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.95rem; }
+  .czas-sub { font-size: 0.95rem; color: var(--ink); line-height: 1.55; margin: 0 0 0.5rem; }
+  .czas-note { font-size: 0.84rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
+
+  .rank { display: flex; flex-direction: column; margin: 1.1rem 0 0.5rem; }
+  .rank-row { display: flex; gap: 0.9rem; align-items: flex-start; padding: 0.85rem 0; border-bottom: 1px solid var(--line); }
+  .rank-row:last-child { border-bottom: none; }
+  .rank-i { font-family: var(--font-mono); font-size: 0.9rem; color: var(--ink-faint); width: 1.6ch; text-align: right; flex-shrink: 0; padding-top: 0.15rem; }
+  .rank-main { flex: 1; min-width: 0; }
+  .rank-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+  .rank-label { font-weight: 600; color: var(--ink); font-size: 0.95rem; min-width: 0; }
+  .rank-num { font-family: var(--font-mono); font-weight: 700; color: var(--ink); font-size: clamp(1rem, 3vw, 1.15rem); white-space: nowrap; flex-shrink: 0; }
+  .rank-unit { font-size: 0.72rem; color: var(--ink-faint); font-weight: 400; }
+  .rank-bar { height: 6px; background: var(--paper-2); border-radius: 3px; overflow: hidden; margin: 0.4rem 0; }
+  .rank-fill { height: 100%; background: var(--brand); border-radius: 3px; min-width: 3px; }
+  .rank-meta { font-size: 0.82rem; color: var(--ink-soft); margin: 0; line-height: 1.6; }
+  .rank-role { color: var(--ink-soft); }
+  .rank-src { margin-left: 0.35rem; font-size: 0.8rem; white-space: nowrap; }
+  .rank-note { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.5; margin: 0.3rem 0 0; }
   .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
   .woj { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.9rem; }
   .woj thead th { padding: 0.5rem 0.7rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; border-bottom: 2px solid var(--line); text-align: right; }
@@ -417,6 +424,14 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
   .jc-head { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: #2f7a34; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.6rem; }
   .jc-mark { font-size: 1.05rem; }
   .jc-lead { font-size: 0.98rem; color: var(--ink); line-height: 1.6; margin: 0 0 1rem; }
+  .realne { display: flex; align-items: stretch; gap: 0.6rem; margin: 0 0 0.75rem; }
+  .realne-stat { flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.65rem 0.9rem; text-align: center; }
+  .realne-num { display: block; font-family: var(--font-mono); font-size: clamp(1.3rem, 5vw, 1.7rem); font-weight: 700; color: var(--ink); line-height: 1.1; }
+  .realne-stat.is-rec .realne-num { color: var(--brand); }
+  .realne-lab { display: block; font-size: 0.76rem; color: var(--ink-soft); margin-top: 0.2rem; line-height: 1.3; }
+  .realne-x { align-self: center; font-family: var(--font-mono); font-weight: 700; color: var(--ink-soft); white-space: nowrap; font-size: 0.9rem; }
+  .realne-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 1rem; }
+  @media (max-width: 480px) { .realne { flex-direction: column; } .realne-x { transform: rotate(90deg); align-self: center; } }
   .jc-split { display: flex; height: 30px; border-radius: var(--radius); overflow: hidden; background: var(--paper-2); }
   .jc-seg { display: flex; align-items: center; justify-content: center; min-width: 0; }
   .jc-seg span { font-size: 0.74rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 0.3rem; }
@@ -430,14 +445,11 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
   .jc-key-i { background: var(--ink-faint); }
   .jc-note { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.6; margin: 0 0 0.5rem; max-width: 68ch; }
   .dist { display: flex; flex-direction: column; gap: 4px; margin: 1rem 0 0.75rem; max-width: 620px; }
-  .dist-row { display: flex; align-items: center; gap: 0.75rem; }
-  .dist-track { flex: 1; background: var(--paper-2); border-radius: 3px; height: 15px; overflow: hidden; }
+  .dist-row { display: grid; grid-template-columns: 1fr 13ch; align-items: center; gap: 0.75rem; }
+  .dist-track { position: relative; background: var(--paper-2); border-radius: 3px; height: 15px; }
   .dist-bar { height: 100%; background: var(--ink-soft); border-radius: 3px; min-width: 3px; }
   .dist-row.is-med .dist-bar { background: var(--brand); }
-  .dist-val { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); white-space: nowrap; min-width: 13ch; text-align: right; }
+  .dist-tag { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.72rem; font-weight: 600; color: var(--brand); background: var(--bg); padding: 0 4px; border-radius: 3px; line-height: 1; }
+  .dist-val { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); white-space: nowrap; text-align: right; }
   .dist-row.is-med .dist-val { color: var(--brand); font-weight: 600; }
-  @media (max-width: 520px) {
-    .rec { flex-direction: column; gap: 0.4rem; }
-    .rec-num { min-width: 0; text-align: left; }
-  }
 </style>

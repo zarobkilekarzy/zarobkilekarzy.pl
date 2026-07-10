@@ -52,7 +52,7 @@ const zarobki = defineCollection({
       'personel',     // inni pracownicy OZ — drabina taryfowa ustawy (piel., ratownicy, diagności…)
     ]),
     kwota: z.number(),
-    jednostka: z.enum(['zł/mc', 'zł/h', 'zł/dzień', 'zł/rok', 'zł/dyżur', 'mies.', 'mld zł', 'lek./1000', '%', 'x']),
+    jednostka: z.enum(['zł/mies.', 'zł/h', 'zł/dzień', 'zł/rok', 'zł/dyżur', 'mies.', 'mld zł', 'lek./1000', '%', 'x']),
     // Współczynnik pracy z załącznika do ustawy o najniższym wynagrodzeniu (grupa 'personel').
     wspolczynnik: z.number().optional(),
     forma: z.enum(['etat', 'kontrakt', 'umowa cywilnoprawna', 'oświadczenie majątkowe', '—']).optional(),

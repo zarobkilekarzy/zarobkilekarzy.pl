@@ -26,7 +26,7 @@ const warunki = [
   },
 ];
 
-// „Ile to naprawdę 331 h/mc” — słupki skalowane do fizycznego sufitu 720 h
+// „Ile to naprawdę 331 h/mies.” — słupki skalowane do fizycznego sufitu 720 h
 // (24 h × 30 dni). Liczby: pełny etat ≈ 168 h; wykazane w aferze ≈ 331 h.
 const MAX_H = 720;
 const godziny = [
@@ -35,6 +35,15 @@ const godziny = [
   { lab: 'Doba × 30 dni (fizyczny sufit)', h: 720, ref: true },
 ];
 const pct = (h: number) => Math.round((h / MAX_H) * 100);
+
+// Braniewo (2025–2026) — wariant skrajny: te same godziny rozliczane w 2–3 źródłach naraz,
+// więc suma przekracza to, co fizycznie mieści rok. Rok = 8 760 h; wykazano 11 577 h. Źródło: Interia.
+const MAX_BRAN = 11577;
+const braniewoH = [
+  { lab: 'Ile godzin ma cały rok (365 × 24)', h: 8760, disp: '8 760', ref: true },
+  { lab: 'Wykazano w rozliczeniach jednego lekarza', h: 11577, disp: '11 577', hot: true },
+];
+const pctB = (h: number) => Math.round((h / MAX_BRAN) * 100);
 ---
 
 <BaseLayout
@@ -180,8 +189,43 @@ const pct = (h: number) => Math.round((h / MAX_H) * 100);
         To zarzuty i relacje świadków, nie prawomocne ustalenia.
       </p>
 
+      <h3 class="viz-h">A bywa jeszcze dalej — godziny, których nie ma</h3>
+      <p class="viz-cap" style="margin-top: 0; margin-bottom: 0.9rem">
+        W szpitalu powiatowym w <strong>Braniewie</strong> (warmińsko-mazurskie) ten sam
+        lekarz-kontraktowiec bywał rozliczany za <strong>ponad 1000 godzin w miesiącu</strong> —
+        a miesiąc ma ich najwyżej 744. Mechanizm był tu jeszcze prostszy niż sumowanie placówek:
+        <strong>te same godziny rozliczano w dwóch–trzech źródłach naraz</strong> (np. dyżur
+        w karetce i zabezpieczenie oddziału w tych samych godzinach).
+      </p>
+      <div class="hours">
+        {braniewoH.map((g) => (
+          <div class="h-row">
+            <span class="h-lab">{g.lab}</span>
+            <div class="h-track">
+              <div class={`h-bar${g.hot ? ' h-bar-hot' : ''}${g.ref ? ' h-bar-ref' : ''}`} style={`width:${pctB(g.h)}%`}>
+                <span class="h-val">{g.disp} h</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p class="viz-cap">
+        W skali roku wykazano <strong>11 577 godzin</strong> — o blisko <strong>2 800 więcej, niż
+        rok w ogóle ma</strong> (8 760); bywały doby rozliczone na <strong>72 godziny</strong>.
+        Rozliczenie sięgnęło <strong>1 772 879,50 zł</strong>, a szacowana strata szpitala to
+        <strong>~3,8 mln zł</strong> w trzy lata. Wychwycił to dopiero <strong>nowy zarząd</strong>
+        przy weryfikacji wypłat — bo <strong>żaden rejestr nie sumuje godzin jednego numeru
+        <a href="/slownik/#pwz">PWZ</a></strong>; lekarz sam się zwolnił.
+      </p>
+      <p class="source-note">
+        Szpital powiatowy w Braniewie —
+        <a href="https://wydarzenia.interia.pl/kraj/news-lekarz-pracowal-72-godziny-na-dobe-to-bylo-wprost-dojenie-sz,nId,23511769" target="_blank" rel="noopener noreferrer">Interia</a>.
+        Świadomie pomijamy nazwisko — opisujemy mechanizm, nie osobę. Sprawę bada prokuratura
+        (od III 2025); formalnych zarzutów dotąd nikomu nie postawiono.
+      </p>
+
       <div class="prose">
-        <h2>Druga sprawa — ta sama arytmetyka, tyle że jawna</h2>
+        <h2>Sprawa jawna — ta sama arytmetyka, tyle że widoczna</h2>
         <p>
           Nie każdy taki przypadek to zarzut — i następny pokazuje dlaczego. Dyrektorka
           szpitala powiatowego w Łosicach (Mazowsze, ok. 7 tys. mieszkańców) wykazała w

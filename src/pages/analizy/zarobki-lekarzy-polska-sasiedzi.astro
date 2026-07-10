@@ -20,7 +20,7 @@ const JAW = {
 } as const;
 type JawKind = keyof typeof JAW;
 
-// Wynagrodzenie zasadnicze/przeciętne specjalisty, brutto/mc.
+// Wynagrodzenie zasadnicze/przeciętne specjalisty, brutto/mies.
 // Kursy orient.: 1 EUR ≈ 4,29 zł, 1 CZK ≈ 0,18 zł, 1 SEK ≈ 0,39 zł. Kwoty zaokrąglone.
 const kraje: { kraj: string; pl?: boolean; spec: string; specNote: string; jawne: JawKind; jawneNote: string }[] = [
   {
@@ -68,7 +68,7 @@ const jawnoscOs: { poz: string; txt: string; tier: JawKind }[] = [
   { poz: 'Szwecja', tier: 'best', txt: 'Pensja lekarza publicznego jawna imiennie — z mocy konstytucji. Każdy może ją sprawdzić, bez podania powodu.' },
 ];
 
-// Drabina kariery u sąsiadów — zasadnicze brutto/mc: złote + oryginalna waluta (€).
+// Drabina kariery u sąsiadów — zasadnicze brutto/mies.: złote + oryginalna waluta (€).
 // Niemcy: taryfa TV-Ärzte/VKA (szpitale komunalne, od 1 VIII 2025). Austria: Kollektivvertrag (×14/rok).
 const drabina = [
   { stopien: 'Rezydent (Assistenzarzt)', dePln: '24,1 – 30,9 tys. zł', deCur: '5 610 – 7 211 €', atPln: '23,7 – 39,9 tys. zł', atCur: '5 518 – 9 310 €' },
@@ -76,20 +76,20 @@ const drabina = [
   { stopien: 'Starszy specjalista (Oberarzt)', dePln: '39,8 – 45,5 tys. zł', deCur: '9 274 – 10 599 €', atPln: '—', atCur: '' },
   { stopien: 'Z-ca ordynatora (leit. Oberarzt)', dePln: '46,8 – 50,2 tys. zł', deCur: '10 909 – 11 689 €', atPln: '—', atCur: '' },
 ];
-// Czechy — niska baza tabelowa vs realna średnia (różnicę robią dyżury/nadgodziny). Brutto/mc.
+// Czechy — niska baza tabelowa vs realna średnia (różnicę robią dyżury/nadgodziny). Brutto/mies.
 const czechy = [
   { rola: 'Baza tabelowa specjalisty (nař. 341/2017)', pln: '~9 200 zł', czk: '50 980 CZK' },
   { rola: 'Przeciętna, sektor publiczny (ÚZIS 2024)', pln: '~22 700 zł', czk: '126 109 CZK' },
   { rola: 'Region deficytowy (Ústecki)', pln: '~26 800 zł', czk: '~149 000 CZK' },
   { rola: 'Ujawnione stawki (np. chirurg)', pln: '~28 200 zł', czk: '157 443 CZK' },
 ];
-// Szwecja — etat u regionu; SCB (średnia, brutto/mc, BEZ dyżurów jour/beredskap).
+// Szwecja — etat u regionu; SCB (średnia, brutto/mies., BEZ dyżurów jour/beredskap).
 const szwecja = [
   { rola: 'Staż (AT-läkare)', pln: '~16 300 zł', sek: '41 700 SEK' },
   { rola: 'Rezydent (ST-läkare)', pln: '~23 000 zł', sek: '58 900 SEK' },
   { rola: 'Specjalista (specialistläkare)', pln: '~38 200 zł', sek: '98 000 SEK' },
 ];
-// Polska — ta sama drabina, ale jawny jest tylko jej dół. Brutto/mc.
+// Polska — ta sama drabina, ale jawny jest tylko jej dół. Brutto/mies.
 const polska = [
   { rola: 'Rezydent (regulowane)', kwota: '10 595 – 11 655 zł', jaw: 'jawne (ustawa)' },
   { rola: 'Specjalista — etat, minimum ustawowe', kwota: '12 910 zł', jaw: 'jawne (ustawa)' },
@@ -105,7 +105,7 @@ const systemy = [
     meta: ['Model: Bismarck (NFZ)', 'Wydatki: ~6–7% PKB', 'Forma: kontrakt B2B'],
     opis: [
       'Jeden publiczny płatnik — <strong>NFZ</strong> — finansuje ochronę zdrowia ze składki zdrowotnej (model Bismarcka). Szpitale są w większości publiczne, ale najlepiej wyceniane procedury coraz częściej wędrują do sektora prywatnego. Na tle tej piątki Polska wydaje na zdrowie <strong>najmniej</strong> — rzędu 6–7% PKB, gdy pozostali 9,5–12,8%.',
-      'Około <strong>73% specjalistów</strong> pracuje nie na etacie, lecz na kontrakcie B2B. Ten sam lekarz sumuje etat, dyżury i kontrakty w wielu placówkach naraz — a państwo <strong>nie zlicza jego łącznego wynagrodzenia po numerze PWZ</strong>. Jawny jest tylko dół drabiny (ustawowe minimum etatu, pensje rezydentów); realny dochód domyka niejawny kontrakt, a udokumentowane rekordy sięgają <strong>316 tys. zł/mc</strong>.',
+      'Około <strong>73% specjalistów</strong> pracuje nie na etacie, lecz na kontrakcie B2B. Ten sam lekarz sumuje etat, dyżury i kontrakty w wielu placówkach naraz — a państwo <strong>nie zlicza jego łącznego wynagrodzenia po numerze PWZ</strong>. Jawny jest tylko dół drabiny (ustawowe minimum etatu, pensje rezydentów); realny dochód domyka niejawny kontrakt, a udokumentowane rekordy sięgają <strong>316 tys. zł/mies.</strong>.',
     ],
     jawne: 'Ustawowe minimum etatu i pensje rezydentów (ustawa o najniższym wynagrodzeniu + rozporządzenie MZ).',
     niejawne: 'Kontrakty B2B (~73% specjalistów), ich stawki i praca w wielu placówkach naraz — nikt nie sumuje ich po jednym lekarzu (PWZ).',
@@ -117,7 +117,7 @@ const systemy = [
       'Bismarck w wersji z <strong>7 kasami</strong> (dominuje państwowa VZP, ~56% ubezpieczonych); wydatki ~9,5% PKB, poniżej średniej UE. Brak realnego gatekeepingu — pacjent idzie wprost do specjalisty, stąd <strong>11–12 kontaktów z systemem rocznie</strong>, prawie dwa razy więcej niż w Niemczech. Szpitale kliniczne należą do państwa (płaca = <em>plat</em> wg rządowej tabeli), powiatowe często działają jako spółki (płaca = <em>mzda</em> z układu zbiorowego).',
       'Baza tabelowa specjalisty jest niska (~50 tys. CZK), a realną przeciętną ~126 tys. CZK „robią" nadgodziny i dyżury. W 2023 rząd chciał podwoić dobrowolne nadgodziny (<strong>416 → 832 h/rok</strong>) — lekarze masowo wypowiedzieli zgody, a grudniowa ugoda cofnęła zmianę i dała podwyżki 5–15 tys. CZK. To echo słynnej akcji „Děkujeme, odcházíme" (2011), która wywalczyła jawne taryfy. Kadra się starzeje (śr. ~48 lat), a <strong>co piąty absolwent wyjeżdża</strong> — najczęściej do Niemiec.',
     ],
-    jawne: 'Siatka bazowa lekarzy budżetowych — rozporządzenie rządu (nař. 341/2017 Sb.), klasy 12–16. Przeciętne płace publikuje urząd statystyczny (ÚZIS/ČSÚ): ~126 tys. CZK brutto/mc (2024).',
+    jawne: 'Siatka bazowa lekarzy budżetowych — rozporządzenie rządu (nař. 341/2017 Sb.), klasy 12–16. Przeciętne płace publikuje urząd statystyczny (ÚZIS/ČSÚ): ~126 tys. CZK brutto/mies. (2024).',
     niejawne: 'Łączne wynagrodzenie konkretnego lekarza „robią" nadgodziny i dyżury (baza tabelowa to ~⅖ całości); płace w szpitalach-spółkach (mzda) — nietransparentne per osoba.',
   },
   {
@@ -182,7 +182,7 @@ const systemy = [
       <div class="table-wrap">
         <table class="cmp">
           <thead>
-            <tr><th>Kraj</th><th>Specjalista (brutto/mc)</th><th>Płace jawne?</th></tr>
+            <tr><th>Kraj</th><th>Specjalista (brutto/mies.)</th><th>Płace jawne?</th></tr>
           </thead>
           <tbody>
             {kraje.map((k) => (
@@ -202,7 +202,7 @@ const systemy = [
         </table>
       </div>
       <p class="source-note">
-        Rezydent (dla porównania, brutto/mc): Polska 10 595–11 655 zł; Niemcy (Assistenzarzt)
+        Rezydent (dla porównania, brutto/mies.): Polska 10 595–11 655 zł; Niemcy (Assistenzarzt)
         5 610–7 211 € (~24–31 tys. zł); Austria (Assistenzarzt) 5 518–9 310 € (~24–40 tys. zł);
         Szwecja (ST-läkare) 58 900 SEK (~23 tys. zł); Czechy (baza tabelowa specjalisty) 50 980 CZK
         (~9,2 tys. zł). Kursy orient.: 1 EUR ≈ 4,29 zł, 1 CZK ≈ 0,18 zł, 1 SEK ≈ 0,39 zł.
@@ -353,7 +353,7 @@ const systemy = [
       <h2 style="margin-top: 2.5rem">Drabina taryfowa: co u innych widać w tabeli</h2>
       <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
         Każdy stopień kariery ma <strong>jawną stawkę</strong>. Poniżej pełne widełki wynagrodzenia
-        zasadniczego (brutto/mc) — w złotych i w oryginalnej walucie — od stażu/rezydenta po zastępcę
+        zasadniczego (brutto/mies.) — w złotych i w oryginalnej walucie — od stażu/rezydenta po zastępcę
         ordynatora.
       </p>
 
@@ -361,7 +361,7 @@ const systemy = [
       <div class="table-wrap">
         <table class="cmp">
           <thead>
-            <tr><th>Stopień</th><th>Niemcy (brutto/mc)</th><th>Austria (brutto/mc)</th></tr>
+            <tr><th>Stopień</th><th>Niemcy (brutto/mies.)</th><th>Austria (brutto/mies.)</th></tr>
           </thead>
           <tbody>
             {drabina.map((r) => (
@@ -392,7 +392,7 @@ const systemy = [
       <div class="table-wrap">
         <table class="cmp">
           <thead>
-            <tr><th>Pozycja</th><th>Kwota (brutto/mc)</th></tr>
+            <tr><th>Pozycja</th><th>Kwota (brutto/mies.)</th></tr>
           </thead>
           <tbody>
             {czechy.map((r) => (
@@ -421,7 +421,7 @@ const systemy = [
       <div class="table-wrap">
         <table class="cmp">
           <thead>
-            <tr><th>Etap</th><th>Kwota (brutto/mc)</th></tr>
+            <tr><th>Etap</th><th>Kwota (brutto/mies.)</th></tr>
           </thead>
           <tbody>
             {szwecja.map((r) => (
@@ -438,7 +438,7 @@ const systemy = [
       </div>
       <p class="source-note">
         Szwecja — <a href="https://www.scb.se/lonestatistik/lakare/" target="_blank" rel="noopener noreferrer">SCB (statystyka płac lekarzy, 2025)</a>:
-        to <strong>średnia</strong> (genomsnittlig), brutto/mc, pełny etat, <strong>bez dodatków za
+        to <strong>średnia</strong> (genomsnittlig), brutto/mies., pełny etat, <strong>bez dodatków za
         dyżury</strong> (jour/beredskap) — realny dochód dyżurującego jest wyraźnie wyższy. Mediana
         specjalisty jest nieco niższa (~92 tys. SEK); starsi specjaliści (överläkare) należą do tej samej
         kategorii SCB i zarabiają powyżej średniej. Uwaga do przeliczeń: brak 13./14. pensji, a podatek
@@ -455,7 +455,7 @@ const systemy = [
       <div class="table-wrap">
         <table class="cmp">
           <thead>
-            <tr><th>Pozycja (Polska)</th><th>zł / mc</th><th>Jawność</th></tr>
+            <tr><th>Pozycja (Polska)</th><th>zł / mies.</th><th>Jawność</th></tr>
           </thead>
           <tbody>
             {polska.map((r) => (
@@ -471,7 +471,7 @@ const systemy = [
       <p class="source-note">
         Polskie kwoty — zob. <a href="/dane/pensje-rezydentow/">pensje rezydentów</a>,
         <a href="/dane/rozklad-wynagrodzen/">rozkład wynagrodzeń</a> (AOTMiT, rozporządzenie MZ) i
-        <a href="/dane/rekordy/">rekordy</a>. 316 079 zł/mc (ortopeda, ~90 operacji/mc) to najwyższy
+        <a href="/dane/rekordy/">rekordy</a>. 316 079 zł/mies. (ortopeda, ~90 operacji/mies.) to najwyższy
         udokumentowany kontrakt <strong>miesięczny</strong>; roczne dochody z oświadczeń majątkowych
         sięgają 4,9 mln zł, a spółka neurochirurgów wystawiała szpitalom rachunki do 308 tys. zł/dzień
         (zarzut, sprawa badana).
@@ -485,7 +485,7 @@ const systemy = [
         średnio <a href="/dane/kolejki/"><strong>4,2 miesiąca</strong></a>, a dług szpitali
         (<a href="/dane/zadluzenie-szpitali/"><strong>34 mld zł</strong></a>) idzie głównie na
         wynagrodzenia. <strong>Im więcej dolewamy do nieprzejrzystego systemu, tym więcej wycieka</strong>:
-        pojedyncze kontrakty <a href="/dane/rekordy/">rozliczają do 316 tys. zł/mc</a>. Czechy nie
+        pojedyncze kontrakty <a href="/dane/rekordy/">rozliczają do 316 tys. zł/mies.</a>. Czechy nie
         „dosypały” — płacą <strong>jawnie</strong>, z policzalnych taryf wywalczonych otwartą drogą
         (protesty „Děkujeme, odcházíme”, 2011), a nie przez cichy rynek kontraktów. U nas najpierw musi
         być widać, <strong>dokąd idą pieniądze</strong>.

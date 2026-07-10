@@ -1,13 +1,19 @@
 ---
-import '@fontsource/ibm-plex-sans/latin-ext-400.css';
-import '@fontsource/ibm-plex-sans/latin-ext-500.css';
-import '@fontsource/ibm-plex-sans/latin-ext-600.css';
-import '@fontsource/ibm-plex-serif/latin-ext-500.css';
-import '@fontsource/ibm-plex-serif/latin-ext-600.css';
-import '@fontsource/ibm-plex-mono/latin-ext-400.css';
-import '@fontsource/ibm-plex-mono/latin-ext-500.css';
-// Główny font tekstowy — preload pliku woff2, by ograniczyć FOUT i opóźnienie LCP.
-import bodyFontUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2?url';
+// Pliki-indeksy fontsource: każdy niesie @font-face z unicode-range dla subsetów
+// `latin` ORAZ `latin-ext`, więc przeglądarka złoży pełną polszczyznę (m.in. „ó",
+// która jest w zakresie podstawowym `latin`, nie w `latin-ext`). Nieużywane subsety
+// (cyrylica/greka/wietnamski) mają rozłączny unicode-range i nie są pobierane.
+import '@fontsource/ibm-plex-sans/400.css';
+import '@fontsource/ibm-plex-sans/500.css';
+import '@fontsource/ibm-plex-sans/600.css';
+import '@fontsource/ibm-plex-serif/500.css';
+import '@fontsource/ibm-plex-serif/600.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+// Główny font tekstowy — preload obu subsetów wagi 400 (ASCII/„ó" + diakryty),
+// by ograniczyć FOUT i opóźnienie LCP.
+import bodyFontUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2?url';
+import bodyFontExtUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2?url';
 import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
@@ -177,6 +183,7 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preload" href={bodyFontUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={bodyFontExtUrl} as="font" type="font/woff2" crossorigin />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

@@ -75,6 +75,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Pogłębione analizy jawności',
     subtitle: 'Porównania międzynarodowe, mechanika niedoboru lekarzy i kształcenia. Każda teza z linkiem do źródła.',
   },
+  'analizy/sladem-zlotowki': {
+    tag: 'Analiza · Jak działa system',
+    title: 'Śladem publicznej złotówki',
+    subtitle: 'Od Twojej składki do kontraktu lekarza. Na każdym etapie widać zbiorczą kwotę — nigdy tego, ile trafiło do konkretnego numeru PWZ.',
+  },
   'analizy/zarobki-lekarzy-polska-sasiedzi': {
     tag: 'Analiza',
     title: 'Zarobki lekarzy: Polska na tle Europy',
@@ -151,6 +156,11 @@ export const ogPages: Record<string, OgPage> = {
     tag: 'Mechanizm',
     title: 'Rozliczenia NFZ',
     subtitle: 'Płatnik zna każdą wypłatę, ale nie łączy jej po lekarzu ani nie publikuje.',
+  },
+  'mechanizmy/wycena-swiadczen': {
+    tag: 'Mechanizm',
+    title: 'Wycena świadczeń: kto ustala, ile płaci NFZ',
+    subtitle: 'Niezależną taryfą objęto ~17% wartości świadczeń — resztę ustala sam płatnik. Cena leczenia to decyzja, nie pomiar.',
   },
   'mechanizmy/brak-jawnosci': {
     tag: 'Mechanizm',

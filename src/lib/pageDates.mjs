@@ -8,6 +8,7 @@
 // wszędzie datę ostatniego commita).
 export const pageDates = {
   // Analizy (długie teksty redakcyjne).
+  '/analizy/sladem-zlotowki': '2026-07-10',
   '/analizy/jedno-pwz': '2026-07-07',
   '/analizy/lejek-ksztalcenia': '2026-07-08',
   '/analizy/lekarze-ze-wschodu': '2026-07-08',
@@ -26,6 +27,7 @@ export const pageDates = {
   '/mechanizmy/brak-jawnosci': '2026-07-06',
   '/mechanizmy/wieloetatowosc': '2026-07-07',
   '/mechanizmy/rozliczenia-nfz': '2026-07-06',
+  '/mechanizmy/wycena-swiadczen': '2026-07-10',
   '/mechanizmy/samorzad-nil': '2026-07-07',
   '/mechanizmy/dyzury-i-gotowosc': '2026-07-06',
   // Dane (tabele/zestawienia — bump przy zmianie liczb/zakresu).

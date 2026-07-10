@@ -28,6 +28,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Rekordowe rozliczenia',
     subtitle: 'Od 316 tys. zł miesięcznie po miliony rocznie — ze środków publicznych. Bez nazwisk, sam mechanizm.',
   },
+  'dane/patologia-w-liczbach': {
+    tag: 'Dane · Patologia w liczbach',
+    title: 'Patologia w liczbach',
+    subtitle: 'Najmocniejsze liczby o pieniądzu publicznym w ochronie zdrowia — na wykresach. 316 tys. zł kontraktu, 26 tys. zł za godzinę, 11 577 godzin w roku, który ma 8 760. Każda ze źródłem.',
+  },
   'dane/kolejki': {
     tag: 'Dane · Kolejki',
     title: 'Pieniądze rosną, kolejka nie maleje',
@@ -51,7 +56,7 @@ export const ogPages: Record<string, OgPage> = {
   'dane/wedlug-specjalizacji': {
     tag: 'Dane · Specjalizacje',
     title: 'Zarobki według specjalizacji',
-    subtitle: 'Pensja rezydenta, stawka rynkowa, miejsca i konkurencja — dla 15 dziedzin.',
+    subtitle: 'Pensja rezydenta, stawka rynkowa, miejsca i konkurencja — dla 29 dziedzin.',
   },
   'dane/personel-medyczny': {
     tag: 'Dane · Inni pracownicy OZ',

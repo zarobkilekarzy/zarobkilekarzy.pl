@@ -1,0 +1,550 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+import DisclaimerZarobki from '../../components/DisclaimerZarobki.astro';
+
+// Wizualne kompendium — najmocniejsze liczby z całego serwisu w jednym, GRAFICZNYM
+// przebiegu. Mało tekstu, dużo wykresu: każdy moduł = jeden twardy fakt + jeden
+// obraz + źródło. Zasady rdzenia redakcyjnego trzymają całość:
+//  • fakt ≠ zarzut — pozycje w toku śledztwa mają chip „zarzut" i czerwony akcent;
+//  • każda liczba ma link do ogólnodostępnego źródła (mocne twierdzenia = mocne linki);
+//  • mechanizm, nie osoba — bez nazwisk;
+//  • kontrowersja bierze się z zestawień, nie z przymiotników.
+// Czerwień oszczędnie: tylko „zarzut" (chipy/obwódki) + kontrast odmowy jawności (BCO).
+// Prozy prawie nie ma — pointa i tak jedna: nikt nie sumuje tego po numerze PWZ.
+
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+
+// — Moduł: kontrakt vs etat (jedno oficjalne zestawienie, Mazowsze 2025) —
+const formy = [
+  { label: 'Kontrakt (B2B)', kwota: 316079, kind: 'k', note: 'najwyższy w zestawieniu' },
+  { label: 'Etat — brutto', kwota: 101384, kind: 'e', note: 'najwyższy etat' },
+  { label: 'Umowa cywilna — brutto', kwota: 100147, kind: 'u', note: 'najwyższa umowa' },
+];
+const formyMax = 316079;
+const medianaKontrakt = 25595; // AOTMiT 02.2026 — kotwica skali
+const rekordVsMediana = Math.round(316079 / medianaKontrakt); // ≈ 12×
+
+// — Moduł: dług szpitali —
+const dlug = [
+  { rok: '2022', kwota: 18 },
+  { rok: '2025', kwota: 34 },
+];
+const dlugMax = 34;
+
+// — Moduł: budżet NFZ 2020→2026 (plan finansowy / przychody ogółem, mld zł; „~" = przybliżone,
+// spójne z /dane/kolejki i /dane/budzet-nfz). ×2,2 od 2020. 2026 = plan (już nie rośnie). —
+const budzetLata = [
+  { rok: 2020, kwota: 97, approx: true },
+  { rok: 2021, kwota: 120, approx: true },
+  { rok: 2022, kwota: 138, approx: true },
+  { rok: 2023, kwota: 144 },
+  { rok: 2024, kwota: 190 },
+  { rok: 2025, kwota: 220 },
+  { rok: 2026, kwota: 217, plan: true },
+];
+const budzetColMax = 220;
+// Kolejka: dwie liczby (od → do, Barometr WHC 2023→2025).
+const kolejkaDelta = { od: '3,7', do: '4,2', jed: 'mies.', odRok: 2023, doRok: 2025, wzrost: '14%' };
+
+const pct = (v: number, max: number) => Math.round((v / max) * 100);
+---
+
+<BaseLayout
+  title="Patologia w liczbach — zarobkilekarzy.pl"
+  description="Najmocniejsze liczby o pieniądzu publicznym w ochronie zdrowia — na wykresach. 316 tys. zł kontraktu miesięcznie, 26 tys. zł za godzinę (zarzut), 11 577 rozliczonych godzin w roku, który ma 8 760. Każda liczba ze źródłem. Bez nazwisk — mechanizm, nie osoba."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane/">Dane</a> · Patologia w liczbach</p>
+      <h1>Patologia w liczbach</h1>
+      <Aktualizacja zrodla=" · zestawienia urzędów marszałkowskich, raporty NIK, dane AOTMiT (02.2026), plany finansowe NFZ, jawne oświadczenia majątkowe." />
+      <p class="lead">
+        Najmocniejsze liczby z całego serwisu — <strong>na wykresach</strong>. Bez akapitów:
+        jeden obraz, jedna liczba, jedno źródło. Kwoty są faktami; tam, gdzie trwa śledztwo,
+        piszemy wprost <strong>„zarzut"</strong>. Bez nazwisk — <strong>mechanizm, nie osoba</strong>.
+      </p>
+
+      <DisclaimerZarobki />
+
+      <!-- ————————————————— TRZY LICZBY NA WEJŚCIE ————————————————— -->
+      <div class="head3">
+        <div class="h3tile">
+          <span class="h3lab">najwyższy kontrakt</span>
+          <span class="h3num">316 079<span class="h3u"> zł/mies.</span></span>
+          <span class="h3ctx">Ortopeda, szpital wojewódzki Mazowsza — publiczny pieniądz NFZ.</span>
+          <a class="h3src" href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Kacprzyk-nie-byl-rekordzista-W-szpitalach-mazowieckich-mozna-zarobic-nawet-316-tys-zl-miesiecznie,285578,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>
+        </div>
+        <div class="h3tile is-zarzut">
+          <span class="h3lab"><span class="chip chip-alert">zarzut</span> za godzinę</span>
+          <span class="h3num">26 000<span class="h3u"> zł/h</span></span>
+          <span class="h3ctx">Spółka neurochirurgów: zabiegi 3–10 min sprawozdawane jako 4× droższe (wg NFZ). Sprawa w toku.</span>
+          <a class="h3src" href="https://www.rp.pl/ochrona-zdrowia/art44774891-300-tys-zl-za-dzien-pracy-tyle-mieli-zarabiac-neurochirurdzy-w-szpitalach" target="_blank" rel="noopener noreferrer">Rzeczpospolita</a>
+        </div>
+        <div class="h3tile is-core">
+          <span class="h3lab">rejestrów, które to sumują</span>
+          <span class="h3num">0</span>
+          <span class="h3ctx">Publicznych rejestrów łączących wypłaty jednego lekarza po numerze PWZ. To sedno.</span>
+          <a class="h3src" href="/postulat/">Postulat →</a>
+        </div>
+      </div>
+
+      <p class="act"><span class="act-num">I</span> Ile trafia do jednej osoby</p>
+
+      <!-- ————————————————— 1. KONTRAKT BIJE ETAT ————————————————— -->
+      <h2 class="mod-h">Za tę samą pracę kontrakt bije etat — trzykrotnie</h2>
+      <p class="mod-sub">
+        Jedno oficjalne zestawienie: 10 najwyższych wynagrodzeń w szpitalach wojewódzkich
+        Mazowsza (2025), wg formy zatrudnienia. Czołówka każdej formy:
+      </p>
+      <figure class="chart" aria-label="Najwyższe wynagrodzenia wg formy zatrudnienia: kontrakt 316 079 zł, etat 101 384 zł brutto, umowa cywilna 100 147 zł brutto miesięcznie; dla skali mediana kontraktu 25 595 zł.">
+        {formy.map((f) => (
+          <div class="barrow">
+            <div class="bl">
+              <span class="bl-t">{f.label}</span>
+              <span class="bl-n">{fmt(f.kwota)}<span class="bl-u"> zł</span></span>
+            </div>
+            <div class="btrack">
+              <div class={`bfill bfill-${f.kind}`} style={`width:${pct(f.kwota, formyMax)}%`}></div>
+            </div>
+          </div>
+        ))}
+        <div class="barrow barrow-ref">
+          <div class="bl">
+            <span class="bl-t">mediana kontraktu <span class="ref-tag">dla skali</span></span>
+            <span class="bl-n">{fmt(medianaKontrakt)}<span class="bl-u"> zł</span></span>
+          </div>
+          <div class="btrack btrack-ref">
+            <div class="bfill bfill-ref" style={`width:${pct(medianaKontrakt, formyMax)}%`}></div>
+          </div>
+        </div>
+      </figure>
+      <p class="mod-cap">
+        Najwyższy kontrakt to <strong>~{rekordVsMediana}× mediana kontraktu</strong> specjalisty
+        (<a href="/dane/rozklad-wynagrodzen/">25 595 zł, AOTMiT II 2026</a>) — i to właśnie
+        <strong>kwot kontraktowych zwykle nikt nie publikuje</strong>. Uczciwie: to trzy różne
+        rekordy w jednej tabeli, nie jedna osoba. Źródło: zestawienie Urzędu Marszałkowskiego
+        Woj. Mazowieckiego,
+        <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Kacprzyk-nie-byl-rekordzista-W-szpitalach-mazowieckich-mozna-zarobic-nawet-316-tys-zl-miesiecznie,285578,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>.
+      </p>
+
+      <!-- ————————————————— 2. POZA FIZYCZNĄ DOBĘ ————————————————— -->
+      <h2 class="mod-h">Rozliczone godziny, których w roku nie ma</h2>
+      <p class="mod-sub">
+        Jeden lekarz rozliczany w kilku miejscach naraz. W skali roku wykazano
+        <strong>11 577 godzin</strong> — a rok, licząc 24 h na dobę bez przerwy, ma tylko 8 760.
+      </p>
+      <figure class="overflow" aria-label="11 577 rozliczonych godzin w roku wobec 8 760 godzin, które rok w ogóle ma — słupek przekracza fizyczne maksimum o 32 procent.">
+        <div class="ov-track">
+          <div class="ov-fill" style="width:100%"></div>
+          <div class="ov-over" style="width:32%"><span class="ov-over-lab">+32%</span></div>
+          <div class="ov-cap" style="left:75.7%">
+            <span class="ov-cap-line"></span>
+            <span class="ov-cap-lab">8 760 h — cały rok (24/7)</span>
+          </div>
+        </div>
+        <div class="ov-legend">
+          <span class="ov-big">11 577 h</span>
+          <span class="ov-small">rozliczone w roku · <span class="chip chip-alert">zarzut — sprawa w toku</span></span>
+        </div>
+      </figure>
+      <p class="mod-cap">
+        Bywały doby rozliczone na <strong>72 godziny</strong>, a miesiąc — na <strong>ponad 1000</strong>
+        (najdłuższy ma 744). Roczne rozliczenie: <strong>1 772 879,50 zł</strong>; szacowana strata
+        szpitala <strong>~3,8 mln zł</strong> w trzy lata. Ujawnił to dopiero nowy zarząd — bo
+        <strong>żaden rejestr nie sumuje godzin jednej osoby</strong>. Szpital powiatowy w Braniewie;
+        sprawa w prokuraturze, nikomu nie postawiono zarzutów.
+        <a href="https://wydarzenia.interia.pl/kraj/news-lekarz-pracowal-72-godziny-na-dobe-to-bylo-wprost-dojenie-sz,nId,23511769" target="_blank" rel="noopener noreferrer">Interia</a>.
+      </p>
+
+      <p class="act"><span class="act-num">II</span> Dokąd naprawdę płynie złotówka</p>
+
+      <!-- ————————————————— 3. KTO USTALA CENĘ ————————————————— -->
+      <h2 class="mod-h">Cenę Twojego leczenia w 83% ustala ten, kto płaci</h2>
+      <div class="donut-wrap">
+        <figure class="donut" style="--seg:17" aria-label="Tylko 17 procent wartości świadczeń objęto niezależną taryfą kosztową; pozostałe 83 procent wyceny ustala sam płatnik NFZ.">
+          <div class="donut-ring">
+            <div class="donut-hole">
+              <span class="donut-num">17%</span>
+              <span class="donut-hole-lab">niezależna<br />taryfa</span>
+            </div>
+          </div>
+        </figure>
+        <div class="donut-side">
+          <p class="donut-lead">
+            Miało być tak: koszty świadczeń liczy <strong>niezależna agencja</strong> (AOTMiT),
+            a płatnik tylko płaci. Przez 5 lat niezależną taryfą objęto
+            <strong>~17% wartości</strong> świadczeń NFZ.
+          </p>
+          <ul class="donut-legend">
+            <li><span class="dk dk-on"></span> 17% — niezależna wycena kosztowa</li>
+            <li><span class="dk dk-off"></span> 83% — cenę ustala <strong>sam płatnik</strong></li>
+          </ul>
+          <p class="mod-cap" style="margin:0">
+            Wg NIK część podwyżek Prezes NFZ wprowadzał <strong>bez rzetelnej analizy kosztów</strong>,
+            a bywało — bez uprawnień — zmieniał nawet taryfy Agencji. To ocena Izby, nie wyrok.
+            <a href="https://www.nik.gov.pl/plik/id,24432,vp,27176.pdf" target="_blank" rel="noopener noreferrer">NIK, raport 24432</a>.
+            Zob. <a href="/mechanizmy/wycena-swiadczen/">mechanizm wyceny</a>.
+          </p>
+        </div>
+      </div>
+
+      <!-- ————————————————— 4. KREDYTOWALI FUNDUSZ ————————————————— -->
+      <div class="quotecard">
+        <div class="qc-num">1,65 mld zł</div>
+        <blockquote class="qc-quote">„Świadczeniodawcy kredytowali Fundusz”.</blockquote>
+        <p class="qc-cap">
+          Tyle świadczeń szpitale wykonały ponad limit i <strong>NFZ ich nie opłacił</strong>
+          (stan szczytowy, pół roku 2024). Szpital leczy teraz, na zapłatę czeka — bywa, że w sądzie.
+          Niuans: do 11.10.2024 kwota spadła do ~317 mln zł.
+          <a href="https://www.nik.gov.pl/plik/id,30820,vp,33892.pdf" target="_blank" rel="noopener noreferrer">NIK (KZD.430.5.2024)</a>.
+        </p>
+      </div>
+
+      <!-- ————————————————— 5. DŁUG ROŚNIE ————————————————— -->
+      <h2 class="mod-h">Dług szpitali: niemal podwojony w trzy lata</h2>
+      <figure class="chart chart-sm" aria-label="Dług publicznych szpitali: 18 mld zł w 2022 roku, 34 mld zł na koniec 2025 roku.">
+        {dlug.map((d) => (
+          <div class="barrow">
+            <div class="bl">
+              <span class="bl-t">koniec {d.rok}</span>
+              <span class="bl-n">{fmt(d.kwota)}<span class="bl-u"> mld zł</span></span>
+            </div>
+            <div class="btrack">
+              <div class="bfill bfill-k" style={`width:${pct(d.kwota, dlugMax)}%`}></div>
+            </div>
+          </div>
+        ))}
+      </figure>
+      <p class="mod-cap">
+        A <strong>5,07 mld zł</strong> to już długi wymagalne (przeterminowane) SPZOZ w I kw. 2026 —
+        <strong>+19,6% w kwartał, najsilniejszy skok w historii</strong>. Dług idzie nie na
+        inwestycje, lecz w dużej części na <strong>bieżące wynagrodzenia</strong> — pensje na kredyt,
+        który spłaca podatnik.
+        <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Szpitale-tona-w-dlugach-Zadluzenie-siega-blisko-40-mld-zl,286396,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>,
+        <a href="https://politykazdrowotna.com/artykul/zadluzenie-szpitali-n2230555" target="_blank" rel="noopener noreferrer">Polityka Zdrowotna</a>.
+        Pełne rozbicie: <a href="/dane/zadluzenie-szpitali/">zadłużenie szpitali</a>.
+      </p>
+
+      <!-- ————————————————— 6. CO TRZECIA ZŁOTÓWKA — USTAWOWE PŁACE ————————————————— -->
+      <h2 class="mod-h">Prawie co trzecia złotówka NFZ to ustawowe płace</h2>
+      <p class="mod-sub">
+        Budżet NFZ rośnie — ale wzrost w dużej mierze pochłaniają <strong>ustawowe podwyżki</strong>,
+        nie nowe świadczenia dla pacjenta.
+      </p>
+      <figure class="stackbar" aria-label="Koszt ustawy o najniższych wynagrodzeniach to około 30 procent planu finansowego NFZ na 2026 rok — 72 z 217 miliardów złotych.">
+        <div class="sb-track">
+          <div class="sb-seg sb-seg-on" style="width:33%"><span>~30%</span></div>
+          <div class="sb-seg sb-seg-off" style="width:67%"><span>pozostałe świadczenia i koszty</span></div>
+        </div>
+        <p class="sb-cap"><strong>~72 mld zł</strong> z 217 mld zł planu NFZ na 2026 r. idzie na ustawową siatkę płac w ochronie zdrowia.</p>
+      </figure>
+      <p class="mod-cap">
+        Uczciwie: <strong>podwyżki to prawo pracowników</strong>, nie patologia sama w sobie.
+        Patologia zaczyna się wyżej — przy <a href="/mechanizmy/wycena-swiadczen/">wycenie, która
+        goni płace</a>: gdy rośnie koszt pracy, taryfę podnosi się „pod” niego, bez rzetelnej analizy.
+        Skutek: więcej pieniędzy w systemie, a dla pacjenta <strong>nie przybywa leczenia</strong>.
+        <a href="https://www.money.pl/finanse/mniej-swiadczen-za-wieksze-pieniadze-punkt-krytyczny-w-nfz-7297494544201728a.html" target="_blank" rel="noopener noreferrer">Money.pl</a>.
+      </p>
+
+      <!-- ————————————————— 7. WIĘCEJ PIENIĘDZY, DŁUŻSZA KOLEJKA ————————————————— -->
+      <h2 class="mod-h">Więcej pieniędzy — i dłuższa kolejka</h2>
+      <p class="mod-sub">
+        Od 2020 r. budżet NFZ <strong>podwoił się</strong> (×2,2). Kolejka do specjalisty w tym
+        czasie <strong>nie skróciła się — wydłużyła</strong>.
+      </p>
+      <figure class="cols" aria-label="Budżet NFZ (plan finansowy, mld zł): 2020 około 97, 2021 około 120, 2022 około 138, 2023 144, 2024 190, 2025 220, 2026 plan 217.">
+        <div class="cols-head">
+          <span class="cols-title">Budżet NFZ · plan finansowy, mld zł</span>
+          <span class="cols-badge">×2,2 od 2020</span>
+        </div>
+        <div class="cols-plot">
+          {budzetLata.map((y) => (
+            <div class="col">
+              <div class={`col-bar${y.plan ? ' is-plan' : ''}`} style={`height:${pct(y.kwota, budzetColMax)}%`}>
+                <span class="col-v">{y.approx ? '~' : ''}{y.kwota}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div class="cols-x">
+          {budzetLata.map((y) => (
+            <span class={y.plan ? 'is-plan' : ''}>{y.rok}{y.plan ? ' plan' : ''}</span>
+          ))}
+        </div>
+      </figure>
+
+      <figure class="delta is-bad delta-wide" aria-label={`Kolejka do specjalisty: ${kolejkaDelta.od} ${kolejkaDelta.jed} w ${kolejkaDelta.odRok} roku, ${kolejkaDelta.do} ${kolejkaDelta.jed} w ${kolejkaDelta.doRok} — dłużej o ${kolejkaDelta.wzrost}.`}>
+        <span class="delta-title">Kolejka do specjalisty</span>
+        <div class="delta-flow">
+          <span class="delta-a">{kolejkaDelta.od}</span>
+          <span class="delta-sep" aria-hidden="true">→</span>
+          <span class="delta-b">{kolejkaDelta.do}<span class="delta-u"> {kolejkaDelta.jed}</span></span>
+        </div>
+        <span class="delta-badge">dłużej o {kolejkaDelta.wzrost} · {kolejkaDelta.odRok}→{kolejkaDelta.doRok}</span>
+      </figure>
+      <p class="mod-cap">
+        Same pieniądze nie kupują krótszej kolejki — przeciwnie. Budżet: plan finansowy NFZ
+        (przychody ogółem; 2020–2022 zaokrąglone, 2026 = plan, który już <strong>nie rośnie</strong>
+        względem 2025) —
+        <a href="https://www.gov.pl/web/zdrowie/plany-finansowe-nfz" target="_blank" rel="noopener noreferrer">gov.pl</a>.
+        Kolejka (Barometr WHC, średnia dla specjalności) —
+        <a href="https://www.rynekzdrowia.pl/Polityka-zdrowotna/Barometr-Watch-Health-Care-sredni-czas-oczekiwania-na-leczenie-w-2025-r-to-ponad-4-miesiace,279890,14.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>.
+        Więcej: <a href="/dane/budzet-nfz/">budżet NFZ</a> · <a href="/dane/kolejki/">pieniądze a kolejka</a>.
+      </p>
+
+      <p class="act"><span class="act-num">III</span> Jawność to loteria</p>
+
+      <!-- ————————————————— 8. LICZBA, KTÓRA SAMA JEST ZANIŻONA ————————————————— -->
+      <h2 class="mod-h">„Tylko 1% zarabia ponad 100 tys.” — a i ta liczba jest zaniżona</h2>
+      <p class="mod-sub">
+        AOTMiT liczy <strong>pojedyncze umowy</strong>, nie sumuje ich po jednej osobie. A ~73%
+        specjalistów rozlicza się kontraktem — i może mieć ich kilka. Więc nawet „1 na 100” to
+        <strong>dolna granica</strong>:
+      </p>
+      <figure class="chart" aria-label="Oficjalnie 1,2 procent kontraktów przekracza 100 tysięcy złotych miesięcznie; po zsumowaniu po jednej osobie szacunkowo od 5 do 10 procent.">
+        <div class="barrow">
+          <div class="bl">
+            <span class="bl-t">Oficjalnie — liczone pojedyncze umowy</span>
+            <span class="bl-n">1,2%</span>
+          </div>
+          <div class="btrack"><div class="bfill bfill-brand" style="width:12%"></div></div>
+        </div>
+        <div class="barrow">
+          <div class="bl">
+            <span class="bl-t">Po zsumowaniu po jednej osobie <span class="ref-tag">szacunek</span></span>
+            <span class="bl-n">5–10%<span class="bl-u"> ?</span></span>
+          </div>
+          <div class="btrack"><div class="bfill bfill-est" style="width:100%"></div></div>
+        </div>
+      </figure>
+      <p class="mod-cap">
+        Oficjalnie wypłaty powyżej 100 tys. zł/mies. to <strong>625 kontraktów w kraju (1,2%)</strong>
+        i 49 etatów (0,2%). Ale nikt nie łączy umów jednej osoby z kilku placówek — po zsumowaniu
+        odsetek mógłby sięgnąć <strong>5–10%</strong>. To najczystszy przykład, jak <strong>brak
+        rejestru po PWZ zaniża oficjalne liczby</strong>.
+        <a href="https://www.rp.pl/ochrona-zdrowia/art44649861-wyplaty-lekarzy-na-kontraktach-wieksze-niz-100-tys-zl-tylko-w-1-proc-przypadkow" target="_blank" rel="noopener noreferrer">Rzeczpospolita (dane AOTMiT)</a>.
+      </p>
+
+      <!-- ————————————————— 9. JAWNOŚĆ TO LOTERIA (KONTROWERSJA) ————————————————— -->
+      <h2 class="mod-h">Ile publicznego pieniądza trafia do jednej osoby? Loteria</h2>
+      <p class="mod-sub">
+        Ta sama praca, ten sam publiczny NFZ — a to, czy w ogóle się dowiesz, zależy od tego,
+        czy szpital zechce odpowiedzieć. Dwa publiczne szpitale, to samo pytanie prasy:
+      </p>
+      <div class="versus">
+        <div class="vs-card is-yes">
+          <div class="vs-head"><span class="vs-mark">✓</span> Włocławek — <strong>odpowiedział</strong></div>
+          <p class="vs-big">1 474 919 zł</p>
+          <p class="vs-lab">roczne rozliczenie rekordzisty (2025) — podane redakcji</p>
+          <div class="vs-split" role="img" aria-label="315 lekarzy: 245 na kontraktach, 61 na etacie, 9 na innych umowach">
+            <span class="vsseg vsseg-k" style="width:77.8%"><i>245 kontrakty</i></span>
+            <span class="vsseg vsseg-e" style="width:19.4%"><i>61 etat</i></span>
+            <span class="vsseg vsseg-i" style="width:2.8%"></span>
+          </div>
+          <p class="vs-note">Z 315 lekarzy trzech na czterech rozlicza się kontraktem. Żadnej afery — zwykła odpowiedź instytucji.
+            <a href="https://ddwloclawek.pl/pl/11_wiadomosci/95804_milionowe-zarobki-lekarzy-takze-w-szpitalu-we-wloclawku-rekordzista-dostal.html" target="_blank" rel="noopener noreferrer">DDWłocławek</a>.
+          </p>
+        </div>
+        <div class="vs-card is-no">
+          <div class="vs-head"><span class="vs-mark">✗</span> Białystok (BCO) — <strong>odmówił</strong></div>
+          <p class="vs-big">„prawie 3 mln zł”</p>
+          <p class="vs-lab">jeden lekarz — kwoty i szczegółów szpital nie ujawnia</p>
+          <div class="vs-blank" aria-hidden="true">
+            <span>?</span>
+          </div>
+          <p class="vs-note">Publiczny szpital z kontraktem NFZ ponad 400 mln zł nie chce powiedzieć, ile publicznego pieniądza poszło do jednej osoby.
+            <a href="https://bialystok.wyborcza.pl/bialystok/7,35241,32903969,prawie-3-mln-zl-dla-jednego-lekarza-bco-nie-chce-ujawnic-szczegolow.html" target="_blank" rel="noopener noreferrer">Wyborcza Białystok</a>.
+          </p>
+        </div>
+      </div>
+      <p class="mod-cap">
+        Rekord ujawniony w kraju to <strong>4,9 mln zł</strong> rocznego dochodu — z analizy 160
+        jawnych oświadczeń majątkowych lekarzy-radnych (10% z nich powyżej 1 mln zł). Widać ich
+        <em>tylko dlatego</em>, że są radnymi.
+        <a href="https://cowzdrowiu.pl/aktualnosci/post/ile-zarabiaja-lekarze-radni-rekord-to-49-mln-zl" target="_blank" rel="noopener noreferrer">Co w Zdrowiu</a>.
+      </p>
+
+      <!-- ————————————————— POINTA ————————————————— -->
+      <div class="callout" style="border-left-color: var(--brand); margin-top: 2.5rem">
+        <p>
+          Każda liczba wyżej to <strong>fragment</strong> — jeden szpital, jedno województwo, jedno
+          oświadczenie, jeden szczyt kwartału. Nikt nie zsumuje tego, co jedna osoba pobiera ze
+          <strong>wszystkich</strong> źródeł publicznych. Nie dlatego, że kwoty są w sejfie — dlatego,
+          że <strong>nikt nie ma prawa ich zsumować</strong> po numerze <a href="/slownik/#pwz">PWZ</a>.
+          To jedyny postulat tej strony: <strong>jawny rejestr łącznych wypłat ze środków publicznych,
+          powiązany z PWZ</strong> — nie z PESEL, bez danych prywatnych.
+        </p>
+      </div>
+
+      <p class="pager"><a href="/dane/rekordy/">← Rekordy</a> · <a href="/postulat/">Postulat →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Udostępnij te liczby:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .chip { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--paper-2); font-size: 0.72rem; font-weight: 600; }
+  .chip-alert { background: var(--alert-50); color: var(--alert); }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+  .mod-h { margin: 2.75rem 0 0.4rem; }
+  .mod-sub { max-width: 66ch; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.55; margin: 0 0 1.1rem; }
+  .mod-cap { max-width: 68ch; font-size: 0.86rem; color: var(--ink-soft); line-height: 1.6; margin: 0.9rem 0 0; }
+
+  /* — etykieta „aktu" (kręgosłup scrolla) — */
+  .act { display: flex; align-items: center; gap: 0.6rem; margin: 3.25rem 0 0; padding-top: 1.4rem; border-top: 2px solid var(--line); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand); }
+  .act-num { display: inline-flex; align-items: center; justify-content: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--brand); color: #fff; font-family: var(--font-mono); font-size: 0.78rem; flex-shrink: 0; }
+  .act + .mod-h { margin-top: 0.7rem; }
+
+  /* — trzy liczby na wejście — */
+  .head3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; margin: 1.75rem 0 0.5rem; }
+  .h3tile { display: flex; flex-direction: column; background: var(--paper); border: 1px solid var(--line); border-top: 3px solid var(--brand); border-radius: var(--radius); padding: 1rem 1.1rem 0.95rem; }
+  .h3tile.is-zarzut { border-top-color: var(--alert); }
+  .h3tile.is-core { border-top-color: var(--brand); background: var(--brand-50); }
+  .h3lab { font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; display: flex; align-items: center; gap: 0.4rem; min-height: 1.4em; }
+  .h3num { font-family: var(--font-mono); font-size: clamp(1.7rem, 5vw, 2.3rem); font-weight: 700; color: var(--ink); line-height: 1.05; margin: 0.35rem 0 0.4rem; white-space: nowrap; }
+  .is-zarzut .h3num { color: var(--alert); }
+  .is-core .h3num { color: var(--brand); }
+  .h3u { font-family: var(--font-sans); font-size: 0.78rem; font-weight: 400; color: var(--ink-soft); }
+  .h3ctx { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.45; margin-bottom: 0.6rem; flex: 1; }
+  .h3src { font-size: 0.78rem; }
+
+  /* — wykres słupkowy poziomy — */
+  .chart { position: relative; margin: 1.25rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
+  .chart-sm { gap: 0.7rem; }
+  .barrow { display: flex; flex-direction: column; gap: 0.3rem; }
+  .barrow-tight { gap: 0.2rem; }
+  .bl { display: flex; align-items: baseline; justify-content: space-between; gap: 0.6rem; }
+  .bl-t { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+  .bl-n { font-family: var(--font-mono); font-weight: 700; color: var(--ink); font-size: clamp(1rem, 2.6vw, 1.2rem); white-space: nowrap; }
+  .bl-u { font-size: 0.72rem; color: var(--ink-faint); font-weight: 400; }
+  .btrack { height: 20px; background: var(--paper-2); border-radius: 4px; overflow: hidden; }
+  .bfill { height: 100%; border-radius: 4px; min-width: 4px; }
+  .bfill-k { background: var(--alert); }
+  .bfill-e { background: var(--brand); }
+  .bfill-u { background: var(--teal); }
+  .bfill-brand { background: var(--brand); }
+  .bfill-alert { background: var(--alert); }
+  .barrow-ref { opacity: 0.9; }
+  .barrow-ref .bl-t { font-weight: 500; color: var(--ink-soft); display: inline-flex; align-items: baseline; gap: 0.45rem; }
+  .barrow-ref .bl-n { color: var(--ink-soft); }
+  .ref-tag { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); background: var(--paper-2); padding: 0.05rem 0.4rem; border-radius: 999px; }
+  .btrack-ref { height: 12px; background: transparent; }
+  .bfill-ref { background: var(--ink-faint); border-radius: 4px; }
+  .bfill-est { background: repeating-linear-gradient(135deg, var(--ink-faint) 0 7px, #b3c0cc 7px 14px); }
+
+  /* — słupek przekraczający skalę — */
+  .overflow { margin: 1.25rem 0 0; }
+  .ov-track { position: relative; display: flex; height: 38px; background: var(--paper-2); border-radius: 4px; margin-bottom: 0.75rem; }
+  .ov-fill { background: var(--brand); border-radius: 4px 0 0 4px; height: 100%; }
+  .ov-over { background: repeating-linear-gradient(135deg, var(--alert) 0 8px, #cf3a32 8px 16px); border-radius: 0 4px 4px 0; height: 100%; display: flex; align-items: center; justify-content: center; box-shadow: -1px 0 0 #fff; }
+  .ov-over-lab { color: #fff; font-family: var(--font-mono); font-weight: 700; font-size: 0.8rem; }
+  .ov-cap { position: absolute; top: -0.35rem; bottom: -0.35rem; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+  .ov-cap-line { flex: 1; width: 2px; background: var(--ink); }
+  .ov-cap-lab { position: absolute; top: -1.15rem; font-size: 0.66rem; font-family: var(--font-mono); color: var(--ink); white-space: nowrap; background: var(--bg); padding: 0 3px; }
+  .ov-legend { display: flex; align-items: baseline; gap: 0.7rem; flex-wrap: wrap; }
+  .ov-big { font-family: var(--font-mono); font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 700; color: var(--alert); line-height: 1; }
+  .ov-small { font-size: 0.86rem; color: var(--ink-soft); }
+
+  /* — donut (conic-gradient) — */
+  .donut-wrap { display: grid; grid-template-columns: 190px 1fr; gap: 1.75rem; align-items: center; margin: 1.25rem 0 0; }
+  .donut { margin: 0; display: flex; justify-content: center; }
+  .donut-ring { width: 170px; height: 170px; border-radius: 50%; background: conic-gradient(var(--teal) 0 calc(var(--seg) * 1%), var(--line-2) calc(var(--seg) * 1%) 100%); display: flex; align-items: center; justify-content: center; }
+  .donut-hole { width: 112px; height: 112px; border-radius: 50%; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .donut-num { font-family: var(--font-mono); font-size: 2rem; font-weight: 700; color: var(--teal); line-height: 1; }
+  .donut-hole-lab { font-size: 0.68rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 0.2rem; line-height: 1.2; }
+  .donut-lead { font-size: 0.95rem; color: var(--ink); line-height: 1.55; margin: 0 0 0.7rem; }
+  .donut-legend { list-style: none; padding: 0; margin: 0 0 0.7rem; font-size: 0.88rem; color: var(--ink-soft); }
+  .donut-legend li { display: flex; align-items: center; gap: 0.5rem; margin: 0.25rem 0; }
+  .dk { width: 0.85em; height: 0.85em; border-radius: 3px; flex-shrink: 0; }
+  .dk-on { background: var(--teal); }
+  .dk-off { background: var(--line-2); }
+
+  /* — karta z cytatem — */
+  .quotecard { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.25rem 1.5rem; margin: 2rem 0 0; }
+  .qc-num { font-family: var(--font-mono); font-size: clamp(2rem, 7vw, 3rem); font-weight: 700; color: var(--brand); line-height: 1; }
+  .qc-quote { font-family: var(--font-serif); font-size: 1.2rem; font-style: italic; color: var(--ink); margin: 0.5rem 0 0.6rem; border: none; padding: 0; }
+  .qc-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.6; margin: 0; max-width: 68ch; }
+
+  /* — pasek stertowy: udział ustawowych płac w budżecie NFZ — */
+  .stackbar { margin: 1.25rem 0 0; }
+  .sb-track { display: flex; height: 44px; border-radius: var(--radius); overflow: hidden; background: var(--paper-2); }
+  .sb-seg { display: flex; align-items: center; justify-content: center; min-width: 0; }
+  .sb-seg-on { background: var(--brand); }
+  .sb-seg-on span { color: #fff; font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; }
+  .sb-seg-off span { color: var(--ink-soft); font-size: 0.8rem; font-weight: 600; padding: 0 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sb-cap { font-size: 0.85rem; color: var(--ink-soft); margin: 0.6rem 0 0; }
+
+  /* — wykres kolumnowy: budżet NFZ 2020→2026 — */
+  .cols { margin: 1.25rem 0 0; }
+  .cols-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .cols-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); }
+  .cols-badge { font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: var(--brand); background: var(--brand-50); padding: 0.15rem 0.55rem; border-radius: 999px; white-space: nowrap; }
+  .cols-plot { display: flex; align-items: flex-end; gap: 0.4rem; height: 190px; border-bottom: 2px solid var(--line); }
+  .col { flex: 1; height: 100%; display: flex; align-items: flex-end; min-width: 0; }
+  .col-bar { position: relative; width: 100%; max-width: 46px; margin: 0 auto; background: var(--brand); border-radius: 4px 4px 0 0; min-height: 3px; }
+  .col-bar.is-plan { background: repeating-linear-gradient(135deg, var(--brand) 0 6px, #3a72a3 6px 12px); }
+  .col-v { position: absolute; top: -1.25rem; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; color: var(--ink-soft); white-space: nowrap; }
+  .cols-x { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+  .cols-x span { flex: 1; min-width: 0; text-align: center; font-family: var(--font-mono); font-size: 0.66rem; color: var(--ink-faint); }
+  .cols-x span.is-plan { color: var(--ink-soft); }
+
+  /* — delta „od → do" (dwie liczby, wzrost ▲) — */
+  .deltas { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0 0; }
+  .delta { margin: 0; display: flex; flex-direction: column; gap: 0.55rem; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1.15rem; background: var(--bg); }
+  .delta-wide { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 0.5rem 1.1rem; margin-top: 1rem; }
+  .delta-wide .delta-title { margin-right: auto; }
+  .delta.is-bad { border-left: 4px solid var(--alert); }
+  .delta-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); }
+  .delta-flow { display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap; }
+  .delta-a { color: var(--ink-faint); font-family: var(--font-mono); font-weight: 700; font-size: clamp(1.3rem, 4vw, 1.7rem); line-height: 1; }
+  .delta-sep { color: var(--line-2); font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; }
+  .delta-b { color: var(--brand); font-family: var(--font-mono); font-weight: 700; font-size: clamp(1.75rem, 5.5vw, 2.35rem); line-height: 1; }
+  .is-bad .delta-b { color: var(--alert); }
+  .delta-u { font-family: var(--font-sans); font-size: 0.72rem; font-weight: 400; color: var(--ink-faint); }
+  .delta-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; font-weight: 700; color: var(--brand); background: var(--brand-50); padding: 0.2rem 0.6rem 0.2rem 0.55rem; border-radius: 999px; }
+  .delta-badge::before { content: ''; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 7px solid currentColor; }
+  .is-bad .delta-badge { color: var(--alert); background: var(--alert-50); }
+
+  /* — kontrowersja: dwie karty — */
+  .versus { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0 0; }
+  .vs-card { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.2rem 1.35rem; }
+  .vs-card.is-yes { border-left: 4px solid #2f7a34; background: #f2f8f3; }
+  .vs-card.is-no { border-left: 4px solid var(--alert); background: var(--alert-50); }
+  .vs-head { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.6rem; }
+  .is-yes .vs-head { color: #2f7a34; }
+  .is-no .vs-head { color: var(--alert); }
+  .vs-mark { font-size: 1.05rem; }
+  .vs-big { font-family: var(--font-mono); font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 700; color: var(--ink); line-height: 1.05; margin: 0 0 0.15rem; }
+  .is-no .vs-big { color: var(--alert); }
+  .vs-lab { font-size: 0.82rem; color: var(--ink-soft); margin: 0 0 0.85rem; line-height: 1.4; }
+  .vs-split { display: flex; height: 26px; border-radius: var(--radius); overflow: hidden; background: var(--paper-2); margin-bottom: 0.7rem; }
+  .vsseg { display: flex; align-items: center; justify-content: center; min-width: 0; }
+  .vsseg i { font-size: 0.7rem; font-weight: 700; color: #fff; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 0.25rem; }
+  .vsseg-k { background: var(--ink-soft); }
+  .vsseg-e { background: #2f7a34; }
+  .vsseg-i { background: var(--ink-faint); }
+  .vs-blank { height: 26px; border-radius: var(--radius); margin-bottom: 0.7rem; background: repeating-linear-gradient(135deg, var(--alert-50) 0 10px, #f6dedc 10px 20px); border: 1px dashed var(--alert); display: flex; align-items: center; justify-content: center; }
+  .vs-blank span { color: var(--alert); font-family: var(--font-mono); font-weight: 700; font-size: 1rem; }
+  .vs-note { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+
+  @media (max-width: 720px) {
+    .donut-wrap { grid-template-columns: 1fr; justify-items: center; text-align: left; }
+    .donut-side { width: 100%; }
+    .versus { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .cols-plot { gap: 0.25rem; height: 165px; }
+    .col-v { font-size: 0.62rem; }
+    .cols-x span { font-size: 0.58rem; }
+  }
+  @media (max-width: 420px) {
+    .head3 { grid-template-columns: 1fr; }
+  }
+</style>

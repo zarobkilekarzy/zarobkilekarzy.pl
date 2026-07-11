@@ -25,7 +25,7 @@ export const pageDates = {
   '/mechanizmy/reglamentacja-dostepu': '2026-07-07',
   '/mechanizmy/kontrakt-vs-etat': '2026-07-07',
   '/mechanizmy/brak-jawnosci': '2026-07-06',
-  '/mechanizmy/wieloetatowosc': '2026-07-07',
+  '/mechanizmy/wieloetatowosc': '2026-07-11',
   '/mechanizmy/rozliczenia-nfz': '2026-07-06',
   '/mechanizmy/wycena-swiadczen': '2026-07-10',
   '/mechanizmy/samorzad-nil': '2026-07-07',

@@ -37,7 +37,7 @@ export const pageDates = {
   '/dane/kolejki': '2026-07-06',
   '/dane/pensje-rezydentow': '2026-07-06',
   '/dane/personel-medyczny': '2026-07-07',
-  '/dane/rekordy': '2026-07-09',
+  '/dane/rekordy': '2026-07-11',
   '/dane/rozklad-wynagrodzen': '2026-07-07',
   '/dane/stawki': '2026-07-06',
   '/dane/wedlug-specjalizacji': '2026-07-07',

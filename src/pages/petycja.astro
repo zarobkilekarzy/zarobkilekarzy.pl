@@ -1,0 +1,350 @@
+---
+// WERSJA ROBOCZA — LANDING AKCYJNY (do sharowania). Skupiony na WYSŁANIU. „Unlisted":
+// noindex (props) + poza sitemap (astro.config) + brak linku w nawigacji. Teoria →
+// /petycja/jak-to-dziala; treść → komponent <PetycjaTresc /> (jedno źródło: src/lib/petycja.ts).
+// JEDNA treść petycji, wysyłana do Ministerstwa Zdrowia (mailem — najprościej) i opcjonalnie
+// do Senatu (pismo ogólne/poczta — ta sama treść).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PetycjaTresc from '../components/PetycjaTresc.astro';
+import LicznikPetycji from '../components/LicznikPetycji.astro';
+import { PETYCJA_TRESC, PETYCJA_TEMAT, ADRESACI } from '../lib/petycja';
+
+const MZ_EMAIL = ADRESACI.mz.email;
+---
+
+<BaseLayout
+  title="Wyślij petycję — jawność wynagrodzeń lekarzy"
+  description="Wyślij gotową petycję o jawny rejestr wynagrodzeń lekarzy ze środków publicznych — do Ministerstwa Zdrowia (i opcjonalnie do Senatu). Wpisz imię, skopiuj, wyślij."
+  noindex={true}
+>
+  <section class="section">
+    <div class="container narrow">
+      <p class="eyebrow">Petycja</p>
+      <h1>Wyślij petycję o jawność wynagrodzeń lekarzy</h1>
+      <p class="lead">
+        Gotowa, formalna petycja o jawny rejestr wynagrodzeń ze środków publicznych.
+        Wpisz imię, skopiuj, wyślij. Zajmie minutę.
+      </p>
+
+      <div class="draft-note">
+        <span class="draft-badge">Wersja robocza</span>
+        <p>To poglądowa wersja — treść jeszcze dopracujemy.</p>
+      </div>
+
+      <!-- SKUTKI PRAWNE -->
+      <h2 class="blk">Co zrobi Twoja petycja</h2>
+      <div class="effects">
+        <div class="effect">
+          <span class="effect-tag">Ministerstwo Zdrowia</span>
+          <p>
+            Urząd ma <strong>prawny obowiązek</strong> ją rozpatrzyć i
+            <strong>odpowiedzieć w 3 miesiące</strong>. Nie może jej zignorować.
+          </p>
+        </div>
+        <div class="effect">
+          <span class="effect-tag">Senat (opcjonalnie)</span>
+          <p>
+            Ta sama treść wysłana do Senatu trafia do <strong>Komisji Petycji</strong>,
+            która może przekuć postulat w <strong>projekt ustawy</strong>.
+          </p>
+        </div>
+      </div>
+      <p class="effects-foot">
+        Jedna treść, dwa możliwe adresy — <strong>wyślij najpierw do Ministerstwa Zdrowia</strong>,
+        a jeśli chcesz wzmocnić, także do Senatu.
+      </p>
+
+      <!-- AKCJA -->
+      <h2 class="blk">Wyślij w 3 krokach</h2>
+      <ol class="steps">
+        <li><span class="step-n">1</span> Wpisz imię, nazwisko i miejscowość.</li>
+        <li><span class="step-n">2</span> Skopiuj treść — albo otwórz gotowy mail, albo wydrukuj.</li>
+        <li><span class="step-n">3</span> Wyślij do Ministerstwa Zdrowia (i opcjonalnie do Senatu).</li>
+      </ol>
+
+      <div class="gen-form">
+        <div class="field">
+          <label for="imie">Imię i nazwisko</label>
+          <input id="imie" type="text" autocomplete="name" placeholder="np. Jan Kowalski" />
+        </div>
+        <div class="field">
+          <label for="miejscowosc">Miejscowość</label>
+          <input id="miejscowosc" type="text" autocomplete="address-level2" placeholder="np. Poznań" />
+        </div>
+      </div>
+      <p class="privacy-hint">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span><strong>Nie zapisujemy tych danych.</strong> Wszystko dzieje się lokalnie w Twojej
+        przeglądarce — służą tylko do wpisania Cię w treść petycji, nic nie trafia na żaden serwer.</span>
+      </p>
+
+      <!-- JEDNA treść petycji (komponent = jedno źródło prawdy) -->
+      <div class="mail-card">
+        <div class="mail-row">
+          <span class="mail-k">Temat</span>
+          <span class="mail-v">{PETYCJA_TEMAT}</span>
+        </div>
+        <div class="petbox">
+          <PetycjaTresc id="petbody" />
+        </div>
+        <div class="cta-row">
+          <button class="btn btn-primary" id="copyBtn" type="button">Kopiuj treść</button>
+          <a class="btn" id="mailtoMz" href="#">Otwórz mail do Min. Zdrowia</a>
+          <button class="btn" id="printBtn" type="button">Drukuj</button>
+        </div>
+        <p class="mail-addr">
+          Mail trafia na adres Ministerstwa Zdrowia: <strong>{MZ_EMAIL}</strong>
+        </p>
+        <p class="senat-opt">
+          <strong>Chcesz wzmocnić?</strong> Wyślij <strong>tę samą treść</strong> także do Senatu.
+          Jak to zrobić — do Ministerstwa Zdrowia i do Senatu — masz krok po kroku niżej w
+          <a href="#jak-wyslac">„Jak wysłać”</a>.
+        </p>
+      </div>
+
+      <!-- JAK WYSŁAĆ -->
+      <h2 class="blk" id="jak-wyslac" style="scroll-margin-top: 1.5rem">Jak wysłać</h2>
+      <p class="muted" style="max-width: 66ch">
+        Masz jedną treść (wyżej) i dwa możliwe adresy: wyślij najpierw do Ministerstwa Zdrowia,
+        a do Senatu — jeśli chcesz wzmocnić. Każdy z poniższych sposobów jest tak samo ważny.
+      </p>
+
+      <ol class="ways">
+        <li>
+          <h3>E-mailem — do Ministerstwa Zdrowia</h3>
+          <p>
+            Najprościej: kliknij <strong>„Otwórz mail do Min. Zdrowia”</strong> wyżej — temat
+            i treść wpiszą się same. Albo skopiuj treść i wyślij ręcznie na adres:
+          </p>
+          <p class="addr-mono">{MZ_EMAIL}</p>
+          <p>
+            Petycja wysłana e-mailem jest w pełni ważna. Senat nie udostępnia adresu e-mail do
+            petycji — do niego użyj sposobu 2 lub 3.
+          </p>
+        </li>
+        <li>
+          <h3>Pismem ogólnym przez gov.pl — do MZ albo do Senatu</h3>
+          <p>Ta droga daje <strong>UPP</strong> — urzędowe potwierdzenie z datą, jak list polecony:</p>
+          <ol class="steps-in">
+            <li>Skopiuj treść przyciskiem <strong>„Kopiuj treść”</strong> wyżej.</li>
+            <li>Otwórz usługę <a href="https://www.gov.pl/web/gov/wyslij-pismo-ogolne" target="_blank" rel="noopener noreferrer">„Wyślij pismo ogólne”</a> na gov.pl i zaloguj się (Profil Zaufany, e-dowód lub aplikacja mObywatel).</li>
+            <li>Jako adresata wskaż <strong>Ministerstwo Zdrowia</strong> albo <strong>Kancelarię Senatu</strong>.</li>
+            <li>Wpisz tytuł (ten sam co „Temat” wyżej) i wklej treść.</li>
+            <li>Wybierz <strong>„Podpisz i wyślij”</strong> i zachowaj UPP.</li>
+          </ol>
+        </li>
+        <li>
+          <h3>Wydrukiem i pocztą — do MZ albo do Senatu</h3>
+          <p>
+            Kliknij <strong>„Drukuj”</strong>, podpisz i <strong>dopisz odręcznie swój adres
+            zwrotny</strong> — bez niego urząd może zostawić petycję bez rozpatrzenia. Wyślij na:
+          </p>
+          <ul class="addr-list">
+            <li>{ADRESACI.mz.adres}</li>
+            <li>{ADRESACI.senat.adres}</li>
+          </ul>
+          <p>Wydruk nie ma mniejszej mocy niż e-mail czy pismo urzędowe.</p>
+        </li>
+      </ol>
+
+      <!-- CO DALEJ (sprawczość) -->
+      <h2 class="blk">Co się stanie z Twoją petycją</h2>
+      <ol class="next">
+        <li><strong>Dostajesz potwierdzenie.</strong> Kopia maila zostaje u Ciebie; przy piśmie ogólnym dostajesz UPP — urzędowe poświadczenie z datą, jak list polecony.</li>
+        <li><strong>Urząd MUSI ją rozpatrzyć.</strong> Nie może jej zignorować — ma ustawowy obowiązek odpowiedzieć (Ministerstwo Zdrowia: do 3 miesięcy).</li>
+        <li><strong>Twoja petycja staje się jawna.</strong> Urząd publikuje jej treść i sposób załatwienia na swojej stronie (BIP) — petycja o jawność sama staje się jawna. Twoje nazwisko trafi tam tylko za Twoją zgodą (domyślnie: nie).</li>
+        <li><strong>Im więcej głosów, tym mocniej.</strong> Wiele petycji w tej samej sprawie urząd rozpatruje łącznie — jedną, zbiorczą odpowiedzią, którą trudniej zbyć milczeniem.</li>
+        <li><strong>Senat → realna droga do ustawy.</strong> Petycja do Senatu trafia do Komisji Petycji, która może przekuć ją w projekt ustawy.</li>
+      </ol>
+      <p class="next-punch">
+        Jedna petycja to sygnał. Tysiące identycznych w tej samej sprawie — to fakt,
+        którego nie da się przemilczeć.
+      </p>
+
+      <LicznikPetycji />
+
+      <p class="source-note">
+        Masz pytania albo wątpliwości? <a href="/petycja/jak-to-dziala/">Jak to działa — i dlaczego tak</a>.
+        Sama treść i jej omówienie — <a href="/petycja/tresc/">treść petycji</a>. Dlaczego jawność —
+        zob. <a href="/postulat/">nasz postulat</a>. Podstawa prawna:
+        <a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20140001195" target="_blank" rel="noopener noreferrer">ustawa o petycjach</a>
+        (art. 2, 4, 10, 11) i art. 63 Konstytucji RP.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .narrow { max-width: 780px; }
+  .blk { margin-top: 2.5rem; }
+
+  .draft-note {
+    display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+    background: var(--alert-50); border: 1px solid var(--line);
+    border-left: 5px solid var(--alert);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 0.7rem 1rem; margin: 1.25rem 0 0;
+  }
+  .draft-badge {
+    background: var(--alert); color: #fff;
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 999px;
+  }
+  .draft-note p { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
+
+  /* Skutki prawne */
+  .effects { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.5rem 0 0.75rem; }
+  .effect { border: 1px solid var(--line); border-top: 4px solid var(--brand); border-radius: var(--radius); padding: 1rem 1.25rem; background: #fff; }
+  .effect-tag { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--brand); margin-bottom: 0.4rem; }
+  .effect p { margin: 0; line-height: 1.55; color: var(--ink); }
+  .effects-foot { margin: 0.25rem 0 0; color: var(--ink); }
+  @media (max-width: 560px) { .effects { grid-template-columns: 1fr; } }
+
+  /* Kroki */
+  .steps { list-style: none; padding: 0; margin: 1rem 0 0; display: flex; flex-direction: column; gap: 0.6rem; }
+  .steps li { display: flex; align-items: baseline; gap: 0.7rem; line-height: 1.6; color: var(--ink); }
+  .step-n {
+    flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+    width: 1.7rem; height: 1.7rem; border-radius: 999px;
+    background: var(--brand); color: #fff; font-size: 0.9rem; font-weight: 600;
+    transform: translateY(0.2rem);
+  }
+
+  /* Formularz */
+  .gen-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0 0.75rem; }
+  .field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .field label { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
+  .field input {
+    font-family: var(--font-sans); font-size: 1.05rem; padding: 0.7rem 0.85rem;
+    border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink);
+  }
+  .field input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-50); }
+  @media (max-width: 540px) { .gen-form { grid-template-columns: 1fr; } }
+  .privacy-hint { display: flex; align-items: flex-start; gap: 0.5rem; margin: 0 0 1.75rem; font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; }
+  .privacy-hint svg { flex-shrink: 0; color: var(--brand); margin-top: 0.15rem; }
+
+  /* Karta petycji */
+  .mail-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+  .mail-row { display: flex; gap: 0.75rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--line); margin-bottom: 0.85rem; }
+  .mail-k { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); flex-shrink: 0; padding-top: 2px; min-width: 3.2rem; }
+  .mail-v { font-weight: 500; word-break: break-word; }
+  .petbox { max-height: 20rem; overflow-y: auto; margin-bottom: 1.1rem; }
+  .mail-addr { margin: 0.85rem 0 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .mail-addr strong { font-family: var(--font-mono); color: var(--ink); }
+  .senat-opt { margin: 0.85rem 0 0; padding-top: 0.9rem; border-top: 1px dashed var(--line); font-size: 0.93rem; color: var(--ink-soft); line-height: 1.55; }
+
+  /* Jak wysłać */
+  .ways { list-style: none; counter-reset: w; padding: 0; margin: 1.25rem 0 0; display: flex; flex-direction: column; gap: 1rem; }
+  .ways > li { border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.1rem 1.35rem; }
+  .ways > li h3 { margin: 0 0 0.5rem; font-size: 1.05rem; }
+  .ways > li h3::before { counter-increment: w; content: counter(w) ". "; color: var(--brand); font-weight: 600; }
+  .ways p { margin: 0 0 0.55rem; color: var(--ink-soft); line-height: 1.6; }
+  .ways p:last-child { margin-bottom: 0; }
+  .addr-mono { font-family: var(--font-mono); font-size: 1rem; color: var(--ink) !important; background: var(--paper-2); display: inline-block; padding: 0.35rem 0.7rem; border-radius: var(--radius); }
+  .steps-in { margin: 0.5rem 0 0; padding-left: 1.3rem; }
+  .steps-in li { margin: 0.4rem 0; color: var(--ink); line-height: 1.55; }
+  .addr-list { list-style: none; margin: 0.4rem 0 0.6rem; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+  .addr-list li { padding-left: 0.9rem; border-left: 2px solid var(--line-2); color: var(--ink); font-size: 0.95rem; }
+
+  /* Co dalej — oś czasu */
+  .next { counter-reset: nx; list-style: none; padding: 0; margin: 1.25rem 0 0; }
+  .next li { position: relative; padding: 0 0 1.15rem 2.6rem; line-height: 1.6; color: var(--ink); }
+  .next li::before {
+    content: counter(nx); counter-increment: nx;
+    position: absolute; left: 0; top: 0;
+    width: 1.7rem; height: 1.7rem; border-radius: 999px;
+    background: var(--brand); color: #fff; font-size: 0.9rem; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .next li::after {
+    content: ''; position: absolute; left: calc(0.85rem - 1px); top: 1.9rem; bottom: 0;
+    width: 2px; background: var(--line);
+  }
+  .next li:last-child { padding-bottom: 0; }
+  .next li:last-child::after { display: none; }
+  .next-punch {
+    margin: 0.75rem 0 0; padding: 0.9rem 1.25rem;
+    background: var(--brand-50); border-left: 4px solid var(--brand);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-weight: 500; color: var(--ink);
+  }
+</style>
+
+<!-- Druk: globalna reguła, bo #petbody pochodzi z komponentu (inny scope) -->
+<style is:global>
+  @media print {
+    body.printing * { visibility: hidden !important; }
+    body.printing .print-target, body.printing .print-target * { visibility: visible !important; }
+    body.printing .print-target {
+      position: absolute; left: 0; top: 0; width: 100%;
+      max-height: none !important; overflow: visible !important;
+      font-size: 12pt; line-height: 1.5; color: #000; white-space: pre-wrap;
+    }
+  }
+</style>
+
+<script is:inline define:vars={{ MZ_EMAIL, PETYCJA_TEMAT, PETYCJA_TRESC }}>
+  (function () {
+    var imieEl = document.getElementById('imie');
+    var miejEl = document.getElementById('miejscowosc');
+    var bodyEl = document.getElementById('petbody');
+    var mailtoEl = document.getElementById('mailtoMz');
+    if (!imieEl || !bodyEl) return;
+
+    function build() {
+      var imie = (imieEl.value || '').trim() || '[Imię i nazwisko]';
+      var miej = (miejEl.value || '').trim() || '[miejscowość]';
+      return PETYCJA_TRESC.replace(/\{\{IMIE\}\}/g, imie).replace(/\{\{MIEJSCOWOSC\}\}/g, miej);
+    }
+
+    function fill() {
+      var body = build();
+      bodyEl.textContent = body;
+      if (mailtoEl) {
+        mailtoEl.href =
+          'mailto:' + MZ_EMAIL +
+          '?subject=' + encodeURIComponent(PETYCJA_TEMAT) +
+          '&body=' + encodeURIComponent(body);
+      }
+    }
+
+    imieEl.addEventListener('input', fill);
+    miejEl.addEventListener('input', fill);
+    fill();
+
+    var copyBtn = document.getElementById('copyBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        var text = 'Temat: ' + PETYCJA_TEMAT + '\n\n' + bodyEl.textContent;
+        var done = function () {
+          var prev = copyBtn.textContent;
+          copyBtn.textContent = 'Skopiowano ✓';
+          setTimeout(function () { copyBtn.textContent = prev; }, 1800);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(function () {
+            copyBtn.textContent = 'Zaznacz i skopiuj ręcznie';
+          });
+        } else {
+          copyBtn.textContent = 'Zaznacz i skopiuj ręcznie';
+        }
+      });
+    }
+
+    var printBtn = document.getElementById('printBtn');
+    if (printBtn) {
+      printBtn.addEventListener('click', function () {
+        bodyEl.classList.add('print-target');
+        document.body.classList.add('printing');
+        var cleanup = function () {
+          bodyEl.classList.remove('print-target');
+          document.body.classList.remove('printing');
+          window.removeEventListener('afterprint', cleanup);
+        };
+        window.addEventListener('afterprint', cleanup);
+        window.print();
+        setTimeout(cleanup, 1000);
+      });
+    }
+  })();
+</script>

@@ -1,0 +1,35 @@
+---
+// Embedowalny komponent z TREŚCIĄ petycji. Renderuje tekst z jednego źródła prawdy
+// (src/lib/petycja.ts). Każda zmiana treści = jedna edycja w lib, propaguje się tutaj
+// i wszędzie, gdzie ten komponent jest użyty.
+//
+// Props:
+//   imie, miejscowosc — wypełnienie tokenów (domyślnie widoczne placeholdery),
+//   id                — id elementu <pre> (do celowania skryptem, np. generator na /petycja),
+//   class             — dodatkowa klasa opakowująca.
+import { fillPetycja } from '../lib/petycja';
+
+interface Props {
+  imie?: string;
+  miejscowosc?: string;
+  id?: string;
+  class?: string;
+}
+
+const { imie, miejscowosc, id, class: klass } = Astro.props;
+const tresc = fillPetycja(imie, miejscowosc);
+---
+
+<pre id={id} class:list={['petycja-tresc', klass]} set:text={tresc}></pre>
+
+<style>
+  .petycja-tresc {
+    font-family: var(--font-sans);
+    font-size: 0.96rem;
+    line-height: 1.65;
+    color: #29384b;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+  }
+</style>

@@ -1,0 +1,98 @@
+---
+// Licznik „wysłałem petycję" — self-reported, anonimowy. REUŻYWA istniejący endpoint
+// /api/clicks (D1, binding CLICKS_DB) ze slugiem 'petycja-wyslana' — zero nowego backendu.
+// GET (odczyt) jest edge-cache'owany Cache Rule na /api/* (Edge TTL ~300 s), więc odsłony
+// nie palą Funkcji/Workera; POST/beacon inkrementuje raz na przeglądarkę (localStorage).
+// Bez bindingu / w `npm run dev` degraduje się łagodnie: liczba „—", klik i tak działa lokalnie.
+---
+
+<div class="licznik" id="licznik-petycji">
+  <p class="eyebrow">Dołącz</p>
+  <p class="licz-line"><span class="licz-n" id="licz-n">—</span> osób zadeklarowało już wysłanie petycji</p>
+  <div class="licz-cta">
+    <button class="btn btn-primary" id="licz-btn" type="button">Wysłałem/-am petycję</button>
+    <span class="licz-done" id="licz-done" hidden>Dziękujemy — doliczono anonimowo.</span>
+  </div>
+  <p class="licz-hint">
+    Kliknij dopiero po faktycznym wysłaniu petycji — nie na znak poparcia. Tylko wtedy
+    liczba cokolwiek znaczy.
+  </p>
+  <p class="licz-note">
+    Licznik opiera się na Twoich zgłoszeniach (nie weryfikujemy wysyłki) — zapisujemy je
+    w tej przeglądarce, zbiorczo i anonimowo, bez danych osobowych.
+  </p>
+</div>
+
+<script>
+  const SLUG = 'petycja-wyslana';
+  const KEY = 'petycja-wyslana-v1';
+  const API = '/api/clicks';
+  const root = document.getElementById('licznik-petycji');
+  if (root) {
+    const nEl = root.querySelector('#licz-n');
+    const btn = root.querySelector('#licz-btn');
+    const doneEl = root.querySelector('#licz-done');
+    let count = null;
+    let done = false;
+
+    const render = () => {
+      nEl.textContent = count == null ? '—' : count.toLocaleString('pl-PL');
+    };
+    const markDone = () => {
+      done = true;
+      btn.disabled = true;
+      btn.classList.add('chosen');
+      doneEl.hidden = false;
+    };
+
+    let prev = null;
+    try { prev = localStorage.getItem(KEY); } catch (e) {}
+    if (prev) markDone();
+
+    // Odczyt licznika — GET idzie z brzegowego cache (bez wywołania Funkcji przy
+    // powtórnych odsłonach). Błąd/brak bindingu → zostaje „—", przycisk działa dalej.
+    (async () => {
+      try {
+        const r = await fetch(API);
+        if (r.ok) {
+          const d = await r.json();
+          count = (d && d.counts && d.counts[SLUG]) || 0;
+          render();
+        }
+      } catch (e) {}
+    })();
+
+    // Listener synchroniczny — klik nigdy nie przepadnie.
+    btn.addEventListener('click', () => {
+      if (done) return;
+      try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+      if (count != null) { count += 1; render(); }
+      try { navigator.sendBeacon(API, JSON.stringify({ slug: SLUG })); } catch (e) {}
+      markDone();
+    });
+  }
+</script>
+
+<style>
+  .licznik {
+    background: var(--brand-50);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.75rem;
+    margin-top: 2.5rem;
+  }
+  .licz-line { margin: 0.3rem 0 1.1rem; font-size: 1.15rem; color: var(--ink); }
+  .licz-n {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 1.9rem;
+    color: var(--brand);
+    font-variant-numeric: tabular-nums;
+    margin-right: 0.15rem;
+  }
+  .licz-cta { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+  #licz-btn.chosen { background: var(--brand-700); border-color: var(--brand-700); color: #fff; opacity: 1; cursor: default; }
+  .licz-done { font-weight: 500; color: var(--brand-700); }
+  .licz-hint { margin: 0.85rem 0 0; font-size: 0.92rem; color: var(--ink-soft); line-height: 1.5; }
+  .licz-note { margin: 0.6rem 0 0; font-size: 0.85rem; color: var(--ink-faint); line-height: 1.5; }
+</style>

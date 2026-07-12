@@ -13,7 +13,9 @@
   /* tekst */
   --ink: #14233a;
   --ink-soft: #51637a;
-  --ink-faint: #8493a2;
+  /* --ink-faint: przyciemniony do ≥4,5:1 (WCAG 1.4.3) także na tłach --paper/--paper-2;
+     poprzednio #8493a2 dawało ~3,1:1 dla drobnych podpisów, źródeł i etykiet. */
+  --ink-faint: #616d7a;
 
   /* linie */
   --line: #e4eaf0;
@@ -47,7 +49,9 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 17px;
+  /* rem, nie px — reaguje na ustawienie domyślnego rozmiaru fontu w przeglądarce
+     (dostępność „większy tekst" bez własnego widżetu). 1.0625rem = 17px przy 16px root. */
+  font-size: 1.0625rem;
   line-height: 1.65;
   color: var(--ink);
   background: var(--bg);
@@ -86,6 +90,17 @@ main { display: block; }
   padding: 0.6rem 1rem; border-radius: 0 0 var(--radius) 0; z-index: 100;
 }
 .skip-link:focus { left: 0; }
+
+/* Spójny, widoczny wskaźnik focusu klawiatury (WCAG 2.4.7 / 2.4.11).
+   Na ciemnych pasmach obwódka na biało, by zachować kontrast. */
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 2px; }
+.cta-band :focus-visible, .x-band :focus-visible { outline-color: #fff; }
+
+/* Treść tylko dla czytników ekranu (nagłówki pomocnicze, etykiety). */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 
 /* --- przyciski ---------------------------------------------------------- */
 .btn {
@@ -129,7 +144,7 @@ main { display: block; }
 .nav-links { display: flex; align-items: center; gap: 1.4rem; }
 .nav-links a:not(.btn) { text-decoration: none; color: var(--ink-soft); font-size: 0.92rem; font-weight: 500; }
 .nav-links a:not(.btn):hover, .nav-links a:not(.btn).active { color: var(--brand); }
-.nav-toggle, .nav-burger { display: none; }
+.nav-burger { display: none; }
 
 /* --- hero --------------------------------------------------------------- */
 .hero { padding: 4.5rem 0 3.5rem; }
@@ -210,7 +225,7 @@ main { display: block; }
 .site-footer { background: var(--paper); border-top: 1px solid var(--line); padding: 2.75rem 0 2rem; font-size: 0.9rem; color: var(--ink-soft); }
 .footer-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 2rem; }
 .footer-note { display: flex; gap: 0.6rem; align-items: flex-start; max-width: 42ch; }
-.site-footer h4 { font-family: var(--font-sans); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin: 0 0 0.7rem; }
+.site-footer h2 { font-family: var(--font-sans); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin: 0 0 0.7rem; line-height: 1.3; }
 .site-footer ul { list-style: none; padding: 0; margin: 0; }
 .site-footer li { margin: 0.35rem 0; }
 .site-footer a { color: var(--ink-soft); text-decoration: none; }
@@ -247,5 +262,42 @@ main { display: block; }
   }
   .nav-links a:not(.btn) { padding: 0.5rem 0; width: 100%; }
   .nav-links .btn { margin-top: 0.5rem; }
-  .nav-toggle:checked ~ .nav-links { display: flex; }
+  .nav-links.open { display: flex; }
+}
+
+/* =========================================================================
+   Natywne preferencje dostępności — honorujemy ustawienia systemu/przeglądarki
+   zamiast budować własne przełączniki (patrz decyzja: brak widżetów a11y).
+   ========================================================================= */
+
+/* Ograniczenie ruchu — dla osób wrażliwych na animacje/scroll (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Podwyższony kontrast na życzenie systemu (macOS „Zwiększ kontrast",
+   niektóre przeglądarki) — przyciemniamy szarości i wzmacniamy linie. */
+@media (prefers-contrast: more) {
+  :root {
+    --ink-soft: #3c4a5c;
+    --ink-faint: #45515f;
+    --line: #c4ced8;
+    --line-2: #a7b4c0;
+  }
+}
+
+/* Tryb wymuszonych kolorów (Windows High Contrast) — nie polegamy na tłach
+   dla znaczenia; utrzymujemy widoczne obramowania i focus. */
+@media (forced-colors: active) {
+  :focus-visible { outline: 2px solid CanvasText; }
+  .btn, .filter-btn, .page-btn, .sonda-btn, .nav-burger, .form-card input, .zglos input, .zglos textarea {
+    border: 1px solid;
+  }
+  .callout { border-left: 4px solid; }
 }

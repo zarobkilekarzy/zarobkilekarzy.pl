@@ -30,16 +30,21 @@ const isActive = (href: string) =>
       <span class="brand-name">zarobkilekarzy.pl</span>
     </a>
 
-    <input type="checkbox" id="navtoggle" class="nav-toggle" aria-hidden="true" />
-    <label for="navtoggle" class="nav-burger" aria-label="Otwórz menu">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <button
+      type="button"
+      class="nav-burger"
+      aria-label="Menu"
+      aria-expanded="false"
+      aria-controls="nav-menu"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <line x1="3" y1="6" x2="21" y2="6"></line>
         <line x1="3" y1="12" x2="21" y2="12"></line>
         <line x1="3" y1="18" x2="21" y2="18"></line>
       </svg>
-    </label>
+    </button>
 
-    <nav class="nav-links" aria-label="Główna nawigacja">
+    <nav id="nav-menu" class="nav-links" aria-label="Główna nawigacja">
       {
         links.map((l) => (
           <a href={l.href} class={isActive(l.href) ? 'active' : ''}>
@@ -51,3 +56,40 @@ const isActive = (href: string) =>
     </nav>
   </div>
 </header>
+
+<script>
+  // Menu mobilne dostępne z klawiatury: prawdziwy <button> + aria-expanded
+  // (zastępuje wcześniejszy checkbox-hack, którego nie dało się otworzyć z klawiatury).
+  const burger = document.querySelector('.nav-burger');
+  const menu = document.getElementById('nav-menu');
+  if (burger && menu) {
+    const setOpen = (open) => {
+      menu.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', String(open));
+    };
+    burger.addEventListener('click', () =>
+      setOpen(burger.getAttribute('aria-expanded') !== 'true'),
+    );
+    // Klik w link zamyka menu (kotwice/nawigacja w obrębie strony).
+    menu.addEventListener('click', (e) => {
+      if (e.target instanceof Element && e.target.closest('a')) setOpen(false);
+    });
+    // Escape zamyka i zwraca focus na przycisk.
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && burger.getAttribute('aria-expanded') === 'true') {
+        setOpen(false);
+        burger.focus();
+      }
+    });
+    // Klik poza nagłówkiem zamyka otwarte menu.
+    document.addEventListener('click', (e) => {
+      if (
+        burger.getAttribute('aria-expanded') === 'true' &&
+        e.target instanceof Element &&
+        !e.target.closest('.nav-inner')
+      ) {
+        setOpen(false);
+      }
+    });
+  }
+</script>

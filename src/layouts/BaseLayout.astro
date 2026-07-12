@@ -228,6 +228,39 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
     </main>
     <Footer />
     <script>
+      // Dostępność przewijalnych tabel (WCAG 2.1.1): kontenery `.table-wrap`
+      // z poziomym przewijaniem muszą być osiągalne i przewijalne klawiaturą.
+      // Nadajemy fokusowalność + nazwę tylko tym, które faktycznie się przewijają
+      // (zależy od szerokości/zoomu), i aktualizujemy przy zmianie rozmiaru.
+      (() => {
+        const wraps = document.querySelectorAll('.table-wrap');
+        if (!wraps.length) return;
+        const label = (el) => {
+          if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')) return;
+          let h = el.previousElementSibling;
+          while (h && !/^H[2-6]$/.test(h.tagName)) h = h.previousElementSibling;
+          const cap = h ? h.textContent.trim().slice(0, 70) : 'Tabela z danymi';
+          el.setAttribute('aria-label', cap + ' — tabela, przewiń w poziomie');
+        };
+        const sync = () => {
+          wraps.forEach((el) => {
+            const scrollable = el.scrollWidth > el.clientWidth + 1;
+            if (scrollable) {
+              el.tabIndex = 0;
+              el.setAttribute('role', 'region');
+              label(el);
+            } else {
+              el.removeAttribute('tabindex');
+              el.removeAttribute('role');
+            }
+          });
+        };
+        sync();
+        let t;
+        window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(sync, 200); });
+      })();
+    </script>
+    <script>
       // Liczniki przejść do źródeł: pokaż liczby (1 cache'owany GET /api/clicks)
       // i policz kliknięcie w kartę (beacon POST, raz na ~12 h na slug w tej
       // przeglądarce). Bez ciasteczek, bez danych osobowych. No-op, gdy na

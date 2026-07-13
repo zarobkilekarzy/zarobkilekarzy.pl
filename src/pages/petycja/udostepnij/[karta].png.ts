@@ -62,8 +62,10 @@ function cardZero(): Node {
         el({ display: 'flex', fontSize: '48px', color: '#dfe6ee', lineHeight: 1.35, marginTop: '20px', maxWidth: '900px' },
           'Tyle jest dziś ogólnodostępnych rejestrów, które to pokazują.'),
       ]),
-      el({ display: 'flex', alignItems: 'center', borderTop: '2px solid #2f4a66', paddingTop: '30px', fontFamily: 'Plex Mono', fontWeight: 500, fontSize: '36px', color: '#9fb3c8' },
-        'Petycja to zmienia — zarobkilekarzy.pl/petycja/'),
+      el({ display: 'flex', flexDirection: 'column', borderTop: '2px solid #2f4a66', paddingTop: '26px', fontFamily: 'Plex Mono', fontWeight: 500, fontSize: '36px', lineHeight: 1.3, color: '#9fb3c8' }, [
+        el({ display: 'flex' }, 'Petycja to zmienia —'),
+        el({ display: 'flex' }, 'zarobkilekarzy.pl/petycja/'),
+      ]),
     ],
   );
 }

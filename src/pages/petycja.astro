@@ -42,7 +42,8 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
       </p>
 
       <div class="pet-subnav">
-        <a class="btn" href="/petycja/jak-to-dziala/">Jak to działa — i dlaczego tak</a>
+        <a class="btn btn-primary" href="#wyslij">Wyślij teraz ↓</a>
+        <a class="pet-subnav-link" href="/petycja/jak-to-dziala/">Jak to działa — i dlaczego tak</a>
         <a class="pet-subnav-link" href="/petycja/tresc/">Pełna treść petycji →</a>
       </div>
 
@@ -70,7 +71,7 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
       </p>
 
       <!-- AKCJA -->
-      <h2 class="blk">Wyślij w 3 krokach</h2>
+      <h2 class="blk" id="wyslij" style="scroll-margin-top: 1.5rem">Wyślij w 3 krokach</h2>
       <ol class="steps">
         <li><span class="step-n">1</span> Wpisz imię, nazwisko i miejscowość.</li>
         <li><span class="step-n">2</span> Skopiuj treść — albo otwórz gotowy mail, albo wydrukuj.</li>
@@ -364,6 +365,19 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
     var warnEl = document.getElementById('genWarn');
     if (!imieEl || !bodyEl) return;
 
+    // Beacon lejka — anonimowy licznik akcji (reużywa /api/clicks; slug nie jest chroniony
+    // Turnstile, więc przyjmuje beacon bez tokenu). Dedup ~12 h per slug w localStorage
+    // (jak w BaseLayout). Fire-and-forget, zero danych osobowych.
+    function beacon(slug) {
+      try {
+        var key = 'clk:' + slug;
+        var now = Date.now();
+        if (now - (Number(localStorage.getItem(key)) || 0) < 12 * 3600 * 1000) return;
+        localStorage.setItem(key, String(now));
+      } catch (e) {}
+      try { navigator.sendBeacon('/api/clicks', JSON.stringify({ slug: slug })); } catch (e) {}
+    }
+
     // Lustro fillPetycja() z src/lib/petycja.ts — podmienia wszystkie trzy tokeny wg
     // kanału: 'elektroniczny' (puste pola → placeholdery) / 'druk' (→ kropkowane pola
     // do odręcznego wypełnienia; pusty formularz do wydruku to legalny scenariusz).
@@ -418,7 +432,8 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
 
     if (mailtoEl) {
       mailtoEl.addEventListener('click', function (event) {
-        guard(event);
+        // Licz tylko odblokowane kliki (guard() === true) — nie zablokowane brakiem danych.
+        if (guard(event)) beacon('petycja-akcja-mail');
       });
     }
 
@@ -426,6 +441,7 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
     if (copyBtn) {
       copyBtn.addEventListener('click', function () {
         if (!guard()) return;
+        beacon('petycja-akcja-kopiuj');
         var text = 'Temat: ' + PETYCJA_TEMAT + '\n\n' + bodyEl.textContent;
         var done = function () {
           var prev = copyBtn.textContent;
@@ -459,6 +475,7 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
 
       choiceEl.querySelectorAll('button[data-print]').forEach(function (btn) {
         btn.addEventListener('click', function () {
+          beacon('petycja-akcja-druk');
           var kto = btn.getAttribute('data-print');
           var miej = (miejEl.value || '').trim() || '……………………';
           var data = new Date().toLocaleDateString('pl-PL', {

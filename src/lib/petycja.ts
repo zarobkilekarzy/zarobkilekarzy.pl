@@ -1,6 +1,7 @@
 // JEDNO ŹRÓDŁO PRAWDY dla TREŚCI petycji. Każda zmiana tutaj propaguje się na
 // wszystkie podstrony przez komponent <PetycjaTresc /> oraz generator na /petycja.
-// Tokeny {{IMIE}} i {{MIEJSCOWOSC}} podmienia fillPetycja() (build-time i w przeglądarce).
+// Tokeny {{IMIE}}, {{MIEJSCOWOSC}} i {{ADRES_KORESPONDENCJI}} podmienia fillPetycja()
+// (build-time i w przeglądarce) — zależnie od kanału wysyłki: elektroniczny / druk.
 
 export const PETYCJA_TEMAT =
   'Petycja — jawny rejestr wynagrodzeń lekarzy ze środków publicznych (per PWZ)';
@@ -8,10 +9,14 @@ export const PETYCJA_TEMAT =
 // Treść JEDNA, neutralna względem adresata — ważna zarówno dla organu wykonawczego
 // (Ministerstwo Zdrowia), jak i ustawodawczego (Senat). Nie zawiera linii „Adresat:” —
 // adresata niesie kanał wysyłki (pole „Do” w mailu / wybór urzędu w piśmie ogólnym).
+// Zawiera za to JAWNĄ linię „Adres do korespondencji” (wymóg art. 4 ust. 2 pkt 2 ustawy
+// o petycjach; jej brak = pozostawienie bez rozpatrzenia bez wezwania, art. 7 ust. 1) —
+// token {{ADRES_KORESPONDENCJI}} wypełnia fillPetycja() brzmieniem z KORESPONDENCJA.
 export const PETYCJA_TRESC = `PETYCJA
 w sprawie utworzenia jawnego, przeszukiwalnego rejestru wynagrodzeń wypłacanych ze środków publicznych osobom wykonującym zawód lekarza, powiązanego z numerem prawa wykonywania zawodu (PWZ).
 
 Wnoszący petycję: {{IMIE}}, {{MIEJSCOWOSC}}
+Adres do korespondencji: {{ADRES_KORESPONDENCJI}}
 
 Na podstawie art. 63 Konstytucji Rzeczypospolitej Polskiej oraz art. 2 ustawy z dnia 11 lipca 2014 r. o petycjach, działając w interesie publicznym, wnoszę o podjęcie działań na rzecz:
 
@@ -43,22 +48,48 @@ Z poważaniem,
 ———
 Petycję przygotowano w ramach obywatelskiej inicjatywy ZarobkiLekarzy.pl (kontakt: kontakt@zarobkilekarzy.pl). Wnoszącym petycję i stroną postępowania pozostaje wyłącznie osoba podpisana powyżej; inicjatywa jedynie udostępnia gotowy wzór.`;
 
+// Brzmienie linii „Adres do korespondencji” per kanał wysyłki. Status e-maila jako
+// „adresu do korespondencji” jest w doktrynie nierozstrzygnięty, więc treść desygnuje
+// go wprost; wydruk dostaje pole do odręcznego uzupełnienia. Obiekt serializowalny —
+// trafia też do define:vars generatora na /petycja.
+export const KORESPONDENCJA = {
+  elektroniczny: 'adres elektroniczny, z którego wniesiono niniejszą petycję',
+  druk: '……………………………………………………………… (uzupełnij odręcznie)',
+} as const;
+
 // Adresaci (do kart wysyłki i instrukcji). Petycję można złożyć do jednego lub obu.
+// `blok` = linie adresowe do nagłówka WYDRUKU (bez dopisków kopertowych).
 export const ADRESACI = {
   mz: {
     nazwa: 'Ministerstwo Zdrowia',
     email: 'kancelaria@mz.gov.pl',
     adres: 'Minister Zdrowia, Ministerstwo Zdrowia, ul. Miodowa 15, 00-952 Warszawa',
+    blok: ['Minister Zdrowia', 'Ministerstwo Zdrowia', 'ul. Miodowa 15, 00-952 Warszawa'],
   },
   senat: {
     nazwa: 'Kancelaria Senatu',
     adres: 'Kancelaria Senatu, ul. Wiejska 6/8, 00-902 Warszawa (dopisek „Petycja”)',
+    blok: [
+      'Marszałek Senatu Rzeczypospolitej Polskiej',
+      'Kancelaria Senatu',
+      'ul. Wiejska 6/8, 00-902 Warszawa',
+    ],
   },
 } as const;
 
-// Podmiana tokenów. Puste pola → widoczne placeholdery do ręcznego uzupełnienia.
-export function fillPetycja(imie?: string, miejscowosc?: string): string {
-  const i = (imie || '').trim() || '[Imię i nazwisko]';
-  const m = (miejscowosc || '').trim() || '[miejscowość]';
-  return PETYCJA_TRESC.replace(/\{\{IMIE\}\}/g, i).replace(/\{\{MIEJSCOWOSC\}\}/g, m);
+// Podmiana tokenów wg kanału wysyłki. Kanał 'elektroniczny' (domyślny — wsteczna
+// zgodność z dotychczasowymi wywołaniami): puste pola → widoczne placeholdery do
+// uzupełnienia na stronie. Kanał 'druk': puste pola → kropkowane linie do odręcznego
+// wypełnienia (świadoma funkcja „pustego formularza do wydruku”).
+export function fillPetycja(
+  imie?: string,
+  miejscowosc?: string,
+  kanal: 'elektroniczny' | 'druk' = 'elektroniczny'
+): string {
+  const kropki = '…………………………………………';
+  const i = (imie || '').trim() || (kanal === 'druk' ? kropki : '[Imię i nazwisko]');
+  const m = (miejscowosc || '').trim() || (kanal === 'druk' ? kropki : '[miejscowość]');
+  return PETYCJA_TRESC.replace(/\{\{IMIE\}\}/g, i)
+    .replace(/\{\{MIEJSCOWOSC\}\}/g, m)
+    .replace(/\{\{ADRES_KORESPONDENCJI\}\}/g, KORESPONDENCJA[kanal]);
 }

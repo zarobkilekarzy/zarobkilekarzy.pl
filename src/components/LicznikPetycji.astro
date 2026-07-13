@@ -15,7 +15,7 @@
 
 <div class="licznik" id="licznik-petycji">
   <p class="eyebrow">Dołącz</p>
-  <p class="licz-line"><span class="licz-n" id="licz-n">—</span> osób zadeklarowało już wysłanie petycji</p>
+  <p class="licz-line"><span class="licz-n" id="licz-n">—</span> <span id="licz-osoby">osób zadeklarowało</span> już wysłanie petycji</p>
   <div class="licz-cta">
     <button class="btn btn-primary" id="licz-btn" type="button">Wysłałem/-am petycję</button>
     <span class="licz-done" id="licz-done" hidden>Dziękujemy — doliczono anonimowo.</span>
@@ -40,6 +40,7 @@
   const root = document.getElementById('licznik-petycji');
   if (root) {
     const nEl = root.querySelector('#licz-n');
+    const osobyEl = root.querySelector('#licz-osoby');
     const btn = root.querySelector('#licz-btn');
     const doneEl = root.querySelector('#licz-done');
     const turnstileEl = root.querySelector('.licz-turnstile');
@@ -53,8 +54,17 @@
     let tsSiteKey = null;         // klucz publiczny (potrzebny przy execute)
     let turnstileEnabled = false; // czy serwer wymaga tokenu dla tego sluga
 
+    // Odmiana frazy do liczby: 1 → „osoba zadeklarowała"; końcówka 2–4 (ale nie 12–14)
+    // → „osoby zadeklarowały"; reszta (w tym 5–21) → „osób zadeklarowało".
+    const formaOsoby = (n) => {
+      if (n === 1) return 'osoba zadeklarowała';
+      const d = n % 10, s = n % 100;
+      if (d >= 2 && d <= 4 && !(s >= 12 && s <= 14)) return 'osoby zadeklarowały';
+      return 'osób zadeklarowało';
+    };
     const render = () => {
       nEl.textContent = count == null ? '—' : count.toLocaleString('pl-PL');
+      osobyEl.textContent = count == null ? 'osób zadeklarowało' : formaOsoby(count);
     };
     const showAlert = (msg) => { alertEl.textContent = msg || ''; alertEl.hidden = !msg; };
     const markDone = () => {

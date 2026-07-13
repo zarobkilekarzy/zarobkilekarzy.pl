@@ -7,7 +7,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PetycjaTresc from '../components/PetycjaTresc.astro';
 import LicznikPetycji from '../components/LicznikPetycji.astro';
 import PetycjaShare from '../components/PetycjaShare.astro';
-import { PETYCJA_TRESC, PETYCJA_TEMAT, ADRESACI } from '../lib/petycja';
+import { PETYCJA_TRESC, PETYCJA_TEMAT, ADRESACI, KORESPONDENCJA, fillPetycja } from '../lib/petycja';
 import { Picture } from 'astro:assets';
 import gov1 from '../assets/petycja-govpl/1.webp';
 import gov2 from '../assets/petycja-govpl/2.webp';
@@ -16,6 +16,16 @@ import gov4 from '../assets/petycja-govpl/4.webp';
 import gov5 from '../assets/petycja-govpl/5.webp';
 
 const MZ_EMAIL = ADRESACI.mz.email;
+
+// Fallback mailto prerenderowany build-time — przycisk „Otwórz mail” działa też bez JS
+// (placeholdery do samodzielnego uzupełnienia); skrypt nadpisuje href danymi z formularza.
+const MAILTO_DEFAULT =
+  'mailto:' + MZ_EMAIL +
+  '?subject=' + encodeURIComponent(PETYCJA_TEMAT) +
+  '&body=' + encodeURIComponent('Adresat: Minister Zdrowia\n\n' + fillPetycja());
+
+// Linie adresowe do nagłówka wydruku (proste obiekty — trafiają do define:vars).
+const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
 ---
 
 <BaseLayout
@@ -82,6 +92,7 @@ const MZ_EMAIL = ADRESACI.mz.email;
         <span><strong>Nie zapisujemy tych danych.</strong> Wszystko dzieje się lokalnie w Twojej
         przeglądarce — służą tylko do wpisania Cię w treść petycji, nic nie trafia na żaden serwer.</span>
       </p>
+      <p class="gen-warn" id="genWarn" role="alert" hidden></p>
 
       <!-- JEDNA treść petycji (komponent = jedno źródło prawdy) -->
       <div class="mail-card">
@@ -94,9 +105,19 @@ const MZ_EMAIL = ADRESACI.mz.email;
         </div>
         <div class="cta-row">
           <button class="btn btn-primary" id="copyBtn" type="button">Kopiuj treść</button>
-          <a class="btn" id="mailtoMz" href="#">Otwórz mail do Min. Zdrowia</a>
-          <button class="btn" id="printBtn" type="button">Drukuj</button>
+          <a class="btn" id="mailtoMz" href={MAILTO_DEFAULT}>Otwórz mail do Min. Zdrowia</a>
+          <button class="btn" id="printBtn" type="button" aria-expanded="false" aria-controls="printChoice">Drukuj</button>
         </div>
+        <div class="print-choice" id="printChoice" hidden>
+          <span class="print-choice-label">Wydruk dla:</span>
+          <button class="btn" type="button" data-print="mz">Ministerstwa Zdrowia</button>
+          <button class="btn" type="button" data-print="senat">Senatu</button>
+        </div>
+        <p class="mailto-hint">
+          Po otwarciu maila sprawdź, czy treść jest kompletna — powinna kończyć się stopką
+          o ZarobkiLekarzy.pl. Niektóre programy pocztowe ucinają tak długie wiadomości;
+          wtedy wróć i użyj „Kopiuj treść”.
+        </p>
         <p class="mail-addr">
           Mail trafia na adres Ministerstwa Zdrowia: <strong>{MZ_EMAIL}</strong>
         </p>
@@ -168,8 +189,10 @@ const MZ_EMAIL = ADRESACI.mz.email;
         <li>
           <h3>Wydrukiem i pocztą — do MZ albo do Senatu</h3>
           <p>
-            Kliknij <strong>„Drukuj”</strong>, podpisz i <strong>dopisz odręcznie swój adres
-            zwrotny — bez niego urząd może zostawić petycję bez rozpatrzenia</strong>. Wyślij na:
+            Kliknij <strong>„Drukuj”</strong> — przycisk zapyta, dla kogo wydruk (Ministerstwa
+            Zdrowia czy Senatu), i doda nagłówek z adresatem oraz datą. Wydruk podpisz
+            i <strong>uzupełnij odręcznie linię „Adres do korespondencji” — bez adresu urząd
+            pozostawi petycję bez rozpatrzenia</strong>. Wyślij na:
           </p>
           <ul class="addr-list">
             <li>{ADRESACI.mz.adres}</li>
@@ -192,7 +215,7 @@ const MZ_EMAIL = ADRESACI.mz.email;
         <li><strong>Dostajesz potwierdzenie.</strong> Kopia maila zostaje u Ciebie; przy piśmie ogólnym dostajesz UPP — urzędowe poświadczenie z datą, jak list polecony.</li>
         <li><strong>Urząd MUSI ją rozpatrzyć.</strong> Nie może jej zignorować — ma ustawowy obowiązek odpowiedzieć (Ministerstwo Zdrowia: do 3 miesięcy).</li>
         <li><strong>Twoja petycja staje się jawna.</strong> Urząd publikuje jej treść i sposób załatwienia na swojej stronie (BIP) — petycja o jawność sama staje się jawna. Twoje nazwisko trafi tam tylko za Twoją zgodą (domyślnie: nie).</li>
-        <li><strong>Im więcej głosów, tym mocniej.</strong> Wiele petycji w tej samej sprawie urząd rozpatruje łącznie — jedną, zbiorczą odpowiedzią, którą trudniej zbyć milczeniem.</li>
+        <li><strong>Im więcej głosów, tym mocniej.</strong> Wiele petycji w tej samej sprawie urząd może rozpatrzyć łącznie — jedną, zbiorczą odpowiedzią, którą trudniej zbyć milczeniem.</li>
         <li><strong>Senat → realna droga do ustawy.</strong> Petycja do Senatu trafia do Komisji Petycji, która może przekuć ją w projekt ustawy.</li>
       </ol>
       <p class="next-punch">
@@ -255,6 +278,7 @@ const MZ_EMAIL = ADRESACI.mz.email;
   @media (max-width: 540px) { .gen-form { grid-template-columns: 1fr; } }
   .privacy-hint { display: flex; align-items: flex-start; gap: 0.5rem; margin: 0 0 1.75rem; font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; }
   .privacy-hint svg { flex-shrink: 0; color: var(--brand); margin-top: 0.15rem; }
+  .gen-warn { margin: 0 0 1.75rem; font-size: 0.9rem; color: var(--alert); line-height: 1.5; }
 
   /* Karta petycji */
   .mail-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
@@ -262,6 +286,10 @@ const MZ_EMAIL = ADRESACI.mz.email;
   .mail-k { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); flex-shrink: 0; padding-top: 2px; min-width: 3.2rem; }
   .mail-v { font-weight: 500; word-break: break-word; }
   .petbox { max-height: 20rem; overflow-y: auto; margin-bottom: 1.1rem; }
+  .print-choice { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
+  .print-choice[hidden] { display: none; }
+  .print-choice-label { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
+  .mailto-hint { margin: 0.85rem 0 0; font-size: 0.92rem; color: var(--ink-soft); line-height: 1.5; }
   .mail-addr { margin: 0.85rem 0 0; font-size: 0.92rem; color: var(--ink-soft); }
   .mail-addr strong { font-family: var(--font-mono); color: var(--ink); }
   .senat-opt { margin: 0.85rem 0 0; padding-top: 0.9rem; border-top: 1px dashed var(--line); font-size: 0.93rem; color: var(--ink-soft); line-height: 1.55; }
@@ -327,28 +355,42 @@ const MZ_EMAIL = ADRESACI.mz.email;
   }
 </style>
 
-<script is:inline define:vars={{ MZ_EMAIL, PETYCJA_TEMAT, PETYCJA_TRESC }}>
+<script is:inline define:vars={{ MZ_EMAIL, PETYCJA_TEMAT, PETYCJA_TRESC, KORESPONDENCJA, ADRESACI_BLOK }}>
   (function () {
     var imieEl = document.getElementById('imie');
     var miejEl = document.getElementById('miejscowosc');
     var bodyEl = document.getElementById('petbody');
     var mailtoEl = document.getElementById('mailtoMz');
+    var warnEl = document.getElementById('genWarn');
     if (!imieEl || !bodyEl) return;
 
-    function build() {
-      var imie = (imieEl.value || '').trim() || '[Imię i nazwisko]';
-      var miej = (miejEl.value || '').trim() || '[miejscowość]';
-      return PETYCJA_TRESC.replace(/\{\{IMIE\}\}/g, imie).replace(/\{\{MIEJSCOWOSC\}\}/g, miej);
+    // Lustro fillPetycja() z src/lib/petycja.ts — podmienia wszystkie trzy tokeny wg
+    // kanału: 'elektroniczny' (puste pola → placeholdery) / 'druk' (→ kropkowane pola
+    // do odręcznego wypełnienia; pusty formularz do wydruku to legalny scenariusz).
+    function build(kanal) {
+      var kropki = '…………………………………………';
+      var imie = (imieEl.value || '').trim() || (kanal === 'druk' ? kropki : '[Imię i nazwisko]');
+      var miej = (miejEl.value || '').trim() || (kanal === 'druk' ? kropki : '[miejscowość]');
+      return PETYCJA_TRESC.replace(/\{\{IMIE\}\}/g, imie)
+        .replace(/\{\{MIEJSCOWOSC\}\}/g, miej)
+        .replace(/\{\{ADRES_KORESPONDENCJI\}\}/g, KORESPONDENCJA[kanal]);
     }
 
     function fill() {
-      var body = build();
+      var body = build('elektroniczny');
       bodyEl.textContent = body;
       if (mailtoEl) {
+        // Mail niesie linię „Adresat:” (oznaczenie adresata, art. 4 ust. 2 pkt 3);
+        // widok #petbody jest bez niej — kopiowanie pozostaje neutralne względem
+        // adresata, bo kanał (gov.pl / pole „Do”) sam go wskazuje.
         mailtoEl.href =
           'mailto:' + MZ_EMAIL +
           '?subject=' + encodeURIComponent(PETYCJA_TEMAT) +
-          '&body=' + encodeURIComponent(body);
+          '&body=' + encodeURIComponent('Adresat: Minister Zdrowia\n\n' + body);
+      }
+      // Ostrzeżenie gaśnie, gdy oba pola są już uzupełnione.
+      if (warnEl && !warnEl.hidden && (imieEl.value || '').trim() && (miejEl.value || '').trim()) {
+        warnEl.hidden = true;
       }
     }
 
@@ -356,9 +398,34 @@ const MZ_EMAIL = ADRESACI.mz.email;
     miejEl.addEventListener('input', fill);
     fill();
 
+    // Guard formalny (tylko kanały elektroniczne): bez imienia i nazwiska lub
+    // miejscowości petycja zostaje pozostawiona bez rozpatrzenia (art. 7 ust. 1) —
+    // blokujemy akcję i wskazujemy pierwsze puste pole. Wydruku NIE blokujemy.
+    function guard(event) {
+      var brakImienia = !(imieEl.value || '').trim();
+      var brakMiejscowosci = !(miejEl.value || '').trim();
+      if (!brakImienia && !brakMiejscowosci) return true;
+      if (event) event.preventDefault();
+      if (warnEl) {
+        warnEl.textContent =
+          'Uzupełnij imię i nazwisko oraz miejscowość — petycja bez nich zostaje ' +
+          'pozostawiona bez rozpatrzenia (art. 7 ust. 1 ustawy o petycjach).';
+        warnEl.hidden = false;
+      }
+      (brakImienia ? imieEl : miejEl).focus();
+      return false;
+    }
+
+    if (mailtoEl) {
+      mailtoEl.addEventListener('click', function (event) {
+        guard(event);
+      });
+    }
+
     var copyBtn = document.getElementById('copyBtn');
     if (copyBtn) {
       copyBtn.addEventListener('click', function () {
+        if (!guard()) return;
         var text = 'Temat: ' + PETYCJA_TEMAT + '\n\n' + bodyEl.textContent;
         var done = function () {
           var prev = copyBtn.textContent;
@@ -375,19 +442,46 @@ const MZ_EMAIL = ADRESACI.mz.email;
       });
     }
 
+    // Druk w dwóch krokach: „Drukuj” pokazuje wybór adresata (MZ / Senat), a wybór
+    // buduje dokument wydruku — miejscowość i data, blok adresata, treść w kanale
+    // 'druk' — i drukuje istniejącym mechanizmem .print-target + body.printing.
     var printBtn = document.getElementById('printBtn');
-    if (printBtn) {
+    var choiceEl = document.getElementById('printChoice');
+    if (printBtn && choiceEl) {
       printBtn.addEventListener('click', function () {
-        bodyEl.classList.add('print-target');
-        document.body.classList.add('printing');
-        var cleanup = function () {
-          bodyEl.classList.remove('print-target');
-          document.body.classList.remove('printing');
-          window.removeEventListener('afterprint', cleanup);
-        };
-        window.addEventListener('afterprint', cleanup);
-        window.print();
-        setTimeout(cleanup, 1000);
+        choiceEl.hidden = !choiceEl.hidden;
+        printBtn.setAttribute('aria-expanded', String(!choiceEl.hidden));
+        if (!choiceEl.hidden) {
+          var first = choiceEl.querySelector('button[data-print]');
+          if (first) first.focus();
+        }
+      });
+
+      choiceEl.querySelectorAll('button[data-print]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var kto = btn.getAttribute('data-print');
+          var miej = (miejEl.value || '').trim() || '……………………';
+          var data = new Date().toLocaleDateString('pl-PL', {
+            day: 'numeric', month: 'long', year: 'numeric',
+          });
+          bodyEl.textContent =
+            miej + ', dnia ' + data + ' r.\n\n' +
+            'Adresat:\n' + ADRESACI_BLOK[kto].join('\n') + '\n\n' +
+            build('druk');
+          bodyEl.classList.add('print-target');
+          document.body.classList.add('printing');
+          var cleanup = function () {
+            bodyEl.classList.remove('print-target');
+            document.body.classList.remove('printing');
+            window.removeEventListener('afterprint', cleanup);
+            fill(); // przywróć widok ekranowy (kanał elektroniczny)
+            choiceEl.hidden = true;
+            printBtn.setAttribute('aria-expanded', 'false');
+          };
+          window.addEventListener('afterprint', cleanup);
+          window.print();
+          setTimeout(cleanup, 1000);
+        });
       });
     }
   })();

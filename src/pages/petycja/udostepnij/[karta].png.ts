@@ -2,24 +2,21 @@
 // ten sam toolchain co OG). Dwie karty 1080×1350 (format 4:5, feed): „zero" (ile z NFZ
 // trafia do jednego lekarza → 0 rejestrów) i „podpisz" (świadectwo + wezwanie).
 // Serwowane pod /petycja/udostepnij/<karta>.png — pokazywane i pobieralne na
-// /petycja/jak-to-dziala. Fonty latin + latin-ext (polskie znaki), jak w OG.
+// /petycja/jak-to-dziala. Fonty scalone (src/assets/fonts) — pełne polskie znaki bez fallbacku.
 import type { APIRoute } from 'astro';
 import { readFileSync } from 'node:fs';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 
-const fp = (p: string) => readFileSync(`node_modules/@fontsource/${p}`);
-// Fonty satori. KLUCZOWE dla polskich znaków: cały tekst z latin-ext („ł/ę/ś/ć/ż/ą…")
-// jest w JEDNEJ rodzinie i wadze — Plex Sans 600 — a JEDYNYM fontem niosącym subset
-// latin-ext jest „Plex Sans Ext" (ta sama waga). Satori podmienia brakujące glify tylko
-// z tego fontu → bez zmiany kroju i grubości. Serif (700) i Mono (500) niosą wyłącznie
-// tekst BEZ latin-ext („0", „Podpisz i Ty.", domena), więc nie dostają subsetu latin-ext
-// (to eliminuje błędny fallback serif→sans, który psuł polskie znaki w nagłówku).
+// Fonty: latin + latin-ext SCALONE w jeden plik na krój (src/assets/fonts, wygenerowane
+// raz przez fonttools) → pełne pokrycie polskich znaków BEZ fallbacku satori. Serif
+// zostaje serifem, sans sansem — bez zależności od (kruchego) doboru fallbacku.
+const ff = (p: string) => readFileSync(`src/assets/fonts/${p}`);
 const fonts = [
-  { name: 'Plex Sans', data: fp('ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff'), weight: 600 as const, style: 'normal' as const },
-  { name: 'Plex Sans Ext', data: fp('ibm-plex-sans/files/ibm-plex-sans-latin-ext-600-normal.woff'), weight: 600 as const, style: 'normal' as const },
-  { name: 'Plex Serif', data: fp('ibm-plex-serif/files/ibm-plex-serif-latin-700-normal.woff'), weight: 700 as const, style: 'normal' as const },
-  { name: 'Plex Mono', data: fp('ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff'), weight: 500 as const, style: 'normal' as const },
+  { name: 'Plex Sans', data: ff('ibm-plex-sans-latin-full-400.woff'), weight: 400 as const, style: 'normal' as const },
+  { name: 'Plex Sans', data: ff('ibm-plex-sans-latin-full-600.woff'), weight: 600 as const, style: 'normal' as const },
+  { name: 'Plex Serif', data: ff('ibm-plex-serif-latin-full-700.woff'), weight: 700 as const, style: 'normal' as const },
+  { name: 'Plex Mono', data: ff('ibm-plex-mono-latin-full-500.woff'), weight: 500 as const, style: 'normal' as const },
 ];
 
 type Node = { type: string; props: { style: Record<string, unknown>; children?: Node[] | string } };
@@ -59,10 +56,10 @@ function cardZero(): Node {
     [
       brandRow('#cdd6e0'),
       el({ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'center' }, [
-        el({ display: 'flex', fontWeight: 600, fontSize: '46px', color: '#aebccb', lineHeight: 1.3, marginBottom: '4px', maxWidth: '880px' },
+        el({ display: 'flex', fontSize: '46px', color: '#aebccb', lineHeight: 1.3, marginBottom: '4px', maxWidth: '880px' },
           'Ile łącznie z NFZ trafia do jednego lekarza?'),
         el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: '440px', lineHeight: 1, color: '#ffffff' }, '0'),
-        el({ display: 'flex', fontWeight: 600, fontSize: '48px', color: '#dfe6ee', lineHeight: 1.35, marginTop: '20px', maxWidth: '900px' },
+        el({ display: 'flex', fontSize: '48px', color: '#dfe6ee', lineHeight: 1.35, marginTop: '20px', maxWidth: '900px' },
           'Tyle jest dziś ogólnodostępnych rejestrów, które to pokazują.'),
       ]),
       el({ display: 'flex', alignItems: 'center', borderTop: '2px solid #2f4a66', paddingTop: '30px', fontFamily: 'Plex Mono', fontWeight: 500, fontSize: '36px', color: '#9fb3c8' },
@@ -84,7 +81,7 @@ function cardPodpisz(): Node {
         el({ display: 'flex', width: '118px', height: '118px', borderRadius: '999px', background: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center', marginBottom: '46px' }, [
           el({ width: '38px', height: '66px', borderRight: '16px solid #bfe0ff', borderBottom: '16px solid #bfe0ff', transform: 'rotate(45deg) translateY(-8px)' }),
         ]),
-        el({ display: 'flex', fontFamily: 'Plex Sans', fontWeight: 600, fontSize: '58px', lineHeight: 1.22, color: '#ffffff', maxWidth: '900px' },
+        el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: '58px', lineHeight: 1.22, color: '#ffffff', maxWidth: '900px' },
           'Podpisałem/-am petycję o jawność zarobków lekarzy ze środków publicznych.'),
         el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: '92px', lineHeight: 1.1, color: '#bfe0ff', marginTop: '40px' }, 'Podpisz i Ty.'),
       ]),

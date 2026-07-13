@@ -4,20 +4,16 @@ import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { ogPages, type OgPage } from '../../lib/ogPages';
 
-// Fonty z @fontsource (woff — satori czyta je bezpośrednio). Dla polskich znaków
-// (ł, ę, ś, ć, ń, ż, ź, ą) potrzebny jest subset latin-ext obok latin — dokładamy oba.
-const fp = (p: string) => readFileSync(`node_modules/@fontsource/${p}`);
-// Subset latin-ext dostaje UNIKALNĄ nazwę (nieużywaną w font-family) — inaczej satori
-// deduplikuje po name+weight i odrzuca go. Pod inną nazwą służy jako fallback glifów PL.
-const face = (name: string, base: string, weight: 400 | 500 | 600 | 700) => [
-  { name, data: fp(`${base}-latin-${weight}-normal.woff`), weight, style: 'normal' as const },
-  { name: `${name} Ext`, data: fp(`${base}-latin-ext-${weight}-normal.woff`), weight, style: 'normal' as const },
-];
+// Fonty: latin + latin-ext SCALONE w jeden plik na krój (src/assets/fonts, wygenerowane
+// raz przez fonttools) → pełne pokrycie polskich znaków (ł, ę, ś, ć, ń, ż, ź, ą) BEZ
+// polegania na fallbacku satori (który dobiera font po kolejności tablicy, nie po rodzinie
+// — serif łapałby wtedy latin-ext z sans). Dzięki temu serif zostaje serifem.
+const ff = (p: string) => readFileSync(`src/assets/fonts/${p}`);
 const fonts = [
-  ...face('Plex Sans', 'ibm-plex-sans/files/ibm-plex-sans', 400),
-  ...face('Plex Sans', 'ibm-plex-sans/files/ibm-plex-sans', 600),
-  ...face('Plex Serif', 'ibm-plex-serif/files/ibm-plex-serif', 700),
-  ...face('Plex Mono', 'ibm-plex-mono/files/ibm-plex-mono', 500),
+  { name: 'Plex Sans', data: ff('ibm-plex-sans-latin-full-400.woff'), weight: 400 as const, style: 'normal' as const },
+  { name: 'Plex Sans', data: ff('ibm-plex-sans-latin-full-600.woff'), weight: 600 as const, style: 'normal' as const },
+  { name: 'Plex Serif', data: ff('ibm-plex-serif-latin-full-700.woff'), weight: 700 as const, style: 'normal' as const },
+  { name: 'Plex Mono', data: ff('ibm-plex-mono-latin-full-500.woff'), weight: 500 as const, style: 'normal' as const },
 ];
 
 // Minimalny konstruktor vnode dla satori (bez JSX/satori-html — zero whitespace).

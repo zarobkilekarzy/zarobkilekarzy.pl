@@ -8,8 +8,7 @@ export default defineConfig({
   integrations: [
     sitemap({
       // /admin/* to strony wewnętrzne (noindex) — poza mapą strony.
-      // /petycja — wersja robocza „unlisted” (dostępna tylko z bezpośredniego linku).
-      filter: (page) => !page.includes('/admin/') && !page.includes('/petycja'),
+      filter: (page) => !page.includes('/admin/'),
       // <lastmod> z centralnej mapy dat (te same daty co widoczna „Ostatnia
       // aktualizacja") — sygnał świeżości przyspieszający rekrawl po zmianie.
       serialize(item) {

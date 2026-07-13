@@ -1,13 +1,19 @@
 ---
-// WERSJA ROBOCZA — LANDING AKCYJNY (do sharowania). Skupiony na WYSŁANIU. „Unlisted":
-// noindex (props) + poza sitemap (astro.config) + brak linku w nawigacji. Teoria →
-// /petycja/jak-to-dziala; treść → komponent <PetycjaTresc /> (jedno źródło: src/lib/petycja.ts).
-// JEDNA treść petycji, wysyłana do Ministerstwa Zdrowia (mailem — najprościej) i opcjonalnie
-// do Senatu (pismo ogólne/poczta — ta sama treść).
+// LANDING AKCYJNY (do sharowania) — skupiony na WYSŁANIU. Publiczny: indeksowany, w sitemap,
+// linkowany z nawigacji i strony głównej. Teoria → /petycja/jak-to-dziala; treść → komponent
+// <PetycjaTresc /> (jedno źródło: src/lib/petycja.ts). JEDNA treść petycji, wysyłana do
+// Ministerstwa Zdrowia (mailem — najprościej) i opcjonalnie do Senatu (pismo ogólne/poczta).
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PetycjaTresc from '../components/PetycjaTresc.astro';
 import LicznikPetycji from '../components/LicznikPetycji.astro';
+import PetycjaShare from '../components/PetycjaShare.astro';
 import { PETYCJA_TRESC, PETYCJA_TEMAT, ADRESACI } from '../lib/petycja';
+import { Picture } from 'astro:assets';
+import gov1 from '../assets/petycja-govpl/1.webp';
+import gov2 from '../assets/petycja-govpl/2.webp';
+import gov3 from '../assets/petycja-govpl/3.webp';
+import gov4 from '../assets/petycja-govpl/4.webp';
+import gov5 from '../assets/petycja-govpl/5.webp';
 
 const MZ_EMAIL = ADRESACI.mz.email;
 ---
@@ -15,7 +21,6 @@ const MZ_EMAIL = ADRESACI.mz.email;
 <BaseLayout
   title="Wyślij petycję — jawność wynagrodzeń lekarzy"
   description="Wyślij gotową petycję o jawny rejestr wynagrodzeń lekarzy ze środków publicznych — do Ministerstwa Zdrowia (i opcjonalnie do Senatu). Wpisz imię, skopiuj, wyślij."
-  noindex={true}
 >
   <section class="section">
     <div class="container narrow">
@@ -26,9 +31,9 @@ const MZ_EMAIL = ADRESACI.mz.email;
         Wpisz imię, skopiuj, wyślij. Zajmie minutę.
       </p>
 
-      <div class="draft-note">
-        <span class="draft-badge">Wersja robocza</span>
-        <p>To poglądowa wersja — treść jeszcze dopracujemy.</p>
+      <div class="pet-subnav">
+        <a class="btn" href="/petycja/jak-to-dziala/">Jak to działa — i dlaczego tak</a>
+        <a class="pet-subnav-link" href="/petycja/tresc/">Pełna treść petycji →</a>
       </div>
 
       <!-- SKUTKI PRAWNE -->
@@ -127,17 +132,44 @@ const MZ_EMAIL = ADRESACI.mz.email;
           <p>Ta droga daje <strong>UPP</strong> — urzędowe potwierdzenie z datą, jak list polecony:</p>
           <ol class="steps-in">
             <li>Skopiuj treść przyciskiem <strong>„Kopiuj treść”</strong> wyżej.</li>
-            <li>Otwórz usługę <a href="https://www.gov.pl/web/gov/wyslij-pismo-ogolne" target="_blank" rel="noopener noreferrer">„Wyślij pismo ogólne”</a> na gov.pl i zaloguj się (Profil Zaufany, e-dowód lub aplikacja mObywatel).</li>
-            <li>Jako adresata wskaż <strong>Ministerstwo Zdrowia</strong> albo <strong>Kancelarię Senatu</strong>.</li>
-            <li>Wpisz tytuł (ten sam co „Temat” wyżej) i wklej treść.</li>
+            <li>Otwórz usługę <a href="https://www.gov.pl/web/gov/wyslij-pismo-ogolne" target="_blank" rel="noopener noreferrer">„Wyślij pismo ogólne”</a> na gov.pl, kliknij <strong>„Wyślij pismo ogólne”</strong> i zaloguj się (mObywatel, Profil Zaufany, bankowość lub e-dowód).</li>
+            <li>W polu <strong>„Urząd lub instytucja”</strong> wskaż <strong>Ministerstwo Zdrowia</strong> (albo <strong>Kancelarię Senatu</strong>).</li>
+            <li>W <strong>„Rodzaj pisma”</strong> wybierz <strong>„Inne pismo”</strong>, a w polu <strong>„Inny rodzaj pisma”</strong> wpisz <strong>„Petycja”</strong>.</li>
+            <li>W <strong>„Tytuł pisma”</strong> wpisz temat (jak wyżej), a w <strong>„Treść pisma”</strong> wklej treść petycji.</li>
             <li>Wybierz <strong>„Podpisz i wyślij”</strong> i zachowaj UPP.</li>
           </ol>
+
+          <details class="gov-walk">
+            <summary>Pokaż krok po kroku (zrzuty ekranu)</summary>
+            <ol class="gov-steps">
+              <li>
+                Otwórz <a href="https://www.gov.pl/web/gov/wyslij-pismo-ogolne" target="_blank" rel="noopener noreferrer">gov.pl → „Wyślij pismo ogólne”</a> i kliknij <strong>WYŚLIJ PISMO OGÓLNE</strong>.
+                <Picture src={gov3} width={1100} formats={['avif', 'webp']} fallbackFormat="jpg" quality={64} loading="lazy" class="gov-shot" alt="Strona gov.pl „Wyślij pismo ogólne” z niebieskim przyciskiem Wyślij pismo ogólne." />
+              </li>
+              <li>
+                <em>Opcjonalnie</em> — jeśli nie wiesz, czy wybrać e-Doręczenia czy ePUAP, uruchom kreator „Sprawdź, który sposób korespondencji” przyciskiem <strong>START</strong>.
+                <Picture src={gov1} width={1100} formats={['avif', 'webp']} fallbackFormat="jpg" quality={64} loading="lazy" class="gov-shot" alt="Kreator gov.pl: „Odpowiedz na kilka prostych pytań” z przyciskiem START." />
+              </li>
+              <li>
+                Na pytanie „Do jakiej instytucji chcesz wysłać pismo?” wybierz <strong>pierwszą opcję</strong> (administracja publiczna / ministerstwo → e-Doręczenia) i <strong>DALEJ</strong>.
+                <Picture src={gov2} width={1100} formats={['avif', 'webp']} fallbackFormat="jpg" quality={64} loading="lazy" class="gov-shot" alt="Kreator gov.pl: pytanie o instytucję z zaznaczoną pierwszą opcją (administracja publiczna, e-Doręczenia)." />
+              </li>
+              <li>
+                Zaloguj się — <strong>mObywatel</strong>, <strong>Profil Zaufany</strong>, bankowość elektroniczna lub e-dowód.
+                <Picture src={gov4} width={1100} formats={['avif', 'webp']} fallbackFormat="jpg" quality={64} loading="lazy" class="gov-shot" alt="Ekran logowania login.gov.pl: mObywatel, bankowość elektroniczna, e-dowód, Profil Zaufany." />
+              </li>
+              <li>
+                Wypełnij formularz: <strong>Urząd</strong> = Ministerstwo Zdrowia (lub Kancelaria Senatu), <strong>Rodzaj pisma</strong> = „Inne pismo”, <strong>Inny rodzaj pisma</strong> = „Petycja”, a w <strong>Tytule</strong> i <strong>Treści</strong> wklej dane z petycji. Na końcu <strong>„Podpisz i wyślij”</strong>.
+                <Picture src={gov5} width={1100} formats={['avif', 'webp']} fallbackFormat="jpg" quality={64} loading="lazy" class="gov-shot" alt="Formularz „Pismo ogólne do podmiotu publicznego”: Ministerstwo Zdrowia jako urząd, Rodzaj pisma = Inne pismo, Inny rodzaj pisma = Petycja, oraz tytuł i treść petycji." />
+              </li>
+            </ol>
+          </details>
         </li>
         <li>
           <h3>Wydrukiem i pocztą — do MZ albo do Senatu</h3>
           <p>
             Kliknij <strong>„Drukuj”</strong>, podpisz i <strong>dopisz odręcznie swój adres
-            zwrotny</strong> — bez niego urząd może zostawić petycję bez rozpatrzenia. Wyślij na:
+            zwrotny — bez niego urząd może zostawić petycję bez rozpatrzenia</strong>. Wyślij na:
           </p>
           <ul class="addr-list">
             <li>{ADRESACI.mz.adres}</li>
@@ -146,6 +178,13 @@ const MZ_EMAIL = ADRESACI.mz.email;
           <p>Wydruk nie ma mniejszej mocy niż e-mail czy pismo urzędowe.</p>
         </li>
       </ol>
+
+      <p class="senat-note">
+        <strong>Do Senatu</strong> (opcjonalnie, tą samą treścią): Senat nie przyjmuje petycji
+        e-mailem, więc skorzystaj ze <strong>sposobu 2</strong> — w usłudze „Wyślij pismo ogólne”
+        na gov.pl, w kroku wyboru adresata wskaż <strong>Kancelarię Senatu</strong> — albo ze
+        <strong>sposobu 3</strong> (wydruk i poczta na adres Kancelarii Senatu podany wyżej).
+      </p>
 
       <!-- CO DALEJ (sprawczość) -->
       <h2 class="blk">Co się stanie z Twoją petycją</h2>
@@ -163,6 +202,11 @@ const MZ_EMAIL = ADRESACI.mz.email;
 
       <LicznikPetycji />
 
+      <PetycjaShare
+        heading="Wysłane? Daj znać innym"
+        intro="Najprostsze wsparcie po wysłaniu petycji to przekazać ją dalej — im więcej identycznych petycji w tej samej sprawie, tym trudniej ją zbyć. Pobierz gotową grafikę i dołącz do posta albo udostępnij sam link (podgląd graficzny dołączy się automatycznie)."
+      />
+
       <p class="source-note">
         Masz pytania albo wątpliwości? <a href="/petycja/jak-to-dziala/">Jak to działa — i dlaczego tak</a>.
         Sama treść i jej omówienie — <a href="/petycja/tresc/">treść petycji</a>. Dlaczego jawność —
@@ -178,19 +222,8 @@ const MZ_EMAIL = ADRESACI.mz.email;
   .narrow { max-width: 780px; }
   .blk { margin-top: 2.5rem; }
 
-  .draft-note {
-    display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
-    background: var(--alert-50); border: 1px solid var(--line);
-    border-left: 5px solid var(--alert);
-    border-radius: 0 var(--radius) var(--radius) 0;
-    padding: 0.7rem 1rem; margin: 1.25rem 0 0;
-  }
-  .draft-badge {
-    background: var(--alert); color: #fff;
-    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em;
-    text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 999px;
-  }
-  .draft-note p { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
+  .pet-subnav { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; margin: 1.25rem 0 0; }
+  .pet-subnav-link { font-weight: 500; color: var(--brand); }
 
   /* Skutki prawne */
   .effects { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.5rem 0 0.75rem; }
@@ -232,6 +265,17 @@ const MZ_EMAIL = ADRESACI.mz.email;
   .mail-addr { margin: 0.85rem 0 0; font-size: 0.92rem; color: var(--ink-soft); }
   .mail-addr strong { font-family: var(--font-mono); color: var(--ink); }
   .senat-opt { margin: 0.85rem 0 0; padding-top: 0.9rem; border-top: 1px dashed var(--line); font-size: 0.93rem; color: var(--ink-soft); line-height: 1.55; }
+  .senat-note { margin: 1rem 0 0; padding: 0.9rem 1.15rem; background: var(--brand-50); border-left: 4px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.95rem; color: var(--ink); line-height: 1.55; }
+
+  /* Walkthrough gov.pl (zrzuty ekranu) */
+  .gov-walk { margin: 1rem 0 0; }
+  .gov-walk > summary { cursor: pointer; font-weight: 600; color: var(--brand); list-style: none; padding: 0.35rem 0; }
+  .gov-walk > summary::-webkit-details-marker { display: none; }
+  .gov-walk > summary::before { content: '▸ '; }
+  .gov-walk[open] > summary::before { content: '▾ '; }
+  .gov-steps { margin: 1rem 0 0; padding-left: 1.4rem; display: flex; flex-direction: column; gap: 1.5rem; }
+  .gov-steps > li { line-height: 1.55; color: var(--ink); }
+  .gov-shot { display: block; width: 100%; height: auto; margin-top: 0.7rem; border: 1px solid var(--line); border-radius: var(--radius); }
 
   /* Jak wysłać */
   .ways { list-style: none; counter-reset: w; padding: 0; margin: 1.25rem 0 0; display: flex; flex-direction: column; gap: 1rem; }

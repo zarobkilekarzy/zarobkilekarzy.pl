@@ -189,6 +189,21 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Jawny rejestr wynagrodzeń ze środków publicznych',
     subtitle: 'Łączne wynagrodzenie lekarza z NFZ, powiązane z numerem PWZ — nie z PESEL, nie z danymi prywatnymi.',
   },
+  'petycja': {
+    tag: 'Petycja',
+    title: 'Wyślij petycję o jawność wynagrodzeń lekarzy',
+    subtitle: 'Gotowa, formalna petycja o jawny rejestr wynagrodzeń ze środków publicznych. Wpisz imię, skopiuj, wyślij — urząd ma obowiązek ją rozpatrzyć.',
+  },
+  'petycja/tresc': {
+    tag: 'Petycja · Treść',
+    title: 'Treść petycji o jawny rejestr',
+    subtitle: 'Pełna treść petycji o jawny rejestr wynagrodzeń lekarzy ze środków publicznych — z omówieniem, z czego się składa i dlaczego.',
+  },
+  'petycja/jak-to-dziala': {
+    tag: 'Petycja · Jak to działa',
+    title: 'Jak działa ta petycja — i dlaczego tak',
+    subtitle: 'Dlaczego formalna petycja zamiast change.org, dlaczego każdy w swoim imieniu, co z danymi i jaka jest moc prawna.',
+  },
   'artykuly': {
     tag: 'Baza artykułów',
     title: 'Baza artykułów o pieniądzu w ochronie zdrowia',

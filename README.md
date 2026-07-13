@@ -90,11 +90,11 @@ Wszystkie są opcjonalne — bez nich strona i sonda działają (fail-open / fal
 | Zmienna | Rola |
 |---|---|
 | `BASIC_AUTH_PASS` | hasło basic-auth „strony w budowie" (gdy `BASIC_AUTH_ENABLED` ≠ `false`) |
-| `TURNSTILE_SITE_KEY` | publiczny klucz [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) — antybot sondy |
+| `TURNSTILE_SITE_KEY` | publiczny klucz [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) — antybot sondy i licznika petycji |
 | `TURNSTILE_SECRET_KEY` | tajny klucz Turnstile (weryfikacja po stronie serwera) |
 
-Ochrona sondy włącza się tylko gdy ustawiono **oba** klucze Turnstile. Turnstile
-nie zapisuje adresów IP — spójnie z polityką prywatności.
+Ochrona sondy i licznika petycji włącza się tylko gdy ustawiono **oba** klucze
+Turnstile. Turnstile nie zapisuje adresów IP — spójnie z polityką prywatności.
 
 ## Zasady redakcyjne (ważne)
 

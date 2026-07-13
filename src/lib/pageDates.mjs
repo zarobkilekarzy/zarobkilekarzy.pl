@@ -42,6 +42,10 @@ export const pageDates = {
   '/dane/stawki': '2026-07-06',
   '/dane/wedlug-specjalizacji': '2026-07-07',
   '/dane/zadluzenie-szpitali': '2026-07-08',
+  // Petycja.
+  '/petycja': '2026-07-13',
+  '/petycja/tresc': '2026-07-13',
+  '/petycja/jak-to-dziala': '2026-07-13',
 };
 
 // Normalizacja ścieżki: bez końcowego „/", z wiodącym „/". '/dane/x/' → '/dane/x'.

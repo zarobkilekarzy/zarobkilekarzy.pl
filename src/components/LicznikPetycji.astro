@@ -48,8 +48,9 @@
     let count = null;
     let done = false;             // zgłoszono / zablokowane na stałe
     let submitting = false;       // trwa wysyłka — anty-double-click „w locie"
-    let tsToken = null;           // aktualny token Turnstile (null = brak/wygasł)
-    let tsWidgetId = null;        // id wyrenderowanego widżetu (do reset)
+    let tsToken = null;           // ostatni token Turnstile (null = brak/wygasł)
+    let tsWidgetId = null;        // id wyrenderowanego widżetu (do execute/reset)
+    let tsSiteKey = null;         // klucz publiczny (potrzebny przy execute)
     let turnstileEnabled = false; // czy serwer wymaga tokenu dla tego sluga
 
     const render = () => {
@@ -76,27 +77,6 @@
       document.head.appendChild(s);
     });
 
-    const initTurnstile = async (siteKey) => {
-      try {
-        await loadScript(TURNSTILE_API);
-        // poczekaj aż globalne `turnstile` będzie gotowe (maks. ~5 s)
-        await new Promise((res) => {
-          if (window.turnstile) return res();
-          const iv = setInterval(() => { if (window.turnstile) { clearInterval(iv); res(); } }, 50);
-          setTimeout(() => { clearInterval(iv); res(); }, 5000);
-        });
-        if (!window.turnstile) return false;
-        turnstileEl.hidden = false;
-        tsWidgetId = window.turnstile.render(turnstileEl, {
-          sitekey: siteKey,
-          callback: (token) => { tsToken = token; showAlert(''); },
-          'expired-callback': () => { tsToken = null; },
-          'error-callback': () => { tsToken = null; },
-        });
-        return true;
-      } catch (e) { return false; }
-    };
-
     const postClick = async (token) => {
       try {
         const body = token ? { slug: SLUG, turnstileToken: token } : { slug: SLUG };
@@ -111,8 +91,75 @@
       } catch (e) { return { ok: false, status: 0 }; }
     };
 
+    // Wysyłka ze świeżym (lub żadnym) tokenem: optymistyczny +1, POST, obsługa 403.
+    const submitWith = async (token) => {
+      try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+      if (count != null) { count += 1; render(); } // optymistycznie
+      const res = await postClick(token);
+      if (res.status === 403) {
+        // token odrzucony (wygasł / duplikat) → cofnij optymizm, zresetuj widżet, pozwól ponowić
+        if (count != null) { count -= 1; render(); }
+        try { localStorage.removeItem(KEY); } catch (e) {}
+        tsToken = null;
+        if (tsWidgetId != null && window.turnstile) { try { window.turnstile.reset(tsWidgetId); } catch (e) {} }
+        submitting = false;
+        btn.disabled = false;
+        showAlert('Weryfikacja nie powiodła się — spróbuj ponownie.');
+        return;
+      }
+      // Sukces (204) albo miękki błąd sieci: licznik jest self-reported, więc i tak
+      // zostawiamy stan „zrobione" (zgodnie z dotychczasowym łagodnym zachowaniem).
+      markDone();
+    };
+
+    // Świeży token z execute() → dokończ trwającą wysyłkę tym tokenem.
+    const onToken = (token) => {
+      tsToken = token;
+      showAlert('');
+      if (submitting) submitWith(token);
+    };
+    // Wyzwanie nie powiodło się/timeout w trakcie kliknięcia → odblokuj i pokaż komunikat.
+    const onTurnstileFail = () => {
+      tsToken = null;
+      if (submitting) {
+        if (tsWidgetId != null && window.turnstile) { try { window.turnstile.reset(tsWidgetId); } catch (e) {} }
+        submitting = false;
+        btn.disabled = false;
+        showAlert('Weryfikacja nie powiodła się — spróbuj ponownie.');
+      }
+    };
+
+    // Turnstile w trybie EXECUTE: NIE rozwiązujemy wyzwania na starcie (token żyje ~300 s
+    // i wygasłby, zanim ktoś kliknie po faktycznym wysłaniu petycji — to była przyczyna
+    // 403 „Weryfikacja nie powiodła się" na prodzie). Wyzwanie odpalamy DOPIERO przy
+    // kliknięciu, tuż przed POST → token zawsze świeży i jednorazowy.
+    const initTurnstile = async (siteKey) => {
+      try {
+        await loadScript(TURNSTILE_API);
+        // poczekaj aż globalne `turnstile` będzie gotowe (maks. ~5 s)
+        await new Promise((res) => {
+          if (window.turnstile) return res();
+          const iv = setInterval(() => { if (window.turnstile) { clearInterval(iv); res(); } }, 50);
+          setTimeout(() => { clearInterval(iv); res(); }, 5000);
+        });
+        if (!window.turnstile) return false;
+        tsSiteKey = siteKey;
+        turnstileEl.hidden = false;
+        tsWidgetId = window.turnstile.render(turnstileEl, {
+          sitekey: siteKey,
+          execution: 'execute',           // rozwiąż na żądanie (przy kliknięciu), nie na starcie
+          appearance: 'interaction-only', // widżet niewidoczny, chyba że wymaga interakcji
+          callback: (token) => { onToken(token); },
+          'expired-callback': () => { tsToken = null; },
+          'error-callback': () => { onTurnstileFail(); },
+          'timeout-callback': () => { onTurnstileFail(); },
+        });
+        return true;
+      } catch (e) { return false; }
+    };
+
     // Odczyt licznika + konfiguracji jednym cache'owanym GET-em. Gdy Turnstile jest
-    // włączony i jeszcze nie zgłoszono — wyrenderuj widżet, by token był gotowy na klik.
+    // włączony i jeszcze nie zgłoszono — wyrenderuj widżet (execute, bez rozwiązywania).
     // Błąd/brak bindingu → zostaje „—", przycisk działa dalej (fallback bez tokenu).
     (async () => {
       let cfg = null;
@@ -125,35 +172,29 @@
       }
     })();
 
-    // Listener synchroniczny — klik nigdy nie przepadnie.
-    btn.addEventListener('click', async () => {
+    // Klik: przy włączonym Turnstile odpalamy ŚWIEŻE wyzwanie i wysyłamy w callbacku;
+    // bez Turnstile wysyłamy od razu. Anty-double-click: flagi done/submitting + disabled.
+    btn.addEventListener('click', () => {
       if (done || submitting) return;
-      // Antybot włączony, ale token jeszcze nie gotowy → poproś o chwilę (nie liczymy).
-      if (turnstileEnabled && !tsToken) {
-        showAlert('Trwa weryfikacja antybotowa — spróbuj za chwilę.');
-        return;
-      }
       submitting = true;
       btn.disabled = true;
       showAlert('');
-      try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
-      if (count != null) { count += 1; render(); } // optymistycznie
-
-      const res = await postClick(tsToken);
-      if (res.status === 403) {
-        // token odrzucony (wygasł / duplikat) → cofnij optymizm, pozwól spróbować raz jeszcze
-        if (count != null) { count -= 1; render(); }
-        try { localStorage.removeItem(KEY); } catch (e) {}
-        tsToken = null;
-        if (tsWidgetId && window.turnstile) window.turnstile.reset(tsWidgetId);
-        submitting = false;
-        btn.disabled = false;
-        showAlert('Weryfikacja nie powiodła się — spróbuj ponownie.');
-        return;
+      if (turnstileEnabled) {
+        if (tsWidgetId == null || !window.turnstile) {
+          // widżet się nie wyrenderował (np. skrypt CF zablokowany) → nie wysyłamy bez
+          // tokenu (serwer i tak odrzuci); pozwól spróbować za chwilę.
+          submitting = false;
+          btn.disabled = false;
+          showAlert('Trwa weryfikacja antybotowa — spróbuj za chwilę.');
+          return;
+        }
+        showAlert('Weryfikacja antybotowa…');
+        // execute() → onToken(świeży token) → submitWith; onTurnstileFail obsługuje błąd/timeout.
+        try { window.turnstile.execute(turnstileEl, { sitekey: tsSiteKey }); }
+        catch (e) { onTurnstileFail(); }
+      } else {
+        submitWith(null);
       }
-      // Sukces (204) albo miękki błąd sieci: licznik jest self-reported, więc i tak
-      // zostawiamy stan „zrobione" (zgodnie z dotychczasowym łagodnym zachowaniem).
-      markDone();
     });
   }
 </script>

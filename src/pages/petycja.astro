@@ -125,13 +125,23 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
         <div class="cta-row">
           <button class="btn btn-primary" id="copyBtn" type="button">Kopiuj treść</button>
           <a class="btn" id="mailtoMz" href={MAILTO_DEFAULT}>Otwórz mail do Min. Zdrowia</a>
-          <button class="btn" id="printBtn" type="button" aria-expanded="false" aria-controls="printChoice">Drukuj</button>
         </div>
-        <div class="print-choice" id="printChoice" hidden>
-          <span class="print-choice-label">Wydruk dla:</span>
-          <button class="btn" type="button" data-print="mz">Ministerstwa Zdrowia</button>
-          <button class="btn" type="button" data-print="senat">Senatu</button>
+        <div class="send-grid">
+          <span class="send-label">Drukuj</span>
+          <div class="send-opts">
+            <button class="btn btn-sm" type="button" data-print="mz">Min. Zdrowia</button>
+            <button class="btn btn-sm" type="button" data-print="senat">Senat</button>
+          </div>
+          <span class="send-label">Pobierz PDF</span>
+          <div class="send-opts">
+            <button class="btn btn-sm" type="button" data-pdf="mz">Min. Zdrowia</button>
+            <button class="btn btn-sm" type="button" data-pdf="senat">Senat</button>
+          </div>
         </div>
+        <p class="send-note">
+          <strong>„Pobierz PDF”</strong> daje plik z Twoim imieniem i miejscowością — gotowy do
+          załączenia (gov.pl / e-mail). <strong>„Drukuj”</strong> — do wydruku i podpisania.
+        </p>
         <p class="mailto-hint">
           Po otwarciu maila sprawdź, czy treść jest kompletna — powinna kończyć się stopką
           o ZarobkiLekarzy.pl. Niektóre programy pocztowe ucinają tak długie wiadomości;
@@ -188,11 +198,11 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
 
           <div class="gov-note">
             <strong>Treść nie mieści się w polu „Treść pisma”?</strong> Docierają do nas takie
-            sygnały — formularz gov.pl bywa ograniczony i może uciąć dłuższą wiadomość. W takim
-            wypadku najprościej kliknij wyżej <strong>„Drukuj” → „Ministerstwa Zdrowia”</strong>,
-            w oknie drukowania wybierz <strong>„Zapisz jako PDF”</strong> i dołącz ten plik do
-            pisma jako <strong>załącznik</strong>. W polu „Treść pisma” wystarczy wtedy krótka
-            adnotacja, np. „Petycja w załączniku”.
+            sygnały — formularz gov.pl bywa ograniczony i może uciąć dłuższą wiadomość. Wtedy
+            najprościej dołączyć petycję jako <strong>załącznik PDF</strong>: wpisz wyżej imię
+            i miejscowość, kliknij <strong>„Pobierz PDF z Twoimi danymi”</strong> i dodaj gotowy,
+            już wypełniony plik do pisma. W polu „Treść pisma” wystarczy wtedy krótka adnotacja,
+            np. „Treść petycji w załączniku”.
           </div>
 
           <details class="gov-walk">
@@ -222,11 +232,24 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
           </details>
         </div>
         <div class="tab-pane" id="pane-druk">
+          <div class="pdf-dl">
+            <p class="pdf-dl-lead"><strong>Pobierz wzór PDF do druku</strong> — wydrukuj, uzupełnij odręcznie i podpisz:</p>
+            <div class="pdf-dl-links">
+              <a class="btn btn-primary" href="/petycja/petycja-ministerstwo-zdrowia.pdf" download>Wzór — do Ministerstwa Zdrowia</a>
+              <a class="btn" href="/petycja/petycja-senat.pdf" download>Wzór — do Senatu</a>
+            </div>
+            <p class="pdf-dl-note">
+              Odręcznie uzupełnij: <strong>miejscowość i datę</strong>, <strong>imię i nazwisko</strong>
+              oraz linię <strong>„Adres do korespondencji”</strong> — bez adresu urząd pozostawi petycję
+              bez rozpatrzenia (art. 7 ust. 1). Podpisz i wyślij pocztą. Chcesz plik z już wpisanymi
+              danymi (np. na e-mail lub gov.pl)? Użyj <strong>„Pobierz PDF z Twoimi danymi”</strong> wyżej.
+            </p>
+          </div>
           <p>
-            Kliknij <strong>„Drukuj”</strong> — przycisk zapyta, dla kogo wydruk (Ministerstwa
-            Zdrowia czy Senatu), i doda nagłówek z adresatem oraz datą. Wydruk podpisz
-            i <strong>uzupełnij odręcznie linię „Adres do korespondencji” — bez adresu urząd
-            pozostawi petycję bez rozpatrzenia</strong>. Wyślij na:
+            Wolisz wydrukować bezpośrednio ze strony? Kliknij wyżej <strong>„Drukuj”</strong> —
+            przycisk zapyta, dla kogo wydruk (Ministerstwa Zdrowia czy Senatu), i doda nagłówek
+            z adresatem oraz datą. Wydruk również podpisz i uzupełnij odręcznie „Adres do
+            korespondencji”. Wyślij na:
           </p>
           <ul class="addr-list">
             <li>{ADRESACI.mz.adres}</li>
@@ -453,9 +476,17 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
   .petbox::-webkit-scrollbar { width: 11px; }
   .petbox::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 6px; border: 3px solid var(--paper-2); }
   .petbox::-webkit-scrollbar-track { background: transparent; }
-  .print-choice { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
-  .print-choice[hidden] { display: none; }
-  .print-choice-label { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
+  /* Wysyłka do MZ/Senatu: dwa równe rzędy (Drukuj / Pobierz PDF), etykieta + przyciski. */
+  .send-grid { display: grid; grid-template-columns: max-content 1fr; align-items: center; gap: 0.55rem 0.9rem; margin-top: 0.95rem; padding-top: 0.95rem; border-top: 1px solid var(--line); }
+  .send-label { font-size: 0.9rem; font-weight: 600; color: var(--ink-soft); }
+  .send-opts { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .send-opts .btn[aria-busy="true"] { opacity: 0.7; cursor: progress; }
+  .send-opts .btn:disabled { opacity: 0.6; cursor: default; border-color: var(--line-2); color: var(--ink); }
+  .send-note { margin: 0.7rem 0 0; font-size: 0.85rem; color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 480px) {
+    .send-grid { grid-template-columns: 1fr; gap: 0.3rem 0; }
+    .send-label { margin-top: 0.5rem; }
+  }
   .mailto-hint { margin: 0.85rem 0 0; font-size: 0.92rem; color: var(--ink-soft); line-height: 1.5; }
   .mail-addr { margin: 0.85rem 0 0; font-size: 0.92rem; color: var(--ink-soft); }
   .mail-addr strong { font-family: var(--font-mono); color: var(--ink); }
@@ -465,6 +496,13 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
   /* Uwaga: treść nie mieści się w polu „Treść pisma” (gov.pl) → wydruk PDF w załączniku */
   .gov-note { margin: 1rem 0 0; padding: 0.85rem 1.1rem; background: var(--paper-2); border: 1px solid var(--line); border-left: 4px solid var(--ink-faint); border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.92rem; color: var(--ink); line-height: 1.6; }
   .gov-note strong { color: var(--ink); }
+
+  /* Pobierz gotowy wzór PDF (zakładka „Wydruk i poczta”) */
+  .pdf-dl { margin: 0 0 1.25rem; padding: 1.1rem 1.25rem; background: var(--brand-50); border: 1px solid #d5e2f0; border-radius: var(--radius); }
+  .pdf-dl .pdf-dl-lead { margin: 0 0 0.75rem; color: var(--ink); line-height: 1.55; }
+  .pdf-dl-links { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .pdf-dl-links .btn { text-decoration: none; }
+  .pdf-dl .pdf-dl-note { margin: 0.9rem 0 0; font-size: 0.9rem; color: var(--ink-soft); line-height: 1.55; }
 
   /* Walkthrough gov.pl (zrzuty ekranu) */
   .gov-walk { margin: 1rem 0 0; }
@@ -650,59 +688,140 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
       });
     }
 
-    // Druk w dwóch krokach: „Drukuj” pokazuje wybór adresata (MZ / Senat), a wybór
-    // buduje dokument wydruku — miejscowość i data, blok adresata, treść w kanale
+    // Druk: przyciski „Drukuj → Min. Zdrowia / Senat” (zawsze widoczne, bez rozwijania).
+    // Każdy buduje dokument wydruku — miejscowość i data, blok adresata, treść w kanale
     // 'druk' — i drukuje istniejącym mechanizmem .print-target + body.printing.
-    var printBtn = document.getElementById('printBtn');
-    var choiceEl = document.getElementById('printChoice');
-    if (printBtn && choiceEl) {
-      printBtn.addEventListener('click', function () {
-        choiceEl.hidden = !choiceEl.hidden;
-        printBtn.setAttribute('aria-expanded', String(!choiceEl.hidden));
-        if (!choiceEl.hidden) {
-          var first = choiceEl.querySelector('button[data-print]');
-          if (first) first.focus();
+    document.querySelectorAll('button[data-print]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        beacon('petycja-akcja-druk');
+        var kto = btn.getAttribute('data-print');
+        var miej = (miejEl.value || '').trim() || '……………………';
+        var data = new Date().toLocaleDateString('pl-PL', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        });
+        bodyEl.textContent =
+          miej + ', dnia ' + data + ' r.\n\n' +
+          'Adresat:\n' + ADRESACI_BLOK[kto].join('\n') + '\n\n' +
+          build('druk');
+        // Wyciągamy pismo bezpośrednio pod <body>, żeby drukowało się w NORMALNYM
+        // przepływie (od góry 1. strony, pełną szerokością, z paginacją) — a nie jako
+        // element pozycjonowany wewnątrz wąskiej kolumny treści. Znacznik trzyma
+        // pierwotne miejsce, by po wydruku wstawić pismo z powrotem.
+        var slot = document.createComment('petbody-slot');
+        bodyEl.parentNode.insertBefore(slot, bodyEl);
+        document.body.appendChild(bodyEl);
+        bodyEl.classList.add('print-target');
+        document.body.classList.add('printing');
+        var cleanup = function () {
+          document.body.classList.remove('printing');
+          bodyEl.classList.remove('print-target');
+          if (slot.parentNode) {
+            slot.parentNode.insertBefore(bodyEl, slot);
+            slot.parentNode.removeChild(slot);
+          }
+          window.removeEventListener('afterprint', cleanup);
+          fill(); // przywróć widok ekranowy (kanał elektroniczny)
+        };
+        window.addEventListener('afterprint', cleanup);
+        window.print();
+        setTimeout(cleanup, 1000);
+      });
+    });
+  })();
+</script>
+
+<!-- Generator WYPEŁNIONEGO PDF-a (do załączenia w gov.pl / e-mailu). Osobny, BUNDLOWANY
+     moduł (nie is:inline), by móc importować jsPDF i wspólny builder. jsPDF + fonty
+     ładowane leniwie (dynamiczny import + fetch) dopiero przy pierwszym kliknięciu. -->
+<script>
+  import { buildFilledPetycjaPdf } from '../lib/petycja-pdf';
+  import { KORESPONDENCJA } from '../lib/petycja';
+
+  const imieEl = document.getElementById('imie');
+  const miejEl = document.getElementById('miejscowosc');
+  const warnEl = document.getElementById('genWarn');
+  const pdfBtns = document.querySelectorAll('button[data-pdf]');
+
+  if (pdfBtns.length && imieEl && miejEl) {
+    // Fonty TTF pobierane raz i cache'owane (jsPDF osadza sfnt jako base64).
+    let fontsPromise;
+    const loadFonts = () => {
+      if (fontsPromise) return fontsPromise;
+      const toB64 = async (url) => {
+        const buf = new Uint8Array(await (await fetch(url)).arrayBuffer());
+        let s = '';
+        const CH = 0x8000;
+        for (let i = 0; i < buf.length; i += CH) {
+          s += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
+        }
+        return btoa(s);
+      };
+      fontsPromise = Promise.all([
+        toB64('/fonts/ibm-plex-sans-400.ttf'),
+        toB64('/fonts/ibm-plex-sans-600.ttf'),
+      ]).then(([regular, bold]) => ({ regular, bold }));
+      return fontsPromise;
+    };
+
+    const beacon = (slug) => {
+      try {
+        const key = 'clk:' + slug;
+        const now = Date.now();
+        if (now - (Number(localStorage.getItem(key)) || 0) < 12 * 3600 * 1000) return;
+        localStorage.setItem(key, String(now));
+      } catch (e) {}
+      try { navigator.sendBeacon('/api/clicks', JSON.stringify({ slug })); } catch (e) {}
+    };
+
+    // Bez imienia i miejscowości plik byłby niewypełniony — wtedy blokujemy i kierujemy do pól.
+    const guard = () => {
+      const brakI = !(imieEl.value || '').trim();
+      const brakM = !(miejEl.value || '').trim();
+      if (!brakI && !brakM) return true;
+      if (warnEl) {
+        warnEl.textContent = 'Uzupełnij imię i nazwisko oraz miejscowość — inaczej PDF nie będzie wypełniony.';
+        warnEl.hidden = false;
+      }
+      const target = brakI ? imieEl : miejEl;
+      target.focus();
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      return false;
+    };
+
+    pdfBtns.forEach((btn) => {
+      const label = btn.textContent;
+      btn.addEventListener('click', async () => {
+        if (!guard()) return;
+        const adresat = btn.getAttribute('data-pdf') === 'senat' ? 'senat' : 'mz';
+        btn.setAttribute('aria-busy', 'true');
+        btn.disabled = true;
+        btn.textContent = 'Generuję…';
+        try {
+          const [{ jsPDF }, fonts] = await Promise.all([import('jspdf'), loadFonts()]);
+          const doc = buildFilledPetycjaPdf(jsPDF, fonts, {
+            imie: imieEl.value.trim(),
+            miejscowosc: miejEl.value.trim(),
+            adresat,
+            data: new Date().toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }),
+            adresKorespondencji: KORESPONDENCJA.elektroniczny,
+          });
+          doc.save('petycja-' + (adresat === 'senat' ? 'senat' : 'ministerstwo-zdrowia') + '.pdf');
+          beacon('petycja-akcja-pdf');
+          if (warnEl) warnEl.hidden = true;
+        } catch (e) {
+          if (warnEl) {
+            warnEl.textContent =
+              'Nie udało się wygenerować PDF w przeglądarce. Użyj „Drukuj → Zapisz jako PDF” ' +
+              'albo pobierz wzór do druku w zakładce „Wydruk i poczta”.';
+            warnEl.hidden = false;
+            warnEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }
+        } finally {
+          btn.removeAttribute('aria-busy');
+          btn.disabled = false;
+          btn.textContent = label;
         }
       });
-
-      choiceEl.querySelectorAll('button[data-print]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          beacon('petycja-akcja-druk');
-          var kto = btn.getAttribute('data-print');
-          var miej = (miejEl.value || '').trim() || '……………………';
-          var data = new Date().toLocaleDateString('pl-PL', {
-            day: 'numeric', month: 'long', year: 'numeric',
-          });
-          bodyEl.textContent =
-            miej + ', dnia ' + data + ' r.\n\n' +
-            'Adresat:\n' + ADRESACI_BLOK[kto].join('\n') + '\n\n' +
-            build('druk');
-          // Wyciągamy pismo bezpośrednio pod <body>, żeby drukowało się w NORMALNYM
-          // przepływie (od góry 1. strony, pełną szerokością, z paginacją) — a nie jako
-          // element pozycjonowany wewnątrz wąskiej kolumny treści. Znacznik trzyma
-          // pierwotne miejsce, by po wydruku wstawić pismo z powrotem.
-          var slot = document.createComment('petbody-slot');
-          bodyEl.parentNode.insertBefore(slot, bodyEl);
-          document.body.appendChild(bodyEl);
-          bodyEl.classList.add('print-target');
-          document.body.classList.add('printing');
-          var cleanup = function () {
-            document.body.classList.remove('printing');
-            bodyEl.classList.remove('print-target');
-            if (slot.parentNode) {
-              slot.parentNode.insertBefore(bodyEl, slot);
-              slot.parentNode.removeChild(slot);
-            }
-            window.removeEventListener('afterprint', cleanup);
-            fill(); // przywróć widok ekranowy (kanał elektroniczny)
-            choiceEl.hidden = true;
-            printBtn.setAttribute('aria-expanded', 'false');
-          };
-          window.addEventListener('afterprint', cleanup);
-          window.print();
-          setTimeout(cleanup, 1000);
-        });
-      });
-    }
-  })();
+    });
+  }
 </script>

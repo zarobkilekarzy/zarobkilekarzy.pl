@@ -7,6 +7,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PetycjaTresc from '../components/PetycjaTresc.astro';
 import LicznikPetycji from '../components/LicznikPetycji.astro';
 import PetycjaShare from '../components/PetycjaShare.astro';
+import AktualizacjaUstawa from '../components/AktualizacjaUstawa.astro';
 import { PETYCJA_TRESC, PETYCJA_TEMAT, ADRESACI, KORESPONDENCJA, fillPetycja } from '../lib/petycja';
 import { Picture } from 'astro:assets';
 import gov1 from '../assets/petycja-govpl/1.webp';
@@ -26,14 +27,27 @@ const MAILTO_DEFAULT =
 
 // Linie adresowe do nagłówka wydruku (proste obiekty — trafiają do define:vars).
 const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
+
+// STAN AKCJI — wartości aktualizowane RĘCZNIE przy każdej zmianie (jedno miejsce).
+// naLiscieMZ: null = jeszcze nie widać / nie sprawdzono; liczba = ile petycji w tej
+// sprawie widnieje na liście MZ. ogloszeniePW: null albo { do: 'data', url: '...' }.
+const STAN = {
+  aktualizacja: '13 lipca 2026',
+  naLiscieMZ: null as number | null,
+  ogloszeniePW: null as { do: string; url: string } | null,
+  odpowiedz: null as { data: string; url: string } | null,
+};
+const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
 ---
 
 <BaseLayout
   title="Wyślij petycję — jawność wynagrodzeń lekarzy"
   description="Wyślij gotową petycję o jawny rejestr wynagrodzeń lekarzy ze środków publicznych — do Ministerstwa Zdrowia (i opcjonalnie do Senatu). Wpisz imię, skopiuj, wyślij."
 >
+  <AktualizacjaUstawa />
   <section class="section">
-    <div class="container narrow">
+    <div class="container pet-wrap">
+      <div class="pet-main">
       <p class="eyebrow">Petycja</p>
       <h1>Wyślij petycję o jawność wynagrodzeń lekarzy</h1>
       <p class="lead">
@@ -71,13 +85,10 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
       </p>
 
       <!-- AKCJA -->
-      <h2 class="blk" id="wyslij" style="scroll-margin-top: 1.5rem">Wyślij w 3 krokach</h2>
-      <ol class="steps">
-        <li><span class="step-n">1</span> Wpisz imię, nazwisko i miejscowość.</li>
-        <li><span class="step-n">2</span> Skopiuj treść — albo otwórz gotowy mail, albo wydrukuj.</li>
-        <li><span class="step-n">3</span> Wyślij do Ministerstwa Zdrowia (i opcjonalnie do Senatu).</li>
-      </ol>
+      <div class="action-zone">
+      <h2 class="blk" id="wyslij" style="scroll-margin-top: 1.5rem">Uzupełnij i wyślij</h2>
 
+      <div class="mail-card">
       <div class="gen-form">
         <div class="field">
           <label for="imie">Imię i nazwisko</label>
@@ -96,13 +107,20 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
       <p class="gen-warn" id="genWarn" role="alert" hidden></p>
 
       <!-- JEDNA treść petycji (komponent = jedno źródło prawdy) -->
-      <div class="mail-card">
         <div class="mail-row">
           <span class="mail-k">Temat</span>
           <span class="mail-v">{PETYCJA_TEMAT}</span>
         </div>
-        <div class="petbox">
-          <PetycjaTresc id="petbody" />
+        <div class="pet-doc">
+          <div class="pet-doc-label">
+            <span>Treść petycji — to wysyłasz</span>
+            <span class="pet-doc-hint" aria-hidden="true">przewiń, aby przeczytać całość ↓</span>
+          </div>
+          <div class="pet-doc-box">
+            <div class="petbox">
+              <PetycjaTresc id="petbody" />
+            </div>
+          </div>
         </div>
         <div class="cta-row">
           <button class="btn btn-primary" id="copyBtn" type="button">Kopiuj treść</button>
@@ -128,6 +146,7 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
           <a href="#jak-wyslac">„Jak wysłać”</a>.
         </p>
       </div>
+      </div><!-- /.action-zone -->
 
       <!-- JAK WYSŁAĆ -->
       <h2 class="blk" id="jak-wyslac" style="scroll-margin-top: 1.5rem">Jak wysłać</h2>
@@ -136,9 +155,16 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
         a do Senatu — jeśli chcesz wzmocnić. Każdy z poniższych sposobów jest tak samo ważny.
       </p>
 
-      <ol class="ways">
-        <li>
-          <h3>E-mailem — do Ministerstwa Zdrowia</h3>
+      <div class="tabs">
+        <input class="tab-in" type="radio" name="jakway" id="way-mail" checked />
+        <input class="tab-in" type="radio" name="jakway" id="way-gov" />
+        <input class="tab-in" type="radio" name="jakway" id="way-druk" />
+        <div class="tablist">
+          <label class="tab-lab" for="way-mail">E-mailem</label>
+          <label class="tab-lab" for="way-gov">Pismo ogólne (gov.pl)</label>
+          <label class="tab-lab" for="way-druk">Wydruk i poczta</label>
+        </div>
+        <div class="tab-pane" id="pane-mail">
           <p>
             Najprościej: kliknij <strong>„Otwórz mail do Min. Zdrowia”</strong> wyżej — temat
             i treść wpiszą się same. Albo skopiuj treść i wyślij ręcznie na adres:
@@ -146,11 +172,10 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
           <p class="addr-mono">{MZ_EMAIL}</p>
           <p>
             Petycja wysłana e-mailem jest w pełni ważna. Senat nie udostępnia adresu e-mail do
-            petycji — do niego użyj sposobu 2 lub 3.
+            petycji — do niego użyj zakładki „Pismo ogólne (gov.pl)” lub „Wydruk i poczta”.
           </p>
-        </li>
-        <li>
-          <h3>Pismem ogólnym przez gov.pl — do MZ albo do Senatu</h3>
+        </div>
+        <div class="tab-pane" id="pane-gov">
           <p>Ta droga daje <strong>UPP</strong> — urzędowe potwierdzenie z datą, jak list polecony:</p>
           <ol class="steps-in">
             <li>Skopiuj treść przyciskiem <strong>„Kopiuj treść”</strong> wyżej.</li>
@@ -186,9 +211,8 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
               </li>
             </ol>
           </details>
-        </li>
-        <li>
-          <h3>Wydrukiem i pocztą — do MZ albo do Senatu</h3>
+        </div>
+        <div class="tab-pane" id="pane-druk">
           <p>
             Kliknij <strong>„Drukuj”</strong> — przycisk zapyta, dla kogo wydruk (Ministerstwa
             Zdrowia czy Senatu), i doda nagłówek z adresatem oraz datą. Wydruk podpisz
@@ -200,18 +224,18 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
             <li>{ADRESACI.senat.adres}</li>
           </ul>
           <p>Wydruk nie ma mniejszej mocy niż e-mail czy pismo urzędowe.</p>
-        </li>
-      </ol>
+        </div>
+      </div>
 
       <p class="senat-note">
         <strong>Do Senatu</strong> (opcjonalnie, tą samą treścią): Senat nie przyjmuje petycji
-        e-mailem, więc skorzystaj ze <strong>sposobu 2</strong> — w usłudze „Wyślij pismo ogólne”
-        na gov.pl, w kroku wyboru adresata wskaż <strong>Kancelarię Senatu</strong> — albo ze
-        <strong>sposobu 3</strong> (wydruk i poczta na adres Kancelarii Senatu podany wyżej).
+        e-mailem, więc skorzystaj z zakładki <strong>„Pismo ogólne (gov.pl)”</strong> — w usłudze
+        „Wyślij pismo ogólne”, w kroku wyboru adresata wskaż <strong>Kancelarię Senatu</strong> —
+        albo z zakładki <strong>„Wydruk i poczta”</strong> (na adres Kancelarii Senatu podany wyżej).
       </p>
 
       <!-- CO DALEJ (sprawczość) -->
-      <h2 class="blk">Co się stanie z Twoją petycją</h2>
+      <h2 class="blk" id="co-dalej" style="scroll-margin-top: 1.5rem">Co się stanie z Twoją petycją</h2>
       <ol class="next">
         <li><strong>Dostajesz potwierdzenie.</strong> Kopia maila zostaje u Ciebie; przy piśmie ogólnym dostajesz UPP — urzędowe poświadczenie z datą, jak list polecony.</li>
         <li><strong>Urząd MUSI ją rozpatrzyć.</strong> Nie może jej zignorować — ma ustawowy obowiązek odpowiedzieć (Ministerstwo Zdrowia: do 3 miesięcy).</li>
@@ -226,6 +250,68 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
 
       <LicznikPetycji />
 
+      <!-- STAN AKCJI — publiczny tracker sprawy; wartości w const STAN (frontmatter). -->
+      <h2 class="blk" id="stan" style="scroll-margin-top: 1.5rem">Stan akcji</h2>
+      <dl class="stan">
+        <div class="stan-row">
+          <dt>Petycje widoczne u adresata</dt>
+          <dd>
+            {STAN.naLiscieMZ == null ? (
+              <Fragment>
+                sprawdzamy — ministerstwo publikuje wpływające petycje na
+                <a href={LISTA_MZ_URL} target="_blank" rel="noopener noreferrer"> swojej liście</a>,
+                zwykle w 1–2 tygodnie od wpływu
+              </Fragment>
+            ) : (
+              <Fragment>
+                <strong>{STAN.naLiscieMZ}</strong> — zob.
+                <a href={LISTA_MZ_URL} target="_blank" rel="noopener noreferrer"> listę petycji MZ</a>
+              </Fragment>
+            )}
+          </dd>
+        </div>
+        <div class="stan-row">
+          <dt>Ustawowy termin odpowiedzi</dt>
+          <dd>
+            3 miesiące od złożenia (art. 10 ust. 1) — dla petycji wysłanych 13 lipca to
+            <strong> 13 października 2026 r.</strong> Urząd może ten termin przesunąć tylko
+            w udokumentowany sposób: ogłaszając łączne rozpatrywanie petycji wielokrotnej
+            (termin biegnie wtedy od końca okresu oczekiwania, art. 11 ust. 2) albo
+            przedłużając go o maks. 3 miesiące (art. 10 ust. 3).
+            <strong> Każde przesunięcie pokażemy tutaj</strong> — z podstawą prawną
+            i linkiem do ogłoszenia.
+            {STAN.ogloszeniePW && (
+              <Fragment>
+                {' '}<strong>Ogłoszono łączne rozpatrywanie:</strong> urząd czeka na dalsze
+                petycje do {STAN.ogloszeniePW.do} —
+                <a href={STAN.ogloszeniePW.url} target="_blank" rel="noopener noreferrer"> ogłoszenie</a>.
+              </Fragment>
+            )}
+          </dd>
+        </div>
+        <div class="stan-row">
+          <dt>Odpowiedź urzędu</dt>
+          <dd>
+            {STAN.odpowiedz == null ? (
+              <Fragment>
+                czekamy — <strong>każdą oficjalną odpowiedź opublikujemy i omówimy</strong>,
+                także odmowną. Odpowiedź na petycję o jawność sama jest informacją publiczną.
+              </Fragment>
+            ) : (
+              <Fragment>
+                nadeszła {STAN.odpowiedz.data} —
+                <a href={STAN.odpowiedz.url}> nasze omówienie</a>
+              </Fragment>
+            )}
+          </dd>
+        </div>
+      </dl>
+      <p class="source-note">
+        Obiecujemy tylko to, co od nas zależy: publikację każdej odpowiedzi i pilnowanie
+        terminów — daty nie kontrolujemy, kontrolujemy to, że żadne przesunięcie nie
+        przejdzie niezauważone. Ostatnia aktualizacja: {STAN.aktualizacja}.
+      </p>
+
       <PetycjaShare
         heading="Wysłane? Daj znać innym"
         intro="Najprostsze wsparcie po wysłaniu petycji to przekazać ją dalej — im więcej identycznych petycji w tej samej sprawie, tym trudniej ją zbyć. Pobierz gotową grafikę i dołącz do posta albo udostępnij sam link (podgląd graficzny dołączy się automatycznie)."
@@ -238,6 +324,21 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
         <a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20140001195" target="_blank" rel="noopener noreferrer">ustawa o petycjach</a>
         (art. 2, 4, 10, 11) i art. 63 Konstytucji RP.
       </p>
+      </div><!-- /.pet-main -->
+
+      <aside class="pet-rail" aria-label="Akcja i sekcje">
+        <div class="rail-card">
+          <p class="rail-tag">Zajmie minutę</p>
+          <a class="btn btn-primary rail-cta" href="#wyslij">Wyślij petycję ↓</a>
+          <p class="rail-sub">Wpisz imię, skopiuj, wyślij — mailem albo pismem urzędowym.</p>
+        </div>
+        <nav class="rail-nav" aria-label="Sekcje strony">
+          <a href="#wyslij">Uzupełnij i wyślij</a>
+          <a href="#jak-wyslac">Jak wysłać</a>
+          <a href="#co-dalej">Co się stanie</a>
+          <a href="#stan">Stan akcji</a>
+        </nav>
+      </aside>
     </div>
   </section>
 </BaseLayout>
@@ -245,6 +346,43 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
 <style>
   .narrow { max-width: 780px; }
   .blk { margin-top: 2.5rem; }
+
+  /* Układ dwustrefowy: treść + lepki pasek akcji (desktop ≥ 900 px) */
+  .pet-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 14rem; gap: 2.5rem; align-items: start; }
+  .pet-main { min-width: 0; max-width: 46rem; }
+  .pet-rail { position: sticky; top: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+  .rail-card { border: 1px solid var(--line); border-top: 4px solid var(--brand); border-radius: var(--radius-lg); background: #fff; padding: 1.1rem 1.2rem; }
+  .rail-tag { margin: 0 0 0.6rem; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--brand); }
+  .rail-cta { width: 100%; justify-content: center; }
+  .rail-sub { margin: 0.65rem 0 0; font-size: 0.85rem; color: var(--ink-soft); line-height: 1.45; }
+  .rail-nav { display: flex; flex-direction: column; gap: 0.1rem; border-left: 2px solid var(--line); padding-left: 0.9rem; }
+  .rail-nav a { padding: 0.28rem 0; font-size: 0.9rem; color: var(--ink-soft); }
+  .rail-nav a:hover { color: var(--brand); }
+  @media (max-width: 900px) {
+    .pet-wrap { grid-template-columns: 1fr; }
+    .pet-main { max-width: none; }
+    .pet-rail { display: none; }
+  }
+
+  /* Zakładki „Jak wysłać” — natywne radio + CSS, bez JS (dostępne z klawiatury) */
+  .tabs { margin: 1.25rem 0 0; }
+  .tab-in { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .tablist { display: flex; flex-wrap: wrap; gap: 0.35rem; border-bottom: 2px solid var(--line); }
+  .tab-lab { cursor: pointer; padding: 0.55rem 1rem; font-weight: 600; font-size: 0.95rem; color: var(--ink-soft); border: 2px solid transparent; border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; margin-bottom: -2px; }
+  .tab-lab:hover { color: var(--brand); }
+  .tab-pane { display: none; padding: 1.25rem 0 0; }
+  #way-mail:checked ~ #pane-mail,
+  #way-gov:checked ~ #pane-gov,
+  #way-druk:checked ~ #pane-druk { display: block; }
+  #way-mail:checked ~ .tablist .tab-lab[for="way-mail"],
+  #way-gov:checked ~ .tablist .tab-lab[for="way-gov"],
+  #way-druk:checked ~ .tablist .tab-lab[for="way-druk"] { color: var(--brand); border-color: var(--line); border-bottom-color: #fff; background: #fff; }
+  #way-mail:focus-visible ~ .tablist .tab-lab[for="way-mail"],
+  #way-gov:focus-visible ~ .tablist .tab-lab[for="way-gov"],
+  #way-druk:focus-visible ~ .tablist .tab-lab[for="way-druk"] { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .tab-pane > :first-child { margin-top: 0; }
+  .tab-pane p { margin: 0 0 0.55rem; color: var(--ink-soft); line-height: 1.6; }
+  .tab-pane p:last-child { margin-bottom: 0; }
 
   .pet-subnav { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; margin: 1.25rem 0 0; }
   .pet-subnav-link { font-weight: 500; color: var(--brand); }
@@ -268,7 +406,7 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
   }
 
   /* Formularz */
-  .gen-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0 0.75rem; }
+  .gen-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0 0 0.75rem; }
   .field { display: flex; flex-direction: column; gap: 0.3rem; }
   .field label { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
   .field input {
@@ -281,12 +419,31 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
   .privacy-hint svg { flex-shrink: 0; color: var(--brand); margin-top: 0.15rem; }
   .gen-warn { margin: 0 0 1.75rem; font-size: 0.9rem; color: var(--alert); line-height: 1.5; }
 
+  /* Strefa akcji — wizualne serce strony: tinted tło + uniesiona biała karta */
+  .action-zone { margin-top: 2.5rem; background: var(--brand-50); border: 1px solid #d5e2f0; border-radius: var(--radius-lg); padding: 1.4rem 1.5rem 1.6rem; }
+  .action-zone > h2 { margin-top: 0; }
+  @media (max-width: 560px) { .action-zone { padding: 1.1rem 1rem 1.3rem; } }
+
   /* Karta petycji */
-  .mail-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; }
+  .mail-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; box-shadow: 0 10px 30px -14px rgba(15, 76, 129, 0.28); }
   .mail-row { display: flex; gap: 0.75rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--line); margin-bottom: 0.85rem; }
   .mail-k { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); flex-shrink: 0; padding-top: 2px; min-width: 3.2rem; }
   .mail-v { font-weight: 500; word-break: break-word; }
-  .petbox { max-height: 20rem; overflow-y: auto; margin-bottom: 1.1rem; }
+  /* Dokument petycji — wyraźny, oźródłowany panel „to wysyłasz” */
+  .pet-doc { margin-bottom: 1.1rem; }
+  .pet-doc-label { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.74rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); }
+  .pet-doc-hint { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 0.74rem; color: var(--ink-faint); }
+  .pet-doc-box { position: relative; }
+  .pet-doc-box::after { content: ''; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 2.5rem; background: linear-gradient(to bottom, transparent, var(--paper-2)); border-radius: 0 0 var(--radius) var(--radius); pointer-events: none; }
+  .petbox {
+    max-height: 20rem; overflow-y: auto;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--paper-2); padding: 0.9rem 1.1rem 2.5rem;
+    scrollbar-width: thin; scrollbar-color: var(--line-2) transparent;
+  }
+  .petbox::-webkit-scrollbar { width: 11px; }
+  .petbox::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 6px; border: 3px solid var(--paper-2); }
+  .petbox::-webkit-scrollbar-track { background: transparent; }
   .print-choice { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
   .print-choice[hidden] { display: none; }
   .print-choice-label { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
@@ -318,6 +475,14 @@ const ADRESACI_BLOK = { mz: ADRESACI.mz.blok, senat: ADRESACI.senat.blok };
   .steps-in li { margin: 0.4rem 0; color: var(--ink); line-height: 1.55; }
   .addr-list { list-style: none; margin: 0.4rem 0 0.6rem; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
   .addr-list li { padding-left: 0.9rem; border-left: 2px solid var(--line-2); color: var(--ink); font-size: 0.95rem; }
+
+  /* Stan akcji — tracker sprawy */
+  .stan { margin: 1rem 0 0; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; overflow: hidden; }
+  .stan-row { display: grid; grid-template-columns: 15rem 1fr; gap: 1rem; padding: 0.95rem 1.25rem; }
+  .stan-row + .stan-row { border-top: 1px solid var(--line); }
+  .stan-row dt { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); padding-top: 0.15rem; }
+  .stan-row dd { margin: 0; color: var(--ink); line-height: 1.6; }
+  @media (max-width: 620px) { .stan-row { grid-template-columns: 1fr; gap: 0.35rem; } }
 
   /* Co dalej — oś czasu */
   .next { counter-reset: nx; list-style: none; padding: 0; margin: 1.25rem 0 0; }

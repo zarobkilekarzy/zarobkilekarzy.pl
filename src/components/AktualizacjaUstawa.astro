@@ -1,0 +1,47 @@
+---
+// PASEK-SZUFLADA na dzień decyzji prezydenta ws. ustawy AOTMiT (dane per PESEL/PWZ).
+// Uzbrojenie w dniu decyzji = zmiana DWÓCH stałych niżej (WARIANT + DATA_DECYZJI) i deploy.
+// 'off' → komponent nie renderuje nic (bezpieczny w produkcji na co dzień).
+// Wariant A = ustawa podpisana; wariant B = weto / odesłanie do TK.
+// Użycie: home (z przyciskiem) i /petycja (bez przycisku — akcja jest na miejscu).
+const WARIANT: 'off' | 'A' | 'B' = 'off';
+const DATA_DECYZJI = '__ lipca 2026';
+
+interface Props {
+  pokazPrzycisk?: boolean;
+}
+const { pokazPrzycisk = false } = Astro.props;
+---
+
+{WARIANT !== 'off' && (
+  <aside class="ustawa-pasek" role="note" aria-label="Aktualizacja: decyzja prezydenta">
+    <div class="container ustawa-inner">
+      <p class="ustawa-tag">Aktualizacja · {DATA_DECYZJI}</p>
+      {WARIANT === 'A' ? (
+        <p class="ustawa-txt">
+          Prezydent podpisał ustawę, na mocy której państwowa agencja (AOTMiT) zacznie
+          zbierać wynagrodzenia medyków powiązane z numerem PESEL/PWZ — <strong>wyłącznie
+          do niejawnych analiz</strong>. Państwo przyznało, że nie widzi łącznych wypłat
+          jednej osoby; <strong>petycja żąda drugiego kroku: jawności</strong>.
+        </p>
+      ) : (
+        <p class="ustawa-txt">
+          Prezydent nie podpisał ustawy o zbieraniu danych o zarobkach medyków. Niezależnie
+          od jej losów jedno się nie zmienia: obywatel <strong>nadal nie może sprawdzić</strong>,
+          ile publicznych pieniędzy trafia łącznie do jednego lekarza — <strong>petycja
+          o jawny rejestr idzie swoją drogą</strong>.
+        </p>
+      )}
+      {pokazPrzycisk && <a class="btn btn-on-brand ustawa-btn" href="/petycja/">Wyślij petycję</a>}
+    </div>
+  </aside>
+)}
+
+<style>
+  .ustawa-pasek { background: var(--brand-700, #0d3a63); color: #fff; }
+  .ustawa-inner { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; padding-top: 0.9rem; padding-bottom: 0.9rem; }
+  .ustawa-tag { margin: 0; flex-shrink: 0; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #bcd3ea; }
+  .ustawa-txt { margin: 0; flex: 1 1 34ch; font-size: 0.95rem; line-height: 1.55; color: #eaf1f8; }
+  .ustawa-txt strong { color: #fff; }
+  .ustawa-btn { flex-shrink: 0; }
+</style>

@@ -14,6 +14,11 @@ const dzienne = rekordy.filter((z) => z.data.jednostka === 'zł/dzień').sort(by
 const miesieczne = rekordy.filter((z) => z.data.jednostka === 'zł/mies.').sort(byKwota);
 const roczne = rekordy.filter((z) => z.data.jednostka === 'zł/rok').sort(byKwota);
 
+// Tabele rekordów pokazują 10 najwyższych pozycji w każdej kategorii.
+const TOP = 10;
+const miesieczneTop = miesieczne.slice(0, TOP);
+const roczneTop = roczne.slice(0, TOP);
+
 const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
 
 // Trójka „skala" — najwyższy udokumentowany rekord w każdej jednostce czasu (dzień/miesiąc/rok).
@@ -23,8 +28,6 @@ const heroRok = roczne[0];
 // Kotwica skali: mediana kontraktu specjalisty (AOTMiT 02.2026, EXACT) — zob. /dane/rozklad-wynagrodzen.
 const medianaKontrakt = 25595;
 const heroMcMult = Math.floor(heroMc.data.kwota / medianaKontrakt);
-// Szerokość paska rankingu = udział kwoty w maksimum danej grupy.
-const barW = (kwota: number, max: number) => Math.round((kwota / max) * 100);
 
 // Źródłowa tabela: 10 najwyższych wynagrodzeń personelu medycznego szpitali wojewódzkich
 // Mazowsza (2025), wg formy zatrudnienia. Kwoty zaokrąglone do zł. eb/en = etat brutto/netto,
@@ -112,56 +115,88 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
         <p class="rec-src"><a href="https://wydarzenia.interia.pl/kraj/news-lekarz-pracowal-72-godziny-na-dobe-to-bylo-wprost-dojenie-sz,nId,23511769" target="_blank" rel="noopener noreferrer">Interia</a></p>
       </div>
 
-      <h2 style="margin-top: 2.5rem">Miesięczne rozliczenia (NFZ / kontrakty)</h2>
-      <div class="rank">
-        {miesieczne.map((z, i) => (
-          <div class="rank-row">
-            <span class="rank-i">{i + 1}</span>
-            <div class="rank-main">
-              <div class="rank-top">
-                <span class="rank-label">{z.data.etykieta}</span>
-                <span class="rank-num">{fmt(z.data.kwota)}<span class="rank-unit"> {z.data.jednostka}</span></span>
-              </div>
-              <div class="rank-bar"><div class={`rank-fill${i === 0 ? ' is-top' : ''}`} style={`width:${barW(z.data.kwota, miesieczne[0].data.kwota)}%`}></div></div>
-              <p class="rank-meta">
-                {z.data.forma && z.data.forma !== '—' && <span class="chip">{z.data.forma}</span>}
-                {z.data.rola && <span class="rank-role">{z.data.rola}</span>}
-                {z.data.region && <span> · {z.data.region}</span>}
-                {z.data.statusFaktu === 'zarzut' && <span class="chip chip-alert">zarzut</span>}
-                <a class="rank-src" href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
-              </p>
-              {z.data.uwaga && <p class="rank-note">{z.data.uwaga}</p>}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <h2 style="margin-top: 2.5rem">Roczne rozliczenia</h2>
-      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
-        Różne źródła tej samej prawdy: <strong>oświadczenia majątkowe</strong> (jawne z mocy prawa),
-        <strong>kontrakty</strong> i <strong>bezpośrednie wypłaty szpitali</strong>. Malejąco, wg kwoty.
+      <h2 style="margin-top: 2.5rem">Najwyższe rozliczenia — miesięczne i roczne</h2>
+      <p class="muted" style="max-width: 74ch; margin-top: 0.5rem">
+        Dwie miary tej samej rzeczy: wypłata <strong>za miesiąc</strong> i łączne rozliczenie
+        <strong>za rok</strong> — obok siebie, po <strong>dziesięć najwyższych</strong> w każdej
+        kategorii, malejąco wg kwoty. Źródło i kontekst każdej pozycji są schowane w wierszu —
+        rozwiń <strong>„źródło"</strong> przy danym rekordzie.
       </p>
-      <div class="rank">
-        {roczne.map((z, i) => (
-          <div class="rank-row">
-            <span class="rank-i">{i + 1}</span>
-            <div class="rank-main">
-              <div class="rank-top">
-                <span class="rank-label">{z.data.etykieta}</span>
-                <span class="rank-num">{fmt(z.data.kwota)}<span class="rank-unit"> {z.data.jednostka}</span></span>
-              </div>
-              <div class="rank-bar"><div class={`rank-fill${i === 0 ? ' is-top' : ''}`} style={`width:${barW(z.data.kwota, roczne[0].data.kwota)}%`}></div></div>
-              <p class="rank-meta">
-                {z.data.forma && z.data.forma !== '—' && <span class="chip">{z.data.forma}</span>}
-                {z.data.rola && <span class="rank-role">{z.data.rola}</span>}
-                {z.data.region && <span> · {z.data.region}</span>}
-                {z.data.statusFaktu === 'zarzut' && <span class="chip chip-alert">zarzut</span>}
-                <a class="rank-src" href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
-              </p>
-              {z.data.uwaga && <p class="rank-note">{z.data.uwaga}</p>}
-            </div>
+
+      <div class="rk-cols">
+        <div class="rk-col">
+          <h3 class="rk-h">Za miesiąc <span class="rk-unit-h">zł / mies.</span></h3>
+          <div class="table-wrap rk-wrap">
+            <table class="rk">
+              <thead>
+                <tr>
+                  <th class="rk-th-i" scope="col">#</th>
+                  <th scope="col">Kto · region</th>
+                  <th class="rk-th-num" scope="col">kwota</th>
+                </tr>
+              </thead>
+              <tbody>
+                {miesieczneTop.map((z, i) => (
+                  <tr>
+                    <td class="rk-i">{i + 1}</td>
+                    <td class="rk-co">
+                      <span class="rk-role">{z.data.rola || z.data.etykieta}</span>
+                      <span class="rk-reg">
+                        {z.data.region}
+                        {z.data.forma && z.data.forma !== '—' && <span class="chip">{z.data.forma}</span>}
+                        <details class="rk-src">
+                          <summary class="rk-src-sum">źródło</summary>
+                          <span class="rk-src-body">
+                            <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
+                            {z.data.uwaga && <span> — {z.data.uwaga}</span>}
+                          </span>
+                        </details>
+                      </span>
+                    </td>
+                    <td class="rk-kwota">{fmt(z.data.kwota)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
+        </div>
+
+        <div class="rk-col">
+          <h3 class="rk-h">Za rok <span class="rk-unit-h">zł / rok</span></h3>
+          <div class="table-wrap rk-wrap">
+            <table class="rk">
+              <thead>
+                <tr>
+                  <th class="rk-th-i" scope="col">#</th>
+                  <th scope="col">Kto · region</th>
+                  <th class="rk-th-num" scope="col">kwota</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roczneTop.map((z, i) => (
+                  <tr>
+                    <td class="rk-i">{i + 1}</td>
+                    <td class="rk-co">
+                      <span class="rk-role">{z.data.rola || z.data.etykieta}</span>
+                      <span class="rk-reg">
+                        {z.data.region}
+                        {z.data.forma && z.data.forma !== '—' && <span class="chip">{z.data.forma}</span>}
+                        <details class="rk-src">
+                          <summary class="rk-src-sum">źródło</summary>
+                          <span class="rk-src-body">
+                            <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
+                            {z.data.uwaga && <span> — {z.data.uwaga}</span>}
+                          </span>
+                        </details>
+                      </span>
+                    </td>
+                    <td class="rk-kwota">{fmt(z.data.kwota)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <p class="source-note" style="margin-top: 1.5rem">
@@ -379,21 +414,32 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
   .czas-sub { font-size: 0.95rem; color: var(--ink); line-height: 1.55; margin: 0 0 0.5rem; }
   .czas-note { font-size: 0.84rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
 
-  .rank { display: flex; flex-direction: column; margin: 1.1rem 0 0.5rem; }
-  .rank-row { display: flex; gap: 0.9rem; align-items: flex-start; padding: 0.85rem 0; border-bottom: 1px solid var(--line); }
-  .rank-row:last-child { border-bottom: none; }
-  .rank-i { font-family: var(--font-mono); font-size: 0.9rem; color: var(--ink-faint); width: 1.6ch; text-align: right; flex-shrink: 0; padding-top: 0.15rem; }
-  .rank-main { flex: 1; min-width: 0; }
-  .rank-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
-  .rank-label { font-weight: 600; color: var(--ink); font-size: 0.95rem; min-width: 0; }
-  .rank-num { font-family: var(--font-mono); font-weight: 700; color: var(--ink); font-size: clamp(1rem, 3vw, 1.15rem); white-space: nowrap; flex-shrink: 0; }
-  .rank-unit { font-size: 0.72rem; color: var(--ink-faint); font-weight: 400; }
-  .rank-bar { height: 6px; background: var(--paper-2); border-radius: 3px; overflow: hidden; margin: 0.4rem 0; }
-  .rank-fill { height: 100%; background: var(--brand); border-radius: 3px; min-width: 3px; }
-  .rank-meta { font-size: 0.82rem; color: var(--ink-soft); margin: 0; line-height: 1.6; }
-  .rank-role { color: var(--ink-soft); }
-  .rank-src { margin-left: 0.35rem; font-size: 0.8rem; white-space: nowrap; }
-  .rank-note { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.5; margin: 0.3rem 0 0; }
+  .rk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.75rem; margin: 1.25rem 0 0.5rem; align-items: start; }
+  .rk-col { min-width: 0; }
+  .rk-h { font-size: 1rem; margin: 0 0 0.5rem; display: flex; align-items: baseline; gap: 0.5rem; }
+  .rk-unit-h { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 400; color: var(--ink-faint); }
+  .rk-wrap { margin: 0; }
+  .rk { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+  .rk thead th { padding: 0.4rem 0.55rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid var(--line); text-align: left; }
+  .rk thead th.rk-th-num { text-align: right; }
+  .rk thead th.rk-th-i { text-align: right; width: 2ch; }
+  .rk td { padding: 0.5rem 0.55rem; vertical-align: top; border-bottom: 1px solid var(--line); }
+  .rk tbody tr:last-child td { border-bottom: none; }
+  .rk-i { text-align: right; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint); }
+  .rk-role { display: block; color: var(--ink); font-weight: 600; line-height: 1.35; }
+  .rk-reg { display: block; color: var(--ink-soft); font-size: 0.8rem; margin-top: 0.15rem; line-height: 1.4; }
+  .rk-reg .chip { margin-left: 0.35rem; }
+  .rk-kwota { text-align: right; white-space: nowrap; font-family: var(--font-mono); font-weight: 700; color: var(--ink); font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+  .rk-src { display: inline; }
+  .rk-src-sum { display: inline; cursor: pointer; list-style: none; color: var(--brand); font-weight: 600; white-space: nowrap; margin-left: 0.4rem; }
+  .rk-src-sum::-webkit-details-marker { display: none; }
+  .rk-src-sum::before { content: "▸ "; font-size: 0.85em; }
+  .rk-src[open] .rk-src-sum::before { content: "▾ "; }
+  .rk-src-sum:hover, .rk-src-sum:focus-visible { text-decoration: underline; }
+  .rk-src-body { display: none; margin-top: 0.35rem; color: var(--ink-soft); line-height: 1.5; }
+  .rk-src[open] .rk-src-body { display: block; }
+  .rk-src-body a { font-weight: 400; }
+  @media (max-width: 720px) { .rk-cols { grid-template-columns: 1fr; gap: 2.25rem; } }
   .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
   .woj { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.9rem; }
   .woj thead th { padding: 0.5rem 0.7rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; border-bottom: 2px solid var(--line); text-align: right; }

@@ -186,6 +186,15 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
             <li>Wybierz <strong>„Podpisz i wyślij”</strong> i zachowaj UPP.</li>
           </ol>
 
+          <div class="gov-note">
+            <strong>Treść nie mieści się w polu „Treść pisma”?</strong> Docierają do nas takie
+            sygnały — formularz gov.pl bywa ograniczony i może uciąć dłuższą wiadomość. W takim
+            wypadku najprościej kliknij wyżej <strong>„Drukuj” → „Ministerstwa Zdrowia”</strong>,
+            w oknie drukowania wybierz <strong>„Zapisz jako PDF”</strong> i dołącz ten plik do
+            pisma jako <strong>załącznik</strong>. W polu „Treść pisma” wystarczy wtedy krótka
+            adnotacja, np. „Petycja w załączniku”.
+          </div>
+
           <details class="gov-walk">
             <summary>Pokaż krok po kroku (zrzuty ekranu)</summary>
             <ol class="gov-steps">
@@ -453,6 +462,10 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
   .senat-opt { margin: 0.85rem 0 0; padding-top: 0.9rem; border-top: 1px dashed var(--line); font-size: 0.93rem; color: var(--ink-soft); line-height: 1.55; }
   .senat-note { margin: 1rem 0 0; padding: 0.9rem 1.15rem; background: var(--brand-50); border-left: 4px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.95rem; color: var(--ink); line-height: 1.55; }
 
+  /* Uwaga: treść nie mieści się w polu „Treść pisma” (gov.pl) → wydruk PDF w załączniku */
+  .gov-note { margin: 1rem 0 0; padding: 0.85rem 1.1rem; background: var(--paper-2); border: 1px solid var(--line); border-left: 4px solid var(--ink-faint); border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.92rem; color: var(--ink); line-height: 1.6; }
+  .gov-note strong { color: var(--ink); }
+
   /* Walkthrough gov.pl (zrzuty ekranu) */
   .gov-walk { margin: 1rem 0 0; }
   .gov-walk > summary { cursor: pointer; font-weight: 600; color: var(--brand); list-style: none; padding: 0.35rem 0; }
@@ -508,15 +521,29 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
   }
 </style>
 
-<!-- Druk: globalna reguła, bo #petbody pochodzi z komponentu (inny scope) -->
+<!-- Druk: globalna reguła, bo #petbody pochodzi z komponentu (inny scope).
+     Skrypt na czas wydruku przenosi pismo (#petbody) bezpośrednio pod <body>, więc
+     wystarczy schować pozostałe dzieci <body> i pozwolić pismu płynąć NORMALNIE:
+     od góry pierwszej strony, pełną szerokością i z paginacją na kolejne strony.
+     (Wcześniej pismo było pozycjonowane bezwzględnie wewnątrz wąskiej kolumny treści,
+     stąd pusta pierwsza strona i zawężone pismo.) -->
 <style is:global>
+  /* Margines pisma urzędowego wymuszony DWUTOROWO, by był widoczny niezależnie od
+     ustawień okna druku:
+     • górny/dolny — z @page (repetuje się na każdej stronie wielostronicowego pisma);
+     • lewy/prawy — z paddingu .print-target (padding jest wewnątrz obszaru druku, więc
+       działa nawet gdy w oknie druku wybrano „Marginesy: brak/minimalne”, które zerują @page).
+     Rozdzielenie osi (padding tylko 0 2cm, @page tylko 2cm 0) zapobiega podwojeniu. */
+  @page { margin: 2cm 0; }
   @media print {
-    body.printing * { visibility: hidden !important; }
-    body.printing .print-target, body.printing .print-target * { visibility: visible !important; }
+    body.printing > *:not(.print-target) { display: none !important; }
     body.printing .print-target {
-      position: absolute; left: 0; top: 0; width: 100%;
+      display: block !important;
+      margin: 0 !important; padding: 0 2cm !important;
       max-height: none !important; overflow: visible !important;
-      font-size: 12pt; line-height: 1.5; color: #000; white-space: pre-wrap;
+      background: none !important; border: none !important;
+      font-size: 12pt; line-height: 1.5; color: #000;
+      white-space: pre-wrap; word-break: break-word;
     }
   }
 </style>
@@ -650,11 +677,22 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
             miej + ', dnia ' + data + ' r.\n\n' +
             'Adresat:\n' + ADRESACI_BLOK[kto].join('\n') + '\n\n' +
             build('druk');
+          // Wyciągamy pismo bezpośrednio pod <body>, żeby drukowało się w NORMALNYM
+          // przepływie (od góry 1. strony, pełną szerokością, z paginacją) — a nie jako
+          // element pozycjonowany wewnątrz wąskiej kolumny treści. Znacznik trzyma
+          // pierwotne miejsce, by po wydruku wstawić pismo z powrotem.
+          var slot = document.createComment('petbody-slot');
+          bodyEl.parentNode.insertBefore(slot, bodyEl);
+          document.body.appendChild(bodyEl);
           bodyEl.classList.add('print-target');
           document.body.classList.add('printing');
           var cleanup = function () {
-            bodyEl.classList.remove('print-target');
             document.body.classList.remove('printing');
+            bodyEl.classList.remove('print-target');
+            if (slot.parentNode) {
+              slot.parentNode.insertBefore(bodyEl, slot);
+              slot.parentNode.removeChild(slot);
+            }
             window.removeEventListener('afterprint', cleanup);
             fill(); // przywróć widok ekranowy (kanał elektroniczny)
             choiceEl.hidden = true;

@@ -19,6 +19,15 @@ const TOP = 10;
 const miesieczneTop = miesieczne.slice(0, TOP);
 const roczneTop = roczne.slice(0, TOP);
 
+// Scalona tabela: najpierw roczne (największe kwoty), potem miesięczne. Numer liczony
+// w OBRĘBIE okresu (rok 1–10, mies 1–10) — wspólny ranking 1–20 fałszywie zaniżałby
+// stawki miesięczne (316 tys./mies to wyższa stawka niż 1,2 mln/rok). `boundary` = pierwszy
+// wiersz miesięczny (wyraźna granica bloku).
+const rekordyMerged = [
+  ...roczneTop.map((z, idx) => ({ z, nr: idx + 1, okres: 'rok', boundary: false })),
+  ...miesieczneTop.map((z, idx) => ({ z, nr: idx + 1, okres: 'mies.', boundary: idx === 0 })),
+];
+
 const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
 
 // Trójka „skala" — najwyższy udokumentowany rekord w każdej jednostce czasu (dzień/miesiąc/rok).
@@ -117,86 +126,47 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
 
       <h2 style="margin-top: 2.5rem">Najwyższe rozliczenia — miesięczne i roczne</h2>
       <p class="muted" style="max-width: 74ch; margin-top: 0.5rem">
-        Dwie miary tej samej rzeczy: wypłata <strong>za miesiąc</strong> i łączne rozliczenie
-        <strong>za rok</strong> — obok siebie, po <strong>dziesięć najwyższych</strong> w każdej
-        kategorii, malejąco wg kwoty. Źródło i kontekst każdej pozycji są schowane w wierszu —
-        rozwiń <strong>„źródło"</strong> przy danym rekordzie.
+        Najwyższe rozliczenia w jednej tabeli — po <strong>dziesięć</strong> za rok i za miesiąc,
+        malejąco wg kwoty; kolumna <strong>„okres"</strong> mówi, czy to wypłata za rok, czy za
+        miesiąc. Numer liczymy w obrębie okresu (wspólny ranking mieszałby stawki — 316 tys./mies
+        to więcej niż 1,2 mln/rok). Źródło i kontekst każdej pozycji są schowane w wierszu —
+        rozwiń <strong>„źródło"</strong>.
       </p>
 
-      <div class="rk-cols">
-        <div class="rk-col">
-          <h3 class="rk-h">Za miesiąc <span class="rk-unit-h">zł / mies.</span></h3>
-          <div class="table-wrap rk-wrap">
-            <table class="rk">
-              <thead>
-                <tr>
-                  <th class="rk-th-i" scope="col">#</th>
-                  <th scope="col">Kto · region</th>
-                  <th class="rk-th-num" scope="col">kwota</th>
-                </tr>
-              </thead>
-              <tbody>
-                {miesieczneTop.map((z, i) => (
-                  <tr>
-                    <td class="rk-i">{i + 1}</td>
-                    <td class="rk-co">
-                      <span class="rk-role">{z.data.rola || z.data.etykieta}</span>
-                      <span class="rk-reg">
-                        {z.data.region}
-                        {z.data.forma && z.data.forma !== '—' && <span class="chip">{z.data.forma}</span>}
-                        <details class="rk-src">
-                          <summary class="rk-src-sum">źródło</summary>
-                          <span class="rk-src-body">
-                            <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
-                            {z.data.uwaga && <span> — {z.data.uwaga}</span>}
-                          </span>
-                        </details>
+      <div class="table-wrap rk-wrap">
+        <table class="rk rk-merged">
+          <thead>
+            <tr>
+              <th class="rk-th-i" scope="col">#</th>
+              <th scope="col">Kto · region</th>
+              <th class="rk-th-num" scope="col">kwota</th>
+              <th class="rk-th-okres" scope="col">okres</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rekordyMerged.map((r) => (
+              <tr class={r.boundary ? 'rk-boundary' : undefined}>
+                <td class="rk-i">{r.nr}</td>
+                <td class="rk-co">
+                  <span class="rk-role">{r.z.data.rola || r.z.data.etykieta}</span>
+                  <span class="rk-reg">
+                    {r.z.data.region}
+                    {r.z.data.forma && r.z.data.forma !== '—' && <span class="chip">{r.z.data.forma}</span>}
+                    <details class="rk-src">
+                      <summary class="rk-src-sum">źródło</summary>
+                      <span class="rk-src-body">
+                        <a href={r.z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{r.z.data.zrodloNazwa}</a>
+                        {r.z.data.uwaga && <span> — {r.z.data.uwaga}</span>}
                       </span>
-                    </td>
-                    <td class="rk-kwota">{fmt(z.data.kwota)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="rk-col">
-          <h3 class="rk-h">Za rok <span class="rk-unit-h">zł / rok</span></h3>
-          <div class="table-wrap rk-wrap">
-            <table class="rk">
-              <thead>
-                <tr>
-                  <th class="rk-th-i" scope="col">#</th>
-                  <th scope="col">Kto · region</th>
-                  <th class="rk-th-num" scope="col">kwota</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roczneTop.map((z, i) => (
-                  <tr>
-                    <td class="rk-i">{i + 1}</td>
-                    <td class="rk-co">
-                      <span class="rk-role">{z.data.rola || z.data.etykieta}</span>
-                      <span class="rk-reg">
-                        {z.data.region}
-                        {z.data.forma && z.data.forma !== '—' && <span class="chip">{z.data.forma}</span>}
-                        <details class="rk-src">
-                          <summary class="rk-src-sum">źródło</summary>
-                          <span class="rk-src-body">
-                            <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
-                            {z.data.uwaga && <span> — {z.data.uwaga}</span>}
-                          </span>
-                        </details>
-                      </span>
-                    </td>
-                    <td class="rk-kwota">{fmt(z.data.kwota)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    </details>
+                  </span>
+                </td>
+                <td class="rk-kwota">{fmt(r.z.data.kwota)}</td>
+                <td class="rk-okres"><span class={`rk-okres-badge rk-okres-${r.okres === 'rok' ? 'rok' : 'mies'}`}>{r.okres}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <p class="source-note" style="margin-top: 1.5rem">
@@ -414,15 +384,13 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
   .czas-sub { font-size: 0.95rem; color: var(--ink); line-height: 1.55; margin: 0 0 0.5rem; }
   .czas-note { font-size: 0.84rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
 
-  .rk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.75rem; margin: 1.25rem 0 0.5rem; align-items: start; }
-  .rk-col { min-width: 0; }
-  .rk-h { font-size: 1rem; margin: 0 0 0.5rem; display: flex; align-items: baseline; gap: 0.5rem; }
-  .rk-unit-h { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 400; color: var(--ink-faint); }
-  .rk-wrap { margin: 0; }
+  .rk-wrap { margin: 1.25rem 0 0.5rem; }
   .rk { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+  .rk-merged { min-width: 420px; }
   .rk thead th { padding: 0.4rem 0.55rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid var(--line); text-align: left; }
   .rk thead th.rk-th-num { text-align: right; }
   .rk thead th.rk-th-i { text-align: right; width: 2ch; }
+  .rk thead th.rk-th-okres { text-align: center; width: 3.5rem; }
   .rk td { padding: 0.5rem 0.55rem; vertical-align: top; border-bottom: 1px solid var(--line); }
   .rk tbody tr:last-child td { border-bottom: none; }
   .rk-i { text-align: right; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint); }
@@ -439,7 +407,11 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
   .rk-src-body { display: none; margin-top: 0.35rem; color: var(--ink-soft); line-height: 1.5; }
   .rk-src[open] .rk-src-body { display: block; }
   .rk-src-body a { font-weight: 400; }
-  @media (max-width: 720px) { .rk-cols { grid-template-columns: 1fr; gap: 2.25rem; } }
+  .rk-okres { text-align: center; white-space: nowrap; }
+  .rk-okres-badge { display: inline-block; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--paper-2); }
+  .rk-okres-rok { color: var(--brand); }
+  .rk-okres-mies { color: var(--ink-soft); }
+  .rk-boundary td { border-top: 2px solid var(--ink-faint); }
   .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
   .woj { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.9rem; }
   .woj thead th { padding: 0.5rem 0.7rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; border-bottom: 2px solid var(--line); text-align: right; }

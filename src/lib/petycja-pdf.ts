@@ -88,9 +88,9 @@ export function buildFilledPetycjaPdf(jsPDFCtor: any, fonts: Fonts, d: PetycjaPd
     cur.y += h + gap * size;
   };
 
-  // — NAGŁÓWEK: data (kropkowana) + adresat, do prawej —
+  // — NAGŁÓWEK: miejscowość + data, adresat — do prawej —
   set('normal', 10, COL.soft);
-  doc.text('……………………………, dnia ' + d.data + ' r.', A4.w - M.right, cur.y, { baseline: 'top', align: 'right' });
+  doc.text(d.miejscowosc + ', dnia ' + d.data + ' r.', A4.w - M.right, cur.y, { baseline: 'top', align: 'right' });
   cur.y += heightOf(1, 10) + 8;
   ADRESACI[d.adresat].blok.forEach((line, i) => {
     set(i === 0 ? 'bold' : 'normal', 10.5, COL.ink);
@@ -147,10 +147,12 @@ export function buildFilledPetycjaPdf(jsPDFCtor: any, fonts: Fonts, d: PetycjaPd
       (b.body as string[]).forEach((line, i) =>
         block(fill(line), { align: 'justify', gap: i < b.body.length - 1 ? 0.35 : 0.7 }));
     } else if (b.kind === 'sign') {
+      // Miejscowość jest już w nagłówku (linia daty) — pod podpisem zostaje samo imię.
       cur.y += 1.2 * 10.5;
-      block(fill(b.lines[0]), { gap: 1.4 });
-      (b.lines as string[]).slice(1).forEach((line) =>
-        block(fill(line), { align: 'right', gap: 0.5 }));
+      block(fill(b.lines[0]), { align: 'right', gap: 1.4 });
+      (b.lines as string[]).slice(1)
+        .filter((line) => line.trim() !== '{{MIEJSCOWOSC}}')
+        .forEach((line) => block(fill(line), { align: 'right', gap: 0.5 }));
     } else if (b.kind === 'foot') {
       cur.y += 1.2 * 9;
       ensure(24);

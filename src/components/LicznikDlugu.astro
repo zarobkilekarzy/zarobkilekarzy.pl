@@ -1,0 +1,373 @@
+---
+// Licznik długu szpitali — „puls długu" w naszej, uczciwej wersji + oś czasu 2020–2035.
+//
+// Mechanika (jak u innych „liczników długu"): dług = baza + sekundy_od_daty × tempo,
+// odświeżane kilkadziesiąt razy na sekundę → efekt tykającego licznika. RÓŻNICA wobec
+// kalek: KAŻDA liczba w formule jest zacytowana, całość jawnie oznaczona jako PROJEKCJA
+// (szacunek), zero suwaków-teatru i zero „okrągłego” tempa dobranego wstecz.
+//
+// PUŁAPKA MIAR (obsłużona uczciwie): istnieją dwie miary długu i NIE wolno ich mieszać:
+//  • „zobowiązania ogółem SPZOZ” — jedyny spójny szereg MZ sięgający 2020 r.
+//    (16,6 mld 2020 → 30,2 mld I kw. 2026);
+//  • dług SZEROKI 562 placówek (SPZOZ + spółki + instytuty) — 34 mld (2025), ~37 mld (2026);
+//    szereg rok-po-roku dla tej miary NIE ISTNIEJE przed 2025.
+// Licznik chodzi na mierze SZEROKIEJ (spójnie z resztą serwisu). Oś czasu pokazuje realny
+// szereg SPZOZ jako ciemny segment (ciągła trajektoria, bez fałszywego skoku), a spółki +
+// instytuty jako jasny segment dokładany OD 2025 (gdy pojawia się szacunek 562 placówek).
+// Wierzchołek 2026 = 37 mld = to, co tyka licznik. Od 2027 — projekcja.
+//
+// Kalibracja (źródła: Rynek Zdrowia [seria SPZOZ], Rzeczpospolita, Polityka Zdrowotna,
+// NBP [projekcja inflacji lipiec 2026], GUS [kategoria „zdrowie”], AOTMiT [koszt podwyżek]):
+//  • baza 37 mld zł @ I kw. 2026 (dług szeroki 562 placówek);
+//  • tempo ZŁOŻONE ~10%/rok = obserwowany CAGR długu SPZOZ 2020→2025 (~10,2%). Na tempo
+//    składają się gł.: inflacja kosztowa OZ (~5%/rok, „zdrowie” GUS ≈2× CPI) + ustawowe
+//    podwyżki płac (9,25 mld zł/2026, AOTMiT), których NFZ nie pokrywa w całości;
+//  • linia REALNA (ceny 2026) deflowana CPI NBP (~2,7%) — pokazuje, ile z nominalnego
+//    wzrostu to sama inflacja; projekcja to jawnie WŁASNA ekstrapolacja (brak cudzej);
+//  • udział wymagalnych ~14,5% — 4,9 mld / 34 mld (2025); „na Polaka” — dług / 37,6 mln.
+//
+// A11y: przy prefers-reduced-motion NIE animujemy — statyczny snapshot na moment wczytania.
+// Wykres to statyczny SVG (build-time); tyka tylko wielka liczba. Czysty front, zero backendu.
+
+interface Props {
+  /** Wariant zwarty do osadzenia w gęstym module. */
+  compact?: boolean;
+  /** Ukryj oś czasu (gdy używana osobno na stronie). */
+  bezOsi?: boolean;
+}
+const { compact = false, bezOsi = false } = Astro.props;
+
+// — Stałe modelu (jedno źródło prawdy; wstrzykiwane do skryptu przez data-*) —
+const BASE_DEBT = 37_000_000_000;         // >37 mld zł, dług szeroki 562 placówek po I kw. 2026
+const BASE_DATE = '2026-03-31T00:00:00';  // koniec I kw. 2026
+// Tempo ZŁOŻONE (procent składany), a nie liniowe. G ≈ obserwowany CAGR długu SPZOZ
+// 2020→2025 (~10,2%/rok). Składa się nań gł.: inflacja kosztowa ochrony zdrowia (~5%/rok,
+// kategoria „zdrowie” GUS ≈ 2× CPI) + ustawowe podwyżki płac (koszt 9,25 mld zł/2026, AOTMiT),
+// których NFZ nie pokrywa w całości. Scenariusz OSTROŻNY (dolny kraniec widełek 10–12%).
+const GROWTH = 0.10;                       // nominalne tempo złożone /rok
+const CPI = 0.027;                         // deflator: ścieżka centralna CPI NBP (lipiec 2026)
+
+// — Dane osi czasu (mld zł) —
+// SPZOZ „zobowiązania ogółem” — realny szereg MZ (za Rynkiem Zdrowia), 2020→I kw. 2026:
+const SPZOZ: Record<number, number> = {
+  2020: 16.6, 2021: 17.7, 2022: 19.4, 2023: 21.6, 2024: 24.2, 2025: 27.0, 2026: 30.2,
+};
+// Spółki kapitałowe + instytuty — znane dopiero od łącznego szacunku 562 placówek:
+const RESZTA: Record<number, number> = { 2025: 7.0, 2026: 6.8 }; // 2025: 4,1+2,9=7,0; 2026: 37−30,2
+const BASE_MLD = BASE_DEBT / 1e9;
+// Lata od bazy (koniec I kw. 2026) do końca roku Y; projekcja składana (nominalna i realna):
+const latOdBazy = (y: number) => (y - 2026) + 0.753;
+const projNom = (y: number) => BASE_MLD * Math.pow(1 + GROWTH, latOdBazy(y));
+const projReal = (y: number) => projNom(y) / Math.pow(1 + CPI, latOdBazy(y));
+
+const LATA = Array.from({ length: 2035 - 2020 + 1 }, (_, i) => 2020 + i);
+type Row = { y: number; spzoz: number; reszta: number; total: number; kind: string };
+const rows: Row[] = LATA.map((y) => {
+  if (y <= 2024) return { y, spzoz: SPZOZ[y], reszta: 0, total: SPZOZ[y], kind: 'hist' };
+  if (y <= 2026) return { y, spzoz: SPZOZ[y], reszta: RESZTA[y], total: SPZOZ[y] + RESZTA[y], kind: 'known' };
+  return { y, spzoz: 0, reszta: 0, total: projNom(y), kind: 'proj' };
+});
+
+// — Geometria SVG —
+const VW = 700, VH = 300;
+const padL = 6, padR = 6, padT = 30, padB = 38;
+const plotW = VW - padL - padR;
+const plotH = VH - padT - padB;
+const yMax = 100;
+const baseY = padT + plotH;
+const yTo = (v: number) => baseY - (v / yMax) * plotH;
+const slot = plotW / rows.length;
+const barW = slot * 0.60;
+const barX = (i: number) => padL + i * slot + (slot - barW) / 2;
+const cx = (i: number) => barX(i) + barW / 2;
+const grid = [0, 25, 50, 75, 100];
+const nom2035 = Math.round(projNom(2035));
+const real2035 = Math.round(projReal(2035)); // do metodologii (nominalnie vs realnie)
+---
+
+<aside
+  class:list={['licznik-dlug', { 'is-compact': compact }]}
+  data-licznik-dlug
+  data-base={BASE_DEBT}
+  data-basedate={BASE_DATE}
+  data-growth={GROWTH}
+>
+  <p class="ld-eyebrow">Licznik na żywo · projekcja</p>
+  {!compact && (
+    <p class="ld-lead">
+      Dług publicznych szpitali <strong>w tej chwili</strong> — szacunek rosnący
+      <strong>procentem składanym</strong> w tempie ostatnich lat. To pieniądz publiczny,
+      którego nikt nie widzi w czasie rzeczywistym:
+    </p>
+  )}
+
+  <p class="ld-total"><span class="ld-total-n" data-ld="total">—</span></p>
+  <p class="ld-rate">rośnie o <strong data-ld="rate">…</strong> zł każdej sekundy</p>
+
+  <div class="ld-grid">
+    <div class="ld-cell">
+      <p class="ld-k">w tym wymagalne <span class="ld-k-sub">(przeterminowane)</span></p>
+      <p class="ld-v" data-ld="matured">—</p>
+    </div>
+    <div class="ld-cell">
+      <p class="ld-k">na każdego Polaka</p>
+      <p class="ld-v" data-ld="capita">—</p>
+    </div>
+    <div class="ld-cell">
+      <p class="ld-k">prognoza na koniec 2026</p>
+      <p class="ld-v" data-ld="eoy">—</p>
+    </div>
+  </div>
+
+  {!bezOsi && (
+    <figure class="ld-chart">
+      <figcaption class="ld-chart-cap">
+        Jak zmienia się dług szpitali: 2020 → 2035 (mld zł) · projekcja procentem składanym
+      </figcaption>
+      <svg viewBox={`0 0 ${VW} ${VH}`} class="ld-svg" role="img"
+        aria-label={`Wykres słupkowy zadłużenia szpitali od 2020 do 2035 roku. Zobowiązania SPZOZ rosną z 16,6 mld zł w 2020 do 30,2 mld zł na początku 2026. Z dodatkiem spółek i instytutów dług 562 placówek to 34 mld zł w 2025 i około 37 mld zł w 2026. Projekcja procentem składanym około 10 procent rocznie sięga około ${nom2035} mld zł w 2035 roku.`}>
+        <defs>
+          <pattern id="ld-hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <rect width="6" height="6" class="ld-hatch-bg" />
+            <line x1="0" y1="0" x2="0" y2="6" class="ld-hatch-line" />
+          </pattern>
+        </defs>
+
+        {grid.map((g) => (
+          <g>
+            <line x1={padL} y1={yTo(g)} x2={VW - padR} y2={yTo(g)} class="ld-gridline" />
+            <text x={padL + 2} y={yTo(g) - 3} class="ld-grid-lab">{g === 0 ? '0' : g}</text>
+          </g>
+        ))}
+
+        {rows.map((r, i) => (
+          <g>
+            {r.kind === 'proj' ? (
+              <rect x={barX(i)} y={yTo(r.total)} width={barW} height={baseY - yTo(r.total)} class="ld-bar-proj" />
+            ) : (
+              <>
+                <rect x={barX(i)} y={yTo(r.spzoz)} width={barW} height={baseY - yTo(r.spzoz)} class="ld-bar-spzoz" />
+                {r.reszta > 0 && (
+                  <rect x={barX(i)} y={yTo(r.spzoz + r.reszta)} width={barW} height={yTo(r.spzoz) - yTo(r.spzoz + r.reszta)} class="ld-bar-reszta" />
+                )}
+              </>
+            )}
+          </g>
+        ))}
+
+        {/* Etykiety wartości na kluczowych słupkach */}
+        <text x={cx(0)} y={yTo(rows[0].total) - 5} class="ld-val-lab">16,6</text>
+        <text x={cx(5)} y={yTo(rows[5].total) - 5} class="ld-val-lab">34</text>
+        <text x={cx(6)} y={yTo(rows[6].total) - 5} class="ld-val-lab ld-val-now">37</text>
+        <text x={cx(15)} y={yTo(rows[15].total) - 5} class="ld-val-lab">≈{nom2035}</text>
+
+        {/* Oś X — co 5 lat + „teraz” */}
+        {[0, 5, 10, 15].map((i) => (
+          <text x={cx(i)} y={baseY + 15} class="ld-x-lab">{rows[i].y}</text>
+        ))}
+        <text x={cx(6)} y={baseY + 15} class="ld-x-now">teraz ▲</text>
+      </svg>
+
+      <div class="ld-legend">
+        <span class="ld-lg"><i class="ld-sw ld-sw-spzoz"></i>SPZOZ (dane MZ)</span>
+        <span class="ld-lg"><i class="ld-sw ld-sw-reszta"></i>spółki + instytuty (od 2025)</span>
+        <span class="ld-lg"><i class="ld-sw ld-sw-proj"></i>projekcja (% składany)</span>
+      </div>
+    </figure>
+  )}
+
+  <details class="ld-method">
+    <summary>Skąd te liczby? To szacunek, nie pomiar.</summary>
+    <div class="ld-method-body">
+      <p>
+        To <strong>projekcja</strong>, nie odczyt z żadnego rejestru — bo taki rejestr
+        w czasie rzeczywistym <strong>nie istnieje</strong>. Bazę <strong>37 mld zł</strong>
+        przyjęto po I kw. 2026 (dług <strong>562 placówek</strong>: SPZOZ 30,2 + spółki i
+        instytuty ~6,8 mld). Rośnie <strong>procentem składanym ~10%/rok</strong> — tyle mniej
+        więcej wynosił <strong>rzeczywisty</strong> roczny przyrost długu SPZOZ w latach
+        2020–2025 (CAGR ~10,2%). Udział <strong>wymagalnych</strong> (~14,5%) odpowiada relacji
+        4,9 mld / 34 mld z 2025 r.; „na Polaka” to dług dzielony przez 37,6 mln ludności.
+      </p>
+      <p>
+        <strong>Co napędza to tempo?</strong> Dwa główne czynniki: <strong>inflacja kosztowa
+        ochrony zdrowia</strong> (kategoria „zdrowie” w GUS rosła na początku 2026 r. o ~5%
+        r/r — ok. dwukrotnie szybciej niż CPI) oraz <strong>ustawowe podwyżki płac</strong>
+        (koszt na 2026 r. to <strong>9,25 mld zł</strong> wg AOTMiT), których NFZ nie pokrywa
+        w całości — nieopłacona część wprost powiększa dług. Część tego wzrostu to sama
+        inflacja: z ~{nom2035} mld zł nominalnie w 2035 r. „w dzisiejszych pieniądzach”
+        (ceny 2026, deflacja CPI wg projekcji NBP) zostaje ~{real2035} mld zł.
+      </p>
+      <p>
+        <strong>To scenariusz ostrożny.</strong> W ostatnich kwartałach dług rósł szybciej
+        (I kw. 2026: +18,6% r/r) — gdyby to tempo się utrzymało, w 2035 r. dług przekroczyłby
+        150 mld zł. Przyjmujemy niższe ~10%/rok, bo NBP i analitycy traktują to przyspieszenie
+        jako częściowo przejściowe. To <strong>nasza własna ekstrapolacja</strong> — nie
+        istnieje żadna oficjalna wieloletnia prognoza długu; rządowy program oddłużenia
+        (do 10 mld zł do 2035) został <strong>wycofany</strong>, więc nie zakładamy ulgi.
+      </p>
+      <p>
+        <strong>Oś czasu — uczciwie o miarach:</strong> jedyny spójny szereg MZ sięgający
+        2020 r. to <strong>same SPZOZ</strong> (ciemne słupki: 16,6 mld w 2020 → 30,2 mld
+        w I kw. 2026). Spółki i instytuty (jasny segment) dokładamy dopiero od 2025 r., gdy
+        pojawił się łączny szacunek 562 placówek (34 mld) — wcześniej MZ nie podaje ich
+        w jednym szeregu. Od 2027 r. słupki to <strong>projekcja</strong>, nie dane.
+      </p>
+      <p class="ld-method-src">
+        Źródła:
+        <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Szpitale-tona-w-dlugach-Zadluzenie-siega-blisko-40-mld-zl,286396,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a> (szereg SPZOZ, dług 562 placówek, wymagalne),
+        <a href="https://www.gov.pl/web/zdrowie/zadluzenie-spzoz" target="_blank" rel="noopener noreferrer">MZ</a> (I kw. 2026, +18,6% r/r),
+        <a href="https://nbp.pl/raport-o-inflacji-lipiec-2026/" target="_blank" rel="noopener noreferrer">NBP</a> (projekcja inflacji, lipiec 2026),
+        <a href="https://www.termedia.pl/mz/Na-podwyzki-NFZ-ma-wydac-ponad-9-mld-zl-AOTMiT-publikuje-rekomendacje,68001.html" target="_blank" rel="noopener noreferrer">AOTMiT</a> (9,25 mld zł na podwyżki 2026).
+        Rzeczywisty dług MZ podaje <strong>kwartalnie</strong> — wartość może odbiegać od tej
+        ekstrapolacji. {!compact && (<a href="/dane/zadluzenie-szpitali/">Pełne rozbicie →</a>)}
+      </p>
+    </div>
+  </details>
+</aside>
+
+<script>
+  document.querySelectorAll('[data-licznik-dlug]').forEach((root) => {
+    const ds = (root as HTMLElement).dataset;
+    const BASE_DEBT = Number(ds.base);
+    const BASE_DATE = Date.parse(ds.basedate!);
+    const GROWTH = Number(ds.growth);                       // nominalne tempo złożone /rok
+    const YEAR_MS = 365.25 * 24 * 3600 * 1000;
+    const MATURED_RATIO = 0.145;                            // 4,9 mld / 34 mld (2025)
+    const POPULATION = 37_600_000;
+    const EOY = Date.parse('2026-12-31T23:59:59');
+
+    const zl2 = new Intl.NumberFormat('pl-PL', {
+      style: 'currency', currency: 'PLN', minimumFractionDigits: 2, maximumFractionDigits: 2,
+    });
+    const zl0 = new Intl.NumberFormat('pl-PL', {
+      style: 'currency', currency: 'PLN', maximumFractionDigits: 0,
+    });
+
+    // Procent składany: dług(t) = baza × (1+G)^(lata od bazy).
+    const debtAt = (ms: number) => BASE_DEBT * Math.pow(1 + GROWTH, (ms - BASE_DATE) / YEAR_MS);
+    // Chwilowe tempo (zł/s) rosnącego wykładniczo długu: d/dt = dług × ln(1+G).
+    const ratePerSec = (debt: number) => (debt * Math.log(1 + GROWTH)) / (365.25 * 24 * 3600);
+    const el = (name: string) => root.querySelector<HTMLElement>(`[data-ld="${name}"]`);
+    const totalEl = el('total'), maturedEl = el('matured'), capitaEl = el('capita');
+    const rateEl = el('rate'), eoyEl = el('eoy');
+
+    if (eoyEl) {
+      const eoyMld = debtAt(EOY) / 1_000_000_000;
+      eoyEl.textContent = '≈ ' + eoyMld.toLocaleString('pl-PL', { maximumFractionDigits: 0 }) + ' mld zł';
+    }
+
+    const render = () => {
+      const total = debtAt(Date.now());
+      if (totalEl) totalEl.textContent = zl2.format(total);
+      if (maturedEl) maturedEl.textContent = zl0.format(total * MATURED_RATIO);
+      if (capitaEl) capitaEl.textContent = zl0.format(total / POPULATION);
+      if (rateEl) rateEl.textContent = ratePerSec(total).toFixed(2).replace('.', ',');
+    };
+    render();
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let timer: number | undefined;
+    const start = () => { if (timer == null) timer = window.setInterval(render, 50); };
+    const stop = () => { if (timer != null) { clearInterval(timer); timer = undefined; } };
+    if (!reduce.matches) start();
+    reduce.addEventListener?.('change', (e) => (e.matches ? stop() : start()));
+  });
+</script>
+
+<style>
+  .licznik-dlug {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--alert);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.75rem;
+    margin: 1.5rem 0 0;
+  }
+  .ld-eyebrow {
+    font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--ink-faint); margin: 0 0 0.75rem;
+  }
+  .ld-lead { font-size: 0.98rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 1rem; max-width: 62ch; }
+  .ld-lead :global(strong) { color: var(--ink); font-weight: 600; }
+
+  .ld-total { margin: 0; }
+  .ld-total-n {
+    font-family: var(--font-mono); font-weight: 700;
+    font-size: clamp(2rem, 7vw, 3.25rem);
+    color: var(--alert); line-height: 1.05;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  }
+  .ld-rate { margin: 0.35rem 0 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .ld-rate :global(strong) { font-family: var(--font-mono); color: var(--ink); font-weight: 600; }
+
+  .ld-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+    margin: 1.4rem 0 0; padding-top: 1.25rem; border-top: 1px solid var(--line);
+  }
+  .ld-cell { min-width: 0; }
+  .ld-k { font-size: 0.78rem; color: var(--ink-soft); margin: 0 0 0.3rem; line-height: 1.35; }
+  .ld-k-sub { color: var(--ink-faint); }
+  .ld-v {
+    font-family: var(--font-mono); font-weight: 600; font-size: 1.15rem;
+    color: var(--ink); margin: 0; font-variant-numeric: tabular-nums; line-height: 1.15;
+  }
+
+  /* — Oś czasu — */
+  .ld-chart { margin: 1.5rem 0 0; padding-top: 1.4rem; border-top: 1px solid var(--line); }
+  .ld-chart-cap {
+    font-size: 0.82rem; font-weight: 600; color: var(--ink-soft);
+    margin: 0 0 0.6rem; letter-spacing: 0.01em;
+  }
+  .ld-svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .ld-svg text { font-family: var(--font-sans); }
+  .ld-gridline { stroke: var(--line); stroke-width: 1; }
+  .ld-grid-lab { fill: var(--ink-faint); font-size: 11px; }
+  .ld-bar-spzoz { fill: var(--alert); }
+  .ld-bar-reszta { fill: var(--alert); opacity: 0.34; }
+  .ld-bar-proj { fill: url(#ld-hatch); }
+  .ld-hatch-bg { fill: var(--alert); opacity: 0.06; }
+  .ld-hatch-line { stroke: var(--alert); stroke-width: 1.4; opacity: 0.5; }
+  .ld-val-lab { fill: var(--ink); font-size: 12px; font-weight: 600; text-anchor: middle; }
+  .ld-val-now { fill: var(--alert); }
+  .ld-x-lab { fill: var(--ink-faint); font-size: 11px; text-anchor: middle; }
+  .ld-x-now { fill: var(--alert); font-size: 10px; font-weight: 600; text-anchor: middle; }
+
+  .ld-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; margin: 0.7rem 0 0; }
+  .ld-lg { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.76rem; color: var(--ink-soft); }
+  .ld-sw { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+  .ld-sw-spzoz { background: var(--alert); }
+  .ld-sw-reszta { background: var(--alert); opacity: 0.34; }
+  .ld-sw-proj {
+    background:
+      repeating-linear-gradient(45deg, transparent, transparent 2px,
+        color-mix(in srgb, var(--alert) 50%, transparent) 2px,
+        color-mix(in srgb, var(--alert) 50%, transparent) 3.4px),
+      color-mix(in srgb, var(--alert) 6%, transparent);
+  }
+
+  .ld-method { margin: 1.3rem 0 0; }
+  .ld-method summary {
+    cursor: pointer; font-size: 0.85rem; color: var(--ink-faint);
+    list-style: none; display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .ld-method summary::-webkit-details-marker { display: none; }
+  .ld-method summary::before { content: '▸'; font-size: 0.7em; transition: transform 0.15s; }
+  .ld-method[open] summary::before { transform: rotate(90deg); }
+  .ld-method summary:hover { color: var(--brand); }
+  .ld-method-body { margin-top: 0.7rem; }
+  .ld-method-body p { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.6; margin: 0 0 0.6rem; max-width: 72ch; }
+  .ld-method-body p:last-child { margin-bottom: 0; }
+  .ld-method-body :global(strong) { color: var(--ink); font-weight: 600; }
+  .ld-method-src { color: var(--ink-faint) !important; }
+  .ld-method-src a { color: var(--ink-faint); text-decoration: underline; }
+  .ld-method-src a:hover { color: var(--brand); }
+
+  .licznik-dlug.is-compact { padding: 1.25rem 1.35rem; }
+  .licznik-dlug.is-compact .ld-total-n { font-size: clamp(1.8rem, 6vw, 2.5rem); }
+
+  @media (max-width: 560px) {
+    .ld-grid { grid-template-columns: 1fr; gap: 0.85rem; }
+    .licznik-dlug { padding: 1.25rem 1.15rem; }
+    .ld-val-lab, .ld-grid-lab, .ld-x-lab { font-size: 13px; }
+  }
+</style>

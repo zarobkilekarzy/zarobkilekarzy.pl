@@ -140,6 +140,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Co to jest komin płacowy',
     subtitle: 'Rażąco wysoka płaca jednej osoby, „wystająca” ponad resztę. Ustawa kominowa miała je ścinać — działa jednak tam, gdzie pieniądz i tak widać (jawna pensja na etacie), a jest ślepa na najwyższy komin w ochronie zdrowia: kontrakt sumowany po placówkach.',
   },
+  'analizy/pielegniarstwo-w-polsce': {
+    tag: 'Analiza · Kadry',
+    title: 'Pielęgniarstwo w Polsce: najstarsza kadra systemu',
+    subtitle: 'Średni wiek pielęgniarki to 54 lata, 34% jest już w wieku emerytalnym, a do 2030 r. będzie ich 65%. Wchodzi 6205 rocznie, w wiek emerytalny — nawet 10 tys. Drabina wieku i mechanika nadchodzącego niedoboru.',
+  },
 
   // — Mechanizmy —
   'mechanizmy': {

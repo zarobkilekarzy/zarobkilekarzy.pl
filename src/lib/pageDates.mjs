@@ -21,6 +21,7 @@ export const pageDates = {
   '/analizy/nil-a-kontrakty-lekarskie': '2026-07-09',
   '/analizy/zarobki-dyrektorow-szpitali': '2026-07-08',
   '/analizy/komin-placowy': '2026-07-14',
+  '/analizy/pielegniarstwo-w-polsce': '2026-07-15',
   // Mechanizmy (strony wyjaśniające).
   '/mechanizmy/reglamentacja-dostepu': '2026-07-14',
   '/mechanizmy/kontrakt-vs-etat': '2026-07-14',

@@ -1,0 +1,567 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+
+// ————————————————————————————————————————————————————————————————
+// Analiza kadry pielęgniarskiej. Oś: dramatyczna DRABINA WIEKU i nadchodzący
+// niedobór. Rdzeń redakcyjny: każda liczba ze źródłem, fakt ≠ prognoza (prognozy
+// NIPiP są warunkowe — oznaczamy je wprost), rozróżniamy pomiar od projekcji.
+// UWAGA terminologiczna: pielęgniarki NIE są opisywane przez lekarski „numer PWZ" —
+// identyfikator/rejestr to Centralny Rejestr Pielęgniarek i Położnych (NIPiP).
+// ————————————————————————————————————————————————————————————————
+
+// — Drabina wieku pielęgniarek (dane rejestrowe CRPiP, styczeń 2023; 315 670 osób) —
+// Kolor = „temperatura" niedoboru: czerwień = już w wieku emerytalnym (61+),
+// bursztyn = wejdzie w wiek emerytalny w tej dekadzie (51–60), błękit = młodsi.
+const drabina = [
+  { grupa: '71+ lat', pct: 8.7, kolor: '#8f1d16' },
+  { grupa: '61–70', pct: 25.3, kolor: '#b3261e' },
+  { grupa: '51–60', pct: 31.5, kolor: '#d1892a' },
+  { grupa: '41–50', pct: 18.0, kolor: '#5f86ab' },
+  { grupa: '31–40', pct: 9.2, kolor: '#8fb0cf' },
+  { grupa: '20–30', pct: 7.3, kolor: '#bcd2e6' },
+];
+const pl1 = (n: number) => n.toLocaleString('pl-PL', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+// — Gęstość: praktykujące pielęgniarki na 1000 mieszkańców (OECD HaG / SoHiEU 2025, dane 2023) —
+const gestosc = [
+  { kraj: 'Polska', v: 5.9, kolor: '#b3261e', uwaga: 'jedna z najniższych w UE' },
+  { kraj: 'Średnia UE', v: 8.5, kolor: '#5f86ab', uwaga: 'State of Health in the EU 2025' },
+  { kraj: 'Średnia OECD', v: 9.2, kolor: '#2f7a34', uwaga: 'Health at a Glance 2025' },
+];
+const gMax = 9.2;
+const pct = (v: number, max: number) => Math.round((v / max) * 100);
+
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+---
+
+<BaseLayout
+  title="Pielęgniarstwo w Polsce: drabina wieku i nadchodzący niedobór — zarobkilekarzy.pl"
+  description="Średni wiek polskiej pielęgniarki to 54 lata, 34% jest już w wieku emerytalnym, a do 2030 r. będzie ich 65%. Wchodzi 6205 rocznie, w wiek emerytalny — nawet 10 tys. Do tego gęstość 5,9 na 1000 (najniższa w UE) i starzejące się społeczeństwo. Analiza z danymi NIPiP i OECD — każda liczba ze źródłem."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/analizy/">Analizy</a> · Kadry</p>
+      <h1>Pielęgniarstwo w Polsce: drabina wieku i nadchodzący niedobór</h1>
+      <Aktualizacja />
+      <p class="lead">
+        Pielęgniarki i położne to <strong>najliczniejsza grupa zawodowa</strong> w ochronie
+        zdrowia — i najstarsza. Średni wiek pielęgniarki przekroczył <strong>54 lata</strong>,
+        co trzecia jest już w wieku emerytalnym, a poniżej 40. roku życia jest ich zaledwie
+        <strong>16,5%</strong>. To nie jest problem, który nadejdzie — to problem, który
+        <strong>już trwa</strong> i w tej dekadzie gwałtownie się pogłębi. Oto liczby, drabina
+        wieku i mechanika niedoboru — z danych <strong>NIPiP</strong> i <strong>OECD</strong>.
+      </p>
+
+      <div class="htiles">
+        <div class="htile">
+          <span class="ht-num">54<span class="ht-u"> lata</span></span>
+          <span class="ht-lab">średni wiek pielęgniarki (koniec 2022) — w 2008 było to 44 lata</span>
+        </div>
+        <div class="htile is-hot">
+          <span class="ht-num">34<span class="ht-u"> %</span></span>
+          <span class="ht-lab">pielęgniarek jest <strong>już w wieku emerytalnym</strong> (styczeń 2023)</span>
+        </div>
+        <div class="htile is-hot">
+          <span class="ht-num">65<span class="ht-u"> %</span></span>
+          <span class="ht-lab">tyle będzie w wieku emerytalnym <strong>do 2030 r.</strong> (prognoza NIPiP)</span>
+        </div>
+        <div class="htile">
+          <span class="ht-num">5,9<span class="ht-u"> / 1000</span></span>
+          <span class="ht-lab">pielęgniarek na 1000 mieszkańców — vs 9,2 średniej OECD</span>
+        </div>
+      </div>
+
+      <!-- ————————————————— 1. DRABINA WIEKU ————————————————— -->
+      <div class="prose">
+        <h2>Drabina wieku: piramida, która stoi na głowie</h2>
+        <p>
+          W zdrowym zawodzie młodych jest więcej niż starych — piramida wieku stoi na
+          szerokiej, młodej podstawie. W polskim pielęgniarstwie jest <strong>odwrotnie</strong>.
+          Najliczniejszy rocznik to pielęgniarki <strong>51–60 lat</strong>, tuż za nim —
+          <strong>61–70</strong>. Młode grupy są cienkie. Tak wygląda rozkład wieku pielęgniarek
+          w rejestrze (styczeń 2023):
+        </p>
+      </div>
+
+      <figure class="fig" aria-labelledby="drab-cap">
+        <svg class="drab" viewBox="0 0 680 288" role="img" aria-label="Struktura wieku pielęgniarek w Polsce, styczeń 2023: 20–30 lat 7,3 procent, 31–40 lat 9,2 procent, 41–50 lat 18 procent, 51–60 lat 31,5 procent (grupa najliczniejsza), 61–70 lat 25,3 procent, 71 lat i więcej 8,7 procent. Zaznaczono strefę wieku emerytalnego 60 plus (grupy 61–70 oraz 71 i więcej), obejmującą 34 procent kadry.">
+          <rect x="0" y="8" width="680" height="86" fill="#b3261e" opacity="0.10"></rect>
+          <text x="662" y="30" text-anchor="end" font-size="12" font-weight="700" fill="#b3261e">WIEK EMERYTALNY (60+ lat)</text>
+          <text x="662" y="48" text-anchor="end" font-size="11.5" font-weight="600" fill="#b3261e">już 34% kadry</text>
+          {drabina.map((c, i) => {
+            const y = 16 + i * 44;
+            const w = c.pct * 15;
+            return (
+              <g>
+                <text x="140" y={y + 18} text-anchor="end" font-size="12.5" fill="#41505f">{c.grupa}</text>
+                <rect x="150" y={y} width={w} height="28" rx="3" fill={c.kolor}></rect>
+                <text x={150 + w + 7} y={y + 18} font-size="12.5" font-weight="700" fill="#28313c">{pl1(c.pct).replace(',0', '')}%</text>
+              </g>
+            );
+          })}
+          <line x1="20" y1="96" x2="660" y2="96" stroke="#b3261e" stroke-width="1.75" stroke-dasharray="6 4"></line>
+        </svg>
+        <figcaption id="drab-cap" class="fig-cap">
+          Udział grup wieku wśród 315 670 pielęgniarek w rejestrze. Kolor: <span class="dot" style="background:#b3261e"></span> już w wieku
+          emerytalnym (61+), <span class="dot" style="background:#d1892a"></span> wejdzie weń w tej dekadzie (51–60),
+          <span class="dot" style="background:#8fb0cf"></span> młodsi.
+        </figcaption>
+      </figure>
+
+      <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+        <p>
+          <strong>Trzy odczyty z jednej drabiny.</strong> <strong>34%</strong> pielęgniarek
+          jest już w wieku emerytalnym (grupy 61+ — czerwona strefa na wykresie). Poniżej 40.
+          roku życia jest ich zaledwie <strong>16,5%</strong>. A wszystkie roczniki
+          <strong>od 51. roku życia w górę — 65,5% kadry</strong> — to niemal dokładnie ten sam
+          zbiór, o którym mówi prognoza: <strong>do 2030 r. aż 65%
+          obecnie zatrudnionych pielęgniarek będzie w wieku uprawniającym do emerytury</strong>.
+          Pomiar ze stycznia 2023 i prognoza na 2030 opowiadają jedną historię: pokolenie, które
+          dziś dźwiga system, w tej dekadzie masowo osiągnie wiek emerytalny — a za nim jest
+          cienko.
+        </p>
+      </div>
+      <p class="source-note">
+        Rozkład wieku (stan styczeń 2023, 315 670 pielęgniarek / 41 719 położnych) —
+        <a href="https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf" target="_blank" rel="noopener noreferrer">NIPiP, „Raport o stanie pielęgniarstwa i położnictwa w Polsce”, maj 2023</a> (Wykres 3);
+        kontrola: 7,3+9,2 = 16,5% poniżej 40 lat, 25,3+8,7 = 34,0% w wieku 61+, 51+ = 65,5%.
+        Prognoza „65% w wieku emerytalnym do 2030” —
+        <a href="https://nipip.pl/wp-content/uploads/2022/06/2022_Raport-NIPiP-struktura-wiekowa-kadr.pdf" target="_blank" rel="noopener noreferrer">NIPiP, raport o strukturze wiekowej kadr, 2022</a>,
+        <a href="https://nipip.pl/do-2030-roku-liczba-pielegniarek-i-poloznych-zmniejszy-sie-o-ponad-26-tysiecy-alarmuje-samorzad-zawodowy-informacja-prasowa/" target="_blank" rel="noopener noreferrer">komunikat NIPiP</a>.
+        <strong>Prognoza jest warunkowa</strong> (założenia: emerytura w wieku 60 lat, stały dopływ do zawodu) — oznaczamy ją jako prognozę, nie fakt.
+        Położne są młodsze: ok. 30% w wieku emerytalnym, ale 25,7% poniżej 40. roku życia.
+      </p>
+
+      <!-- ————————————————— 2. ŚREDNI WIEK ROŚNIE ————————————————— -->
+      <div class="prose">
+        <h2>Z 44 do 54 lat: kadra, która się nie odmładza</h2>
+        <p>
+          Drabina wieku nie zawsze tak wyglądała — przechyliła się na naszych oczach. Średni
+          wiek pielęgniarki podniósł się z <strong>44,2 lat (2008)</strong> do
+          <strong>54,1 (2022)</strong>, a prognoza NIPiP na 2030 r. to <strong>57,2</strong>
+          (położne odpowiednio 43,2 → 51,4 → 53,7). Rosnąca średnia to sygnał <strong>słabej
+          odnowy</strong>: w zdrowym zawodzie młodzi wchodzą w miejsce odchodzących i trzymają
+          średnią w ryzach. Tu przez lata wchodziło ich za mało — więc kadra starzeje się
+          „razem ze sobą”, rocznik po roczniku, i wciąż się starzeje.
+        </p>
+        <div class="traj">
+          <div class="traj-pt"><span class="traj-y">2008</span><span class="traj-v">44,2</span></div>
+          <div class="traj-arrow" aria-hidden="true">→</div>
+          <div class="traj-pt"><span class="traj-y">2022</span><span class="traj-v is-hot">54,1</span></div>
+          <div class="traj-arrow" aria-hidden="true">→</div>
+          <div class="traj-pt is-proj"><span class="traj-y">2030 (prognoza)</span><span class="traj-v">57,2</span></div>
+        </div>
+        <p class="source-note">
+          Średni wiek 44,2 (2008) → 54,1 (2022, dane rejestrowe CRPiP) —
+          <a href="https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf" target="_blank" rel="noopener noreferrer">NIPiP 2023</a> (Tabela 3);
+          prognoza 57,2 na 2030 —
+          <a href="https://nipip.pl/do-2030-roku-liczba-pielegniarek-i-poloznych-zmniejszy-sie-o-ponad-26-tysiecy-alarmuje-samorzad-zawodowy-informacja-prasowa/" target="_blank" rel="noopener noreferrer">komunikat NIPiP</a>.
+        </p>
+      </div>
+
+      <!-- ————————————————— 3. JAK CIENKA JEST LINIA ————————————————— -->
+      <div class="prose">
+        <h2>Jak cienka jest już dziś linia — i cieńsza, niż się wydaje</h2>
+        <p>
+          Zanim spojrzymy, dokąd to zmierza, warto zobaczyć punkt startu. Polska ma jeden z
+          <strong>najniższych wskaźników liczby pielęgniarek w całej Unii</strong>: <strong>5,9
+          praktykującej pielęgniarki na 1000 mieszkańców</strong>, przy średniej OECD 9,2 i
+          średniej UE 8,5 (dane 2023). Brakuje nam nie kilku procent — brakuje jednej trzeciej
+          obsady względem europejskiej normy.
+        </p>
+      </div>
+      <figure class="fig" aria-label="Praktykujące pielęgniarki na 1000 mieszkańców w 2023: Polska 5,9, średnia UE 8,5, średnia OECD 9,2.">
+        {gestosc.map((g) => (
+          <div class="cmprow">
+            <div class="cmp-l">
+              <span class="cmp-k">{g.kraj}</span>
+              <span class="cmp-n">{pl1(g.v)}<span class="cmp-u"> /1000</span></span>
+            </div>
+            <div class="cmp-track">
+              <div class="cmp-fill" style={`width:${pct(g.v, gMax)}%; background:${g.kolor}`}></div>
+            </div>
+          </div>
+        ))}
+      </figure>
+      <p class="source-note">
+        Praktykujące (<em>practising</em>) pielęgniarki na 1000 mieszkańców, dane 2023 —
+        <a href="https://www.oecd.org/content/dam/oecd/en/publications/reports/2025/11/health-at-a-glance-2025-country-notes_2f94481e/poland_3e11c239/c3917772-en.pdf" target="_blank" rel="noopener noreferrer">OECD, „Health at a Glance 2025”, nota Polska</a>
+        (5,9 vs OECD 9,2);
+        <a href="https://www.oecd.org/content/dam/oecd/en/publications/reports/2025/12/country-health-profile-2025-country-notes_7e72146d/poland_388161c0/5b674a77-en.pdf" target="_blank" rel="noopener noreferrer">OECD/KE, „State of Health in the EU 2025”, Polska</a>
+        (5,9 vs UE 8,5; „niska liczba lekarzy i pielęgniarek to kluczowe ograniczenie zdolności systemu”).
+        Miara „practising” = pielęgniarki pracujące bezpośrednio z pacjentem; OECD zaznacza, że polski wskaźnik liczy wszystkie kategorie pielęgniarek, więc może być raczej <strong>zawyżony</strong> niż zaniżony.
+      </p>
+
+      <div class="prose">
+        <p>
+          A i ta liczba jest <strong>optymistyczna</strong>. W rejestrze prawa wykonywania
+          zawodu figuruje <strong>333 336 pielęgniarek</strong> (stan 31.12.2025), ale
+          <strong>zatrudnionych jest 243 596</strong> — różnica blisko <strong>90 tysięcy</strong>.
+          Część z nich pracuje za granicą, część już nie pracuje, część rozlicza się w formach,
+          których rejestr nie łapie. „Pielęgniarek w Polsce” jest więc <strong>tyle, co mówi
+          nagłówek — dopóki nie zapytać, ile z nich naprawdę stoi przy łóżku</strong>.
+        </p>
+      </div>
+      <div class="funnel">
+        <div class="fn-row">
+          <div class="fn-bar" style="width:100%"><span>{fmt(333336)}</span></div>
+          <span class="fn-lab">pielęgniarek <strong>w rejestrze</strong> prawa wykonywania zawodu (CRPiP, 31.12.2025)</span>
+        </div>
+        <div class="fn-row">
+          <div class="fn-bar fn-bar-hot" style="width:73.1%"><span>{fmt(243596)}</span></div>
+          <span class="fn-lab"><strong>zatrudnionych</strong> — różnica ~90 tys. to m.in. emigracja, emerytury i formy poza rejestrem zatrudnienia</span>
+        </div>
+      </div>
+      <p class="source-note">
+        Liczba zarejestrowanych i zatrudnionych (31.12.2025): 333 336 pielęgniarek (321 832 kobiet + 11 504 mężczyzn) / 243 596 zatrudnionych; położne 43 965 / 30 682 —
+        <a href="https://nipip.pl/liczba-pielegniarek-poloznych-zarejestrowanych-zatrudnionych/" target="_blank" rel="noopener noreferrer">NIPiP, Centralny Rejestr Pielęgniarek i Położnych</a>.
+        Etykieta „zatrudnione” nie obejmuje czystego B2B ani osób za granicą — luka ~90 tys. nie jest w całości „niepracującymi”.
+      </p>
+
+      <!-- ————————————————— 4. ZASTĘPOWALNOŚĆ POKOLEŃ ————————————————— -->
+      <div class="prose">
+        <h2>Zastępowalność pokoleń: alarm — i uczciwa korekta</h2>
+        <p>
+          Starzejąca się kadra nie jest katastrofą, jeśli na dole napływa dość młodych, by
+          zastąpić odchodzących. Przez lata nie napływało — i stąd alarm. Gdy NIPiP go bił, do
+          zawodu wchodziło ok. <strong>6205 osób rocznie</strong> (średnia 2019–2021), a wiek
+          emerytalny osiągało <strong>8 821–10 101 osób rocznie</strong> (2022–2030). Ale ten
+          obraz się zmienia i trzeba to powiedzieć wprost: <strong>dopływ do zawodu wyraźnie
+          wzrósł</strong> — z 5 969 nowych praw wykonywania zawodu w 2019 r. do
+          <strong>10 152 w 2025 r.</strong>
+        </p>
+      </div>
+      <div class="duo">
+        <div class="duo-cols">
+          <div class="duo-col">
+            <p class="duo-k">Wchodzą do zawodu</p>
+            <p class="duo-v">10 152<span class="duo-per">/rok (2025)</span></p>
+            <p class="duo-d">Nowe prawa wykonywania zawodu (9153 pielęgniarki + 999 położnych). Dopływ rośnie od lat: 5 969 w 2019 → 10 152 w 2025.</p>
+          </div>
+          <div class="duo-col is-out">
+            <p class="duo-k">Osiągają wiek emerytalny</p>
+            <p class="duo-v is-hot">8,8–10,1 tys.<span class="duo-per">/rok</span></p>
+            <p class="duo-d">Tyle pielęgniarek i położnych rocznie nabywa uprawnienia emerytalne w latach 2022–2030.</p>
+          </div>
+        </div>
+        <div class="duo-foot">
+          <p>
+            Alarm NIPiP oparto na modelu z <strong>zamrożonym</strong> dopływem 6205/rok — przy
+            takim założeniu luka zastępowalności rosłaby o <strong>28 889 do 2030 r.</strong> W
+            rzeczywistości dopływ podgonił odpływ: dziś nowych uprawnień jest już ~10 tys.
+            rocznie, mniej więcej tyle, ile osób odchodzi. To realnie dobra wiadomość — ale
+            oznacza <strong>dreptanie w miejscu</strong>. Zastąpienie odchodzących to nie
+            odbudowa: przy najniższej w UE gęstości <strong>5,9</strong>, trzonie kadry idącym
+            masowo na emeryturę do 2030 r. i rosnącym popycie samo utrzymanie stanu to
+            <strong>za mało</strong>.
+          </p>
+        </div>
+      </div>
+      <p class="source-note">
+        Dopływ nowych praw wykonywania zawodu 2019–2025 (5 969 → 10 152; w 2025: 9 153 pielęgniarki + 999 położnych) —
+        <a href="https://nipip.pl/liczba-osob-ktore-uzyskaly-prawo-wykonywania-zawodu/" target="_blank" rel="noopener noreferrer">NIPiP, „Liczba osób, które uzyskały prawo wykonywania zawodu”</a>.
+        Model NIPiP (śr. 2019–2021 = 6205/rok), osoby nabywające uprawnienia emerytalne 8 821–10 101/rok (2022–2030) i wzrost luki o 28 889 do 2030 r. —
+        <a href="https://nipip.pl/wp-content/uploads/2022/06/2022_Raport-NIPiP-struktura-wiekowa-kadr.pdf" target="_blank" rel="noopener noreferrer">NIPiP, raport o strukturze wiekowej kadr, 2022</a>;
+        sam raport zaznacza, że prognoza <strong>nie uwzględnia rosnącej od 2014 r. liczby przyznawanych uprawnień</strong> — dlatego jej „deficyt netto” zawyża realny ubytek.
+      </p>
+
+      <!-- ————————————————— 5. PROGNOZA I ROZBIÓR „26 vs 36 TYS." ————————————————— -->
+      <div class="prose">
+        <h2>Dokąd to zmierza — i skąd dwie różne liczby niedoboru</h2>
+        <p>
+          W debacie krążą dwie liczby: że pielęgniarek ubędzie „ponad <strong>26 tysięcy</strong>”
+          i że „<strong>36 tysięcy</strong>”. Bywają mylone — a mierzą <strong>dwie różne
+          rzeczy</strong>, z dwóch różnych roczników raportów. Rozłóżmy to, bo od tego zależy,
+          czy cytat jest rzetelny:
+        </p>
+        <div class="split">
+          <div class="split-item">
+            <p class="split-n">ponad 26 000</p>
+            <p class="split-d">
+              Skumulowany <strong>ubytek kadry rejestrowej</strong> w latach 2023–2030, przy
+              założeniu stałego dopływu 6205 osób z uprawnieniami rocznie (rośnie z ~2,5 tys.
+              w 2023 do ~3,9 tys. w 2029). Dotyczy pielęgniarek <em>i</em> położnych łącznie.
+            </p>
+            <p class="split-src"><a href="https://nipip.pl/do-2030-roku-liczba-pielegniarek-i-poloznych-zmniejszy-sie-o-ponad-26-tysiecy-alarmuje-samorzad-zawodowy-informacja-prasowa/" target="_blank" rel="noopener noreferrer">NIPiP, raport maj 2023</a></p>
+          </div>
+          <div class="split-item">
+            <p class="split-n">36 293</p>
+            <p class="split-d">
+              Prognozowany <strong>spadek liczby zatrudnionych</strong> pielęgniarek i położnych
+              do 2030 r. (do 2025: −16 761). Inny wskaźnik (zatrudnienie, nie rejestr) i
+              <strong>starszy rocznik</strong> — raport „Katastrofa kadrowa” z 2021 r.
+            </p>
+            <p class="split-src"><a href="https://nipip.pl/raport2021/" target="_blank" rel="noopener noreferrer">NIPiP, raport 2021</a> · <a href="https://pulsmedycyny.pl/medycyna/zdrowie/nipip-liczba-zatrudnionych-pielegniarek-i-poloznych-zmniejszy-sie-do-2030-r-o-363-tys/" target="_blank" rel="noopener noreferrer">Puls Medycyny</a></p>
+          </div>
+        </div>
+        <div class="callout" style="border-left-color: var(--brand)">
+          <p>
+            Obie liczby są prawdziwe — pod warunkiem, że powie się, <strong>co</strong> mierzą.
+            „26 tys.” to ubytek kadry <em>rejestrowej</em>, „36 tys.” to spadek <em>zatrudnienia</em>
+            z wcześniejszego raportu. Istnieje jeszcze trzecia — <strong>28 889</strong> — jako
+            wzrost samej luki zastępowalności do 2030. Podając którąkolwiek, trzeba wskazać
+            wskaźnik i rocznik; inaczej cytat wprowadza w błąd.
+          </p>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- SEKCJE 6–8 (lejek kształcenia / emigracja / podwójne starzenie) —      -->
+      <!-- czekają na zweryfikowane dane z 3 agentów-domykaczy. NIE PUBLIKOWAĆ    -->
+      <!-- przed wypełnieniem twardymi liczbami ze źródłami.                      -->
+      <!-- ===================================================================== -->
+      <!-- ————————————————— 6. LEJEK KSZTAŁCENIA ————————————————— -->
+      <div class="prose">
+        <h2>Czy szkoły to nadrobią? Kran się rozkręca, ale wiadro cieknie</h2>
+        <p>
+          Częściowo już nadrabiają — to druga dobra wiadomość. Pielęgniarstwo przeżywa
+          <strong>boom</strong>: kierunek prowadzi dziś ponad <strong>120 uczelni</strong> (dwie
+          dekady temu — około trzydziestu), a liczba absolwentów studiów licencjackich rośnie z
+          <strong>8 498 (2023)</strong> do <strong>10 757 (2024)</strong>. Co ciekawe,
+          w przeciwieństwie do medycyny <strong>nie ma tu jednego krajowego limitu przyjęć</strong>
+          ustalanego przez ministra — miejsca wyznacza każda uczelnia z osobna, a resort zdrowia
+          daje jedynie akredytację jakościową.
+        </p>
+        <p>
+          Kłopot w tym, że <strong>kran się rozkręca, ale wiadro cieknie</strong>. Z rocznika
+          <strong>2020</strong> — jedynego z wiarygodnie zmierzonym wynikiem — do zawodu weszło
+          ok. <strong>55% absolwentów</strong>; pozostałe <strong>~45% nie podjęło pracy</strong>
+          w publicznej ochronie zdrowia. Nowszego, twardo zmierzonego odsetka brak — w prognozach
+          NIPiP przyjmuje (jako założenie modelowe, nie pomiar), że pracę podejmuje 100%.
+        </p>
+      </div>
+      <div class="funnel">
+        <div class="fn-row">
+          <div class="fn-bar" style="width:100%"><span>4 525</span></div>
+          <span class="fn-lab">absolwentów studiów pielęgniarskich w <strong>2020 r.</strong></span>
+        </div>
+        <div class="fn-row">
+          <div class="fn-bar fn-bar-hot" style="width:55.3%"><span>~2 504</span></div>
+          <span class="fn-lab">uzyskało prawo wykonywania zawodu i podjęło pracę — <strong>~55%</strong>; blisko połowy dyplomów nie trafiło do zawodu</span>
+        </div>
+      </div>
+      <div class="callout" style="border-left-color: var(--brand)">
+        <p>
+          Wejście do zawodu wygląda tu inaczej niż u lekarzy — i warto to dopowiedzieć. Nie ma
+          żadnego centralnego egzaminu państwowego w rodzaju lekarskiego LEK: po dyplomie (co
+          najmniej licencjatu) prawo wykonywania zawodu stwierdza <strong>okręgowa rada
+          pielęgniarek i położnych</strong> na podstawie kompletu dokumentów. Bramką jest więc
+          <strong>ukończenie studiów</strong>, nie egzamin — a największy ubytek następuje
+          <em>po</em> dyplomie, gdy część absolwentów wybiera inną drogę niż praca przy pacjencie
+          w publicznym systemie.
+        </p>
+      </div>
+      <p class="source-note">
+        Ponad 120 uczelni z akredytacją MZ (126 na pielęgniarstwie, 2023) —
+        <a href="https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf" target="_blank" rel="noopener noreferrer">NIPiP 2023</a>;
+        absolwenci I stopnia 8 498 (2023) → 10 757 (2024) —
+        <a href="https://stat.gov.pl/obszary-tematyczne/edukacja/edukacja/szkolnictwo-wyzsze-w-roku-akademickim-20232024,8,10.html" target="_blank" rel="noopener noreferrer">GUS, „Szkolnictwo wyższe”</a>
+        (przeliczenie tablic wg kierunku; absolwentów II stopnia — w większości pielęgniarki już pracujące — nie liczymy jako nowy dopływ);
+        wejście do zawodu ~55% z rocznika 2020 (4 525 absolwentów → ~2 504 z pracą; założenie NIPiP o 100% to model, nie pomiar) —
+        <a href="https://demagog.org.pl/wypowiedzi/ile-wyksztalconych-pielegniarek-nie-podejmuje-pracy-w-zawodzie/" target="_blank" rel="noopener noreferrer">Demagog</a> (za odpowiedzią NIPiP na wniosek o informację publiczną);
+        brak jednego krajowego limitu przyjęć (limit ustala uczelnia; MZ daje akredytację) — Prawo o szkolnictwie wyższym i nauce, art. 70;
+        wejście do zawodu bez egzaminu centralnego (dyplom → prawo wykonywania zawodu z okręgowej rady) — ustawa z 15.07.2011 o zawodach pielęgniarki i położnej.
+      </p>
+
+      <!-- ————————————————— 7. EMIGRACJA ————————————————— -->
+      <div class="prose">
+        <h2>A część tego cienkiego dopływu wyjeżdża</h2>
+        <p>
+          Sześć tysięcy wchodzących rocznie to liczba i tak optymistyczna — bo część z nich
+          nie zostaje w polskim systemie. Ile dokładnie wyjeżdża, <strong>nie wie nikt</strong>,
+          i to samo w sobie jest wymowne. Jedyny ślad, jaki zostawia emigracja, to
+          <strong>zaświadczenia o kwalifikacjach</strong>, które pielęgniarka musi pobrać, by
+          podjąć pracę w innym kraju UE. Od wejścia Polski do Unii okręgowe rady wydały ich
+          <strong>ponad 23 tysiące</strong> (2004–2025) — ze szczytem 1527 w 2015 r. i spadkiem
+          do 230 w 2025 r.
+        </p>
+      </div>
+      <div class="htiles">
+        <div class="htile">
+          <span class="ht-num">23 424</span>
+          <span class="ht-lab">zaświadczenia do pracy w UE wydane pielęgniarkom <strong>2004–2025</strong> — jedyny krajowy ślad emigracji</span>
+        </div>
+        <div class="htile">
+          <span class="ht-num">~64 tys.</span>
+          <span class="ht-lab">urodzonych w Polsce pielęgniarek pracuje w krajach OECD (2020/21) — <strong>3. miejsce na świecie</strong> po Filipinach i Indiach</span>
+        </div>
+        <div class="htile">
+          <span class="ht-num">0</span>
+          <span class="ht-lab">rejestrów mierzących, ile pielęgniarek <strong>faktycznie</strong> wyjechało (NIK, 2016)</span>
+        </div>
+      </div>
+      <div class="callout" style="border-left-color: var(--brand)">
+        <p>
+          <strong>Zaświadczenie to nie to samo, co wyjazd.</strong> Część osób pobiera je „na
+          zapas” i zostaje; część wyjeżdża bez niego (np. do pracy jako opiekun). Kontrola NIK
+          już w 2016 r. stwierdziła, że <strong>Polska nie ma metody monitorowania emigracji
+          kadr medycznych</strong> — liczba zaświadczeń to jedyny, wyłącznie szacunkowy trop.
+          Kraje docelowe: Niemcy, Wielka Brytania, Szwecja, Norwegia, Irlandia. To kolejna
+          luka pomiaru: <strong>państwo nie zna skali własnego drenażu</strong>.
+        </p>
+      </div>
+      <p class="source-note">
+        Zaświadczenia wg roku (suma 2004–2025 = 23 424; szczyt 1527 w 2015; 230 w 2025) —
+        <a href="https://nipip.pl/liczba-zaswiadczen-wydanych-na-potrzeby-uznawania-kwalifikacji-zawodowych/" target="_blank" rel="noopener noreferrer">NIPiP, „Liczba zaświadczeń wydanych na potrzeby uznawania kwalifikacji zawodowych”</a>
+        (od 2023 r. zmieniono zakres liczonych zaświadczeń — porównania rok do roku z tym zastrzeżeniem);
+        niezależnie „ponad 21,8 tys.” za lata 2004–2020 —
+        <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8776200/" target="_blank" rel="noopener noreferrer">Domagała i in., IJERPH 2022</a>.
+        64 tys. urodzonych w Polsce pielęgniarek w OECD (2020/21; miara „foreign-born”, 3. miejsce po Filipinach ~270 tys. i Indiach 120 tys.) —
+        <a href="https://www.oecd.org/en/publications/2025/11/health-at-a-glance-2025_a894f72e/full-report/international-migration-of-nurses_9f4ba769.html" target="_blank" rel="noopener noreferrer">OECD, „Health at a Glance 2025”</a>.
+        Brak krajowej metody pomiaru emigracji — NIK, 2016 (za
+        <a href="https://nursing.com.pl/artykul/polskie-pielegniarki-i-polozne-na-emigracji-liczby-trendy-i-kierunki-6346bf48ddc8512b8534f4cc" target="_blank" rel="noopener noreferrer">nursing.com.pl</a>).
+        Zaświadczenia wydają okręgowe rady pielęgniarek i położnych; identyfikatorem jest prawo wykonywania zawodu pielęgniarki (rejestr NIPiP), nie lekarski numer.
+      </p>
+
+      <!-- ————————————————— 8. PODWÓJNE STARZENIE ————————————————— -->
+      <div class="prose">
+        <h2>Podwójne starzenie: nożyce, które się właśnie zamykają</h2>
+        <p>
+          Kurcząca się kadra w stabilnym społeczeństwie byłaby problemem poważnym, ale
+          liniowym. Tymczasem w tej samej dekadzie, w której <strong>65% pielęgniarek osiąga
+          wiek emerytalny</strong>, gwałtownie rośnie liczba osób, które ich potrzebują. To są
+          nożyce: jedno ostrze — kurcząca się kadra — opada, drugie — starzejące się
+          społeczeństwo — unosi się w górę. Popyt na opiekę rośnie <strong>dokładnie wtedy</strong>,
+          gdy podaż opiekunów spada.
+        </p>
+      </div>
+      <div class="htiles">
+        <div class="htile is-hot">
+          <span class="ht-num">7,7 → 9,9<span class="ht-u"> mln</span></span>
+          <span class="ht-lab">osób <strong>65+</strong> w Polsce: 7,7 mln (2024, 20,6%) → 8,1 mln do 2030 → 9,9 mln (30%) do 2060</span>
+        </div>
+        <div class="htile is-hot">
+          <span class="ht-num">×2<span class="ht-u"> (80+)</span></span>
+          <span class="ht-lab">liczba osób <strong>80+</strong> — najbardziej wymagających opieki — podwoi się: 1,6 mln (2024) → 3,5 mln (2060)</span>
+        </div>
+        <div class="htile">
+          <span class="ht-num">43 → 50<span class="ht-u"> lat</span></span>
+          <span class="ht-lab">mediana wieku Polaka: 43,3 (2024) → ponad 50 (2060) — połowa kraju będzie miała 50+</span>
+        </div>
+      </div>
+      <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+        <p>
+          <strong>Baza opieki jest już za mała — a popyt dopiero rośnie.</strong> Polska ma
+          ok. <strong>151 tys. miejsc</strong> opieki długoterminowej (DPS, ZOL i pokrewne),
+          co pokrywa raptem 5% populacji 75+. By przy prognozowanym wzroście liczby seniorów
+          osiągnąć poziom zbliżony do zachodnioeuropejskiego, trzeba by tę bazę <strong>niemal
+          podwoić</strong> — a opieka bez pielęgniarek nie istnieje. Nożyce zamykają się na
+          pacjencie: <strong>im więcej osób będzie potrzebować opieki, tym mniej będzie rąk,
+          by ją zapewnić</strong>.
+        </p>
+      </div>
+      <p class="source-note">
+        Ludność 65+ 7,7 mln/20,6% (2024, pomiar) i prognoza 8,1 mln (2030) / 9,9 mln, 30% (2060); 80+ ponad 1,6 mln (2024) → 3,5 mln (2060, ×2); mediana wieku 43,3 (2024) → 50,25 (2060) —
+        <a href="https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5468/40/5/1/sytuacja_demograficzna_polski_do_2024.pdf" target="_blank" rel="noopener noreferrer">GUS, „Sytuacja demograficzna Polski do 2024 r.”</a>,
+        <a href="https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5469/12/1/1/prognoza_ludnosci_rezydujacej_dla_polski_na_lata_2023-2060.pdf" target="_blank" rel="noopener noreferrer">GUS, „Prognoza ludności rezydującej 2023–2060”</a>.
+        Baza opieki długoterminowej (151 607 miejsc, 2024; potrzeba ~podwojenia) —
+        <a href="https://www.bgk.pl/files/public/Pliki/Raporty/Opieka_długoterminowa_w_Polsce_raport_BGK_luty_2026.pdf" target="_blank" rel="noopener noreferrer">BGK / KIDO, „Rynek opieki długoterminowej w Polsce”, luty 2026</a> (na danych GUS).
+        Prognozy GUS — scenariusz główny; oznaczamy je jako prognozę, nie fakt.
+      </p>
+
+      <!-- ————————————————— ZAKOŃCZENIE + TIE-IN ————————————————— -->
+      <div class="prose">
+        <h2>Co to znaczy dla pacjenta — i dla nas</h2>
+        <p>
+          Ten serwis pilnuje głównie tego, <strong>dokąd płynie publiczny pieniądz</strong> w
+          ochronie zdrowia. Kadra pielęgniarska to druga strona tej samej monety: <strong>nawet
+          największy budżet nie kupi opieki, jeśli nie ma jej komu wykonać</strong>. A tu akurat
+          jest ważny kontrapunkt do naszej opowieści o niejawnych kontraktach lekarskich —
+          płace pielęgniarek na etacie reguluje <a href="/dane/personel-medyczny/">jawna,
+          ustawowa siatka</a>: tę część systemu <strong>widać</strong>. Problemem nie jest tu
+          tajemnica, lecz <strong>demografia</strong> — i to, jak rozkładamy pieniądz, który
+          mamy.
+        </p>
+        <p>
+          Widzieliśmy już, co się dzieje, gdy alokacja się rozjeżdża: w
+          <a href="/dane/zadluzenie-szpitali/">szpitalu w Kaliszu</a> zaległości wobec
+          <strong>240 pielęgniarek</strong> latami narosły do ~37 mln zł — a w tym samym czasie
+          cztery lekarskie kontrakty pochłaniały ~10 mln zł <strong>rocznie</strong>. Niedobór
+          pielęgniarek i nieprzejrzystość
+          wydawania publicznych pieniędzy to nie są dwa osobne tematy. To ten sam system,
+          oglądany z dwóch stron.
+        </p>
+      </div>
+
+      <p class="pager"><a href="/analizy/">← Wszystkie analizy</a> · <a href="/dane/personel-medyczny/">Zarobki pielęgniarek i innych →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Kafle-uderzenia na wejściu */
+  .htiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem; }
+  .htile { display: flex; flex-direction: column; gap: 0.5rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.2rem 1.3rem; }
+  .htile.is-hot { border-left: 4px solid var(--alert); }
+  .ht-num { font-family: var(--font-mono); font-size: clamp(1.9rem, 5.5vw, 2.5rem); font-weight: 700; color: var(--brand); line-height: 1; }
+  .htile.is-hot .ht-num { color: var(--alert); }
+  .ht-u { font-family: var(--font-sans); font-size: 0.85rem; font-weight: 500; color: var(--ink-faint); }
+  .ht-lab { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.45; }
+
+  /* Wykresy — wspólna oprawa */
+  .fig { margin: 1.25rem 0 0.75rem; }
+  .fig svg { width: 100%; height: auto; display: block; }
+  .fig svg text { font-family: var(--font-sans); }
+  .fig-cap { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.5; margin-top: 0.6rem; }
+  .fig-cap .dot { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: middle; margin: 0 0.1rem 0 0.3rem; }
+
+  /* Trajektoria średniego wieku */
+  .traj { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: 1.25rem 0; }
+  .traj-pt { display: flex; flex-direction: column; gap: 0.25rem; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 0.8rem 1.1rem; min-width: 6rem; }
+  .traj-pt.is-proj { border-style: dashed; }
+  .traj-y { font-size: 0.76rem; color: var(--ink-faint); font-weight: 500; }
+  .traj-v { font-family: var(--font-mono); font-size: 1.7rem; font-weight: 700; color: var(--brand); line-height: 1; }
+  .traj-v.is-hot { color: var(--alert); }
+  .traj-arrow { color: var(--ink-faint); font-size: 1.3rem; }
+
+  /* Porównanie gęstości (poziome słupki) */
+  .cmprow { display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 0.9rem; margin: 0.55rem 0; }
+  .cmp-l { display: flex; flex-direction: column; gap: 0.1rem; }
+  .cmp-k { font-size: 0.9rem; color: var(--ink); font-weight: 500; }
+  .cmp-n { font-family: var(--font-mono); font-weight: 700; color: var(--ink); }
+  .cmp-u { font-family: var(--font-sans); font-size: 0.72rem; font-weight: 500; color: var(--ink-faint); }
+  .cmp-track { background: var(--paper-2); border-radius: var(--radius); height: 26px; overflow: hidden; }
+  .cmp-fill { height: 100%; border-radius: var(--radius); min-width: 3px; }
+  @media (max-width: 520px) { .cmprow { grid-template-columns: 1fr; gap: 0.2rem; } }
+
+  /* Lejek rejestr → zatrudnione */
+  .funnel { display: flex; flex-direction: column; gap: 1rem; margin: 1.25rem 0; max-width: 640px; }
+  .fn-row { display: flex; flex-direction: column; gap: 0.3rem; }
+  .fn-bar { background: var(--brand); color: #fff; font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; padding: 0.45rem 0.8rem; border-radius: var(--radius); text-align: right; box-sizing: border-box; min-width: 6rem; }
+  .fn-bar-hot { background: var(--alert); }
+  .fn-lab { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.45; }
+
+  /* Dwie kolumny: wchodzą vs odchodzą */
+  .duo { margin: 1.25rem 0 0; }
+  .duo-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: stretch; }
+  .duo-col { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.25rem; }
+  .duo-col.is-out { border-left: 4px solid var(--alert); }
+  .duo-k { font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); margin: 0 0 0.5rem; }
+  .duo-v { font-family: var(--font-mono); font-size: clamp(1.7rem, 5vw, 2.3rem); font-weight: 700; color: var(--brand); line-height: 1; margin: 0 0 0.6rem; }
+  .duo-v.is-hot { color: var(--alert); }
+  .duo-per { font-family: var(--font-sans); font-size: 0.85rem; font-weight: 500; color: var(--ink-soft); margin-left: 0.3rem; }
+  .duo-d { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .duo-foot { margin-top: 1rem; padding: 1rem 1.15rem; background: var(--alert-50); border-radius: var(--radius-lg); }
+  .duo-foot p { margin: 0; font-size: 0.92rem; color: var(--ink); line-height: 1.55; }
+  .duo-foot strong { font-weight: 700; }
+  @media (max-width: 560px) { .duo-cols { grid-template-columns: 1fr; } }
+
+  /* Rozbiór dwóch liczb niedoboru */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0; }
+  .split-item { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.2rem; }
+  .split-n { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; color: var(--ink); margin: 0 0 0.5rem; line-height: 1; }
+  .split-d { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.6rem; }
+  .split-d :global(strong) { color: var(--ink); font-weight: 600; }
+  .split-src { font-size: 0.78rem; margin: 0; }
+  @media (max-width: 560px) { .split { grid-template-columns: 1fr; } }
+
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+</style>

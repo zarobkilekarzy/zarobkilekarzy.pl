@@ -28,6 +28,7 @@ export const pageDates = {
   '/mechanizmy/brak-jawnosci': '2026-07-06',
   '/mechanizmy/wieloetatowosc': '2026-07-14',
   '/mechanizmy/rozliczenia-nfz': '2026-07-14',
+  '/mechanizmy/fikcyjne-wizyty': '2026-07-16',
   '/mechanizmy/wycena-swiadczen': '2026-07-10',
   '/mechanizmy/samorzad-nil': '2026-07-07',
   '/mechanizmy/dyzury-i-gotowosc': '2026-07-06',

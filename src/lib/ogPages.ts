@@ -172,6 +172,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Wycena świadczeń: kto ustala, ile płaci NFZ',
     subtitle: 'Niezależną taryfą objęto ~17% wartości świadczeń — resztę ustala sam płatnik. Cena leczenia to decyzja, nie pomiar.',
   },
+  'mechanizmy/fikcyjne-wizyty': {
+    tag: 'Mechanizm',
+    title: 'Wizyty, których nie było',
+    subtitle: 'Płaci się za sprawozdanie leczenia, nie za leczenie. W 2024 r. pacjenci zgłosili blisko 3,5 tys. świadczeń widocznych na IKP — ponad 1600 zasadnych.',
+  },
   'mechanizmy/brak-jawnosci': {
     tag: 'Mechanizm',
     title: 'Brak jawności',

@@ -228,6 +228,23 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
     </main>
     <Footer />
     <script>
+      // Wejście z linku do sekcji (np. udostępnione /mechanizmy/wycena-swiadczen#6-pointa).
+      // `scroll-behavior: smooth` psuje natywny skok do #fragmentu przy ładowaniu strony:
+      // animacja rusza, zanim dojdą fonty i obrazy, gubi cel i strona zostaje na górze
+      // (sprawdzone: z `auto` skacze, ze `smooth` nie). Kotwice mają być klikalnym
+      // adresem sekcji, więc domykamy to jednym skokiem bez animacji, po zbudowaniu DOM.
+      (() => {
+        if (!location.hash) return;
+        let el = null;
+        try {
+          el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+        } catch (e) {
+          return; // niepoprawny %-kod w adresie — nie ma czego szukać
+        }
+        if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+      })();
+    </script>
+    <script>
       // Dostępność przewijalnych tabel (WCAG 2.1.1): kontenery `.table-wrap`
       // z poziomym przewijaniem muszą być osiągalne i przewijalne klawiaturą.
       // Nadajemy fokusowalność + nazwę tylko tym, które faktycznie się przewijają
@@ -235,11 +252,17 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
       (() => {
         const wraps = document.querySelectorAll('.table-wrap');
         if (!wraps.length) return;
+        // Tekst nagłówka bez doklejonego anchora („#") — inaczej wpadłby do nazwy tabeli.
+        const headingText = (h) => {
+          const copy = h.cloneNode(true);
+          copy.querySelectorAll('.hanchor').forEach((a) => a.remove());
+          return copy.textContent.trim();
+        };
         const label = (el) => {
           if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')) return;
           let h = el.previousElementSibling;
           while (h && !/^H[2-6]$/.test(h.tagName)) h = h.previousElementSibling;
-          const cap = h ? h.textContent.trim().slice(0, 70) : 'Tabela z danymi';
+          const cap = h ? headingText(h).slice(0, 70) : 'Tabela z danymi';
           el.setAttribute('aria-label', cap + ' — tabela, przewiń w poziomie');
         };
         const sync = () => {

@@ -25,6 +25,9 @@ interface Props {
   description?: string;
   image?: string;
   noindex?: boolean;
+  /** Czy treść strony ma trafić do indeksu wyszukiwarki (Pagefind). Domyślnie
+   *  jak `!noindex` — strony wewnętrzne, wydruki i sama /szukaj są pomijane. */
+  search?: boolean;
 }
 
 const {
@@ -33,6 +36,7 @@ const {
     'Obywatelska inicjatywa na rzecz jawności publicznych pieniędzy w ochronie zdrowia. Dane, źródła i postulat jawnego rejestru wynagrodzeń lekarzy.',
   image,
   noindex = false,
+  search = !noindex,
 } = Astro.props;
 
 // Obraz OG: jawny `image` z propsów > dynamiczny per-strona (ogPages). Dla tras
@@ -228,7 +232,10 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
   <body>
     <a href="#main" class="skip-link">Przejdź do treści</a>
     <Nav />
-    <main id="main">
+    {/* `data-pagefind-body` wyznacza zakres indeksu wyszukiwarki: tylko treść
+        <main>, bez powtarzanej nawigacji i stopki. Strony niewidoczne w wynikach
+        (noindex, wydruki, /szukaj) atrybutu nie dostają — patrz prop `search`. */}
+    <main id="main"{...(search ? { 'data-pagefind-body': true } : {})}>
       <slot />
     </main>
     <Footer />

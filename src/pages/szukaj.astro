@@ -1,0 +1,110 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Wyszukiwarka całego serwisu na statycznym indeksie Pagefind (budowanym w
+// `astro build` → `integrations/pagefind.mjs`). Zapytania liczone są w
+// przeglądarce z pobranych fragmentów indeksu — nic nie wychodzi na serwer,
+// brak firm trzecich. `noindex`: to strona wyników, nie treść (nie chcemy jej
+// ani w Google, ani we własnym indeksie — patrz prop `search` w BaseLayout).
+---
+
+<BaseLayout
+  title="Szukaj — zarobkilekarzy.pl"
+  description="Przeszukaj cały serwis: dane, analizy, mechanizmy i źródła o jawności wynagrodzeń w ochronie zdrowia."
+  noindex={true}
+>
+  <Fragment slot="head">
+    <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+  </Fragment>
+
+  <section class="section">
+    <div class="container" style="max-width: 760px">
+      <p class="eyebrow">Wyszukiwarka</p>
+      <h1>Szukaj w serwisie</h1>
+      <p class="lead">
+        Przeszukaj wszystkie strony — dane, analizy, mechanizmy i słownik pojęć.
+        Wpisz np. <em>kontrakt</em>, <em>PWZ</em>, <em>NFZ</em> albo nazwę miasta.
+      </p>
+
+      <div id="search" class="pf-search"></div>
+
+      <p id="search-fallback" class="muted" hidden>
+        Wyszukiwarka działa na zbudowanej wersji strony. W trybie deweloperskim
+        indeks nie istnieje — uruchom <code>npm run build</code> i podgląd
+        (<code>npm run preview:cf</code>).
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style is:global>
+  /* Motyw Pagefind UI dopasowany do systemu projektowego (granat + IBM Plex).
+     Zmienne dziedziczą do wstrzykiwanego markupu wyszukiwarki. */
+  #search {
+    --pagefind-ui-scale: 0.9;
+    --pagefind-ui-primary: var(--brand);
+    --pagefind-ui-text: var(--ink);
+    --pagefind-ui-background: #fff;
+    --pagefind-ui-border: var(--line-2);
+    --pagefind-ui-tag: var(--paper);
+    --pagefind-ui-border-width: 1px;
+    --pagefind-ui-border-radius: var(--radius);
+    --pagefind-ui-font: var(--font-sans);
+    margin: 1.75rem 0 0.5rem;
+  }
+  /* Focus na polu zgodny z resztą formularzy (granatowy pierścień). */
+  #search .pagefind-ui__search-input:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-50);
+  }
+  /* Tytuły wyników serifem — jak nagłówki treści. */
+  #search .pagefind-ui__result-title {
+    font-family: var(--font-serif);
+  }
+  #search .pagefind-ui__result-link { color: var(--ink); }
+  #search .pagefind-ui__result-link:hover { color: var(--brand); }
+</style>
+
+<script is:inline src="/pagefind/pagefind-ui.js"></script>
+<script is:inline>
+  (function () {
+    var mount = document.getElementById('search');
+    var fallback = document.getElementById('search-fallback');
+    if (!mount) return;
+
+    // Brak indeksu (np. `npm run dev`) → pokaż wskazówkę zamiast pustego miejsca.
+    if (typeof window.PagefindUI === 'undefined') {
+      if (fallback) fallback.hidden = false;
+      return;
+    }
+
+    var ui = new window.PagefindUI({
+      element: '#search',
+      bundlePath: '/pagefind/',
+      showImages: false,
+      showSubResults: true,
+      resetStyles: true,
+      autofocus: true,
+      translations: {
+        placeholder: 'Szukaj w serwisie…',
+        clear_search: 'Wyczyść',
+        load_more: 'Pokaż więcej wyników',
+        search_label: 'Szukaj w serwisie',
+        filters_label: 'Filtry',
+        zero_results: 'Brak wyników dla „[SEARCH_TERM]”',
+        many_results: 'Wyników dla „[SEARCH_TERM]”: [COUNT]',
+        one_result: 'Wynik dla „[SEARCH_TERM]”: [COUNT]',
+        alt_search: 'Brak wyników dla „[SEARCH_TERM]”. Pokazuję wyniki dla „[DIFFERENT_TERM]”',
+        search_suggestion: 'Brak wyników dla „[SEARCH_TERM]”. Spróbuj innej frazy:',
+        searching: 'Szukam „[SEARCH_TERM]”…',
+      },
+    });
+
+    // Prefill z ?q= — pozwala linkować bezpośrednio do wyników.
+    try {
+      var q = new URLSearchParams(location.search).get('q');
+      if (q) ui.triggerSearch(q);
+    } catch (e) {}
+  })();
+</script>

@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import { lastmodFor } from './src/lib/pageDates.mjs';
 import stripHtmlComments from './integrations/strip-html-comments.mjs';
+import pagefindSearch from './integrations/pagefind.mjs';
 
 // Adres produkcyjny — używany do generowania kanonicznych URL i mapy strony.
 export default defineConfig({
@@ -22,6 +23,9 @@ export default defineConfig({
     }),
     // Komentarze z szablonów są robocze — nie trafiają do publikowanego HTML.
     stripHtmlComments(),
+    // Indeks wyszukiwarki (Pagefind) budowany z gotowego, oczyszczonego HTML —
+    // po `stripHtmlComments`, więc indeksuje dokładnie to, co ląduje na produkcji.
+    pagefindSearch(),
   ],
   // Prefetch wbudowany w Astro 5. Bez ClientRoutera trzeba włączyć jawnie —
   // nawigacja artykuły ↔ kategorie ↔ paginacja staje się natychmiastowa.

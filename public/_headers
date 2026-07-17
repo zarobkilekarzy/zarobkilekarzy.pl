@@ -14,12 +14,18 @@
 # widać dopiero na runtime Cloudflare (`preview:cf`/produkcja), bo `astro
 # preview` nie nakłada `_headers` — tam WASM działa i bez tej dyrektywy.
 #
+# Cloudflare Web Analytics (beacon wpięty ręcznie w BaseLayout, nie auto-iniekcja):
+# `https://static.cloudflareinsights.com` w script-src ładuje `beacon.min.js`,
+# a `https://cloudflareinsights.com` w connect-src przyjmuje beacon (tryb ręczny
+# raportuje do cloudflareinsights.com/cdn-cgi/rum, nie do naszej domeny). Bez obu
+# tych wpisów przeglądarka blokuje pomiar — dlatego analityka „przestała działać".
+#
 # HSTS NIE jest tutaj celowo — ustawione strefowo w panelu Cloudflare
 # (SSL/TLS → Edge Certificates → HSTS: 6 mies., includeSubDomains, bez preload).
 # Zone-level HSTS nadpisuje ewentualny nagłówek z `_headers`, więc trzymamy go
 # w jednym miejscu (panel), by nie serwować dwóch/rozjechanych nagłówków STS.
 /*
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https://img.youtube.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; manifest-src 'self'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https://img.youtube.com; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; manifest-src 'self'; upgrade-insecure-requests
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

@@ -192,7 +192,27 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#0f4c81" />
+    <meta name="theme-color" id="theme-color-meta" content="#0f4c81" />
+    {/* Motyw jasny/ciemny ustawiany PRZED pierwszym malowaniem, żeby nie było
+        mignięcia białym (FOUC) przy odświeżeniu w trybie ciemnym. Kolejność:
+        wybór użytkownika z localStorage > preferencja systemu. `is:inline` —
+        Astro nie może tego przenieść/odroczyć; musi wykonać się synchronicznie
+        w <head>. Kolor paska przeglądarki (theme-color) dobierany tak samo. */}
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          if (stored === 'dark' || stored === 'light') {
+            document.documentElement.setAttribute('data-theme', stored);
+          }
+          var dark = stored
+            ? stored === 'dark'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var m = document.getElementById('theme-color-meta');
+          if (m) m.setAttribute('content', dark ? '#0e1622' : '#0f4c81');
+        } catch (e) {}
+      })();
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -227,6 +247,17 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
     {jsonLd.map((schema) => (
       <script type="application/ld+json" set:html={JSON.stringify(schema).replace(/</g, '\\u003c')} />
     ))}
+    {/* Cloudflare Web Analytics — beacon wpięty ręcznie (nie przez auto-iniekcję
+        w panelu, która jest krucha na Pages i cicho się urwała). `is:inline` —
+        Astro renderuje tag dosłownie, nie bundluje. Token jest publiczny z natury
+        (i tak trafia do HTML), więc może siedzieć w repo. Beacon raportuje do
+        `cloudflareinsights.com/cdn-cgi/rum` — stąd wpis w connect-src (_headers). */}
+    <script
+      is:inline
+      type="module"
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "41998160098a4fd3965151cf1b67f440"}'
+    ></script>
     <slot name="head" />
   </head>
   <body>

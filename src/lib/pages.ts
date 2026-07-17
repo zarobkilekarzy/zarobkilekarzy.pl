@@ -258,6 +258,15 @@ export const strony: Record<string, Strona> = {
     opis: 'Rażąco wysoka płaca jednej osoby, „wystająca” ponad resztę jak komin ponad dach. Ustawa kominowa miała je ścinać — działa jednak tam, gdzie pieniądz i tak widać (jawna pensja na etacie), a jest ślepa na najwyższy komin w ochronie zdrowia: kontrakt sumowany po placówkach.',
     tematy: ['jawnosc', 'pieniadz-nfz'],
   },
+  // Poradnik dla pacjenta pod adresem /prawa-pacjenta (poza prefiksem /analizy/),
+  // ale wystawiony na hubie analiz — `dzial` steruje tylko przynależnością do huba,
+  // href karty bierze się z klucza. Oś „jawność": poinformowany pacjent to audyt.
+  '/prawa-pacjenta': {
+    dzial: 'analizy',
+    tytul: 'Prawa pacjenta — i gdzie zgłosić naruszenie',
+    opis: 'Poinformowany pacjent to jedyny codzienny audyt systemu. Co gwarantuje Ci ustawa, ile masz czasu i pod jaki numer zadzwonić — prawa, terminy i kanały zgłoszeń, każda pozycja z artykułem ustawy.',
+    tematy: ['jawnosc'],
+  },
 };
 
 // — Odczyt —

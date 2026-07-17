@@ -17,8 +17,19 @@ const fonts = [
 ];
 
 // Minimalny konstruktor vnode dla satori (bez JSX/satori-html — zero whitespace).
-type Node = { type: string; props: { style: Record<string, unknown>; children?: Node[] | string } };
+type Node = { type: string; props: { style: Record<string, unknown>; children?: Node[] | string; [attr: string]: unknown } };
 const el = (style: Record<string, unknown>, children?: Node[] | string): Node => ({ type: 'div', props: { style, children } });
+
+// Logo — to samo źródło co favicon i znak w nawigacji (public/favicon.svg). Satori nie
+// renderuje inline SVG jako drzewa vnode, więc plik wchodzi jako <img> z data URI.
+// Granatowe tło znaku (#0f4c81) ginie na granacie karty (#14233a), więc na potrzeby OG
+// kwadrat dostaje jaśniejszy błękit — kształt i puls zostają bez zmian.
+const logoSvg = readFileSync('public/favicon.svg', 'utf8').replace('#0f4c81', '#4aa9e0');
+const logoSrc = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString('base64')}`;
+const logo = (size: number, style: Record<string, unknown> = {}): Node => ({
+  type: 'img',
+  props: { src: logoSrc, width: size, height: size, style },
+});
 
 function template(p: OgPage): Node {
   const len = p.title.length;
@@ -27,7 +38,7 @@ function template(p: OgPage): Node {
     { height: '100%', width: '100%', display: 'flex', flexDirection: 'column', background: '#14233a', color: '#ffffff', padding: '70px 72px', fontFamily: 'Plex Sans', borderLeft: '16px solid #b3261e' },
     [
       el({ display: 'flex', alignItems: 'center' }, [
-        el({ width: '26px', height: '26px', background: '#4aa9e0', borderRadius: '6px', marginRight: '16px' }),
+        logo(30, { marginRight: '16px' }),
         el({ fontFamily: 'Plex Mono', fontSize: '27px', color: '#cdd6e0', letterSpacing: '1px' }, 'zarobkilekarzy.pl'),
       ]),
       el({ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'center' }, [

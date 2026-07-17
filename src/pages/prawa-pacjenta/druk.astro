@@ -172,12 +172,20 @@ const gdzie = [
   .arkusz {
     display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center;
     padding: 1.5rem 1rem 3rem;
+    /* Karta ma nienaruszalne 105 mm (≈397 px), czyli więcej niż szerokość telefonu.
+       Przewijamy podgląd wewnątrz jego własnego kontenera — strona jako całość nigdy
+       nie może jechać w poziomie. */
+    overflow-x: auto;
   }
 
   /* Karta w rzeczywistym rozmiarze A6. Milimetry, nie rem — to ma trafić na papier
      1:1, a nie skalować się z ustawieniami przeglądarki. */
   .karta {
     width: 105mm; height: 148mm;
+    /* Karta jest elementem flex, więc bez tego kurczyłaby się poniżej 105 mm na
+       wąskim ekranie (flex-shrink domyślnie 1) i treść by się przelewała. Rozmiar
+       A6 jest nienaruszalny — to podgląd papieru, nie responsywny layout. */
+    flex: 0 0 auto;
     box-sizing: border-box;
     padding: 7mm 7mm 5mm;
     background: #fff;
@@ -243,9 +251,9 @@ const gdzie = [
   }
 
   @media (max-width: 560px) {
-    /* Karta ma stały rozmiar w mm — na wąskim ekranie skalujemy podgląd, żeby nie
-       rozpychał strony w poziomie. */
-    .arkusz { gap: 0.5rem; }
-    .karta { transform: scale(0.85); transform-origin: top center; margin-bottom: -20mm; }
+    /* Bez skalowania: podgląd ma pokazywać papier 1:1, a wąski ekran obsługuje
+       przewijanie kontenera (wyżej). `justify-content` na start, żeby przy przewijaniu
+       nie ucinało lewej krawędzi karty. */
+    .arkusz { gap: 0.75rem; justify-content: flex-start; padding: 1rem 0.75rem 2rem; }
   }
 </style>

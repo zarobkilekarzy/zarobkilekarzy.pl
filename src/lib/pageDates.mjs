@@ -45,6 +45,8 @@ export const pageDates = {
   '/dane/stawki': '2026-07-06',
   '/dane/wedlug-specjalizacji': '2026-07-07',
   '/dane/zadluzenie-szpitali': '2026-07-08',
+  // Dla pacjenta (poradnik — bump przy zmianie stanu prawnego, kwot lub kontaktów).
+  '/prawa-pacjenta': '2026-07-17',
   // Petycja.
   '/petycja': '2026-07-13',
   '/petycja/tresc': '2026-07-13',

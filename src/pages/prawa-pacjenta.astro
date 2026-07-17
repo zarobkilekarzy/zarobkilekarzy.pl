@@ -1,0 +1,465 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ShareRow from '../components/ShareRow.astro';
+import Aktualizacja from '../components/Aktualizacja.astro';
+
+// Prawa pacjenta — jedno źródło zasila widoczną listę <details> i schemat FAQPage
+// (Google wymaga zgodności danych strukturalnych z treścią widoczną na stronie).
+// Pytania sformułowane głosem pacjenta, nie językiem ustawy: człowiek szuka
+// „czy mogę prosić o drugą opinię", a nie „art. 6 ust. 3".
+// Odpowiedzi mogą zawierać proste HTML (linki, <strong>).
+const grupy = [
+  {
+    tytul: 'W gabinecie i w szpitalu',
+    faqs: [
+      {
+        q: 'Lekarz tłumaczy niezrozumiale. Mam prawo dopytać?',
+        a: `Tak. Masz prawo do <strong>przystępnej</strong> informacji o swoim stanie zdrowia, rozpoznaniu, proponowanych metodach leczenia (i tych możliwych do zastosowania), dających się przewidzieć następstwach ich zastosowania albo zaniechania, wynikach leczenia i rokowaniu (<strong>art. 9</strong>). „Przystępna" to słowo z ustawy — informacja ma być zrozumiała dla Ciebie, a nie poprawna dla protokołu. Pacjent, który skończył <strong>16 lat</strong>, ma prawo dostać tę informację samodzielnie. Działa to też w drugą stronę: możesz zażądać, żeby Cię <strong>nie</strong> informowano o określonych sprawach (art. 9 ust. 4).`,
+      },
+      {
+        q: 'Czy mogę prosić o drugą opinię?',
+        a: `Tak — masz prawo żądać, by lekarz zasięgnął opinii <strong>innego lekarza</strong> lub zwołał <strong>konsylium lekarskie</strong> (<strong>art. 6 ust. 3</strong>). Uczciwie o granicy tego prawa: lekarz <strong>może odmówić</strong>, jeśli uzna żądanie za bezzasadne — ale wtedy ma obowiązek <strong>odnotować odmowę w dokumentacji medycznej</strong>. Ten wpis jest istotny: to on zamienia „nie" wypowiedziane w gabinecie w ślad, który da się później sprawdzić.`,
+      },
+      {
+        q: 'Boli mnie. Czy leczenie bólu to moje prawo, czy przysługa?',
+        a: `Prawo — i to zapisane wprost. <strong>Art. 20a</strong>: „Pacjent ma prawo do leczenia bólu". Placówka jest <strong>obowiązana</strong> podejmować działania polegające na <strong>określeniu stopnia natężenia bólu</strong>, <strong>leczeniu bólu</strong> oraz <strong>monitorowaniu skuteczności</strong> tego leczenia. To trzy osobne obowiązki: samo podanie leku bez zmierzenia bólu i sprawdzenia, czy pomogło, nie wyczerpuje przepisu.`,
+      },
+      {
+        q: 'Czy ktoś bliski może być przy mnie podczas badania?',
+        a: `Tak, <strong>na Twoje życzenie</strong> (<strong>art. 21</strong>). Personel może odmówić tylko w dwóch przypadkach: gdy istnieje <strong>prawdopodobieństwo zagrożenia epidemicznego</strong> albo ze względu na <strong>bezpieczeństwo zdrowotne pacjenta</strong> — i musi tę odmowę <strong>odnotować w dokumentacji medycznej</strong>. „Taka mamy zasadę" nie jest żadną z tych dwóch przesłanek.`,
+      },
+      {
+        q: 'Czy muszę zgodzić się na zabieg? Kiedy zgoda musi być na piśmie?',
+        a: `Nie musisz — masz prawo <strong>wyrazić zgodę albo odmówić</strong>, po uzyskaniu informacji z art. 9 (<strong>art. 16</strong>). To dlatego informacja jest wcześniej: zgoda bez informacji nie jest zgodą. Przy <strong>zabiegu operacyjnym</strong> albo metodzie leczenia lub diagnostyki o <strong>podwyższonym ryzyku</strong> zgoda musi być <strong>pisemna</strong> (<strong>art. 18</strong>). Pacjent, który ukończył <strong>16 lat</strong>, ma własne prawo do wyrażenia zgody (<strong>art. 17 ust. 1</strong>) — obok zgody przedstawiciela ustawowego, która jest odrębna (art. 17 ust. 2).`,
+      },
+      {
+        q: 'Szpital każe płacić za pobyt rodzica przy dziecku. Legalnie?',
+        a: `<strong>Nie.</strong> To jeden z najczęściej łamanych przepisów. Zasada ogólna rzeczywiście jest taka, że koszty dodatkowej opieki pielęgnacyjnej ponosi pacjent (art. 35 ust. 1) — <strong>ale art. 35 ust. 4 wprost wyłącza z tej odpłatności</strong> przypadek z <strong>art. 34 ust. 3</strong>: pobyt <strong>przedstawiciela ustawowego albo opiekuna faktycznego</strong> przy pacjencie <strong>małoletnim</strong> lub posiadającym <strong>orzeczenie o znacznym stopniu niepełnosprawności</strong>. Za to szpital <strong>nie ma prawa</strong> pobrać opłaty. Jeśli pobiera — to sprawa dla <a href="#rpp">Rzecznika Praw Pacjenta</a>.`,
+      },
+      {
+        q: 'Nagły przypadek — czy muszę czekać w kolejce?',
+        a: `Nie. <strong>Art. 7</strong>: „Pacjent ma prawo do natychmiastowego udzielenia świadczeń zdrowotnych ze względu na zagrożenie zdrowia lub życia". To prawo działa <strong>niezależnie</strong> od kolejek, list oczekujących i skierowań. Pacjentka <strong>rodząca</strong> ma prawo do natychmiastowych świadczeń związanych z porodem (art. 7 ust. 2).`,
+      },
+    ],
+  },
+  {
+    tytul: 'Twoje dane i dokumenty',
+    faqs: [
+      {
+        q: 'Ile kosztuje kopia mojej dokumentacji medycznej?',
+        a: `<strong>Pierwsza kopia — nic.</strong> Placówka <strong>nie pobiera opłaty</strong> za udostępnienie dokumentacji pacjentowi (albo jego przedstawicielowi ustawowemu) <strong>po raz pierwszy w żądanym zakresie</strong> (<strong>art. 28 ust. 2a pkt 1</strong>). Za kolejne kopie tego samego zakresu opłata jest dopuszczalna, ale ustawa nakłada na nią <strong>maksymalne stawki</strong> — placówka nie ustala ceny dowolnie. Warto to znać, bo o darmowej pierwszej kopii w rejestracji zwykle nikt sam nie wspomni.`,
+      },
+      {
+        q: 'Jak długo szpital przechowuje moją dokumentację?',
+        a: `Co do zasady <strong>20 lat</strong> od końca roku kalendarzowego, w którym dokonano ostatniego wpisu (<strong>art. 29</strong>). Wyjątki, które w praktyce decydują o tym, czy zdążysz: <strong>30 lat</strong> — gdy zgon nastąpił wskutek uszkodzenia ciała lub zatrucia; <strong>22 lata</strong> — dokumentacja dzieci do ukończenia 2. roku życia; <strong>10 lat</strong> — zdjęcia rentgenowskie przechowywane poza dokumentacją. Jeśli rozważasz jakiekolwiek kroki, <strong>wystąp o kopię od razu</strong> — dokumentacja jest jedynym dowodem, a Twoje terminy na działanie są krótsze niż terminy jej przechowywania.`,
+      },
+      {
+        q: 'Czy lekarz może powiedzieć o mojej chorobie rodzinie?',
+        a: `Nie — chyba że Ty na to pozwolisz. Personel jest zobowiązany do <strong>zachowania w tajemnicy</strong> informacji związanych z pacjentem, w tym o stanie zdrowia (<strong>art. 13</strong>), i tajemnica ta wiąże <strong>także po Twojej śmierci</strong> (art. 14). To Ty wskazujesz w dokumentacji, kogo <strong>upoważniasz</strong> do informacji i do dokumentacji — i możesz to upoważnienie zmienić lub cofnąć. Warto sprawdzić, co masz tam wpisane: to pole wypełnia się raz, przy przyjęciu, i potem o nim zapomina.`,
+      },
+    ],
+  },
+  {
+    tytul: 'Gdy coś poszło nie tak',
+    faqs: [
+      {
+        q: 'Nie zgadzam się z orzeczeniem lekarza. Co mogę zrobić?',
+        a: `Możesz wnieść <strong>sprzeciw do Komisji Lekarskiej</strong> działającej przy Rzeczniku Praw Pacjenta — składa się go <strong>za pośrednictwem Rzecznika</strong>, nie wprost do Komisji (<strong>art. 31</strong>). Warunek wstępny: opinia albo orzeczenie musi <strong>mieć wpływ na Twoje prawa lub obowiązki wynikające z przepisów prawa</strong>. Trzy rzeczy, na których ten sprzeciw najczęściej przepada, więc zapamiętaj je zawczasu: <strong>(1)</strong> masz <strong>30 dni</strong> od dnia wydania opinii albo orzeczenia — termin jest sztywny; <strong>(2)</strong> sprzeciw <strong>wymaga uzasadnienia</strong>, w tym <strong>wskazania przepisu prawa</strong>, z którego wynikają te prawa lub obowiązki — bez tego zostanie Ci <strong>zwrócony</strong>; <strong>(3)</strong> Komisja orzeka w ciągu <strong>30 dni</strong>, a od jej rozstrzygnięcia <strong>nie przysługuje odwołanie</strong>. To jedno podejście, nie pierwsza instancja.`,
+      },
+      {
+        q: 'W moim IKP widnieje wizyta, której nie było. Co to znaczy?',
+        a: `Że ktoś mógł rozliczyć z NFZ świadczenie, którego Ci nie udzielono — i że jesteś <strong>jedyną osobą spoza układu placówka–NFZ</strong>, która może to zauważyć. W 2024 r. pacjenci zgłosili <strong>blisko 3,5 tys.</strong> takich świadczeń, a <strong>ponad 1600</strong> zgłoszeń Fundusz uznał za <strong>zasadne</strong>. Zgłoszenie robi się w kilka minut, wprost z konta na pacjent.gov.pl. Instrukcja krok po kroku, razem z dwoma fałszywymi alarmami, które warto wykluczyć przed zgłoszeniem: <a href="/mechanizmy/fikcyjne-wizyty/#sprawdz">jak sprawdzić swoje IKP →</a>`,
+      },
+      {
+        q: 'Kazano mi zapłacić za świadczenie, które należy się z NFZ.',
+        a: `Jeśli świadczenie jest <strong>gwarantowane</strong> i finansowane przez NFZ, placówka nie ma prawa żądać za nie zapłaty. To sprawa dla <a href="#nfz">oddziału wojewódzkiego NFZ</a> — <strong>zachowaj paragon lub fakturę</strong>, bo to jest dowód. Zdarza się też odwrotna wersja tego samego problemu: pacjent płaci prywatnie, a placówka <strong>dodatkowo</strong> rozlicza to świadczenie z NFZ. Wtedy to samo zdarzenie ma dwa źródła zapłaty i widać je na <a href="/mechanizmy/fikcyjne-wizyty/">Twoim IKP</a>.`,
+      },
+      {
+        q: 'Czy „komisja wojewódzka ds. zdarzeń medycznych" jeszcze działa?',
+        a: `<strong>Nie — i to ważne, bo starsze poradniki wciąż do niej odsyłają.</strong> Wojewódzkie komisje do spraw orzekania o zdarzeniach medycznych zostały <strong>zlikwidowane 1 lipca 2024 r.</strong> Sprawy niezakończone przejął Rzecznik Praw Pacjenta. W ich miejsce działa <a href="#fkzm"><strong>Fundusz Kompensacyjny Zdarzeń Medycznych</strong></a> przy RPP — z innymi zasadami, innymi terminami i jednym haczykiem, który opisujemy niżej.`,
+      },
+    ],
+  },
+];
+
+// Kanały zgłoszeń — dane kontaktowe i terminy sprawdzone u źródła (lipiec 2026).
+// Kolejność nieprzypadkowa: od tego, co pacjent robi najczęściej i najmniejszym
+// kosztem, do tego, co jest ostatecznością.
+const kanaly = [
+  {
+    id: 'rpp',
+    nazwa: 'Rzecznik Praw Pacjenta',
+    kiedy: 'Naruszono Twoje prawo pacjenta — odmówiono informacji lub dokumentacji, kazano zapłacić za pobyt rodzica przy dziecku, potraktowano Cię bez poszanowania intymności i godności.',
+    meta: [
+      ['Telefon', '<strong>800 190 590</strong> — bezpłatny, <strong>całodobowo, 7 dni w tygodniu</strong>'],
+      ['Z zagranicy', 'Tu oficjalne źródła się rozjeżdżają: <a href="https://www.gov.pl/web/rpp/telefoniczna-informacja-pacjenta" target="_blank" rel="noopener noreferrer">RPP podaje <strong>22 688 05 00</strong></a>, a <a href="https://www.nfz.gov.pl/kontakt/telefoniczna-informacja-pacjenta/" target="_blank" rel="noopener noreferrer">NFZ dla tej samej infolinii — <strong>22 125 66 00</strong></a>. Nie rozstrzygamy, który jest właściwy; jeśli jeden nie odpowiada, spróbuj drugiego'],
+      ['Pisemnie', 'kancelaria@rpp.gov.pl · ePUAP: /RzPP/skrytka · ul. Płocka 11/13, 01-231 Warszawa'],
+      ['Koszt', 'Wniosek jest <strong>wolny od opłat</strong> (art. 50 ust. 2 ustawy)'],
+    ],
+  },
+  {
+    id: 'nfz',
+    nazwa: 'NFZ — oddział wojewódzki',
+    kiedy: 'Sprawy o pieniądze i dostęp: kazano zapłacić za świadczenie gwarantowane, odmówiono zapisu, nie wykonano zleconych badań, coś nie zgadza się w rozliczeniu.',
+    meta: [
+      ['Jak', 'e-formularz <a href="https://skargi-i-wnioski.nfz.gov.pl/" target="_blank" rel="noopener noreferrer">skargi-i-wnioski.nfz.gov.pl</a>, osobiście w oddziale, listem lub przez ePUAP'],
+      ['Termin', 'Odpowiedź w <strong>30 dni</strong>. Jeśli NFZ wezwie Cię do uzupełnienia braków — masz <strong>7 dni</strong>, inaczej sprawa zostanie bez rozpoznania'],
+      ['Koszt', 'Bezpłatne'],
+    ],
+  },
+  {
+    id: 'ikp',
+    nazwa: 'IKP — Internetowe Konto Pacjenta',
+    kiedy: 'Widzisz u siebie wizytę, której nie było, placówkę, w której nigdy nie byłeś, albo świadczenie opłacone przez Ciebie prywatnie, a rozliczone jako refundowane.',
+    meta: [
+      ['Jak', '<a href="https://pacjent.gov.pl" target="_blank" rel="noopener noreferrer">pacjent.gov.pl</a> → Historia leczenia → Historia wizyt → Szczegóły → <strong>„Zgłoś nieprawidłowość"</strong>'],
+      ['Termin', 'Trafia do właściwego oddziału NFZ, który wszczyna postępowanie wyjaśniające. <strong>Nie zgłaszaj tej samej sprawy dwa razy</strong> — to ją opóźnia'],
+      ['Koszt', 'Bezpłatne · <a href="/mechanizmy/fikcyjne-wizyty/#sprawdz">instrukcja krok po kroku →</a>'],
+    ],
+  },
+  {
+    id: 'oroz',
+    nazwa: 'Okręgowy Rzecznik Odpowiedzialności Zawodowej',
+    kiedy: 'Błąd lekarza albo zachowanie sprzeczne z etyką zawodu. To postępowanie dyscyplinarne — nie zasądzi Ci odszkodowania.',
+    meta: [
+      ['Jak', '<strong>Wyłącznie pisemnie</strong>, do okręgowej izby lekarskiej właściwej dla lekarza: Twoje dane, data i miejsce zdarzenia, opis czynu, dane lekarza, własnoręczny podpis'],
+      ['Termin', 'Postępowania <strong>nie wszczyna się</strong> po <strong>3 latach</strong> od czynu; karalność ustaje po <strong>5 latach</strong> (art. 64 ustawy o izbach lekarskich). Bieg tych 3 lat <strong>przerywa każda czynność rzecznika</strong>, a gdy czyn jest zarazem przestępstwem — karalność trwa nie krócej niż karalność przestępstwa'],
+      ['Zastrzeżenie', 'Skargę na lekarza rozpatruje <strong>samorząd lekarski</strong> — ta sama struktura pełni rolę oskarżyciela i sądu. <a href="/mechanizmy/samorzad-nil/">Opisujemy ten mechanizm →</a>'],
+    ],
+  },
+  {
+    id: 'sad',
+    nazwa: 'Sąd cywilny',
+    kiedy: 'Odszkodowanie i zadośćuczynienie — jedyna ścieżka, która nie ma ustawowego limitu kwoty.',
+    meta: [
+      ['Termin', '<strong>3 lata</strong> od dnia, w którym dowiedziałeś się (albo przy zachowaniu należytej staranności mogłeś się dowiedzieć) o szkodzie i o osobie zobowiązanej do jej naprawienia — <strong>art. 442¹ § 1 k.c.</strong>'],
+      ['Nie daj się zbyć', 'Usłyszysz czasem, że „po 10 latach od zdarzenia i tak się przedawniło". <strong>Przy szkodzie na osobie — a błąd medyczny nią jest — dziesięcioletni limit nie obowiązuje</strong> (art. 442¹ § 3 k.c.). Twoje 3 lata biegną dopiero od dnia, w którym <em>dowiedziałeś się</em> o szkodzie — choćby ujawniła się po dziesiątkach lat'],
+      ['Wyjątki', 'Gdy szkoda wynikła ze <strong>zbrodni lub występku</strong> — <strong>20 lat</strong> od popełnienia przestępstwa, bez względu na to, kiedy się dowiedziałeś (§ 2). Dla <strong>małoletniego</strong> — przedawnienie nie skończy się wcześniej niż <strong>2 lata</strong> od uzyskania pełnoletności (§ 4)'],
+      ['Koszt', 'Opłata sądowa; sprawy o błąd medyczny bywają długie i wymagają biegłych'],
+    ],
+  },
+  {
+    id: 'prokuratura',
+    nazwa: 'Prokuratura lub policja',
+    kiedy: 'Podejrzenie przestępstwa — nie każdy błąd nim jest, ale np. wpis o badaniu, którego nie przeprowadzono, albo żądanie „dowodu wdzięczności" za przyjęcie poza kolejką — tak.',
+    meta: [
+      ['Przepisy', '<strong>art. 160 k.k.</strong> — narażenie na bezpośrednie niebezpieczeństwo utraty życia lub ciężkiego uszczerbku; <strong>art. 271 k.k.</strong> — poświadczenie nieprawdy w dokumencie; <strong>art. 228–229 k.k.</strong> — łapówka (przyjęcie i wręczenie)'],
+      ['Jak', 'Zawiadomienie w dowolnej jednostce policji lub prokuraturze rejonowej — pisemnie albo ustnie do protokołu'],
+      ['Korupcja', 'CBA: <strong>800 808 808</strong> (całodobowo), sygnal@cba.gov.pl. Kto <strong>wręczył</strong> łapówkę, <strong>nie podlega karze</strong>, jeżeli korzyść została przyjęta, a on sam zawiadomił organy <strong>zanim się o tym dowiedziały</strong>, i ujawnił <strong>wszystkie</strong> istotne okoliczności (art. 229 § 6 k.k.) — warunki są łączne'],
+    ],
+  },
+  {
+    id: 'inne',
+    nazwa: 'Sprawy szczególne',
+    kiedy: 'Trzy kanały, które łatwo przeoczyć, bo nie prowadzi do nich ani RPP, ani NFZ.',
+    meta: [
+      ['Lek zaszkodził', 'Zgłoszenie działania niepożądanego to <strong>Twoje prawo</strong> (art. 12a) — <a href="https://www.gov.pl/web/urpl/zglos-dzialanie-niepozadane2" target="_blank" rel="noopener noreferrer">formularz URPL</a>, przez pracownika medycznego albo podmiot odpowiedzialny (adres w ulotce)'],
+      ['Brud, zakażenia', 'Sanepid — <a href="https://e.sanepid.gov.pl/interventions" target="_blank" rel="noopener noreferrer">e.sanepid.gov.pl</a> lub aplikacja mObywatel, całodobowo'],
+      ['Sama placówka', 'Nadzór nad podmiotem leczniczym sprawuje <strong>wojewoda</strong> (wydział zdrowia właściwego urzędu wojewódzkiego). Rejestr placówek jest publiczny: <a href="https://rpwdl2.ezdrowie.gov.pl/" target="_blank" rel="noopener noreferrer">rpwdl2.ezdrowie.gov.pl</a>'],
+    ],
+  },
+];
+
+// Dane strukturalne FAQPage: płaska lista wszystkich pytań, tekst bez znaczników.
+const stripHtml = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: grupy.flatMap((g) =>
+    g.faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: stripHtml(f.a) },
+    })),
+  ),
+};
+---
+
+<BaseLayout
+  title="Prawa pacjenta — co Ci przysługuje i gdzie to zgłosić — zarobkilekarzy.pl"
+  description="Proste FAQ o prawach pacjenta: co gwarantuje ustawa, ile masz czasu i pod jaki numer zadzwonić. Bezpłatna infolinia 800 190 590, całodobowo. Każda odpowiedź z artykułem ustawy i linkiem do źródła."
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema).replace(/</g, '\\u003c')} />
+  </Fragment>
+
+  <section class="section">
+    <div class="container" style="max-width: 800px">
+      <p class="eyebrow">Dla pacjenta</p>
+      <h1>Prawa pacjenta: co Ci przysługuje i gdzie to zgłosić</h1>
+      <Aktualizacja />
+
+      <p class="lead">
+        Prawa pacjenta nie są uprzejmością placówki — są <strong>ustawą</strong>. Problem w tym,
+        że rozpisano je w kilkudziesięciu artykułach, a instytucje, które ich pilnują, dzielą się
+        kompetencjami w sposób nieoczywisty dla kogoś, kto akurat jest chory. Zebraliśmy to
+        w jednym miejscu: <strong>co Ci wolno</strong>, <strong>ile masz czasu</strong> i
+        <strong>pod jaki numer zadzwonić</strong>.
+      </p>
+
+      <div class="hotline">
+        <p class="hotline-k">Jeden bezpłatny numer, jeśli nie wiesz, od czego zacząć</p>
+        <p class="hotline-v"><a href="tel:800190590">800 190 590</a></p>
+        <p class="hotline-d">
+          Telefoniczna Informacja Pacjenta — <strong>całodobowo, 7 dni w tygodniu</strong>.
+          Prowadzą ją wspólnie <strong>Rzecznik Praw Pacjenta</strong> (prawa pacjenta, świadczenie
+          kompensacyjne) i <strong>NFZ</strong> (placówki, zasady dostępu do świadczeń).
+          Z zagranicy: <a href="tel:+48226880500">22 688 05 00</a>.
+        </p>
+      </div>
+
+      <div class="callout quiet">
+        <p>
+          <strong>Wolisz na papierze?</strong> Przygotowaliśmy
+          <a href="/prawa-pacjenta/druk/"><strong>kieszonkową kartę A6 do wydruku</strong></a> —
+          najważniejsze prawa, terminy i numery na dwóch stronach. Do portfela, do teczki
+          z dokumentacją albo na korytarz w przychodni.
+        </p>
+      </div>
+
+      <div class="callout quiet">
+        <p>
+          <strong>To nie jest porada prawna.</strong> Zebraliśmy to, co wynika wprost z ustawy
+          i z oficjalnych stron urzędów — z artykułami i linkami, żebyś mógł każde zdanie sprawdzić
+          u źródła. W indywidualnej sprawie zadzwoń pod numer wyżej: to bezpłatne i prowadzą je
+          ludzie, którzy robią to zawodowo.
+        </p>
+      </div>
+
+      <div class="prose">
+        {
+          grupy.map((g) => (
+            <>
+              <h2>{g.tytul}</h2>
+              <div class="faq">
+                {g.faqs.map((f) => (
+                  <details>
+                    <summary>{f.q}</summary>
+                    <div class="faq-a">
+                      <p set:html={f.a} />
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </>
+          ))
+        }
+
+        <p class="source-note">
+          Podstawa: <strong>ustawa z 6 listopada 2008 r. o prawach pacjenta i Rzeczniku Praw
+          Pacjenta</strong> (tekst jednolity <a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20240000581" target="_blank" rel="noopener noreferrer">Dz.U. 2024 poz. 581</a>) —
+          numery artykułów podajemy przy każdej odpowiedzi. Opis poszczególnych praw prowadzi też
+          <a href="https://www.gov.pl/web/rpp/prawa-pacjenta" target="_blank" rel="noopener noreferrer">Rzecznik Praw Pacjenta</a>
+          i <a href="https://www.gov.pl/web/zdrowie/prawa-pacjenta" target="_blank" rel="noopener noreferrer">Ministerstwo Zdrowia</a>.
+          Przedawnienie roszczeń — art. 442¹ Kodeksu cywilnego; że przy <strong>szkodzie na osobie</strong>
+          nie działa dziesięcioletni limit od zdarzenia, przesądził
+          <strong> Sąd Najwyższy w uchwale z 24 lutego 2009 r. (III CZP 2/09)</strong>: „w odniesieniu do
+          szkód na osobie wyeliminowane zostało działanie zasady, że przedawnienie […] nie może nastąpić
+          później niż po upływie dziesięciu lat od dnia wyrządzenia szkody" — wcześniej sztywny limit
+          uchylił <strong>Trybunał Konstytucyjny (SK 14/05)</strong> jako niezgodny z Konstytucją.
+          Odpowiedzialność zawodowa lekarzy — art. 64 ustawy o izbach lekarskich
+          (tekst jednolity Dz.U. 2021 poz. 1342). Klauzula niekaralności przy zawiadomieniu
+          o łapówce — art. 229 § 6 k.k.
+        </p>
+
+        <h2 id="gdzie">Gdzie zgłosić — dopasuj sprawę do instytucji</h2>
+        <p>
+          Najczęstszy powód, dla którego zgłoszenie pacjenta kończy się niczym, to nie brak racji,
+          tylko <strong>zły adres</strong>. Każda z tych instytucji robi coś innego i żadna nie
+          przekaże Twojej sprawy dalej za Ciebie. Poniżej: kto się czym zajmuje, ile masz czasu
+          i ile to kosztuje.
+        </p>
+      </div>
+
+      <div class="kanaly">
+        {
+          kanaly.map((k) => (
+            <div class="kanal" id={k.id}>
+              <h3>{k.nazwa}</h3>
+              <p class="kanal-kiedy">{k.kiedy}</p>
+              <dl class="kanal-meta">
+                {k.meta.map(([klucz, wartosc]) => (
+                  <>
+                    <dt>{klucz}</dt>
+                    <dd set:html={wartosc} />
+                  </>
+                ))}
+              </dl>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="prose">
+        <h2 id="fkzm">Szkoda w szpitalu: świadczenie kompensacyjne</h2>
+        <p>
+          Od <strong>1 lipca 2024 r.</strong>, gdy zlikwidowano wojewódzkie komisje, szkody powstałe
+          w szpitalu rozpatruje <strong>Fundusz Kompensacyjny Zdarzeń Medycznych</strong> przy
+          Rzeczniku Praw Pacjenta. Pomyślano go jako ścieżkę <strong>szybszą i prostszą niż sąd</strong>:
+          bez pozwu, bez adwokata, bez dowodzenia winy konkretnej osoby. Ale ma warunki, które trzeba
+          znać <em>przed</em> złożeniem wniosku — nie po.
+        </p>
+        <ul>
+          <li>
+            <strong>Tylko szpital.</strong> Obejmuje zdarzenia, do których doszło <strong>w szpitalu</strong>
+            (także psychiatrycznym i uzdrowiskowym) przy świadczeniach finansowanych ze środków
+            publicznych. Przychodnia, gabinet czy leczenie prywatne — nie.
+          </li>
+          <li>
+            <strong>Tylko od 6 września 2023 r.</strong> Zdarzenie musi być późniejsze niż wejście
+            ustawy w życie — chyba że doszło do niego wcześniej, a dowiedziałeś się o nim już po tej dacie.
+          </li>
+          <li>
+            <strong>Powikłanie to nie zdarzenie medyczne.</strong> Świadczenie należy się za skutek,
+            którego <strong>z wysokim prawdopodobieństwem dałoby się uniknąć</strong> przy leczeniu
+            zgodnym z aktualną wiedzą medyczną. Dające się przewidzieć, normalne następstwo metody,
+            na którą wyraziłeś świadomą zgodę, jest powikłaniem — i jest z Funduszu wyłączone.
+          </li>
+          <li>
+            <strong>Masz rok, ale nie dłużej niż 3 lata.</strong> Wniosek składa się w ciągu
+            <strong> roku</strong> od uzyskania informacji o zakażeniu, uszkodzeniu ciała, rozstroju
+            zdrowia albo śmierci pacjenta — <strong>nie później niż 3 lata</strong> od samego zdarzenia.
+          </li>
+          <li>
+            <strong>Wniosek kosztuje 348 zł</strong> i <strong>nie wraca</strong>, jeśli Rzecznik
+            odmówi przyznania świadczenia. Wraca, gdy świadczenie zostanie przyznane, gdy wniosek
+            zostanie pozostawiony bez rozpoznania albo gdy Rzecznik odmówi wszczęcia postępowania.
+            Przy trudnej sytuacji finansowej możesz wystąpić o <strong>zwolnienie z opłaty</strong>.
+          </li>
+          <li>
+            <strong>Mailem się nie da.</strong> Wniosek złożony zwykłą pocztą elektroniczną
+            <strong> nie zostanie rozpatrzony</strong>. Zostaje papier (ul. Płocka 11/13,
+            01-231 Warszawa), <strong>ePUAP</strong> (/RzPP/skrytka) albo <strong>e-Doręczenia</strong>.
+          </li>
+          <li>
+            <strong>Decyzja w 3 miesiące</strong> od kompletnego i prawidłowo opłaconego wniosku.
+            Od decyzji służy odwołanie do niezależnej <strong>Komisji Odwoławczej</strong>
+            (opłata <strong>223 zł</strong>, zwracana przy uwzględnieniu odwołania), a potem skarga
+            do <strong>Wojewódzkiego Sądu Administracyjnego w Warszawie</strong>.
+          </li>
+          <li>
+            <strong>Kwoty:</strong> od <strong>2 309 zł</strong> do <strong>230 821 zł</strong> dla
+            pacjenta, który doznał zakażenia, uszkodzenia ciała lub rozstroju zdrowia; od
+            <strong> 23 083 zł</strong> do <strong>115 411 zł</strong> dla osoby bliskiej zmarłego
+            pacjenta (dla każdego wnioskodawcy osobno). Kwoty <strong>są co roku waloryzowane</strong> —
+            te obowiązują od 6 września 2025 r. Wypłata jest zwolniona z podatku dochodowego.
+          </li>
+        </ul>
+
+        <div class="callout alert">
+          <p>
+            <strong>Haczyk, który przesądza o wszystkim — przeczytaj przed złożeniem wniosku.</strong>
+            Gdy Rzecznik przyzna świadczenie, masz <strong>30 dni</strong> na oświadczenie, czy je
+            przyjmujesz. <strong>Przyjęcie jest równoznaczne ze zrzeczeniem się wszelkich roszczeń
+            odszkodowawczych</strong> mogących wynikać z tego zdarzenia — w zakresie szkód, które
+            ujawniły się do dnia złożenia wniosku. Innymi słowy: <strong>to jest ścieżka
+            zamiast sądu, a nie obok sądu</strong>. Kwota z Funduszu jest z góry ograniczona
+            widełkami, sąd żadnych widełek nie ma. Jeśli szkoda jest poważna, decyzję o wyborze drogi
+            warto skonsultować z prawnikiem <em>zanim</em> podpiszesz przyjęcie.
+          </p>
+        </div>
+
+        <p class="source-note">
+          Zakres, przesłanki, terminy i tryb —
+          <a href="https://www.gov.pl/web/rpp/kiedy-i-komu-przysluguje-swiadczenie" target="_blank" rel="noopener noreferrer">RPP: Kiedy i komu przysługuje świadczenie</a>;
+          opłata 348 zł, zasady zwrotu, zwolnienie z opłaty i kanały złożenia —
+          <a href="https://www.gov.pl/web/rpp/jak-zlozyc-wniosek3" target="_blank" rel="noopener noreferrer">RPP: Jak złożyć wniosek</a>;
+          kwoty obowiązujące od 6 września 2025 r. (waloryzacja o 3,6%) —
+          <a href="https://www.gov.pl/web/rpp/wysokosc-swiadczenia-kompensacyjnego" target="_blank" rel="noopener noreferrer">RPP: Wysokość świadczenia kompensacyjnego</a>.
+          Uwaga na rozbieżność u samego źródła: strona „Kiedy i komu przysługuje" podaje wciąż kwoty
+          sprzed ostatniej waloryzacji — podajemy te z dedykowanej strony o wysokości świadczenia,
+          bo tylko ona wskazuje datę, od której obowiązują.
+          Likwidacja wojewódzkich komisji z dniem 1 lipca 2024 r. —
+          <a href="https://www.gov.pl/web/rpp/rzecznik-praw-pacjenta-przejmuje-sprawy-wojewodzkich-komisji-ds-orzekania-o-zdarzeniach-medycznych" target="_blank" rel="noopener noreferrer">komunikat RPP</a>.
+          Nie myl Funduszu Kompensacyjnego <strong>Zdarzeń Medycznych</strong> z Funduszem
+          Kompensacyjnym <strong>Szczepień Ochronnych</strong> ani <strong>Badań Klinicznych</strong> —
+          to trzy różne fundusze przy tym samym urzędzie, z osobnymi wnioskami, opłatami i kontami.
+        </p>
+
+        <h2 id="dlaczego">Dlaczego watchdog jawności pisze o prawach pacjenta</h2>
+        <p>
+          Bo to ta sama sprawa, oglądana z drugiej strony. Wszystkie prawa z tej strony łączy jedno:
+          działają dokładnie <strong>na tyle, na ile ktoś o nich wie</strong>. Prawo do bezpłatnej
+          pierwszej kopii dokumentacji istnieje od lat — a w rejestracji nikt go nie ogłasza.
+          Zakaz pobierania opłaty za pobyt rodzica przy dziecku jest w ustawie — a rachunki
+          za „dostawkę" wciąż się zdarzają. <strong>Niewiedza jest tu formą nieprzejrzystości</strong>,
+          tak samo jak niejawność kwot.
+        </p>
+        <p>
+          Najlepiej widać to na <a href="/mechanizmy/fikcyjne-wizyty/">IKP</a>. Kiedy pacjenci
+          dostali okno na własne dane, w jednym roku <strong>ponad 1600</strong> rozliczeń okazało
+          się nie do obrony. Nie zmieniło się nic poza tym, że <em>ktoś mógł zajrzeć</em>.
+          A teraz zwróć uwagę, czego to okno <strong>nie</strong> pokazuje: widzisz koszt swojej
+          wizyty, ale nie widzisz, ile publicznych pieniędzy trafiło łącznie do konkretnego lekarza
+          (numer <a href="/slownik/#pwz">PWZ</a>) ze wszystkich źródeł naraz. Ta sama luka, ten sam
+          wniosek: <a href="/mechanizmy/brak-jawnosci/">brak jawności jako warunek nadużyć →</a>
+        </p>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://pacjent.gov.pl" target="_blank" rel="noopener noreferrer">Sprawdź swoje IKP →</a>
+          <a class="btn" href="/postulat/">Poznaj postulat</a>
+        </div>
+
+        <p class="source-note" style="margin-top: 1.5rem">
+          Nie jesteśmy urzędem, kancelarią ani organizacją pacjencką — jesteśmy obywatelskim
+          watchdogiem jawności pieniędzy publicznych. Tę stronę prowadzimy, bo poinformowany pacjent
+          jest jedynym audytem, jaki ten system ma na co dzień. Opisujemy mechanizmy, nie osoby —
+          bez nazwisk. Zdecydowana większość lekarzy i placówek pracuje rzetelnie; problemem jest
+          system, w którym o Twoich prawach dowiadujesz się zwykle wtedy, gdy już zostały naruszone.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Ktoś, kogo znasz, może tego potrzebować:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Infolinia — najważniejsza informacja na stronie, więc jedyny element
+     w brandowym negatywie. Numer jako link tel: (klikalny na telefonie). */
+  .hotline {
+    background: var(--brand);
+    color: #fff;
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.75rem;
+    margin: 1.75rem 0;
+  }
+  .hotline-k { font-size: 0.85rem; opacity: 0.85; margin: 0 0 0.35rem; }
+  .hotline-v { font-family: var(--font-mono); font-size: 2.4rem; font-weight: 500; margin: 0; line-height: 1.1; }
+  .hotline-v a { color: #fff; text-decoration: none; }
+  .hotline-v a:hover { text-decoration: underline; }
+  .hotline-d { font-size: 0.92rem; line-height: 1.6; margin: 0.6rem 0 0; opacity: 0.92; }
+  .hotline-d a { color: #fff; }
+
+  /* FAQ — wzorem /faq/, ale pytania to realne pytania pacjenta, więc bez cudzysłowów. */
+  .faq { margin: 1rem 0 2rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  .faq details { border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+  .faq summary { cursor: pointer; padding: 1rem 1.25rem; font-weight: 500; font-size: 1.02rem; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; color: var(--brand); font-size: 1.4rem; font-weight: 400; line-height: 1; flex-shrink: 0; }
+  .faq details[open] summary::after { content: "−"; }
+  .faq details[open] summary { border-bottom: 1px solid var(--line); }
+  .faq-a { padding: 1rem 1.25rem 1.25rem; }
+  .faq-a p { margin: 0; color: #29384b; line-height: 1.7; }
+
+  /* Kanały zgłoszeń — karty neutralne (dane, nie wyróżnienia). Jedna kolumna:
+     każdą kartę czyta się w całości, a nie porównuje wzrokiem z sąsiednią. */
+  .kanaly { display: flex; flex-direction: column; gap: 0.9rem; margin: 1.5rem 0 2rem; }
+  .kanal { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.3rem 1.4rem; scroll-margin-top: 1.5rem; }
+  .kanal h3 { margin: 0 0 0.4rem; font-size: 1.1rem; }
+  .kanal-kiedy { margin: 0 0 0.9rem; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.6; }
+  .kanal-meta { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.45rem 1rem; margin: 0; font-size: 0.92rem; }
+  .kanal-meta dt { color: var(--ink-faint); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; padding-top: 0.15rem; }
+  .kanal-meta dd { margin: 0; color: #29384b; line-height: 1.6; }
+
+  @media (max-width: 560px) {
+    .hotline-v { font-size: 1.9rem; }
+    /* Etykieta nad wartością — 7,5 rem kolumny zjadłoby treść na wąskim ekranie. */
+    .kanal-meta { grid-template-columns: 1fr; gap: 0.15rem; }
+    .kanal-meta dt { padding-top: 0.5rem; }
+  }
+</style>

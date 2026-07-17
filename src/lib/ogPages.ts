@@ -224,6 +224,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Dołącz do sprawy',
     subtitle: 'Poprzyj postulat jawności, udostępnij dane, wesprzyj projekt. Pieniądz publiczny, nie polityka.',
   },
+  'prawa-pacjenta': {
+    tag: 'Dla pacjenta',
+    title: 'Prawa pacjenta — i gdzie zgłosić naruszenie',
+    subtitle: 'Co gwarantuje Ci ustawa, ile masz czasu i pod jaki numer zadzwonić. Jeden bezpłatny telefon: 800 190 590, całodobowo.',
+  },
   'analizy/ustawa-o-danych-a-jawny-rejestr': {
     tag: 'Analizy · Ustawa a rejestr',
     title: 'Państwo policzy, obywatel nie zobaczy',

@@ -34,7 +34,7 @@ export const pageDates = {
   '/mechanizmy/samorzad-nil': '2026-07-07',
   '/mechanizmy/dyzury-i-gotowosc': '2026-07-06',
   // Dane (tabele/zestawienia — bump przy zmianie liczb/zakresu).
-  '/dane': '2026-07-08',
+  // '/dane' (hub) celowo bez daty — jak huby /analizy i /mechanizmy.
   '/dane/patologia-w-liczbach': '2026-07-10',
   '/dane/budzet-nfz': '2026-07-07',
   '/dane/kolejki': '2026-07-06',

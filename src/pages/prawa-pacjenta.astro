@@ -88,6 +88,7 @@ const grupy = [
 const kanaly = [
   {
     id: 'rpp',
+    skrot: 'Naruszono Twoje prawo pacjenta',
     nazwa: 'Rzecznik Praw Pacjenta',
     kiedy: 'Naruszono Twoje prawo pacjenta — odmówiono informacji lub dokumentacji, kazano zapłacić za pobyt rodzica przy dziecku, potraktowano Cię bez poszanowania intymności i godności.',
     meta: [
@@ -99,6 +100,7 @@ const kanaly = [
   },
   {
     id: 'nfz',
+    skrot: 'Pieniądze i dostęp do świadczeń',
     nazwa: 'NFZ — oddział wojewódzki',
     kiedy: 'Sprawy o pieniądze i dostęp: kazano zapłacić za świadczenie gwarantowane, odmówiono zapisu, nie wykonano zleconych badań, coś nie zgadza się w rozliczeniu.',
     meta: [
@@ -109,6 +111,7 @@ const kanaly = [
   },
   {
     id: 'ikp',
+    skrot: 'Wizyta, której nie było',
     nazwa: 'IKP — Internetowe Konto Pacjenta',
     kiedy: 'Widzisz u siebie wizytę, której nie było, placówkę, w której nigdy nie byłeś, albo świadczenie opłacone przez Ciebie prywatnie, a rozliczone jako refundowane.',
     meta: [
@@ -119,6 +122,7 @@ const kanaly = [
   },
   {
     id: 'oroz',
+    skrot: 'Błąd lub nieetyczne zachowanie lekarza',
     nazwa: 'Okręgowy Rzecznik Odpowiedzialności Zawodowej',
     kiedy: 'Błąd lekarza albo zachowanie sprzeczne z etyką zawodu. To postępowanie dyscyplinarne — nie zasądzi Ci odszkodowania.',
     meta: [
@@ -129,6 +133,7 @@ const kanaly = [
   },
   {
     id: 'sad',
+    skrot: 'Odszkodowanie i zadośćuczynienie',
     nazwa: 'Sąd cywilny',
     kiedy: 'Odszkodowanie i zadośćuczynienie — jedyna ścieżka, która nie ma ustawowego limitu kwoty.',
     meta: [
@@ -140,6 +145,7 @@ const kanaly = [
   },
   {
     id: 'prokuratura',
+    skrot: 'Podejrzenie przestępstwa lub łapówka',
     nazwa: 'Prokuratura lub policja',
     kiedy: 'Podejrzenie przestępstwa — nie każdy błąd nim jest, ale np. wpis o badaniu, którego nie przeprowadzono, albo żądanie „dowodu wdzięczności" za przyjęcie poza kolejką — tak.',
     meta: [
@@ -150,6 +156,7 @@ const kanaly = [
   },
   {
     id: 'inne',
+    skrot: 'Lek, brud w placówce, nadzór',
     nazwa: 'Sprawy szczególne',
     kiedy: 'Trzy kanały, które łatwo przeoczyć, bo nie prowadzi do nich ani RPP, ani NFZ.',
     meta: [
@@ -204,7 +211,7 @@ const faqSchema = {
           Telefoniczna Informacja Pacjenta — <strong>całodobowo, 7 dni w tygodniu</strong>.
           Prowadzą ją wspólnie <strong>Rzecznik Praw Pacjenta</strong> (prawa pacjenta, świadczenie
           kompensacyjne) i <strong>NFZ</strong> (placówki, zasady dostępu do świadczeń).
-          Z zagranicy: <a href="tel:+48226880500">22 688 05 00</a>.
+          Dzwonisz z zagranicy? <a href="#rpp">Numery i zastrzeżenie →</a>
         </p>
       </div>
 
@@ -265,27 +272,31 @@ const faqSchema = {
         <h2 id="gdzie">Gdzie zgłosić — dopasuj sprawę do instytucji</h2>
         <p>
           Najczęstszy powód, dla którego zgłoszenie pacjenta kończy się niczym, to nie brak racji,
-          tylko <strong>zły adres</strong>. Każda z tych instytucji robi coś innego i żadna nie
-          przekaże Twojej sprawy dalej za Ciebie. Poniżej: kto się czym zajmuje, ile masz czasu
-          i ile to kosztuje.
+          tylko <strong>zły adres</strong> — a żadna z tych instytucji nie przekaże sprawy dalej
+          za Ciebie. Rozwiń tę, która pasuje do Twojej: w środku kontakt, termin i koszt.
         </p>
       </div>
 
       <div class="kanaly">
         {
           kanaly.map((k) => (
-            <div class="kanal" id={k.id}>
-              <h3>{k.nazwa}</h3>
-              <p class="kanal-kiedy">{k.kiedy}</p>
-              <dl class="kanal-meta">
-                {k.meta.map(([klucz, wartosc]) => (
-                  <>
-                    <dt>{klucz}</dt>
-                    <dd set:html={wartosc} />
-                  </>
-                ))}
-              </dl>
-            </div>
+            <details class="kanal" id={k.id}>
+              <summary>
+                <span class="kanal-nazwa">{k.nazwa}</span>
+                <span class="kanal-skrot">{k.skrot}</span>
+              </summary>
+              <div class="kanal-tresc">
+                <p class="kanal-kiedy">{k.kiedy}</p>
+                <dl class="kanal-meta">
+                  {k.meta.map(([klucz, wartosc]) => (
+                    <>
+                      <dt>{klucz}</dt>
+                      <dd set:html={wartosc} />
+                    </>
+                  ))}
+                </dl>
+              </div>
+            </details>
           ))
         }
       </div>
@@ -418,6 +429,30 @@ const faqSchema = {
   </section>
 </BaseLayout>
 
+<script>
+  // Odpowiedzi w FAQ linkują do konkretnego kanału (#rpp, #nfz). Odkąd kanały są
+  // zwijane, sam skok do kotwicy pokazałby zamknięty wiersz — czyli link prowadziłby
+  // donikąd. Otwieramy docelowy <details> i dosuwamy go do widoku (bez animacji,
+  // z tego samego powodu co w BaseLayout: smooth gubi cel przy zimnym wejściu).
+  (() => {
+    const otworzZKotwicy = () => {
+      if (!location.hash) return;
+      let el = null;
+      try {
+        el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+      } catch (e) {
+        return; // niepoprawny %-kod w adresie
+      }
+      if (el instanceof HTMLDetailsElement) {
+        el.open = true;
+        el.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }
+    };
+    otworzZKotwicy();
+    window.addEventListener('hashchange', otworzZKotwicy);
+  })();
+</script>
+
 <style>
   /* Infolinia — najważniejsza informacja na stronie, więc jedyny element
      w brandowym negatywie. Numer jako link tel: (klikalny na telefonie). */
@@ -446,11 +481,30 @@ const faqSchema = {
   .faq-a { padding: 1rem 1.25rem 1.25rem; }
   .faq-a p { margin: 0; color: #29384b; line-height: 1.7; }
 
-  /* Kanały zgłoszeń — karty neutralne (dane, nie wyróżnienia). Jedna kolumna:
-     każdą kartę czyta się w całości, a nie porównuje wzrokiem z sąsiednią. */
-  .kanaly { display: flex; flex-direction: column; gap: 0.9rem; margin: 1.5rem 0 2rem; }
-  .kanal { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.3rem 1.4rem; scroll-margin-top: 1.5rem; }
-  .kanal h3 { margin: 0 0 0.4rem; font-size: 1.1rem; }
+  /* Kanały zgłoszeń — lista zwijana, nie karty. Rozwinięte zajmowały ponad połowę
+     strony i spychały pointę poza ekran, a to materiał do jednorazowego użycia:
+     pacjent potrzebuje JEDNEGO kanału, nie siedmiu naraz. Zwinięte wiersze dają się
+     przeskanować wzrokiem, szczegóły są o jedno kliknięcie. */
+  .kanaly { display: flex; flex-direction: column; gap: 0.4rem; margin: 1.25rem 0 2rem; }
+  .kanal {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+    scroll-margin-top: 1.5rem;
+  }
+  .kanal summary {
+    cursor: pointer; list-style: none;
+    padding: 0.75rem 1rem;
+    display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap;
+  }
+  .kanal summary::-webkit-details-marker { display: none; }
+  .kanal summary::after {
+    content: "+"; color: var(--brand); font-size: 1.25rem; line-height: 1;
+    margin-left: auto; flex-shrink: 0;
+  }
+  .kanal[open] summary::after { content: "−"; }
+  .kanal[open] summary { border-bottom: 1px solid var(--line); }
+  .kanal-nazwa { font-weight: 600; font-size: 0.98rem; color: var(--ink); }
+  .kanal-skrot { color: var(--ink-faint); font-size: 0.88rem; }
+  .kanal-tresc { padding: 0.9rem 1rem 1.1rem; }
   .kanal-kiedy { margin: 0 0 0.9rem; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.6; }
   .kanal-meta { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.45rem 1rem; margin: 0; font-size: 0.92rem; }
   .kanal-meta dt { color: var(--ink-faint); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; padding-top: 0.15rem; }
@@ -461,5 +515,8 @@ const faqSchema = {
     /* Etykieta nad wartością — 7,5 rem kolumny zjadłoby treść na wąskim ekranie. */
     .kanal-meta { grid-template-columns: 1fr; gap: 0.15rem; }
     .kanal-meta dt { padding-top: 0.5rem; }
+    /* Nazwa i skrót jedno pod drugim — obok siebie łamałyby się brzydko. */
+    .kanal summary { gap: 0.1rem 0.6rem; }
+    .kanal-nazwa { flex-basis: 100%; }
   }
 </style>

@@ -1,0 +1,49 @@
+---
+// Karty huba PODZIELONE na sekcje kategorii (nagłówek + siatka), zamiast jednego
+// płaskiego stosu. Kategoria = temat wiodący (`tematy[0]`) z rejestru `pages.ts`.
+import HubGrid from './HubGrid.astro';
+import { TEMATY } from '../lib/pages';
+import type { Wpis, TematSlug } from '../lib/pages';
+
+interface Props {
+  strony: Wpis[];
+  /** Poziom nagłówka sekcji: 2 domyślnie, 3 gdy hub ma już własne h2 nad siatką (/dane). */
+  poziom?: 2 | 3;
+  zwarta?: boolean;
+}
+const { strony, poziom = 2, zwarta = false } = Astro.props;
+
+// Kolejność sekcji = kolejność deklaracji kategorii w TEMATY.
+const kolejnosc = Object.keys(TEMATY) as TematSlug[];
+const grupy = kolejnosc
+  .map((temat) => ({ temat, strony: strony.filter((w) => w.tematy[0] === temat) }))
+  .filter((g) => g.strony.length > 0);
+
+const Heading = poziom === 3 ? 'h3' : 'h2';
+---
+
+{
+  grupy.map((g) => (
+    <section class="hub-sekcja">
+      <Heading class="hub-sekcja-h" data-anchor="off">
+        <span>{TEMATY[g.temat].label}</span>
+        <span class="hub-sekcja-n">{g.strony.length}</span>
+      </Heading>
+      <HubGrid strony={g.strony} zwarta={zwarta} />
+    </section>
+  ))
+}
+
+<style>
+  .hub-sekcja { margin-top: 2.25rem; }
+  .hub-sekcja:first-of-type { margin-top: 1.5rem; }
+  .hub-sekcja-h {
+    display: flex; align-items: baseline; gap: 0.6rem;
+    margin: 0; padding-bottom: 0.5rem; border-bottom: 2px solid var(--line);
+    font-size: 1.2rem;
+  }
+  .hub-sekcja-n {
+    font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600;
+    color: var(--ink-faint); font-variant-numeric: tabular-nums;
+  }
+</style>

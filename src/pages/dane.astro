@@ -2,6 +2,8 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ShareRow from '../components/ShareRow.astro';
 import Aktualizacja from '../components/Aktualizacja.astro';
+import HubSekcje from '../components/HubSekcje.astro';
+import { stronyDzialu, strona } from '../lib/pages';
 
 const stats = [
   { n: '300 tys.', u: 'zł / dzień', cap: 'Rekordowy dzień neurochirurga (zarzut — sprawa w toku).', href: '/dane/rekordy/', hot: true },
@@ -15,17 +17,9 @@ const stats = [
 ];
 
 const podstrony = [
-  { href: '/dane/patologia-w-liczbach/', t: 'Patologia w liczbach', d: 'Najmocniejsze liczby serwisu — na wykresach. Mało tekstu, twarde dane, źródła.' },
-  { href: '/dane/rozklad-wynagrodzen/', t: 'Rozkład wynagrodzeń', d: 'Od pensji rezydenta po górny 1% — cała rozpiętość, per forma zatrudnienia.' },
-  { href: '/dane/personel-medyczny/', t: 'Inni pracownicy OZ', d: 'Pielęgniarki, ratownicy, diagności, fizjoterapeuci — drabina taryfowa ustawy obok zarobków lekarzy.' },
-  { href: '/dane/wedlug-specjalizacji/', t: 'Według specjalizacji', d: 'Pensja rezydenta, stawka rynkowa, miejsca i konkurencja — dla 29 dziedzin.' },
-  { href: '/dane/pensje-rezydentow/', t: 'Pensje rezydentów', d: 'Jedyna dokładna liczba „zł per specjalizacja”. Paradoks priorytetów.' },
-  { href: '/dane/rekordy/', t: 'Rekordowe rozliczenia', d: 'Od 316 tys. zł/mies. po miliony rocznie. Bez nazwisk — mechanizm, nie osoba.' },
-  { href: '/dane/stawki/', t: 'Stawki godzinowe', d: 'Minimum ustawowe kontra rynek. Oferta to nie to samo co wypłata.' },
-  { href: '/dane/budzet-nfz/', t: 'Budżet NFZ', d: 'Budżet rośnie, ale wzrost pochłaniają ustawowe płace, nie nowe świadczenia.' },
-  { href: '/dane/zadluzenie-szpitali/', t: 'Zadłużenie szpitali', d: 'Dług 34 mld zł idzie głównie na wynagrodzenia — pensje na kredyt, który spłacamy.' },
-  { href: '/dane/kolejki/', t: 'Pieniądze a kolejka', d: 'Infografika + dłuższa perspektywa: budżet, składka, dopłaty i inflacja rosną — kolejka też.' },
-  { href: '/analizy/zarobki-lekarzy-polska-sasiedzi/', t: 'Polska na tle sąsiadów', d: 'Płace lekarzy PL·CZ·DE·AT, liczba lekarzy ≈ OECD i ile kosztowałyby niemieckie stawki — pełna analiza.' },
+  ...stronyDzialu('dane'),
+  // Gość z działu analiz — liczby porównawcze pasują do huba danych.
+  strona('/analizy/zarobki-lekarzy-polska-sasiedzi'),
 ];
 ---
 
@@ -45,15 +39,7 @@ const podstrony = [
       <Aktualizacja zrodla=" · dane AOTMiT (02.2026), CMKP (jesień 2025), ustawa o najniższym wynagrodzeniu (siatka od 1 VII 2026), NIPiP/GUS (kadra pielęgniarska)." />
 
       <h2 style="margin-top: 0.5rem">Przeglądaj wszystkie dane</h2>
-      <div class="hub-grid">
-        {podstrony.map((p) => (
-          <a class="hub-card" href={p.href}>
-            <span class="hub-t">{p.t}</span>
-            <span class="hub-d">{p.d}</span>
-            <span class="hub-arrow" aria-hidden="true">→</span>
-          </a>
-        ))}
-      </div>
+      <HubSekcje strony={podstrony} poziom={3} zwarta />
 
       <p class="eyebrow" style="margin-top: 2.5rem">Na start</p>
       <h2 style="margin-top: 0.1rem">Osiem liczb, które pokazują skalę</h2>
@@ -95,10 +81,4 @@ const podstrony = [
   .dstat-unit { display: block; font-family: var(--font-sans); font-size: 0.8rem; font-weight: 500; color: var(--ink-faint); margin-top: 0.3rem; }
   .dstat-cap { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; }
   .dstat-go { position: absolute; left: 1.35rem; bottom: 1rem; color: var(--brand); font-weight: 700; }
-  .hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin: 1.25rem 0; }
-  .hub-card { position: relative; display: flex; flex-direction: column; gap: 0.35rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
-  .hub-card:hover { border-color: var(--brand); transform: translateY(-2px); }
-  .hub-t { font-weight: 600; color: var(--ink); font-size: 1.02rem; }
-  .hub-d { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.45; }
-  .hub-arrow { color: var(--brand); font-weight: 700; margin-top: 0.15rem; }
 </style>

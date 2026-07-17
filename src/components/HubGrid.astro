@@ -1,0 +1,48 @@
+---
+// Siatka kart huba — wspólna dla /mechanizmy, /dane i /analizy.
+// Wcześniej ten sam CSS i ta sama pętla żyły w trzech plikach naraz.
+import { TEMATY } from '../lib/pages';
+import type { Wpis } from '../lib/pages';
+
+interface Props {
+  strony: Wpis[];
+  /** Odstęp pionowy — /dane ma nad siatką nagłówek, więc mniejszy. */
+  zwarta?: boolean;
+  /**
+   * Etykieta tematu na karcie. Daje podział na hubie działu BEZ dzielenia siatki
+   * na grupy (9 kart w 5 grupach czyta się gorzej niż 9 opisanych kart).
+   * Na hubie tematu zbędna — tam wszystkie karty mają ten sam temat.
+   */
+  temat?: boolean;
+}
+
+const { strony, zwarta = false, temat = false } = Astro.props;
+---
+
+<div class={zwarta ? 'hub-grid is-zwarta' : 'hub-grid'}>
+  {
+    strony.map((s) => (
+      <a class="hub-card" href={s.href}>
+        {temat && <span class="hub-temat">{TEMATY[s.tematy[0]].label}</span>}
+        <span class="hub-t">{s.tytul}</span>
+        <span class="hub-d">{s.opis}</span>
+        <span class="hub-arrow" aria-hidden="true">
+          →
+        </span>
+      </a>
+    ))
+  }
+</div>
+
+<style>
+  .hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .hub-grid.is-zwarta { margin: 1.25rem 0; }
+  .hub-card { position: relative; display: flex; flex-direction: column; gap: 0.35rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
+  .hub-card:hover { border-color: var(--brand); transform: translateY(-2px); }
+  /* Karta jest w całości <a>, więc etykieta NIE może być linkiem (zagnieżdżone <a>
+     to niepoprawny HTML). Przejście do tematu prowadzi z paska pod treścią strony. */
+  .hub-temat { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); }
+  .hub-t { font-weight: 600; color: var(--ink); font-size: 1.02rem; }
+  .hub-d { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.45; }
+  .hub-arrow { color: var(--brand); font-weight: 700; margin-top: 0.15rem; }
+</style>

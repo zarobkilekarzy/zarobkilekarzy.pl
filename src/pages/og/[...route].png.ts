@@ -33,28 +33,32 @@ const logo = (size: number, style: Record<string, unknown> = {}): Node => ({
 
 // Tło: wielki, ledwie widoczny zapis EKG — element graficzny, nie treść. Ta sama droga
 // co logo (<img> z data URI), bo satori nie rysuje ścieżek SVG.
-// Jeden cykl w proporcjach szerokości cyklu (w) i amplitudy załamka R (a): odcinek
-// izoelektryczny → P → zespół QRS → T → izoelektryczny.
+//
+// WYŁĄCZNIE odcinki proste — krzywe (Q/C) dawały z załamków P i T półkola, których EKG
+// nie ma. Jeden cykl w proporcjach szerokości cyklu (w) i amplitudy załamka R (a): długi
+// odcinek izoelektryczny → wąski, ostry zespół QRS → niski, szeroki załamek T. Załamka P
+// celowo nie ma: mniej szczegółów, bardziej czytelny rysunek. Ten sam język co logo
+// (public/favicon.svg) — sama łamana, zero krzywizn.
 const ecgCycle = (x: number, y: number, w: number, a: number) =>
   [
     `M${x},${y}`,
-    `L${x + 0.13 * w},${y}`,
-    `Q${x + 0.185 * w},${y - 0.14 * a} ${x + 0.24 * w},${y}`, // P
-    `L${x + 0.325 * w},${y}`,
-    `L${x + 0.35 * w},${y + 0.1 * a}`, // Q
-    `L${x + 0.39 * w},${y - a}`, // R
-    `L${x + 0.43 * w},${y + 0.36 * a}`, // S
-    `L${x + 0.46 * w},${y}`,
-    `L${x + 0.55 * w},${y}`,
-    `Q${x + 0.64 * w},${y - 0.3 * a} ${x + 0.73 * w},${y}`, // T
+    `L${x + 0.3 * w},${y}`,
+    `L${x + 0.35 * w},${y + 0.09 * a}`, // Q
+    `L${x + 0.41 * w},${y - a}`, // R
+    `L${x + 0.47 * w},${y + 0.28 * a}`, // S
+    `L${x + 0.52 * w},${y}`,
+    `L${x + 0.62 * w},${y}`,
+    `L${x + 0.72 * w},${y - 0.15 * a}`, // T
+    `L${x + 0.84 * w},${y}`,
     `L${x + w},${y}`,
   ].join(' ');
 
-// Linia izoelektryczna celowo pokrywa się z kreską nad stopką — trace wygląda wtedy na
-// element kompozycji, a nie przypadkową krechę w poprzek tekstu, i zostawia akapity czyste
-// (przez tekst przechodzą tylko pionowe załamki R). Wartość ZMIERZONA na wyrenderowanej
-// karcie, nie wyliczona — zależy od metryk fontu stopki. Zmiana paddingu/rozmiaru stopki
-// wymaga ponownego pomiaru, inaczej linia się rozjedzie z kreską.
+// Linia izoelektryczna PEŁNI ROLĘ kreski oddzielającej stopkę (osobnego bordera już nie
+// ma — byłby zdublowany). Dzięki temu trace czyta się jako element kompozycji, a nie
+// przypadkowa krecha w poprzek tekstu, i zostawia akapity czyste: przez tekst przechodzą
+// tylko pionowe załamki R. Wartość ZMIERZONA na wyrenderowanej karcie, nie wyliczona —
+// zależy od metryk fontu stopki. Zmiana paddingu/rozmiaru stopki wymaga ponownego pomiaru,
+// inaczej linia oderwie się od stopki.
 const ECG_BASELINE = 506;
 
 function ecgSvg(w: number, h: number, baseline: number, amplitude: number, cycles: number) {
@@ -76,11 +80,14 @@ function ecgSvg(w: number, h: number, baseline: number, amplitude: number, cycle
     </linearGradient>
     <mask id="m"><rect width="${w}" height="${h}" fill="url(#v)"/></mask>
   </defs>
-  <path d="${d}" fill="none" stroke="url(#f)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.1" mask="url(#m)"/>
+  <!-- linejoin=miter daje ostre wierzchołki, ale WYMAGA wysokiego miterlimit: przy kącie
+       załamka R (~11°) potrzebny jest ~10, a poniżej progu SVG po cichu ścina wierzchołek
+       do bevela (płaski szczyt). Nie zjeżdżać z limitem, bo stożki tępieją. -->
+  <path d="${d}" fill="none" stroke="url(#f)" stroke-width="6" stroke-linecap="round" stroke-linejoin="miter" stroke-miterlimit="14" opacity="0.1" mask="url(#m)"/>
 </svg>`;
 }
 
-const ecgSrc = `data:image/svg+xml;base64,${Buffer.from(ecgSvg(1184, 630, ECG_BASELINE, 200, 3)).toString('base64')}`;
+const ecgSrc = `data:image/svg+xml;base64,${Buffer.from(ecgSvg(1184, 630, ECG_BASELINE, 190, 3)).toString('base64')}`;
 const ecgBg: Node = {
   type: 'img',
   props: { src: ecgSrc, width: 1184, height: 630, style: { position: 'absolute', top: 0, left: 0 } },
@@ -102,7 +109,7 @@ function template(p: OgPage): Node {
         el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: `${titleSize}px`, lineHeight: 1.08, color: '#ffffff' }, p.title),
         el({ display: 'flex', fontSize: '31px', lineHeight: 1.42, color: '#aebccb', marginTop: '26px', maxWidth: '1010px' }, p.subtitle),
       ]),
-      el({ display: 'flex', alignItems: 'center', borderTop: '1px solid #2f4a66', paddingTop: '24px', color: '#8aa0b6', fontSize: '22px' }, [
+      el({ display: 'flex', alignItems: 'center', paddingTop: '25px', color: '#8aa0b6', fontSize: '22px' }, [
         el({ display: 'flex' }, 'Jawność wynagrodzeń w ochronie zdrowia ze środków publicznych'),
       ]),
     ],

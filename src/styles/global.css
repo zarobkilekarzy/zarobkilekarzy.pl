@@ -33,6 +33,24 @@
   /* akcent medyczny — używać oszczędnie */
   --teal: #0e7c86;
 
+  /* powierzchnie kart / kontrolek — w dark mode odwracają się na ciemne
+     (poprzednio wpisywane wprost jako `#fff`; jeden token = spójny flip). */
+  --surface: #ffffff;
+  --surface-2: #f6f9fb;
+  /* panel CELOWO ciemny (feature box: „skala się urywa", pasek X) — pozostaje
+     ciemny w OBU motywach, więc NIE używać tu --ink (ten się odwraca). */
+  --panel: #14233a;
+  --on-panel: #ffffff;
+  /* akcent TEKSTOWY (linki, eyebrow) — w dark jaśniejszy niż --brand, żeby
+     utrzymać kontrast na ciemnym tle; --brand zostaje kolorem WYPEŁNIEŃ. */
+  --brand-link: #0f4c81;
+  /* półprzezroczyste tło przyklejonego paska nawigacji */
+  --nav-bg: rgba(255, 255, 255, 0.92);
+  /* tekst treści artykułowej (nieco miększy od --ink) */
+  --prose-ink: #29384b;
+
+  color-scheme: light;
+
   --radius: 8px;
   --radius-lg: 12px;
   --maxw: 1080px;
@@ -40,6 +58,84 @@
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* =========================================================================
+   Dark mode — „gabinet nocą": granat gov/finansowy jako baza, medyczny teal
+   jako akcent. Ten sam system tokenów, odwrócone powierzchnie i tekst.
+   Aktywny gdy:
+     • użytkownik wybrał ciemny w przełączniku  → :root[data-theme="dark"], LUB
+     • system woli ciemny, a użytkownik nie wymusił jasnego → media + :not([light]).
+   Wartości utrzymane pod WCAG AA (tekst ≥4,5:1, elementy UI ≥3:1). Blok
+   deklaracji jest świadomie zduplikowany (selektor atrybutu vs media) — CSS bez
+   preprocesora nie pozwala współdzielić go inaczej; trzymamy oba obok siebie.
+   ========================================================================= */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0e1622;
+  --paper: #141f2e;
+  --paper-2: #1c2838;
+
+  --ink: #eaf0f7;
+  --ink-soft: #b2c0d0;
+  --ink-faint: #93a1b3;
+
+  --line: #223047;
+  --line-2: #354861;
+
+  --brand: #2f6fb1;
+  --brand-700: #5a9bd6;
+  --brand-50: #17293e;
+  --brand-link: #6ea8e6;
+
+  --alert: #f26d63;
+  --alert-50: #3a1e1c;
+
+  --teal: #45b8c2;
+
+  --surface: #16212f;
+  --surface-2: #1c2838;
+  --panel: #0a1119;
+  --on-panel: #eef4fa;
+
+  --nav-bg: rgba(14, 22, 34, 0.9);
+  --prose-ink: #c4d0dd;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: #0e1622;
+    --paper: #141f2e;
+    --paper-2: #1c2838;
+
+    --ink: #eaf0f7;
+    --ink-soft: #b2c0d0;
+    --ink-faint: #93a1b3;
+
+    --line: #223047;
+    --line-2: #354861;
+
+    --brand: #2f6fb1;
+    --brand-700: #5a9bd6;
+    --brand-50: #17293e;
+    --brand-link: #6ea8e6;
+
+    --alert: #f26d63;
+    --alert-50: #3a1e1c;
+
+    --teal: #45b8c2;
+
+    --surface: #16212f;
+    --surface-2: #1c2838;
+    --panel: #0a1119;
+    --on-panel: #eef4fa;
+
+    --nav-bg: rgba(14, 22, 34, 0.9);
+    --prose-ink: #c4d0dd;
+  }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -89,7 +185,7 @@ h3 { font-family: var(--font-sans); font-size: 1.1rem; font-weight: 600; margin:
 .cta-band .hanchor, .cta-band .hanchor:hover { color: #fff; }
 
 p { margin: 0 0 1rem; }
-a { color: var(--brand); }
+a { color: var(--brand-link); }
 
 img { max-width: 100%; height: auto; }
 
@@ -103,7 +199,7 @@ main { display: block; }
 
 .eyebrow {
   font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.09em; color: var(--brand); margin: 0 0 0.7rem;
+  letter-spacing: 0.09em; color: var(--brand-link); margin: 0 0 0.7rem;
 }
 .lead { font-size: 1.15rem; line-height: 1.6; color: var(--ink-soft); max-width: 60ch; }
 .muted { color: var(--ink-soft); }
@@ -130,7 +226,7 @@ main { display: block; }
 .btn {
   display: inline-flex; align-items: center; gap: 0.5rem;
   padding: 0.72rem 1.2rem; border-radius: var(--radius);
-  border: 1px solid var(--line-2); background: #fff; color: var(--ink);
+  border: 1px solid var(--line-2); background: var(--surface); color: var(--ink);
   font-family: var(--font-sans); font-weight: 500; font-size: 0.95rem;
   text-decoration: none; cursor: pointer; transition: all 0.15s ease;
 }
@@ -158,7 +254,7 @@ main { display: block; }
 /* --- nawigacja ---------------------------------------------------------- */
 .site-nav {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(8px);
+  background: var(--nav-bg); backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
 .nav-inner { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.85rem 1.25rem; max-width: var(--maxw); margin: 0 auto; }
@@ -168,16 +264,32 @@ main { display: block; }
 .nav-cluster { display: flex; align-items: center; gap: 1.4rem; }
 .nav-links { display: flex; align-items: center; gap: 1.4rem; }
 .nav-links a:not(.btn) { text-decoration: none; color: var(--ink-soft); font-size: 0.92rem; font-weight: 500; white-space: nowrap; }
-.nav-links a:not(.btn):hover, .nav-links a:not(.btn).active { color: var(--brand); }
+.nav-links a:not(.btn):hover, .nav-links a:not(.btn).active { color: var(--brand-link); }
 /* Wejście do wyszukiwarki — ikona lupy widoczna zawsze (desktop i mobile). */
 .nav-search { display: inline-flex; align-items: center; justify-content: center; color: var(--ink-soft); border-radius: var(--radius); }
-.nav-search:hover, .nav-search.active { color: var(--brand); }
+.nav-search:hover, .nav-search.active { color: var(--brand-link); }
+/* Przełącznik jasny/ciemny — ikona przełącza się (słońce/księżyc) przez CSS
+   zależnie od aktywnego motywu; sam guzik jest neutralny jak lupa. */
+.nav-theme {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0; color: var(--ink-soft);
+  background: transparent; border: 0; border-radius: var(--radius); cursor: pointer;
+}
+.nav-theme:hover { color: var(--brand-link); }
+.nav-theme .ico-sun { display: none; }
+.nav-theme .ico-moon { display: inline-flex; }
+:root[data-theme="dark"] .nav-theme .ico-sun { display: inline-flex; }
+:root[data-theme="dark"] .nav-theme .ico-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .nav-theme .ico-sun { display: inline-flex; }
+  :root:not([data-theme="light"]) .nav-theme .ico-moon { display: none; }
+}
 .nav-burger { display: none; }
 
 /* --- hero --------------------------------------------------------------- */
 .hero { padding: 4.5rem 0 3.5rem; }
 .hero-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 2.5rem; align-items: center; }
-.hero h1 .hl { color: var(--brand); }
+.hero h1 .hl { color: var(--brand-link); }
 .stat-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.6rem; }
 .stat-label { font-size: 0.82rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 0.3rem; }
 .stat-num { font-family: var(--font-mono); font-size: clamp(3rem, 9vw, 4.5rem); font-weight: 500; line-height: 1; margin: 0; color: var(--ink); }
@@ -185,7 +297,7 @@ main { display: block; }
 
 /* --- filary ------------------------------------------------------------- */
 .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.25rem; }
-.pillar { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.4rem; }
+.pillar { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.4rem; }
 .pillar .ico { color: var(--brand); margin-bottom: 0.6rem; display: block; }
 .pillar p { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
 
@@ -194,7 +306,7 @@ main { display: block; }
 .article {
   display: flex; gap: 1.25rem; justify-content: space-between; align-items: flex-start;
   padding: 1.15rem 1.35rem; border: 1px solid var(--line); border-radius: var(--radius);
-  background: #fff; text-decoration: none; color: inherit; transition: border-color 0.15s ease;
+  background: var(--surface); text-decoration: none; color: inherit; transition: border-color 0.15s ease;
 }
 .article:hover { border-color: var(--line-2); }
 .article-body { min-width: 0; }
@@ -208,7 +320,7 @@ main { display: block; }
 /* --- filtry ------------------------------------------------------------- */
 .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1.5rem 0; }
 .filter-btn {
-  border: 1px solid var(--line-2); background: #fff; color: var(--ink-soft);
+  border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-soft);
   padding: 0.4rem 0.85rem; border-radius: 999px; font-family: var(--font-sans);
   font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
 }
@@ -224,7 +336,7 @@ main { display: block; }
 
 /* --- treść artykułowa (prose) ------------------------------------------ */
 .prose { max-width: 730px; }
-.prose p, .prose li { font-size: 1.05rem; line-height: 1.7; color: #29384b; }
+.prose p, .prose li { font-size: 1.05rem; line-height: 1.7; color: var(--prose-ink); }
 .prose h2 { margin: 2.4rem 0 0.8rem; }
 .prose h3 { margin: 1.7rem 0 0.5rem; font-size: 1.15rem; }
 .prose ul, .prose ol { padding-left: 1.3rem; margin: 0 0 1.2rem; }
@@ -257,7 +369,7 @@ main { display: block; }
 .site-footer ul { list-style: none; padding: 0; margin: 0; }
 .site-footer li { margin: 0.35rem 0; }
 .site-footer a { color: var(--ink-soft); text-decoration: none; }
-.site-footer a:hover { color: var(--brand); }
+.site-footer a:hover { color: var(--brand-link); }
 .footer-bottom { border-top: 1px solid var(--line); margin-top: 2rem; padding-top: 1.25rem; font-size: 0.82rem; color: var(--ink-faint); display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 
 /* --- formularz ---------------------------------------------------------- */
@@ -266,7 +378,8 @@ main { display: block; }
 .field label { display: block; font-size: 0.88rem; font-weight: 500; margin-bottom: 0.35rem; }
 .field input[type="text"], .field input[type="email"] {
   width: 100%; padding: 0.65rem 0.8rem; border: 1px solid var(--line-2);
-  border-radius: var(--radius); font-family: var(--font-sans); font-size: 0.95rem; color: var(--ink);
+  border-radius: var(--radius); font-family: var(--font-sans); font-size: 0.95rem;
+  color: var(--ink); background: var(--surface);
 }
 .field input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-50); }
 .check { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.85rem; color: var(--ink-soft); }
@@ -289,12 +402,13 @@ main { display: block; }
 @media (max-width: 860px) {
   /* Lupa tuż obok burgera — bez szerokiego odstępu menu desktopowego. */
   .nav-cluster { gap: 0.5rem; }
-  .nav-search { width: 40px; height: 40px; border: 1px solid var(--line-2); background: #fff; }
-  .nav-burger { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1px solid var(--line-2); border-radius: var(--radius); background: #fff; cursor: pointer; color: var(--ink); }
+  .nav-search { width: 40px; height: 40px; border: 1px solid var(--line-2); background: var(--surface); }
+  .nav-theme { width: 40px; height: 40px; border: 1px solid var(--line-2); background: var(--surface); }
+  .nav-burger { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1px solid var(--line-2); border-radius: var(--radius); background: var(--surface); cursor: pointer; color: var(--ink); }
   .nav-links {
     display: none; position: absolute; top: calc(100% + 1px); left: 0; right: 0;
     flex-direction: column; align-items: flex-start; gap: 0.25rem;
-    background: #fff; border-bottom: 1px solid var(--line); padding: 0.75rem 1.25rem 1.1rem;
+    background: var(--surface); border-bottom: 1px solid var(--line); padding: 0.75rem 1.25rem 1.1rem;
   }
   .nav-links a:not(.btn) { padding: 0.5rem 0; width: 100%; }
   .nav-links .btn { margin-top: 0.5rem; }
@@ -318,13 +432,29 @@ main { display: block; }
 }
 
 /* Podwyższony kontrast na życzenie systemu (macOS „Zwiększ kontrast",
-   niektóre przeglądarki) — przyciemniamy szarości i wzmacniamy linie. */
+   niektóre przeglądarki). W jasnym motywie przyciemniamy szarości i wzmacniamy
+   linie; w ciemnym — rozjaśniamy je, żeby nie wpisać ciemnego tekstu na ciemne
+   tło (dlatego blok jest rozbity na dwa warianty motywu). */
 @media (prefers-contrast: more) {
-  :root {
+  :root:not([data-theme="dark"]) {
     --ink-soft: #3c4a5c;
     --ink-faint: #45515f;
     --line: #c4ced8;
     --line-2: #a7b4c0;
+  }
+  :root[data-theme="dark"] {
+    --ink-soft: #d3dde8;
+    --ink-faint: #b9c6d4;
+    --line: #3a4c66;
+    --line-2: #55688a;
+  }
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink-soft: #d3dde8;
+    --ink-faint: #b9c6d4;
+    --line: #3a4c66;
+    --line-2: #55688a;
   }
 }
 

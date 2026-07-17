@@ -14,29 +14,29 @@ const dzienne = rekordy.filter((z) => z.data.jednostka === 'zł/dzień').sort(by
 const miesieczne = rekordy.filter((z) => z.data.jednostka === 'zł/mies.').sort(byKwota);
 const roczne = rekordy.filter((z) => z.data.jednostka === 'zł/rok').sort(byKwota);
 
-// Tabele rekordów pokazują 10 najwyższych pozycji w każdej kategorii.
+// Rankingi pokazują 10 najwyższych pozycji w każdej kategorii, jako paski proporcjonalne
+// do kwoty. Rok i miesiąc mają WŁASNĄ skalę (osobny nagłówek, osobny max) — wspólna oś
+// fałszywie zaniżałaby stawki miesięczne (316 tys./mies to wyższa stawka niż 1,2 mln/rok).
 const TOP = 10;
 const miesieczneTop = miesieczne.slice(0, TOP);
 const roczneTop = roczne.slice(0, TOP);
-
-// Scalona tabela: najpierw roczne (największe kwoty), potem miesięczne. Numer liczony
-// w OBRĘBIE okresu (rok 1–10, mies 1–10) — wspólny ranking 1–20 fałszywie zaniżałby
-// stawki miesięczne (316 tys./mies to wyższa stawka niż 1,2 mln/rok). `boundary` = pierwszy
-// wiersz miesięczny (wyraźna granica bloku).
-const rekordyMerged = [
-  ...roczneTop.map((z, idx) => ({ z, nr: idx + 1, okres: 'rok', boundary: false })),
-  ...miesieczneTop.map((z, idx) => ({ z, nr: idx + 1, okres: 'mies.', boundary: idx === 0 })),
-];
+const maxMies = miesieczneTop[0]?.data.kwota ?? 1;
+const maxRok = roczneTop[0]?.data.kwota ?? 1;
 
 const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+// Minimum 4% szerokości, żeby najniższy pasek (np. etat 29 300) pozostał widoczny.
+const pct = (v: number, max: number) => Math.max(4, Math.round((v / max) * 100));
 
 // Trójka „skala" — najwyższy udokumentowany rekord w każdej jednostce czasu (dzień/miesiąc/rok).
 const heroDzien = dzienne[0];
 const heroMc = miesieczne[0];
 const heroRok = roczne[0];
 // Kotwica skali: mediana kontraktu specjalisty (AOTMiT 02.2026, EXACT) — zob. /dane/rozklad-wynagrodzen.
-const medianaKontrakt = 25595;
-const heroMcMult = Math.floor(heroMc.data.kwota / medianaKontrakt);
+// Krotność liczymy TYLKO dla wypłat miesięcznych (wypłata ↔ mediana wypłaty = porównanie uczciwe).
+// Dla rocznych to dochód z oświadczeń, nie wypłata — krotności świadomie nie podajemy.
+const medianaKontrakt = 25595; // zł/mies.
+const multMies = (v: number) => Math.round(v / medianaKontrakt);
+const heroMcMult = multMies(heroMc.data.kwota);
 
 // Źródłowa tabela: 10 najwyższych wynagrodzeń personelu medycznego szpitali wojewódzkich
 // Mazowsza (2025), wg formy zatrudnienia. Kwoty zaokrąglone do zł. eb/en = etat brutto/netto,
@@ -78,6 +78,14 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
 
       <DisclaimerZarobki />
 
+      <!-- ══════════ AKT I · SKALA ══════════ -->
+      <p class="act-label"><span class="act-nr">I</span> Skala</p>
+      <h2 class="act-h">Trzy twarze jednego rekordu</h2>
+      <p class="act-intro">
+        Najwyższe udokumentowane rozliczenie w każdej jednostce czasu — za godzinę, za miesiąc,
+        za rok. Ta sama praca ze środków publicznych, trzy różne rzędy wielkości.
+      </p>
+
       <div class="skala">
         <div class="skala-tile is-zarzut">
           <div class="skala-eb">za godzinę</div>
@@ -103,6 +111,80 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
         specjalisty</strong> — <a href="/dane/rozklad-wynagrodzen/">25 595 zł/mies., mediana AOTMiT (II 2026)</a>.
       </p>
 
+      <!-- Rankingi-paski: rok i miesiąc obok siebie, każdy z własną skalą -->
+      <div class="rank-cols">
+        <div class="rank-col">
+          <h3 class="rank-h">Rekordy miesięczne</h3>
+          <p class="rank-sub">
+            Najwyższe rozliczenia <strong>za jeden miesiąc</strong>. Pasek = kwota względem rekordu;
+            <strong>×N</strong> to krotność <a href="/dane/rozklad-wynagrodzen/">mediany kontraktu</a> (25 595 zł/mies.).
+          </p>
+          <ol class="rank">
+            {miesieczneTop.map((z, i) => (
+              <li class={`rank-row${i < 3 ? ' is-top' : ''}`}>
+                <div class="rank-head">
+                  <span class="rank-nr">{i + 1}</span>
+                  <span class="rank-role">{z.data.rola || z.data.etykieta}</span>
+                  <span class="rank-amt">{fmt(z.data.kwota)}<i> zł</i></span>
+                </div>
+                <div class="rank-track"><div class="rank-bar" style={`width:${pct(z.data.kwota, maxMies)}%`}></div></div>
+                <div class="rank-meta">
+                  <span class="rank-reg">{z.data.region}</span>
+                  {z.data.forma && z.data.forma !== '—' && <span class="chip">{z.data.forma}</span>}
+                  <span class="rank-mult">×{multMies(z.data.kwota)} mediany</span>
+                  <details class="rk-src">
+                    <summary class="rk-src-sum">źródło</summary>
+                    <span class="rk-src-body">
+                      <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
+                      {z.data.uwaga && <span> — {z.data.uwaga}</span>}
+                    </span>
+                  </details>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div class="rank-col">
+          <h3 class="rank-h">Rekordy roczne</h3>
+          <p class="rank-sub">
+            Najwyższe rozliczenia <strong>za cały rok</strong> — z oświadczeń majątkowych i danych
+            szpitali. To <strong>dochód / rozliczenie roczne</strong>, nie pojedyncza wypłata.
+          </p>
+          <ol class="rank">
+            {roczneTop.map((z, i) => (
+              <li class={`rank-row${i < 3 ? ' is-top' : ''}`}>
+                <div class="rank-head">
+                  <span class="rank-nr">{i + 1}</span>
+                  <span class="rank-role">{z.data.rola || z.data.etykieta}</span>
+                  <span class="rank-amt">{fmt(z.data.kwota)}<i> zł</i></span>
+                </div>
+                <div class="rank-track"><div class="rank-bar" style={`width:${pct(z.data.kwota, maxRok)}%`}></div></div>
+                <div class="rank-meta">
+                  <span class="rank-reg">{z.data.region}</span>
+                  {z.data.forma && z.data.forma !== '—' && <span class="chip">{z.data.forma}</span>}
+                  <details class="rk-src">
+                    <summary class="rk-src-sum">źródło</summary>
+                    <span class="rk-src-body">
+                      <a href={z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{z.data.zrodloNazwa}</a>
+                      {z.data.uwaga && <span> — {z.data.uwaga}</span>}
+                    </span>
+                  </details>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+
+      <p class="source-note">
+        <strong>Uczciwie:</strong> to różne miary — <strong>dochód</strong> z oświadczenia majątkowego
+        (praktyka indywidualna) nie jest tożsamy z <strong>wypłatą</strong> kontraktu czy etatu, a część
+        praktyk rozlicza się też prywatnie. Krotność mediany podajemy tylko przy wypłatach miesięcznych.
+        Kwoty rozliczeń to fakty; zarzuty w postępowaniach oznaczamy osobno i traktujemy jako <strong>nieudowodnione</strong>.
+      </p>
+
+      <!-- Rekord czasu — punchline aktu: najbardziej skrajny rekord nie jest o pieniądzach -->
       <div class="czas">
         <div class="czas-head">
           <span class="czas-eb"><i class="czas-clock" aria-hidden="true">🕐</i> Rekord czasu — nie pieniędzy</span>
@@ -124,60 +206,10 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
         <p class="rec-src"><a href="https://wydarzenia.interia.pl/kraj/news-lekarz-pracowal-72-godziny-na-dobe-to-bylo-wprost-dojenie-sz,nId,23511769" target="_blank" rel="noopener noreferrer">Interia</a></p>
       </div>
 
-      <h2 style="margin-top: 2.5rem">Najwyższe rozliczenia — miesięczne i roczne</h2>
-      <p class="muted" style="max-width: 74ch; margin-top: 0.5rem">
-        Najwyższe rozliczenia w jednej tabeli — po <strong>dziesięć</strong> za rok i za miesiąc,
-        malejąco wg kwoty; kolumna <strong>„okres"</strong> mówi, czy to wypłata za rok, czy za
-        miesiąc. Numer liczymy w obrębie okresu (wspólny ranking mieszałby stawki — 316 tys./mies
-        to więcej niż 1,2 mln/rok). Źródło i kontekst każdej pozycji są schowane w wierszu —
-        rozwiń <strong>„źródło"</strong>.
-      </p>
-
-      <div class="table-wrap rk-wrap">
-        <table class="rk rk-merged">
-          <thead>
-            <tr>
-              <th class="rk-th-i" scope="col">#</th>
-              <th scope="col">Kto · region</th>
-              <th class="rk-th-num" scope="col">kwota</th>
-              <th class="rk-th-okres" scope="col">okres</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rekordyMerged.map((r) => (
-              <tr class={r.boundary ? 'rk-boundary' : undefined}>
-                <td class="rk-i">{r.nr}</td>
-                <td class="rk-co">
-                  <span class="rk-role">{r.z.data.rola || r.z.data.etykieta}</span>
-                  <span class="rk-reg">
-                    {r.z.data.region}
-                    {r.z.data.forma && r.z.data.forma !== '—' && <span class="chip">{r.z.data.forma}</span>}
-                    <details class="rk-src">
-                      <summary class="rk-src-sum">źródło</summary>
-                      <span class="rk-src-body">
-                        <a href={r.z.data.zrodloUrl} target="_blank" rel="noopener noreferrer">{r.z.data.zrodloNazwa}</a>
-                        {r.z.data.uwaga && <span> — {r.z.data.uwaga}</span>}
-                      </span>
-                    </details>
-                  </span>
-                </td>
-                <td class="rk-kwota">{fmt(r.z.data.kwota)}</td>
-                <td class="rk-okres"><span class={`rk-okres-badge rk-okres-${r.okres === 'rok' ? 'rok' : 'mies'}`}>{r.okres}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <p class="source-note" style="margin-top: 1.5rem">
-        <strong>Uczciwie:</strong> to różne miary — <strong>dochód</strong> z oświadczenia majątkowego
-        (praktyka indywidualna) nie jest tożsamy z <strong>wypłatą</strong> kontraktu czy etatu, a część
-        praktyk rozlicza się też prywatnie. Kwoty rozliczeń to fakty; ewentualne zarzuty w postępowaniach
-        oznaczamy osobno i traktujemy jako <strong>nieudowodnione</strong>.
-      </p>
-
-      <h2 style="margin-top: 2.75rem">Kontrakt bije etat: pełna tabela wojewódzka (2025)</h2>
-      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+      <!-- ══════════ AKT II · MECHANIZM ══════════ -->
+      <p class="act-label"><span class="act-nr">II</span> Mechanizm</p>
+      <h2 class="act-h">Kontrakt bije etat — i właśnie jego nie widać</h2>
+      <p class="act-intro">
         Jedno oficjalne zestawienie — <strong>10 najwyższych wynagrodzeń</strong> w szpitalach
         wojewódzkich Mazowsza (2025), wg formy zatrudnienia — pokazuje sedno całej strony: za tę
         samą pracę <strong>kontrakt (B2B) bije etat i umowę cywilnoprawną kilkukrotnie</strong>.
@@ -222,8 +254,10 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
         <a href="https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Kacprzyk-nie-byl-rekordzista-W-szpitalach-mazowieckich-mozna-zarobic-nawet-316-tys-zl-miesiecznie,285578,1.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia</a>.
       </p>
 
-      <h2 style="margin-top: 2.75rem">Kiedy jawność zadziałała — Włocławek</h2>
-      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+      <!-- ══════════ AKT III · JAWNOŚĆ ══════════ -->
+      <p class="act-label"><span class="act-nr">III</span> Jawność</p>
+      <h2 class="act-h">Kiedy jawność zadziałała — Włocławek</h2>
+      <p class="act-intro">
         Zwykle kwot kontraktowych <strong>nikt nie ujawnia</strong>. Tu było inaczej: Wojewódzki
         Szpital Specjalistyczny we Włocławku po prostu <strong>odpowiedział lokalnej gazecie</strong>
         pełnym zestawieniem. Żadnego wycieku ani afery — zwykła odpowiedź instytucji publicznej
@@ -278,7 +312,7 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
       </div>
 
       <h2 style="margin-top: 2.75rem">Jawne — a i tak niewidoczne</h2>
-      <p class="muted" style="max-width: 68ch; margin-top: 0.5rem">
+      <p class="act-intro">
         Bywa, że dochód lekarza jest <strong>jawny z mocy prawa</strong> — u <strong>radnych-lekarzy</strong>,
         bo pełnią funkcję publiczną i składają oświadczenia majątkowe. Poniżej 19 takich rocznych
         dochodów z praktyki lekarskiej (bez nazwisk). Sęk w tym, że widać je <em>tylko dlatego</em>,
@@ -364,17 +398,59 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
   .rec-src { font-size: 0.8rem; margin: 0; }
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
 
-  .skala { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.7rem; margin: 1.5rem 0 0.75rem; }
-  .skala-tile { background: var(--paper); border: 1px solid var(--line); border-top: 3px solid var(--brand); border-radius: var(--radius); padding: 0.85rem 0.95rem 0.8rem; }
-  .skala-tile.is-zarzut { border-top-color: var(--alert); }
-  .skala-eb { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
-  .skala-num { font-family: var(--font-mono); font-size: clamp(1.25rem, 3.2vw, 1.7rem); font-weight: 700; color: var(--ink); line-height: 1.05; margin: 0.3rem 0 0.15rem; white-space: nowrap; }
-  .skala-zl { font-family: var(--font-sans); font-size: 0.8rem; font-weight: 400; color: var(--ink-soft); }
-  .skala-who { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.4; margin: 0 0 0.6rem; }
-  .skala-foot { font-size: 0.78rem; color: var(--ink-faint); margin: 0; }
-  .skala-ctx { max-width: 62ch; font-size: 0.92rem; color: var(--ink-soft); line-height: 1.55; margin: 0.25rem 0 0; }
+  /* ── Akty: etykieta + tytuł + wprowadzenie ─────────────────────────── */
+  .act-label { display: flex; align-items: center; gap: 0.6rem; margin: 3.5rem 0 0.5rem; font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--brand); }
+  .act-nr { display: inline-flex; align-items: center; justify-content: center; width: 1.7rem; height: 1.7rem; border-radius: 999px; border: 1.5px solid var(--brand); font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 0; }
+  .act-h { margin-top: 0.15rem; }
+  .act-intro { max-width: 68ch; font-size: 1rem; color: var(--ink-soft); line-height: 1.65; margin: 0.5rem 0 0; }
 
-  .czas { background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.1rem 1.35rem; margin: 1.25rem 0 0.5rem; }
+  /* ── Kafle „skala" (powiększone) ───────────────────────────────────── */
+  .skala { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.9rem; margin: 1.5rem 0 0.8rem; }
+  .skala-tile { background: var(--paper); border: 1px solid var(--line); border-top: 3px solid var(--brand); border-radius: var(--radius-lg); padding: 1.1rem 1.2rem 1rem; }
+  .skala-tile.is-zarzut { border-top-color: var(--alert); }
+  .skala-eb { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+  .skala-num { font-family: var(--font-mono); font-size: clamp(1.7rem, 4.2vw, 2.35rem); font-weight: 700; color: var(--ink); line-height: 1.02; margin: 0.35rem 0 0.2rem; white-space: nowrap; }
+  .skala-zl { font-family: var(--font-sans); font-size: 0.85rem; font-weight: 400; color: var(--ink-soft); }
+  .skala-who { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.45; margin: 0 0 0.6rem; }
+  .skala-foot { font-size: 0.78rem; color: var(--ink-faint); margin: 0; }
+  .skala-ctx { max-width: 64ch; font-size: 0.95rem; color: var(--ink-soft); line-height: 1.55; margin: 0.25rem 0 0; }
+
+  /* ── Rankingi-paski ────────────────────────────────────────────────── */
+  .rank-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 1.75rem 2.5rem; margin: 2rem 0 0.5rem; }
+  .rank-col { min-width: 0; }
+  .rank-h { font-size: 1.15rem; margin: 0 0 0.15rem; color: var(--ink); }
+  .rank-sub { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.5; margin: 0 0 1rem; }
+  .rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.7rem; }
+  .rank-row { padding-bottom: 0.7rem; border-bottom: 1px solid var(--line); }
+  .rank-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .rank-head { display: grid; grid-template-columns: 1.5rem 1fr auto; align-items: baseline; gap: 0.55rem; }
+  .rank-nr { font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink-faint); text-align: right; }
+  .rank-role { font-weight: 600; color: var(--ink); line-height: 1.3; font-size: 0.95rem; }
+  .rank-amt { font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rank-amt i { font-style: normal; font-size: 0.72rem; font-weight: 400; color: var(--ink-soft); }
+  .rank-track { margin: 0.45rem 0 0.4rem; margin-left: 2.05rem; height: 9px; background: var(--paper-2); border-radius: 999px; overflow: hidden; }
+  .rank-bar { height: 100%; background: var(--neutral-fill); border-radius: 999px; }
+  .rank-meta { margin-left: 2.05rem; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.1rem 0.15rem; font-size: 0.8rem; color: var(--ink-soft); line-height: 1.5; }
+  .rank-reg { margin-right: 0.4rem; }
+  .rank-mult { font-family: var(--font-mono); font-size: 0.74rem; color: var(--ink-faint); margin-right: 0.5rem; }
+  /* Podium: top-3 mocniej — większa liczba i pasek w kolorze marki */
+  .rank-row.is-top .rank-amt { font-size: 1.35rem; color: var(--brand); }
+  .rank-row.is-top .rank-bar { background: var(--brand); }
+  .rank-row.is-top .rank-nr { color: var(--brand); font-weight: 700; }
+
+  /* Źródło inline (rozwijane) — współdzielone przez rankingi */
+  .rk-src { display: inline; }
+  .rk-src-sum { display: inline; cursor: pointer; list-style: none; color: var(--brand-link); font-weight: 600; white-space: nowrap; }
+  .rk-src-sum::-webkit-details-marker { display: none; }
+  .rk-src-sum::before { content: "▸ "; font-size: 0.85em; }
+  .rk-src[open] .rk-src-sum::before { content: "▾ "; }
+  .rk-src-sum:hover, .rk-src-sum:focus-visible { text-decoration: underline; }
+  .rk-src-body { display: none; margin-top: 0.3rem; color: var(--ink-soft); line-height: 1.5; flex-basis: 100%; }
+  .rk-src[open] .rk-src-body { display: block; }
+  .rk-src-body a { font-weight: 400; }
+
+  /* ── Rekord czasu ──────────────────────────────────────────────────── */
+  .czas { background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.1rem 1.35rem; margin: 2rem 0 0.5rem; }
   .czas-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
   .czas-eb { font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; }
   .czas-clock { font-style: normal; }
@@ -384,34 +460,7 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
   .czas-sub { font-size: 0.95rem; color: var(--ink); line-height: 1.55; margin: 0 0 0.5rem; }
   .czas-note { font-size: 0.84rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
 
-  .rk-wrap { margin: 1.25rem 0 0.5rem; }
-  .rk { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
-  .rk-merged { min-width: 420px; }
-  .rk thead th { padding: 0.4rem 0.55rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid var(--line); text-align: left; }
-  .rk thead th.rk-th-num { text-align: right; }
-  .rk thead th.rk-th-i { text-align: right; width: 2ch; }
-  .rk thead th.rk-th-okres { text-align: center; width: 3.5rem; }
-  .rk td { padding: 0.5rem 0.55rem; vertical-align: top; border-bottom: 1px solid var(--line); }
-  .rk tbody tr:last-child td { border-bottom: none; }
-  .rk-i { text-align: right; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint); }
-  .rk-role { display: block; color: var(--ink); font-weight: 600; line-height: 1.35; }
-  .rk-reg { display: block; color: var(--ink-soft); font-size: 0.8rem; margin-top: 0.15rem; line-height: 1.4; }
-  .rk-reg .chip { margin-left: 0.35rem; }
-  .rk-kwota { text-align: right; white-space: nowrap; font-family: var(--font-mono); font-weight: 700; color: var(--ink); font-size: 0.92rem; font-variant-numeric: tabular-nums; }
-  .rk-src { display: inline; }
-  .rk-src-sum { display: inline; cursor: pointer; list-style: none; color: var(--brand); font-weight: 600; white-space: nowrap; margin-left: 0.4rem; }
-  .rk-src-sum::-webkit-details-marker { display: none; }
-  .rk-src-sum::before { content: "▸ "; font-size: 0.85em; }
-  .rk-src[open] .rk-src-sum::before { content: "▾ "; }
-  .rk-src-sum:hover, .rk-src-sum:focus-visible { text-decoration: underline; }
-  .rk-src-body { display: none; margin-top: 0.35rem; color: var(--ink-soft); line-height: 1.5; }
-  .rk-src[open] .rk-src-body { display: block; }
-  .rk-src-body a { font-weight: 400; }
-  .rk-okres { text-align: center; white-space: nowrap; }
-  .rk-okres-badge { display: inline-block; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--paper-2); }
-  .rk-okres-rok { color: var(--brand); }
-  .rk-okres-mies { color: var(--ink-soft); }
-  .rk-boundary td { border-top: 2px solid var(--ink-faint); }
+  /* ── Tabela wojewódzka ─────────────────────────────────────────────── */
   .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
   .woj { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.9rem; }
   .woj thead th { padding: 0.5rem 0.7rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; border-bottom: 2px solid var(--line); text-align: right; }
@@ -424,6 +473,8 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
   .woj-k { font-weight: 700; color: var(--alert); background: var(--alert-50); border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
   .woj tbody tr { border-bottom: 1px solid var(--line); }
   .woj tbody tr:last-child { border-bottom: none; }
+
+  /* ── „Jawne, a niewidoczne" — okno + rozkład radnych ───────────────── */
   .okno-q { font-size: 1.05rem; font-weight: 600; color: var(--ink); margin: 1.25rem 0 0.75rem; }
   .okno { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.75rem; }
   .okno-card { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
@@ -465,7 +516,7 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
   .dist { display: flex; flex-direction: column; gap: 4px; margin: 1rem 0 0.75rem; max-width: 620px; }
   .dist-row { display: grid; grid-template-columns: 1fr 13ch; align-items: center; gap: 0.75rem; }
   .dist-track { position: relative; background: var(--paper-2); border-radius: 3px; height: 15px; }
-  .dist-bar { height: 100%; background: var(--ink-soft); border-radius: 3px; min-width: 3px; }
+  .dist-bar { height: 100%; background: var(--neutral-fill); border-radius: 3px; min-width: 3px; }
   .dist-row.is-med .dist-bar { background: var(--brand); }
   .dist-tag { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.72rem; font-weight: 600; color: var(--brand); background: var(--bg); padding: 0 4px; border-radius: 3px; line-height: 1; }
   .dist-val { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); white-space: nowrap; text-align: right; }

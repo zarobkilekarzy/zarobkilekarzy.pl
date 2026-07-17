@@ -224,6 +224,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Dołącz do sprawy',
     subtitle: 'Poprzyj postulat jawności, udostępnij dane, wesprzyj projekt. Pieniądz publiczny, nie polityka.',
   },
+  'analizy/ustawa-o-danych-a-jawny-rejestr': {
+    tag: 'Analizy · Ustawa a rejestr',
+    title: 'Państwo policzy, obywatel nie zobaczy',
+    subtitle: 'Ustawa z 19 czerwca 2026 r. pozwala zsumować wypłaty jednej osoby z wielu placówek. Ale to trzy artykuły, w których nie ma ani jednego przepisu o publikacji.',
+  },
   'faq': {
     tag: 'Pytania i zarzuty',
     title: 'Najczęstsze zarzuty — i nasze odpowiedzi',

@@ -22,6 +22,7 @@ export const pageDates = {
   '/analizy/zarobki-dyrektorow-szpitali': '2026-07-08',
   '/analizy/komin-placowy': '2026-07-14',
   '/analizy/pielegniarstwo-w-polsce': '2026-07-15',
+  '/analizy/ustawa-o-danych-a-jawny-rejestr': '2026-07-17',
   // Mechanizmy (strony wyjaśniające).
   '/mechanizmy/reglamentacja-dostepu': '2026-07-14',
   '/mechanizmy/kontrakt-vs-etat': '2026-07-14',

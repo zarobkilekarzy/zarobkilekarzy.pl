@@ -1,0 +1,880 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+
+// Analiza prawna ustawy z 19.06.2026 (dane o wynagrodzeniach po PESEL/PWZ) zestawiona
+// z postulatem jawnego rejestru po PWZ.
+// ŹRÓDŁO TREŚCI PRZEPISÓW: tekst ustawy po III czytaniu (druk 2685), Senat bez poprawek
+// -> api.sejm.gov.pl/sejm/term10/processes/2685/attachment/2685_u3.pdf. Cytaty dosłowne.
+// UWAGA REDAKCYJNA: ustawa OBEJMUJE spółki prawa handlowego (art. 4 ust. 1 pkt 1 udl:
+// „przedsiębiorcy we wszelkich formach") — dlatego NIE ma tu sekcji o spółkach. Luka dot.
+// spółek istnieje, ale w Centralnym Rejestrze Umów, czyli w innej ustawie. Nie mieszać.
+
+// Katalog danych z nowego art. 27a ust. 1 pkt 2 udl — prezentowany jako KARTA JEDNEJ OSOBY.
+// `nowe` = pole dodane nowelizacją (to cała nowość ustawy — reszta pól była w przepisie wcześniej).
+// `warunek` = klauzula „jeżeli dotyczy" → samoocena podmiotu, czyli furtka (wiąże się z sekcją 04).
+const katalog = [
+  { lit: 'a', t: 'Numer PESEL', d: 'W razie braku — rodzaj, seria i numer dokumentu tożsamości.', nowe: true, warunek: null },
+  { lit: 'b', t: 'Numer prawa wykonywania zawodu', d: 'Numer zawodowy: ma go lekarz i pielęgniarka, nie ma go administracja.', nowe: true, warunek: 'osoby, którym go nadano' },
+  { lit: 'c', t: 'Wysokość wynagrodzenia', d: 'Zasadnicze, dodatki oraz stawki godzinowe.', nowe: false, warunek: 'stawki godzinowe — „jeżeli dotyczy”' },
+  { lit: 'd', t: 'Wymiar czasu pracy', d: 'Zapis umowy: ułamek etatu — nie liczba godzin, które ktoś naprawdę przepracował. Dyżury, nadgodziny i gotowość niczego tu nie zmieniają: lekarz z jednym etatem i kilkunastoma dyżurami w miesiącu wpisze dokładnie to samo, co lekarz bez ani jednego.', nowe: false, warunek: null },
+  { lit: 'e', t: 'Tytuły zawodowe', d: 'Lekarz, lekarz dentysta, magister pielęgniarstwa.', nowe: false, warunek: '„jeżeli posiada”' },
+  { lit: 'f', t: 'Zajmowane stanowisko', d: 'Nazwa stanowiska w strukturze podmiotu — np. koordynator oddziału.', nowe: false, warunek: null },
+  { lit: 'g', t: 'Forma zatrudnienia', d: 'Etat, kontrakt, zlecenie. To pole odróżnia B2B od umowy o pracę.', nowe: false, warunek: null },
+  { lit: 'h', t: 'Posiadane specjalizacje', d: 'Zestawione ze stanowiskiem pokazują, czy ktoś pełni funkcję bez wymaganej specjalizacji.', nowe: false, warunek: '„jeżeli dotyczy”' },
+  { lit: 'i', t: 'Wymagane wykształcenie', d: 'Uwaga: przepis mówi o wykształceniu wymaganym na stanowisku — nie o tym, które osoba faktycznie ma.', nowe: false, warunek: null },
+];
+
+// FURTKI — analiza luk. Każda pozycja opiera się na DOSŁOWNYM brzmieniu przepisu.
+// UWAGA: zakres pojęcia „osoba zatrudniona" w art. 27a udl jest NIEJEDNOZNACZNY (art. 36 udl
+// rozróżnia je od stosunku cywilnoprawnego, ale art. 92 udl używa „zatrudnieni" szeroko).
+// Dlatego asertujemy RÓŻNICĘ BRZMIEŃ (fakt), a nie wykładnię („kontrakty wypadają") — tego
+// nie wolno podać jako faktu.
+const furtki = [
+  {
+    grupa: 'Kto może wypaść z obowiązku',
+    items: [
+      {
+        t: 'Kontrakt to nie „zatrudnienie" — a przynajmniej nie zawsze',
+        d: 'Ta sama ustawa nowelizuje dwa przepisy i każdy pisze o tym samym innym językiem. Art. 31lc wymienia trzy formy z nazwy. Art. 27a poprzestaje na „zatrudnionych". Dodatkowo art. 36 tej samej ustawy o działalności leczniczej nakazuje identyfikatory „osobom zatrudnionym w szpitalu <strong>oraz pozostającym w stosunku cywilnoprawnym</strong>" — czyli sam ustawodawca traktuje je jako dwie różne kategorie. Gdyby „zatrudnione" obejmowało kontrakt, ten drugi człon byłby zbędny.',
+        uczciwie: 'Uczciwie: przepis jest <strong>niejednoznaczny</strong>, nie jednoznacznie dziurawy. W art. 92 tej samej ustawy „zatrudnieni" obejmuje wprost także umowę cywilnoprawną. Nie twierdzimy więc, że kontrakty na pewno wypadną — twierdzimy, że ustawa zostawia spór o zakres tam, gdzie obok go nie zostawiono.',
+      },
+      {
+        t: 'Faktura zamiast osoby',
+        d: 'Art. 31lc obejmuje wprost także pracę „<strong>w ramach podwykonawstwa</strong>". W art. 27a tego członu nie ma. Jeśli stroną umowy ze szpitalem jest spółka albo spółdzielnia lekarska, a nie lekarz osobiście, to przepis mówiący o „osobach zatrudnionych w tym podmiocie" nie sięga kontrahenta. Pieniądz wychodzi wtedy na jedną fakturę, a osoba za nią stojąca pozostaje poza zestawieniem.',
+        uczciwie: null,
+      },
+      {
+        t: 'Praktyka jednoosobowa nie ma kogo zgłosić',
+        d: 'Lekarz prowadzący indywidualną praktykę <em>sam</em> jest „podmiotem wykonującym działalność leczniczą" (art. 2 ust. 1 pkt 5) — więc art. 27a formalnie go dotyczy. Tyle że przepis każe raportować „osoby zatrudnione w tym podmiocie", a w praktyce jednoosobowej nie ma nikogo takiego: lekarz nie jest zatrudniony sam u siebie. W szpitalu nie jest pracownikiem, bo jest kontrahentem. Wypada między dwa krzesła.',
+        uczciwie: null,
+      },
+    ],
+  },
+  {
+    grupa: 'Czego i tak nie policzą',
+    items: [
+      {
+        t: '„Wymiar czasu pracy" to instytucja Kodeksu pracy',
+        d: 'Art. 129 Kodeksu pracy przypisuje czas pracy <strong>pracownikowi</strong>. Osoba na kontrakcie B2B nie ma „wymiaru czasu pracy" — ta kategoria prawnie jej nie dotyczy. I znów: w art. 31lc ustawodawca użył neutralnego „<strong>wymiaru zatrudnienia</strong>", które działa dla każdej formy. W art. 27a wpisał kodeksowy „<strong>wymiar czasu pracy</strong>". Dwa przepisy, dwa terminy, jedna nowelizacja.',
+        uczciwie: null,
+      },
+      {
+        t: 'Godzin nikt nie ma obowiązku ewidencjonować',
+        d: 'Art. 149 § 1 Kodeksu pracy nakazuje ewidencję czasu pracy <strong>pracownika</strong> — kontraktowca nie obejmuje żaden ustawowy odpowiednik. Co więcej, § 2 tego samego artykułu wyłącza z ewidencjonowania godzin nawet <em>pracowników</em>: tych w zadaniowym czasie pracy oraz tych na <strong>ryczałcie</strong> za nadgodziny. Reżim dyżuru medycznego z art. 95 ust. 1 ustawy o działalności leczniczej też dotyczy wyłącznie „pracowników zatrudnionych w podmiocie leczniczym".',
+        uczciwie: null,
+      },
+      {
+        t: 'Dyżury nie ruszają etatu',
+        d: 'Art. 95 ust. 3: „Czas pełnienia dyżuru medycznego wlicza się do czasu pracy" — ale <strong>wymiar etatu zostaje ten sam</strong>. Dyżury rozlicza się jak nadgodziny (odesłanie do art. 151 Kodeksu pracy), nie przez podniesienie wymiaru z 1,0 na 1,5. Lekarz z jednym etatem i kilkunastoma dyżurami w miesiącu wpisze „pełny etat" — dokładnie to samo, co lekarz bez ani jednego dyżuru.',
+        uczciwie: null,
+      },
+      {
+        t: 'Opt-out zostaje w szufladzie pracodawcy',
+        d: 'Art. 96 pozwala lekarzowi zgodzić się na pracę ponad przeciętnie 48 godzin tygodniowo. Ewidencję takich osób prowadzi <strong>pracodawca</strong> i udostępnia ją organom nadzoru nad prawem pracy — <strong>na ich wniosek</strong>. Nie ministrowi zdrowia, nie do zestawienia z art. 27a, nie publicznie. Najtwardszy dowód przeciążenia pracą powstaje więc obok tego rejestru i nigdy do niego nie trafia.',
+        uczciwie: null,
+      },
+      {
+        t: '„Jeżeli dotyczy" — trzy razy w jednym katalogu',
+        d: 'Katalog danych zawiera trzy klauzule warunkowe: „stawek godzinowych, <strong>jeżeli dotyczy</strong>" (lit. c), „tytuły zawodowe, <strong>jeżeli posiada</strong>" (lit. e), „posiadane specjalizacje, <strong>jeżeli dotyczy</strong>" (lit. h). Ocenia to sam raportujący podmiot. Przy kontrakcie rozliczanym ryczałtem za dyżur stawki godzinowej po prostu „nie dotyczy" — i pole zostaje puste zgodnie z ustawą.',
+        uczciwie: null,
+      },
+    ],
+  },
+  {
+    grupa: 'Co, jeśli podmiot po prostu nie prześle',
+    items: [
+      {
+        t: 'Za brak danych nie grozi nic',
+        mocna: '0',
+        d: 'Ustawa o działalności leczniczej <strong>nie ma rozdziału przepisów karnych</strong>. Kary pieniężne przewiduje w dwóch miejscach: art. 35 (zaprzestanie działalności bez zachowania trybu) i art. 107 (niezgłoszenie zmiany danych rejestrowych). <strong>Żadna nie obejmuje art. 27a</strong>, a nowelizacja sankcji nie dodaje. Ustawa nakłada obowiązek i na tym poprzestaje: <strong>szpital, który po prostu nie odeśle danych, nie ponosi żadnej konsekwencji przewidzianej w tej ustawie</strong>. Cały mechanizm opiera się na dobrej woli podmiotu, który ma donieść na samego siebie.',
+        uczciwie: 'Uczciwie: wobec podmiotu z kontraktem NFZ teoretycznie zadziałałaby ogólna kara umowna z warunków umowy z Funduszem. Nie znaleźliśmy jednak przypadku zastosowania jej do tego obowiązku — to możliwość, nie działający mechanizm.',
+      },
+      {
+        t: 'Zakres ustala pismo, nie rozporządzenie',
+        d: 'Art. 27a nie zawiera delegacji do wydania rozporządzenia — minister określa zakres, termin i sposób „<strong>w sposób przez niego wskazany</strong>", czyli w samym wniosku. Rozporządzenie byłoby publikowane w Dzienniku Ustaw i konsultowane. Wniosek nie podlega ani publikacji, ani konsultacjom. Obok, w art. 31lc ust. 4c, ustawodawca zażądał czegoś odwrotnego: wytyczne „określa Prezes Agencji i <strong>publikuje je w Biuletynie Informacji Publicznej Agencji</strong>". Jeden przepis każe pokazać metodykę. Drugi milczy.',
+        uczciwie: null,
+      },
+    ],
+  },
+];
+
+// Cztery różnice konstrukcyjne. Kolejność = od najważniejszej.
+const roznice = [
+  {
+    os: 'Kto zobaczy dane',
+    ustawa: 'Minister zdrowia. Na jego wskazanie także NFZ, Centrum e-Zdrowia albo AOTMiT. Obywatel — nikt z tej listy.',
+    postulat: 'Każdy. Publikacja z mocy ustawy, w formacie do pobrania.',
+    dlaczego: 'Dane, których nie można sprawdzić z zewnątrz, wymagają zaufania do tego, kto je trzyma. Jawne dane zaufania nie wymagają — wystarczy je otworzyć.',
+  },
+  {
+    os: 'Kiedy dane są zbierane',
+    ustawa: 'Dopiero „na wniosek ministra", w terminie i w sposób przez niego wskazany. Ustawa nie przewiduje cyklu ani terminu.',
+    postulat: 'Stały, cykliczny obowiązek sprawozdawczy — niezależny od tego, czy resort akurat chce popatrzeć.',
+    dlaczego: 'Narzędzie uruchamiane na żądanie działa wtedy, gdy jest wola polityczna. Rejestr działa zawsze — również wtedy, gdy jest niewygodny.',
+  },
+  {
+    os: 'Czy dane da się w ogóle pokazać',
+    ustawa: 'Zestawienie spięte numerem PESEL. Takiego zbioru nie da się opublikować — publikacja ujawniałaby numer, który z natury jest chroniony.',
+    postulat: 'Zestawienie spięte numerem PWZ — tym samym, po którym samorząd lekarski już dziś pozwala każdemu sprawdzić lekarza w publicznej wyszukiwarce.',
+    dlaczego: 'Wybór identyfikatora przesądza o tym, czy jawność jest technicznie możliwa — zanim ktokolwiek zdąży o niej zdecydować. Rejestr oparty na PESEL musi zostać zamknięty, choćby minister bardzo chciał go otworzyć. Rejestr po PWZ można pokazać, nie odsłaniając niczego, co dziś jest tajne. Ustawa wybrała numer, który zamyka drzwi.',
+  },
+  {
+    os: 'Czy widać godziny',
+    ustawa: 'Wymiar czasu pracy i stawka godzinowa — czyli treść umowy. Ewidencji realnie przepracowanych godzin ustawa nie tworzy.',
+    postulat: 'Realne godziny, rozliczane per podmiot wypłacający.',
+    dlaczego: 'Bez godzin widać, ile ktoś dostał, ale nie widać, kiedy pracował. Grafików nachodzących na siebie w dwóch miejscach o tej samej porze taki zbiór nie wychwyci — a to jest pytanie o bezpieczeństwo pacjenta, nie o pieniądze.',
+  },
+];
+---
+
+<BaseLayout
+  title="Państwo policzy, obywatel nie zobaczy — ustawa o danych o wynagrodzeniach a jawny rejestr — zarobkilekarzy.pl"
+  description="Ustawa z 19 czerwca 2026 r. pozwala państwu zsumować zarobki jednej osoby w ochronie zdrowia. Analiza prawna: co dokładnie mówią przepisy, gdzie kończy się obieg danych i czym różni się to od jawnego rejestru po numerze PWZ."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/analizy/">Analizy</a> · Ustawa a jawny rejestr</p>
+      <h1>Państwo policzy, obywatel nie zobaczy</h1>
+      <Aktualizacja />
+      <p class="lead">
+        Podpisana <strong>17 lipca 2026 r.</strong> nowelizacja robi rzecz, której państwo
+        nie potrafiło zrobić przez dwie dekady: pozwala <strong>zsumować wypłaty jednej osoby
+        z wielu placówek</strong>. To realna zmiana i warto ją nazwać po imieniu. Ale cała
+        ustawa mieści się w <strong>trzech artykułach</strong> i nie ma w nich
+        <strong>ani jednego przepisu nakazującego cokolwiek opublikować</strong>. Poniżej —
+        co dokładnie mówią przepisy i czym ta konstrukcja różni się od rejestru, którego
+        domaga się ta strona.
+      </p>
+    </div>
+  </section>
+
+  <!-- 1. ANATOMIA -->
+  <section class="section band-soft">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">01</span> Anatomia</p>
+      <h2 class="sec-h">Cała zmiana to skreślenie jednego słowa</h2>
+      <p class="sec-intro">
+        Do tej pory podmioty lecznicze przekazywały agencji dane o wynagrodzeniach
+        <strong>zanonimizowane</strong> — widać było kwoty, nie było widać, że trzy z nich
+        trafiają do tej samej osoby. Nowelizacja robi dwie rzeczy: <strong>skreśla słowo
+        „zanonimizowane"</strong> i dokłada do katalogu <strong>numer PESEL oraz numer
+        PWZ</strong>. Tyle. Reszta konstrukcji już istniała.
+      </p>
+
+      <div class="anatomy">
+        <div class="anat">
+          <p class="anat-h">Art. 1 — ustawa o świadczeniach opieki zdrowotnej</p>
+          <p class="anat-d">
+            W art. 31lc skreśla wyraz „zanonimizowane" i dodaje numer PESEL (ust. 2 pkt 6)
+            oraz numer PWZ (pkt 7). Ta ścieżka dotyczy świadczeniodawców, którzy zawarli
+            umowę z NFZ.
+          </p>
+        </div>
+        <div class="anat">
+          <p class="anat-h">Art. 2 — ustawa o działalności leczniczej</p>
+          <p class="anat-d">
+            Nadaje nowe brzmienie art. 27a: katalog danych, cele przetwarzania i lista
+            odbiorców. To jest serce ustawy.
+          </p>
+        </div>
+        <div class="anat">
+          <p class="anat-h">Art. 3 — wejście w życie</p>
+          <p class="anat-d">
+            Po upływie 14 dni od dnia ogłoszenia. Na dzień publikacji tej analizy ustawa
+            nie została jeszcze ogłoszona w Dzienniku Ustaw.
+          </p>
+        </div>
+      </div>
+
+      <p class="source-note">
+        Tekst ustawy z dnia 19 czerwca 2026 r. o zmianie ustawy o świadczeniach opieki
+        zdrowotnej finansowanych ze środków publicznych oraz ustawy o działalności leczniczej —
+        <a href="https://api.sejm.gov.pl/sejm/term10/processes/2685/attachment/2685_u3.pdf" target="_blank" rel="noopener noreferrer">tekst po III czytaniu (druk 2685)</a>;
+        Senat nie wniósł poprawek, więc jest to tekst przedłożony prezydentowi. Przebieg prac:
+        <a href="https://api.sejm.gov.pl/sejm/term10/processes/2685" target="_blank" rel="noopener noreferrer">proces legislacyjny 2685</a>.
+        Sejm uchwalił ustawę 19.06.2026 (253 za, <strong>0 przeciw</strong>, 177 wstrzymujących się).
+      </p>
+    </div>
+  </section>
+
+  <!-- 2. KATALOG -->
+  <section class="section">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">02</span> Co trafia do państwa</p>
+      <h2 class="sec-h">Karta jednej osoby</h2>
+      <p class="sec-intro">
+        Tak wygląda komplet danych, który podmiot leczniczy wysyła ministrowi o każdej osobie.
+        Osiem z dziewięciu pól było w przepisie <strong>już wcześniej</strong> — nowelizacja
+        dokłada dwa numery i to one zmieniają wszystko: dopiero one pozwalają połączyć wypłaty
+        tej samej osoby z różnych placówek.
+      </p>
+
+      <div class="karta" role="group" aria-label="Katalog danych z art. 27a ust. 1 pkt 2">
+        <p class="karta-head">Dane przekazywane o jednej osobie · art. 27a ust. 1 pkt 2</p>
+        <ol class="karta-pola">
+          {katalog.map((k) => (
+            <li class={`pole${k.nowe ? ' pole-nowe' : ''}`}>
+              <span class="pole-lit" aria-hidden="true">{k.lit}</span>
+              <div class="pole-tresc">
+                <p class="pole-t">
+                  {k.t}
+                  {k.nowe && <span class="znacznik znacznik-nowe">nowe</span>}
+                  {k.warunek && <span class="znacznik znacznik-war">{k.warunek}</span>}
+                </p>
+                <p class="pole-d">{k.d}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <p class="karta-stopka">
+          <strong>nowe</strong> — pole dodane nowelizacją z 19.06.2026.
+          <strong>Klauzule warunkowe</strong> ocenia sam raportujący podmiot — wracamy do nich
+          w sekcji <a href="#ta-sama-ustawa-dwa-jezyki">Furtki</a>.
+        </p>
+      </div>
+
+      <p class="sec-intro" style="margin-top: 1.75rem">
+        Obowiązek nałożono na <strong>„podmiot wykonujący działalność leczniczą"</strong> — a to
+        pojęcie obejmuje <strong>wszystkie formy prawne</strong>: SPZOZ-y, instytuty, fundacje,
+        ale też spółki prawa handlowego, bo art. 4 ust. 1 pkt 1 zalicza do podmiotów leczniczych
+        „przedsiębiorców […] we wszelkich formach przewidzianych dla wykonywania działalności
+        gospodarczej". Pod tym względem ustawa nie ma luki.
+      </p>
+
+      <p class="source-note">
+        Art. 27a ust. 1 pkt 2 ustawy o działalności leczniczej w brzmieniu nadanym art. 2
+        nowelizacji — <a href="#tekst-ustawy">pełny tekst ustawy niżej</a>. Definicje:
+        <a href="https://www.lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-4/" target="_blank" rel="noopener noreferrer">art. 4 ust. 1</a>
+        (podmiot leczniczy) i art. 2 ust. 1 pkt 5 (podmiot wykonujący działalność leczniczą).
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. OBIEG -->
+  <section class="section band-soft">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">03</span> Obieg</p>
+      <h2 class="sec-h">Monitoring, który włącza się na życzenie</h2>
+      <p class="sec-intro">
+        Najważniejsze zdanie tej ustawy nie mówi o tym, <em>co</em> się zbiera, tylko
+        <strong>kiedy</strong> i <strong>dla kogo</strong>. Sprawozdawczość nie rusza sama
+        i nie chodzi w tle — <strong>uruchamia ją wniosek ministra</strong>. A wyniki analiz
+        wracają tam, skąd wyszło polecenie.
+      </p>
+
+      <blockquote class="lex">
+        <p>
+          „Podmiot wykonujący działalność leczniczą, <strong>na wniosek ministra</strong> właściwego
+          do spraw zdrowia, gromadzi oraz przekazuje, <strong>w terminie i w sposób przez niego
+          wskazany</strong>, dane dotyczące osób zatrudnionych w tym podmiocie […]"
+        </p>
+        <cite>Art. 27a ust. 1 ustawy o działalności leczniczej</cite>
+      </blockquote>
+
+      <ol class="pipe">
+        <li>
+          <span class="pipe-n" aria-hidden="true"></span>
+          <div>
+            <p class="pipe-t">Podmiot leczniczy przekazuje dane</p>
+            <p class="pipe-d">Ale dopiero wtedy, gdy minister o nie wystąpi.</p>
+          </div>
+        </li>
+        <li>
+          <span class="pipe-n" aria-hidden="true"></span>
+          <div>
+            <p class="pipe-t">Minister zdrowia je przetwarza</p>
+            <p class="pipe-d">
+              Cele wylicza art. 27a ust. 2: równy dostęp do świadczeń, prace analityczne
+              i prognostyczne oraz kontrola „legalności, gospodarności, rzetelności i celowości
+              finansowania". Publikacji na tej liście nie ma.
+            </p>
+          </div>
+        </li>
+        <li>
+          <span class="pipe-n" aria-hidden="true"></span>
+          <div>
+            <p class="pipe-t">Minister „może wskazać" odbiorcę</p>
+            <p class="pipe-d">
+              NFZ albo jednostkę podległą właściwą dla systemów informacyjnych (ust. 3), albo
+              AOTMiT (ust. 4). Agencja jest tu <strong>opcją, nie adresatem z urzędu</strong> —
+              wbrew temu, jak ustawa bywa opisywana.
+            </p>
+          </div>
+        </li>
+        <li class="pipe-end">
+          <span class="pipe-n" aria-hidden="true"></span>
+          <div>
+            <p class="pipe-t">Wyniki analiz wracają do ministra</p>
+            <p class="pipe-d">
+              Art. 31o ust. 2 pkt 1n nakazuje agencji „przekazywanie ministrowi właściwemu do
+              spraw zdrowia wyników prac analitycznych". I na tym przepis się kończy —
+              <strong>nic nie musi wyjść na zewnątrz</strong>: ani rekord, ani zestawienie,
+              ani wniosek.
+            </p>
+          </div>
+        </li>
+      </ol>
+
+      <h3 class="pod-h">Czego ustawa nie mówi o tym wniosku</h3>
+      <p class="sec-intro">
+        Przepis nie określa <strong>ani jednej</strong> z rzeczy, które zamieniłyby to narzędzie
+        w rejestr. Nie ma w nim:
+      </p>
+      <ul class="braki">
+        <li><strong>Kiedy</strong> — żadnego terminu ani daty pierwszego zapytania.</li>
+        <li><strong>Jak często</strong> — żadnego cyklu; może raz, może nigdy więcej.</li>
+        <li><strong>Wobec kogo</strong> — żadnego klucza doboru placówek.</li>
+        <li><strong>W jakim zakresie</strong> — to minister określa „w sposób przez niego wskazany".</li>
+      </ul>
+
+      <p class="sec-intro">
+        Do tego dochodzi arytmetyka. Adresatem wniosku jest <strong>pojedynczy podmiot</strong>,
+        nie system — ustawa nie zna powszechnego obowiązku sprawozdawczego, który ruszałby sam.
+        Samych szpitali jest w Polsce <strong>ponad tysiąc</strong>: 896 stacjonarnych ogólnych
+        i 231 dziennych. A obowiązek na szpitalach się nie kończy — obejmuje <strong>każdy</strong>
+        podmiot wykonujący działalność leczniczą, w tym przychodnie i indywidualne praktyki
+        lekarskie. Pełny przegląd systemu wymagałby wystąpienia do każdego z osobna. Zapytanie
+        o kilka wybranych placówek jest <strong>tańsze, szybsze i nie wymaga niczyjej zgody</strong>.
+      </p>
+
+      <div class="callout callout-alert">
+        <p>
+          <strong>Uznaniowość plus tajność to jeden mechanizm, nie dwie osobne wady.</strong>
+          Skoro ustawa nie narzuca klucza doboru, nic nie stoi na przeszkodzie, by wniosek objął
+          <strong>jedną placówkę zamiast wszystkich</strong>. A skoro ani treść wniosku, ani wyniki
+          analiz nie podlegają publikacji, <strong>z zewnątrz nie da się sprawdzić, czy zapytano
+          o wszystkich, czy o wybranych</strong>. Narzędzie, którego użycie jest niewidoczne, nie
+          daje się rozliczyć — i to jest cecha jego konstrukcji, niezależna od intencji
+          kogokolwiek, kto akurat sprawuje urząd.
+        </p>
+        <p class="callout-uczciwie">
+          To <strong>opis ryzyka wpisanego w przepis, nie zarzut wobec kogokolwiek</strong>. Nie
+          twierdzimy, że ustawę napisano po to, by jej używać wybiórczo, ani że ktokolwiek tak
+          zrobił. Twierdzimy, że tekst na to pozwala i nie daje obywatelowi sposobu, żeby to
+          zweryfikować.
+        </p>
+      </div>
+
+      <p class="tory-pointa">
+        I tu jawność przestaje być zagrożeniem dla lekarzy, a staje się ich <strong>osłoną</strong>.
+        Rejestr, który działa <strong>zawsze, wobec wszystkich i na oczach wszystkich</strong>,
+        nie da się w nikogo wycelować — bo nie ma w nim momentu, w którym ktoś decyduje, o kogo
+        zapytać. Zapytanie na żądanie za zamkniętymi drzwiami takiego zabezpieczenia nie ma.
+      </p>
+
+      <p class="source-note">
+        Art. 27a ust. 1–4 ustawy o działalności leczniczej oraz art. 31n pkt 4h i art. 31o
+        ust. 2 pkt 1n ustawy o świadczeniach — w brzmieniu nadanym nowelizacją;
+        <a href="#tekst-ustawy">pełny tekst niżej</a>. Liczba szpitali: GUS, „Zdrowie i ochrona
+        zdrowia w 2022 r." — 896 stacjonarnych szpitali ogólnych i 231 szpitali dziennych
+        (<a href="https://www.mzdrowie.pl/fakty/liczba-szpitali-i-lozek-szpitalnych-utrzymuje-sie-na-podobnym-poziomie/" target="_blank" rel="noopener noreferrer">za mzdrowie.pl</a>);
+        to <strong>najnowsze pełne dane GUS</strong>, liczba utrzymuje się na podobnym poziomie.
+        Brak delegacji do rozporządzenia omawiamy w sekcji
+        <a href="#ta-sama-ustawa-dwa-jezyki">Furtki</a>. Zob. też
+        <a href="/mechanizmy/brak-jawnosci/">mechanizm: brak jawności</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- 4. FURTKI -->
+  <section class="section">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">04</span> Furtki</p>
+      <h2 class="sec-h">Ta sama ustawa, dwa języki</h2>
+      <p class="sec-intro">
+        Nowelizacja zmienia naraz <strong>dwa przepisy w dwóch ustawach</strong> — i każdy z nich
+        opisuje to samo innym językiem. Art. 31lc (dane dla Agencji) wylicza formy współpracy
+        z nazwy. Art. 27a (dane dla ministra) poprzestaje na jednym słowie. Zestawmy je dosłownie:
+      </p>
+
+      <div class="tory">
+        <div class="tor tor-szeroki">
+          <p class="tor-tag">Art. 31lc — dane dla Agencji (AOTMiT)</p>
+          <p class="tor-cyt">
+            „…dane dotyczące wszystkich osób zatrudnionych u niego <strong>na podstawie umowy
+            o pracę lub świadczących usługi na podstawie umowy cywilnoprawnej, lub w ramach
+            podwykonawstwa</strong>…"
+          </p>
+          <p class="tor-op">Trzy formy współpracy wymienione z nazwy. Nie da się ich pominąć.</p>
+        </div>
+        <div class="tor tor-waski">
+          <p class="tor-tag">Art. 27a — dane dla ministra zdrowia</p>
+          <p class="tor-cyt">
+            „…dane dotyczące <strong>osób zatrudnionych</strong> w tym podmiocie…"
+          </p>
+          <p class="tor-op">Jedno słowo — i spór o to, co ono obejmuje.</p>
+        </div>
+      </div>
+
+      <p class="tory-pointa">
+        Ustawodawca <strong>umie napisać przepis, który obejmuje kontrakty</strong> — udowodnił to
+        w tej samej nowelizacji, jeden przepis obok. W art. 27a tego nie zrobił.
+      </p>
+
+      <p class="source-note">
+        Art. 31lc ust. 4a ustawy o świadczeniach opieki zdrowotnej —
+        <a href="https://www.lexlege.pl/ustawa-o-swiadczeniach-opieki-zdrowotnej-finansowanych-ze-srodkow-publicznych/art-31lc/" target="_blank" rel="noopener noreferrer">tekst przepisu</a>;
+        art. 27a ust. 1 ustawy o działalności leczniczej w brzmieniu nadanym
+        <a href="https://api.sejm.gov.pl/sejm/term10/processes/2685/attachment/2685_u3.pdf" target="_blank" rel="noopener noreferrer">art. 2 nowelizacji</a>.
+        Oba tory nowelizacja odanonimizowuje — różnią się zakresem, nie tym, czy dane są imienne.
+      </p>
+
+      <div class="furtki">
+        {furtki.map((g) => (
+          <div class="furtka-grupa">
+            <h3 class="furtka-h">{g.grupa}</h3>
+            <div class="furtka-lista">
+              {g.items.map((f) => (
+                <div class={`furtka${f.mocna ? ' furtka-mocna' : ''}`}>
+                  {f.mocna && <span class="furtka-num" aria-hidden="true">{f.mocna}</span>}
+                  <div class="furtka-body">
+                    <p class="furtka-t">{f.t}</p>
+                    <p class="furtka-d" set:html={f.d} />
+                    {f.uczciwie && <p class="furtka-u" set:html={f.uczciwie} />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p class="source-note">
+        Przepisy przywołane w tej sekcji:
+        <a href="https://www.lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-36/" target="_blank" rel="noopener noreferrer">art. 36</a>,
+        <a href="https://www.lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-95/" target="_blank" rel="noopener noreferrer">art. 95</a>,
+        <a href="https://www.lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-96/" target="_blank" rel="noopener noreferrer">art. 96</a>,
+        <a href="https://www.lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-107/" target="_blank" rel="noopener noreferrer">art. 107</a>
+        ustawy o działalności leczniczej;
+        <a href="https://www.lexlege.pl/kp/art-149/" target="_blank" rel="noopener noreferrer">art. 149</a>
+        i art. 129 Kodeksu pracy. Zob. też <a href="/mechanizmy/kontrakt-vs-etat/">kontrakt vs etat</a>
+        i <a href="/mechanizmy/wieloetatowosc/">wieloetatowość</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. RÓŻNICE -->
+  <section class="section band-soft">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">05</span> Zestawienie</p>
+      <h2 class="sec-h">Cztery różnice konstrukcyjne</h2>
+      <p class="sec-intro">
+        Spór nie dotyczy już tego, <em>czy</em> zbierać dane — to przesądzone i przeszło przez
+        Sejm bez jednego głosu sprzeciwu. Spór dotyczy tego, <strong>kto ma prawo je zobaczyć</strong>,
+        <strong>kiedy</strong> i <strong>pod jakim numerem</strong>.
+      </p>
+
+      <div class="cmp">
+        {roznice.map((r, i) => (
+          <div class="cmp-row">
+            <p class="cmp-os"><span class="cmp-n">{String(i + 1).padStart(2, '0')}</span>{r.os}</p>
+            <div class="cmp-cols">
+              <div class="cmp-col cmp-law">
+                <p class="cmp-lab">Ustawa z 19.06.2026</p>
+                <p class="cmp-txt">{r.ustawa}</p>
+              </div>
+              <div class="cmp-col cmp-ours">
+                <p class="cmp-lab">Jawny rejestr po PWZ</p>
+                <p class="cmp-txt">{r.postulat}</p>
+              </div>
+            </div>
+            <p class="cmp-why"><strong>Dlaczego to przeważa:</strong> {r.dlaczego}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. UCZCIWIE -->
+  <section class="section">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">06</span> Uczciwie</p>
+      <h2 class="sec-h">Co ta ustawa naprawdę załatwia, a czego nie</h2>
+      <div class="prose">
+        <ul class="mech">
+          <li>
+            <strong>To jest krok naprzód i nie udajemy inaczej.</strong> Po raz pierwszy państwo
+            zobaczy łączną kwotę po osobie. Ustawa jest też przyznaniem się do premisy, którą
+            ta strona powtarza od początku: <strong>dotąd nikt tej sumy nie znał</strong> —
+            gdyby znał, nowelizacja nie byłaby potrzebna.
+          </li>
+          <li>
+            <strong>Zarzut o prywatność jest poważny i nie odrzucamy go.</strong> Samorząd lekarski
+            zapowiada skargę do Trybunału Konstytucyjnego, a urząd ochrony danych zgłaszał
+            wątpliwości wobec zbierania po numerze PESEL. To realne pytanie o proporcjonalność —
+            i właśnie dlatego nasz postulat opiera się na numerze, <strong>który i tak jest już
+            publicznie sprawdzalny</strong>: PWZ zamiast PESEL, wyłącznie środki publiczne, bez
+            prywatnych gabinetów i bez nazwisk. Pokazanie łącznej kwoty przy numerze PWZ nie
+            odsłania niczego, co dziś jest chronione.
+          </li>
+          <li>
+            <strong>Ale spór nie toczy się wyłącznie o prywatność — także o siłę.</strong>
+            Kilka dni po uchwaleniu ustawy wyciekł wpis prezesa Naczelnej Rady Lekarskiej
+            z zamkniętej grupy zrzeszającej ok. 40 tys. osób. Autentyczność potwierdził:
+            <blockquote class="cyt-inline">
+              <p>„to my leczymy pacjentów, a nie politycy i jeszcze <strong>żaden rząd nie wygrał
+              z lekarzami</strong>"</p>
+              <cite>prezes Naczelnej Rady Lekarskiej, wpis z 29 czerwca 2026 r.</cite>
+            </blockquote>
+            Uczciwie: autor tłumaczył potem, że chciał dodać lekarzom otuchy, a wpis był też
+            apelem do rządu — „nie idźmy na konfrontację, bo nikt na niej nie zyska". Przytaczamy
+            to zdanie nie po to, by kogokolwiek piętnować, lecz dlatego, że pokazuje stawkę:
+            <strong>o jawności pieniądza publicznego decyduje dziś układ sił, a nie interes
+            pacjenta</strong>. Jawny rejestr wyjmuje tę sprawę z negocjacji — bo prawa obywatela
+            do wiedzy nie wygrywa się ani nie przegrywa przy stole.
+          </li>
+          <li>
+            <strong>Jawność nie jest karą dla lekarzy.</strong> Uczciwy lekarz na jawności
+            zyskuje — przestaje być wrzucany do jednego worka z rekordzistą z nagłówków.
+            Przeciwnikiem jest nieprzejrzystość, nie zawód.
+          </li>
+          <li>
+            <strong>Czego wciąż nie będzie widać.</strong> Realnych godzin — bo ustawa zbiera
+            wymiar czasu pracy, a nie ewidencję. Prywatnego obiegu pieniądza — i słusznie,
+            bo to nie nasza sprawa. Oraz samych danych — bo nie ma przepisu, który kazałby
+            je pokazać.
+          </li>
+        </ul>
+
+        <p class="source-note">
+          Wpis prezesa Naczelnej Rady Lekarskiej na zamkniętej grupie Porozumienia Rezydentów OZZL
+          (29.06.2026), ujawniony i potwierdzony przez autora —
+          <a href="https://www.rp.pl/polityka/art44719541-jeszcze-zaden-rzad-nie-wygral-z-lekarzami-wyciekl-wpis-prezesa-naczelnej-izby-lekarskiej" target="_blank" rel="noopener noreferrer">Rzeczpospolita</a>.
+          Zgodnie z zasadą „mechanizmy, nie osoby" cytat przypisujemy funkcji, nie nazwisku.
+          Zapowiedź skargi do TK jest <strong>zapowiedzią, nie faktem</strong> jej złożenia.
+        </p>
+
+        <div class="callout" style="border-left-color: var(--brand); background: var(--brand-50)">
+          <p>
+            <strong>Państwo zrobiło pierwszy krok — zbiera dane. Drugiego kroku brakuje: jawności.</strong>
+            Rejestr po numerze <a href="/slownik/#pwz">PWZ</a> nie wymaga zbierania niczego nowego
+            ponad to, co ustawa i tak już zbiera — wymaga jedynie <strong>otwarcia tego, co
+            państwo ma</strong>, i spięcia tego numerem zawodowym zamiast osobowego.
+            <a href="/postulat/">Poznaj postulat →</a> · <a href="/petycja/">Wyślij petycję →</a>
+          </p>
+        </div>
+      </div>
+
+      <p class="pager"><a href="/analizy/">← Wszystkie analizy</a> · <a href="/analizy/jedno-pwz/">Jeden lekarz, wiele strumieni →</a></p>
+    </div>
+  </section>
+
+  <!-- ANEKS: pełny tekst ustawy. Akty normatywne nie są przedmiotem prawa autorskiego
+       (art. 4 pkt 1 ustawy o prawie autorskim), więc możemy podać całość. -->
+  <section class="section band-soft" id="tekst-ustawy">
+    <div class="container">
+      <p class="kicker"><span class="kicker-num">＋</span> Aneks</p>
+      <h2 class="sec-h">Cała ustawa — przeczytaj sam</h2>
+      <p class="sec-intro">
+        Nie musisz nam wierzyć na słowo, że to trzy artykuły i zero jawności. Poniżej pełny,
+        niczego niepomijający tekst ustawy w brzmieniu uchwalonym przez Sejm — Senat nie wniósł
+        poprawek, więc dokładnie to podpisał prezydent. Zajmuje dwie strony maszynopisu.
+      </p>
+
+      <p class="lex-links">
+        <a class="btn btn-brand" href="https://api.sejm.gov.pl/sejm/term10/processes/2685/attachment/2685_u3.pdf" target="_blank" rel="noopener noreferrer">Pobierz tekst ustawy (PDF, Sejm)</a>
+        <a href="https://api.sejm.gov.pl/sejm/term10/processes/2685" target="_blank" rel="noopener noreferrer">Przebieg procesu legislacyjnego (druk 2685)</a>
+      </p>
+
+      <div class="akt">
+        <p class="akt-naglowek">
+          Ustawa z dnia 19 czerwca 2026 r.<br />
+          <span class="akt-tytul">o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych
+          ze środków publicznych oraz ustawy o działalności leczniczej</span>
+        </p>
+
+        <div class="akt-art">
+          <p class="akt-h">Art. 1.</p>
+          <p>
+            W ustawie z dnia 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych
+            ze środków publicznych (Dz. U. z 2025 r. poz. 1461, 1537 i 1739 oraz z 2026 r. poz. 26,
+            203 i 791) wprowadza się następujące zmiany:
+          </p>
+          <ol class="akt-lista">
+            <li>
+              w art. 31lc:
+              <ol class="akt-lista akt-lit">
+                <li>
+                  w ust. 2:
+                  <ul class="akt-tiret">
+                    <li>w pkt 5 skreśla się wyraz „zanonimizowane" i kropkę na końcu zastępuje się średnikiem,</li>
+                    <li>
+                      dodaje się pkt 6 i 7 w brzmieniu:
+                      <p class="akt-cyt">
+                        „6) numer PESEL osoby, o której mowa w pkt 4, a w przypadku jego braku —
+                        rodzaj, serię i numer dokumentu potwierdzającego tożsamość tej osoby;<br />
+                        7) numer prawa wykonywania zawodu osoby, o której mowa w pkt 4 —
+                        w przypadku osób, którym nadano ten numer.",
+                      </p>
+                    </li>
+                  </ul>
+                </li>
+                <li>
+                  w ust. 4b:
+                  <ul class="akt-tiret">
+                    <li>w pkt 2 skreśla się wyraz „zanonimizowane",</li>
+                    <li>
+                      po pkt 2 dodaje się pkt 2a i 2b w brzmieniu:
+                      <p class="akt-cyt">
+                        „2a) numer PESEL osoby, o której mowa w pkt 2, a w przypadku jego braku —
+                        rodzaj, serię i numer dokumentu potwierdzającego tożsamość tej osoby;<br />
+                        2b) numer prawa wykonywania zawodu osoby, o której mowa w pkt 2 —
+                        w przypadku osób, którym nadano ten numer;",
+                      </p>
+                    </li>
+                  </ul>
+                </li>
+                <li>
+                  ust. 4d otrzymuje brzmienie:
+                  <p class="akt-cyt">
+                    „4d. Dane, o których mowa w ust. 4a i 4b, są wykorzystywane przez Agencję
+                    w celu realizacji zadań określonych w art. 31n pkt 1, 1a, 2c i 4b–5.";
+                  </p>
+                </li>
+              </ol>
+            </li>
+            <li>
+              w art. 31n po pkt 4g dodaje się pkt 4h w brzmieniu:
+              <p class="akt-cyt">
+                „4h) prowadzenie na zlecenie ministra właściwego do spraw zdrowia prac
+                analitycznych związanych z realizacją celów, o których mowa w art. 27a ust. 2
+                ustawy z dnia 15 kwietnia 2011 r. o działalności leczniczej;";
+              </p>
+            </li>
+            <li>
+              w art. 31o w ust. 2 po pkt 1m dodaje się pkt 1n w brzmieniu:
+              <p class="akt-cyt">
+                „1n) przekazywanie ministrowi właściwemu do spraw zdrowia wyników prac
+                analitycznych związanych z realizacją celów, o których mowa w art. 27a ust. 2
+                ustawy z dnia 15 kwietnia 2011 r. o działalności leczniczej;".
+              </p>
+            </li>
+          </ol>
+        </div>
+
+        <div class="akt-art">
+          <p class="akt-h">Art. 2.</p>
+          <p>
+            W ustawie z dnia 15 kwietnia 2011 r. o działalności leczniczej (Dz. U. z 2026 r.
+            poz. 156) art. 27a otrzymuje brzmienie:
+          </p>
+          <div class="akt-cyt akt-cyt-blok">
+            <p>
+              „Art. 27a. 1. Podmiot wykonujący działalność leczniczą, na wniosek ministra
+              właściwego do spraw zdrowia, gromadzi oraz przekazuje, w terminie i w sposób przez
+              niego wskazany, dane dotyczące osób zatrudnionych w tym podmiocie obejmujące:
+            </p>
+            <p>1) liczbę tych osób;</p>
+            <p>2) dane osoby zatrudnionej:</p>
+            <p class="akt-wciecie">
+              a) numer PESEL, a w przypadku jego braku — rodzaj, serię i numer dokumentu
+              potwierdzającego tożsamość takiej osoby,<br />
+              b) numer prawa wykonywania zawodu — w przypadku osób, którym nadano ten numer,<br />
+              c) informację o wysokości wynagrodzenia, w tym wynagrodzenia zasadniczego, stawek
+              godzinowych, jeżeli dotyczy, oraz dodatków,<br />
+              d) wymiar czasu pracy,<br />
+              e) tytuły zawodowe, jeżeli posiada,<br />
+              f) zajmowane stanowisko,<br />
+              g) formę zatrudnienia,<br />
+              h) posiadane specjalizacje, jeżeli dotyczy,<br />
+              i) wymagane na zajmowanym stanowisku wykształcenie.
+            </p>
+            <p>
+              2. Minister właściwy do spraw zdrowia przetwarza dane, o których mowa w ust. 1,
+              w celu zapewnienia równego dostępu do świadczeń zdrowotnych, prowadzenia prac
+              analitycznych i prognostycznych związanych z realizacją świadczeń opieki zdrowotnej
+              oraz kontroli przestrzegania zasad legalności, gospodarności, rzetelności
+              i celowości finansowania udzielanych świadczeń opieki zdrowotnej.
+            </p>
+            <p>
+              3. Minister właściwy do spraw zdrowia może wskazać we wniosku, o którym mowa
+              w ust. 1, Narodowy Fundusz Zdrowia lub jednostkę podległą ministrowi właściwemu do
+              spraw zdrowia właściwą w zakresie systemów informacyjnych w ochronie zdrowia jako
+              podmiot, do którego są przekazywane dane, o których mowa w ust. 1. Narodowy Fundusz
+              Zdrowia i ta jednostka przetwarzają te dane zgodnie z celami, o których mowa w ust. 2.
+            </p>
+            <p>
+              4. Minister właściwy do spraw zdrowia może wskazać we wniosku, o którym mowa
+              w ust. 1, Agencję Oceny Technologii Medycznych i Taryfikacji jako podmiot, do
+              którego są przekazywane dane, o których mowa w ust. 1. Agencja Oceny Technologii
+              Medycznych i Taryfikacji przetwarza te dane w związku z realizacją zadań określonych
+              w art. 31n pkt 1, 1a, 2c i 4b–5 ustawy z dnia 27 sierpnia 2004 r. o świadczeniach
+              opieki zdrowotnej finansowanych ze środków publicznych.".
+            </p>
+          </div>
+        </div>
+
+        <div class="akt-art">
+          <p class="akt-h">Art. 3.</p>
+          <p>Ustawa wchodzi w życie po upływie 14 dni od dnia ogłoszenia.</p>
+        </div>
+
+        <p class="akt-podpis">MARSZAŁEK SEJMU / – / Włodzimierz Czarzasty</p>
+      </div>
+
+      <p class="source-note">
+        Źródło: <a href="https://api.sejm.gov.pl/sejm/term10/processes/2685/attachment/2685_u3.pdf" target="_blank" rel="noopener noreferrer">tekst ustawy przekazany do Senatu zgodnie z art. 52 regulaminu Sejmu</a>
+        (druk 2685). Senat nie wniósł poprawek — to tekst przedłożony prezydentowi i podpisany
+        17.07.2026. Akty normatywne nie są przedmiotem prawa autorskiego (art. 4 pkt 1 ustawy
+        o prawie autorskim i prawach pokrewnych), dlatego publikujemy je w całości. Po ogłoszeniu
+        w Dzienniku Ustaw uzupełnimy pozycję publikacyjną.
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .band-soft { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .kicker { display: flex; align-items: center; gap: 0.6rem; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand); margin: 0 0 0.5rem; }
+  .kicker-num { font-family: var(--font-mono); font-size: 0.72rem; color: #fff; background: var(--brand); border-radius: 999px; width: 1.55rem; height: 1.55rem; display: inline-flex; align-items: center; justify-content: center; letter-spacing: 0; }
+  .sec-h { margin: 0 0 0.6rem; }
+  .sec-intro { max-width: 66ch; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.6; margin: 0 0 1.5rem; }
+  .sec-intro strong { color: var(--ink); }
+
+  /* 01 — anatomia */
+  .anatomy { display: grid; gap: 0.85rem; grid-template-columns: 1fr; margin: 0.5rem 0 1rem; }
+  @media (min-width: 760px) { .anatomy { grid-template-columns: repeat(3, 1fr); } }
+  .anat { background: var(--bg); border: 1px solid var(--line); border-top: 3px solid var(--brand); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+  .anat-h { font-family: var(--font-mono); font-size: 0.8rem; color: var(--brand); margin: 0 0 0.45rem; }
+  .anat-d { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.55; margin: 0; }
+
+  /* 02 — karta danych jednej osoby (stylizowana na dokument) */
+  .karta { max-width: 780px; background: var(--bg); border: 1px solid var(--line-2); border-radius: var(--radius-lg); overflow: hidden; }
+  .karta-head { margin: 0; padding: 0.85rem 1.25rem; background: var(--brand); color: #fff; font-family: var(--font-mono); font-size: 0.76rem; letter-spacing: 0.04em; }
+  .karta-pola { list-style: none; margin: 0; padding: 0; }
+  .pole { display: flex; gap: 1rem; align-items: flex-start; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--line); }
+  .pole:last-child { border-bottom: 0; }
+  .pole-nowe { background: var(--brand-50); }
+  .pole-lit { flex: none; width: 1.6rem; height: 1.6rem; margin-top: 0.1rem; background: var(--paper-2); border: 1px solid var(--line-2); color: var(--brand); border-radius: 4px; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .pole-nowe .pole-lit { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .pole-tresc { min-width: 0; }
+  .pole-t { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--ink); margin: 0 0 0.2rem; }
+  .pole-d { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .znacznik { font-family: var(--font-mono); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.05em; padding: 0.12rem 0.45rem; border-radius: 999px; white-space: nowrap; }
+  .znacznik-nowe { background: var(--brand); color: #fff; text-transform: uppercase; }
+  .znacznik-war { background: var(--amber-50, #fbf1de); color: #8a5a00; border: 1px solid #d9b877; }
+  .karta-stopka { margin: 0; padding: 0.85rem 1.25rem; background: var(--paper-2); border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--ink-soft); line-height: 1.55; }
+  .karta-stopka strong { color: var(--ink); }
+
+  /* 03 — cytat + rura */
+  .lex { margin: 0 0 1.5rem; padding: 1.1rem 1.25rem; background: var(--bg); border: 1px solid var(--line-2); border-left: 3px solid var(--brand); border-radius: var(--radius); max-width: 720px; }
+  .lex p { margin: 0 0 0.5rem; font-family: var(--font-serif); font-size: 1.02rem; line-height: 1.6; color: var(--ink); }
+  .lex cite { font-family: var(--font-mono); font-size: 0.78rem; font-style: normal; color: var(--ink-faint); }
+  .pipe { list-style: none; margin: 0 0 1rem; padding: 0; max-width: 720px; }
+  /* Łącznik rysujemy na <li>, NIE na kropce: `height: 100%` liczone od kropki dawało
+     13 px zamiast pełnego odstępu do następnego kroku (stąd wcześniejsze „ogonki"). */
+  .pipe li { display: flex; gap: 1rem; align-items: flex-start; position: relative; }
+  .pipe li:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 5.5px;        /* środek kropki: (13 px)/2 − (2 px)/2 */
+    top: 1.5rem;        /* tuż pod kropką (margin-top 0.45rem + 13 px) */
+    bottom: -0.45rem;   /* dociągnięcie do kropki następnego kroku */
+    width: 2px;
+    background: var(--line-2);
+  }
+  .pipe-n { flex: none; width: 13px; height: 13px; margin-top: 0.45rem; border-radius: 50%; border: 2px solid var(--brand); background: var(--bg); position: relative; z-index: 1; }
+  .pipe li > div { padding-bottom: 1.15rem; }
+  .pipe li:last-child > div { padding-bottom: 0; }
+  .pipe-t { font-weight: 600; color: var(--ink); margin: 0 0 0.2rem; }
+  .pipe-d { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.55; margin: 0; }
+  .pipe-end .pipe-n { border-color: var(--alert); background: var(--alert); }
+  .pod-h { font-family: var(--font-sans); font-size: 1.05rem; font-weight: 600; margin: 1.75rem 0 0.5rem; }
+  .braki { list-style: none; margin: 0 0 1.5rem; padding: 0; display: grid; gap: 0.5rem; max-width: 640px; }
+  .braki li { position: relative; padding: 0.55rem 0.9rem 0.55rem 2.1rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); font-size: 0.92rem; color: var(--ink-soft); line-height: 1.5; }
+  .braki li::before { content: "—"; position: absolute; left: 0.9rem; color: var(--alert); font-weight: 700; }
+  .braki strong { color: var(--ink); }
+  /* Jedyny czerwony callout na stronie (hierarchia wyróżnień: max 1). */
+  .callout-alert { border-left: 3px solid var(--alert); background: var(--alert-50); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.1rem 1.25rem; margin: 0 0 1.5rem; max-width: 74ch; }
+  .callout-alert p { margin: 0; line-height: 1.65; }
+  .callout-uczciwie { margin-top: 0.85rem !important; padding-top: 0.85rem; border-top: 1px solid rgba(179, 38, 30, 0.25); font-size: 0.88rem; color: var(--ink-soft); }
+
+  /* 04 — dwa tory + furtki */
+  .tory { display: grid; gap: 0.85rem; grid-template-columns: 1fr; margin: 0.5rem 0 1rem; }
+  @media (min-width: 820px) { .tory { grid-template-columns: 1.35fr 1fr; align-items: stretch; } }
+  .tor { border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; background: var(--bg); border: 1px solid var(--line-2); }
+  .tor-szeroki { border-left: 3px solid var(--teal); }
+  .tor-waski { border-left: 3px solid var(--alert); }
+  .tor-tag { font-family: var(--font-mono); font-size: 0.75rem; margin: 0 0 0.5rem; }
+  .tor-szeroki .tor-tag { color: var(--teal); }
+  .tor-waski .tor-tag { color: var(--alert); }
+  .tor-cyt { font-family: var(--font-serif); font-size: 1rem; line-height: 1.55; color: var(--ink); margin: 0 0 0.6rem; }
+  .tor-op { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .tory-pointa { max-width: 70ch; font-size: 1rem; line-height: 1.6; color: var(--ink-soft); margin: 0 0 1rem; }
+  .tory-pointa strong { color: var(--ink); }
+
+  .furtki { display: grid; gap: 1.75rem; margin: 1.75rem 0 1rem; }
+  .furtka-h { font-family: var(--font-sans); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--brand); margin: 0 0 0.85rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--line); }
+  .furtka-lista { display: grid; gap: 0.85rem; grid-template-columns: 1fr; }
+  @media (min-width: 880px) { .furtka-lista { grid-template-columns: 1fr 1fr; } }
+  .furtka { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
+  /* Karta „0 sankcji" — najmocniejszy punkt sekcji: pełna szerokość + wielkie zero.
+     Wyróżnienie typograficzne, nie kolejny czerwony box (na stronie jest już jeden). */
+  .furtka-mocna { grid-column: 1 / -1; display: flex; gap: 1.25rem; align-items: flex-start; background: var(--bg); border: 1px solid var(--alert); border-left: 3px solid var(--alert); }
+  .furtka-num { flex: none; font-family: var(--font-serif); font-size: clamp(3rem, 7vw, 4.25rem); font-weight: 600; line-height: 0.9; color: var(--alert); font-variant-numeric: tabular-nums; }
+  .furtka-body { min-width: 0; }
+  .furtka-t { font-weight: 600; color: var(--ink); margin: 0 0 0.4rem; line-height: 1.4; }
+  .furtka-d { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.6; margin: 0; }
+  .furtka-d :global(strong) { color: var(--ink); font-weight: 600; }
+  .furtka-u { font-size: 0.85rem; line-height: 1.55; color: var(--ink-soft); margin: 0.75rem 0 0; padding: 0.6rem 0.75rem; background: var(--bg); border-left: 2px solid var(--line-2); border-radius: 0 var(--radius) var(--radius) 0; }
+  .furtka-u :global(strong) { color: var(--ink); font-weight: 600; }
+
+  /* 05 — porównanie */
+  .cmp { display: grid; gap: 1.5rem; }
+  .cmp-row { border-top: 1px solid var(--line); padding-top: 1.25rem; }
+  .cmp-os { display: flex; align-items: center; gap: 0.6rem; font-family: var(--font-sans); font-size: 1.05rem; font-weight: 600; color: var(--ink); margin: 0 0 0.85rem; }
+  .cmp-n { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); font-weight: 400; }
+  .cmp-cols { display: grid; gap: 0.75rem; grid-template-columns: 1fr; }
+  @media (min-width: 700px) { .cmp-cols { grid-template-columns: 1fr 1fr; } }
+  .cmp-col { border-radius: var(--radius); padding: 0.9rem 1rem; }
+  .cmp-law { background: var(--paper); border: 1px solid var(--line); }
+  .cmp-ours { background: var(--brand-50); border: 1px solid var(--brand); }
+  .cmp-lab { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 0.35rem; }
+  .cmp-law .cmp-lab { color: var(--ink-faint); }
+  .cmp-ours .cmp-lab { color: var(--brand); }
+  .cmp-txt { font-size: 0.92rem; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+  .cmp-ours .cmp-txt { color: var(--ink); }
+  .cmp-why { max-width: 72ch; font-size: 0.9rem; line-height: 1.6; color: var(--ink-soft); margin: 0.85rem 0 0; }
+  .cmp-why strong { color: var(--ink); }
+
+  .mech { padding-left: 1.25rem; max-width: 68ch; }
+  .mech li { margin: 0.7rem 0; line-height: 1.6; }
+  .cyt-inline { margin: 0.85rem 0; padding: 0.85rem 1.1rem; background: var(--paper-2); border-left: 3px solid var(--ink-faint); border-radius: 0 var(--radius) var(--radius) 0; }
+  .cyt-inline p { margin: 0 0 0.4rem; font-family: var(--font-serif); font-size: 1.02rem; line-height: 1.55; color: var(--ink); }
+  .cyt-inline cite { font-family: var(--font-mono); font-size: 0.75rem; font-style: normal; color: var(--ink-faint); }
+  .pager { margin-top: 2rem; font-size: 0.9rem; color: var(--ink-soft); }
+
+  /* Aneks — tekst aktu normatywnego, złożony jak dokument urzędowy */
+  .lex-links { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin: 0 0 1.5rem; font-size: 0.9rem; }
+  .akt {
+    max-width: 760px; background: var(--bg); border: 1px solid var(--line-2);
+    border-radius: var(--radius-lg); padding: clamp(1.25rem, 3vw, 2rem);
+    font-family: var(--font-serif); font-size: 0.95rem; line-height: 1.65; color: var(--ink);
+  }
+  .akt p { margin: 0 0 0.65rem; }
+  .akt-naglowek { text-align: center; margin: 0 0 1.75rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--line); font-weight: 600; }
+  .akt-tytul { display: block; margin-top: 0.4rem; font-weight: 400; color: var(--ink-soft); font-size: 0.92rem; }
+  .akt-art { margin: 0 0 1.5rem; }
+  .akt-art:last-of-type { margin-bottom: 0; }
+  .akt-h { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; color: var(--brand); margin: 0 0 0.4rem; }
+  .akt-lista { margin: 0.5rem 0 0; padding-left: 1.5rem; }
+  .akt-lista > li { margin: 0.5rem 0; }
+  .akt-lit { list-style: lower-latin; }
+  .akt-tiret { list-style: '– '; margin: 0.4rem 0 0; padding-left: 1.1rem; }
+  .akt-tiret > li { margin: 0.35rem 0; }
+  .akt-cyt { margin: 0.5rem 0; padding: 0.6rem 0.9rem; background: var(--paper); border-left: 2px solid var(--line-2); border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.92rem; }
+  .akt-cyt-blok { padding: 1rem 1.1rem; border-left-color: var(--brand); }
+  .akt-cyt-blok p:last-child { margin-bottom: 0; }
+  .akt-wciecie { padding-left: 1.25rem; }
+  .akt-podpis { margin: 2rem 0 0; padding-top: 1.25rem; border-top: 1px solid var(--line); text-align: right; font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-faint); }
+
+  @media (max-width: 560px) { .section { padding: 2.5rem 0; } }
+</style>

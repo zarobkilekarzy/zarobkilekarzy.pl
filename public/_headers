@@ -23,3 +23,22 @@
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+
+# Pagefind — pliki o STAŁYCH nazwach (loader, worker, UI, mapa indeksu). Muszą
+# zawsze odzwierciedlać bieżący build i bieżący CSP z tego pliku. Cloudflare
+# cache'uje statyki RAZEM z nagłówkiem CSP (domyślnie ~4 h), a dedykowany Worker
+# egzekwuje CSP z nagłówków SWOJEGO skryptu — zcache'owany stary worker = WASM
+# zablokowane, search wisi na „Szukam…" mimo poprawnego CSP na /szukaj. `no-store`
+# gwarantuje świeży nagłówek na każde żądanie (pliki małe, ładowane raz na wejście).
+# Pliki z hashem w nazwie (fragment/index/*.pf_meta/wasm) zostają cache'owalne —
+# inna treść = inna nazwa, więc nie da się z nich zaserwować nieaktualnej wersji.
+/pagefind/pagefind.js
+  Cache-Control: no-store
+/pagefind/pagefind-worker.js
+  Cache-Control: no-store
+/pagefind/pagefind-ui.js
+  Cache-Control: no-store
+/pagefind/pagefind-ui.css
+  Cache-Control: no-store
+/pagefind/pagefind-entry.json
+  Cache-Control: no-store

@@ -54,6 +54,27 @@ const gdzie = [
   description="Kieszonkowy wyciąg z praw pacjenta do wydruku: dwie karty A6 z najważniejszymi prawami, terminami i numerami. Każda pozycja z artykułem ustawy."
   noindex={true}
 >
+  <Fragment slot="head">
+    {/* Strona „do druku" to podgląd dokumentu — wymuszamy JASNY motyw niezależnie od
+        przełącznika i preferencji systemu. W trybie ciemnym białe karty A6 wisiały na
+        granatowo-czarnym tle strony, co wyglądało jak błąd. Skrypt jest w slocie head,
+        więc wykonuje się PO anti-FOUC z BaseLayout (wygrywa, bez migotania). Nie ruszamy
+        localStorage — inne strony dalej honorują wybór użytkownika, a wyjście z tej strony
+        przywraca jego motyw. `color-scheme: light` domyka natywne kontrolki i tło druku. */}
+    <script is:inline>
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.style.colorScheme = 'light';
+      var m = document.getElementById('theme-color-meta');
+      if (m) m.setAttribute('content', '#0f4c81');
+      // Strona jest zablokowana na jasny motyw — przełącznik zwróciłby czarne tło
+      // i zapisał 'dark' w localStorage, więc chowamy go TYLKO na tej stronie.
+      document.addEventListener('DOMContentLoaded', function () {
+        var t = document.querySelector('.nav-theme');
+        if (t) t.style.display = 'none';
+      });
+    </script>
+  </Fragment>
+
   <section class="section no-print">
     <div class="container" style="max-width: 760px">
       <p class="eyebrow"><a href="/prawa-pacjenta/">Prawa pacjenta</a> · Wersja do druku</p>

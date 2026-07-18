@@ -117,16 +117,19 @@ const latest = (await getCollection('articles'))
       <div class="container">
         <div class="trio" role="group" aria-label="Wybór tematu w karuzeli">
           <button class="tcard" type="button" style="--accent: var(--brand-link)" aria-current="true">
+            <span class="tc-prog" aria-hidden="true"></span>
             <span class="tc-tag">Działaj</span>
             <span class="tc-title">Wyślij petycję</span>
             <span class="tc-desc">Gotowa, formalna petycja o jawny rejestr. Urząd ma obowiązek odpowiedzieć.</span>
           </button>
           <button class="tcard" type="button" style="--accent: var(--brand-link)" aria-current="false">
+            <span class="tc-prog" aria-hidden="true"></span>
             <span class="tc-tag">Zrozum</span>
             <span class="tc-title">Poznaj postulat</span>
             <span class="tc-desc">Jeden jawny rejestr wypłat ze środków publicznych — po numerze PWZ.</span>
           </button>
           <button class="tcard tcard-teal" type="button" style="--accent: var(--teal)" aria-current="false">
+            <span class="tc-prog" aria-hidden="true"></span>
             <span class="tc-tag">Skorzystaj</span>
             <span class="tc-title">Prawa pacjenta</span>
             <span class="tc-desc">Informacja, druga opinia, leczenie bólu i darmowa pierwsza kopia dokumentacji.</span>
@@ -483,11 +486,43 @@ const latest = (await getCollection('articles'))
     let i = Math.max(0, slides.findIndex((s) => s.classList.contains('is-active')));
     let auto = !rmq.matches;
     let hovered = false;
-    let timer = null;
+    const canAnim = typeof root.animate === 'function';
+    let prog = null;   // pasek postępu = ZEGAR przewijania (koniec paska → następny slajd)
+    let timer = null;  // fallback bez Web Animations API (brak paska, samo przewijanie)
+
+    function clearRun() {
+      if (prog) { prog.cancel(); prog = null; }
+      if (timer) { clearInterval(timer); timer = null; }
+    }
+
+    // Uzbrój odliczanie do następnego slajdu na AKTYWNYM kaflu: pasek .tc-prog
+    // wypełnia się 0→100% przez DELAY, a jego KONIEC przewija karuzelę — jeden
+    // zegar dla paska i dla zmiany slajdu, więc nie mogą się rozjechać. Pauza
+    // (hover / ukryta karta) zamraża pasek; wznowienie idzie od tego samego miejsca.
+    function arm() {
+      clearRun();
+      if (!auto) return;                    // autoplay off → brak odliczania (CSS pokazuje pasek pełny)
+      const fill = tiles[i].querySelector('.tc-prog');
+      if (canAnim && fill) {
+        prog = fill.animate(
+          [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
+          { duration: DELAY, easing: 'linear', fill: 'forwards' },
+        );
+        prog.onfinish = () => select(i + 1, false, false);
+        if (hovered || document.hidden) prog.pause();
+      } else if (!hovered && !document.hidden) {
+        timer = setInterval(() => select(i + 1, false, false), DELAY);
+      }
+    }
 
     function refresh() {
-      if (timer) { clearInterval(timer); timer = null; }
-      if (auto && !hovered && !document.hidden) timer = setInterval(() => select(i + 1, false, false), DELAY);
+      const running = auto && !hovered && !document.hidden;
+      if (prog) {
+        if (running) prog.play(); else prog.pause();
+      } else if (auto && !canAnim) {         // fallback: pauza = clear, wznowienie = nowy interval
+        if (running && !timer) timer = setInterval(() => select(i + 1, false, false), DELAY);
+        else if (!running && timer) { clearInterval(timer); timer = null; }
+      }
       if (playBtn) {
         playBtn.setAttribute('aria-pressed', String(auto));
         playBtn.setAttribute('aria-label', auto ? 'Zatrzymaj automatyczne przewijanie' : 'Włącz automatyczne przewijanie');
@@ -510,6 +545,7 @@ const latest = (await getCollection('articles'))
       });
       if (focusTile) tiles[i].focus();
       if (live) live.textContent = announce ? `Slajd ${i + 1} z ${n}: ${slides[i].dataset.title || ''}` : '';
+      arm();
       refresh();
     }
 
@@ -527,7 +563,7 @@ const latest = (await getCollection('articles'))
         select(to, true, true);
       });
     });
-    playBtn?.addEventListener('click', () => { auto = !auto; refresh(); });
+    playBtn?.addEventListener('click', () => { auto = !auto; arm(); refresh(); });
 
     root.addEventListener('mouseenter', () => { hovered = true; refresh(); });
     root.addEventListener('mouseleave', () => { hovered = false; refresh(); });
@@ -602,9 +638,24 @@ const latest = (await getCollection('articles'))
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
   }
   .tcard:hover { transform: translateY(-2px); }
-  /* Aktywny kafel: pełny akcent u góry, podniesiony; nieaktywne przygaszone. */
-  .tcard[aria-current="true"] { border-top-color: var(--accent); transform: translateY(-4px); box-shadow: 0 18px 40px rgba(10,17,25,0.24); }
+  /* Aktywny kafel: podniesiony; górny akcent rysuje pasek postępu (.tc-prog),
+     a border-top zostaje neutralnym „torem" pod nim. Nieaktywne przygaszone. */
+  .tcard[aria-current="true"] { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(10,17,25,0.24); }
   .tcard[aria-current="false"] { opacity: 0.9; }
+
+  /* Pasek postępu autoprzewijania — leży dokładnie na górnej krawędzi (4px
+     border-top + 1px boki) aktywnego kafla. W czasie autoodliczania skrypt
+     (Web Animations API) wypełnia go 0→100% w akcencie kafla; koniec = zmiana
+     slajdu. Gdy autoplay nieaktywny (pauza/reduced-motion/ręczny wybór), WAAPI
+     nie działa i CSS pokazuje pasek pełny — statyczny wskaźnik aktywnego kafla. */
+  .tc-prog {
+    position: absolute; top: -4px; left: -1px; right: -1px; height: 4px;
+    background: var(--accent); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    transform: scaleX(0); transform-origin: left center;
+    pointer-events: none; display: none;
+  }
+  .tcard[aria-current="true"] .tc-prog { display: block; transform: scaleX(1); }
+  @media (prefers-reduced-motion: reduce) { .tc-prog { transition: none; } }
   .tc-tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; color: var(--accent); }
   .tc-title { font-family: var(--font-serif); font-weight: 600; font-size: 1.3rem; line-height: 1.2; color: var(--ink); }
   .tc-desc { font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); }

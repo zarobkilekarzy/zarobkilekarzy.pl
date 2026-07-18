@@ -54,27 +54,6 @@ const gdzie = [
   description="Kieszonkowy wyciąg z praw pacjenta do wydruku: dwie karty A6 z najważniejszymi prawami, terminami i numerami. Każda pozycja z artykułem ustawy."
   noindex={true}
 >
-  <Fragment slot="head">
-    {/* Strona „do druku" to podgląd dokumentu — wymuszamy JASNY motyw niezależnie od
-        przełącznika i preferencji systemu. W trybie ciemnym białe karty A6 wisiały na
-        granatowo-czarnym tle strony, co wyglądało jak błąd. Skrypt jest w slocie head,
-        więc wykonuje się PO anti-FOUC z BaseLayout (wygrywa, bez migotania). Nie ruszamy
-        localStorage — inne strony dalej honorują wybór użytkownika, a wyjście z tej strony
-        przywraca jego motyw. `color-scheme: light` domyka natywne kontrolki i tło druku. */}
-    <script is:inline>
-      document.documentElement.setAttribute('data-theme', 'light');
-      document.documentElement.style.colorScheme = 'light';
-      var m = document.getElementById('theme-color-meta');
-      if (m) m.setAttribute('content', '#0f4c81');
-      // Strona jest zablokowana na jasny motyw — przełącznik zwróciłby czarne tło
-      // i zapisał 'dark' w localStorage, więc chowamy go TYLKO na tej stronie.
-      document.addEventListener('DOMContentLoaded', function () {
-        var t = document.querySelector('.nav-theme');
-        if (t) t.style.display = 'none';
-      });
-    </script>
-  </Fragment>
-
   <section class="section no-print">
     <div class="container" style="max-width: 760px">
       <p class="eyebrow"><a href="/prawa-pacjenta/">Prawa pacjenta</a> · Wersja do druku</p>
@@ -216,9 +195,11 @@ const gdzie = [
     font-size: 8.2pt;
     line-height: 1.34;
     display: flex; flex-direction: column;
-    /* Na ekranie: cień i ramka pokazują krawędź papieru. W druku znikają. */
-    border: 1px solid var(--line);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    /* Karta to PAPIER — zawsze biała, niezależnie od motywu strony. Krawędź i cień
+       stałe (nie z tokenów theme), żeby w dark mode biała kartka nie dostała ciemnej
+       ramki. W druku i jedno, i drugie znika. */
+    border: 1px solid #d9e1ea;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
   }
 
   .k-head { border-bottom: 1.2pt solid #000; padding-bottom: 1.5mm; margin-bottom: 3mm; }
@@ -269,6 +250,10 @@ const gdzie = [
     .karta:last-child { page-break-after: auto; break-after: auto; }
     /* Nagłówek i stopka serwisu nie mają czego szukać na papierze. */
     :global(.site-nav), :global(.site-footer), :global(footer) { display: none !important; }
+    /* Pewnik: wydruk zawsze na białym, nawet gdy strona jest w dark mode, a użytkownik
+       ma włączoną „grafikę w tle" (kartka i tak wypełnia całą stronę A6, ale bez tego
+       ciemne tło strony mogłoby przy niej wyciec na papier). */
+    :global(html), :global(body) { background: #fff !important; }
   }
 
   @media (max-width: 560px) {

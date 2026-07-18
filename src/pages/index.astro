@@ -485,7 +485,8 @@ const latest = (await getCollection('articles'))
     const DELAY = 7000;
     let i = Math.max(0, slides.findIndex((s) => s.classList.contains('is-active')));
     let auto = !rmq.matches;
-    let hovered = false;
+    let paused = false;   // pauza CHWILOWA: focus klawiatury w karuzeli lub ukryta karta.
+                          // Świadomie NIE na hover myszą — przewijanie ma lecieć pod kursorem.
     const canAnim = typeof root.animate === 'function';
     let prog = null;   // pasek postępu = ZEGAR przewijania (koniec paska → następny slajd)
     let timer = null;  // fallback bez Web Animations API (brak paska, samo przewijanie)
@@ -496,27 +497,28 @@ const latest = (await getCollection('articles'))
     }
 
     // Uzbrój odliczanie do następnego slajdu na AKTYWNYM kaflu: pasek .tc-prog
-    // wypełnia się 0→100% przez DELAY, a jego KONIEC przewija karuzelę — jeden
-    // zegar dla paska i dla zmiany slajdu, więc nie mogą się rozjechać. Pauza
-    // (hover / ukryta karta) zamraża pasek; wznowienie idzie od tego samego miejsca.
+    // odsłania się (clip-path) 0→100% przez DELAY, a jego KONIEC przewija karuzelę
+    // — jeden zegar dla paska i dla zmiany slajdu, więc nie mogą się rozjechać.
+    // Pauza (focus klawiatury / ukryta karta) zamraża pasek; wznowienie idzie
+    // od tego samego miejsca.
     function arm() {
       clearRun();
       if (!auto) return;                    // autoplay off → brak odliczania (CSS pokazuje pasek pełny)
       const fill = tiles[i].querySelector('.tc-prog');
       if (canAnim && fill) {
         prog = fill.animate(
-          [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
+          [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)' }],
           { duration: DELAY, easing: 'linear', fill: 'forwards' },
         );
         prog.onfinish = () => select(i + 1, false, false);
-        if (hovered || document.hidden) prog.pause();
-      } else if (!hovered && !document.hidden) {
+        if (paused || document.hidden) prog.pause();
+      } else if (!paused && !document.hidden) {
         timer = setInterval(() => select(i + 1, false, false), DELAY);
       }
     }
 
     function refresh() {
-      const running = auto && !hovered && !document.hidden;
+      const running = auto && !paused && !document.hidden;
       if (prog) {
         if (running) prog.play(); else prog.pause();
       } else if (auto && !canAnim) {         // fallback: pauza = clear, wznowienie = nowy interval
@@ -565,11 +567,13 @@ const latest = (await getCollection('articles'))
     });
     playBtn?.addEventListener('click', () => { auto = !auto; arm(); refresh(); });
 
-    root.addEventListener('mouseenter', () => { hovered = true; refresh(); });
-    root.addEventListener('mouseleave', () => { hovered = false; refresh(); });
-    root.addEventListener('focusin', () => { hovered = true; refresh(); });
+    // Bez pauzy na hover myszą (świadomie — przewijanie leci pod kursorem).
+    // Pauza tylko na focusie klawiatury: inaczej autoprzewijanie zrobiłoby inert
+    // aktywny slajd, na którym stoi focus (link CTA) → utrata focusu. Wznawia po
+    // wyjściu focusu poza karuzelę.
+    root.addEventListener('focusin', () => { paused = true; refresh(); });
     root.addEventListener('focusout', () => {
-      if (!root.contains(document.activeElement)) { hovered = false; refresh(); }
+      if (!root.contains(document.activeElement)) { paused = false; refresh(); }
     });
     document.addEventListener('visibilitychange', refresh);
 
@@ -643,19 +647,22 @@ const latest = (await getCollection('articles'))
   .tcard[aria-current="true"] { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(10,17,25,0.24); }
   .tcard[aria-current="false"] { opacity: 0.9; }
 
-  /* Pasek postępu autoprzewijania — leży dokładnie na górnej krawędzi (4px
-     border-top + 1px boki) aktywnego kafla. W czasie autoodliczania skrypt
-     (Web Animations API) wypełnia go 0→100% w akcencie kafla; koniec = zmiana
-     slajdu. Gdy autoplay nieaktywny (pauza/reduced-motion/ręczny wybór), WAAPI
-     nie działa i CSS pokazuje pasek pełny — statyczny wskaźnik aktywnego kafla. */
+  /* Pasek postępu autoprzewijania. Zamiast płaskiego 4px paska (którego promień
+     przycinała jego własna wysokość → ciaśniejsze narożniki niż boks) to NAKŁADKA
+     odwzorowująca CAŁĄ ramkę aktywnego kafla: ten sam `border-radius` i ta sama
+     4px górna krawędź w akcencie, więc narożniki są 1:1 jak oryginalny border.
+     Odsłaniana z lewej do prawej przez `clip-path` (skrypt/WAAPI wypełnia 0→100%,
+     koniec = zmiana slajdu). border-top kafla zostaje neutralnym „torem" pod spodem.
+     Gdy autoplay nieaktywny (pauza/reduced-motion/ręczny wybór) — CSS pokazuje
+     nakładkę w pełni (inset 0) = statyczny wskaźnik, wygląda jak oryginalny border. */
   .tc-prog {
-    position: absolute; top: -4px; left: -1px; right: -1px; height: 4px;
-    background: var(--accent); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    transform: scaleX(0); transform-origin: left center;
+    position: absolute; top: -4px; left: -1px; right: -1px; bottom: -1px;
+    border: 1px solid transparent; border-top: 4px solid var(--accent);
+    border-radius: var(--radius-lg);
+    clip-path: inset(0 100% 0 0);
     pointer-events: none; display: none;
   }
-  .tcard[aria-current="true"] .tc-prog { display: block; transform: scaleX(1); }
-  @media (prefers-reduced-motion: reduce) { .tc-prog { transition: none; } }
+  .tcard[aria-current="true"] .tc-prog { display: block; clip-path: inset(0 0 0 0); }
   .tc-tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; color: var(--accent); }
   .tc-title { font-family: var(--font-serif); font-weight: 600; font-size: 1.3rem; line-height: 1.2; color: var(--ink); }
   .tc-desc { font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); }

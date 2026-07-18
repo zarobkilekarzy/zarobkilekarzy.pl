@@ -1,0 +1,466 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+import DisclaimerZarobki from '../../components/DisclaimerZarobki.astro';
+
+// WERSJA ROBOCZA (niepublikowana). Rdzeń: DANE O ZAROBKACH lekarzy ze środków
+// publicznych, wyłuskane z list ujawnionych w obywatelskim monitoringu „Ile
+// zarabiają lekarze?" (Sieć Obywatelska Watchdog Polska, fedrowanie.siecobywatelska.pl).
+// Lejek „kto odpowiada" zostaje tylko jako krótkie wprowadzenie i źródło liczb.
+// Zasady rdzenia redakcyjnego:
+//  • liczby = AGREGATY z ujawnionych odpowiedzi (rozkład, percentyle) — odporne na
+//    pojedynczy szum; POJEDYNCZE rekordy oznaczamy „surowiec / do weryfikacji";
+//  • to DOLNE GRANICE: kwota z JEDNEJ placówki, nikt nie sumuje po PWZ → pointa;
+//  • mechanizm, nie osoba — bez nazwisk; placówek-przykładów nie piętnujemy z nazwy
+//    (ujawnienie to dobra praktyka, nie afera);
+//  • kredyt + link do Watchdog Polska (zasada źródła).
+// Dane oczyszczone: tylko listy ROCZNE (mediana ≥60 tys.), bez agregatów zespołów/sum,
+// bez list miesięcznych. Stan na 2026-07-18.
+
+const fmt = (n) => new Intl.NumberFormat('pl-PL').format(n);
+const SYNC = '2026-07-18';
+const SYNC_HR = new Intl.DateTimeFormat('pl-PL', {
+  day: 'numeric', month: 'long', year: 'numeric',
+}).format(new Date(SYNC + 'T12:00:00'));
+
+// — Lejek-pomost (skąd biorą się kwoty) —
+const N = 1358;         // wysłanych wniosków
+const MERYT = 693;      // merytoryczna odpowiedź
+const LISTY = 74;       // placówki z pełnymi listami per-lekarz
+const ROCZNE = 54;      // z tego listy roczne (baza analizy kwot)
+const LEKARZY = 3746;   // pojedynczych kwot rocznych na czystym zbiorze
+
+// — Rozkład rocznego brutto na jednego lekarza (czysty zbiór roczny) —
+const MEDIANA = 203000;
+const P75 = 366000, P90 = 564000, P99 = 1052000;
+const OVER300 = 33.4, OVER500 = 13.9;   // % lekarzy
+const OVER1M = 55;                       // lekarzy > 1 mln zł/rok
+const OVER1Mpct = 1.5;
+
+// Histogram (progi brutto/rok). Kolor rośnie z kwotą: spokój → alarm.
+const hist = [
+  { label: 'do 100 tys.', n: 1072, pct: 28.6, band: 'lo' },
+  { label: '100–200 tys.', n: 781, pct: 20.8, band: 'lo' },
+  { label: '200–300 tys.', n: 641, pct: 17.1, band: 'lo' },
+  { label: '300–400 tys.', n: 436, pct: 11.6, band: 'mid' },
+  { label: '400–500 tys.', n: 296, pct: 7.9, band: 'mid' },
+  { label: '500–750 tys.', n: 353, pct: 9.4, band: 'hi' },
+  { label: '750 tys.–1 mln', n: 112, pct: 3.0, band: 'hi' },
+  { label: 'ponad 1 mln', n: 55, pct: 1.5, band: 'top' },
+];
+const histMax = Math.max(...hist.map((h) => h.pct));
+
+// — Drabina percentyli (kto ile rozliczył — z JEDNEJ placówki) —
+const ladder = [
+  { who: 'Mediana — środkowy lekarz na listach', v: '≈ 200 tys.', wpct: 20 },
+  { who: 'Co czwarty lekarz (górne 25%)', v: 'ponad 365 tys.', wpct: 37 },
+  { who: 'Co dziesiąty (górne 10%)', v: 'ponad 560 tys.', wpct: 56 },
+  { who: 'Jeden na stu (górne 1%)', v: 'ponad 1 mln', wpct: 100 },
+];
+
+const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabiaja-lekarze';
+const WATCHDOG = 'https://siecobywatelska.pl/';
+const FEDROWANIE = 'https://fedrowanie.siecobywatelska.pl/';
+---
+
+<BaseLayout
+  title="Ile trafia do jednego lekarza — z ujawnionych list — zarobkilekarzy.pl"
+  description="54 publiczne szpitale ujawniły pełne listy wynagrodzeń lekarzy — 3746 rozliczeń. Mediana ok. 200 tys. zł rocznie, co siódme ponad 500 tys., dziesiątki powyżej miliona — a każda kwota to zapłata jednego tylko szpitala. Dane, wykresy i uczciwe zastrzeżenia. Źródło: obywatelski monitoring Watchdog Polska."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane/">Dane</a> · Zarobki z ujawnionych list</p>
+      <h1>Ile trafia do jednego lekarza — z ujawnionych list</h1>
+      <Aktualizacja zrodla=" · obywatelski monitoring „Ile zarabiają lekarze?” (Sieć Obywatelska Watchdog Polska)." />
+      <p class="lead">
+        Zapytaliśmy <strong>{fmt(N)} publicznych placówek</strong>, ile płacą lekarzom ze środków
+        publicznych. Część ujawniła <strong>pełne, wierszowe listy</strong> — złożyły się na
+        <strong> {fmt(LEKARZY)} konkretnych kwot rocznych</strong>. Oto co z nich wynika. Bez
+        akapitów tam, gdzie wystarczy wykres — a każda kwota to i tak dopiero <strong>fragment</strong>.
+      </p>
+
+      <DisclaimerZarobki />
+
+      <!-- ————————————————— SKĄD TE DANE (WATCHDOG) ————————————————— -->
+      <aside class="wd-box" aria-label="Źródło danych">
+        <div class="wd-head">
+          <span class="wd-tag">Skąd te dane</span>
+          <span class="wd-name">Sieć Obywatelska Watchdog Polska</span>
+        </div>
+        <p class="wd-lead">
+          To nie nasze szacunki. Liczby pochodzą z <strong>obywatelskiego monitoringu</strong>
+          „Ile zarabiają lekarze?", prowadzonego przez
+          <a href={WATCHDOG} target="_blank" rel="noopener noreferrer">Sieć Obywatelską Watchdog Polska</a> —
+          organizację strażniczą, która egzekwuje prawo do informacji publicznej. W ramach
+          monitoringu do publicznych placówek ochrony zdrowia rozesłano <strong>{fmt(N)} jednakowych
+          wniosków</strong> o <strong>roczne brutto lekarzy za 2025 r.</strong> ze środków
+          publicznych. Cała korespondencja — wnioski i odpowiedzi wraz z tabelami — jest
+          <strong> jawna</strong> na platformie
+          <a href={FEDROWANIE} target="_blank" rel="noopener noreferrer">fedrowanie.siecobywatelska.pl</a>.
+          Kwoty poniżej wyłuskaliśmy z tych odpowiedzi.
+        </p>
+        <p class="wd-cta">
+          <a href={MONITORING} target="_blank" rel="noopener noreferrer">Zobacz monitoring u źródła →</a>
+        </p>
+      </aside>
+
+      <!-- ————————————————— POMOST: SKĄD 3746 KWOT ————————————————— -->
+      <figure class="bridge" aria-label={`Z ${fmt(N)} wniosków ${fmt(MERYT)} odpowiedziało merytorycznie, ${fmt(LISTY)} podało pełne listy, co dało ${fmt(LEKARZY)} kwot rocznych z ${ROCZNE} placówek.`}>
+        <div class="br-step"><span class="br-n">{fmt(N)}</span><span class="br-l">wysłanych wniosków</span></div>
+        <span class="br-arr" aria-hidden="true">→</span>
+        <div class="br-step"><span class="br-n">{fmt(MERYT)}</span><span class="br-l">odpowiedziało merytorycznie</span></div>
+        <span class="br-arr" aria-hidden="true">→</span>
+        <div class="br-step"><span class="br-n">{fmt(LISTY)}</span><span class="br-l">podało pełne listy płac</span></div>
+        <span class="br-arr" aria-hidden="true">→</span>
+        <div class="br-step is-out"><span class="br-n">{fmt(LEKARZY)}</span><span class="br-l">kwot rocznych do analizy<br />(z {ROCZNE} placówek)</span></div>
+      </figure>
+      <p class="mod-cap" style="margin-top:0.6rem">
+        Rozbicie „kto odpowiada, a kto milczy" (¾ placówek zwleka, milczy lub odmawia) to osobny
+        wątek — tu skupiamy się na tym, co pokazali <strong>ci, którzy odpowiedzieli</strong>.
+      </p>
+
+      <!-- ————————————————— TRZY LICZBY NA WEJŚCIE ————————————————— -->
+      <div class="head3">
+        <div class="h3tile">
+          <span class="h3lab">mediana — roczne brutto</span>
+          <span class="h3num">≈ 200<span class="h3u"> tys. zł</span></span>
+          <span class="h3ctx">Środkowy lekarz na ujawnionych listach — za 2025 r., z <strong>jednej</strong> placówki.</span>
+          <a class="h3src" href="#rozklad">Zobacz rozkład ↓</a>
+        </div>
+        <div class="h3tile is-brand2">
+          <span class="h3lab">co siódmy lekarz</span>
+          <span class="h3num">&gt; 500<span class="h3u"> tys. zł/rok</span></span>
+          <span class="h3ctx">{OVER500}% rozliczeń przekracza pół miliona rocznie — a to zapłata jednego tylko szpitala.</span>
+          <a class="h3src" href="#ogon">Zobacz ogon ↓</a>
+        </div>
+        <div class="h3tile is-alert">
+          <span class="h3lab">rozliczeń powyżej miliona</span>
+          <span class="h3num">{fmt(OVER1M)}<span class="h3u"> lekarzy</span></span>
+          <span class="h3ctx">≈ {OVER1Mpct}% pozycji przekracza milion złotych rocznie — z jednego tylko szpitala. Pojedyncze sięgają 2 mln. <span class="chip chip-alert">surowiec — do weryfikacji</span></span>
+          <a class="h3src" href="#ogon">Rekordy ↓</a>
+        </div>
+      </div>
+
+      <p class="act" id="rozklad"><span class="act-num">I</span> Rozkład: ile realnie dostają</p>
+
+      <!-- ————————————————— 1. HISTOGRAM ————————————————— -->
+      <h2 class="mod-h">{fmt(LEKARZY)} rozliczeń z {ROCZNE} szpitali</h2>
+      <p class="mod-sub">
+        Rozkład rocznego brutto na jedno rozliczenie — ze <strong>wszystkich {ROCZNE} ujawnionych
+        list rocznych</strong>. Każda pozycja to zapłata jednego szpitala jednemu lekarzowi za rok;
+        im wyższa kwota, tym cieplejszy słupek.
+      </p>
+      <figure class="hist" aria-label="Rozkład rocznego brutto: do 100 tys. 28,6%, 100–200 tys. 20,8%, 200–300 tys. 17,1%, 300–400 tys. 11,6%, 400–500 tys. 7,9%, 500–750 tys. 9,4%, 750 tys.–1 mln 3%, ponad 1 mln 1,5%.">
+        {hist.map((h) => (
+          <div class="hrow">
+            <span class="hlab">{h.label}</span>
+            <div class="htrack">
+              <div class={`hfill hband-${h.band}`} style={`width:${(h.pct / histMax) * 100}%`}></div>
+            </div>
+            <span class="hval">{h.pct}%<span class="hn"> · {fmt(h.n)}</span></span>
+          </div>
+        ))}
+      </figure>
+      <p class="mod-cap">
+        Mediana to <strong>≈ 200 tys. zł</strong> rocznie (ok. 17 tys. zł miesięcznie brutto).
+        Ale rozkład jest silnie <strong>prawostronny</strong>: „długi ogon" bogatych rozliczeń
+        ciągnie średnią w górę i to on jest właściwą historią. Wszystko <strong>za rok 2025, z
+        jednego szpitala</strong> — a realnie u wielu lekarzy sumuje się to z kilku miejsc naraz.
+      </p>
+
+      <!-- ————————————————— UCZCIWIE: JAK CZYTAĆ TE LICZBY ————————————————— -->
+      <div class="callout quiet">
+        <p>
+          <strong>Jak czytać te liczby — uczciwie.</strong> To <strong>nie</strong> jest próba
+          reprezentatywna dla wszystkich lekarzy w Polsce. Cztery zastrzeżenia:
+        </p>
+        <ul class="rz-list">
+          <li>dane ujawniło <strong>{ROCZNE} z {fmt(N)} placówek</strong> — dobór nielosowy, ze
+            skosem ku dużym szpitalom wojewódzkim i specjalistycznym, które płacą więcej;</li>
+          <li><strong>pięć największych list to ~47% wszystkich pozycji</strong> — rozkład w dużej
+            mierze opisuje kilka dużych szpitali, nie „przeciętną placówkę";</li>
+          <li>mediana ważona pozycją to ≈ 200 tys., ale ważona <strong>placówką</strong> (typowy
+            szpital z zestawu) to <strong>≈ 150 tys.</strong> — duże, lepiej płacące szpitale ciągną
+            ją w górę;</li>
+          <li>to <strong>rozliczenia</strong> (pozycje na listach), a nie zsumowane dochody osób;
+            część list rozbija jednego lekarza na kilka umów, więc per osoba kwoty bywają
+            <strong> wyższe</strong>, nie niższe.</li>
+        </ul>
+        <p style="margin-bottom:0">
+          Wniosek dotyczył rocznego brutto 2025. Te liczby to <strong>rząd wielkości i dolna
+          granica</strong> tego, co widać w ujawnionych listach — nie precyzyjny pomiar całego rynku.
+        </p>
+      </div>
+
+      <!-- ————————————————— 2. DRABINA PERCENTYLI ————————————————— -->
+      <h2 class="mod-h">Im wyżej, tym stromiej</h2>
+      <p class="mod-sub">Ile rocznie rozliczył lekarz na danym poziomie listy (brutto, zapłata jednego szpitala):</p>
+      <figure class="ladder" aria-label="Mediana około 200 tys., górne 25% ponad 365 tys., górne 10% ponad 560 tys., górny 1% ponad milion złotych rocznie.">
+        {ladder.map((r, i) => (
+          <div class="lrow">
+            <span class="lwho">{r.who}</span>
+            <div class="ltrack">
+              <div class={`lfill lstep-${i}`} style={`width:${r.wpct}%`}><span class="lv">{r.v}<span class="lu"> zł</span></span></div>
+            </div>
+          </div>
+        ))}
+      </figure>
+
+      <!-- killer stat -->
+      <div class="quotecard">
+        <div class="qc-num">1 na 7</div>
+        <blockquote class="qc-quote">Co siódmy lekarz na tych listach rozliczył ponad pół miliona złotych — w jeden rok, z jednego szpitala.</blockquote>
+        <p class="qc-cap">
+          Dokładnie <strong>{OVER500}%</strong> rozliczeń przekracza 500 tys. zł rocznie, a
+          <strong> {OVER300}%</strong> — 300 tys. To nie są oferty ani stawki godzinowe: to
+          <strong> faktyczne roczne wypłaty ze środków publicznych</strong>, podane przez same
+          placówki w odpowiedzi na wniosek.
+        </p>
+      </div>
+
+      <p class="act" id="ogon"><span class="act-num">II</span> Ogon: rozliczenia powyżej miliona</p>
+
+      <!-- ————————————————— 3. OGON / REKORDY ————————————————— -->
+      <h2 class="mod-h">Milion złotych rocznie — w jednym tylko szpitalu</h2>
+      <p class="mod-sub">
+        Na samym końcu rozkładu jest wąska, ale realna grupa. To rozliczenia, które w publicznej
+        debacie brzmią nieprawdopodobnie — a wynikają wprost z urzędowych odpowiedzi.
+      </p>
+      <div class="dtiles">
+        <div class="dtile">
+          <span class="dt-num">{fmt(OVER1M)}</span>
+          <span class="dt-lab">pozycji rozliczono na <strong>ponad 1 mln zł</strong> w 2025 r. (≈ {OVER1Mpct}% list)</span>
+        </div>
+        <div class="dtile">
+          <span class="dt-num">≈ 1,4 mln</span>
+          <span class="dt-lab">najwyższa pozycja na jednoznacznie <strong>numerowanej</strong> liście (1 wiersz = 1 lekarz)</span>
+        </div>
+        <div class="dtile">
+          <span class="dt-num">1 / 100</span>
+          <span class="dt-lab">rozliczeń przekracza milion — górny 1% (p99 ≈ 1,05 mln zł)</span>
+        </div>
+      </div>
+      <p class="mod-cap">
+        Ostrożnie z rekordami. Na listach <strong>numerowanych</strong> (1 wiersz = 1 lekarz) najwyższe
+        pozycje sięgają <strong>~1,4 mln zł</strong>. Na listach z <strong>inicjałami</strong> pojawiają
+        się pozycje nawet powyżej 2 mln — ale tam te same inicjały potrafią się powtarzać, więc mogą
+        <strong> łączyć kilka umów albo różne osoby</strong>; nie podajemy ich jako rekordów jednej osoby.
+        Zdarzają się też sumy zespołów i błędy odczytu skanów, które odfiltrowujemy. Każdą pojedynczą
+        kwotę traktujemy jako <strong>surowiec do weryfikacji przy źródle</strong> —
+        <a href={MONITORING} target="_blank" rel="noopener noreferrer">monitoring Watchdog</a>.
+        Dokładniej opisane, potwierdzone rekordy zbieramy w <a href="/dane/rekordy/">rekordach</a>.
+      </p>
+
+      <!-- ————————————————— 4. JEDNA LISTA Z BLISKA ————————————————— -->
+      <h2 class="mod-h">Jak wygląda jedna taka lista</h2>
+      <p class="mod-sub">
+        Wzorcowa odpowiedź: jeden szpital wojewódzki podał <strong>całą listę {fmt(446)} lekarzy</strong> —
+        i sam ją zanonimizował, numerując „Lekarz nr 1, 2, 3…". Dokładnie nasz model:
+        <strong> jawna kwota bez nazwiska</strong>.
+      </p>
+      <div class="anon-wrap">
+        <div class="anon-card" role="img" aria-label="Przykład zanonimizowanej listy jednego szpitala: 446 lekarzy oznaczonych numerami, mediana około 190 tysięcy, rekord około 1,4 miliona złotych rocznie.">
+          <div class="anon-row"><span class="anon-id">Lekarz nr 1</span><span class="anon-kw">■ ■■■ ■■■ zł</span></div>
+          <div class="anon-row"><span class="anon-id">Lekarz nr 2</span><span class="anon-kw">■■■ ■■■ zł</span></div>
+          <div class="anon-row"><span class="anon-id">Lekarz nr 3</span><span class="anon-kw">■ ■■■ ■■■ zł</span></div>
+          <div class="anon-more">… aż do „Lekarz nr 446" — bez jednego nazwiska</div>
+        </div>
+        <div class="anon-side">
+          <ul class="mini-stats">
+            <li><span class="ms-n">446</span><span class="ms-l">lekarzy na jednej liście</span></li>
+            <li><span class="ms-n">≈ 190 tys.</span><span class="ms-l">mediana brutto/rok</span></li>
+            <li><span class="ms-n">≈ 1,38 mln</span><span class="ms-l">najwyższe rozliczenie</span></li>
+            <li><span class="ms-n">47</span><span class="ms-l">lekarzy powyżej 500 tys. zł</span></li>
+          </ul>
+          <p class="anon-note">
+            Nazwy szpitala nie podajemy — <strong>ujawnienie to dobra praktyka, nie afera</strong>.
+            Piętnujemy system, w którym takie dane są loterią, a nie tych, którzy odpowiedzieli.
+          </p>
+        </div>
+      </div>
+
+      <p class="act"><span class="act-num">III</span> Dlaczego to wciąż zaniżone</p>
+
+      <!-- ————————————————— 5. DOLNA GRANICA / POINTA ————————————————— -->
+      <h2 class="mod-h">Każda z tych kwot to dolna granica</h2>
+      <p class="mod-sub">
+        Rozkład wyżej złożyliśmy z <strong>54 szpitali</strong> — ale każda pojedyncza kwota to
+        zapłata <strong>tylko jednego</strong> z nich danemu lekarzowi. Ten sam lekarz może
+        rozliczać się równolegle w kilku szpitalach, na kontrakcie i etacie naraz — tych
+        pozostałych wypłat tu <strong>nie widać</strong>.
+      </p>
+      <figure class="sumbox" aria-label="Ten sam lekarz w kilku placówkach: widzimy kwotę tylko z jednej, suma po PWZ pozostaje nieznana.">
+        <div class="sb-nodes">
+          <div class="sb-node is-seen">Szpital A<span>widoczne: ■ ■■■ ■■■ zł</span></div>
+          <div class="sb-node">Szpital B<span>nie ujawnił</span></div>
+          <div class="sb-node">Przychodnia C<span>nie ujawniła</span></div>
+        </div>
+        <div class="sb-sum">
+          <span class="sb-q">Σ po numerze PWZ = ?</span>
+          <span class="sb-qcap">Nikt nie ma prawa tego zsumować — dlatego oficjalne liczby są zaniżone.</span>
+        </div>
+      </figure>
+      <p class="mod-cap">
+        Co więcej — pełne listy pokazało zaledwie <strong>{ROCZNE} z {fmt(N)} placówek</strong>. Reszta
+        milczy, zwleka albo odmawia. Widzimy więc <strong>ułamek rynku — i to tylko po jednej stronie
+        każdego lekarza</strong>. Skala całości pozostaje zakryta.
+      </p>
+
+      <!-- ————————————————— POINTA ————————————————— -->
+      <div class="callout" style="border-left-color: var(--brand); margin-top: 2.5rem">
+        <p>
+          Mediana <strong>≈ 200 tys. zł</strong>, co siódme rozliczenie ponad pół miliona,
+          dziesiątki powyżej miliona — a każda z tych kwot to zapłata <strong>jednego tylko szpitala, za jeden rok</strong>.
+          Prawdziwej, łącznej kwoty ze <strong>wszystkich</strong> źródeł publicznych nie zna nikt,
+          bo nikt nie ma prawa jej zsumować. To jedyny postulat tej strony: <strong>jawny rejestr
+          łącznych wypłat powiązany z PWZ</strong> — nie z PESEL, bez danych prywatnych.
+          <a href="/postulat/">Zobacz postulat →</a>
+        </p>
+      </div>
+
+      <!-- ————————————————— ATRYBUCJA / METODA ————————————————— -->
+      <p class="source-note" style="margin-top:2rem">
+        <strong>Źródło i metoda.</strong> Dane: obywatelski monitoring „Ile zarabiają lekarze?"
+        prowadzony przez <a href={WATCHDOG} target="_blank" rel="noopener noreferrer">Sieć
+        Obywatelską Watchdog Polska</a> na platformie
+        <a href={FEDROWANIE} target="_blank" rel="noopener noreferrer">Obywatelskiego fedrowania
+        danych</a> (<a href={MONITORING} target="_blank" rel="noopener noreferrer">monitoring „Ile
+        zarabiają lekarze?"</a>). Z jawnych odpowiedzi wyłuskaliśmy wierszowe tabele płac; do rozkładu
+        bierzemy wyłącznie listy <strong>roczne</strong> (mediana ≥ 60 tys. zł), po odfiltrowaniu sum
+        zespołów, wierszy „razem" i list miesięcznych — {fmt(LEKARZY)} kwot z {ROCZNE} placówek.
+        Pojedyncze rekordy wymagają potwierdzenia u źródła. Stan na {SYNC_HR} (monitoring trwa,
+        liczby będą rosły). Kredyt dla Watchdog Polska; nasza rola to zestawienie i analiza.
+      </p>
+
+      <p class="pager"><a href="/dane/patologia-w-liczbach/">← Patologia w liczbach</a> · <a href="/postulat/">Postulat →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Udostępnij te liczby:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .chip { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--paper-2); font-size: 0.68rem; font-weight: 600; }
+  .chip-alert { background: var(--alert-50); color: var(--alert); }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+  .mod-h { margin: 2.75rem 0 0.4rem; }
+  .mod-sub { max-width: 66ch; color: var(--ink-soft); font-size: 0.95rem; line-height: 1.55; margin: 0 0 1.1rem; }
+  .mod-cap { max-width: 68ch; font-size: 0.86rem; color: var(--ink-soft); line-height: 1.6; margin: 0.9rem 0 0; }
+  .rz-list { margin: 0.5rem 0 0.8rem; padding-left: 1.1rem; font-size: 0.92rem; color: var(--ink-soft); line-height: 1.55; }
+  .rz-list li { margin: 0.3rem 0; }
+
+  /* — etykieta „aktu" — */
+  .act { display: flex; align-items: center; gap: 0.6rem; margin: 3.25rem 0 0; padding-top: 1.4rem; border-top: 2px solid var(--line); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand); scroll-margin-top: 5rem; }
+  .act-num { display: inline-flex; align-items: center; justify-content: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--brand); color: #fff; font-family: var(--font-mono); font-size: 0.78rem; flex-shrink: 0; }
+  .act + .mod-h { margin-top: 0.7rem; }
+
+  /* — box źródła: Watchdog — */
+  .wd-box { border: 1px solid var(--line); border-left: 4px solid var(--teal); background: var(--teal-50); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 1.15rem 1.4rem; margin: 1.5rem 0 0; }
+  .wd-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.55rem; }
+  .wd-tag { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--teal); background: var(--surface); border: 1px solid var(--teal); border-radius: 999px; padding: 0.12rem 0.55rem; }
+  .wd-name { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 600; color: var(--ink); }
+  .wd-lead { font-size: 0.95rem; color: var(--ink); line-height: 1.6; margin: 0 0 0.6rem; max-width: 74ch; }
+  .wd-cta { font-size: 0.9rem; color: var(--ink-soft); margin: 0; }
+
+  /* — pomost (skąd 3746 kwot) — */
+  .bridge { display: flex; align-items: stretch; gap: 0.5rem; margin: 1.75rem 0 0; flex-wrap: wrap; }
+  .br-step { flex: 1; min-width: 120px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.75rem 0.85rem; display: flex; flex-direction: column; gap: 0.15rem; }
+  .br-step.is-out { border-color: var(--teal); background: var(--teal-50); }
+  .br-n { font-family: var(--font-mono); font-size: clamp(1.25rem, 4vw, 1.6rem); font-weight: 700; color: var(--ink); line-height: 1; }
+  .is-out .br-n { color: var(--teal); }
+  .br-l { font-size: 0.74rem; color: var(--ink-soft); line-height: 1.3; }
+  .br-arr { align-self: center; color: var(--line-2); font-family: var(--font-mono); font-weight: 700; }
+
+  /* — trzy liczby na wejście — */
+  .head3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.8rem; margin: 1.75rem 0 0.5rem; }
+  .h3tile { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--brand); border-radius: var(--radius); padding: 1rem 1.1rem 0.95rem; }
+  .h3tile.is-brand2 { border-top-color: var(--teal); }
+  .h3tile.is-alert { border-top-color: var(--alert); }
+  .h3lab { font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; display: flex; align-items: center; gap: 0.4rem; min-height: 1.4em; }
+  .h3num { font-family: var(--font-mono); font-size: clamp(1.7rem, 5vw, 2.3rem); font-weight: 700; color: var(--ink); line-height: 1.05; margin: 0.35rem 0 0.4rem; white-space: nowrap; }
+  .is-brand2 .h3num { color: var(--teal); }
+  .is-alert .h3num { color: var(--alert); }
+  .h3u { font-family: var(--font-sans); font-size: 0.78rem; font-weight: 400; color: var(--ink-soft); }
+  .h3ctx { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.45; margin-bottom: 0.6rem; flex: 1; }
+  .h3src { font-size: 0.78rem; }
+
+  /* — histogram — */
+  .hist { margin: 1.25rem 0 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .hrow { display: grid; grid-template-columns: 8.5rem 1fr 5.5rem; align-items: center; gap: 0.6rem; }
+  .hlab { font-size: 0.82rem; color: var(--ink); text-align: right; }
+  .htrack { height: 22px; background: var(--paper-2); border-radius: 4px; overflow: hidden; }
+  .hfill { height: 100%; border-radius: 4px; min-width: 3px; }
+  .hband-lo { background: var(--brand); }
+  .hband-mid { background: color-mix(in srgb, var(--brand) 45%, var(--amber)); }
+  .hband-hi { background: var(--amber); }
+  .hband-top { background: var(--alert); }
+  .hval { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .hn { color: var(--ink-faint); font-weight: 400; font-size: 0.72rem; }
+
+  /* — drabina percentyli — */
+  .ladder { margin: 1.25rem 0 0; display: flex; flex-direction: column; gap: 0.55rem; }
+  .lrow { display: flex; flex-direction: column; gap: 0.25rem; }
+  .lwho { font-size: 0.85rem; color: var(--ink-soft); font-weight: 600; }
+  .ltrack { height: 34px; background: var(--paper-2); border-radius: 4px; overflow: hidden; }
+  .lfill { height: 100%; border-radius: 4px; min-width: 90px; display: flex; align-items: center; justify-content: flex-end; padding-right: 0.7rem; }
+  .lstep-0 { background: var(--brand); }
+  .lstep-1 { background: color-mix(in srgb, var(--brand) 55%, var(--amber)); }
+  .lstep-2 { background: var(--amber); }
+  .lstep-3 { background: var(--alert); }
+  .lv { font-family: var(--font-mono); font-weight: 700; color: #fff; font-size: clamp(0.9rem, 2.4vw, 1.1rem); white-space: nowrap; }
+  .lu { font-size: 0.7rem; font-weight: 400; opacity: 0.85; }
+
+  /* — karta z cytatem — */
+  .quotecard { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.25rem 1.5rem; margin: 2rem 0 0; }
+  .qc-num { font-family: var(--font-mono); font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 700; color: var(--brand); line-height: 1; }
+  .qc-quote { font-family: var(--font-serif); font-size: 1.2rem; font-style: italic; color: var(--ink); margin: 0.5rem 0 0.6rem; border: none; padding: 0; }
+  .qc-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.6; margin: 0; max-width: 68ch; }
+
+  /* — kafle (ogon) — */
+  .dtiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.8rem; margin: 1.25rem 0 0; }
+  .dtile { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--alert); border-radius: var(--radius); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+  .dt-num { font-family: var(--font-mono); font-size: clamp(1.5rem, 4.5vw, 2rem); font-weight: 700; color: var(--alert); line-height: 1; }
+  .dt-lab { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.4; }
+
+  /* — jedna lista z bliska — */
+  .anon-wrap { display: grid; grid-template-columns: 260px 1fr; gap: 1.5rem; align-items: start; margin: 1.25rem 0 0; }
+  .anon-card { background: var(--panel); color: var(--on-panel); border-radius: var(--radius); padding: 1rem 1.1rem; font-family: var(--font-mono); }
+  .anon-row { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.12); }
+  .anon-id { font-size: 0.85rem; }
+  .anon-kw { font-size: 0.85rem; color: var(--teal); letter-spacing: 0.05em; }
+  .anon-more { font-size: 0.72rem; opacity: 0.7; padding-top: 0.6rem; font-family: var(--font-sans); }
+  .mini-stats { list-style: none; padding: 0; margin: 0 0 0.9rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .mini-stats li { display: flex; flex-direction: column; }
+  .ms-n { font-family: var(--font-mono); font-size: clamp(1.25rem, 3.5vw, 1.55rem); font-weight: 700; color: var(--ink); line-height: 1; }
+  .ms-l { font-size: 0.76rem; color: var(--ink-soft); margin-top: 0.15rem; }
+  .anon-note { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.6; margin: 0; max-width: 60ch; }
+
+  /* — dolna granica: sumowanie po PWZ — */
+  .sumbox { margin: 1.25rem 0 0; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+  .sb-nodes { display: flex; flex-direction: column; gap: 0.5rem; }
+  .sb-node { font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); border: 1px dashed var(--line-2); border-radius: var(--radius); padding: 0.5rem 0.75rem; display: flex; justify-content: space-between; gap: 1rem; }
+  .sb-node span { font-family: var(--font-mono); font-weight: 400; font-size: 0.78rem; color: var(--ink-faint); }
+  .sb-node.is-seen { border-style: solid; border-color: var(--teal); color: var(--ink); }
+  .sb-node.is-seen span { color: var(--teal); }
+  .sb-sum { text-align: center; padding-left: 1rem; border-left: 2px solid var(--line); }
+  .sb-q { display: block; font-family: var(--font-mono); font-size: clamp(1.1rem, 4vw, 1.5rem); font-weight: 700; color: var(--brand); }
+  .sb-qcap { display: block; font-size: 0.76rem; color: var(--ink-soft); max-width: 18ch; margin: 0.35rem auto 0; line-height: 1.4; }
+
+  @media (max-width: 640px) {
+    .anon-wrap { grid-template-columns: 1fr; }
+    .hrow { grid-template-columns: 6.5rem 1fr 4.5rem; gap: 0.4rem; }
+    .hlab { font-size: 0.74rem; }
+    .sumbox { grid-template-columns: 1fr; }
+    .sb-sum { border-left: 0; border-top: 2px solid var(--line); padding-left: 0; padding-top: 0.9rem; }
+    .sb-qcap { max-width: none; }
+  }
+  @media (max-width: 420px) {
+    .head3 { grid-template-columns: 1fr; }
+    .mini-stats { grid-template-columns: 1fr 1fr; }
+  }
+</style>

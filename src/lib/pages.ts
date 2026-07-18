@@ -118,6 +118,12 @@ export const strony: Record<string, Strona> = {
     opis: 'Od pensji rezydenta po górny 1% — cała rozpiętość, per forma zatrudnienia.',
     tematy: ['pieniadz-nfz'],
   },
+  '/dane/zarobki-ujawnione-listy': {
+    dzial: 'dane',
+    tytul: 'Zarobki z ujawnionych list płac',
+    opis: '54 szpitale ujawniły pełne listy — 3746 rozliczeń. Mediana ~200 tys. zł/rok, co siódme ponad pół miliona, dziesiątki powyżej miliona — a każda kwota to zapłata jednego tylko szpitala. Dane z obywatelskiego monitoringu Watchdog Polska.',
+    tematy: ['pieniadz-nfz', 'jawnosc'],
+  },
   '/dane/personel-medyczny': {
     dzial: 'dane',
     tytul: 'Inni pracownicy OZ',

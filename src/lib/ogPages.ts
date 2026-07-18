@@ -53,6 +53,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Rozkład wynagrodzeń lekarzy',
     subtitle: 'Od pensji rezydenta po górny 1% — cała rozpiętość, per forma zatrudnienia. Kwot kontraktów nikt nie publikuje.',
   },
+  'dane/zarobki-ujawnione-listy': {
+    tag: 'Dane · Zarobki',
+    title: 'Ile trafia do jednego lekarza',
+    subtitle: '54 szpitale ujawniły pełne listy płac. Mediana ~200 tys. zł rocznie, co siódme rozliczenie ponad pół miliona, dziesiątki powyżej miliona — a każda kwota to zapłata jednego tylko szpitala.',
+  },
   'dane/wedlug-specjalizacji': {
     tag: 'Dane · Specjalizacje',
     title: 'Zarobki według specjalizacji',

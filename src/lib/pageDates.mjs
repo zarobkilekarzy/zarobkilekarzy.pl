@@ -42,6 +42,7 @@ export const pageDates = {
   '/dane/personel-medyczny': '2026-07-07',
   '/dane/rekordy': '2026-07-17',
   '/dane/rozklad-wynagrodzen': '2026-07-07',
+  '/dane/zarobki-ujawnione-listy': '2026-07-18',
   '/dane/stawki': '2026-07-06',
   '/dane/wedlug-specjalizacji': '2026-07-07',
   '/dane/zadluzenie-szpitali': '2026-07-08',

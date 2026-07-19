@@ -55,9 +55,26 @@ const woj2025 = [
 ];
 
 // Anonimowy rozkład: roczne dochody radnych-lekarzy z jawnych oświadczeń majątkowych
-// (oddolne zestawienie; każda kwota do sprawdzenia w BIP właściwej jednostki). Malejąco.
-const radniDochody = [1491932, 1334692, 1212738, 1065886, 1040192, 1024636, 987192, 969570, 935753, 916009, 844387, 806843, 719721, 718902, 711179, 707986, 685544, 587746, 581708];
-const radniStat = { n: 19, mediana: 916009, srednia: 912769, min: 581708, max: 1491932, przychodMax: 3918517 };
+// (oddolne zestawienie — seria #konowałposting; każdą kwotę można sprawdzić w BIP właściwej
+// jednostki). Dochód z praktyki lekarskiej (nie przychód/obrót). Malejąco. Wpisy tylko-przychód,
+// nieczytelne oraz były radny (obecnie dyrektor) świadomie pominięte. Stan: 2026-07-19.
+const radniDochody = [
+  1491932, 1334692, 1313226, 1229440, 1212738, 1186294, 1078895, 1065886, 1040192, 1024636,
+  987192, 969570, 935753, 916009, 844387, 844330, 806843, 781032, 771564, 719721,
+  718902, 717159, 711179, 707986, 685544, 649570, 591359, 587746, 581708, 493248,
+];
+const rdN = radniDochody.length;
+const rdSum = radniDochody.reduce((a, b) => a + b, 0);
+const radniStat = {
+  n: rdN,
+  medIdx: Math.floor((rdN - 1) / 2),
+  mediana: rdN % 2 ? radniDochody[(rdN - 1) / 2] : Math.round((radniDochody[rdN / 2 - 1] + radniDochody[rdN / 2]) / 2),
+  srednia: Math.round(rdSum / rdN),
+  min: radniDochody[rdN - 1],
+  max: radniDochody[0],
+  nadMilion: radniDochody.filter((d) => d >= 1_000_000).length,
+  przychodMax: 3918517,
+};
 const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zawód)
 ---
 
@@ -314,7 +331,7 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
       <h2 style="margin-top: 2.75rem">Jawne — a i tak niewidoczne</h2>
       <p class="act-intro">
         Bywa, że dochód lekarza jest <strong>jawny z mocy prawa</strong> — u <strong>radnych-lekarzy</strong>,
-        bo pełnią funkcję publiczną i składają oświadczenia majątkowe. Poniżej 19 takich rocznych
+        bo pełnią funkcję publiczną i składają oświadczenia majątkowe. Poniżej {radniStat.n} takich rocznych
         dochodów z praktyki lekarskiej (bez nazwisk). Sęk w tym, że widać je <em>tylko dlatego</em>,
         że akurat są radnymi.
       </p>
@@ -324,7 +341,7 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
         <div class="okno-card is-yes">
           <div class="okno-head"><span class="okno-mark">✓</span> Widać</div>
           <p class="okno-who">Lekarz, który jest <strong>radnym</strong></p>
-          <p class="okno-count">garstka — te 19 kwot wyżej</p>
+          <p class="okno-count">garstka — te {radniStat.n} kwot wyżej</p>
           <p class="okno-desc">Pełni funkcję publiczną, więc składa <strong>jawne oświadczenie majątkowe</strong> (BIP). Dlatego jego dochód można poznać.</p>
         </div>
         <div class="okno-card is-no">
@@ -345,17 +362,17 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
 
       <div class="callout quiet">
         <p style="margin: 0">
-          <strong>19 dochodów, rocznie:</strong> mediana <strong>~916 tys. zł</strong> · średnia
-          <strong>~913 tys. zł</strong> · rozrzut od <strong>582 tys.</strong> do
-          <strong>1,49 mln zł</strong>. U części sam przychód (obrót) sięgał <strong>3,9 mln zł</strong>.
+          <strong>{radniStat.n} dochodów, rocznie:</strong> mediana <strong>~{Math.round(radniStat.mediana / 1000)} tys. zł</strong> · średnia
+          <strong>~{Math.round(radniStat.srednia / 1000)} tys. zł</strong> · rozrzut od <strong>{Math.round(radniStat.min / 1000)} tys.</strong> do
+          <strong>1,49 mln zł</strong> — <strong>{radniStat.nadMilion} z {radniStat.n}</strong> ponad milion. U części sam przychód (obrót) sięgał <strong>3,9 mln zł</strong>.
         </p>
       </div>
       <div class="dist">
-        {radniDochody.map((d) => (
-          <div class={`dist-row${d === radniStat.mediana ? ' is-med' : ''}`}>
+        {radniDochody.map((d, i) => (
+          <div class={`dist-row${i === radniStat.medIdx ? ' is-med' : ''}`}>
             <div class="dist-track">
               <div class="dist-bar" style={`width:${Math.round((d / radniStat.max) * 100)}%`}></div>
-              {d === radniStat.mediana && <span class="dist-tag">mediana</span>}
+              {i === radniStat.medIdx && <span class="dist-tag">mediana</span>}
             </div>
             <span class="dist-val">{fmt(d)} zł</span>
           </div>
@@ -365,7 +382,7 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
       <div class="callout">
         <p>
           <strong>To nie kwoty są tu sednem — lecz to, że są jawne, a mimo to rozsypane.</strong>
-          Te ~20 dochodów widać przez <strong>przypadek pełnienia funkcji</strong>. Dla ~164 892
+          Te {radniStat.n} dochodów widać przez <strong>przypadek pełnienia funkcji</strong>. Dla ~164 892
           lekarzy wykonujących zawód nie ma nawet tego okna — choć płaci im ten sam publiczny NFZ.
           Rejestr powiązany z numerem <a href="/postulat/">PWZ</a> zsumowałby to systemowo, dla
           każdego, w jeden dzień. Ktoś już liczy to <strong>ręcznie, po omacku</strong> — bo

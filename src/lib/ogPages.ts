@@ -130,6 +130,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Zarezerwowane dla lekarzy — rynek „urody”, który wyciąga ich z kolejki',
     subtitle: 'Państwo oddaje lekarzom wyłączność na dochodową medycynę estetyczną. Skoro tylko oni mogą, a gotówka bije NFZ — rezerwacja przeciąga ich od pacjenta. Bodziec stworzony przez państwo, nie zarzut wobec lekarzy.',
   },
+  'analizy/odpowiedzialnosc-zawodowa-lekarzy': {
+    tag: 'Analiza · Samorząd',
+    title: 'Najwyższa kara, której prawie się nie orzeka',
+    subtitle: 'Sąd lekarski może odebrać prawo do zawodu — przez ćwierć wieku (2000–2024) prawomocnie wobec około 20 lekarzy, mniej więcej jednego rocznie. 86% spraw kończy się upomnieniem, naganą lub grzywną. Jak korporacja zawodowa rozlicza samą siebie.',
+  },
   'analizy/nil-a-kontrakty-lekarskie': {
     tag: 'Analiza · Samorząd',
     title: 'Naczelna Izba Lekarska a kontrakty lekarskie',

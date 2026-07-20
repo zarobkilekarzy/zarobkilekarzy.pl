@@ -246,6 +246,12 @@ export const strony: Record<string, Strona> = {
     opis: 'Państwo oddaje lekarzom wyłączność na dochodową medycynę estetyczną. Skoro tylko oni mogą — gotówka przeciąga deficytowe godziny od pacjenta. Miarą ciągu jest cały zagrożony rynek beauty, nie garstka dzisiejszych lekarzy.',
     tematy: ['dostep-do-zawodu'],
   },
+  '/analizy/odpowiedzialnosc-zawodowa-lekarzy': {
+    dzial: 'analizy',
+    tytul: 'Najwyższa kara, której prawie się nie orzeka',
+    opis: 'Sąd lekarski może odebrać prawo do zawodu — przez ćwierć wieku (2000–2024) zrobił to prawomocnie wobec około 20 lekarzy, mniej więcej jednego rocznie. 86% spraw kończy się upomnieniem, naganą lub grzywną. Dane policzone z rocznych sprawozdań sądów lekarskich. Nie o „bezkarnych lekarzach”, lecz o tym, jak korporacja rozlicza samą siebie.',
+    tematy: ['dostep-do-zawodu', 'jawnosc'],
+  },
   '/analizy/nil-a-kontrakty-lekarskie': {
     dzial: 'analizy',
     tytul: 'Naczelna Izba Lekarska a kontrakty lekarskie',

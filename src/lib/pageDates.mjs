@@ -23,6 +23,7 @@ export const pageDates = {
   '/analizy/komin-placowy': '2026-07-14',
   '/analizy/pielegniarstwo-w-polsce': '2026-07-15',
   '/analizy/ustawa-o-danych-a-jawny-rejestr': '2026-07-17',
+  '/analizy/odpowiedzialnosc-zawodowa-lekarzy': '2026-07-19',
   // Mechanizmy (strony wyjaśniające).
   '/mechanizmy/reglamentacja-dostepu': '2026-07-14',
   '/mechanizmy/kontrakt-vs-etat': '2026-07-14',

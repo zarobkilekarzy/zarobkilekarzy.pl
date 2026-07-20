@@ -1,0 +1,330 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+
+// Analiza odpowiedzialności zawodowej lekarzy przed sądami lekarskimi. Teza (obronna, nie
+// „oskarżycielska"): własny sąd samorządu praktycznie nie sięga po najwyższą karę —
+// pozbawienie PWZ (art. 83 ust. 1 pkt 7). Najdalej zawiesza czasowo, a najczęściej poprzestaje
+// na upomnieniu/naganie/grzywnie. UCZCIWY BEZPIECZNIK: najcięższe przestępstwa odbiera PWZ SĄD
+// KARNY (zakaz z art. 41 k.k.), nie samorząd — więc NIE piszemy „przestępca zostaje w zawodzie".
+// Dane PIERWOTNE, policzone z plików NIL (sprawozdania roczne OSL + NSL 2010–2024 + zestawienie 2000–2014).
+//   LICZY SIĘ PRAWOMOCNE (ilu lekarzy naprawdę straciło PWZ), nie orzeczone. Metoda prawomocnych =
+//   OSL niezaskarżone (sekcja 8.9) + NSL utrzymał/orzekł w apelacji (sekcja 8.11); zbiory rozłączne.
+//   Prawomocne per rok 2010–2024: 0,0,0,0,1,1,4,1,0,0,2,0,0,1,7 = 17. 2000–2009 (stary formularz bez
+//   rozbicia) dokłada kilka → CAŁY OKRES 2000–2024 ≈ 20 (jeden rocznie). Orzeczone I inst. 2000–2024 = 41
+//   (2000–14:13, 2015–19:8, 2020–24:20) — połowa nie utrzymała się w apelacji; podajemy raz jako atrycję.
+//   Struktura kar 2020–2024 (orzeczone, SUMA 24 OIL): upomn. 817, nagana 400, kara pien. 443, zakaz f. 15,
+//   ogran. 62, zawiesz. 165, pozbaw. 20; RAZEM 1922; trzy najłagodniejsze 1660 (86%). Bez nazwisk.
+
+const karyStruktura = [
+  { nazwa: 'Upomnienie', n: 817 },
+  { nazwa: 'Kara pieniężna', n: 443 },
+  { nazwa: 'Nagana', n: 400 },
+  { nazwa: 'Zawieszenie PWZ', n: 165, hot: true },
+  { nazwa: 'Ograniczenie zakresu czynności', n: 62 },
+  { nazwa: 'Pozbawienie PWZ', n: 20, hot: true },
+  { nazwa: 'Zakaz funkcji kierowniczych', n: 15 },
+];
+const karyMax = Math.max(...karyStruktura.map((k) => k.n));
+
+// Prawomocne pozbawienia PWZ w roku uprawomocnienia (OSL niezaskarżone 8.9 + NSL 8.11).
+const pozbawieniaRok = [
+  { rok: '2010', n: 0 }, { rok: '2011', n: 0 }, { rok: '2012', n: 0 }, { rok: '2013', n: 0 },
+  { rok: '2014', n: 1 }, { rok: '2015', n: 1 }, { rok: '2016', n: 4 }, { rok: '2017', n: 1 },
+  { rok: '2018', n: 0 }, { rok: '2019', n: 0 }, { rok: '2020', n: 2 }, { rok: '2021', n: 0 },
+  { rok: '2022', n: 0 }, { rok: '2023', n: 1 }, { rok: '2024', n: 7 },
+];
+const pozbMax = Math.max(...pozbawieniaRok.map((r) => r.n));
+---
+
+<BaseLayout
+  title="Najwyższa kara, której prawie się nie orzeka — odpowiedzialność zawodowa lekarzy — zarobkilekarzy.pl"
+  description="Sąd lekarski może odebrać lekarzowi prawo wykonywania zawodu — to najwyższa z siedmiu kar samorządu. Przez ćwierć wieku (2000–2024) prawomocnie odebrał je około 20 lekarzom, mniej więcej jednemu rocznie; 86% spraw kończy się upomnieniem, naganą lub grzywną. Dane policzone z rocznych sprawozdań sądów lekarskich. Nie o „bezkarnych lekarzach” — o tym, jak korporacja zawodowa rozlicza samą siebie."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/analizy/">Analizy</a> · Odpowiedzialność zawodowa</p>
+      <h1>Najwyższa kara, której prawie się nie orzeka</h1>
+      <Aktualizacja />
+      <p class="lead">
+        Sąd lekarski może odebrać lekarzowi <strong>prawo wykonywania zawodu</strong> — to najwyższa
+        z siedmiu kar, jakimi dysponuje samorząd. Sięga po nią wyjątkowo rzadko: przez
+        <strong>ćwierć wieku (2000–2024)</strong> prawomocnie odebrał prawo do zawodu
+        <strong>około 20 lekarzom</strong> — mniej więcej <strong>jednemu rocznie</strong>, na przeszło
+        166 tysięcy. Zdecydowana większość spraw kończy się upomnieniem, naganą albo grzywną. To nie
+        jest opowieść o „bezkarnych lekarzach”. To opis <strong>mechanizmu</strong>: korporacji
+        zawodowej, która sądzi samą siebie i po swoje najsurowsze narzędzie prawie nie sięga.
+      </p>
+
+      <div class="callout" style="border-left-color: var(--brand)">
+        <p>
+          Najcięższe przestępstwa odbiera lekarzowi prawo do zawodu zwykle <strong>sąd karny</strong>,
+          a nie samorząd. Ale tam, gdzie decyzja należy do <strong>własnego sądu lekarskiego</strong>,
+          najsurowszą realnie orzekaną sankcją jest <strong>czasowe zawieszenie</strong> — a
+          pozbawienie zdarza się pojedyncze razy w roku. Piszemy o <strong>mechanizmie</strong>, nie o
+          żadnej osobie.
+        </p>
+      </div>
+
+      <h2 style="margin-top: 2.5rem">Cztery liczby</h2>
+      <div class="fact-grid">
+        <div class="fact">
+          <span class="fact-num">~20</span>
+          <span class="fact-cap">lekarzom samorząd <strong>prawomocnie</strong> odebrał prawo wykonywania zawodu przez <strong>ćwierć wieku (2000–2024)</strong> — na przeszło 166 tysięcy.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-num">~1</span>
+          <span class="fact-cap">tyle prawomocnych pozbawień przypada <strong>na rok</strong>. W latach 2020, 2021 i 2022 <strong>razem</strong> — dwa; w samym 2022 — <strong>zero</strong>.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-num">86%</span>
+          <span class="fact-cap">gdy sąd <strong>już</strong> karze, sięga po najłagodniejsze: <strong>upomnienie, nagana, grzywna</strong> (1660 z 1922 orzeczeń w I inst.).</span>
+        </div>
+        <div class="fact">
+          <span class="fact-num">41 → ~20</span>
+          <span class="fact-cap">sądy I instancji <strong>orzekły</strong> pozbawienie 41 razy (2000–2024), lecz prawomocnie utrzymała się <strong>połowa</strong> — resztę złagodził lub uchylił apelacyjnie sam NSL.</span>
+        </div>
+      </div>
+      <p class="source-note">
+        <strong>Dane pierwotne policzone z rocznych sprawozdań sądów lekarskich</strong> (suma 24 okręgowych
+        izb): Naczelna Izba Lekarska,
+        <a href="https://nil.org.pl/izba/naczelny-sad-lekarski/sprawozdania/dane-liczbowe-dotyczace-sadow-lekarskich" target="_blank" rel="noopener noreferrer">Dane liczbowe dotyczące sądów lekarskich</a>
+        (pliki „Sprawozdanie roczne OSL” i „…NSL” za lata 2010–2024 oraz „Zestawienie orzeczeń OSL i NSL 2000–2014”).
+        „Prawomocne” = orzeczenia OSL niezaskarżone (sekcja 8.9) plus pozbawienia utrzymane lub orzeczone
+        przez NSL w apelacji (sekcja 8.11), zbiory rozłączne — co do jednego z danych 2010–2024 (17);
+        starszy formularz (2000–2009) nie rozdziela prawomocnych, stąd „~20” za cały okres. Rząd wielkości
+        potwierdza <a href="https://www.prawo.pl/zdrowie/sady-lekarskie-kara-pozbawienia-prawa-wykonywania-zawodu-ukaraly,399509.html" target="_blank" rel="noopener noreferrer">Prawo.pl (2019)</a> („13 przez ćwierć wieku” do 2019 r.).
+      </p>
+
+      <div class="prose">
+        <h2>1. Siedem kar, dwie ostateczne</h2>
+        <p>
+          Odpowiedzialność zawodową lekarzy prowadzą <strong>sądy lekarskie</strong> — organy
+          samorządu, w których orzekają sami lekarze (pierwsza instancja to okręgowe sądy lekarskie,
+          druga — Naczelny Sąd Lekarski). Art. 83 ustawy o izbach lekarskich wylicza siedem kar,
+          <strong>od najłagodniejszej do najsurowszej</strong>:
+        </p>
+        <ol class="kary-lista">
+          <li>upomnienie,</li>
+          <li>nagana,</li>
+          <li>kara pieniężna,</li>
+          <li>zakaz pełnienia funkcji kierowniczych (1–5 lat),</li>
+          <li>ograniczenie zakresu czynności (6 miesięcy – 2 lata),</li>
+          <li><strong>zawieszenie</strong> prawa wykonywania zawodu (1–5 lat),</li>
+          <li><strong>pozbawienie</strong> prawa wykonywania zawodu.</li>
+        </ol>
+        <p>
+          Różnica między szóstką a siódemką jest zasadnicza. <strong>Zawieszenie jest z definicji
+          czasowe</strong> — maksymalnie pięć lat, potem lekarz wraca do zawodu. <strong>Pozbawienie</strong>
+          to koniec kariery: sankcja, którą sam samorząd opisuje jako „ostateczność”, sięganą tylko po
+          najcięższe naruszenia. To po nią sądy lekarskie praktycznie nie sięgają.
+        </p>
+        <p class="source-note">
+          Katalog kar — art. 83 ustawy z 2 grudnia 2009 r. o izbach lekarskich
+          (<a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20092191708" target="_blank" rel="noopener noreferrer">ISAP</a>,
+          <a href="https://lexlege.pl/ustawa-o-izbach-lekarskich/art-83/" target="_blank" rel="noopener noreferrer">LexLege</a>).
+        </p>
+
+        <h2>2. Po najwyższą karę sądy nie sięgają</h2>
+        <p>
+          Pozbawienie to najrzadsza z siedmiu kar — a i tak większość spraw kończy się dużo łagodniej.
+          Tak wygląda struktura <strong>wszystkich 1922 kar</strong> orzeczonych przez okręgowe sądy
+          lekarskie w latach 2020–2024. Im niżej na liście, tym surowsza kara — i tym rzadsza:
+        </p>
+        <div class="kbars" role="img" aria-label="Struktura 1922 kar orzeczonych w latach 2020–2024: upomnienie 817, kara pieniężna 443, nagana 400, zawieszenie PWZ 165, ograniczenie zakresu 62, pozbawienie PWZ 20, zakaz funkcji kierowniczych 15.">
+          {karyStruktura.map((k) => (
+            <div class="kbar-row">
+              <span class="kbar-label">{k.nazwa}</span>
+              <span class="kbar-track">
+                <span class={`kbar-fill${k.hot ? ' kbar-fill-hot' : ''}`} style={`width: ${Math.max((k.n / karyMax) * 100, 1.5)}%`}></span>
+              </span>
+              <span class="kbar-num">{k.n}</span>
+            </div>
+          ))}
+        </div>
+        <p>
+          Trzy najłagodniejsze kary — upomnienie, nagana, grzywna — to razem <strong>1660 orzeczeń,
+          czyli 86%</strong>. Zawieszenie prawa wykonywania zawodu, ta „ciężka” sankcja, to
+          <strong>165 (niecałe 9%)</strong>. Pozbawienie pojawia się tu 20 razy — ale to dopiero
+          <strong>orzeczenia</strong>. Liczy się wyrok <strong>prawomocny</strong>, bo pozbawienie prawie
+          zawsze jest zaskarżane do Naczelnego Sądu Lekarskiego. Z <strong>41 orzeczeń</strong>
+          pozbawienia wydanych w I instancji w latach 2000–2024 prawomocnie utrzymała się
+          <strong>mniej więcej połowa</strong>; resztę złagodził, uchylił albo dotąd nie zakończył sam
+          samorząd w drugiej instancji. Tam, gdzie da się to policzyć co do jednego — w latach
+          <strong>2010–2024</strong> — prawomocnych pozbawień było <strong>17</strong>. Rozłożone na lata:
+        </p>
+        <div class="hours">
+          {pozbawieniaRok.map((r) => (
+            <div class="h-row">
+              <span class="h-label">{r.rok}</span>
+              <span class="h-bar" style={`width: ${(r.n / pozbMax) * 100}%`}></span>
+              <span class="h-val">{r.n}</span>
+            </div>
+          ))}
+        </div>
+        <p class="viz-cap">
+          Prawomocne pozbawienia PWZ w roku uprawomocnienia (I i II instancja razem, wszystkie izby).
+        </p>
+        <p>
+          To średnio <strong>jeden lekarz rocznie</strong>, a w większości lat — <strong>zero</strong>.
+          W latach 2020, 2021 i 2022 razem prawomocnie odebrano PWZ <strong>dwóm</strong> lekarzom
+          (w samym 2022 — zeru), a cały niedawny ciężar to rok 2024. Za starszy okres (2000–2009)
+          formularze nie rozdzielają prawomocnych od orzeczonych, ale i tam pozbawień było kilka — stąd
+          <strong>około 20 przez cały ćwierć wieku</strong>.
+        </p>
+        <p class="source-note">
+          Struktura kar (słupki wyżej) to <strong>orzeczenia I instancji</strong> 2020–2024 (sąd może
+          połączyć zakaz funkcji kierowniczych z zawieszeniem, więc kar bywa więcej niż ukaranych
+          lekarzy). „Prawomocne pozbawienia” = orzeczenia OSL niezaskarżone (sekcja 8.9) plus utrzymane
+          lub orzeczone przez NSL w apelacji (sekcja 8.11); zbiory rozłączne. Źródło: sprawozdania roczne
+          OSL i NSL 2010–2024 oraz zestawienie 2000–2014,
+          <a href="https://nil.org.pl/izba/naczelny-sad-lekarski/sprawozdania/dane-liczbowe-dotyczace-sadow-lekarskich" target="_blank" rel="noopener noreferrer">NIL</a>.
+        </p>
+
+        <h2>3. Zawieszenie, nie pozbawienie — i to rzadko</h2>
+        <p>
+          Warto zobaczyć to od strony pojedynczego roku. W <strong>2022</strong> Naczelny Sąd Lekarski
+          rozstrzygnął sprawy <strong>185 lekarzy</strong> — i <strong>żaden</strong> nie stracił prawa
+          do zawodu bezpowrotnie; najsurowszymi wyrokami były zawieszenia (6 lekarzy) i ograniczenia
+          zakresu czynności (5). Najsurowszym, co realnie spotyka lekarza z rąk własnego samorządu, jest
+          więc zwykle <strong>nagana albo grzywna</strong>; czasowe zawieszenie to wyjątek, a trwałe
+          pozbawienie — rzadkość na skalę pojedynczych przypadków w skali kraju.
+        </p>
+        <p>
+          Dzieje się tak także dlatego, że większość sygnałów odsiewa się wcześniej. Do rzeczników
+          odpowiedzialności zawodowej wpływa <strong>ok. 3 tysięcy skarg rocznie</strong> (dziś już
+          ponad cztery), a do sądów lekarskich trafia z nich <strong>mniej więcej jedna trzecia</strong>.
+          Reszta kończy się na etapie postępowania wyjaśniającego.
+        </p>
+        <p class="source-note">
+          Dane NSL za 2022 —
+          <a href="https://cowzdrowiu.pl/aktualnosci/post/jak-karal-naczelny-sad-lekarski-samorzad-przedstawil-dane-za-2022-rok" target="_blank" rel="noopener noreferrer">Co w zdrowiu (2023)</a>.
+          Skargi i odsetek trafiający do sądów —
+          <a href="https://www.prawo.pl/zdrowie/sady-lekarskie-kara-pozbawienia-prawa-wykonywania-zawodu-ukaraly,399509.html" target="_blank" rel="noopener noreferrer">Prawo.pl</a>.
+        </p>
+
+        <h2>4. Uczciwie: najcięższe sprawy sądzi sąd karny</h2>
+        <p>
+          Odpowiedzialność zawodowa przed sądem lekarskim to <strong>osobny tor</strong> niż
+          odpowiedzialność karna. Za przestępstwo prawo do zawodu może odebrać <strong>sąd karny</strong>
+          — orzekając zakaz wykonywania zawodu (art. 41 § 1 Kodeksu karnego), gdy dalsze jego
+          wykonywanie zagraża dobru chronionemu prawem. Ten zakaz jest <strong>niezależny</strong> od
+          samorządu i to on, a nie sąd lekarski, najczęściej zamyka drogę do zawodu w najcięższych
+          sprawach.
+        </p>
+        <p>
+          Dlatego rzetelna teza nie brzmi „lekarze-przestępcy chodzą wolno”. Brzmi tak:
+          <strong>samorząd, rozliczając własnych członków, praktycznie nie używa swojego najmocniejszego
+          narzędzia</strong> — a system, który sądzi sam siebie, dobiera kary po najłagodniejszej stronie
+          skali.
+        </p>
+        <p class="source-note">
+          Zakaz wykonywania zawodu jako środek karny — art. 41 § 1 Kodeksu karnego
+          (<a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU19970880553" target="_blank" rel="noopener noreferrer">ISAP</a>).
+        </p>
+
+        <h2>5. Co mówi druga strona</h2>
+        <p>
+          Argument samorządu jest realny i trzeba go przyznać. Po pierwsze, ustawa <strong>każe</strong>
+          stopniować kary — od najłagodniejszej do najsurowszej — więc sąd ma rozważyć lżejszą sankcję,
+          zanim sięgnie po pozbawienie. Po drugie, większość przewinień to sprawy mniejszej wagi (braki
+          w dokumentacji, konflikty, sprawy etyki), nie czyny, które uzasadniałyby koniec kariery. Po
+          trzecie, pozbawienie PWZ bywa traktowane jako kara <strong>nieusuwalna z akt</strong> — i już
+          to skłania sądy do ostrożności.
+        </p>
+        <p>
+          To jednak nie unieważnia pointy. Można zgodzić się, że najwyższa kara ma być rzadka — i wciąż
+          pytać, czy <strong>korporacja orzekająca we własnej sprawie</strong> sięga po nią wtedy, kiedy
+          trzeba, i czy jej statystyki są dla obywatela czytelne.
+        </p>
+        <p class="source-note">
+          Gradacja kar i „ostateczność” najwyższej sankcji — prof. D. Karkowska,
+          <a href="https://www.medexpress.pl/zawody-medyczne/pozbawienie-prawa-wykonywania-zawodu-jest-ostatecznoscia-62892/" target="_blank" rel="noopener noreferrer">MedExpress (2016)</a>.
+        </p>
+
+        <h2>6. Sędzia we własnej sprawie</h2>
+        <p>
+          To nie przypadek jednego roku, lecz cecha <strong>modelu</strong>. Gdy pacjent skarży się na
+          lekarza, postępowanie prowadzi <strong>rzecznik będący lekarzem</strong>, a orzeka
+          <strong>sąd złożony z lekarzy</strong> — w ramach samorządu, którego ustawowym zadaniem jest
+          reprezentowanie interesów zawodu. Etyka, „prokuratura” i „sąd” są zamknięte w jednej strukturze
+          o jednym celu (rozłożyliśmy to na części w tekście o <a href="/mechanizmy/samorzad-nil/">roli
+          samorządu</a>). Liczby z tej strony są tego <strong>rozstrzygnięciem w praktyce</strong>.
+        </p>
+        <div class="callout alert">
+          <p>
+            Same rozstrzygnięcia są jawne w Rejestrze Ukaranych Lekarzy, ale zbiorcze dane o karach leżą
+            rozproszone w plikach Excel i PDF na stronie izby — trzeba je pobrać i policzyć samodzielnie,
+            izba po izbie. <strong>Rozliczalność, której nie da się prześledzić bez pracy analityka, jest
+            rozliczalnością głównie na papierze</strong> — to ten sam mechanizm nieprzejrzystości, który
+            ukrywa, ile ze środków publicznych trafia do konkretnego lekarza.
+          </p>
+        </div>
+        <p class="source-note">
+          Rejestr Ukaranych Lekarzy —
+          <a href="https://nil.org.pl/rejestry/rejestr-ukaranych-lekarzy" target="_blank" rel="noopener noreferrer">NIL</a>.
+          Struktura organów samorządu (rzecznik i sąd złożone z lekarzy) — zob.
+          <a href="/mechanizmy/samorzad-nil/">Rola samorządu (NIL)</a>.
+        </p>
+
+        <h2>7. Pointa</h2>
+        <div class="callout" style="border-left-color: var(--brand)">
+          <p>
+            Punktem nie jest żadne nazwisko ani żaden wyrok. Punktem jest <strong>model</strong>:
+            zamknięty samorząd zawodowy, finansowany z obowiązkowych składek, który jednocześnie ustala
+            reguły, ściga naruszenia i orzeka kary — i który po swoją najcięższą sankcję sięga w
+            promilach spraw. Ten sam brak zewnętrznej, przejrzystej kontroli, który utrudnia powiązanie
+            <strong>wynagrodzenia ze środków publicznych z numerem PWZ</strong>, utrudnia też
+            prześledzenie, jak naprawdę wygląda rozliczanie zawodu. Jawność jednego i drugiego to nie
+            atak na lekarzy — to warunek zaufania.
+          </p>
+        </div>
+        <p class="source-note">
+          <strong>Pokrewne:</strong>
+          <a href="/mechanizmy/samorzad-nil/">Rola samorządu (NIL)</a>,
+          <a href="/analizy/nil-a-kontrakty-lekarskie/">NIL a kontrakty lekarskie</a>,
+          <a href="/mechanizmy/brak-jawnosci/">Brak jawności jako warunek nadużyć</a>.
+          <strong>Postulat jawnego rejestru</strong> po numerze PWZ: zob. <a href="/postulat/">Postulat</a>.
+        </p>
+      </div>
+
+      <p class="pager"><a href="/analizy/">← Wszystkie analizy</a> · <a href="/mechanizmy/samorzad-nil/">Rola samorządu (NIL) →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .fact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1.25rem 0 0.75rem; }
+  .fact { display: flex; flex-direction: column; gap: 0.4rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+  .fact-num { font-family: var(--font-mono); font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; color: var(--brand); line-height: 1.05; }
+  .fact-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.5; }
+
+  .kary-lista { padding-left: 1.4rem; }
+  .kary-lista li { margin: 0.35rem 0; line-height: 1.55; }
+
+  /* Poziomy wykres struktury kar */
+  .kbars { margin: 1.25rem 0 0.5rem; display: flex; flex-direction: column; gap: 0.55rem; }
+  .kbar-row { display: grid; grid-template-columns: minmax(9rem, 14rem) 1fr auto; align-items: center; gap: 0.6rem; }
+  .kbar-label { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.25; }
+  .kbar-track { background: var(--neutral-fill, rgba(0,0,0,0.05)); border-radius: 999px; height: 0.85rem; overflow: hidden; }
+  .kbar-fill { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
+  .kbar-fill-hot { background: var(--alert); }
+  .kbar-num { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--ink); min-width: 2.5ch; text-align: right; }
+
+  /* Roczne słupki pozbawień (wzorzec z .hours) */
+  .hours { margin: 1rem 0 0.4rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .h-row { display: grid; grid-template-columns: 3rem 1fr auto; align-items: center; gap: 0.6rem; }
+  .h-label { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-soft); }
+  .h-bar { display: block; height: 0.85rem; background: var(--alert); border-radius: 999px; min-width: 2px; }
+  .h-val { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--ink); min-width: 2ch; text-align: right; }
+  .viz-cap { font-size: 0.8rem; color: var(--ink-soft); margin: 0.2rem 0 0.75rem; }
+
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+</style>

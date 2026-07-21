@@ -36,6 +36,66 @@ const pozbawieniaRok = [
   { rok: '2022', n: 0 }, { rok: '2023', n: 1 }, { rok: '2024', n: 7 },
 ];
 const pozbMax = Math.max(...pozbawieniaRok.map((r) => r.n));
+
+// Porównanie ROCZNE, wspólny okres 2019–2024 — jedyne lata, w których Norwegia, Szwecja I Polska
+// publikują dane rok po roku (uczciwe zestawienie: te same lata, potem przeliczenie na 100 tys.
+// lekarzy). Wszystkie liczby DOTYCZĄ LEKARZY, z oficjalnych źródeł (patrz source-note):
+//   NO: tilbakekall autoryzacji lekarzom (Helsetilsynet) — 40,30,44,37,29,27; 2025=58 (ogon, poza oknem).
+//   SE: återkallelse legitymacji lekarzom (HSAN, tab. 6) — 31,36,41,43,55,48; rośnie dalej (2025=64).
+//   PL: prawomocne pozbawienia PWZ (jak w sekcji 2) — 0,2,0,0,1,7.
+// Niemcy/Austrię POMIJAMY (brak liczby do porównania: DE brak krajowej statystyki, AT §194 zakazuje).
+// Czechy (samorząd jak PL) bez rozbicia rocznego — omówione prozą pod tabelą (10 wykluczeń/20 lat, max 5 lat).
+const porownanieRoczne = [
+  { rok: '2019', no: 40, se: 31, pl: 0 },
+  { rok: '2020', no: 30, se: 36, pl: 2 },
+  { rok: '2021', no: 44, se: 41, pl: 0 },
+  { rok: '2022', no: 37, se: 43, pl: 0 },
+  { rok: '2023', no: 29, se: 55, pl: 1 },
+  { rok: '2024', no: 27, se: 48, pl: 7 },
+];
+const porLata = porownanieRoczne.length; // 6
+const porSum = {
+  no: porownanieRoczne.reduce((a, r) => a + r.no, 0), // 207
+  se: porownanieRoczne.reduce((a, r) => a + r.se, 0), // 254
+  pl: porownanieRoczne.reduce((a, r) => a + r.pl, 0), // 10
+};
+// Czynni lekarze (źródła w source-note): NO ~36 tys. (SSB), SE ~46 tys. (Socialstyrelsen),
+// PL ~165 tys. wykonujących zawód (NIL). „Rocznie na 100 tys." = (suma/6)/mianownik*100000 — przybliżone.
+const porDen = { no: 36000, se: 46000, pl: 165000 };
+const porPer = {
+  no: Math.round((porSum.no / porLata / porDen.no) * 100000), // ~96
+  se: Math.round((porSum.se / porLata / porDen.se) * 100000), // ~92
+  pl: Math.round((porSum.pl / porLata / porDen.pl) * 100000), // ~1
+};
+
+// Wykres liniowy 2010–2024 — prawomocne odebrania PWZ lekarzom ROCZNIE (liczby bezwzględne).
+// NO: tilbakekall autoryzacji lekarzom (Helsetilsynet; 2010–2018 z archiwum komunikatów/„Tilsynsmelding",
+//     2019–2024 z bieżących komunikatów; 2012 pierwotnie 29, później skorygowane do 30 — bierzemy 29).
+// SE: återkallelse legitymacji lekarzom (HSAN, tab. 6 rocznych sprawozdań; 2013 = 25 wg sprawozdania,
+//     Läkartidningen podaje 17 — bierzemy liczbę pierwotną).
+// PL: prawomocne pozbawienia PWZ (jak w sekcji 2, dane z NIL).
+const seriaCzasowa = [
+  { rok: 2010, no: 27, se: 10, pl: 0 }, { rok: 2011, no: 24, se: 7, pl: 0 },
+  { rok: 2012, no: 29, se: 20, pl: 0 }, { rok: 2013, no: 25, se: 25, pl: 0 },
+  { rok: 2014, no: 32, se: 16, pl: 1 }, { rok: 2015, no: 37, se: 14, pl: 1 },
+  { rok: 2016, no: 28, se: 15, pl: 4 }, { rok: 2017, no: 47, se: 10, pl: 1 },
+  { rok: 2018, no: 45, se: 24, pl: 0 }, { rok: 2019, no: 40, se: 31, pl: 0 },
+  { rok: 2020, no: 30, se: 36, pl: 2 }, { rok: 2021, no: 44, se: 41, pl: 0 },
+  { rok: 2022, no: 37, se: 43, pl: 0 }, { rok: 2023, no: 29, se: 55, pl: 1 },
+  { rok: 2024, no: 27, se: 48, pl: 7 },
+];
+const CHART = { w: 780, h: 400, l: 40, r: 74, t: 18, b: 34, ymax: 60 };
+const cN = seriaCzasowa.length;
+const cx = (i) => CHART.l + (i / (cN - 1)) * (CHART.w - CHART.l - CHART.r);
+const cy = (v) => CHART.t + (1 - v / CHART.ymax) * (CHART.h - CHART.t - CHART.b);
+const linePts = (key) => seriaCzasowa.map((d, i) => `${cx(i).toFixed(1)},${cy(d[key]).toFixed(1)}`).join(' ');
+const chartSeries = [
+  { key: 'no', label: 'Norwegia', color: 'var(--brand)', w: 2 },
+  { key: 'se', label: 'Szwecja', color: 'var(--ok)', w: 2 },
+  { key: 'pl', label: 'Polska', color: 'var(--alert)', w: 2.6 },
+];
+const chartGrid = [0, 15, 30, 45, 60];
+const chartLast = seriaCzasowa[cN - 1];
 ---
 
 <BaseLayout
@@ -224,7 +284,151 @@ const pozbMax = Math.max(...pozbawieniaRok.map((r) => r.n));
           (<a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU19970880553" target="_blank" rel="noopener noreferrer">ISAP</a>).
         </p>
 
-        <h2>5. Co mówi druga strona</h2>
+        <h2>5. Jak to robią inni — kto trzyma pióro</h2>
+        <p>
+          W Polsce prawo do zawodu odbiera lekarzowi jego własny <strong>samorząd</strong>. W
+          Skandynawii robi to <strong>niezależny urząd państwowy</strong>. Zobaczmy <strong>te same
+          piętnaście lat</strong> co w polskich danych — 2010–2024 — dla każdego kraju osobno, licząc
+          tylko <strong>lekarzy</strong>.
+        </p>
+        <figure class="chart-fig">
+          <div class="chart-wrap">
+            <svg class="chart" viewBox={`0 0 ${CHART.w} ${CHART.h}`} role="img"
+              aria-label="Wykres liniowy: prawomocne odebrania prawa wykonywania zawodu lekarzom rocznie, 2010–2024. Norwegia (nadzór państwowy) utrzymuje się w przedziale 24–47 rocznie; Szwecja rośnie z 7–10 na początku dekady do 41–55 w latach 2021–2023; Polska (samorząd) przez większość lat wynosi zero, z pojedynczymi wzrostami do 4 w 2016 i 7 w 2024.">
+              {chartGrid.map((g) => (
+                <g>
+                  <line class="grid" x1={CHART.l} y1={cy(g)} x2={CHART.w - CHART.r} y2={cy(g)} />
+                  <text class="ylab" x={CHART.l - 8} y={cy(g)}>{g}</text>
+                </g>
+              ))}
+              {seriaCzasowa.map((d, i) => (
+                i % 2 === 0 ? <text class="xlab" x={cx(i)} y={CHART.h - 12}>{d.rok}</text> : null
+              ))}
+              {chartSeries.map((s) => (
+                <polyline points={linePts(s.key)} fill="none" stroke={s.color} stroke-width={s.w} stroke-linejoin="round" stroke-linecap="round" />
+              ))}
+              {chartSeries.map((s) => seriaCzasowa.map((d, i) => (
+                <circle cx={cx(i)} cy={cy(d[s.key])} r="2.6" fill={s.color} />
+              )))}
+              {chartSeries.map((s) => (
+                <text class="endlab" x={cx(cN - 1) + 6} y={cy(chartLast[s.key])} fill={s.color}>{s.label}</text>
+              ))}
+            </svg>
+          </div>
+          <figcaption>
+            Prawomocne odebrania prawa wykonywania zawodu <strong>lekarzom</strong>, rocznie,
+            2010–2024 (liczby bezwzględne). Norwegia i Szwecja — nadzór państwowy (Helsetilsynet, HSAN);
+            Polska — samorząd, sądy lekarskie (dane jak w sekcji 2). Skala pionowa: liczba lekarzy w roku.
+          </figcaption>
+        </figure>
+        <p>
+          Liczby bezwzględne nie oddają jednak całej prawdy — Polska ma około <strong>trzy–cztery razy
+          większą</strong> kadrę lekarską niż Norwegia czy Szwecja. Zawężmy więc obraz do wspólnego,
+          najnowszego okna <strong>2019–2024</strong> i przeliczmy odebrania na 100 tysięcy czynnych
+          lekarzy:
+        </p>
+        <div class="table-wrap">
+          <table class="cmp cmp-rok">
+            <thead>
+              <tr>
+                <th scope="col">Rok</th>
+                <th scope="col" class="th-state">Norwegia<span class="th-sub">państwo</span></th>
+                <th scope="col" class="th-state">Szwecja<span class="th-sub">państwo</span></th>
+                <th scope="col" class="th-self pl-col">Polska<span class="th-sub">samorząd</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {porownanieRoczne.map((r) => (
+                <tr>
+                  <th scope="row">{r.rok}</th>
+                  <td class="num">{r.no}</td>
+                  <td class="num">{r.se}</td>
+                  <td class="num pl-col">{r.pl}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr class="tf-sum">
+                <th scope="row">Razem 2019–2024</th>
+                <td class="num">{porSum.no}</td>
+                <td class="num">{porSum.se}</td>
+                <td class="num pl-col">{porSum.pl}</td>
+              </tr>
+              <tr class="tf-rate">
+                <th scope="row">Na 100 tys. czynnych lekarzy rocznie</th>
+                <td class="num">≈{porPer.no}</td>
+                <td class="num">≈{porPer.se}</td>
+                <td class="num pl-col">≈{porPer.pl}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p>
+          W tym samym sześcioleciu państwowe urzędy Norwegii i Szwecji odebrały lekarzom prawo do
+          zawodu — kolejno — <strong>207</strong> i <strong>254</strong> razy; polski samorząd —
+          <strong>10</strong>. W przeliczeniu na 100 tysięcy czynnych lekarzy to około
+          <strong>96</strong> i <strong>92</strong> rocznie wobec około <strong>1</strong> w Polsce. I
+          to licząc Polsce lata korzystnie: sam rok 2024 (7 pozbawień) mocno podbija ostatnie okno —
+          w całym ćwierćwieczu 2000–2024 wypada u nas <strong>poniżej jednego rocznie</strong>.
+        </p>
+        <p>
+          Czwarty kraj tego zestawienia — <strong>Czechy</strong> — to również samorząd (izba ČLK),
+          ale rocznego rozbicia nie publikuje. Sama izba podaje, że przez dwadzieścia lat wykluczyła
+          <strong>dziesięciu</strong> lekarzy — i to najwyżej na pięć lat, z prawem powrotu. Rząd
+          wielkości jak w Polsce: po tej samej, „samorządowej” stronie osi, nie po skandynawskiej.
+        </p>
+        <p>
+          <strong>Uczciwie: to wciąż nie są liczby wprost porównywalne.</strong> W Norwegii i Szwecji
+          jedną decyzją państwowego urzędu obejmuje się wszystko naraz — niekompetencję, chorobę,
+          utratę zaufania, a nawet rezygnację lekarza na własną prośbę. W Polsce te tory są
+          rozdzielone: samorządowe pozbawienie nie obejmuje najcięższych przestępstw, bo te — jak w
+          sekcji obok — odbiera osobno <strong>sąd karny</strong>. Różnią się też mianowniki (~36 tys.
+          lekarzy w Norwegii, ~46 tys. w Szwecji, ~165 tys. w Polsce) i samo pojęcie „trwałości” (w
+          Norwegii po latach można wystąpić o autoryzację ponownie; w Czechach wykluczenie jest z
+          definicji najwyżej pięcioletnie). Dlatego mówimy o <strong>rzędzie wielkości i tendencji</strong>,
+          nie o wyniku co do sztuki — ale nawet przy najostrożniejszym czytaniu różnica jest rzędu
+          wielkości, nie kilku procent.
+        </p>
+        <p>
+          I jeszcze jedno, dokładnie na temat tej strony. Norwegia i Szwecja te liczby po prostu
+          <strong>publikują</strong> — rok po roku, z podziałem na zawody. W Polsce tej samej liczby
+          nie ma w żadnym gotowym zestawieniu; trzeba ją złożyć samodzielnie z arkuszy rozsianych po
+          stronach izb (o czym niżej). Nawet gdy rozliczenie formalnie jest jawne, bywa jawne tylko
+          dla tego, kto ma czas je policzyć.
+        </p>
+        <p class="source-note">
+          <strong>Źródła — odebrania prawa do zawodu lekarzom (dane oficjalne; wykres 2010–2024, tabela 2019–2024):</strong>
+          <strong>Norwegia</strong> — państwowy nadzór zdrowia (Statens helsetilsyn), roczne komunikaty
+          o reakcjach wobec personelu (tilbakekall autoryzacji lekarzom, 2010–2024: 27, 24, 29, 25, 32,
+          37, 28, 47, 45, 40, 30, 44, 37, 29, 27; w 2025 — 58; lata 2010–2018 z archiwum komunikatów i
+          „Tilsynsmelding”, 2019–2024 z bieżących):
+          <a href="https://www.helsetilsynet.no/tilsyn/om-tilsynssaker/statistikk-reaksjoner-mot-helsepersonell/" target="_blank" rel="noopener noreferrer">Helsetilsynet</a>;
+          liczba lekarzy (~36 tys.) — <a href="https://www.ssb.no/statbank/table/07938/" target="_blank" rel="noopener noreferrer">SSB</a>.
+          <strong>Szwecja</strong> — wnioskuje państwowe IVO, orzeka państwowy HSAN (återkallelse
+          legitymacji lekarzom, 2010–2024: 10, 7, 20, 25, 16, 14, 15, 10, 24, 31, 36, 41, 43, 55, 48;
+          tab. 6 rocznych sprawozdań HSAN, lata 2010–2017 z archiwalnych raportów; za 2013 sprawozdanie
+          podaje 25, a Läkartidningen 17 — podajemy liczbę pierwotną):
+          <a href="https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/dokument-webb/ovrigt/hsan-verksamhetsredogorelse-2025.pdf" target="_blank" rel="noopener noreferrer">HSAN 2025 (PDF)</a>;
+          liczba lekarzy (~46 tys.) —
+          <a href="https://www.socialstyrelsen.se/contentassets/8f0d27a18c394508bb609d03d5153dc2/2026-2-10048.pdf" target="_blank" rel="noopener noreferrer">Socialstyrelsen 2026</a>.
+          <strong>Polska</strong> — prawomocne pozbawienia PWZ (2010–2024: 0, 0, 0, 0, 1, 1, 4, 1, 0, 0,
+          2, 0, 0, 1, 7), dane jak w sekcji 2 (NIL); liczba lekarzy wykonujących zawód (~165 tys.) — NIL.
+          <strong>Czechy</strong> — samorząd (ČLK) może wykluczyć członka najwyżej na 5 lat; wg prezesa
+          izby przez 20 lat wykluczono 10 lekarzy (bez rozbicia rocznego): „V uplynulých dvaceti letech
+          ČLK vyloučila deset členů…”
+          (<a href="https://www.lkcr.cz/doc/tempus_file/tempus_medicorum_12_2024_web-218.pdf" target="_blank" rel="noopener noreferrer">Tempus Medicorum 12/2024</a>).
+          „Na 100 tys. lekarzy rocznie” = (suma z sześciu lat ÷ 6) ÷ liczba czynnych lekarzy × 100 000;
+          mianowniki z różnych rejestrów krajowych, więc wynik jest przybliżony.
+          <strong>Niemcy i Austrię pomijamy</strong> — nie istnieje tam publiczna liczba do porównania:
+          w Niemczech brak krajowej statystyki (rząd federalny w 2026 r. „nie dysponuje” —
+          <a href="https://dserver.bundestag.de/btd/21/047/2104787.pdf" target="_blank" rel="noopener noreferrer">Bundestag, dr. 21/4787</a>),
+          w Austrii §194 ustawy o zawodzie lekarza wprost zakazuje jej ujawniania
+          (<a href="https://www.jusline.at/gesetz/aerzteg/paragraf/194" target="_blank" rel="noopener noreferrer">ÄrzteG §194</a>).
+          Systemy nie są tożsame (państwowy nadzór vs samorząd, różne mianowniki i definicje) —
+          porównujemy rząd wielkości i jawność, nie liczby co do sztuki.
+        </p>
+
+        <h2>6. Co mówi druga strona</h2>
         <p>
           Argument samorządu jest realny i trzeba go przyznać. Po pierwsze, ustawa <strong>każe</strong>
           stopniować kary — od najłagodniejszej do najsurowszej — więc sąd ma rozważyć lżejszą sankcję,
@@ -243,7 +447,7 @@ const pozbMax = Math.max(...pozbawieniaRok.map((r) => r.n));
           <a href="https://www.medexpress.pl/zawody-medyczne/pozbawienie-prawa-wykonywania-zawodu-jest-ostatecznoscia-62892/" target="_blank" rel="noopener noreferrer">MedExpress (2016)</a>.
         </p>
 
-        <h2>6. Sędzia we własnej sprawie</h2>
+        <h2>7. Sędzia we własnej sprawie</h2>
         <p>
           To nie przypadek jednego roku, lecz cecha <strong>modelu</strong>. Gdy pacjent skarży się na
           lekarza, postępowanie prowadzi <strong>rzecznik będący lekarzem</strong>, a orzeka
@@ -268,7 +472,7 @@ const pozbMax = Math.max(...pozbawieniaRok.map((r) => r.n));
           <a href="/mechanizmy/samorzad-nil/">Rola samorządu (NIL)</a>.
         </p>
 
-        <h2>7. Pointa</h2>
+        <h2>8. Pointa</h2>
         <div class="callout" style="border-left-color: var(--brand)">
           <p>
             Punktem nie jest żadne nazwisko ani żaden wyrok. Punktem jest <strong>model</strong>:
@@ -325,6 +529,37 @@ const pozbMax = Math.max(...pozbawieniaRok.map((r) => r.n));
   .h-bar { display: block; height: 0.85rem; background: var(--alert); border-radius: 999px; min-width: 2px; }
   .h-val { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--ink); min-width: 2ch; text-align: right; }
   .viz-cap { font-size: 0.8rem; color: var(--ink-soft); margin: 0.2rem 0 0.75rem; }
+
+  /* Wykres liniowy 2010–2024 (SVG, kolory z tokenów = theme-aware) */
+  .chart-fig { margin: 1.25rem 0 0.5rem; }
+  .chart-wrap { overflow-x: auto; }
+  .chart { display: block; width: 100%; min-width: 600px; height: auto; }
+  .chart .grid { stroke: var(--line); stroke-width: 1; }
+  .chart .ylab { fill: var(--ink-soft); font-family: var(--font-mono); font-size: 12px; text-anchor: end; dominant-baseline: middle; }
+  .chart .xlab { fill: var(--ink-soft); font-family: var(--font-mono); font-size: 12px; text-anchor: middle; }
+  .chart .endlab { font-family: var(--font-sans); font-size: 13px; font-weight: 700; text-anchor: start; dominant-baseline: middle; }
+  .chart-fig figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top: 0.5rem; line-height: 1.5; }
+
+  /* Porównanie roczne — tabela (wspólny okres 2019–2024) */
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .cmp { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 0.94rem; }
+  .cmp thead th { padding: 0.6rem 0.9rem; background: var(--paper-2); color: var(--ink); font-weight: 700; font-size: 0.9rem; border-bottom: 2px solid var(--line); vertical-align: bottom; text-align: center; }
+  .cmp thead th:first-child { text-align: left; }
+  .cmp tbody th[scope="row"] { text-align: left; padding: 0.55rem 0.9rem; font-weight: 600; font-family: var(--font-mono); color: var(--ink-soft); white-space: nowrap; }
+  .cmp td { padding: 0.55rem 0.9rem; }
+  .cmp td.num { font-family: var(--font-mono); font-weight: 600; text-align: center; white-space: nowrap; }
+  .cmp tbody tr { border-bottom: 1px solid var(--line); }
+  .cmp .th-sub { display: block; font-weight: 700; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.2rem; }
+  .cmp .th-state .th-sub { color: var(--brand); }
+  .cmp .th-self .th-sub { color: var(--amber); }
+  .cmp .pl-col { background: var(--brand-50); }
+  .cmp thead th.pl-col { background: var(--brand-50); }
+  .cmp tfoot th[scope="row"] { text-align: left; padding: 0.6rem 0.9rem; font-family: var(--font-sans); }
+  .cmp tfoot td { padding: 0.6rem 0.9rem; border-top: 2px solid var(--line); }
+  .cmp tfoot .tf-sum th[scope="row"] { font-weight: 700; color: var(--ink); }
+  .cmp tfoot .tf-sum td.num { font-size: 1.05rem; font-weight: 700; border-top: 2px solid var(--line); }
+  .cmp tfoot .tf-rate th[scope="row"] { font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); white-space: normal; }
+  .cmp tfoot .tf-rate td.num { color: var(--ink-soft); }
 
   .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
 </style>

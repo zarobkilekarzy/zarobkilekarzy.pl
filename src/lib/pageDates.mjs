@@ -28,7 +28,7 @@ export const pageDates = {
   // Mechanizmy (strony wyjaśniające).
   '/mechanizmy/reglamentacja-dostepu': '2026-07-14',
   '/mechanizmy/kontrakt-vs-etat': '2026-07-14',
-  '/mechanizmy/brak-jawnosci': '2026-07-06',
+  '/mechanizmy/brak-jawnosci': '2026-07-22',
   '/mechanizmy/wieloetatowosc': '2026-07-14',
   '/mechanizmy/rozliczenia-nfz': '2026-07-14',
   '/mechanizmy/fikcyjne-wizyty': '2026-07-16',
@@ -42,7 +42,7 @@ export const pageDates = {
   '/dane/kolejki': '2026-07-06',
   '/dane/pensje-rezydentow': '2026-07-06',
   '/dane/personel-medyczny': '2026-07-07',
-  '/dane/rekordy': '2026-07-19',
+  '/dane/rekordy': '2026-07-22',
   '/dane/rozklad-wynagrodzen': '2026-07-07',
   '/dane/zarobki-ujawnione-listy': '2026-07-18',
   '/dane/stawki': '2026-07-06',

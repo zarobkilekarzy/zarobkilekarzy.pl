@@ -174,6 +174,12 @@ export const strony: Record<string, Strona> = {
   },
 
   // — Analizy —
+  '/analizy/monitor-reformy-zdrowia': {
+    dzial: 'analizy',
+    tytul: 'Monitor reformy zdrowia',
+    opis: 'Żywe rozliczenie reformy: zbieramy deklaracje rządu i twarde etapy legislacyjne, układamy je na osi czasu i śledzimy status każdej obietnicy — spełniona, w toku, spóźniona czy porzucona. Każda pozycja z linkiem do źródła.',
+    tematy: ['pieniadz-nfz', 'jawnosc'],
+  },
   '/analizy/ustawa-o-danych-a-jawny-rejestr': {
     dzial: 'analizy',
     tytul: 'Państwo policzy, obywatel nie zobaczy',

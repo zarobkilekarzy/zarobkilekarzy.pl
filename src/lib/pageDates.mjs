@@ -8,6 +8,7 @@
 // wszędzie datę ostatniego commita).
 export const pageDates = {
   // Analizy (długie teksty redakcyjne).
+  '/analizy/monitor-reformy-zdrowia': '2026-07-19',
   '/analizy/sladem-zlotowki': '2026-07-10',
   '/analizy/jedno-pwz': '2026-07-07',
   '/analizy/lejek-ksztalcenia': '2026-07-08',

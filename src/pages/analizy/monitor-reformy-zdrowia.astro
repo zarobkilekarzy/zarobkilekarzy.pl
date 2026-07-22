@@ -1,0 +1,865 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+
+// MONITOR REFORMY ZDROWIA — żywe rozliczenie deklaracji obecnego rządu z osią czasu.
+// Zasada: KAŻDA pozycja ma publiczne źródło (link) i jawny status. Rozróżniamy obietnicę
+// (zapowiedź polityka) od legislacji (twardy etap: uchwalenie, podpis, wejście w życie).
+// Status opisuje ETAP, nie ocenę intencji. „Spełnione" = weszło w życie / zrealizowane;
+// nie znaczy, że działa dla pacjenta — to osobne pytanie, które zadajemy w opisach.
+//
+// AKTUALIZACJA: dopisujemy nowe wpisy do tablicy DEKLARACJE i bumpujemy datę w
+// src/lib/pageDates.mjs. Statusy zmieniamy w miarę biegu spraw. Nic bez źródła.
+//
+// Ministra zdrowia (2026): Jolanta Sobierańska-Grenda; wcześniej Izabela Leszczyna. Uwaga na
+// atrybucję: „Moje Zdrowie", KSO i część zapowiedzi z 2025 r. to okres Leszczyny; plan reform
+// z 8.07.2026, ustawa o danych i limity płac — Sobierańska-Grenda. Ta sama koalicja (rząd Tuska).
+// Pułapki liczbowe uszanowane w danych: KSK = „354 przedsięwzięcia / ~1,94 mld zł w dwóch
+// naborach; pula KPO 2,65 mld" (NIE „376 / 2,6 mld"); zniesienie limitów AOS to reforma
+// POPRZEDNIEGO rządu (2021), którą obecny częściowo odwraca; „7% PKB" to ścieżka USTAWOWA.
+
+// — Słownik statusów (kolejność = od „domkniętego" do „porzuconego") —
+const STATUSY = {
+  spelnione:     { label: 'Spełnione',    opis: 'weszło w życie lub zrealizowane', kolor: 'ok' },
+  'w-toku':      { label: 'W toku',       opis: 'prace trwają, w terminie',        kolor: 'teal' },
+  zapowiedziane: { label: 'Zapowiedziane', opis: 'ogłoszone, jeszcze nierozpoczęte', kolor: 'neutral' },
+  spozniona:     { label: 'Spóźnione',    opis: 'termin minął lub się zsuwa',       kolor: 'amber' },
+  porzucone:     { label: 'Porzucone',    opis: 'wycofane, zawetowane lub martwe',  kolor: 'alert' },
+} as const;
+type Status = keyof typeof STATUSY;
+
+// — Filary reformy (grupy tematyczne) —
+const FILARY = {
+  szpitale:     { nazwa: 'Szpitale: sieć, restrukturyzacja, oddłużenie' },
+  koszty:       { nazwa: 'Koszty pracy i wynagrodzenia' },
+  jawnosc:      { nazwa: 'Jawność, dane i kontrola' },
+  cyfryzacja:   { nazwa: 'Cyfryzacja i dostęp' },
+  sieci:        { nazwa: 'Sieci klinicze i profilaktyka' },
+  finansowanie: { nazwa: 'Finansowanie, składka i leki' },
+} as const;
+type Filar = keyof typeof FILARY;
+
+type Zrodlo = { label: string; url: string };
+interface Deklaracja {
+  tytul: string;
+  kto: string;
+  data: string;        // ISO — kotwica na osi czasu (dzień zdarzenia albo ogłoszenia)
+  termin?: string;     // obiecany termin / etap docelowy
+  status: Status;
+  typ: 'obietnica' | 'legislacja';
+  filar: Filar;
+  opis: string;
+  zrodla: Zrodlo[];
+}
+
+// — DANE. Każda pozycja oźródłowana. Cytaty i liczby dokładne. —
+const DEKLARACJE: Deklaracja[] = [
+  // — Szpitale —
+  {
+    tytul: 'Ustawa o reformie szpitalnictwa wchodzi w życie',
+    kto: 'Sejm; prezydent Karol Nawrocki',
+    data: '2025-09-17',
+    termin: 'podpis 29.08.2025 → obowiązuje od 17.09.2025',
+    status: 'spelnione',
+    typ: 'legislacja',
+    filar: 'szpitale',
+    opis: 'Sztandarowy projekt byłej ministry Izabeli Leszczyny, uchwalony już za jej następczyni. Wersja „miękka": pozwala samorządom łączyć szpitale i zamieniać pełną hospitalizację na leczenie planowe lub jednodniowe, a zadłużonym placówkom każe pisać plany naprawcze. Bez przymusu i — na razie — bez pieniędzy na sam mechanizm.',
+    zrodla: [
+      { label: 'MZ (gov.pl)', url: 'https://www.gov.pl/web/zdrowie/ustawa-reformujaca-szpitalnictwo-podpisana-przez-prezydenta' },
+      { label: 'TVN24', url: 'https://tvn24.pl/zdrowie/reforma-szpitali-staje-sie-faktem-jakie-zmiany-oznacza-kiedy-odczuja-je-pacjenci-st8653647' },
+    ],
+  },
+  {
+    tytul: 'Mechanizm oddłużenia szpitali (wsparcie z BGK)',
+    kto: 'MZ + Ministerstwo Finansów + BGK',
+    data: '2025-09-17',
+    termin: 'szczegóły wsparcia i szkolenia dyrektorów „w 2026 r."',
+    status: 'spozniona',
+    typ: 'obietnica',
+    filar: 'szpitale',
+    opis: 'Ustawa otwiera zadłużonym szpitalom drogę do wsparcia z Banku Gospodarstwa Krajowego, ale mechanizmu i kwot od kilkunastu miesięcy nie ma — resort mówi o „pracach analitycznych". Zobowiązania SPZOZ przekroczyły 27,7 mld zł, a część wymagalna 4,2 mld zł. Wcześniejszy pomysł programu oddłużeniowego nie doczekał się realizacji.',
+    zrodla: [
+      { label: 'Rynek Zdrowia', url: 'https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Polskie-szpitale-stoja-w-obliczu-zmian-czy-2026-wreszcie-przyniesie-przelom,279399,1.html' },
+      { label: 'Rzeczpospolita', url: 'https://www.rp.pl/zdrowie/art43555381-mial-byc-oddech-dla-zadluzonych-szpitali-co-dalej-z-reforma' },
+    ],
+  },
+  {
+    tytul: 'Fundusz Medyczny na reorganizację szpitali — ponad 1 mld zł',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-08',
+    termin: 'nabór wniosków 1.07–31.10.2026; pierwsze rozstrzygnięcia I kw. 2027',
+    status: 'w-toku',
+    typ: 'obietnica',
+    filar: 'szpitale',
+    opis: 'Pieniądze z Funduszu Medycznego mają wesprzeć szpitale przekształcające oddziały i profile. To środki na inwestycje i sprzęt, nie na bieżące oddłużenie.',
+    zrodla: [
+      { label: 'Alert Medyczny', url: 'https://alertmedyczny.pl/ministra-zdrowia-przedstawila-plan-reform-jakie-zmiany-zapowiada-mz-i-nfz/' },
+      { label: 'MZ — priorytety 2025–2027', url: 'https://www.gov.pl/web/zdrowie/priorytety-ministerstwa-zdrowia-na-lata-2025-2027' },
+    ],
+  },
+
+  // — Koszty pracy i wynagrodzenia —
+  {
+    tytul: 'Maksymalna stawka 240 zł brutto/godz. na kontrakcie',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-08',
+    termin: 'rekomendacja AOTMiT do końca sierpnia 2026 (bez projektu ustawy)',
+    status: 'zapowiedziane',
+    typ: 'obietnica',
+    filar: 'koszty',
+    opis: 'Górny limit stawki dla jednego pracownika medycznego na kontrakcie (ok. 40 tys. zł/mies. w przeliczeniu na etat) w części finansowanej z NFZ. Ma zbić udział wynagrodzeń w budżetach szpitali. Konkretną wysokość ma dopiero zarekomendować AOTMiT — samorządy i część lekarzy już zapowiadają opór.',
+    zrodla: [
+      { label: 'Rynek Zdrowia', url: 'https://www.rynekzdrowia.pl/Polityka-zdrowotna/Maksymalnie-240-zl-za-godzine-Konkrety-reform-Ministerstwa-Zdrowia,286444,14.html' },
+      { label: 'Portal Samorządowy', url: 'https://www.portalsamorzadowy.pl/ochrona-zdrowia/nie-wiecej-niz-240-zl-za-godzine-pracy-medykow-minister-zdrowia-przedstawila-plan-reform,667911.html' },
+    ],
+  },
+  {
+    tytul: 'Udział wynagrodzeń w budżecie szpitala w dół do ~60%',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-08',
+    termin: 'bez jednolitego limitu — zależny od typu szpitala (7 poziomów)',
+    status: 'zapowiedziane',
+    typ: 'obietnica',
+    filar: 'koszty',
+    opis: 'Dziś w wielospecjalistycznych szpitalach na płace idzie średnio 81,3% budżetu; cel to około 60%, a „nadmiarowe" środki mają trafić na leczenie. Nie zapowiedziano jednego twardego progu — ma zależeć od rodzaju placówki.',
+    zrodla: [
+      { label: 'Rzeczpospolita', url: 'https://www.rp.pl/ochrona-zdrowia/art44792961-minister-pokazala-plan-naprawczy-w-ochronie-zdrowia-nie-bedzie-ani-rewolucji-ani-wiecej-pieniedzy' },
+      { label: 'Rynek Zdrowia', url: 'https://www.rynekzdrowia.pl/Polityka-zdrowotna/Maksymalnie-240-zl-za-godzine-Konkrety-reform-Ministerstwa-Zdrowia,286444,14.html' },
+    ],
+  },
+  {
+    tytul: 'Ewidencja czasu pracy personelu medycznego',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-08',
+    termin: 'projekt rozporządzenia do konsultacji (tydzień od 21.07.2026)',
+    status: 'w-toku',
+    typ: 'legislacja',
+    filar: 'koszty',
+    opis: 'Rejestr faktycznie przepracowanych godzin — dziś nikt nie sumuje godzin jednego lekarza z wielu placówek, więc rekordowe liczby dyżurów pozostają niewidoczne. Wg projektu z 18 lipca szpitale mają raportować do NFZ rzeczywiste grafiki pracy, a dotychczasowe raporty tygodniowe zastąpić godzinowymi. To jedno z czterech rozporządzeń kierowanych do konsultacji.',
+    zrodla: [
+      { label: 'Alert Medyczny', url: 'https://alertmedyczny.pl/ministra-zdrowia-przedstawila-plan-reform-jakie-zmiany-zapowiada-mz-i-nfz/' },
+      { label: 'Portal Samorządowy', url: 'https://www.portalsamorzadowy.pl/ochrona-zdrowia/lekarze-z-limitem-240-zl-za-godzine-i-obowiazkowo-w-jednej-placowce-zmiany-coraz-blizej,669162.html' },
+    ],
+  },
+  {
+    tytul: 'Wymóg min. ½ etatu w jednym miejscu; praca gdzie indziej za zgodą',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-08',
+    termin: 'doprecyzowane w projekcie z 18.07.2026',
+    status: 'zapowiedziane',
+    typ: 'obietnica',
+    filar: 'koszty',
+    opis: 'Pracownik medyczny ma być związany co najmniej na pół etatu z jednym, podstawowym miejscem pracy, a dodatkowe zatrudnienie w innych placówkach ma wymagać zgody tego głównego pracodawcy. Pierwotnie mówiono też o górnym limicie łącznego zaangażowania rzędu dwóch etatów.',
+    zrodla: [
+      { label: 'Alert Medyczny', url: 'https://alertmedyczny.pl/ministra-zdrowia-przedstawila-plan-reform-jakie-zmiany-zapowiada-mz-i-nfz/' },
+      { label: 'Portal Samorządowy', url: 'https://www.portalsamorzadowy.pl/ochrona-zdrowia/lekarze-z-limitem-240-zl-za-godzine-i-obowiazkowo-w-jednej-placowce-zmiany-coraz-blizej,669162.html' },
+    ],
+  },
+  {
+    tytul: 'Zakaz zawierania przez szpitale umów ze spółkami lekarskimi',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-18',
+    termin: 'w pakiecie projektów kierowanych do konsultacji',
+    status: 'zapowiedziane',
+    typ: 'legislacja',
+    filar: 'koszty',
+    opis: 'Szpitale i przychodnie nie miałyby zawierać kontraktów ze spółkami lekarskimi, a bezpośrednio z osobami — cios w „proceder walizkowy". To trafia w tę samą lukę, którą opisujemy przy ustawie o danych: gdy stroną umowy jest spółka, a nie lekarz, pieniądz wychodzi na jedną fakturę, a osoba za nim stojąca znika z ewidencji.',
+    zrodla: [
+      { label: 'Portal Samorządowy', url: 'https://www.portalsamorzadowy.pl/ochrona-zdrowia/lekarze-z-limitem-240-zl-za-godzine-i-obowiazkowo-w-jednej-placowce-zmiany-coraz-blizej,669162.html' },
+      { label: 'PulsHR', url: 'https://www.pulshr.pl/rynek-zdrowia/rozmowy-w-sprawie-zarobkow-lekarzy-mamy-dwa-projekty-ustaw,120547.html' },
+    ],
+  },
+  {
+    tytul: 'Limit godzin pracy lekarzy na kontrakcie',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-18',
+    termin: 'projektowane rozporządzenie',
+    status: 'zapowiedziane',
+    typ: 'legislacja',
+    filar: 'koszty',
+    opis: 'Projekt przewiduje górny limit godzin dla lekarzy rozliczających się kontraktem — ma ukrócić wielogodzinne, ciągnące się dyżury. To odpowiedź na rekordy rzędu tysiąca godzin miesięcznie, których dziś nikt nie sumuje.',
+    zrodla: [
+      { label: 'Portal Samorządowy', url: 'https://www.portalsamorzadowy.pl/ochrona-zdrowia/lekarze-z-limitem-240-zl-za-godzine-i-obowiazkowo-w-jednej-placowce-zmiany-coraz-blizej,669162.html' },
+    ],
+  },
+  {
+    tytul: 'Reforma płac w fazie projektów: 4 rozporządzenia i 2 ustawy',
+    kto: 'MZ; premier Donald Tusk (kalendarz)',
+    data: '2026-07-18',
+    termin: 'konsultacje od tygodnia 21.07.2026; pierwsze zmiany „we wrześniu"',
+    status: 'w-toku',
+    typ: 'legislacja',
+    filar: 'koszty',
+    opis: 'Zapowiedzi z 8 lipca przybrały formę projektów: cztery rozporządzenia mają iść do konsultacji publicznych, a dwie ustawy są w opracowaniu. Premier oczekuje przedstawienia części regulacji na najbliższym posiedzeniu rządu, a wejścia pierwszych zmian we wrześniu. To moment, w którym „obietnica" zaczyna zmieniać się w „legislację".',
+    zrodla: [
+      { label: 'Portal Samorządowy', url: 'https://www.portalsamorzadowy.pl/ochrona-zdrowia/lekarze-z-limitem-240-zl-za-godzine-i-obowiazkowo-w-jednej-placowce-zmiany-coraz-blizej,669162.html' },
+      { label: 'PulsHR', url: 'https://www.pulshr.pl/rynek-zdrowia/rozmowy-w-sprawie-zarobkow-lekarzy-mamy-dwa-projekty-ustaw,120547.html' },
+    ],
+  },
+  {
+    tytul: 'Waloryzacja płac minimalnych w ochronie zdrowia +8,82%',
+    kto: 'mechanizm ustawowy (ustawa z 2017 r.); AOTMiT',
+    data: '2026-07-01',
+    termin: 'obowiązuje od 1 lipca 2026',
+    status: 'spelnione',
+    typ: 'legislacja',
+    filar: 'koszty',
+    opis: 'Automatyczna, coroczna podwyżka najniższych wynagrodzeń zasadniczych — objęła ~700 tys. osób; lekarz ze specjalizacją to min. 12 910,16 zł brutto. Koszt ok. 4,5 mld zł w skali półrocza. Resort próbował ten mechanizm przesunąć lub zawiesić („kosztuje budżet zbyt dużo") — rozmowy ze stroną społeczną zakończyły się brakiem porozumienia, więc podwyżka weszła planowo.',
+    zrodla: [
+      { label: 'Rzeczpospolita', url: 'https://www.rp.pl/ochrona-zdrowia/art44685961-1-lipca-wchodzi-nowa-minimalna-dla-lekarzy-pielegniarek-opiekunow-i-salowych-najwyzsza-przekroczy-12-tys-zl' },
+      { label: 'Alert Medyczny', url: 'https://alertmedyczny.pl/brak-porozumienia-ws-ustawy-podwyzkowej-od-1-lipca-2026-place-wzrosna-o-8-82-proc/' },
+    ],
+  },
+
+  // — Jawność, dane i kontrola —
+  {
+    tytul: 'Sejm uchwala ustawę o danych o wynagrodzeniach (PESEL/PWZ)',
+    kto: 'Sejm',
+    data: '2026-06-19',
+    termin: 'Senat bez poprawek 25.06.2026 → prezydent',
+    status: 'spelnione',
+    typ: 'legislacja',
+    filar: 'jawnosc',
+    opis: 'Głosami 253 do 0 (177 wstrzymujących się) Sejm skreślił anonimizację danych zbieranych przez AOTMiT i pozwolił łączyć wypłaty jednej osoby z wielu placówek — po numerze PESEL lub PWZ. Kluczowy niuans: ustawa nie tworzy publicznej wyszukiwarki. Dane trafiają do prac analitycznych urzędu, nie do wiadomości obywatela.',
+    zrodla: [
+      { label: 'Rzeczpospolita', url: 'https://www.rp.pl/ochrona-zdrowia/art44659551-sejm-uchwalil-ustawe-o-powiazaniu-informacji-o-wynagrodzeniach-medykow-z-numerem-pesel' },
+      { label: 'Nasza analiza przepisów', url: '/analizy/ustawa-o-danych-a-jawny-rejestr/' },
+    ],
+  },
+  {
+    tytul: 'Prezydent podpisuje ustawę o danych o wynagrodzeniach',
+    kto: 'prezydent Karol Nawrocki',
+    data: '2026-07-17',
+    termin: 'wejście w życie 14 dni po ogłoszeniu w Dz.U.',
+    status: 'spelnione',
+    typ: 'legislacja',
+    filar: 'jawnosc',
+    opis: 'Prezydent podpisał ustawę mimo apelu Naczelnej Rady Lekarskiej o weto; samorząd zapowiedział skargę do Trybunału Konstytucyjnego i wniosek do organów UE ws. zgodności z RODO. To wciąż odwrotność naszego postulatu: rejestr liczy państwo, opinia publiczna nadal nie zobaczy, ile ze środków publicznych trafia do konkretnego numeru PWZ.',
+    zrodla: [
+      { label: 'PulsHR', url: 'https://www.pulshr.pl/wynagrodzenia/prezydent-podpisal-ustawe-o-zarobkach-lekarzy-i-personelu-dane-powiazane-z-pesel-trafia-do-systemu,120555.html' },
+      { label: 'Nasza analiza przepisów', url: '/analizy/ustawa-o-danych-a-jawny-rejestr/' },
+    ],
+  },
+  {
+    tytul: 'Jawność wynagrodzeń i konkursów w planie reform',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-08',
+    termin: 'zapowiedź w planie reform',
+    status: 'zapowiedziane',
+    typ: 'obietnica',
+    filar: 'jawnosc',
+    opis: 'Plan zapowiada dostęp do danych o wynagrodzeniach po numerze PESEL/PWZ oraz publiczne informacje o konkursach i wyborze kontrahentów. Kierunek zgodny z ideą jawności — pozostaje pytanie, dla kogo dane będą dostępne: dla urzędu czy dla obywatela.',
+    zrodla: [
+      { label: 'Alert Medyczny', url: 'https://alertmedyczny.pl/ministra-zdrowia-przedstawila-plan-reform-jakie-zmiany-zapowiada-mz-i-nfz/' },
+    ],
+  },
+  {
+    tytul: 'Kara administracyjna do 1 mln zł za dyskryminację pacjentów',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-08',
+    termin: 'zapowiedź w planie reform',
+    status: 'zapowiedziane',
+    typ: 'obietnica',
+    filar: 'jawnosc',
+    opis: 'Maksymalna kara za nierówne traktowanie pacjentów (np. faworyzowanie komercyjnych ponad kolejkę NFZ). Wysokość sankcji ma odstraszać placówki od omijania publicznej listy oczekujących.',
+    zrodla: [
+      { label: 'Alert Medyczny', url: 'https://alertmedyczny.pl/ministra-zdrowia-przedstawila-plan-reform-jakie-zmiany-zapowiada-mz-i-nfz/' },
+    ],
+  },
+
+  // — Cyfryzacja i dostęp —
+  {
+    tytul: 'Obowiązkowa e-rejestracja: mammografia, cytologia, kardiologia',
+    kto: 'Ministerstwo Zdrowia',
+    data: '2026-01-01',
+    termin: 'obowiązek od 1 stycznia 2026',
+    status: 'spelnione',
+    typ: 'legislacja',
+    filar: 'cyfryzacja',
+    opis: 'Pierwszy obowiązkowy zakres centralnej e-rejestracji — na razie programy profilaktyczne i kardiologia.',
+    zrodla: [
+      { label: 'MZ — priorytety 2025–2027', url: 'https://www.gov.pl/web/zdrowie/priorytety-ministerstwa-zdrowia-na-lata-2025-2027' },
+    ],
+  },
+  {
+    tytul: 'E-rejestracja — rozszerzenie o kolejne dziedziny',
+    kto: 'Ministerstwo Zdrowia',
+    data: '2026-08-01',
+    termin: 'od 1 sierpnia 2026',
+    status: 'zapowiedziane',
+    typ: 'legislacja',
+    filar: 'cyfryzacja',
+    opis: 'Kolejny obowiązkowy zakres: choroby naczyń, choroby zakaźne, endokrynologia, hepatologia, immunologia, mukowiscydoza, nefrologia, neonatologia, pulmonologia.',
+    zrodla: [
+      { label: 'MZ — priorytety 2025–2027', url: 'https://www.gov.pl/web/zdrowie/priorytety-ministerstwa-zdrowia-na-lata-2025-2027' },
+    ],
+  },
+  {
+    tytul: 'Centralna e-kolejka',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-08',
+    termin: 'uruchomienie do końca 2026 r.',
+    status: 'w-toku',
+    typ: 'obietnica',
+    filar: 'cyfryzacja',
+    opis: 'Jedna, wspólna kolejka zamiast zapisów placówka po placówce. Ma ukrócić „martwe" terminy i podwójne rezerwacje.',
+    zrodla: [
+      { label: 'Alert Medyczny', url: 'https://alertmedyczny.pl/ministra-zdrowia-przedstawila-plan-reform-jakie-zmiany-zapowiada-mz-i-nfz/' },
+    ],
+  },
+  {
+    tytul: 'Centralna e-rejestracja: 39 specjalizacji',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2026-07-08',
+    termin: 'do końca 2027 r. (przyspieszone z 4 do 2 lat); całość AOS do 31.12.2029',
+    status: 'zapowiedziane',
+    typ: 'obietnica',
+    filar: 'cyfryzacja',
+    opis: 'Docelowo e-rejestracja ma objąć 39 specjalizacji w dwa, a nie cztery lata, a wszystkie świadczenia ambulatoryjne — do końca 2029 r.',
+    zrodla: [
+      { label: 'Alert Medyczny', url: 'https://alertmedyczny.pl/ministra-zdrowia-przedstawila-plan-reform-jakie-zmiany-zapowiada-mz-i-nfz/' },
+      { label: 'MZ — priorytety 2025–2027', url: 'https://www.gov.pl/web/zdrowie/priorytety-ministerstwa-zdrowia-na-lata-2025-2027' },
+    ],
+  },
+
+  // — Sieci klinicze i profilaktyka —
+  {
+    tytul: 'Krajowa Sieć Onkologiczna rusza w całym kraju',
+    kto: 'Ministerstwo Zdrowia / NFZ',
+    data: '2025-04-01',
+    termin: 'ustawa z 2023 r.; start ogólnokrajowy przesunięty z 2024 na 1.04.2025',
+    status: 'spelnione',
+    typ: 'legislacja',
+    filar: 'sieci',
+    opis: 'Od 1 kwietnia 2025 podmioty spoza sieci tracą prawo do leczenia onkologicznego na kontrakcie NFZ; struktura ma trzy poziomy (SOLO I–III). Start był o rok spóźniony — poprzedni rząd nie przygotował 7 z 9 potrzebnych rozporządzeń.',
+    zrodla: [
+      { label: 'LEX', url: 'https://www.lex.pl/krajowa-siec-onkologiczna-wystartowala-2025,40021.html' },
+      { label: 'Prawo.pl', url: 'https://www.prawo.pl/zdrowie/odroczenie-reformy-krajowej-sieci-onkologicznej,515947.html' },
+    ],
+  },
+  {
+    tytul: 'Krajowa Sieć Kardiologiczna: ustawa i konkurs z KPO',
+    kto: 'Ministerstwo Zdrowia / NFZ',
+    data: '2025-07-02',
+    termin: 'pełne uruchomienie sieci od 1 stycznia 2027',
+    status: 'w-toku',
+    typ: 'legislacja',
+    filar: 'sieci',
+    opis: 'Ustawa o KSK weszła w życie 2 lipca 2025; sieć ma trzy poziomy referencyjne, placówki dostają 3 lata na dostosowanie. Konkurs inwestycyjny z KPO ma pulę 2,65 mld zł — w dwóch naborach rozstrzygniętych w listopadzie 2025 przyznano ok. 1,94 mld zł na 354 przedsięwzięcia (media mówią o „376 szpitalach", dokumenty liczą projekty, nie szpitale).',
+    zrodla: [
+      { label: 'Rynek Zdrowia', url: 'https://www.rynekzdrowia.pl/Serwis-Kardiologia/Krajowa-Siec-Kardiologiczna-jaki-jest-postep-prac-Rozliczenie-srodkow-z-KPO-do-30-czerwca-2026,277327,1014.html' },
+      { label: 'MZ — wyniki naborów', url: 'https://www.gov.pl/web/zdrowie/wyniki-naborow-dla-i-i-ii-poziomu-krajowej-sieci-kardiologicznej-kolejne-inwestycje-z-kpo-w-opieke-kardiologiczna' },
+    ],
+  },
+  {
+    tytul: '„Zdrowe serce, zdrowy mózg" — standardy w neurologii',
+    kto: 'ministra Jolanta Sobierańska-Grenda',
+    data: '2025-09-26',
+    termin: 'konkursy z Funduszu Medycznego po zmapowaniu potrzeb',
+    status: 'zapowiedziane',
+    typ: 'obietnica',
+    filar: 'sieci',
+    opis: 'Jeden z trzech filarów polityki resortu. W neurologii priorytetem udar i otępienia; zapowiedziano standardy postępowania oraz konkursy z Funduszu Medycznego (blisko 1 mld zł) na sprzęt i rehabilitację poudarową. To zapowiedź kierunkowa, nie uruchomiony jeszcze program świadczeń.',
+    zrodla: [
+      { label: 'Newsmed', url: 'https://newsmed.pl/aktualnosci/12134488/priorytety-mz-20252027-szpitale-serce-cyfryzacja-refundacja.html' },
+      { label: 'Termedia', url: 'https://www.termedia.pl/neurologia/Priorytet-zdrowy-mozg-Eksperci-apeluja-o-systemowe-zmiany-w-neurologii,66328.html' },
+    ],
+  },
+  {
+    tytul: 'Centra Zdrowia Psychicznego: koniec pilotażu, model docelowy',
+    kto: 'Ministerstwo Zdrowia',
+    data: '2025-05-13',
+    termin: 'pilotaż do 31.12.2026; nabór od 2027; pełne pokrycie kraju do 2029',
+    status: 'w-toku',
+    typ: 'legislacja',
+    filar: 'sieci',
+    opis: 'Pilotaż środowiskowej opieki psychiatrycznej dla dorosłych przedłużono do końca 2026 r.; działa 127 centrów obejmujących ok. 14,7 mln mieszkańców. Model docelowy ma ruszyć od 2027 i objąć cały kraj do 2029. Osobny tor — reforma psychiatrii dzieci i młodzieży — dostał krytyczny raport NIK.',
+    zrodla: [
+      { label: 'MZ (gov.pl)', url: 'https://www.gov.pl/web/zdrowie/pilotaz-centrow-zdrowia-psychicznego-przedluzony-do-konca-2026-r' },
+      { label: 'Prawo.pl', url: 'https://www.prawo.pl/zdrowie/harmonogram-wychodzenia-z-pilotazu-centrow-zdrowia-psychicznego,1539274.html' },
+    ],
+  },
+  {
+    tytul: 'Program „Moje Zdrowie" — bilans zdrowia dorosłych',
+    kto: 'ministra Izabela Leszczyna (start)',
+    data: '2025-05-05',
+    termin: 'program ciągły; do 10.03.2026 ponad 3 mln zgłoszeń',
+    status: 'spelnione',
+    typ: 'obietnica',
+    filar: 'sieci',
+    opis: 'Bilans zdrowia dla osób 20+ w POZ (pakiet badań co 3–5 lat), następca „Profilaktyki 40+". Do 10 marca 2026 złożono ponad 3 mln ankiet — mniej więcej czterokrotnie więcej, niż zakładano na koniec 2025 r. Uwaga: ankieta zgłoszeniowa to nie to samo co ukończony bilans z wynikami.',
+    zrodla: [
+      { label: 'MZ (gov.pl)', url: 'https://www.gov.pl/web/zdrowie/rusza-program-moje-zdrowie-bilans-zdrowia-osoby-doroslej' },
+      { label: 'Rynek Zdrowia', url: 'https://www.rynekzdrowia.pl/E-zdrowie/Ponad-3-mln-osob-wypelnilo-ankiete-w-programie-Moje-Zdrowie-Dominuje-m-in-nadcisnienie-i-cukrzyca,283136,7.html' },
+    ],
+  },
+
+  // — Finansowanie, składka i leki —
+  {
+    tytul: 'Ustawowa ścieżka do 7% PKB na zdrowie',
+    kto: 'ścieżka ustawowa (2018/2021); realizuje rząd Tuska',
+    data: '2026-01-01',
+    termin: 'minimum 6,8% PKB w 2026 → 7% PKB w 2027',
+    status: 'w-toku',
+    typ: 'legislacja',
+    filar: 'finansowanie',
+    opis: 'Nakłady rosną wg ustawowego harmonogramu, ale wskaźnik liczy się od PKB sprzed dwóch lat (mechanizm „t-2"), co zaniża realny poziom — organizacje pracodawców szacują, że „6,8% PKB (2026)" to w rzeczywistości ok. 6,03% PKB bieżącego, a luka finansowa systemu rośnie. To szacunki analityków, nie dane urzędowe.',
+    zrodla: [
+      { label: 'Prawo.pl', url: 'https://www.prawo.pl/zdrowie/7-proc-pkb-na-zdrowie-i-dotacja-dla-nfz-z-budzetu,509686.html' },
+      { label: 'Polityka Zdrowotna', url: 'https://politykazdrowotna.com/artykul/raport-publiczne-wydatki-n1277185' },
+    ],
+  },
+  {
+    tytul: 'Reforma składki zdrowotnej przedsiębiorców — zawetowana',
+    kto: 'rząd Tuska; weto prezydenta Andrzeja Dudy',
+    data: '2025-05-06',
+    termin: 'reforma miała wejść od 1.01.2026 — nie weszła',
+    status: 'porzucone',
+    typ: 'legislacja',
+    filar: 'finansowanie',
+    opis: 'Sztandarowa obietnica „100 konkretów" (powrót do korzystniejszego naliczania składki). Ustawę uchwalono 4 kwietnia 2025 (nowa, dwuelementowa podstawa dla ~2,5 mln przedsiębiorców, koszt ~4,6 mld zł/rok), ale prezydent Duda ją zawetował, a weta nie odrzucono. Od 2026 minimalna składka rośnie z 314,96 zł do 432,54 zł/mies. (~+37%); resort finansów nie pracuje nad przedłużeniem ulgi.',
+    zrodla: [
+      { label: 'Rynek Zdrowia', url: 'https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Ostateczna-decyzja-Prezydent-Andrzej-Duda-postanowil-co-z-obnizka-skladki-zdrowotnej,271166,1.html' },
+      { label: 'Money.pl', url: 'https://www.money.pl/gospodarka/korzystne-przepisy-dla-firm-tylko-do-konca-roku-potem-wyrazne-podwyzki-7223883447503360a.html' },
+    ],
+  },
+  {
+    tytul: 'Dziura w NFZ łatana dotacją z budżetu',
+    kto: 'rząd / NFZ / MZ',
+    data: '2025-07-08',
+    termin: 'plan NFZ na 2026: dotacja budżetu 26 mld zł',
+    status: 'w-toku',
+    typ: 'legislacja',
+    filar: 'finansowanie',
+    opis: 'Na rozliczenie świadczeń 2025 brakowało ok. 14 mld zł; nowela ustawy o Funduszu Medycznym pozwoliła dosypać NFZ ~3,6 mld, a łączna dotacja budżetu do NFZ sięgnęła w 2025 blisko 32 mld zł. Plan na 2026 zakłada dotację 26 mld zł, a ministra sama szacuje lukę roku 2026 na ok. 23 mld zł. Doraźne łatanie, nie systemowe domknięcie.',
+    zrodla: [
+      { label: 'Termedia', url: 'https://www.termedia.pl/mz/Projekt-planu-finansowego-NFZ-na-2026-r-przedstawil-wiceminister-Konieczny-,63175.html' },
+      { label: 'Prawo.pl', url: 'https://www.prawo.pl/zdrowie/3-6-mld-zl-trafilo-do-budzetu-nfz,536447.html' },
+    ],
+  },
+  {
+    tytul: 'Częściowy powrót limitów na wizyty u specjalistów (AOS)',
+    kto: 'NFZ / MZ',
+    data: '2026-03-17',
+    termin: 'projekt: nadwykonania AOS płacone w 40%',
+    status: 'zapowiedziane',
+    typ: 'legislacja',
+    filar: 'finansowanie',
+    opis: 'Limity w ambulatoryjnej opiece specjalistycznej zniósł poprzedni rząd w 2021 r. — kolejek to nie skróciło, a wydatki i tak wzrosły. Teraz NFZ planuje płacić za nadwykonania w AOS tylko 40% wartości (z wyłączeniem onkologii, zabiegów i świadczeń dla dzieci), czyli po cichu częściowo zawraca. To rzadki przykład reformy cofanej, nie zapowiadanej.',
+    zrodla: [
+      { label: 'Rzeczpospolita', url: 'https://www.rp.pl/ochrona-zdrowia/art43975761-bedzie-czesciowy-powrot-limitow-na-wizyty-u-lekarzy-specjalistow-ustalenia-rzeczpospolitej' },
+      { label: 'Rynek Zdrowia', url: 'https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Zniesienie-limitow-do-AOS-nie-skrocilo-kolejek-Milkowski-liczba-swiadczen-nie-wzrosla,242163,1.html' },
+    ],
+  },
+  {
+    tytul: 'Rekordowe listy refundacyjne — 151 nowych terapii w 2025',
+    kto: 'Ministerstwo Zdrowia',
+    data: '2025-09-15',
+    termin: 'utrzymanie rozszerzonej refundacji w 2026',
+    status: 'spelnione',
+    typ: 'legislacja',
+    filar: 'finansowanie',
+    opis: 'W 2025 r. refundacją objęto 151 nowych terapii w czterech transzach — wg resortu najwięcej w historii; ogłoszono to jeszcze pod poprzednim kierownictwem MZ. Kwartalne listy 2026 kontynuują trend (np. od 1 lipca 2026 kolejne 25 terapii, w tym choroby rzadkie i onkologia).',
+    zrodla: [
+      { label: 'Polskie Radio 24', url: 'https://polskieradio24.pl/artykul/3579678,rekordowa-lista-refundacyjna-dodano-151-nowych-terapii' },
+      { label: 'Prawo.pl', url: 'https://www.prawo.pl/zdrowie/nowa-lista-lekow-refundowanych-od-1-kwietnia-2026-r,1540479.html' },
+    ],
+  },
+  {
+    tytul: 'Program in vitro z budżetu — 4929 urodzeń',
+    kto: 'Ministerstwo Zdrowia',
+    data: '2025-08-31',
+    termin: 'kontynuacja programu',
+    status: 'spelnione',
+    typ: 'obietnica',
+    filar: 'finansowanie',
+    opis: 'Przywrócone rządowe finansowanie in vitro. Do 31 sierpnia 2025 r. w ramach programu urodziło się 4929 dzieci — jedna z niewielu obietnic zdrowotnych domkniętych twardą liczbą.',
+    zrodla: [
+      { label: 'MZ — priorytety 2025–2027', url: 'https://www.gov.pl/web/zdrowie/priorytety-ministerstwa-zdrowia-na-lata-2025-2027' },
+    ],
+  },
+];
+
+// — Wyliczenia pochodne —
+const kolejnoscStatus: Status[] = ['spelnione', 'w-toku', 'zapowiedziane', 'spozniona', 'porzucone'];
+const licznik = kolejnoscStatus.map((s) => ({
+  s,
+  ...STATUSY[s],
+  n: DEKLARACJE.filter((d) => d.status === s).length,
+}));
+const razem = DEKLARACJE.length;
+
+// Oś czasu — chronologicznie (najstarsze u góry). Kotwica = pole `data`.
+const osCzasu = [...DEKLARACJE].sort((a, b) => a.data.localeCompare(b.data));
+
+// Grupowanie po filarach — w kolejności deklaracji FILARY.
+const filarSlugs = Object.keys(FILARY) as Filar[];
+const wgFilaru = filarSlugs
+  .map((f) => ({ slug: f, nazwa: FILARY[f].nazwa, pozycje: DEKLARACJE.filter((d) => d.filar === f) }))
+  .filter((g) => g.pozycje.length > 0);
+
+const fmtData = (iso: string) =>
+  new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }).format(
+    new Date(`${iso}T12:00:00`),
+  );
+const fmtKrotka = (iso: string) =>
+  new Intl.DateTimeFormat('pl-PL', { month: 'short', year: 'numeric' }).format(
+    new Date(`${iso}T12:00:00`),
+  );
+
+const opisLista = kolejnoscStatus.map((s) => `${STATUSY[s].label} — ${STATUSY[s].opis}`).join('; ');
+---
+
+<BaseLayout
+  title="Monitor reformy zdrowia — deklaracje na osi czasu — zarobkilekarzy.pl"
+  description="Żywe rozliczenie reformy ochrony zdrowia: zbieramy deklaracje rządu i twarde etapy legislacyjne, układamy je na osi czasu i śledzimy status każdej obietnicy — spełniona, w toku, spóźniona czy porzucona. Każda pozycja z linkiem do źródła. Od ustawy o reformie szpitalnictwa po limit 240 zł/godz., e-rejestrację, ewidencję czasu pracy i jawność wynagrodzeń po PESEL/PWZ."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/analizy/">Analizy</a> · Monitor reformy</p>
+      <h1>Monitor reformy zdrowia</h1>
+      <Aktualizacja zrodla=" · monitor aktualizowany na bieżąco" />
+      <p class="lead">
+        Rząd zapowiada <strong>reformę ochrony zdrowia</strong>: limity na wynagrodzenia, centralną
+        e-rejestrację, ewidencję czasu pracy, jawność wypłat po numerze PESEL i PWZ. To
+        <strong>monitor</strong>, nie manifest — zbieramy publiczne deklaracje i twarde etapy
+        legislacyjne, układamy je na osi czasu i przy każdej pozycji trzymamy <strong>status</strong>
+        oraz <strong>link do źródła</strong>. Obietnica to nie ustawa, a ustawa to jeszcze nie zmiana
+        dla pacjenta — pokazujemy, na którym z tych etapów każda zapowiedź naprawdę jest.
+      </p>
+
+      <div class="callout" style="border-left-color: var(--brand)">
+        <p>
+          Reforma dotyka wprost tego, o co upomina się ta strona: <strong>ewidencji czasu pracy</strong>
+          i <strong>jawności wynagrodzeń po PESEL/PWZ</strong>. Kibicujemy kierunkowi — i właśnie
+          dlatego pilnujemy szczegółu. Podpisana już ustawa o danych pozwala <strong>państwu</strong>
+          zsumować wypłaty jednej osoby, ale <strong>obywatelowi</strong> niczego nie pokazuje
+          (rozbieramy to w tekście <a href="/analizy/ustawa-o-danych-a-jawny-rejestr/">Państwo policzy,
+          obywatel nie zobaczy</a>). Monitor rozlicza <strong>mechanizm</strong>, nie osoby.
+        </p>
+      </div>
+
+      <h2 style="margin-top: 2.5rem">Stan rozliczenia</h2>
+      <div class="mrz-score" role="img" aria-label={`Rozliczenie ${razem} deklaracji reformy zdrowia według statusu. ${licznik.map((l) => `${l.label}: ${l.n}`).join(', ')}.`}>
+        {licznik.map((l) => (
+          <div class={`mrz-scard mrz-c-${l.kolor}`}>
+            <span class="mrz-scard-n">{l.n}</span>
+            <span class="mrz-scard-l">{l.label}</span>
+            <span class="mrz-scard-o">{l.opis}</span>
+          </div>
+        ))}
+      </div>
+      <p class="source-note">
+        Łącznie <strong>{razem}</strong> śledzonych pozycji w {wgFilaru.length} filarach reformy. Status
+        opisuje <strong>etap</strong>, nie ocenę intencji: „spełnione" znaczy „weszło w życie lub
+        zrealizowane", a nie „działa już dla pacjenta" — to osobne pytanie, które stawiamy w opisach.
+        Legenda: {opisLista}.
+      </p>
+
+      <h2 style="margin-top: 2.75rem">Oś czasu deklaracji i etapów</h2>
+      <p class="mrz-intro">
+        <strong>Kliknij status</strong>, żeby zawęzić listę (np. do spóźnionych i porzuconych);
+        <strong>kliknij wpis</strong>, żeby rozwinąć opis i źródło. Kotwicą jest dzień zdarzenia
+        (uchwalenie, podpis, wejście w życie) albo dzień ogłoszenia obietnicy — od najstarszego do
+        najnowszego.
+      </p>
+      <div class="mrz-tl" data-mrz-tl>
+        <div class="mrz-filterbar" role="group" aria-label="Filtruj oś czasu po statusie">
+          <button type="button" class="mrz-fbtn is-on" data-filter="all" aria-pressed="true">
+            Wszystkie <span class="mrz-fbtn-n">{razem}</span>
+          </button>
+          {licznik.map((l) => (
+            <button type="button" class={`mrz-fbtn mrz-c-${l.kolor}`} data-filter={l.s} aria-pressed="false">
+              {l.label} <span class="mrz-fbtn-n">{l.n}</span>
+            </button>
+          ))}
+          <button type="button" class="mrz-expand" data-expand aria-expanded="false">Rozwiń widoczne</button>
+          <span class="mrz-count" aria-live="polite"></span>
+        </div>
+        <ol class="mrz-timeline">
+          {osCzasu.map((d) => (
+            <li class={`mrz-item mrz-c-${STATUSY[d.status].kolor}`} data-status={d.status}>
+              <span class="mrz-dot" aria-hidden="true"></span>
+              <details class="mrz-det">
+                <summary class="mrz-sum">
+                  <time class="mrz-date" datetime={d.data}>{fmtData(d.data)}</time>
+                  <span class={`mrz-chip mrz-c-${STATUSY[d.status].kolor}`}>{STATUSY[d.status].label}</span>
+                  <span class="mrz-typ">{d.typ === 'legislacja' ? 'legislacja' : 'obietnica'}</span>
+                  <span class="mrz-title">{d.tytul}</span>
+                  <span class="mrz-caret" aria-hidden="true"></span>
+                </summary>
+                <div class="mrz-panel">
+                  <p class="mrz-who">{d.kto}{d.termin ? <span class="mrz-termin"> · {d.termin}</span> : null}</p>
+                  <p class="mrz-desc">{d.opis}</p>
+                  <p class="mrz-src">
+                    Źródło:
+                    {d.zrodla.map((z, i) => (
+                      <>
+                        {i > 0 ? ', ' : ' '}
+                        <a href={z.url} {...(z.url.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>{z.label}</a>
+                      </>
+                    ))}
+                  </p>
+                </div>
+              </details>
+            </li>
+          ))}
+        </ol>
+        <p class="mrz-empty" role="status" hidden>Brak pozycji w wybranym filtrze.</p>
+      </div>
+
+      <h2 style="margin-top: 2.75rem">Rozliczenie po filarach</h2>
+      <p class="mrz-intro">
+        Te same deklaracje pogrupowane tematycznie — żeby zobaczyć, gdzie reforma jest dociągnięta do
+        końca, a gdzie utknęła na zapowiedzi.
+      </p>
+      <div class="mrz-filary">
+        {wgFilaru.map((g) => (
+          <section class="mrz-filar">
+            <h3 class="mrz-filar-h" data-anchor="off">{g.nazwa} <span class="mrz-filar-n">{g.pozycje.length}</span></h3>
+            <ul class="mrz-flist">
+              {g.pozycje
+                .slice()
+                .sort((a, b) => a.data.localeCompare(b.data))
+                .map((d) => (
+                  <li class="mrz-frow">
+                    <span class={`mrz-fdot mrz-c-${STATUSY[d.status].kolor}`} title={STATUSY[d.status].label} aria-hidden="true"></span>
+                    <span class="mrz-ftitle">{d.tytul}</span>
+                    <span class={`mrz-fstatus mrz-c-${STATUSY[d.status].kolor}`}>{STATUSY[d.status].label}</span>
+                    <span class="mrz-fdate">{fmtKrotka(d.data)}</span>
+                  </li>
+                ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+
+      <div class="prose" style="margin-top: 2.75rem">
+        <h2>Jak czytać ten monitor</h2>
+        <p>
+          Rozdzielamy dwie rzeczy, które w debacie publicznej ciągle się zlewają. <strong>Obietnica</strong>
+          to zapowiedź polityka — ważna, ale odwracalna. <strong>Legislacja</strong> to twardy etap:
+          projekt, uchwalenie, podpis, wejście w życie. Dopiero ostatni z nich cokolwiek zmienia, i nawet
+          wtedy między „ustawa obowiązuje" a „pacjent to odczuł" bywa długa droga. Dlatego status
+          <strong>„Spełnione"</strong> oznacza u nas domknięty etap formalny — nie deklarację, że problem
+          zniknął.
+        </p>
+        <p>
+          Monitor jest <strong>żywy</strong>: dopisujemy nowe zapowiedzi i przesuwamy statusy w miarę biegu
+          spraw. Jeśli obiecany termin minie bez efektu, pozycja dostaje status <strong>„Spóźnione"</strong>;
+          jeśli projekt zostanie wycofany albo zawetowany — <strong>„Porzucone"</strong>. Niczego nie
+          publikujemy bez ogólnodostępnego źródła. Nie zaokrąglamy liczb w stronę sensacji, nie mieszamy
+          różnych mierników i nie podajemy zapowiedzi jako faktu dokonanego. Część reformy to spuścizna po
+          poprzednim rządzie (np. zniesienie limitów w AOS z 2021 r. czy ustawowa ścieżka do 7% PKB) —
+          zaznaczamy to wprost, bo monitorujemy stan reformy, nie prowadzimy sporu partyjnego.
+        </p>
+        <div class="callout">
+          <p>
+            Widzisz deklarację reformy, której u nas brakuje — albo etap, który zmienił status? Napisz przez
+            <a href="/dzialaj/"> stronę „Działaj"</a>. Dobre źródło (data + link) to najcenniejszy wkład
+            w ten monitor.
+          </p>
+        </div>
+
+        <h2>Dlaczego akurat my to śledzimy</h2>
+        <p>
+          Bo znaczna część tej reformy to nasz temat: <strong>koszty pracy</strong>, <strong>kontrakty</strong>,
+          <strong>ewidencja czasu</strong> i <strong>jawność wypłat</strong> ze środków publicznych. Rząd
+          sam nazwał 81,3% budżetu szpitala idące na wynagrodzenia problemem i zapowiedział limit 240 zł za
+          godzinę oraz sumowanie wypłat po numerze PWZ. To dokładnie mechanizmy, które opisujemy od miesięcy.
+          Będziemy więc pilnować, czy <strong>dane trafią też do obywatela</strong>, czy tylko do urzędu —
+          i czy limit kosztów pracy nie zamieni się w kolejną furtkę. Nasz <a href="/postulat/">postulat</a>
+          pozostaje ten sam: jawny rejestr łącznego wynagrodzenia po numerze <strong>PWZ</strong>, nie PESEL.
+        </p>
+        <p class="source-note">
+          <strong>Pokrewne:</strong>
+          <a href="/analizy/ustawa-o-danych-a-jawny-rejestr/">Ustawa o danych a jawny rejestr</a>,
+          <a href="/dane/zadluzenie-szpitali/">Zadłużenie szpitali</a>,
+          <a href="/mechanizmy/kontrakt-vs-etat/">Kontrakt czy etat</a>,
+          <a href="/dane/budzet-nfz/">Budżet NFZ</a>.
+        </p>
+      </div>
+
+      <p class="pager"><a href="/analizy/">← Wszystkie analizy</a> · <a href="/analizy/ustawa-o-danych-a-jawny-rejestr/">Ustawa o danych a jawny rejestr →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  // Interaktywna oś czasu: filtry po statusie (wielokrotny wybór) + „rozwiń widoczne".
+  // Progresywne wzbogacenie — bez JS wszystkie wpisy są widoczne i rozwijalne natywnie.
+  document.querySelectorAll('[data-mrz-tl]').forEach((tl) => {
+    const btns = Array.from(tl.querySelectorAll('.mrz-fbtn'));
+    const items = Array.from(tl.querySelectorAll('.mrz-item'));
+    const empty = tl.querySelector('.mrz-empty');
+    const count = tl.querySelector('.mrz-count');
+    const expand = tl.querySelector('[data-expand]');
+    const total = items.length;
+    const active = new Set();
+
+    const sync = () => {
+      let shown = 0;
+      items.forEach((it) => {
+        const on = active.size === 0 || active.has(it.dataset.status);
+        it.hidden = !on;
+        if (on) shown += 1;
+      });
+      btns.forEach((b) => {
+        const f = b.dataset.filter;
+        const on = f === 'all' ? active.size === 0 : active.has(f);
+        b.classList.toggle('is-on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      if (empty) empty.hidden = shown > 0;
+      if (count) count.textContent = shown === total ? '' : `Pokazano ${shown} z ${total}`;
+    };
+
+    btns.forEach((b) =>
+      b.addEventListener('click', () => {
+        const f = b.dataset.filter;
+        if (f === 'all') active.clear();
+        else if (active.has(f)) active.delete(f);
+        else active.add(f);
+        sync();
+      }),
+    );
+
+    if (expand) {
+      expand.addEventListener('click', () => {
+        const vis = items.filter((it) => !it.hidden);
+        const anyClosed = vis.some((it) => !it.querySelector('details').open);
+        vis.forEach((it) => {
+          it.querySelector('details').open = anyClosed;
+        });
+        expand.textContent = anyClosed ? 'Zwiń widoczne' : 'Rozwiń widoczne';
+        expand.setAttribute('aria-expanded', anyClosed ? 'true' : 'false');
+      });
+    }
+
+    sync();
+  });
+</script>
+
+<style>
+  /* — Tablica wyniku (scoreboard) — */
+  .mrz-score { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.85rem; margin: 1.25rem 0 0.75rem; }
+  .mrz-scard {
+    display: flex; flex-direction: column; gap: 0.15rem;
+    background: var(--surface); border: 1px solid var(--line);
+    border-top: 3px solid var(--mrz-c); border-radius: var(--radius-lg);
+    padding: 0.9rem 1rem 1rem;
+  }
+  .mrz-scard-n { font-family: var(--font-mono); font-size: clamp(1.6rem, 5vw, 2.1rem); font-weight: 700; color: var(--mrz-c); line-height: 1; }
+  .mrz-scard-l { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+  .mrz-scard-o { font-size: 0.76rem; color: var(--ink-faint); line-height: 1.35; }
+
+  .mrz-intro { font-size: 0.95rem; color: var(--ink-soft); line-height: 1.6; margin: 0.4rem 0 1.1rem; max-width: 64ch; }
+
+  /* — Oś czasu (interaktywna: filtry po statusie + zwijane wpisy) — */
+  .mrz-tl { margin-top: 0.5rem; }
+  .mrz-filterbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin: 0 0 1.2rem; }
+  .mrz-fbtn {
+    font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.3rem 0.72rem; border-radius: 999px;
+    border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-soft);
+    transition: background .12s, border-color .12s, color .12s;
+  }
+  .mrz-fbtn:hover { border-color: var(--mrz-c, var(--brand-link)); color: var(--ink); }
+  .mrz-fbtn-n { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); }
+  .mrz-fbtn.is-on { background: var(--mrz-bg, var(--brand-50)); border-color: var(--mrz-c, var(--brand-link)); color: var(--mrz-c, var(--brand-700)); }
+  .mrz-fbtn.is-on .mrz-fbtn-n { color: inherit; opacity: 0.85; }
+  .mrz-fbtn[data-filter="all"] { --mrz-c: var(--brand-link); --mrz-bg: var(--brand-50); }
+  .mrz-fbtn:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 2px; }
+  .mrz-expand {
+    font: inherit; font-size: 0.76rem; cursor: pointer; margin-left: auto;
+    background: none; border: 0; color: var(--brand-link); text-decoration: underline; padding: 0.3rem 0.2rem;
+  }
+  .mrz-expand:hover { color: var(--brand-700); }
+  .mrz-expand:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 2px; }
+  .mrz-count { font-size: 0.76rem; color: var(--ink-faint); }
+
+  .mrz-timeline { list-style: none; padding: 0; margin: 0; position: relative; }
+  .mrz-timeline::before {
+    content: ''; position: absolute; left: 7px; top: 0.7rem; bottom: 0.7rem;
+    width: 2px; background: var(--line-2);
+  }
+  .mrz-item { position: relative; padding-left: 2.1rem; }
+  .mrz-item[hidden] { display: none; }
+  .mrz-dot {
+    position: absolute; left: 0; top: 0.75rem; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--surface); border: 3px solid var(--mrz-c); box-sizing: border-box; z-index: 1;
+  }
+  .mrz-det { border-bottom: 1px solid var(--line); }
+  .mrz-item:last-child .mrz-det { border-bottom: 0; }
+  .mrz-sum {
+    list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: center;
+    gap: 0.4rem 0.6rem; padding: 0.6rem 0;
+  }
+  .mrz-sum::-webkit-details-marker { display: none; }
+  .mrz-sum::marker { content: ''; }
+  .mrz-sum:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 2px; border-radius: 4px; }
+  .mrz-det[open] > .mrz-sum { padding-bottom: 0.4rem; }
+  .mrz-date { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mrz-chip {
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.01em;
+    padding: 0.1rem 0.55rem; border-radius: 999px;
+    color: var(--mrz-c); background: var(--mrz-bg);
+    border: 1px solid color-mix(in srgb, var(--mrz-c) 35%, transparent);
+  }
+  .mrz-typ {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--ink-faint); border: 1px solid var(--line-2); border-radius: 4px; padding: 0.05rem 0.4rem;
+  }
+  .mrz-title { font-size: 0.95rem; font-weight: 600; line-height: 1.3; color: var(--ink); flex: 1 1 12rem; }
+  .mrz-caret {
+    margin-left: auto; flex-shrink: 0; width: 0; height: 0;
+    border-left: 6px solid var(--ink-faint); border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+    transition: transform .15s;
+  }
+  .mrz-det[open] .mrz-caret { transform: rotate(90deg); }
+  .mrz-panel { padding: 0 0 0.95rem; }
+  .mrz-who { font-size: 0.82rem; color: var(--ink-soft); margin: 0 0 0.5rem; }
+  .mrz-termin { color: var(--ink-faint); }
+  .mrz-desc { font-size: 0.92rem; color: var(--prose-ink); line-height: 1.6; margin: 0 0 0.5rem; max-width: 68ch; }
+  .mrz-src { font-size: 0.78rem; color: var(--ink-faint); margin: 0; }
+  .mrz-src a { color: var(--ink-faint); text-decoration: underline; }
+  .mrz-src a:hover { color: var(--brand-link); }
+  .mrz-empty { font-size: 0.9rem; color: var(--ink-faint); padding: 1rem 0 0; }
+  @media (prefers-reduced-motion: reduce) { .mrz-caret { transition: none; } }
+
+  /* — Rozliczenie po filarach — */
+  .mrz-filary { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 1.1rem; margin-top: 0.5rem; }
+  .mrz-filar { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.2rem 1.2rem; }
+  .mrz-filar-h { font-size: 0.98rem; margin: 0 0 0.7rem; color: var(--ink); display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+  .mrz-filar-n { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint); font-weight: 600; }
+  .mrz-flist { list-style: none; padding: 0; margin: 0; }
+  .mrz-frow { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.4rem 0.6rem; padding: 0.5rem 0; border-top: 1px solid var(--line); }
+  .mrz-frow:first-child { border-top: 0; }
+  .mrz-fdot { width: 10px; height: 10px; border-radius: 50%; background: var(--mrz-c); flex-shrink: 0; }
+  .mrz-ftitle { font-size: 0.86rem; color: var(--ink); line-height: 1.35; }
+  .mrz-fstatus { grid-column: 2 / 3; justify-self: start; font-size: 0.7rem; font-weight: 600; color: var(--mrz-c); }
+  .mrz-fdate { grid-row: 1 / 2; grid-column: 3 / 4; font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); white-space: nowrap; }
+
+  /* — Kolory statusów (theme-aware pary token + tło) — */
+  .mrz-c-ok      { --mrz-c: var(--ok);          --mrz-bg: var(--ok-50); }
+  .mrz-c-teal    { --mrz-c: var(--teal);        --mrz-bg: var(--teal-50); }
+  .mrz-c-neutral { --mrz-c: var(--neutral-fill); --mrz-bg: var(--paper-2); }
+  .mrz-c-amber   { --mrz-c: var(--amber);       --mrz-bg: var(--amber-50); }
+  .mrz-c-alert   { --mrz-c: var(--alert);       --mrz-bg: var(--alert-50); }
+
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+
+  @media (max-width: 560px) {
+    .mrz-frow { grid-template-columns: auto 1fr; }
+    .mrz-fdate { grid-row: 2 / 3; grid-column: 2 / 3; justify-self: start; }
+    .mrz-fstatus { grid-column: 2 / 3; }
+  }
+</style>

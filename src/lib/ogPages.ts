@@ -80,6 +80,11 @@ export const ogPages: Record<string, OgPage> = {
   },
 
   // — Analizy —
+  'analizy/monitor-reformy-zdrowia': {
+    tag: 'Analiza · Monitor',
+    title: 'Monitor reformy zdrowia',
+    subtitle: 'Deklaracje rządu i twarde etapy legislacyjne na osi czasu — z jawnym statusem: spełnione, w toku, spóźnione, porzucone. Każda pozycja z linkiem do źródła.',
+  },
   'analizy': {
     tag: 'Analizy',
     title: 'Pogłębione analizy jawności',

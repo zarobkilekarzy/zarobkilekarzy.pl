@@ -8,7 +8,7 @@
 // wszędzie datę ostatniego commita).
 export const pageDates = {
   // Analizy (długie teksty redakcyjne).
-  '/analizy/monitor-reformy-zdrowia': '2026-07-19',
+  '/analizy/monitor-reformy-zdrowia': '2026-07-22',
   '/analizy/sladem-zlotowki': '2026-07-10',
   '/analizy/jedno-pwz': '2026-07-07',
   '/analizy/lejek-ksztalcenia': '2026-07-08',
@@ -29,7 +29,7 @@ export const pageDates = {
   '/mechanizmy/reglamentacja-dostepu': '2026-07-14',
   '/mechanizmy/kontrakt-vs-etat': '2026-07-14',
   '/mechanizmy/brak-jawnosci': '2026-07-22',
-  '/mechanizmy/wieloetatowosc': '2026-07-14',
+  '/mechanizmy/wieloetatowosc': '2026-07-22',
   '/mechanizmy/rozliczenia-nfz': '2026-07-14',
   '/mechanizmy/fikcyjne-wizyty': '2026-07-16',
   '/mechanizmy/wycena-swiadczen': '2026-07-10',

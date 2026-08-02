@@ -1,0 +1,506 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+
+// English Division — skala, pieniądz uczelni, stawki nauczycieli.
+// Research: research/english-division-eksport-lekarzy.md
+//
+// TEZA (obronna): część nagłówkowego „ile lekarzy kształcimy" to miejsca anglojęzyczne,
+// z których do polskiego systemu wraca <1% absolwentów. To legalny, jawny eksport usługi
+// edukacyjnej — i właśnie dlatego jest ciekawy: pokazuje, że pieniądz w ochronie zdrowia
+// UMIE być policzalny co do złotówki, gdy państwo tego chce.
+//
+// BEZPIECZNIKI (obowiązkowe, powtórzone w treści):
+//   1. Osobny limit i osobna rekrutacja — cudzoziemcy NIE zabierają miejsc Polakom.
+//   2. Płacą pełne czesne (385–442 tys. zł za studia) — nie kosztują podatnika.
+//   3. 91% studentów kierunków anglojęzycznych to cudzoziemcy → ~9% to Polacy.
+//   4. Limit ≠ przyjęci ≠ absolwenci. 24 266 to MIEJSCA W LIMITACH, nie „wykształceni lekarze".
+//   5. Motywu („żeby pokazać nadpodaż") NIE przypisujemy — opisujemy skutek i mechanizm.
+//
+// DANE PIERWOTNE:
+//   Limity — załącznik nr 1 do rozporządzeń MZ (Dz.U.), kolumna „w języku innym niż język
+//   polski", zsumowana po uczelniach; wersje BAZOWE (przed nowelizacjami wrześniowymi).
+//   Kontrole zgodności przechodzą: 2020/21 = 8 309, 2021/22 = 9 039, 2022/23 = 9 406,
+//   2025/26 = 10 504. Rok 2015/16 odczytany z rozjechanego PDF — oznaczony w treści.
+//   Czesne — strony uczelni (Poznań, Wrocław, Katowice, Gdańsk, Kraków). WUM POMINIĘTY:
+//   BIP WUM oddaje HTTP 500, a pośrednicy podają sprzeczne kwoty — nie publikujemy zgadywanki.
+//   Stawki nauczycieli — zarządzenie Rektora WUM 36/2017 (zał. 1 i 2) + tabela Działu
+//   Personalnego WUM na podstawie zarz. 12/2005; Regulamin Wynagradzania UM w Lublinie
+//   (tekst jednolity 18.01.2021), zał. 5 i 6.
+//   PUŁAPKA: 250 zł (WUM, anglojęzyczne) i 70 zł (WUM, ponadwymiarowe po polsku) to DWIE
+//   RÓŻNE KATEGORIE PRAWNE — nie wolno pisać „za tę samą pracę". Lublin jest czystszym
+//   przykładem: ten sam nauczyciel, ta sama godzina, dodatek wyłącznie za język.
+
+const lata = [
+  { rok: '2012/13', og: 5202, ob: 1288 },
+  { rok: '2013/14', og: 5352, ob: 1361 },
+  { rok: '2014/15', og: 5510, ob: 1451 },
+  { rok: '2015/16', og: 6188, ob: 1551 },
+  { rok: '2016/17', og: 7100, ob: 1741 },
+  { rok: '2017/18', og: 7587, ob: 1865 },
+  { rok: '2018/19', og: 7846, ob: 1891 },
+  { rok: '2019/20', og: 8158, ob: 1892 },
+  { rok: '2020/21', og: 8309, ob: 1967 },
+  { rok: '2021/22', og: 9039, ob: 1824 },
+  { rok: '2022/23', og: 9406, ob: 1879 },
+  { rok: '2023/24', og: 9804, ob: 1829 },
+  { rok: '2024/25', og: 9882, ob: 1839 },
+  { rok: '2025/26', og: 10504, ob: 1888 },
+];
+const sumaOb = lata.reduce((a, r) => a + r.ob, 0); // 24 266
+const ostatni = lata[lata.length - 1];
+const udzialOstatni = (100 * ostatni.ob) / ostatni.og; // 18,0%
+const udzialPierwszy = (100 * lata[0].ob) / lata[0].og; // 24,8%
+
+// Wykres kolumnowy skumulowany: polskojęzyczne (dół) + obcojęzyczne (góra).
+const CH = { w: 760, h: 300, l: 46, r: 14, t: 16, b: 34 };
+const chMax = 11000;
+const chIW = CH.w - CH.l - CH.r;
+const chIH = CH.h - CH.t - CH.b;
+const barW = (chIW / lata.length) * 0.62;
+const bx = (i: number) => CH.l + (chIW / lata.length) * (i + 0.5) - barW / 2;
+const bh = (v: number) => (v / chMax) * chIH;
+const by = (v: number) => CH.t + chIH - bh(v);
+const chGrid = [0, 2000, 4000, 6000, 8000, 10000];
+
+// Rozkład miejsc anglojęzycznych po uczelniach — Dz.U. 2025 poz. 1086, zał. nr 1.
+const uczelnie = [
+  { n: 'Uniwersytet Medyczny w Poznaniu', m: 200 },
+  { n: 'Uniwersytet Medyczny w Lublinie', m: 170 },
+  { n: 'Śląski Uniwersytet Medyczny w Katowicach', m: 160 },
+  { n: 'Warszawski Uniwersytet Medyczny', m: 150 },
+  { n: 'Uniwersytet Medyczny we Wrocławiu', m: 140 },
+  { n: 'Uniwersytet Jagielloński w Krakowie', m: 130 },
+  { n: 'Akademia Śląska', m: 130 },
+  { n: 'Uniwersytet Medyczny w Białymstoku', m: 126 },
+  { n: 'Pomorski Uniwersytet Medyczny w Szczecinie', m: 120 },
+  { n: 'Uniwersytet Warmińsko-Mazurski w Olsztynie', m: 110 },
+  { n: 'Uniwersytet Medyczny w Łodzi', m: 104 },
+  { n: 'Uniwersytet Mikołaja Kopernika w Toruniu', m: 96 },
+  { n: 'Krakowska Akademia im. A. Frycza Modrzewskiego', m: 80 },
+  { n: 'Gdański Uniwersytet Medyczny', m: 50 },
+  { n: 'Uniwersytet Jana Kochanowskiego w Kielcach', m: 50 },
+  { n: 'Uniwersytet Rzeszowski', m: 40 },
+  { n: 'Akademia WSB', m: 32 },
+];
+const uczMax = Math.max(...uczelnie.map((u) => u.m));
+
+// Czesne — dane ze stron uczelni (rok akademicki 2025/26, gdzie nie zaznaczono inaczej).
+const czesne = [
+  { u: 'Uniwersytet Medyczny w Poznaniu', rok: '69 000 → 76 000 zł', calosc: '442 000 zł' },
+  { u: 'Uniwersytet Medyczny we Wrocławiu', rok: '67 900 zł', calosc: '407 400 zł' },
+  { u: 'Śląski Uniwersytet Medyczny', rok: '65 500 zł', calosc: '~393 000 zł' },
+  { u: 'Gdański Uniwersytet Medyczny', rok: '64 200 zł', calosc: '~385 200 zł' },
+  { u: 'Uniwersytet Jagielloński', rok: '15 500 €', calosc: '~93 000 €' },
+];
+
+// Stawki WUM: zał. 1 (anglojęzyczne) vs zał. 2 (niestacjonarne po polsku) do zarz. 36/2017.
+const stawkiWUM = [
+  { forma: 'Wykład', en: 250, pl: 120 },
+  { forma: 'Seminarium', en: 150, pl: 74 },
+  { forma: 'Ćwiczenia', en: 90, pl: 65 },
+];
+
+// Dane, które zostały w prozie zamiast w tabelach — żeby sekcja 3 nie rozlała się na
+// cztery zestawienia. Trzymamy je tutaj, bo to źródła, a nie ozdobniki:
+//   Czesne UJ wg rocznika przyjęcia (jedyny publiczny szereg historyczny), w euro:
+//     2019/20 i 2020/21 — 14 000 · 2021/22 — 14 500 · 2022/23 — 15 000 · 2023/24 — 15 000
+//     2024/25 — 15 500 · 2025/26 — 15 500 · 2026/27 — 16 000  (+14,3% w 7 lat)
+//   UM Lublin, godzina ponadwymiarowa (zał. 5): profesor 98 zł · prof. uczelni i adiunkt
+//     dr hab. 83 zł · adiunkt 69 zł · asystent 54 zł; dodatek za grupę anglojęzyczną
+//     (zał. 6): +60 zł do wykładu, +50 zł do zajęć ponadwymiarowych innych niż wykład,
+//     +40 zł do zajęć w ramach pensum; promotorstwo pracy w języku obcym — stawka ×2.
+
+const zl = (n: number) => n.toLocaleString('pl-PL');
+---
+
+<BaseLayout
+  title="English Division: kogo naprawdę kształcimy — zarobkilekarzy.pl"
+  description="Co szóste miejsce na kierunku lekarskim jest anglojęzyczne — 24 266 miejsc przez 14 lat. Zostaje mniej niż 1% absolwentów. Ile na tym zarabiają uczelnie i ile płacą nauczycielom za godzinę po angielsku."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/analizy/">Analizy</a> · English Division</p>
+      <h1>English Division: kogo naprawdę kształcimy</h1>
+      <Aktualizacja />
+      <p class="lead">
+        W roku akademickim 2025/2026 <strong>18% miejsc</strong> na kierunku lekarskim to
+        miejsca na studiach prowadzonych w języku obcym. Przez czternaście lat państwo
+        utworzyło ich <strong>{zl(sumaOb)}</strong>. Z absolwentów tych studiów w Polsce
+        zostaje <strong>mniej niż 1%</strong>. To nie jest afera — to legalny eksport usługi
+        edukacyjnej, którego <strong>cena jest ogłoszona co do złotówki</strong>. I to ona
+        tłumaczy, dlaczego te miejsca trwają.
+      </p>
+
+      {/* Siatka liczb POZA `.prose` — na podstronach tekstowych `.prose` jest
+          przycięta do miary czytania (780 px), a kafle mają wziąć pełną szerokość
+          obok szyny spisu treści. Tak samo w /analizy/odpowiedzialnosc-zawodowa-lekarzy. */}
+      <div class="fact-grid">
+        <div class="fact">
+          <span class="fact-num">18,0%</span>
+          <span class="fact-cap">miejsc na kierunku lekarskim w 2025/26 to miejsca w języku obcym (1 888 z 10 504)</span>
+        </div>
+        <div class="fact">
+          <span class="fact-num">{zl(sumaOb)}</span>
+          <span class="fact-cap">tyle miejsc anglojęzycznych łącznie w limitach z lat 2012/13–2025/26</span>
+        </div>
+        <div class="fact">
+          <span class="fact-num">&lt; 1%</span>
+          <span class="fact-cap">absolwentów-cudzoziemców nauk medycznych podejmuje pracę w Polsce (ELA, rocznik 2021)</span>
+        </div>
+        <div class="fact">
+          <span class="fact-num">442 tys. zł</span>
+          <span class="fact-cap">najwyższe czesne za sześcioletnie studia lekarskie po angielsku (Poznań)</span>
+        </div>
+      </div>
+
+      <div class="prose">
+
+        <h2>1. Skala: co szóste miejsce, i to od dawna</h2>
+        <p>
+          Rozporządzenie Ministra Zdrowia o limicie przyjęć ma cztery kolumny. Trzy dotyczą
+          studiów po polsku, czwarta — studiów „w języku innym niż język polski”. To
+          <strong>osobna pula i osobna rekrutacja</strong>. Zsumowaliśmy tę kolumnę po
+          wszystkich uczelniach dla każdego rocznika od 2012/13.
+        </p>
+
+        <figure class="chart-fig">
+          <div class="chart-wrap">
+            <svg class="chart" viewBox={`0 0 ${CH.w} ${CH.h}`} role="img"
+              aria-label="Wykres kolumnowy skumulowany: limit przyjęć na kierunek lekarski w latach 2012/13–2025/26. Część polskojęzyczna rośnie z 3 914 do 8 616 miejsc, część anglojęzyczna stoi w miejscu w przedziale 1 288–1 967 miejsc rocznie.">
+              {chGrid.map((g) => (
+                <g>
+                  <line class="grid" x1={CH.l} y1={by(g)} x2={CH.w - CH.r} y2={by(g)} />
+                  <text class="ylab" x={CH.l - 8} y={by(g)}>{g === 0 ? '0' : `${g / 1000} tys.`}</text>
+                </g>
+              ))}
+              {lata.map((d, i) => (
+                <g>
+                  <rect class="bar-pl" x={bx(i)} y={by(d.og - d.ob)} width={barW} height={bh(d.og - d.ob)} />
+                  <rect class="bar-en" x={bx(i)} y={by(d.og)} width={barW} height={bh(d.ob)} />
+                </g>
+              ))}
+              {lata.map((d, i) => (
+                i % 2 === 0 ? <text class="xlab" x={bx(i) + barW / 2} y={CH.h - 12}>{d.rok.slice(0, 4)}</text> : null
+              ))}
+            </svg>
+          </div>
+          <figcaption>
+            Limit przyjęć na kierunek lekarski: <span class="key key-pl"></span> miejsca
+            po polsku (stacjonarne + niestacjonarne + pula dla cudzoziemców) ·
+            <span class="key key-en"></span> miejsca w języku innym niż polski. Wersje bazowe
+            rozporządzeń MZ, przed nowelizacjami wrześniowymi. Rok oznaczony początkiem roku
+            akademickiego.
+          </figcaption>
+        </figure>
+
+        <p>
+          Obraz jest jednoznaczny i — co ważne — <strong>nie potwierdza najprostszej wersji
+          zarzutu</strong>. Miejsc anglojęzycznych nie przybywa: od 2017 r. trzymają się
+          w wąskim przedziale <strong>1 824–1 967</strong> rocznie. Rośnie za to część
+          polskojęzyczna, dlatego <strong>udział</strong> miejsc obcojęzycznych spadł
+          z {udzialPierwszy.toFixed(1).replace('.', ',')}% (2012/13) do
+          {' '}{udzialOstatni.toFixed(1).replace('.', ',')}% (2025/26). Skala nie rośnie —
+          ale też przez czternaście lat ani razu nie zmalała poniżej 1 288 miejsc rocznie.
+        </p>
+
+        <div class="table-wrap">
+          <table class="cmp">
+            <thead>
+              <tr><th>Rok akad.</th><th>Limit ogółem</th><th>w języku obcym</th><th>udział</th></tr>
+            </thead>
+            <tbody>
+              {lata.map((d) => (
+                <tr>
+                  <th scope="row">{d.rok}</th>
+                  <td class="num">{zl(d.og)}</td>
+                  <td class="num hot">{zl(d.ob)}</td>
+                  <td class="num">{((100 * d.ob) / d.og).toFixed(1).replace('.', ',')}%</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Razem 14 roczników</th>
+                <td class="num">{zl(lata.reduce((a, r) => a + r.og, 0))}</td>
+                <td class="num hot">{zl(sumaOb)}</td>
+                <td class="num">22,1%</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="source-note">
+          Obliczenia własne z załącznika nr 1 do rozporządzeń Ministra Zdrowia w sprawie limitu
+          przyjęć (kolumna „w języku innym niż język polski”, suma po uczelniach). Dz.U.:
+          <a href="https://api.sejm.gov.pl/eli/acts/DU/2012/864/text.pdf" target="_blank" rel="noopener noreferrer">2012 poz. 864</a>,
+          <a href="https://api.sejm.gov.pl/eli/acts/DU/2016/982/text.pdf" target="_blank" rel="noopener noreferrer">2016 poz. 982</a>,
+          <a href="https://api.sejm.gov.pl/eli/acts/DU/2020/1272/text.pdf" target="_blank" rel="noopener noreferrer">2020 poz. 1272</a>,
+          <a href="https://api.sejm.gov.pl/eli/acts/DU/2025/1086/text.pdf" target="_blank" rel="noopener noreferrer">2025 poz. 1086</a>
+          i analogiczne dla pozostałych lat.
+          <strong>Zastrzeżenie:</strong> limit to sufit, nie liczba przyjętych ani absolwentów —
+          {' '}{zl(sumaOb)} to <em>miejsca w rozporządzeniach</em>, nie „wykształceni lekarze”.
+          Rocznik 2015/16 odczytany z pliku Dz.U. o uszkodzonym układzie kolumn — traktujemy go
+          jako wymagający potwierdzenia.
+        </p>
+
+        <h3>Kto prowadzi nabór anglojęzyczny</h3>
+        <p>
+          W 2025/2026 robi to <strong>17 uczelni</strong>. Największą pulę ma Poznań, nie
+          Warszawa.
+        </p>
+        <div class="ubars">
+          {uczelnie.map((u) => (
+            <div class="ubar-row">
+              <span class="ubar-label">{u.n}</span>
+              <span class="ubar-track"><span class="ubar-fill" style={`width: ${(100 * u.m) / uczMax}%`}></span></span>
+              <span class="ubar-num">{u.m}</span>
+            </div>
+          ))}
+        </div>
+        <p class="viz-cap">
+          Miejsca na studiach w języku innym niż polski, kierunek lekarski, rok 2025/2026
+          (Dz.U. 2025 poz. 1086, zał. nr 1). Razem 1 888.
+        </p>
+
+        <h2>2. Ilu zostaje: mniej niż jeden na stu</h2>
+        <p>
+          Państwo prowadzi system monitorowania Ekonomicznych Losów Absolwentów (ELA), który
+          porównuje dyplomy z danymi ZUS. Dla rocznika 2021 wynik jest jednoznaczny:
+          <strong>ponad 17% absolwentów studiów medycznych</strong> (przyszłych lekarzy
+          i stomatologów) to cudzoziemcy, a <strong>mniej niż 1%</strong> absolwentów-cudzoziemców
+          z dziedziny nauk medycznych i nauk o zdrowiu podejmuje pracę w Polsce. W skali
+          wszystkich dziedzin <strong>98%</strong> absolwentów-cudzoziemców w ogóle nie pojawia
+          się wśród pracujących w Polsce. Dla porównania: wśród polskich absolwentów medycyny
+          udział zatrudnionych sięga <strong>95%</strong>.
+        </p>
+        <p>
+          Nie jest to przypadek ani luka. Ustawa z 16 lipca 2020 r. o zmianie ustawy o zawodach
+          lekarza i lekarza dentysty dała absolwentom studiów w języku obcym wybór: zdać LEK
+          i uzyskać <strong>zaświadczenie o formalnych kwalifikacjach</strong>, z którym wyjeżdża
+          się do innego państwa Unii — <strong>albo</strong> zdać dodatkowo egzamin z języka
+          polskiego i uzyskać prawo wykonywania zawodu tutaj. Pozytywna decyzja ministra jest
+          przy tym równoważna odbyciu stażu podyplomowego. Ustawodawca <strong>świadomie
+          zbudował ścieżkę wyjazdu</strong> i opisał to wprost w uzasadnieniu.
+        </p>
+        <div class="callout">
+          <p>
+            <strong>Uczciwie: to nie są „obcy, którzy zabierają miejsca”.</strong> Rozporządzenie
+            ma osobne kolumny — miejsca polskojęzyczne i obcojęzyczne to <strong>dwie różne
+            pule i dwie różne rekrutacje</strong>. Studenci English Division płacą pełne czesne,
+            od 385 do 442 tys. zł za komplet studiów, i <strong>nie kosztują polskiego
+            podatnika</strong>. Co więcej, English Division to nie jest oferta wyłącznie dla
+            cudzoziemców: wśród studentów kierunku lekarskiego prowadzonego w języku obcym
+            cudzoziemcy stanowią <strong>91%</strong> — pozostałe 9% to Polacy, którzy również
+            płacą. Nasz zarzut brzmi inaczej i dotyczy <strong>sposobu liczenia</strong>.
+          </p>
+        </div>
+        <p>
+          Ten sposób liczenia ma konkretny skutek. Gdy pada zdanie „Polska kształci rekordową
+          liczbę lekarzy”, w nagłówkowej liczbie siedzi blisko dwa tysiące miejsc rocznie,
+          z których do polskiego systemu wraca ułamek procenta. Realnie system zasila około
+          <strong>8,6 tys. miejsc polskojęzycznych</strong>, nie 10,5 tys. A na tej samej
+          nagłówkowej liczbie opiera się teza o zbliżającej się <a href="/mechanizmy/reglamentacja-dostepu/">nadpodaży
+          lekarzy</a>. Nie twierdzimy, że ktokolwiek liczy tak celowo — <strong>opisujemy skutek,
+          nie zamiar</strong>.
+        </p>
+        <p class="source-note">
+          Losy absolwentów —
+          <a href="https://ela.nauka.gov.pl/pl/labor-market/absolwenci_obcokrajowcy_na_polskim_rynku_pracy" target="_blank" rel="noopener noreferrer">ELA, „Absolwenci obcokrajowcy na polskim rynku pracy”</a>
+          (8. odsłona systemu, rocznik dyplomu 2021);
+          struktura studentów i udział 91% —
+          <a href="https://radon.nauka.gov.pl/opendata/reports/download/pdf/Cudzoziemcy_na_uczelniach_w_Polsce_2024.pdf" target="_blank" rel="noopener noreferrer">OPI PIB / RAD-on, „Cudzoziemcy na uczelniach w Polsce 2024”</a>;
+          osobna rekrutacja i czesne —
+          <a href="https://konkret24.tvn24.pl/polska/obcokrajowcy-zajmuja-miejsca-na-uczelniach-medycznych-a-placi-polski-podatnik-dwie-nieprawdy-st8141769" target="_blank" rel="noopener noreferrer">Konkret24 / TVN24</a>;
+          ścieżka dla absolwentów studiów w języku obcym —
+          <a href="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20200001291" target="_blank" rel="noopener noreferrer">Dz.U. 2020 poz. 1291</a>.
+        </p>
+
+        <h2>3. Dlaczego szkolimy lekarzy na eksport</h2>
+        <p>
+          Bo to się opłaca — i, w odróżnieniu od reszty pieniądza w ochronie zdrowia,
+          jest policzalne. Cena dyplomu lekarza jest publicznie ogłoszona, na sześć lat z góry.
+        </p>
+        <div class="table-wrap">
+          <table class="cmp">
+            <thead>
+              <tr><th>Uczelnia</th><th>Czesne za rok</th><th>Za cały 6-letni program</th></tr>
+            </thead>
+            <tbody>
+              {czesne.map((c) => (
+                <tr>
+                  <th scope="row">{c.u}</th>
+                  <td class="num">{c.rok}</td>
+                  <td class="num hot">{c.calosc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="source-note">
+          Kierunek lekarski w języku angielskim, rok akademicki 2025/2026, dane ze stron uczelni:
+          <a href="https://pums.ump.edu.pl/tuition-fees" target="_blank" rel="noopener noreferrer">Poznań</a>,
+          <a href="https://www.umw.edu.pl/pl/kierunek-lekarski-english-division/tuition-fees" target="_blank" rel="noopener noreferrer">Wrocław</a>,
+          <a href="https://smzwp.sum.edu.pl/tuition-fees/" target="_blank" rel="noopener noreferrer">Katowice</a>,
+          <a href="https://admission.mug.edu.pl/1447.html" target="_blank" rel="noopener noreferrer">Gdańsk</a>,
+          <a href="https://medschool.uj.edu.pl/practical-info/tuition-fees/" target="_blank" rel="noopener noreferrer">Kraków</a>.
+          Warszawskiego Uniwersytetu Medycznego <strong>nie podajemy</strong> — jego Biuletyn
+          Informacji Publicznej zwraca błąd serwera, a portale pośredników podają wartości
+          rozbieżne o kilka tysięcy euro. Wolimy lukę niż zgadywankę.
+        </p>
+        <p>
+          Dla uczelni to nie dodatek, tylko filar budżetu. W sprawozdaniu Uniwersytetu Medycznego
+          we Wrocławiu za 2020 r. pozycja „opłaty za świadczone usługi edukacyjne” to
+          <strong>69,7 mln zł</strong> przy 301,2 mln zł przychodów operacyjnych — <strong>około
+          23%</strong>. W skali kraju, przy 6,3–7,1 tys. cudzoziemców na kierunku lekarskim
+          i czesnym rzędu 65 tys. zł, daje to <strong>0,4–0,5 mld zł rocznie</strong>. To
+          <strong>szacunek własny, nie liczba sprawozdawcza</strong> — bo takiej liczby nikt nie
+          publikuje: pozycja „opłaty za usługi edukacyjne” obejmuje też studia niestacjonarne
+          po polsku i podyplomowe, więc nie wolno jej podpisać jako „przychód z English Division”.
+          Dla porządku: czesne nie rośnie w oderwaniu od rzeczywistości — jedyna uczelnia
+          z pełnym szeregiem historycznym, Uniwersytet Jagielloński, podniosła je z 14 000 €
+          (rocznik 2019/20) do 16 000 € (rocznik 2026/27), czyli o 14,3% w siedem lat — realnie,
+          po inflacji, <strong>taniej</strong>.
+        </p>
+        <p>
+          I tu pętla się domyka. Za te pieniądze uczelnia kupuje <strong>czas lekarzy</strong>,
+          bo kadrę kliniczną stanowią praktykujący lekarze — a płaci im więcej, gdy zajęcia są
+          po angielsku. Nie jest to nigdzie ukrywane: stawki leżą w zarządzeniach rektorów
+          i regulaminach wynagradzania.
+        </p>
+        <div class="table-wrap">
+          <table class="cmp">
+            <thead>
+              <tr>
+                <th>Forma zajęć (WUM)</th>
+                <th class="th-en">studia<span class="th-sub">anglojęzyczne</span></th>
+                <th>studia niestacjonarne<span class="th-sub">po polsku</span></th>
+                <th>krotność</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stawkiWUM.map((s) => (
+                <tr>
+                  <th scope="row">{s.forma}</th>
+                  <td class="num hot">{s.en} zł</td>
+                  <td class="num">{s.pl} zł</td>
+                  <td class="num">{(s.en / s.pl).toFixed(2).replace('.', ',')}×</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Jeszcze czyściej widać to w Lublinie, bo tam różnica jest <strong>wyłącznie</strong>
+          językowa: ta sama godzina ponadwymiarowa, ten sam nauczyciel, a za grupę anglojęzyczną
+          dochodzi dodatek <strong>60 zł do wykładu</strong> (50 zł do pozostałych zajęć).
+          Godzina adiunkta: <strong>69 zł po polsku, 129 zł po angielsku</strong>. Stawka za
+          promotorstwo pracy dyplomowej pisanej w języku obcym — <strong>podwojona</strong>.
+          Nie wszędzie da się to sprawdzić: Uniwersytet Medyczny w Poznaniu, z największą pulą
+          miejsc anglojęzycznych w kraju, deleguje stawki do zarządzenia rektora, którego w BIP
+          nie ma. Jawność jest realna, ale nierówna.
+        </p>
+        <p class="source-note">
+          Stawki WUM — zarządzenie Rektora nr 36/2017 z 5 kwietnia 2017 r., załączniki
+          <a href="https://praca.wum.edu.pl/sites/praca.wum.edu.pl/files/1wd_zarzadzenie_rektora_36-2017_zalacznik_zalacznik_1.pdf" target="_blank" rel="noopener noreferrer">nr 1</a>
+          i <a href="https://praca.wum.edu.pl/sites/praca.wum.edu.pl/files/1wd_zarzadzenie_rektora_36-2017_zalacznik_zalacznik_2.pdf" target="_blank" rel="noopener noreferrer">nr 2</a>
+          (stawki anglojęzyczne są maksymalne); stawki Lublina — Regulamin Wynagradzania UM
+          w Lublinie, tekst jednolity z 18 stycznia 2021 r., zał. nr 5 i 6
+          (<a href="https://bip.umlub.pl/download/gfx/bip/pl/bipdokumenty/6221/zalaczniki_regulamin_wynagradzania_tekst_jednolity.pdf" target="_blank" rel="noopener noreferrer">BIP, PDF</a>).
+          Zastrzeżenie: 250 zł za wykład anglojęzyczny to <em>dodatkowe wynagrodzenie
+          z przychodów własnych uczelni</em> (art. 151 ust. 8 ustawy — czyli wprost z czesnego),
+          a stawka za godzinę ponadwymiarową na studiach stacjonarnych po polsku to inna
+          kategoria prawna (w WUM 70 zł dla profesora, wg zarządzenia z 2005 r., nadal
+          publikowanego). Nie zestawiamy ich jako „to samo za to samo”.
+        </p>
+        <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+          <p>
+            <strong>I dlatego uczelnia w ogóle musi dopłacać.</strong> Ustawowe minimum
+            wynagrodzenia zasadniczego profesora w uczelni publicznej to od 1 stycznia 2026 r.
+            <strong>9 650 zł</strong> — około <strong>38%</strong> mediany kontraktu specjalisty
+            (<a href="/dane/rozklad-wynagrodzen/">25 595 zł</a>). Uczelnia konkuruje o czas tego
+            samego lekarza ze szpitalem, który płaci wielokrotnie więcej, i jedynym narzędziem,
+            jakim może podbić stawkę, są pieniądze zagranicznego studenta. Stąd 250 zł za wykład
+            po angielsku i dodatki lubelskie. <strong>To opis mechanizmu, nie zarzut</strong>:
+            rynek działa dokładnie tam, gdzie pieniądz jest widoczny.
+          </p>
+        </div>
+        <p class="source-note">
+          Minimum profesorskie —
+          <a href="https://api.sejm.gov.pl/eli/acts/DU/2026/525/text.pdf" target="_blank" rel="noopener noreferrer">rozporządzenie MNiSW z 14.04.2026, Dz.U. 2026 poz. 525</a>
+          (9 370 → 9 650 zł, ze skutkiem od 1.01.2026); stawki pochodne — art. 137 ustawy Prawo
+          o szkolnictwie wyższym i nauce (profesor uczelni 83%, adiunkt 73%, asystent 50%).
+          Sprawozdanie z wykonania planu rzeczowo-finansowego UM we Wrocławiu za 2020 r. —
+          <a href="https://bip.umw.edu.pl/artykul/166/1575/plany-rzeczowo-finansowe" target="_blank" rel="noopener noreferrer">BIP UMW</a>
+          (ten sam BIP publikuje plany tylko do 2021 r., a sprawozdanie za 2024 r. — bez rachunku
+          wyników). Liczba studentów-cudzoziemców —
+          <a href="https://radon.nauka.gov.pl/opendata/reports/download/pdf/Cudzoziemcy_na_uczelniach_w_Polsce_2024.pdf" target="_blank" rel="noopener noreferrer">OPI PIB / RAD-on 2024</a>.
+        </p>
+
+        <div class="callout">
+          <p>
+            To dlatego postulujemy <a href="/postulat/">jawny rejestr łącznego wynagrodzenia ze
+            środków publicznych powiązany z numerem PWZ</a> — identyfikatorem zawodowym, nie
+            PESEL-em, bez danych prywatnych. Uczelnie medyczne pokazują, że taka jawność nie
+            burzy systemu ani nie odstrasza ludzi od zawodu. Po prostu każe podać cenę.
+          </p>
+        </div>
+      </div>
+
+      <p class="pager"><a href="/analizy/lejek-ksztalcenia/">← Lejek kształcenia</a> · <a href="/analizy/ucieczka-lekarzy/">Ucieczka lekarzy →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .fact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 1.25rem 0 0.75rem; }
+  .fact { display: flex; flex-direction: column; gap: 0.4rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+  .fact-num { font-family: var(--font-mono); font-size: clamp(1.4rem, 4vw, 1.9rem); font-weight: 700; color: var(--brand); line-height: 1.05; }
+  .fact-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.5; }
+
+  /* Wykres kolumnowy skumulowany (SVG, kolory z tokenów = theme-aware) */
+  .chart-fig { margin: 1.25rem 0 0.5rem; }
+  .chart-wrap { overflow-x: auto; }
+  .chart { display: block; width: 100%; min-width: 600px; height: auto; }
+  .chart .grid { stroke: var(--line); stroke-width: 1; }
+  .chart .ylab { fill: var(--ink-soft); font-family: var(--font-mono); font-size: 12px; text-anchor: end; dominant-baseline: middle; }
+  .chart .xlab { fill: var(--ink-soft); font-family: var(--font-mono); font-size: 12px; text-anchor: middle; }
+  .chart .bar-pl { fill: var(--brand); opacity: 0.45; }
+  .chart .bar-en { fill: var(--alert); }
+  .chart-fig figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top: 0.5rem; line-height: 1.5; }
+  .key { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 2px; margin: 0 0.15rem 0 0.35rem; vertical-align: baseline; }
+  .key-pl { background: var(--brand); opacity: 0.45; }
+  .key-en { background: var(--alert); }
+
+  /* Poziome słupki — rozkład miejsc po uczelniach */
+  .ubars { margin: 1.25rem 0 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .ubar-row { display: grid; grid-template-columns: minmax(10rem, 20rem) 1fr auto; align-items: center; gap: 0.6rem; }
+  .ubar-label { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.25; }
+  .ubar-track { background: var(--neutral-fill, rgba(0,0,0,0.05)); border-radius: 999px; height: 0.8rem; overflow: hidden; }
+  .ubar-fill { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
+  .ubar-num { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--ink); min-width: 3ch; text-align: right; }
+  .viz-cap { font-size: 0.8rem; color: var(--ink-soft); margin: 0.2rem 0 0.75rem; }
+
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .cmp { border-collapse: collapse; width: 100%; min-width: 480px; font-size: 0.94rem; }
+  .cmp thead th { text-align: right; padding: 0.7rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); vertical-align: bottom; }
+  .cmp thead th:first-child { text-align: left; }
+  .cmp thead th.th-en { color: var(--brand); }
+  .cmp .th-sub { display: block; font-weight: 700; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.2rem; }
+  .cmp tbody th { text-align: left; padding: 0.7rem 0.9rem; font-weight: 500; }
+  .cmp td { text-align: right; padding: 0.7rem 0.9rem; }
+  .cmp td.num { font-family: var(--font-mono); white-space: nowrap; }
+  .cmp tbody tr { border-bottom: 1px solid var(--line); }
+  .cmp tbody tr:last-child { border-bottom: none; }
+  .cmp .hot { color: var(--alert); font-weight: 600; }
+  .cmp tfoot th[scope="row"] { text-align: left; padding: 0.7rem 0.9rem; font-weight: 700; border-top: 2px solid var(--line); }
+  .cmp tfoot td { padding: 0.7rem 0.9rem; border-top: 2px solid var(--line); font-weight: 700; }
+
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+</style>

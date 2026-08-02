@@ -234,6 +234,12 @@ export const strony: Record<string, Strona> = {
     opis: 'Miejsc przybywa, ale 2/3–3/4 miejsc specjalizacyjnych co roku stoi pustych. Wąskie gardło jest strukturalne.',
     tematy: ['dostep-do-zawodu'],
   },
+  '/analizy/english-division': {
+    dzial: 'analizy',
+    tytul: 'English Division: kogo naprawdę kształcimy',
+    opis: 'Co szóste miejsce na medycynie jest anglojęzyczne, a zostaje mniej niż 1% absolwentów. Czesne, przychody uczelni i stawki nauczycieli — wszystko jawne co do złotówki.',
+    tematy: ['dostep-do-zawodu', 'jawnosc'],
+  },
   '/analizy/apteka-pieniadz-publiczny': {
     dzial: 'analizy',
     tytul: 'Apteka i recepta: pieniądz, którego nikt nie sumuje',

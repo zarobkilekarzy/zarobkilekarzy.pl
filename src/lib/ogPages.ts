@@ -110,6 +110,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Lejek kształcenia lekarzy',
     subtitle: 'Miejsc przybywa, ale 2/3–3/4 miejsc specjalizacyjnych co roku stoi pustych. Wąskie gardło jest strukturalne.',
   },
+  'analizy/english-division': {
+    tag: 'Analiza',
+    title: 'English Division: kogo naprawdę kształcimy',
+    subtitle: 'Co szóste miejsce na medycynie jest anglojęzyczne — 24 266 miejsc przez 14 lat. Zostaje mniej niż 1% absolwentów.',
+  },
   'analizy/lekarze-ze-wschodu': {
     tag: 'Analiza',
     title: 'Lekarze ze wschodu — kogo wpuszczamy',

@@ -12,6 +12,7 @@ export const pageDates = {
   '/analizy/sladem-zlotowki': '2026-07-10',
   '/analizy/jedno-pwz': '2026-07-07',
   '/analizy/lejek-ksztalcenia': '2026-07-08',
+  '/analizy/english-division': '2026-08-02',
   '/analizy/lekarze-ze-wschodu': '2026-07-08',
   '/analizy/poz-pieniadz-za-pacjenta': '2026-07-18',
   '/analizy/dlaczego-brakuje-lekarzy': '2026-07-07',

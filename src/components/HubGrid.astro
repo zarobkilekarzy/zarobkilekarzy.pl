@@ -26,9 +26,6 @@ const { strony, zwarta = false, temat = false } = Astro.props;
         {temat && <span class="hub-temat">{TEMATY[s.tematy[0]].label}</span>}
         <span class="hub-t">{s.tytul}</span>
         <span class="hub-d">{s.opis}</span>
-        <span class="hub-arrow" aria-hidden="true">
-          →
-        </span>
       </a>
     ))
   }
@@ -37,12 +34,26 @@ const { strony, zwarta = false, temat = false } = Astro.props;
 <style>
   .hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
   .hub-grid.is-zwarta { margin: 1.25rem 0; }
-  .hub-card { position: relative; display: flex; flex-direction: column; gap: 0.35rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
+  /* Tło `--surface`, nie `--bg`: karta na tle strony w tym samym kolorze trzymała
+     się wyłącznie na 1 px obwódki i w trybie ciemnym praktycznie znikała. */
+  .hub-card { position: relative; display: flex; flex-direction: column; gap: 0.35rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
   .hub-card:hover { border-color: var(--brand); transform: translateY(-2px); }
   /* Karta jest w całości <a>, więc etykieta NIE może być linkiem (zagnieżdżone <a>
      to niepoprawny HTML). Przejście do tematu prowadzi z paska pod treścią strony. */
   .hub-temat { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); }
+  /* Strzałka przy tytule, nie w osobnym wierszu na dole karty. Wcześniej wisiała
+     oddzielona od tekstu (siatka rozciąga karty do równej wysokości), dokładała
+     wiersz każdej z kilkudziesięciu kart i jako jedyna sygnalizowała, że karta
+     jest odnośnikiem. Teraz sygnał siedzi tam, gdzie pada wzrok — przy tytule. */
   .hub-t { font-weight: 600; color: var(--ink); font-size: 1.02rem; }
-  .hub-d { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.45; }
-  .hub-arrow { color: var(--brand); font-weight: 700; margin-top: 0.15rem; }
+  .hub-t::after { content: ' →'; color: var(--brand-link); white-space: nowrap; }
+  /* Opisy w rejestrze stron urosły z jednego zdania do całych akapitów, przez co
+     karty w jednym rzędzie różniły się wysokością nawet trzykrotnie, a siatka
+     robiła się poszarpana. Trzy wiersze wystarczą, żeby wiedzieć, co jest w
+     środku — reszta jest na samej podstronie. Pełny opis zostaje w HTML dla
+     czytników ekranu i wyszukiwarki. */
+  .hub-d {
+    font-size: 0.88rem; color: var(--ink-soft); line-height: 1.45;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+  }
 </style>

@@ -67,7 +67,18 @@
 
   --radius: 8px;
   --radius-lg: 12px;
-  --maxw: 1080px;
+  /* Szerokość STRONY. 1080 px zostawiało na monitorze 1440/1920 px pas pustki
+     szerszy od samej treści — serwis wyglądał na wciśnięty w środek ekranu. */
+  --maxw: 1240px;
+  /* Miara CZYTANIA — osobna od szerokości strony i celowo stała: wiersz dłuższy
+     niż ~80 znaków gubi się przy powrocie do lewej krawędzi, więc rozciąganie
+     akapitu razem z ekranem pogarsza czytelność zamiast ją poprawiać. Dobrana
+     tak, żeby akapit zachował dotychczasową długość wiersza `.prose` (~730 px
+     treści). Na podstronach tekstowych dostają ją WSZYSTKIE bloki tekstu —
+     wcześniej lead, akapit i wyróżnienie miały trzy różne szerokości. */
+  --maxw-tekst: 780px;
+  /* Szerokość szyny bocznej (spis treści) w układzie szerokim. */
+  --szyna: 15rem;
 
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
@@ -95,8 +106,8 @@
   --ink-soft: #b2c0d0;
   --ink-faint: #93a1b3;
 
-  --line: #223047;
-  --line-2: #354861;
+  --line: #2c3d57;
+  --line-2: #5d76a0;
 
   --brand: #2f6fb1;
   --brand-700: #5a9bd6;
@@ -116,8 +127,8 @@
   --amber-50: #2c2211;
   --neutral-fill: #5c6d84;
 
-  --surface: #16212f;
-  --surface-2: #1c2838;
+  --surface: #1b2739;
+  --surface-2: #223047;
   --panel: #0a1119;
   --on-panel: #eef4fa;
 
@@ -137,8 +148,8 @@
     --ink-soft: #b2c0d0;
     --ink-faint: #93a1b3;
 
-    --line: #223047;
-    --line-2: #354861;
+    --line: #2c3d57;
+    --line-2: #5d76a0;
 
     --brand: #2f6fb1;
     --brand-700: #5a9bd6;
@@ -158,8 +169,8 @@
     --amber-50: #2c2211;
     --neutral-fill: #5c6d84;
 
-    --surface: #16212f;
-    --surface-2: #1c2838;
+    --surface: #1b2739;
+    --surface-2: #223047;
     --panel: #0a1119;
     --on-panel: #eef4fa;
 
@@ -220,9 +231,16 @@ a { color: var(--brand-link); }
 img { max-width: 100%; height: auto; }
 
 /* --- layout ------------------------------------------------------------- */
-.container { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 1.25rem; }
+/* `--container` nadpisuje szerokość tylko tam, gdzie ktoś ją zawęzi (patrz
+   strony tekstowe niżej). `--maxw` zostaje NIEZMIENNYM punktem odniesienia
+   pełnej szerokości — korzystają z niego nawigacja, stopka i wyjścia poza
+   miarę czytania. */
+.container { width: 100%; max-width: var(--container, var(--maxw)); margin: 0 auto; padding: 0 1.25rem; }
 main { display: block; }
-.section { padding: 4rem 0; }
+/* Serwis urósł z pięciu podstron do kilkudziesięciu — przy tej objętości 4 rem
+   na każdą sekcję dokładało po kilka ekranów pustki na stronę. 3.25 rem nadal
+   czytelnie oddziela sekcje, a skraca typową analizę o ok. 10%. */
+.section { padding: 3.25rem 0; }
 .section-alt { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .section-head { margin-bottom: 1.5rem; }
 .row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
@@ -332,7 +350,15 @@ main { display: block; }
 .pillar p { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
 
 /* --- lista artykułów ---------------------------------------------------- */
-.article-list { display: flex; flex-direction: column; gap: 0.75rem; }
+/* Dwie kolumny od 900 px: przy ~110 pozycjach jedna kolumna na szerokiej stronie
+   dawała wiersz nienaturalnie długi dla samego tytułu, a paginacja uciekała
+   daleko w dół. `align-items: start` — karty mają zostać przy swojej wysokości,
+   bez rozciągania krótkich do najwyższej w rzędzie. Poniżej 900 px jedna
+   kolumna, tak jak dotąd. */
+.article-list { display: grid; grid-template-columns: 1fr; align-items: start; gap: 0.75rem; }
+@media (min-width: 900px) {
+  .article-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .article {
   display: flex; gap: 1.25rem; justify-content: space-between; align-items: flex-start;
   padding: 1.15rem 1.35rem; border: 1px solid var(--line); border-radius: var(--radius);
@@ -342,8 +368,16 @@ main { display: block; }
 .article-body { min-width: 0; }
 .article-meta { font-size: 0.78rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.35rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .article-meta .dot { color: var(--line-2); }
-.article h3 { font-size: 1.08rem; margin: 0 0 0.3rem; }
-.article-excerpt { color: var(--ink-soft); font-size: 0.93rem; margin: 0; }
+.article h3 { font-size: 1.15rem; margin: 0 0 0.35rem; max-width: 62ch; }
+/* Baza urosła do ~110 pozycji na 13 stronach, a każdy opis (często z komentarzem
+   redakcji) szedł pełną szerokością — ekran listy był ścianą tekstu, w której
+   nie dało się skanować samych tytułów. Zwijamy opis do trzech wierszy i dajemy
+   mu miarę przypisu; pełną treść otwiera przycisk „Więcej" (patrz ArticleCard).
+   Bez JS klasa `is-clamped` nie zostaje nadana i widać całość jak dotąd. */
+.article-excerpt { color: var(--ink-soft); font-size: 0.93rem; margin: 0; max-width: 74ch; }
+.article-excerpt.is-clamped {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+}
 .article-ext { color: var(--ink-faint); flex-shrink: 0; margin-top: 0.2rem; }
 .badge-example { font-size: 0.68rem; color: var(--alert); border: 1px solid var(--alert-50); background: var(--alert-50); padding: 0.05rem 0.4rem; border-radius: 999px; text-transform: none; letter-spacing: 0; }
 
@@ -382,7 +416,97 @@ main { display: block; }
 .callout.quiet { background: var(--paper); border-left-color: var(--line-2); border-left-width: 3px; }
 .callout.quiet p { color: var(--ink-soft); font-size: 0.95rem; }
 .todo { color: var(--alert); font-style: italic; }
-.source-note { font-size: 0.85rem; color: var(--ink-faint); }
+/* Podpis źródła to przypis, nie tekst główny — przy 0.85 rem rozciągniętym na
+   szerokość kontenera wiersz miał ~130 znaków i czytało się go najgorzej na
+   stronie. Własna, węższa miara odsuwa go też wizualnie od akapitu. */
+.source-note { font-size: 0.85rem; color: var(--ink-faint); max-width: 62ch; }
+
+/* =========================================================================
+   Strony tekstowe (/analizy/*, /mechanizmy/*) — JEDNA miara czytania.
+   Problem, który to rozwiązuje: na jednej podstronie sąsiadowały trzy różne
+   szerokości — lead (60ch ≈ 555 px), akapit `.prose` (730 px) i wyróżnienie
+   czy podpis źródła rozciągnięte na całe 1080 px. Oko przy każdym bloku
+   przestawiało zasięg skanowania, a `.source-note` miał linie po ~140 znaków.
+   Zamiast przerabiać ~40 szablonów: `<main>` ustawia `--container`, z którego
+   `.container` już korzysta. Nawigacja i stopka są POZA `<main>`, więc
+   zostają na pełnej szerokości. Typ strony ustawia `BaseLayout` z adresu.
+
+   Dwa układy, jeden próg:
+     • wąsko (telefon, tablet, mały laptop) — strona = miara czytania, jedna
+       kolumna na całą szerokość, bez marnowania piksela;
+     • szeroko (od 1100 px) — strona zajmuje pełne `--maxw` jak reszta serwisu,
+       tekst zostaje w lewej kolumnie o stałej mierze, a prawy pas przestaje
+       być pustką i dostaje szynę ze spisem treści. Tabele i siatki liczb
+       biorą całą szerokość obok szyny, bo im szerokość SŁUŻY.
+   ========================================================================= */
+body[data-kind='tekst'] main { --container: var(--maxw-tekst); }
+body[data-kind='tekst'] :is(.prose, .lead) { max-width: none; }
+
+@media (min-width: 1100px) {
+  body[data-kind='tekst'] main { --container: var(--maxw); }
+  /* Prawy pas jest ZAREZERWOWANY pod szynę (spis treści jest `position: fixed`
+     i sam z siebie niczego nie odsuwa). Rezerwujemy go zawsze, także na krótkich
+     podstronach bez spisu — inaczej ta sama treść skakałaby na szerokości
+     zależnie od liczby sekcji. */
+  body[data-kind='tekst'] main .container > * { max-width: calc(100% - var(--szyna) - 2rem); }
+  body[data-kind='tekst'] main .container > :is(p, h2, h3, ul, ol, .prose, .lead, .callout) {
+    max-width: var(--maxw-tekst);
+  }
+}
+
+/* Siatka „kilku liczb" pod leadem powtarza się w dziesięciu szablonach z progiem
+   150 px. W układzie szerokim zostaje jak była (cztery wygodne kolumny na pełnej
+   szerokości strony); w wąskim, gdzie strona schodzi do miary czytania, cztery
+   słupki po ~180 px łamałyby podpis na dziesięć wierszy — stąd dwie kolumny.
+   Selektor jest bardziej szczegółowy niż zakresowa reguła Astro, więc wygrywa
+   bez zmian w szablonach. */
+@media (max-width: 1099px) {
+  body[data-kind='tekst'] .fact-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  }
+}
+
+/* --- spis treści dłuższej analizy --------------------------------------
+   Zawartość prawej szyny układu szerokiego. Wypełnia ją skrypt w `BaseLayout`
+   (tylko od czterech sekcji w górę). Poniżej 1100 px układ wraca do jednej
+   kolumny i szyny nie ma — nawigacją po sekcjach zostają wtedy anchory
+   przy nagłówkach.
+
+   Szyna jest dosunięta do PRAWEJ krawędzi kontenera, nie doklejona do kolumny
+   tekstu — inaczej zjadłaby całe miejsce, które ma zostać dla tabel i wykresów.
+   Pozycja liczona od środka ekranu, bo element jest `fixed` i nie zna krawędzi
+   kontenera. `--toc-polowa` to REALNA połowa szerokości strony: przy węższym
+   oknie kontener jest węższy od swojego maksimum, więc sztywna „połowa
+   z --maxw" wsadziłaby szynę poza ekran. */
+.toc { display: none; }
+@media (min-width: 1100px) {
+  .toc {
+    --toc-polowa: min(calc(var(--maxw) / 2), 50vw);
+    display: block;
+    position: fixed;
+    top: 6rem;
+    /* wewnętrzna prawa krawędź kontenera (połowa − padding) minus szerokość szyny */
+    left: calc(50% + var(--toc-polowa) - 1.25rem - var(--szyna));
+    width: var(--szyna);
+    max-height: calc(100vh - 9rem);
+    overflow-y: auto;
+    z-index: 10;
+  }
+  .toc[hidden] { display: none; }
+}
+.toc-head {
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.09em; color: var(--ink-faint); margin: 0 0 0.6rem;
+}
+.toc-list { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); }
+.toc-list li { margin: 0; }
+.toc-list a {
+  display: block; padding: 0.3rem 0 0.3rem 0.75rem; margin-left: -2px;
+  border-left: 2px solid transparent;
+  font-size: 0.84rem; line-height: 1.35; color: var(--ink-soft); text-decoration: none;
+}
+.toc-list a:hover { color: var(--brand-link); }
+.toc-list a[aria-current] { color: var(--ink); font-weight: 600; border-left-color: var(--brand); }
 
 /* --- karty danych (poglądowe) ------------------------------------------ */
 .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }

@@ -111,6 +111,13 @@ const wantSchema = !noindex && nested;
 const isArticle = wantSchema && (segs[0] === 'analizy' || segs[0] === 'mechanizmy');
 const isDataset = wantSchema && segs[0] === 'dane';
 
+// Typ strony wyprowadzony z adresu — steruje UKŁADEM, nie treścią. „tekst" to
+// podstrony czytane liniowo (analizy, mechanizmy): dostają węższą miarę czytania
+// i automatyczny spis treści. Huby i /dane zostają szerokie (siatki, tabele,
+// rankingi). Dzięki wyprowadzeniu z URL żadna z ~50 podstron nie wymaga własnego
+// propsa — nowa strona w tych działach dostaje układ z automatu.
+const kind = nested && (segs[0] === 'analizy' || segs[0] === 'mechanizmy') ? 'tekst' : null;
+
 let breadcrumbSchema = null;
 if (wantSchema) {
   const crumbs = [{ name: 'Strona główna', url: Astro.site?.toString() }];
@@ -260,7 +267,7 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
     ></script>
     <slot name="head" />
   </head>
-  <body>
+  <body {...(kind ? { 'data-kind': kind } : {})}>
     <a href="#main" class="skip-link">Przejdź do treści</a>
     <Nav />
     {/* `data-pagefind-body` wyznacza zakres indeksu wyszukiwarki: tylko treść
@@ -269,6 +276,12 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
     <main id="main"{...(search ? { 'data-pagefind-body': true } : {})}>
       <slot />
     </main>
+    {/* Spis treści dłuższej analizy — wypełniany w przeglądarce z nagłówków h2,
+        które `src/middleware.ts` i tak numeruje i zaopatruje w `id`. Pusty w HTML:
+        gdy JS nie wystartuje albo sekcji jest mniej niż cztery, nic się nie
+        pokazuje i nic nie przeskakuje (element jest poza układem — `position: fixed`).
+        Poza <main>, więc nie wchodzi do indeksu Pagefind. */}
+    {kind === 'tekst' && <nav class="toc" data-toc hidden aria-label="Spis treści"></nav>}
     <Footer />
     <script>
       // Wejście z linku do sekcji (np. udostępnione /mechanizmy/wycena-swiadczen#6-pointa).
@@ -285,6 +298,78 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
           return; // niepoprawny %-kod w adresie — nie ma czego szukać
         }
         if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+      })();
+    </script>
+    <script>
+      // Spis treści analizy — buduje się z nagłówków h2, którym middleware nadał
+      // `id`. Powstał, bo dłuższe teksty mają dziś po 8 sekcji: bez spisu jedyną
+      // nawigacją jest przewijanie w ciemno. Pokazujemy dopiero od czterech sekcji
+      // (przy dwóch–trzech spis jest szumem) i tylko tam, gdzie CSS ma miejsce na
+      // boczną szynę (≥1180 px) — na węższych ekranach reguła `display: none`
+      // trzyma go schowanym, więc nie zabiera miejsca treści.
+      (() => {
+        const toc = document.querySelector('nav[data-toc]');
+        if (!toc) return;
+        // Numer sekcji bywa już w tekście nagłówka („2. Po najwyższą karę…") —
+        // zdejmujemy go, żeby nie dublować numeracji spisu.
+        const clean = (h) => {
+          const copy = h.cloneNode(true);
+          copy.querySelectorAll('.hanchor').forEach((a) => a.remove());
+          return copy.textContent.trim().replace(/^\s*\d+[.)]\s*/, '');
+        };
+        const heads = [...document.querySelectorAll('main h2[id]')].filter(
+          (h) => h.offsetParent !== null && clean(h),
+        );
+        if (heads.length < 4) return;
+
+        const list = document.createElement('ol');
+        list.className = 'toc-list';
+        const links = heads.map((h) => {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = '#' + h.id;
+          a.textContent = clean(h);
+          li.append(a);
+          list.append(li);
+          return a;
+        });
+        const head = document.createElement('p');
+        head.className = 'toc-head';
+        head.textContent = 'Na tej stronie';
+        toc.append(head, list);
+        toc.hidden = false;
+
+        // Podświetlenie aktualnej sekcji. Obserwujemy wąski pas tuż pod przyklejoną
+        // nawigacją — dzięki temu „aktywna" jest sekcja, której nagłówek właśnie
+        // minął górę ekranu, a nie ta, która przypadkiem jest największa.
+        // -1 = jesteśmy jeszcze nad pierwszą sekcją (lead, wstęp) i NIC nie jest
+        // podświetlone; podświetlenie pierwszej pozycji od razu po wejściu
+        // sugerowałoby, że czytelnik jest w sekcji, do której nie dojechał.
+        let active = -1;
+        const mark = () => {
+          let i = -1;
+          heads.forEach((h, n) => {
+            if (h.getBoundingClientRect().top < 120) i = n;
+          });
+          if (i === active) return;
+          if (active >= 0) links[active].removeAttribute('aria-current');
+          if (i >= 0) links[i].setAttribute('aria-current', 'true');
+          active = i;
+        };
+        mark();
+        let ticking = false;
+        addEventListener(
+          'scroll',
+          () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(() => {
+              mark();
+              ticking = false;
+            });
+          },
+          { passive: true },
+        );
       })();
     </script>
     <script>

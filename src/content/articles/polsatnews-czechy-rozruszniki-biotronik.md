@@ -3,6 +3,7 @@ title: "Czechy: 757 wszczepionych defibrylatorów w rok i płatność producenta
 source: "Polsat News"
 sourceType: "prasa"
 url: "https://www.polsatnews.pl/wiadomosc/2026-07-13/najwiekszy-skandal-w-historii-czeski-szpital-mial-wykonac-setki-zbednych-zabiegow/"
+thumb: "polsatnews-czechy-rozruszniki-biotronik.webp"
 date: 2026-07-13
 category: "system"
 tags: ["porównanie międzynarodowe", "bodziec finansowy", "procedura", "zarzut nie fakt", "Czechy"]

@@ -3,6 +3,7 @@ title: "Koniec klauzul opt-out od 2028 r. Limit 48 godzin obejmie etat, ale nie 
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Prawo/Koniec-opt-outow-od-2028-roku-Lekarze-moga-stracic-czesc-dochodow-a-szpitale-obsade-dyzurow,286879,2.html"
+thumb: "rynekzdrowia-koniec-opt-out-2028.webp"
 date: 2026-07-20
 category: "wieloetatowosc"
 tags: ["opt-out", "czas pracy", "dyżury", "kontrakty", "etat", "wieloetatowość"]

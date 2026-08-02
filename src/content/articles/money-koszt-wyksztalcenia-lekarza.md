@@ -3,6 +3,7 @@ title: "Ile publiczna kasa wydaje na jednego lekarza: ok. 330 tys. zł za studia
 source: "Money.pl"
 sourceType: "prasa"
 url: "https://www.money.pl/finanse/oto-koszt-wyksztalcenia-lekarza-w-polsce-ile-kosztuja-nas-studia-medykow-7307034771822592a.html"
+thumb: "money-koszt-wyksztalcenia-lekarza.webp"
 date: 2026-07-13
 category: "system"
 tags: ["kształcenie", "rezydentura", "koszt publiczny", "emigracja lekarzy", "szacunek"]

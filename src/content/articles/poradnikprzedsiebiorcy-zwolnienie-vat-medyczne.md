@@ -3,6 +3,7 @@ title: "Usługi medyczne są zwolnione z VAT — art. 43 ust. 1 pkt 18, 18a i 19
 source: "Poradnik Przedsiębiorcy"
 sourceType: "analiza"
 url: "https://poradnikprzedsiebiorcy.pl/-kiedy-jest-mozliwe-zwolnienie-uslug-medycznych-z-vat"
+thumb: "poradnikprzedsiebiorcy-zwolnienie-vat-medyczne.webp"
 date: 2026-07-09
 category: "system"
 tags: ["VAT", "podatki", "kontrakty", "medycyna estetyczna", "stan prawny"]

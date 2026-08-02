@@ -3,6 +3,7 @@ title: "Kierunek lekarski na uczelni prywatnej: 21 tys. zł za semestr, 252 tys.
 source: "Onet"
 sourceType: "prasa"
 url: "https://wiadomosci.onet.pl/kraj/akademia-ojca-tadeusza-rydzyka-rekrutuje-tyle-kosztuje-medycyna/1w31r3r"
+thumb: "onet-akademia-torun-czesne-medycyna.webp"
 date: 2026-07-22
 category: "system"
 tags: ["kształcenie", "czesne", "limity przyjęć", "uczelnie niepubliczne"]

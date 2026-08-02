@@ -3,6 +3,7 @@ title: "Pacjent widzi rachunek za swoje leczenie: Francja, Estonia, Szwecja, Por
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/30-euro-za-wizyte-u-lekarza-i-ani-centa-wiecej-Inne-kraje-juz-stosuja-limity,286161,1.html"
+thumb: "rynekzdrowia-koszty-widoczne-dla-pacjenta.webp"
 date: 2026-07-02
 category: "system"
 tags: ["jawność", "porównanie międzynarodowe", "taryfy", "limity", "prawa pacjenta"]

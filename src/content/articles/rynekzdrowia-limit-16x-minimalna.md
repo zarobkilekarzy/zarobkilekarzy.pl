@@ -3,6 +3,7 @@ title: "Limit wynagrodzeń w szpitalach: 16-krotność minimalnej miesięcznie, 
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Polityka-zdrowotna/Stop-spirali-placowej-w-szpitalach-Dluga-lista-zmian-w-wykazie-prac-rzadu,286946,14.html"
+thumb: "rynekzdrowia-limit-16x-minimalna.webp"
 date: 2026-07-22
 category: "wynagrodzenia"
 tags: ["limit wynagrodzeń", "240 zł za godzinę", "procent od przychodu", "reforma", "kontrakty", "wykaz prac rządu"]

@@ -3,6 +3,7 @@ title: "Rządowe dane: 625 lekarzy na kontraktach i 49 na etacie zarabia ponad 1
 source: "Onet"
 sourceType: "prasa"
 url: "https://wiadomosci.onet.pl/kraj/prawie-700-milionerow-onet-przedstawia-dane-o-zarobkach-lekarzy/xn4xe52"
+thumb: "onet-700-milionerow-dane-rzadowe.webp"
 date: 2026-07-11
 category: "wynagrodzenia"
 tags: ["rozkład wynagrodzeń", "mediana", "kontrakty", "etat", "dane rządowe", "górny 1%"]

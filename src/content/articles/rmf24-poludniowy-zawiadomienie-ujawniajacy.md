@@ -3,6 +3,7 @@ title: "Szpital Południowy: prezes NFZ złożył zawiadomienie na byłego ordyn
 source: "RMF24"
 sourceType: "prasa"
 url: "https://www.rmf24.pl/regiony/warszawa/news-afera-w-szpitalu-poludniowym-nabiera-rozpedu-jest-zawiadomie,nIdn,1010637"
+thumb: "rmf24-poludniowy-zawiadomienie-ujawniajacy.webp"
 date: 2026-07-20
 category: "system"
 tags: ["rozliczenia NFZ", "kontrola", "sygnalista", "zarzut nie fakt", "Szpital Południowy"]

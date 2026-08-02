@@ -3,6 +3,7 @@ title: "310 tys. zł dopłat i praca rozliczona podwójnie — co NIK znalazła 
 source: "Jawny Lublin"
 sourceType: "prasa"
 url: "https://jawnylublin.pl/310-tys-zl-premii-co-nik-znalazl-w-uniwersyteckim-szpitalu-klinicznym-nr-4/"
+thumb: "jawnylublin-nik-usk4-premie.webp"
 date: 2026-06-26
 category: "wieloetatowosc"
 tags: ["NIK", "premie", "czas pracy", "podwójne rozliczanie", "wieloetatowość"]

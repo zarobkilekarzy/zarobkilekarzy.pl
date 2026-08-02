@@ -3,6 +3,7 @@ title: "Dyrektorka Szpitala Bielańskiego o limicie 240 zł za godzinę: „to b
 source: "Radio ZET"
 sourceType: "prasa"
 url: "https://wiadomosci.radiozet.pl/gosc-radia-zet/dyrektor-szpitala-bielanskiego-o-propozycji-mz-to-bardzo-godna-kwota"
+thumb: "radiozet-bielanski-240-godna-kwota.webp"
 date: 2026-07-09
 category: "wynagrodzenia"
 tags: ["wynagrodzenia", "kontrakty", "reforma", "czas pracy", "górne widełki"]

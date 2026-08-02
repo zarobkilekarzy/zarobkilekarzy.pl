@@ -3,6 +3,7 @@ title: "Miliardy z NFZ na podwyżki. Minister zatwierdziła nowe wyceny świadcz
 source: "Rzeczpospolita"
 sourceType: "prasa"
 url: "https://www.rp.pl/zdrowie/art44765471-nfz-wyda-miliardy-na-podwyzki-w-ochronie-zdrowia-minister-zdrowia-zatwierdzila-wyceny"
+thumb: "rp-podwyzki-wyceny-zatwierdzone.webp"
 date: 2026-07-03
 category: "wynagrodzenia"
 tags: ["podwyżki", "NFZ", "wyceny", "AOTMiT"]

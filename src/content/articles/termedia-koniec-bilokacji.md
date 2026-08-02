@@ -3,6 +3,7 @@ title: "Koniec bilokacji lekarzy?"
 source: "Termedia"
 sourceType: "prasa"
 url: "https://www.termedia.pl/mz/Koniec-bilokacji-lekarzy-,68020.html"
+thumb: "termedia-koniec-bilokacji.webp"
 date: 2026-07-04
 category: "wieloetatowosc"
 tags: ["bilokacja", "wieloetatowość", "ewidencja czasu", "nadzór NFZ", "ustawa"]

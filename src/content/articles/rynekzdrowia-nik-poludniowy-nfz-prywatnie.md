@@ -3,6 +3,7 @@ title: "Kontrola NIK w Szpitalu Południowym: lekarze rozliczani na NFZ i prywat
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Polityka-zdrowotna/Kontrola-NIK-w-Szpitalu-Poludniowym-Lekarze-pracowali-na-NFZ-i-prywatnie-jednoczesnie,286699,14.html"
+thumb: "rynekzdrowia-nik-poludniowy-nfz-prywatnie.webp"
 date: 2026-07-15
 category: "wieloetatowosc"
 tags: ["NIK", "Szpital Południowy", "bilokacja", "NFZ", "nakładanie godzin"]

@@ -3,6 +3,7 @@ title: "Patologia zarobków w służbie zdrowia — relacja z branży"
 source: "Joe Monster"
 sourceType: "prasa"
 url: "https://joemonster.org/art/79386/Patologia_zarobkow_w_sluzbie_zdrowia"
+thumb: "joemonster-patologia-zarobkow.webp"
 date: 2026-06-17
 category: "system"
 tags: ["gotowość", "dyżury pod telefonem", "transparentność", "relacja", "kontrakty"]

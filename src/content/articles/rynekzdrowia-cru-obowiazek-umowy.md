@@ -3,6 +3,7 @@ title: "Centralny Rejestr Umów: od 1 lipca szpitale publikują kontrakty. Lekar
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Prawo/Nowy-obowiazek-dla-przychodni-i-szpitali-Lekarze-boja-sie-o-prywatnosc,286634,2.html"
+thumb: "rynekzdrowia-cru-obowiazek-umowy.webp"
 date: 2026-07-14
 category: "kontrakty"
 tags: ["jawność", "Centralny Rejestr Umów", "kontrakty", "OZZL"]

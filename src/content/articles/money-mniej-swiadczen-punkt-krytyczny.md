@@ -3,6 +3,7 @@ title: "Mniej świadczeń za większe pieniądze. „Punkt krytyczny” w NFZ"
 source: "Money.pl"
 sourceType: "analiza"
 url: "https://www.money.pl/finanse/mniej-swiadczen-za-wieksze-pieniadze-punkt-krytyczny-w-nfz-7297494544201728a.html"
+thumb: "money-mniej-swiadczen-punkt-krytyczny.webp"
 date: 2026-06-17
 category: "system"
 tags: ["NFZ", "wynagrodzenia", "deficyt", "świadczenia"]

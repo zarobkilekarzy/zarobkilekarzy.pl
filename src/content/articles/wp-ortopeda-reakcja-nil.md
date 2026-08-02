@@ -3,6 +3,7 @@ title: "Gigantyczne zarobki ortopedy. Jest reakcja Naczelnej Izby Lekarskiej"
 source: "Wirtualna Polska"
 sourceType: "prasa"
 url: "https://wiadomosci.wp.pl/gigantyczne-zarobki-ortopedy-jest-reakcja-naczelnej-izby-lekarskiej-na-tekst-wp-7297826571073536a"
+thumb: "wp-ortopeda-reakcja-nil.webp"
 date: 2026-06-16
 category: "wieloetatowosc"
 tags: ["wieloetatowość", "kontrakty", "NIL"]

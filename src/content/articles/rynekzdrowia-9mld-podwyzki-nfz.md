@@ -3,6 +3,7 @@ title: "9 mld zł na podwyżki dla medyków. Zapłaci Narodowy Fundusz Zdrowia"
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/9-mld-zl-na-podwyzki-dla-medykow-Zaplaci-Narodowy-Fundusz-Zdrowia,285313,1.html"
+thumb: "rynekzdrowia-9mld-podwyzki-nfz.webp"
 date: 2026-06-11
 category: "wynagrodzenia"
 tags: ["wynagrodzenia", "NFZ", "podwyżki", "AOTMiT"]

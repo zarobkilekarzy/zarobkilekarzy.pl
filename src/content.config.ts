@@ -13,6 +13,11 @@ const articles = defineCollection({
     sourceType: z.enum(['prasa', 'raport', 'analiza', 'dane', 'wideo', 'social']),
     // Pełny adres do oryginalnego, ogólnodostępnego materiału.
     url: z.url(),
+    // Nazwa pliku miniatury w `src/assets/artykuly/` (bez ścieżki). Wypełnia je
+    // `scripts/fetch-miniatury.mjs`, pobierając `og:image` ze źródła RAZ i
+    // zapisując własną, przeskalowaną kopię — build nie odpytuje cudzych
+    // serwerów. Pole opcjonalne: wpisy bez miniatury dostają monogram źródła.
+    thumb: z.string().optional(),
     date: z.coerce.date(),
     excerpt: z.string(),
     category: z.enum([

@@ -3,6 +3,7 @@ title: "Sześć rodzajów kontraktów lekarskich — b. wiceminister zdrowia: li
 source: "Klub Jagielloński"
 sourceType: "analiza"
 url: "https://klubjagiellonski.pl/2026/07/13/kontrakty-maskuja-braki-kadrowe-co-znajduje-sie-na-umowach-lekarzy-w-polsce/"
+thumb: "klubjagiellonski-szesc-rodzajow-kontraktow.webp"
 date: 2026-07-13
 category: "kontrakty"
 tags: ["kontrakty", "kominy płacowe", "jawność", "procent od przychodu", "ewidencja czasu pracy", "reforma"]

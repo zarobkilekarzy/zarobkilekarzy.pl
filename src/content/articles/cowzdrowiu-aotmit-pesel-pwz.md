@@ -3,6 +3,7 @@ title: "AOTMiT dostanie pensje medyków „na NFZ” razem z numerem PESEL i PWZ
 source: "Co w Zdrowiu"
 sourceType: "prasa"
 url: "https://cowzdrowiu.pl/aktualnosci/post/pensje-medykow-aotmit-dostanie-dane-razem-z-pesel"
+thumb: "cowzdrowiu-aotmit-pesel-pwz.webp"
 date: 2025-12-23
 category: "system"
 tags: ["jawność", "PESEL", "PWZ", "AOTMiT", "taryfikacja"]

@@ -3,6 +3,7 @@ title: "Działdowo: dyrektor obniżył pensje pielęgniarkom, a swoją podniós�
 source: "ndz24.pl"
 sourceType: "prasa"
 url: "https://ndz24.pl/pl/11_wiadomosci/1800_dzialdowski-szpital-w-agonii-prawda-ukryta-pod-platnymi-certyfikatami.html"
+thumb: "ndz24-dzialdowo-dyrektor-pensja.webp"
 date: 2026-07-06
 category: "wynagrodzenia"
 tags: ["dyrektor szpitala", "oświadczenie majątkowe", "pielęgniarki", "certyfikat", "zadłużenie"]

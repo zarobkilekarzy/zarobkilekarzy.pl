@@ -3,6 +3,7 @@ title: "Lekarze o ustawie rządu: „dodatkowe skanowanie środowiska”"
 source: "Business Insider Polska"
 sourceType: "prasa"
 url: "https://businessinsider.com.pl/praca/wynagrodzenia/lekarze-komentuja-nowa-ustawe-rzadu-dodatkowe-skanowanie-srodowiska/5e9d2d0"
+thumb: "bi-skanowanie-srodowiska.webp"
 date: 2026-06-17
 category: "system"
 tags: ["ustawa", "PESEL", "jawność", "reakcje środowiska"]

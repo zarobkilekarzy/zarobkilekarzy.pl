@@ -3,6 +3,7 @@ title: "Koszalin: lekarz zarobił 2,6 mln zł w rok, 17 przekroczyło milion —
 source: "Wirtualna Polska"
 sourceType: "prasa"
 url: "https://wiadomosci.wp.pl/ogromne-zarobki-lekarzy-w-koszalinie-placowka-odpowiada-na-pytania-7307285538121728a"
+thumb: "wp-koszalin-zarobki.webp"
 date: 2026-07-14
 category: "wynagrodzenia"
 tags: ["jawność", "rekordy", "milionerzy", "Koszalin", "Watchdog Polska"]

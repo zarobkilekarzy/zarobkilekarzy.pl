@@ -3,6 +3,7 @@ title: "Afera w Szpitalu Południowym: lekarze chcą zeznawać. NIL: jawność z
 source: "RMF FM"
 sourceType: "prasa"
 url: "https://www.rmf24.pl/fakty/news-afera-w-szpitalu-poludniowym-zglaszaja-sie-lekarze-bali-sie-,nIdn,1007717"
+thumb: "rmf24-jankowski-poludniowy-jawnosc.webp"
 date: 2026-06-26
 category: "system"
 tags: ["Szpital Południowy", "NIL", "jawność", "PESEL", "nadzór"]

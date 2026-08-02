@@ -3,6 +3,7 @@ title: "Tyle chcą zarabiać lekarze. „Poniżej 220 zł za godzinę nie schodz
 source: "Biznes Interia"
 sourceType: "prasa"
 url: "https://biznes.interia.pl/praca/news-tyle-chca-zarabiac-lekarze-ponizej-220-zl-za-godzine-nie-sch,nId,23498013"
+thumb: "interia-oczekiwania-placowe.webp"
 date: 2026-06-16
 category: "wynagrodzenia"
 tags: ["stawki godzinowe", "kontrakty", "rynek pracy"]

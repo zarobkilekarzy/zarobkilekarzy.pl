@@ -3,6 +3,7 @@ title: "Szpital nr 1 w Bytomiu bez płynności. Brakuje na wypłaty dla personel
 source: "TVN24"
 sourceType: "prasa"
 url: "https://tvn24.pl/katowice/szpital-ma-problem-z-plynnoscia-finansowa-brakuje-na-wyplaty-st9096204"
+thumb: "tvn24-bytom-plynnosc-szpitala.webp"
 date: 2026-06-15
 category: "system"
 tags: ["NFZ", "wycena świadczeń", "płynność szpitala", "kontrakty"]

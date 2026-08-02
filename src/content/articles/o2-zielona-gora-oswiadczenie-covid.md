@@ -3,6 +3,7 @@ title: "Miał 32 lata i wykazał 4,3 mln zł dochodu. „Niczego nie ukradłem�
 source: "o2"
 sourceType: "prasa"
 url: "https://www.o2.pl/informacje/mial-32-lata-i-zarobil-4-3-mln-zl-niczego-nie-ukradlem-7299847381694496a"
+thumb: "o2-zielona-gora-oswiadczenie-covid.webp"
 date: 2026-06-23
 category: "wynagrodzenia"
 tags: ["oświadczenie majątkowe", "COVID", "medycyna ratunkowa", "rekord", "działalność gospodarcza"]

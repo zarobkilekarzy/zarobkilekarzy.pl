@@ -3,6 +3,7 @@ title: "Podwyżki dla lekarzy. Od lipca wynagrodzenia zasadnicze pójdą w gór�
 source: "Interia"
 sourceType: "prasa"
 url: "https://wydarzenia.interia.pl/kraj/news-podwyzki-dla-lekarzy-od-lipca-wynagrodzenia-zasadnicze-pojda,nId,23497816"
+thumb: "interia-podwyzki-od-lipca.webp"
 date: 2026-06-16
 category: "wynagrodzenia"
 tags: ["podwyżki", "etat", "ustawa o najniższych wynagrodzeniach"]

@@ -3,6 +3,7 @@ title: "Konin: jeden lekarz ponad 2 mln zł w rok — a całą drabinę widać d
 source: "infoKONIN.com.pl"
 sourceType: "prasa"
 url: "https://infokonin.com.pl/artykul/lekarze-milionerzy-w-n2401341"
+thumb: "infokonin-konin-kalisz-milionerzy.webp"
 date: 2026-07-06
 category: "wynagrodzenia"
 tags: ["kontrakty", "szpital wojewódzki", "wynagrodzenia", "Konin", "Kalisz", "wielkopolskie"]

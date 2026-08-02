@@ -3,6 +3,7 @@ title: "Ponad 430 lekarzy z kontraktem 100–300 tys. zł miesięcznie (dane AOT
 source: "Bankier.pl"
 sourceType: "prasa"
 url: "https://www.bankier.pl/wiadomosc/Ponad-430-lekarzy-zarabia-wiecej-niz-100-tys-zl-miesiecznie-Rzad-chce-to-ukrocic-9040848.html"
+thumb: "bankier-430-lekarzy-100k.webp"
 date: 2025-11-18
 category: "kontrakty"
 tags: ["AOTMiT", "kontrakty", "rozkład zarobków", "dane publiczne"]

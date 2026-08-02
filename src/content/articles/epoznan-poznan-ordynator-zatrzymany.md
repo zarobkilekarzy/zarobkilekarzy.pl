@@ -3,6 +3,7 @@ title: "Ordynator neurologii z poznańskiego szpitala zatrzymany. „Sam sobie p
 source: "epoznan.pl"
 sourceType: "prasa"
 url: "https://epoznan.pl/news-news-168437-jest_wiecej_informacji_w_sprawie_ordynatora_poznanskiego_szpitala_zatrzymanego_przez_policje_zarabial_ogromne_pieniadze"
+thumb: "epoznan-poznan-ordynator-zatrzymany.webp"
 date: 2025-10-07
 category: "wieloetatowosc"
 tags: ["zarzut", "dyżury", "nadzór", "poświadczenie nieprawdy", "Poznań"]

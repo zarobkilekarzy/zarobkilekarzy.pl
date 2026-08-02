@@ -3,6 +3,7 @@ title: "Nie będzie górnej granicy zarobków lekarzy na kontraktach — ministe
 source: "Puls Medycyny"
 sourceType: "prasa"
 url: "https://pulsmedycyny.pl/system-ochrony-zdrowia/finanse/posiedzenie-nrl-z-udzialem-minister-zdrowia-i-wiceprezesem-nfz-co-ustalono"
+thumb: "pulsmedycyny-limit-wycofany.webp"
 date: 2025-11-21
 category: "wynagrodzenia"
 tags: ["limit", "kontrakty", "NRL", "Ministerstwo Zdrowia"]

@@ -3,6 +3,7 @@ title: "Śledztwo: zarzuty o wysokie wynagrodzenie i „system VIP” w szpitalu
 source: "Donald.pl (za śledztwem Zero.pl)"
 sourceType: "prasa"
 url: "https://www.donald.pl/artykuly/cPT4fWmW/zeropl-lekarz-milioner-z-koalicji-obywatelskiej-zrobil-osobny-luksusowy-system-dla-znajomych-w-szpitalu/"
+thumb: "zero-sledztwo-szpital-vip.webp"
 date: 2026-06-17
 category: "system"
 tags: ["szpital publiczny", "dostęp do świadczeń", "śledztwo"]

@@ -3,6 +3,7 @@ title: "Niemal 5 tysięcy godzin w rok. Rekord czasu pracy lekarza ze Śląska"
 source: "TVN24"
 sourceType: "prasa"
 url: "https://tvn24.pl/katowice/sosnowiec-niemal-5-tysiecy-godzin-w-rok-rekord-lekarza-ze-szpitala-miejskiego-st9110251"
+thumb: "tvn24-sosnowiec-5000-godzin.webp"
 date: 2026-06-26
 category: "wieloetatowosc"
 tags: ["wieloetatowość", "czas pracy", "kontrakt", "Sosnowiec", "rekord godzin"]

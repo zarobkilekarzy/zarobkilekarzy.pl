@@ -3,6 +3,7 @@ title: "Onkologia dziecięca: po połączeniu oddziałów lekarze złożyli rezy
 source: "TVN24"
 sourceType: "prasa"
 url: "https://tvn24.pl/katowice/po-polaczeniu-oddzialow-onkologicznych-lekarze-zrezygnowali-z-pracy-szpital-o-hipokryzji-st9125114"
+thumb: "tvn24-onkologia-dziecieca-rezygnacje.webp"
 date: 2026-07-03
 category: "system"
 tags: ["restrukturyzacja", "warunki pracy", "wynagrodzenia", "bezpieczeństwo pacjenta"]

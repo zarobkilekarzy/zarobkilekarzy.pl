@@ -3,6 +3,7 @@ title: "Dyżury i wynagrodzenia pod ostrzałem. NIL: „przygotowujemy propozycj
 source: "Biznes Interia"
 sourceType: "prasa"
 url: "https://biznes.interia.pl/praca/news-dyzury-i-wynagrodzenia-pod-ostrzalem-nil-przygotowujemy-prop,nId,23497908"
+thumb: "interia-nil-dyzury-propozycje.webp"
 date: 2026-06-17
 category: "system"
 tags: ["NIL", "dyżury", "ewidencja czasu pracy", "PESEL"]

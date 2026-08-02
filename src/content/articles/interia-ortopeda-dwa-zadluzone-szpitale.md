@@ -3,6 +3,7 @@ title: "Kolejny lekarz z milionowymi zarobkami kieruje dwoma zadłużonymi szpit
 source: "Interia Biznes"
 sourceType: "prasa"
 url: "https://biznes.interia.pl/praca/news-kolejny-lekarz-z-milionowymi-zarobkami-kieruje-dwoma-zadluzo,nId,23498058"
+thumb: "interia-ortopeda-dwa-zadluzone-szpitale.webp"
 date: 2026-06-17
 category: "system"
 tags: ["wynagrodzenia", "zadłużenie szpitali", "dyrektorzy", "praktyka prywatna"]

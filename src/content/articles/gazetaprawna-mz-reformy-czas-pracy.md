@@ -3,6 +3,7 @@ title: "Ministerstwo Zdrowia szykuje zmiany: e-rejestracja, kominy płacowe i cz
 source: "Gazeta Prawna"
 sourceType: "prasa"
 url: "https://www.gazetaprawna.pl/biznes/zdrowie/artykuly/11272350,ministerstwo-zdrowia-zmiany-e-rejestracja-czas-pracy-medykow.html"
+thumb: "gazetaprawna-mz-reformy-czas-pracy.webp"
 date: 2026-07-06
 category: "system"
 tags: ["kominy płacowe", "czas pracy", "e-rejestracja", "reforma MZ", "jawność"]

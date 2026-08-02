@@ -3,6 +3,7 @@ title: "16 lekarzy-milionerów w jednym szpitalu w Kaliszu. W Wielkopolsce milio
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/16-lekarzy-milionerow-w-Kaliszu-6-specjalizacji-na-liscie-To-jest-chory-system,286169,1.html"
+thumb: "rynekzdrowia-16-milionerow-kalisz.webp"
 date: 2026-07-01
 category: "kontrakty"
 tags: ["kontrakty", "milionerzy", "Kalisz", "Wielkopolska", "rekordy"]

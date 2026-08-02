@@ -3,6 +3,7 @@ title: "KONIEC TAJNYCH PENSJI LEKARZY"
 source: "Kanał Zero"
 sourceType: "wideo"
 url: "https://www.youtube.com/watch?v=IUIGBh5w6tA"
+thumb: "yt-kanal-zero-koniec-tajnych-pensji.webp"
 date: 2026-06-17
 category: "system"
 tags: ["jawność", "wideo", "pensje lekarzy"]

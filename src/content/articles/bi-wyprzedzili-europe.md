@@ -3,6 +3,7 @@ title: "Lekarze w Polsce wyprzedzili Europę — zarobki kontra średnia krajowa
 source: "Business Insider Polska"
 sourceType: "analiza"
 url: "https://businessinsider.com.pl/praca/lekarze-w-polsce-wyprzedzili-europe-zarobki-kontra-srednia-krajowa/2ccmnml"
+thumb: "bi-wyprzedzili-europe.webp"
 date: 2026-04-15
 category: "wynagrodzenia"
 tags: ["OECD", "porównanie europejskie", "średnia krajowa"]

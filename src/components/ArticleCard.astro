@@ -8,7 +8,7 @@ interface Props {
 }
 
 const { article } = Astro.props;
-const { title, source, sourceType, url, date, excerpt, category, example } =
+const { title, source, sourceType, url, date, excerpt, category, example, thumb: thumbFile } =
   article.data;
 
 // Materiały wideo (sourceType: "wideo") z YouTube dostają miniaturę.
@@ -17,6 +17,29 @@ const ytMatch =
     ? url.match(/[?&]v=([\w-]+)/) ?? url.match(/youtu\.be\/([\w-]+)/)
     : null;
 const thumb = ytMatch ? `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg` : null;
+
+// Miniatura z pliku lokalnego (pobrana raz przez `scripts/fetch-miniatury.mjs`).
+// `import.meta.glob` z `eager` daje Vite komplet importów w czasie budowania —
+// dynamiczny `import()` po zmiennej nie zadziałałby przy `output: static`.
+const MINIATURY = import.meta.glob<{ default: ImageMetadata }>(
+  '../assets/artykuly/*.webp',
+  { eager: true },
+);
+const lokalna =
+  thumbFile ? MINIATURY[`../assets/artykuly/${thumbFile}`]?.default ?? null : null;
+
+// Zastępnik dla wpisów bez miniatury (źródło nie wystawia `og:image` albo
+// blokuje pobieranie): monogram z nazwy wydawcy. Kolor wybierany deterministycznie
+// z tej nazwy, żeby to samo źródło zawsze miało ten sam kafelek.
+const monogram = source
+  .replace(/[^\p{L}\p{N} ]/gu, ' ')
+  .trim()
+  .split(/\s+/)
+  .slice(0, 2)
+  .map((w) => w[0]?.toUpperCase() ?? '')
+  .join('');
+const odcien = [...source].reduce((a, c) => (a * 31 + c.codePointAt(0)!) % 360, 7);
+
 const catHref = `/artykuly/kategoria/${category}/`;
 ---
 
@@ -37,10 +60,15 @@ const catHref = `/artykuly/kategoria/${category}/`;
       <a class="article-link" href={url} target="_blank" rel="noopener noreferrer" data-slug={article.id}>{title}</a>
     </h3>
     <p class="article-excerpt">{excerpt}</p>
-    <a class="tag tag-link" href={catHref}>{CATEGORY_LABELS[category]}</a>
+    <div class="article-foot">
+      <a class="tag tag-link" href={catHref}>{CATEGORY_LABELS[category]}</a>
+    </div>
   </div>
+  {/* Miniatura jest ILUSTRACJĄ odnośnika, nie treścią — stąd `aria-hidden`
+      i puste `alt`: czytnik ekranu dostaje tytuł i źródło, obrazek by tylko
+      dublował. Kolejność: klatka z YouTube > pobrany `og:image` > monogram. */}
   {
-    thumb && (
+    thumb ? (
       <div class="article-thumb" aria-hidden="true">
         <Image src={thumb} alt="" width={360} height={270} loading="lazy" />
         <span class="article-play">
@@ -50,6 +78,14 @@ const catHref = `/artykuly/kategoria/${category}/`;
           </svg>
         </span>
       </div>
+    ) : lokalna ? (
+      <div class="article-thumb" aria-hidden="true">
+        <Image src={lokalna} alt="" widths={[240, 480]} sizes="140px" loading="lazy" />
+      </div>
+    ) : (
+      <div class="article-thumb is-monogram" aria-hidden="true" style={`--odcien:${odcien}`}>
+        <span>{monogram}</span>
+      </div>
     )
   }
   <span class="article-ext" aria-hidden="true">
@@ -58,6 +94,40 @@ const catHref = `/artykuly/kategoria/${category}/`;
     </svg>
   </span>
 </article>
+
+<script>
+  // Zwijanie opisów na liście artykułów. Robimy to w przeglądarce, a nie w HTML,
+  // żeby bez JS (i dla czytników ekranu oraz indeksu wyszukiwarki) opis został
+  // w całości. Zwijamy tylko te, które realnie się nie mieszczą — krótkie
+  // opisy nie dostają przycisku, więc lista nie zbiera się przyciskami-atrapami.
+  (() => {
+    document.querySelectorAll('.article').forEach((card, i) => {
+      const p = card.querySelector('.article-excerpt');
+      const foot = card.querySelector('.article-foot');
+      if (!p || !foot) return;
+      const full = p.scrollHeight;
+      p.classList.add('is-clamped');
+      // Trzy wiersze pomieściły całość — zwijanie nic nie ukrywa, więc bez przycisku.
+      if (p.clientHeight >= full - 1) {
+        p.classList.remove('is-clamped');
+        return;
+      }
+      if (!p.id) p.id = 'excerpt-' + i;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'article-more';
+      btn.textContent = 'Więcej';
+      btn.setAttribute('aria-expanded', 'false');
+      btn.setAttribute('aria-controls', p.id);
+      btn.addEventListener('click', () => {
+        const open = !p.classList.toggle('is-clamped');
+        btn.textContent = open ? 'Mniej' : 'Więcej';
+        btn.setAttribute('aria-expanded', String(open));
+      });
+      foot.append(btn);
+    });
+  })();
+</script>
 
 <style>
   /* Cała karta klikalna do źródła (stretched link); tag kategorii to osobny link. */
@@ -72,19 +142,53 @@ const catHref = `/artykuly/kategoria/${category}/`;
   .article-clicks[hidden] { display: none; }
   .article-clicks { position: relative; z-index: 2; color: var(--ink-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .article-clicks::before { content: '•'; margin: 0 0.4rem; color: var(--ink-faint); }
+  .article-foot { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.6rem; }
   .tag-link {
-    position: relative; z-index: 2; display: inline-block; margin-top: 0.6rem;
+    position: relative; z-index: 2; display: inline-block;
     text-decoration: none; transition: border-color 0.15s ease, color 0.15s ease;
   }
   .tag-link:hover { border-color: var(--brand); color: var(--brand); }
+  /* Rozwinięcie zwiniętego opisu. Nad nakładką linku (z-index), więc klik
+     otwiera tekst, a nie źródło. Dodawany skryptem — bez JS opis jest pełny
+     i przycisk byłby atrapą. `:global`, bo element powstaje w przeglądarce:
+     nie ma atrybutu zakresu Astro, więc reguła zakresowa by go ominęła. */
+  :global(.article-more) {
+    position: relative; z-index: 2; padding: 0; border: 0; background: none;
+    font-family: var(--font-sans); font-size: 0.82rem; font-weight: 500;
+    color: var(--brand-link); cursor: pointer; text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 
-  .article-thumb { position: relative; flex-shrink: 0; width: 172px; align-self: flex-start; }
+  /* 140 px, nie 172: baza idzie teraz w dwóch kolumnach, więc karta jest o połowę
+     węższa i większa miniatura zjadałaby tytuł. */
+  .article-thumb { position: relative; flex-shrink: 0; width: 140px; align-self: flex-start; }
   .article-thumb img {
     width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;
     border-radius: var(--radius); background: var(--paper-2);
   }
   .article-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  /* Monogram wydawcy — zastępnik dla źródeł bez `og:image`. Kolor z `--odcien`
+     (liczony z nazwy), przygaszony na tyle, żeby rząd kart nie zamienił się
+     w paletę barw; w obu motywach ta sama konstrukcja, inna jasność. */
+  .article-thumb.is-monogram {
+    aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius);
+    background: hsl(var(--odcien) 30% 92%);
+    color: hsl(var(--odcien) 45% 30%);
+    font-family: var(--font-mono); font-size: 1.5rem; font-weight: 500; letter-spacing: 0.02em;
+  }
+  :global(:root[data-theme='dark']) .article-thumb.is-monogram {
+    background: hsl(var(--odcien) 22% 22%);
+    color: hsl(var(--odcien) 40% 78%);
+  }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .article-thumb.is-monogram {
+      background: hsl(var(--odcien) 22% 22%);
+      color: hsl(var(--odcien) 40% 78%);
+    }
+  }
   @media (max-width: 560px) {
-    .article-thumb { width: 116px; }
+    .article-thumb { width: 104px; }
+    .article-thumb.is-monogram { font-size: 1.15rem; }
   }
 </style>

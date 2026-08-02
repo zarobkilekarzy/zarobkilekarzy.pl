@@ -3,6 +3,7 @@ title: "Trzeba ucywilizować czas pracy lekarzy"
 source: "Medycyna Praktyczna (Kurier MP)"
 sourceType: "analiza"
 url: "https://ochronazdrowia.mp.pl/wywiady/441625,trzeba-ucywilizowac-czas-pracy-lekarzy"
+thumb: "mp-jankowski-czas-pracy.webp"
 date: 2026-06-17
 category: "wieloetatowosc"
 tags: ["czas pracy", "NRL", "limity", "wieloetatowość"]

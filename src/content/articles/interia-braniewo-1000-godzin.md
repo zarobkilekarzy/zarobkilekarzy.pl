@@ -3,6 +3,7 @@ title: "Lekarz rozliczał ponad 1000 godzin miesięcznie — „to było wprost 
 source: "Interia Wydarzenia"
 sourceType: "prasa"
 url: "https://wydarzenia.interia.pl/kraj/news-lekarz-pracowal-72-godziny-na-dobe-to-bylo-wprost-dojenie-sz,nId,23511769"
+thumb: "interia-braniewo-1000-godzin.webp"
 date: 2026-07-09
 category: "wieloetatowosc"
 tags: ["wieloetatowość", "czas pracy", "wynagrodzenia", "kontrakty", "zarzut"]

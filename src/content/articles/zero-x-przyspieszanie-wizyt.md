@@ -3,6 +3,7 @@ title: "„Niech rzuci kamieniem ten, który nie próbował przyspieszyć sobie 
 source: "Kanał Zero (X)"
 sourceType: "social"
 url: "https://x.com/OficjalneZero/status/2067507274411651536"
+thumb: "zero-x-przyspieszanie-wizyt.webp"
 date: 2026-06-18
 category: "kolejki"
 tags: ["nierówny dostęp", "kolejki", "wypowiedź", "X"]

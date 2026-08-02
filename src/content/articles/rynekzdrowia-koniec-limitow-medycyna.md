@@ -3,6 +3,7 @@ title: "Koniec rekordowych limitów przyjęć na medycynę — MZ nie widzi potr
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Nauka/Koniec-rekordowych-limitow-przyjec-na-medycyne-To-moze-byc-ostatni-tak-liczny-nabor,285222,9.html"
+thumb: "rynekzdrowia-koniec-limitow-medycyna.webp"
 date: 2026-06-09
 category: "system"
 tags: ["limity", "studia lekarskie", "reglamentacja", "podaż lekarzy"]

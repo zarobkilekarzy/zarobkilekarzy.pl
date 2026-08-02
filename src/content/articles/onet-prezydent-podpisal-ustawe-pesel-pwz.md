@@ -3,6 +3,7 @@ title: "Prezydent podpisał ustawę o danych o wynagrodzeniach medyków — po P
 source: "Onet"
 sourceType: "prasa"
 url: "https://wiadomosci.onet.pl/kraj/karol-nawrocki-nie-posluchal-lekarzy-ich-zarobki-beda-jawne/pm1vp35"
+thumb: "onet-prezydent-podpisal-ustawe-pesel-pwz.webp"
 date: 2026-07-17
 category: "system"
 tags: ["ustawa", "PESEL", "PWZ", "jawność", "AOTMiT"]

@@ -3,6 +3,7 @@ title: "Rekordowy dyżur lekarza: prawie 176 godzin. Inny uzbierał ponad 1200 n
 source: "Dentonet"
 sourceType: "prasa"
 url: "https://dentonet.pl/rekordowy-dyzur-lekarza-prawie-176-godzin/"
+thumb: "dentonet-rekordowy-dyzur-176-godzin.webp"
 date: 2014-09-19
 category: "wieloetatowosc"
 tags: ["czas pracy", "PIP", "nadgodziny", "opt-out"]

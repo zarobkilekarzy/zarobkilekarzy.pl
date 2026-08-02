@@ -3,6 +3,7 @@ title: "Ponad 22 kandydatów na jedno miejsce — oblężenie na kierunku lekars
 source: "Rzeczpospolita"
 sourceType: "prasa"
 url: "https://www.rp.pl/spoleczenstwo/art44805151-ponad-dwudziestu-kandydatow-na-jedno-miejsce-oblezenie-na-kierunku-lekarskim"
+thumb: "rp-oblezenie-kierunek-lekarski.webp"
 date: 2026-07-10
 category: "system"
 tags: ["studia lekarskie", "reglamentacja", "limity", "konkurencja", "podaż lekarzy"]

@@ -3,6 +3,7 @@ title: "Nawet 2 tys. zł za godzinę pracy lekarza — ekspertka: to symptom, ni
 source: "Wprost"
 sourceType: "prasa"
 url: "https://biznes.wprost.pl/finanse-i-inwestycje/12377790/nawet-2-tys-zl-za-godzine-pracy-lekarza-ekspertka-wyjasnia-problem-szpitali.html"
+thumb: "wprost-2-tys-godzina-deficyt.webp"
 date: 2026-07-03
 category: "wynagrodzenia"
 tags: ["stawki", "deficyt specjalistów", "zadłużenie szpitali", "SOR"]

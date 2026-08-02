@@ -3,6 +3,7 @@ title: "Afera akredytacyjna a nowe kierunki lekarskie. Lekarze domagają się we
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Nauka/Afera-akredytacyjna-a-nowe-kierunki-lekarskie-Lekarze-domagaja-sie-weryfikacji-uczelni,285474,9.html"
+thumb: "rynekzdrowia-afera-akredytacyjna-kierunki.webp"
 date: 2026-06-18
 category: "system"
 tags: ["dostęp do zawodu", "kształcenie", "PKA", "akredytacja", "NRL"]

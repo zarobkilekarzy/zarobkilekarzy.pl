@@ -3,6 +3,7 @@ title: "Inowrocław: dentysta stanie przed sądem za wyłudzenie ponad 700 tys. 
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Prawo/Inowroclaw-dentysta-stanie-przed-sadem-za-wyludzenie-ponad-700-tys-zl,180063,2.html"
+thumb: "rynekzdrowia-inowroclaw-dentysta-wyludzenie.webp"
 date: 2018-01-06
 category: "system"
 tags: ["refundacja", "nadużycia", "rozliczenia", "NFZ", "stomatologia"]

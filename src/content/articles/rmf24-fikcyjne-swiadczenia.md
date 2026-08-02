@@ -3,6 +3,7 @@ title: "Fikcyjne świadczenia medyczne? NFZ zażądał zwrotu pieniędzy"
 source: "RMF24"
 sourceType: "prasa"
 url: "https://www.rmf24.pl/regiony/trojmiasto/news-fikcyjne-swiadczenia-medyczne-nfz-zazadal-zwrotu-pieniedzy,nId,7752343"
+thumb: "rmf24-fikcyjne-swiadczenia.webp"
 date: 2024-08-08
 category: "kontrakty"
 tags: ["rozliczenia", "nadużycia", "NFZ"]

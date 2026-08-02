@@ -3,6 +3,7 @@ title: "Te zabiegi medycyny estetycznej wykona tylko lekarz. Stanowisko Minister
 source: "DOZ.pl"
 sourceType: "prasa"
 url: "https://www.doz.pl/czytelnia/a18563-Te_zabiegi_medycyny_estetycznej_wykona_tylko_lekarz_Jest_stanowisko_Ministerstwa_Zdrowia"
+thumb: "doz-kosmetolodzy-zabiegi-lekarze.webp"
 date: 2026-02-03
 category: "system"
 tags: ["medycyna estetyczna", "kosmetolodzy", "reglamentacja", "PWZ"]

@@ -3,6 +3,7 @@ title: "W dzień otwarcia centrum onkologii dziecięcej w Zabrzu odszedł cały 
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Serwis-Onkologia/Nagle-wszyscy-lekarze-odeszli-W-dzien-otwarcia-centrum-onkologii-dla-dzieci,286305,1013.html"
+thumb: "rynekzdrowia-zabrze-onkolodzy-odeszli.webp"
 date: 2026-07-05
 category: "system"
 tags: ["onkologia dziecięca", "kadry", "Zabrze", "bezpieczeństwo pacjentów"]

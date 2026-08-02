@@ -3,6 +3,7 @@ title: "Ponad 16 mld zł straty NFZ w 2023 r. Jedną z przyczyn ustawa o minimal
 source: "Puls Medycyny"
 sourceType: "prasa"
 url: "https://pulsmedycyny.pl/kadry/menedzerowie-ochrony-zdrowia/ponad-16-mld-zl-straty-nfz-w-2023-r-jedna-z-przyczyn-ustawa-o-minimalnym-wynagrodzeniu/"
+thumb: "pulsmedycyny-strata-nfz-2023.webp"
 date: 2024-09-14
 category: "system"
 tags: ["NFZ", "finanse", "ustawa płacowa"]

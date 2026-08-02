@@ -3,6 +3,7 @@ title: "Sejm uchwalił ustawę o powiązaniu informacji o wynagrodzeniach medyk�
 source: "Gazeta.pl"
 sourceType: "prasa"
 url: "https://wiadomosci.gazeta.pl/polityka/7,198012,32864666,sejm-uchwalil-ustawe-o-powiazaniu-informacji-o-wynagrodzeniach.html"
+thumb: "gazeta-sejm-ustawa-pesel.webp"
 date: 2026-06-19
 category: "system"
 tags: ["ustawa", "PESEL", "PWZ", "jawność", "AOTMiT"]

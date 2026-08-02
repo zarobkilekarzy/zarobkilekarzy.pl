@@ -3,6 +3,7 @@ title: "Za mało czy za dużo lekarzy? Lekarskie lobby nie może się zdecydowa�
 source: "OKO.press"
 sourceType: "analiza"
 url: "https://oko.press/mamy-za-malo-czy-za-duzo-lekarzy-lekarskie-lobby-nie-moze-sie-zdecydowac"
+thumb: "okopress-lobby-za-duzo-za-malo.webp"
 date: 2026-06-18
 category: "system"
 tags: ["reglamentacja", "podaż lekarzy", "NIL", "kontrakty"]

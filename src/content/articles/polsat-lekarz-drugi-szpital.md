@@ -3,6 +3,7 @@ title: "Lekarz milioner dorabiał w innym szpitalu. Ponadstandardowe wynagrodzen
 source: "Polsat News"
 sourceType: "prasa"
 url: "https://www.polsatnews.pl/wiadomosc/2026-06-18/lekarz-milioner-dorabial-w-innym-szpitalu-ponadstandardowe-wynagrodzenie/"
+thumb: "polsat-lekarz-drugi-szpital.webp"
 date: 2026-06-18
 category: "wieloetatowosc"
 tags: ["wieloetatowość", "SOR", "godziny pracy", "kontrakty"]

@@ -3,6 +3,7 @@ title: "Limit 240 zł za godzinę i jawność kontraktów — MZ przedstawia pla
 source: "Portal Samorządowy"
 sourceType: "prasa"
 url: "https://www.portalsamorzadowy.pl/ochrona-zdrowia/nie-wiecej-niz-240-zl-za-godzine-pracy-medykow-minister-zdrowia-przedstawila-plan-reform,667911.html"
+thumb: "portalsamorzadowy-limit-240-jawnosc-reforma.webp"
 date: 2026-07-08
 category: "wynagrodzenia"
 tags: ["jawność", "kontrakty", "wynagrodzenia", "czas pracy", "wieloetatowość", "kolejki", "reforma"]

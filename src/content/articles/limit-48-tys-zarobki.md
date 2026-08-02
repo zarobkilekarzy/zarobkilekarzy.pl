@@ -3,6 +3,7 @@ title: "48 000 zł miesięcznie. Padła pierwsza propozycja limitu dla zarobków
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/48-000-zl-miesiecznie-Padla-pierwsza-propozycja-limitu-dla-zarobkow-lekarza,277199,1.html"
+thumb: "limit-48-tys-zarobki.webp"
 date: 2025-10-27
 category: "wynagrodzenia"
 tags: ["limit zarobków", "kontrakty", "polityka zdrowotna"]

@@ -3,6 +3,7 @@ title: "Na zdrowie wydajemy trzy razy więcej niż dekadę temu, a kolejki do le
 source: "Forsal"
 sourceType: "analiza"
 url: "https://forsal.pl/kraj/artykuly/11268141,na-zdrowie-wydajemy-trzy-razy-wiecej-niz-dekade-temu-a-kolejki-do-lek.html"
+thumb: "forsal-naklady-3x-kolejki.webp"
 date: 2026-06-26
 category: "system"
 tags: ["nakłady", "kolejki", "NFZ", "alokacja", "podwyżki"]

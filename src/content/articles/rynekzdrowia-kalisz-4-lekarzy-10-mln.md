@@ -3,6 +3,7 @@ title: "Kalisz: czterech lekarzy jednego szpitala na kontraktach ≈ 10 mln zł 
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Szpital-w-Kaliszu-ma-placic-czterem-lekarzom-10-mln-zl-rocznie-Pielegniarka-chora-sytuacja-trwa,277827,1.html"
+thumb: "rynekzdrowia-kalisz-4-lekarzy-10-mln.webp"
 date: 2025-11-13
 category: "kontrakty"
 tags: ["kontrakty", "B2B", "szpital wojewódzki", "zadłużenie", "Kalisz", "NFZ"]

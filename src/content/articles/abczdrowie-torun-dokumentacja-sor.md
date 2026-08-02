@@ -3,6 +3,7 @@ title: "Toruń: zarzuty o »kreatywną dokumentację« dyżurów na SOR i zastra
 source: "WP abcZdrowie"
 sourceType: "prasa"
 url: "https://portal.abczdrowie.pl/kreatywna-dokumentacja-w-toruniu-sygnalisci-byli-zastraszani/7303160595695968a"
+thumb: "abczdrowie-torun-dokumentacja-sor.webp"
 date: 2026-07-03
 category: "system"
 tags: ["dokumentacja", "SOR", "dyżury", "sygnaliści", "nieprzejrzystość", "bezpieczeństwo pacjenta"]

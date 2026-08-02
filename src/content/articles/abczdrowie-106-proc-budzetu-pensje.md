@@ -3,6 +3,7 @@ title: "„W niektórych szpitalach 106 proc. budżetu idzie na pensje”. MZ ch
 source: "abcZdrowie"
 sourceType: "prasa"
 url: "https://portal.abczdrowie.pl/pensje-pochlaniaja-wiecej-niz-caly-budzet-szpitala-mz-zapowiada-zmiany/7283655957841984a"
+thumb: "abczdrowie-106-proc-budzetu-pensje.webp"
 date: 2026-05-08
 category: "system"
 tags: ["udział płac", "budżet szpitala", "spór o liczbę", "nieprzejrzystość"]

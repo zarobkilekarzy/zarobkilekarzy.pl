@@ -3,6 +3,7 @@ title: "NFZ opóźnia płatności za nadwykonania. Pacjentów mogą czekać dłu
 source: "TVN24"
 sourceType: "prasa"
 url: "https://tvn24.pl/zdrowie/nfz-opoznia-platnosci-szpitalom-za-nadwykonania-pacjentow-moga-czekac-dluzsze-kolejki-st9123466"
+thumb: "tvn24-nfz-nadwykonania-po-roku.webp"
 date: 2026-07-01
 category: "kolejki"
 tags: ["NFZ", "nadwykonania", "kolejki", "limity"]

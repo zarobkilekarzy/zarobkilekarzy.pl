@@ -3,6 +3,7 @@ title: "Dyrektor-lekarz pracował niemal non stop — do szpitala w Tomaszowie L
 source: "Money.pl"
 sourceType: "prasa"
 url: "https://www.money.pl/praca/wykrecil-864-tys-zl-jako-dyrektor-i-lekarz-pracowal-niemal-non-stop-7304920814070176a.html"
+thumb: "money-tomaszow-dyrektor-pip.webp"
 date: 2026-07-07
 category: "wieloetatowosc"
 tags: ["czas pracy", "PIP", "dyrektor", "kontrakt", "Tomaszów Lubelski"]

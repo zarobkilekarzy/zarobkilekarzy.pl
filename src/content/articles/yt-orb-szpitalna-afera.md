@@ -3,6 +3,7 @@ title: "Szpitalna afera Koalicji Obywatelskiej — czy pogrąży Tuska?"
 source: "ORB (YouTube)"
 sourceType: "wideo"
 url: "https://www.youtube.com/watch?v=w2MPy0jz0J0"
+thumb: "yt-orb-szpitalna-afera.webp"
 date: 2026-06-17
 category: "system"
 tags: ["wideo", "afera", "szpitale", "polityka"]

@@ -3,6 +3,7 @@ title: "100 tys. zł to nie wszystko. Ujawniono najwyższe zarobki lekarzy na Ś
 source: "Medonet"
 sourceType: "analiza"
 url: "https://www.medonet.pl/biznes-system-i-zdrowie/trendy-w-ochronie-zdrowia/100-tys-zl-to-nie-wszystko-ujawniono-najwyzsze-zarobki-lekarzy-na-slasku/zbdlmlz"
+thumb: "medonet-slask-najwyzsze-zarobki.webp"
 date: 2026-03-01
 category: "wynagrodzenia"
 tags: ["kontrakty", "NFZ", "szpitale wojewódzkie", "kontrakt vs etat", "dokument publiczny"]

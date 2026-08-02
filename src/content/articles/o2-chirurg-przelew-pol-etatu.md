@@ -3,6 +3,7 @@ title: "Lekarz pokazał przelew: 4621 zł brutto za pół etatu"
 source: "Biznes o2"
 sourceType: "prasa"
 url: "https://biznes.o2.pl/biznes/lekarz-pokazal-przelew-gotowi-tyle-dostal-za-maj-7298149773453312a"
+thumb: "o2-chirurg-przelew-pol-etatu.webp"
 date: 2026-06-18
 category: "wynagrodzenia"
 tags: ["wynagrodzenia", "etat", "rozpiętość płac"]

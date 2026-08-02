@@ -3,6 +3,7 @@ title: "Kolejna afera w Szpitalu Południowym: pacjentce podano zarodek innej pa
 source: "Rzeczpospolita"
 sourceType: "prasa"
 url: "https://www.rp.pl/zdrowie/art44769271-kolejna-afera-w-szpitalu-poludniowym-pacjentce-podano-zarodek-innej-pary"
+thumb: "rp-invitro-zamiana-zarodkow.webp"
 date: 2026-07-03
 category: "system"
 tags: ["bezpieczeństwo pacjenta", "nadzór", "Szpital Południowy"]

@@ -3,6 +3,7 @@ title: "Ile zarabiają lekarze w Polsce? Rekordowy kontrakt za pół roku to 2,4
 source: "Medonet"
 sourceType: "analiza"
 url: "https://www.medonet.pl/biznes-system-i-zdrowie/trendy-w-ochronie-zdrowia/ile-zarabiaja-lekarze-w-polsce-rekordowy-kontrakt-za-pol-roku-to-24-mln-zl/14n48q6"
+thumb: "medonet-rekordowy-kontrakt-sokolka.webp"
 date: 2026-06-15
 category: "kontrakty"
 tags: ["kontrakty", "outsourcing", "szpitale"]

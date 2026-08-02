@@ -3,6 +3,7 @@ title: "Dolnośląska Izba Lekarska sprzeciwia się przekazywaniu NFZ danych o g
 source: "Dolnośląska Izba Lekarska"
 sourceType: "prasa"
 url: "https://dilnet.wroc.pl/nfz-zada-informacji-o-wypracowanych-godzinach-przez-lekarzy-zatrudnionych-w-sor/"
+thumb: "dilnet-izba-godziny-sor.webp"
 date: 2026-07-14
 category: "wieloetatowosc"
 tags: ["ewidencja czasu", "SOR", "NFZ", "NIL", "godziny"]

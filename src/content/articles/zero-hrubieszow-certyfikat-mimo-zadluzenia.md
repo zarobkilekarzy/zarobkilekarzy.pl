@@ -3,6 +3,7 @@ title: "Szpital w Hrubieszowie z certyfikatem »Wysoka Jakość w Ochronie Zdrow
 source: "Zero.pl"
 sourceType: "prasa"
 url: "https://zero.pl/news/szpital-w-hrubieszowie-certyfikat-wysoka-jakosc-w-ochronie-zdrowia-mimo-zadluzenia"
+thumb: "zero-hrubieszow-certyfikat-mimo-zadluzenia.webp"
 date: 2026-05-15
 category: "system"
 tags: ["zadłużenie szpitali", "jakość", "marketing", "środki publiczne"]

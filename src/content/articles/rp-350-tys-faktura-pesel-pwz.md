@@ -3,6 +3,7 @@ title: "300–350 tys. zł na jednej fakturze. „Rz” ujawnia dane AOTMiT i lu
 source: "Rzeczpospolita"
 sourceType: "prasa"
 url: "https://www.rp.pl/ochrona-zdrowia/art44661031-nawet-350-tys-zl-miesiecznie-tyle-zarobil-z-pieniedzy-podatnikow-najlepiej-wynagradzany-lekarz-w-polsce"
+thumb: "rp-350-tys-faktura-pesel-pwz.webp"
 date: 2026-06-22
 category: "wynagrodzenia"
 tags: ["jawność", "PESEL", "PWZ", "AOTMiT", "kontrakty", "spółdzielnie lekarskie"]

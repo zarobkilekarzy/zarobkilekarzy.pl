@@ -3,6 +3,7 @@ title: "Nawet 26 tys. zł za godzinę, ponad 300 tys. zł za dzień. Tyle mieli 
 source: "Rzeczpospolita"
 sourceType: "prasa"
 url: "https://www.rp.pl/ochrona-zdrowia/art44774891-300-tys-zl-za-dzien-pracy-tyle-mieli-zarabiac-neurochirurdzy-w-szpitalach"
+thumb: "rp-neurochirurdzy-26-tys-godzina.webp"
 date: 2026-07-06
 category: "kontrakty"
 tags: ["kontrakty", "NFZ", "nadużycia", "spółki lekarskie"]

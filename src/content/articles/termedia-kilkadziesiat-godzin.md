@@ -3,6 +3,7 @@ title: "Dlaczego pracują po kilkadziesiąt godzin? Bo mogą"
 source: "Menedżer Zdrowia (Termedia)"
 sourceType: "analiza"
 url: "https://www.termedia.pl/mz/Dlaczego-pracuja-po-kilkadziesiat-godzin-Bo-moga,55246.html"
+thumb: "termedia-kilkadziesiat-godzin.webp"
 date: 2024-03-08
 category: "wieloetatowosc"
 tags: ["wieloetatowość", "czas pracy", "kontrakty"]

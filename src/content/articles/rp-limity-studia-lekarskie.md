@@ -3,6 +3,7 @@ title: "Limity przyjęć na studia lekarskie nie będą zwiększane. „Nie ma p
 source: "Rzeczpospolita (edukacja.rp.pl)"
 sourceType: "prasa"
 url: "https://edukacja.rp.pl/uczelnie-wyzsze/art44588301-koniec-duzych-limitow-na-studia-medyczne-ten-rok-moze-byc-ostatni"
+thumb: "rp-limity-studia-lekarskie.webp"
 date: 2026-06-09
 category: "system"
 tags: ["limity przyjęć", "kadry", "reglamentacja podaży", "dostęp do zawodu"]

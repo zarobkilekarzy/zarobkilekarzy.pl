@@ -3,6 +3,7 @@ title: "Jawne zarobki lekarzy. Dr Sutkowski się sprzeciwia: będziemy wskazywan
 source: "Rzeczpospolita"
 sourceType: "prasa"
 url: "https://www.rp.pl/zdrowie/art44659131-jawne-zarobki-lekarzy-dr-sutkowski-sie-sprzeciwia-bedziemy-wskazywani-palcem"
+thumb: "rp-sutkowski-sprzeciw-jawnosc.webp"
 date: 2026-06-19
 category: "wynagrodzenia"
 tags: ["jawność", "wynagrodzenia", "głos drugiej strony"]

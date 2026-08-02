@@ -3,6 +3,7 @@ title: "„Lekarze turyści” — przyjeżdżają, robią opłacalny zabieg i j
 source: "Wirtualna Polska"
 sourceType: "prasa"
 url: "https://wiadomosci.wp.pl/dyrektor-szpitala-obejrzal-konferencje-ministry-ujawnia-nowy-skandal-lekarze-turysci-7305643749149024a"
+thumb: "wp-plonsk-lekarze-objazdowi.webp"
 date: 2026-07-09
 category: "wieloetatowosc"
 tags: ["kontrakty", "wieloetatowość", "dyżury", "wycena świadczeń", "jawność", "mazowieckie"]

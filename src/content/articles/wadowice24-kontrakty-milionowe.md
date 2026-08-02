@@ -3,6 +3,7 @@ title: "Wadowice: szpital sam ujawnił kontrakty. Anestezjolodzy po ponad 1,3 ml
 source: "Wadowice24.pl"
 sourceType: "prasa"
 url: "https://wadowice24.pl/pieniadze/w-wadowicach-tez-mamy-lekarzy-milionerow-szpital-ujawnil-kontrakty-kwoty-szokujace/"
+thumb: "wadowice24-kontrakty-milionowe.webp"
 date: 2026-07-06
 category: "kontrakty"
 tags: ["kontrakty", "B2B", "anestezjolodzy", "jawność", "szpital powiatowy"]

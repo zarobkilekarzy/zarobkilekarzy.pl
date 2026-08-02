@@ -3,6 +3,7 @@ title: "Profesor o szpitalach: dlaczego mam siedzieć w tej samej kolejce?"
 source: "Money.pl"
 sourceType: "analiza"
 url: "https://www.money.pl/biznes/dlaczego-wszyscy-maja-stac-w-tej-samej-kolejce-lekarz-pisze-o-skladkach-7298501706168320a.html"
+thumb: "money-jedrzejczak-zlota-karta.webp"
 date: 2026-06-19
 category: "kolejki"
 tags: ["kolejki", "składki", "dostęp", "głos w debacie"]

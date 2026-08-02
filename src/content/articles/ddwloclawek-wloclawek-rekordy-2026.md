@@ -3,6 +3,7 @@ title: "Milionowe zarobki lekarzy także we Włocławku — rekordzista rozliczy
 source: "DDWłocławek"
 sourceType: "prasa"
 url: "https://ddwloclawek.pl/pl/11_wiadomosci/95804_milionowe-zarobki-lekarzy-takze-w-szpitalu-we-wloclawku-rekordzista-dostal.html"
+thumb: "ddwloclawek-wloclawek-rekordy-2026.webp"
 date: 2026-07-08
 category: "wynagrodzenia"
 tags: ["kontrakty", "szpital wojewódzki", "jawność", "dane publiczne", "kujawsko-pomorskie"]

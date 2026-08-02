@@ -3,6 +3,7 @@ title: "Milioner w cztery miesiące — rekordowe rozliczenia w szpitalach wojew
 source: "Menedżer Zdrowia (Termedia)"
 sourceType: "analiza"
 url: "https://www.termedia.pl/mz/Milioner-w-cztery-miesiace,66022.html"
+thumb: "mazowieckie-rekordy-2025.webp"
 date: 2025-10-15
 category: "wynagrodzenia"
 tags: ["kontrakty", "NFZ", "szpitale wojewódzkie", "dokument publiczny"]

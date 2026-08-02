@@ -3,6 +3,7 @@ title: "Niemal wszystkie kontrole NFZ wykazują nieprawidłowości (97–99 proc
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Polityka-zdrowotna/Balicki-bez-zmian-personalnych-w-Ministerstwie-Zdrowia-i-NFZ-nie-bedzie-reform,286291,14.html"
+thumb: "rynekzdrowia-balicki-kontrole-nfz.webp"
 date: 2026-07-03
 category: "system"
 tags: ["kontrole NFZ", "nieprawidłowości", "prokuratura", "reformy"]

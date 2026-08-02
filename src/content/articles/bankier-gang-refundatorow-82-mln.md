@@ -3,6 +3,7 @@ title: "82 mln zł wyłudzone z NFZ. Rozbito gang refundatorów, 21 zatrzymanych
 source: "Bankier.pl"
 sourceType: "prasa"
 url: "https://www.bankier.pl/wiadomosc/Wyludzili-dziesiatki-milionow-z-NFZ-Sluzby-rozbily-gang-refundatorow-8986434.html"
+thumb: "bankier-gang-refundatorow-82-mln.webp"
 date: 2025-07-30
 category: "system"
 tags: ["refundacja", "nadużycia", "recepty", "NFZ"]

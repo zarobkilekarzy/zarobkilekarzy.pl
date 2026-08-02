@@ -3,6 +3,7 @@ title: "Zapytaliśmy 570 szpitali, ile płacą lekarzom — jedna dyrektorka gro
 source: "TVN24"
 sourceType: "prasa"
 url: "https://tvn24.pl/polska/ile-zarabiaja-lekarze-wyslalismy-pytania-do-ponad-500-szpitali-st9136735"
+thumb: "tvn24-570-szpitali-mapa-plac.webp"
 date: 2026-07-10
 category: "wynagrodzenia"
 tags: ["jawność", "kontrakty", "informacja publiczna", "mapa płac", "szpitale wojewódzkie"]

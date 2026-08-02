@@ -1,10 +1,8 @@
 ---
 import type { Page } from 'astro';
 import type { CollectionEntry } from 'astro:content';
-import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ArticleCard from './ArticleCard.astro';
-import ZglosArtykul from './ZglosArtykul.astro';
 import { CATEGORY_LABELS, CATEGORY_ORDER } from '../lib/categories';
 
 interface Props {
@@ -13,10 +11,6 @@ interface Props {
   basePath: string;
 }
 const { page, activeCategory = null, basePath } = Astro.props;
-
-// Pełna lista URL-i do wykrywania duplikatów w „Zgłoś artykuł" — niezależnie od
-// bieżącej strony/kategorii.
-const allUrls = (await getCollection('articles')).map((a) => a.data.url);
 
 const activeKey = activeCategory ?? 'all';
 const filters = [
@@ -130,8 +124,6 @@ const nextHref = page.currentPage < page.lastPage ? pageHref(page.currentPage + 
       }
     </div>
   </section>
-
-  <ZglosArtykul urls={allUrls} />
 </BaseLayout>
 
 <style>

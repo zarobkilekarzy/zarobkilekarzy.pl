@@ -3,6 +3,7 @@ title: "Wicepremier: prezes NFZ powinien zostać zdymisjonowany"
 source: "TVN24"
 sourceType: "prasa"
 url: "https://tvn24.pl/polska/krzysztof-gawkowski-prezes-nfz-filip-nowak-powinien-zostac-zdymisjonowany-st9120368"
+thumb: "tvn24-dymisja-prezesa-nfz.webp"
 date: 2026-06-30
 category: "system"
 tags: ["NFZ", "nadzór", "polityka"]

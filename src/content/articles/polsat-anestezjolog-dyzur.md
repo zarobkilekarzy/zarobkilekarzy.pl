@@ -3,6 +3,7 @@ title: "57-letni anestezjolog zmarł na dyżurze; prokuratura badała godziny pr
 source: "Polsat News"
 sourceType: "prasa"
 url: "https://www.polsatnews.pl/wiadomosc/2016-08-24/57-letni-anestezjolog-zmarl-na-dyzurze-sprawe-bada-prokuratura/"
+thumb: "polsat-anestezjolog-dyzur.webp"
 date: 2016-08-24
 category: "wieloetatowosc"
 tags: ["czas pracy", "dyżury", "przepracowanie", "bezpieczeństwo pacjenta"]

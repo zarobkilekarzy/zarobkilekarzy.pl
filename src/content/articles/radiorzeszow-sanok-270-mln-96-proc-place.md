@@ -3,6 +3,7 @@ title: "Szpital w Sanoku: 270 mln zł długu, ponad 96 proc. środków z NFZ poc
 source: "Radio Rzeszów"
 sourceType: "prasa"
 url: "https://radio.rzeszow.pl/337880/dramatyczna-sytuacja-szpitala-w-sanoku-zadluzenie-siega-270-milionow-zlotych/"
+thumb: "radiorzeszow-sanok-270-mln-96-proc-place.webp"
 date: 2026-07-16
 category: "wynagrodzenia"
 tags: ["zadłużenie", "wynagrodzenia", "budżet szpitala", "Sanok", "NFZ"]

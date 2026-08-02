@@ -3,6 +3,7 @@ title: "Lekarze stanęli w obronie zwolnionego kolegi. Mówią o „prowokacji�
 source: "abcZdrowie"
 sourceType: "prasa"
 url: "https://portal.abczdrowie.pl/lekarze-staneli-w-obronie-dawida-kacprzyka-mowia-o-prowokacji/7303101062269344a"
+thumb: "abczdrowie-lekarze-bronia-kacprzyka.webp"
 date: 2026-07-02
 category: "system"
 tags: ["jawność", "środowisko lekarskie", "wieloetatowość"]

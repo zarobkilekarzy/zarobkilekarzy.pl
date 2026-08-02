@@ -3,6 +3,7 @@ title: "Cięcia NFZ w badaniach: po miesiącu sprawdzamy kolejki. Uderzenie w pa
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Ciecia-NFZ-w-badaniach-po-miesiacu-sprawdzamy-kolejki-Uderzenie-w-pacjentow,284117,1.html"
+thumb: "rynekzdrowia-ciecia-nfz-badania-kolejki.webp"
 date: 2026-05-09
 category: "kolejki"
 tags: ["NFZ", "diagnostyka", "kolejki", "limity"]

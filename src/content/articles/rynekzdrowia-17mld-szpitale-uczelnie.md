@@ -3,6 +3,7 @@ title: "Historyczny zastrzyk dla ochrony zdrowia. 17 mld zł dla szpitali i ucze
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Historyczny-zastrzyk-dla-ochrony-zdrowia-17-mld-zl-dla-szpitali-i-uczelni-medycznych,285401,1.html"
+thumb: "rynekzdrowia-17mld-szpitale-uczelnie.webp"
 date: 2026-06-12
 category: "system"
 tags: ["KPO", "finansowanie", "szpitale", "inwestycje"]

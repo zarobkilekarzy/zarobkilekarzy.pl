@@ -3,6 +3,7 @@ title: "Trzej lekarze wystawili 56,6 tys. zwolnień L4 w rok. ZUS kontroluje rek
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Polska-i-swiat/Wystawili-56-6-tys-zwolnien-L4-w-rok-ZUS-kontroluje-trzech-lekarzy-rekordzistow-z-Wielkopolski,285752,15.html"
+thumb: "rynekzdrowia-l4-56-tys-zus-wielkopolska.webp"
 date: 2026-06-23
 category: "system"
 tags: ["L4", "ZUS", "wyłudzenia", "zwolnieniomaty", "kontrola"]

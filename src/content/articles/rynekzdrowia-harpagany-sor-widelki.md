@@ -3,6 +3,7 @@ title: "Dyrektor o „harpaganach SOR”: 50–60 tys. zł miesięcznie to kwoty
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Dyrektor-i-lekarz-o-harpaganach-SOR-50-60-tys-miesiecznie-to-kwoty-akceptowalne,286432,1.html"
+thumb: "rynekzdrowia-harpagany-sor-widelki.webp"
 date: 2026-07-08
 category: "kontrakty"
 tags: ["wynagrodzenia", "kontrakty", "SOR", "dyżury", "górne widełki"]

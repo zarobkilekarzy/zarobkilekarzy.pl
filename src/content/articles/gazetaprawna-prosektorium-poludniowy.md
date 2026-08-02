@@ -3,6 +3,7 @@ title: "Prosektorium Szpitala Południowego: nielegalny cennik i bezczeszczenie 
 source: "Gazeta Prawna"
 sourceType: "prasa"
 url: "https://www.gazetaprawna.pl/wiadomosci/kraj/artykuly/11270590,zwolnienie-koordynatora-prosektorium-szpital-poludniowy-afera-ceny.html"
+thumb: "gazetaprawna-prosektorium-poludniowy.webp"
 date: 2026-07-01
 category: "system"
 tags: ["Szpital Południowy", "korupcja", "nadzór", "prokuratura"]

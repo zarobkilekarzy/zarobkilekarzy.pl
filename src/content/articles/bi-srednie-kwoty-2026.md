@@ -3,6 +3,7 @@ title: "Ile zarabia lekarz? Oto średnie kwoty w 2026 r."
 source: "Business Insider Polska"
 sourceType: "analiza"
 url: "https://businessinsider.com.pl/finanse/ile-zarabia-lekarz-oto-srednie-kwoty-w-2026-r/mz6p1q3"
+thumb: "bi-srednie-kwoty-2026.webp"
 date: 2026-06-10
 category: "wynagrodzenia"
 tags: ["wynagrodzenia", "etat", "kontrakty"]

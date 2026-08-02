@@ -3,6 +3,7 @@ title: "Sondaż: jawność kontraktów lekarskich ze środków publicznych to ro
 source: "Onet / UCE Research"
 sourceType: "prasa"
 url: "https://wiadomosci.onet.pl/kraj/polacy-chca-wiedziec-ile-zarabiaja-lekarze-sa-wyniki-nowego-sondazu/v840y3y"
+thumb: "onet-sondaz-jawnosc-21-9.webp"
 date: 2026-06-26
 category: "system"
 tags: ["jawność", "sondaż", "opinia publiczna", "poparcie"]

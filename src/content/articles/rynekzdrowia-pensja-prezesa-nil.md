@@ -3,6 +3,7 @@ title: "Tajemnica pensji prezesa NIL odkryta. Jankowski potwierdza kwotę"
 source: "Rynek Zdrowia"
 sourceType: "prasa"
 url: "https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Tajemnica-pensji-prezesa-NIL-odkryta-Ujawnilismy-uchwaly-Jankowski-potwierdza-kwote,284388,1.html"
+thumb: "rynekzdrowia-pensja-prezesa-nil.webp"
 date: 2026-05-15
 category: "wynagrodzenia"
 tags: ["jawność", "NIL", "samorząd lekarski"]

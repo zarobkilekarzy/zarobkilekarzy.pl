@@ -3,6 +3,7 @@ title: "Kolejne 57 tys. zł dla minister zdrowia. Szpitalna spółka płaci jej 
 source: "Wirtualna Polska"
 sourceType: "prasa"
 url: "https://wiadomosci.wp.pl/57-tys-zl-dla-minister-zdrowia-szpitalna-spolka-ciagle-jej-placi-takze-w-2026-roku-7303444829653408a"
+thumb: "wp-minister-zakaz-konkurencji.webp"
 date: 2026-07-03
 category: "system"
 tags: ["konflikt interesów", "nadzór", "jawność", "oświadczenia majątkowe"]

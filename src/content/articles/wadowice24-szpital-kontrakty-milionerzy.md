@@ -3,6 +3,7 @@ title: "W Wadowicach też mamy lekarzy milionerów — szpital ujawnił kontrakt
 source: "Wadowice24.pl"
 sourceType: "prasa"
 url: "https://wadowice24.pl/pieniadze/w-wadowicach-tez-mamy-lekarzy-milionerow-szpital-ujawnil-kontrakty-kwoty-szokujace/"
+thumb: "wadowice24-szpital-kontrakty-milionerzy.webp"
 date: 2026-07-06
 category: "wynagrodzenia"
 tags: ["kontrakty", "NFZ", "szpitale powiatowe", "anestezjologia", "jawność", "dokument publiczny"]

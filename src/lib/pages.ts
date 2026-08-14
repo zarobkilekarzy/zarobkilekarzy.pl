@@ -122,7 +122,7 @@ export const strony: Record<string, Strona> = {
     dzial: 'dane',
     tytul: 'Przeglądarka monitoringu płac lekarzy',
     opis: 'Wszystkie 1358 publicznych placówek, do których Watchdog Polska wysłał wniosek o wynagrodzenia lekarzy: kto ujawnił dane, kto odmówił, kto milczy — z agregatami płac tam, gdzie padły pełne listy. Wyszukiwarka, filtry (w tym sieć szpitali) i link do każdej sprawy u źródła.',
-    tematy: ['jawnosc', 'pieniadz-nfz'],
+    tematy: ['pieniadz-nfz', 'jawnosc'],
   },
   '/dane/zarobki-ujawnione-listy': {
     dzial: 'dane',
@@ -268,7 +268,7 @@ export const strony: Record<string, Strona> = {
     dzial: 'analizy',
     tytul: 'Lekarze-radni: jedyni, których dochód widać w całości',
     opis: 'Lekarz, który zasiada w radzie, składa jawne oświadczenie majątkowe — i wtedy widać jego pełny roczny dochód z praktyki, a nie zapłatę jednej placówki. W 183 takich oświadczeniach mediana to ok. 633 tys. zł, a 30 osób przekroczyło milion. Tabela z linkami do BIP. Sedno: tych ludzi widać przez przypadek pełnienia funkcji, a pozostałych ~165 tys. lekarzy nie widać wcale.',
-    tematy: ['jawnosc', 'pieniadz-nfz'],
+    tematy: ['pieniadz-nfz', 'jawnosc'],
   },
   '/analizy/odpowiedzialnosc-zawodowa-lekarzy': {
     dzial: 'analizy',

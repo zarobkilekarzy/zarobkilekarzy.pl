@@ -49,6 +49,7 @@ const N_DANE = placowki.filter((p) => p.kat === 'A').length;
 const N_ODMOWA = placowki.filter((p) => p.kat === 'B').length;
 const N_CISZA = placowki.filter((p) => p.kat === 'none').length;
 const N_LISTY = placowki.filter((p) => p.n).length;
+const N_PSZ = placowki.filter((p) => p.psz).length;
 
 const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabiaja-lekarze';
 ---
@@ -118,6 +119,10 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
           <input type="checkbox" id="wm-tylko-listy" />
           <span>tylko z listami płac ({N_LISTY})</span>
         </label>
+        <label class="wm-check">
+          <input type="checkbox" id="wm-tylko-psz" />
+          <span>tylko sieć szpitali ({N_PSZ})</span>
+        </label>
       </form>
       <p class="wm-count" id="wm-count" aria-live="polite">Placówek: {fmt(N)}</p>
 
@@ -146,6 +151,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                   data-nazwa={`${p.nazwa} ${p.miasto}`.toLowerCase()}
                   data-woj={p.woj}
                   data-kat={p.kat}
+                  data-psz={p.psz ? '1' : '0'}
                   data-n={p.n ?? -1}
                   data-fundusz={p.fundusz ?? -1}
                   data-mediana={p.mediana ?? -1}
@@ -157,6 +163,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                   <td class="wm-name">
                     <a href={`https://fedrowanie.siecobywatelska.pl/sprawy/${p.slug}`} target="_blank" rel="noopener noreferrer">{p.nazwa}</a>
                     {p.miasto && <span class="wm-city">{p.miasto}</span>}
+                    {p.psz && <span class="wm-psz" title={`Sieć szpitali (PSZ)${p.pszPoziom ? ' — ' + p.pszPoziom : ''}`}>sieć</span>}
                   </td>
                   <td class="wm-woj">{p.woj}</td>
                   <td><span class={`wm-badge is-${k.cls}`} title={k.desc}>{k.label}</span></td>
@@ -215,6 +222,15 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
             <strong>Każda kwota to zapłata jednej placówki.</strong> Lekarz pracujący w kilku
             miejscach ma tu tylko fragment przychodu — sum per osoba nikt w Polsce nie zna,
             bo nie ma jawnego rejestru per&nbsp;PWZ. To dolne granice.
+          </li>
+          <li>
+            Znacznik <strong>„sieć”</strong> oznacza szpital zakwalifikowany do
+            <strong> PSZ</strong> (podstawowego szpitalnego zabezpieczenia, czyli „sieci szpitali”) —
+            ma z mocy ustawy gwarantowaną umowę z NFZ finansowaną ryczałtem. To najtwardszy
+            przypadek obowiązku jawności: publiczny pieniądz płynie tam z automatu.
+            Dopasowaliśmy {N_PSZ} placówek do wykazów 16 oddziałów NFZ po kodzie gminy i nazwie;
+            gdzie dopasowanie było niepewne, <strong>celowo nie stawiamy znacznika</strong> —
+            jego brak nie dowodzi więc, że szpitala nie ma w sieci.
           </li>
           <li>
             <strong>Kolumnę „Odpowiedź” klasyfikuje automat</strong> platformy fedrowanie
@@ -285,6 +301,11 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
   .wm-name a { color: var(--ink); text-decoration-color: var(--line-2); }
   .wm-name a:hover { color: var(--brand-link); }
   .wm-city { display: block; font-size: 0.78rem; color: var(--ink-faint); }
+  .wm-psz {
+    display: inline-block; margin-top: 0.2rem; font-size: 0.66rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--brand-link);
+    border: 1px solid var(--line-2); border-radius: 999px; padding: 0.02rem 0.4rem;
+  }
   .wm-woj { white-space: nowrap; color: var(--ink-soft); }
 
   .wm-badge {
@@ -318,6 +339,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
     var woj = document.getElementById('wm-woj');
     var kat = document.getElementById('wm-kat');
     var tylkoListy = document.getElementById('wm-tylko-listy');
+    var tylkoPsz = document.getElementById('wm-tylko-psz');
     var perPage = document.getElementById('wm-pp');
     var count = document.getElementById('wm-count');
     var pager = { prev: document.getElementById('wm-prev'), next: document.getElementById('wm-next'), info: document.getElementById('wm-page') };
@@ -327,7 +349,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
     // DOM, którą ustawia sortowanie.
     function applyFilter() {
       var needle = q.value.trim().toLowerCase();
-      var w = woj.value, k = kat.value, listy = tylkoListy.checked;
+      var w = woj.value, k = kat.value, listy = tylkoListy.checked, psz = tylkoPsz.checked;
       // Iterujemy po tbody.rows — to kolejność po sortowaniu.
       var matched = [];
       for (var i = 0; i < tbody.rows.length; i++) {
@@ -336,7 +358,8 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
           (!needle || d.nazwa.indexOf(needle) !== -1) &&
           (!w || d.woj === w) &&
           (!k || d.kat === k) &&
-          (!listy || d.n !== '-1');
+          (!listy || d.n !== '-1') &&
+          (!psz || d.psz === '1');
         r.hidden = true;
         if (ok) matched.push(r);
       }
@@ -387,7 +410,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
       applyFilter();
     });
 
-    [q, woj, kat, tylkoListy, perPage].forEach(function (el) {
+    [q, woj, kat, tylkoListy, tylkoPsz, perPage].forEach(function (el) {
       el.addEventListener('input', function () { page = 1; applyFilter(); });
     });
     pager.prev.addEventListener('click', function () { if (page > 1) { page--; applyFilter(); } });

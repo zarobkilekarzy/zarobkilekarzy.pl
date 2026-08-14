@@ -55,14 +55,11 @@ const woj2025 = [
 ];
 
 // Anonimowy rozkład: roczne dochody radnych-lekarzy z jawnych oświadczeń majątkowych
-// (oddolne zestawienie — seria #konowałposting; każdą kwotę można sprawdzić w BIP właściwej
-// jednostki). Dochód z praktyki lekarskiej (nie przychód/obrót). Malejąco. Wpisy tylko-przychód,
-// nieczytelne oraz były radny (obecnie dyrektor) świadomie pominięte. Stan: 2026-07-19.
-const radniDochody = [
-  1491932, 1334692, 1313226, 1229440, 1212738, 1186294, 1078895, 1065886, 1040192, 1024636,
-  987192, 969570, 935753, 916009, 844387, 844330, 806843, 781032, 771564, 719721,
-  718902, 717159, 711179, 707986, 685544, 649570, 591359, 587746, 581708, 493248,
-];
+// (dokumenty publiczne w BIP; zbiór z src/data/radni-lekarze.json, generowany z bazy
+// researchu — pełny rozkład i tabela per-wiersz na /analizy/lekarze-radni).
+// Dochód z praktyki lekarskiej (nie przychód/obrót). JSON jest posortowany malejąco.
+import radniJson from '../../data/radni-lekarze.json';
+const radniDochody = radniJson.radni.map((r) => r.dochod);
 // Tablica jest malejąca → slice daje TOP i „resztę" bez ponownego sortowania.
 // Imiennie (paskami) pokazujemy tylko top 10; pozostałe zwijamy w statystyki zbiorcze.
 const rdMediana = (arr: number[]) => {
@@ -83,7 +80,7 @@ const radniReszta = radniDochody.slice(RADNI_TOP_N);
 const radniStat = {
   ...rdStat(radniDochody),
   nadMilion: radniDochody.filter((d) => d >= 1_000_000).length,
-  przychodMax: 3918517,
+  przychodMax: Math.max(...radniJson.radni.map((r) => r.przychod ?? 0)),
 };
 const resztaStat = rdStat(radniReszta);
 const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zawód)
@@ -438,7 +435,7 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
           <span class="fact-cap"><strong>Średnia</strong> tej samej grupy — zbliżona do mediany, więc rozkład bez skrajności.</span>
         </div>
         <div class="fact">
-          <span class="fact-num">{Math.round(resztaStat.min / 1000)}–{Math.round(resztaStat.max / 1000)} tys.</span>
+          <span class="fact-num">{Math.round(resztaStat.min / 1000)} tys.–{(resztaStat.max / 1e6).toFixed(2).replace('.', ',')} mln</span>
           <span class="fact-cap"><strong>Rozrzut</strong> reszty — od najniższego do najwyższego dochodu poza dziesiątką.</span>
         </div>
         <div class="fact">
@@ -448,7 +445,7 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
       </div>
       <p class="source-note" style="margin-top: 0.5rem">
         A to i tak <strong>dochód</strong>, nie obrót: u części radnych sam <strong>przychód</strong> praktyki
-        sięgał <strong>3,9 mln zł</strong> — inna, znacznie wyższa liczba.
+        sięgał <strong>{(radniStat.przychodMax / 1e6).toFixed(1).replace('.', ',')} mln zł</strong> — inna, znacznie wyższa liczba.
       </p>
 
       <div class="callout">
@@ -464,10 +461,11 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
       <p class="source-note">
         <strong>Metoda i zastrzeżenia.</strong> Oddolne zestawienie z <strong>jawnych oświadczeń
         majątkowych</strong> radnych-lekarzy (dokumenty publiczne w BIP właściwych jednostek) —
-        każdą kwotę można sprawdzić u źródła; jedną (Piotrków Tryb.) potwierdziliśmy z naszą bazą.
-        To <strong>dochód</strong> z działalności lekarskiej, nie przychód/obrót. To
-        <strong>grupa wyselekcjonowana</strong> (radni-lekarze), nie losowa próba — pokazuje
-        rozpiętość i lukę jawności, nie „medianę typowego lekarza”. Bez nazwisk — mechanizm, nie osoba.
+        każdą kwotę można sprawdzić u źródła. To <strong>dochód</strong> z działalności lekarskiej,
+        nie przychód/obrót. To <strong>grupa wyselekcjonowana</strong> (radni-lekarze), nie losowa
+        próba — pokazuje rozpiętość i lukę jawności, nie „medianę typowego lekarza”. Bez nazwisk —
+        mechanizm, nie osoba. Pełny rozkład, przekroje i tabela z linkami do oświadczeń:
+        <a href="/analizy/lekarze-radni/">analiza „Lekarze-radni”</a>.
       </p>
 
       <p class="pager"><a href="/dane/rozklad-wynagrodzen/">← Rozkład</a> · <a href="/dane/wedlug-specjalizacji/">Według specjalizacji →</a></p>

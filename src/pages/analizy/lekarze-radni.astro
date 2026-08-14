@@ -1,0 +1,346 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+import dataset from '../../data/radni-lekarze.json';
+
+// Analiza „Lekarze-radni": jedyna grupa lekarzy z JAWNYM pełnym rocznym dochodem
+// (oświadczenia majątkowe, BIP). Rdzeń: mechanizm jawności wybiórczej — widać ich
+// przez przypadek pełnienia funkcji, nie dzięki systemowi. Zasady:
+//  • BEZ NAZWISK (mechanizm, nie osoba) — ale z linkiem do oświadczenia u źródła;
+//  • statystyki NA DOCHODZIE (przychód ≠ dochód);
+//  • zbiór selekcjonowany — rozpiętość i luka jawności, nie mediana populacji;
+//  • dane zbierane maszynowo → wyraźne ostrzeżenie + weryfikacja przy źródle.
+// Dane: src/data/radni-lekarze.json z research/db/export-radni.mjs (lokalnie).
+// Sekcja-zajawka z top 10 jest na /dane/rekordy — tu NIE powtarzamy pasków top 10.
+
+const { radni, stan } = dataset;
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
+const tys = (n: number) => `${Math.round(n / 1000)} tys.`;
+
+const dochody = radni.map((r) => r.dochod); // JSON posortowany malejąco
+const N = dochody.length;
+const posortowane = [...dochody].sort((a, b) => a - b);
+const mediana = N % 2
+  ? posortowane[(N - 1) / 2]
+  : Math.round((posortowane[N / 2 - 1] + posortowane[N / 2]) / 2);
+const nadMilion = dochody.filter((d) => d >= 1_000_000).length;
+const nad500 = dochody.filter((d) => d > 500_000).length;
+const maxDochod = dochody[0];
+const maxPrzychod = Math.max(...radni.map((r) => r.przychod ?? 0));
+const zJdg = radni.filter((r) => /JDG|NZOZ|praktyka/i.test(r.forma ?? '')).length;
+const kobiety = radni.filter((r) => r.plec === 'kobieta').length;
+
+// Histogram dochodów (roczne brutto-dochody, nie przychody).
+const bands = [
+  { label: 'do 250 tys.', lo: 0, hi: 250_000, band: 'lo' },
+  { label: '250–500 tys.', lo: 250_000, hi: 500_000, band: 'lo' },
+  { label: '500–750 tys.', lo: 500_000, hi: 750_000, band: 'mid' },
+  { label: '750 tys.–1 mln', lo: 750_000, hi: 1_000_000, band: 'mid' },
+  { label: '1–1,5 mln', lo: 1_000_000, hi: 1_500_000, band: 'hi' },
+  { label: 'ponad 1,5 mln', lo: 1_500_000, hi: Infinity, band: 'top' },
+].map((b) => ({ ...b, n: dochody.filter((d) => d >= b.lo && d < b.hi).length }));
+const histMax = Math.max(...bands.map((b) => b.n));
+
+const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
+  day: 'numeric', month: 'long', year: 'numeric',
+}).format(new Date(stan + 'T12:00:00'));
+---
+
+<BaseLayout
+  title="Lekarze-radni: jedyni, których dochód widać w całości — zarobkilekarzy.pl"
+  description={`${N} lekarzy zasiadających w radach samorządów ma z mocy prawa jawny pełny roczny dochód — mediana ok. ${tys(mediana)} zł, ${nadMilion} osób ponad milion. Reszta ~165 tys. lekarzy pozostaje niewidoczna. Rozkład, przekroje i tabela z linkami do oświadczeń w BIP.`}
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/analizy/">Analizy</a> · Lekarze-radni</p>
+      <h1>Lekarze-radni: jedyni, których dochód widać w całości</h1>
+      <Aktualizacja zrodla=" · jawne oświadczenia majątkowe radnych (BIP jednostek samorządu)." />
+      <p class="lead">
+        Lekarz, który zostaje <strong>radnym</strong>, składa co roku jawne oświadczenie majątkowe —
+        i jego dochód z praktyki widzi każdy. Zebraliśmy <strong>{N} takich oświadczeń</strong>
+        (za lata 2023–2024). To jedyne w Polsce okno, przez które widać <strong>pełny roczny
+        dochód lekarza</strong> — nie zapłatę jednej placówki, lecz sumę ze wszystkich źródeł.
+        Mediana: <strong>ok. {tys(mediana)} zł</strong>. Co szósty — <strong>ponad milion</strong>.
+      </p>
+
+      <div class="rl-chips" role="group" aria-label="Podsumowanie zbioru">
+        <span class="rl-chip"><strong>{N}</strong> oświadczeń</span>
+        <span class="rl-chip"><strong>{tys(mediana)} zł</strong> mediana dochodu</span>
+        <span class="rl-chip"><strong>{nad500}</strong> ponad 500 tys.</span>
+        <span class="rl-chip is-hot"><strong>{nadMilion}</strong> ponad 1 mln</span>
+        <span class="rl-chip"><strong>{(maxDochod / 1e6).toFixed(2).replace('.', ',')} mln zł</strong> najwyższy dochód</span>
+      </div>
+
+      <!-- ————————————————— MECHANIZM (krótko) ————————————————— -->
+      <p>
+        Ta jawność nie jest zasługą systemu ochrony zdrowia — to <strong>produkt uboczny ustawy
+        samorządowej</strong>. Dochód lekarza staje się widoczny, bo <em>akurat</em> wygrał wybory;
+        jego kolega z tego samego oddziału, z tym samym kontraktem NFZ, pozostaje niewidoczny.
+        I nawet ta wymuszona jawność jest <strong>rozsypana po setkach BIP-ów</strong> — zwykle
+        jako skany PDF, bez żadnego centralnego zestawienia. Rejestr powiązany z numerem
+        <a href="/postulat/">PWZ</a> pokazywałby to samo — dla wszystkich i w jednym miejscu.
+        Kontrast „widać / nie widać” rozrysowany jest przy <a href="/dane/rekordy/">rekordach</a>.
+      </p>
+
+      <!-- ————————————————— ROZKŁAD ————————————————— -->
+      <h2>Rozkład: dochód, nie przychód</h2>
+      <p>
+        Kwoty poniżej to roczny <strong>dochód</strong> z działalności lekarskiej (po kosztach) —
+        nie przychód. Przychody bywają znacznie wyższe: rekordowy w zbiorze to
+        <strong>{(maxPrzychod / 1e6).toFixed(1).replace('.', ',')} mln zł</strong>.
+      </p>
+      <div class="rl-hist" role="img" aria-label={`Histogram rocznych dochodów ${N} lekarzy-radnych: ${bands.map((b) => `${b.label}: ${b.n}`).join(', ')}.`}>
+        {bands.map((b) => (
+          <div class="rl-hrow">
+            <span class="rl-hlabel">{b.label}</span>
+            <div class="rl-htrack"><div class={`rl-hbar is-${b.band}`} style={`width:${Math.round((b.n / histMax) * 100)}%`}></div></div>
+            <span class="rl-hval">{b.n}</span>
+          </div>
+        ))}
+      </div>
+      <p class="rl-cap">
+        Do pełnego obrazu: <strong>{zJdg} z {N}</strong> rozlicza praktykę przez działalność
+        gospodarczą lub własny NZOZ (kontekst: <a href="/mechanizmy/kontrakt-vs-etat/">kontrakt
+        vs etat</a>); kobiet jest {kobiety}, mężczyzn {N - kobiety}; roczniki głównie 1955–1975.
+        Zbiór jest <strong>selekcjonowany</strong> (lekarze, którzy kandydowali i wygrali) —
+        pokazuje rozpiętość, nie „medianę typowego lekarza”.
+      </p>
+
+      <!-- ————————————————— TABELA ————————————————— -->
+      <h2>Wszystkie {N} oświadczeń — przeglądaj sam</h2>
+      <p>
+        Bez nazwisk — konsekwentnie <strong>opisujemy mechanizm, nie osoby</strong>. Każdy wiersz
+        linkuje za to do oświadczenia (lub strony z oświadczeniami) w BIP, gdzie kwotę można
+        sprawdzić u źródła.
+      </p>
+
+      <form class="rl-controls" aria-label="Filtry tabeli">
+        <label class="rl-field rl-grow">
+          <span>Szukaj (rada, specjalizacja, forma)</span>
+          <input type="search" id="rl-q" placeholder="np. chirurg, sejmik, JDG…" autocomplete="off" />
+        </label>
+        <label class="rl-field">
+          <span>Na stronę</span>
+          <select id="rl-pp">
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="0">wszystkie</option>
+          </select>
+        </label>
+      </form>
+      <p class="rl-count" id="rl-count" aria-live="polite"></p>
+
+      <div class="rl-scroll" tabindex="0" role="region" aria-label="Tabela dochodów lekarzy-radnych">
+        <table class="rl-table" id="rl-table">
+          <thead>
+            <tr>
+              <th scope="col"><button type="button" data-sort="rada" data-type="text">Rada</button></th>
+              <th scope="col"><button type="button" data-sort="rok" data-type="num">Rok</button></th>
+              <th scope="col"><button type="button" data-sort="spec" data-type="text">Specjalizacja</button></th>
+              <th scope="col"><button type="button" data-sort="forma" data-type="text">Forma</button></th>
+              <th scope="col" class="num"><button type="button" data-sort="dochod" data-type="num">Dochód (zł/rok)</button></th>
+              <th scope="col" class="num"><button type="button" data-sort="przychod" data-type="num">Przychód</button></th>
+              <th scope="col">Źródło</th>
+            </tr>
+          </thead>
+          <tbody>
+            {radni.map((r) => (
+              <tr
+                data-szukaj={`${r.rada ?? ''} ${r.specjalizacja ?? ''} ${r.forma ?? ''}`.toLowerCase()}
+                data-rada={r.rada ?? ''}
+                data-rok={r.rok ?? -1}
+                data-spec={r.specjalizacja ?? ''}
+                data-forma={r.forma ?? ''}
+                data-dochod={r.dochod}
+                data-przychod={r.przychod ?? -1}
+              >
+                <td class="rl-rada">{r.rada}</td>
+                <td>{r.rok}</td>
+                <td>{r.specjalizacja}</td>
+                <td class="rl-forma">{r.forma}</td>
+                <td class="num"><strong>{fmt(r.dochod)}</strong></td>
+                <td class="num">{r.przychod ? fmt(r.przychod) : ''}</td>
+                <td>{r.link && <a href={r.link} target="_blank" rel="noopener noreferrer">BIP&nbsp;↗</a>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="rl-pager" aria-label="Stronicowanie tabeli">
+        <button type="button" id="rl-prev">‹ poprzednia</button>
+        <span id="rl-page" aria-live="polite"></span>
+        <button type="button" id="rl-next">następna ›</button>
+      </nav>
+
+      <div class="callout" style="border-left-color: var(--amber); background: var(--amber-50)">
+        <p>
+          <strong>Ostrzeżenie: dane zbierane maszynowo.</strong> Kwoty zostały odczytane
+          (częściowo automatycznie) ze skanów oświadczeń o różnej jakości — tabela
+          <strong> może zawierać błędy</strong>: literówki w kwotach, pomylony rok, przychód
+          wpisany jako dochód. Zanim zacytujesz konkretną liczbę, <strong>sprawdź ją
+          w oświadczeniu u źródła</strong> (link „BIP” w wierszu). Rok w tabeli to rok złożenia
+          oświadczenia; dochód dotyczy roku poprzedniego.
+        </p>
+      </div>
+
+      <!-- ————————————————— METODA ————————————————— -->
+      <p class="source-note">
+        <strong>Metoda.</strong> Oddolna kompilacja jawnych oświadczeń majątkowych radnych będących
+        lekarzami (dokumenty publiczne w BIP; stan zbioru: {STAN_HR}). Zestawienie udostępnione
+        dzięki uprzejmości użytkownika X
+        <a href="https://x.com/nicobogu" target="_blank" rel="noopener noreferrer">@nicobogu</a>.
+        Kwoty to dochód/przychód
+        z praktyki lekarskiej zadeklarowany w oświadczeniu. Bycie radnym i wysoki dochód to
+        <strong>nie zarzut</strong> — to legalne i jawne z mocy prawa; sednem jest asymetria:
+        widać tylko tych, których <em>przypadkiem</em> obejmuje ustawa samorządowa.
+      </p>
+
+      <p class="pager"><a href="/dane/rekordy/">← Rekordy</a> · <a href="/mechanizmy/brak-jawnosci/">Brak jawności →</a></p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .rl-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.1rem 0 1.6rem; }
+  .rl-chip {
+    font-size: 0.85rem; color: var(--ink-soft); background: var(--surface);
+    border: 1px solid var(--line-2); border-radius: 999px; padding: 0.3rem 0.75rem;
+  }
+  .rl-chip strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .rl-chip.is-hot { border-color: var(--alert); }
+  .rl-chip.is-hot strong { color: var(--alert); }
+
+  /* — histogram — */
+  .rl-hist { display: grid; gap: 0.4rem; margin: 1.1rem 0 0.8rem; }
+  .rl-hrow { display: grid; grid-template-columns: 9.5rem 1fr 2.5rem; gap: 0.6rem; align-items: center; }
+  .rl-hlabel { font-size: 0.82rem; color: var(--ink-soft); text-align: right; }
+  .rl-htrack { background: var(--paper); border-radius: 4px; height: 1.15rem; overflow: hidden; }
+  .rl-hbar { height: 100%; border-radius: 4px; min-width: 2px; }
+  .rl-hbar.is-lo { background: var(--neutral-fill); }
+  .rl-hbar.is-mid { background: var(--brand-link); }
+  .rl-hbar.is-hi { background: var(--amber); }
+  .rl-hbar.is-top { background: var(--alert); }
+  .rl-hval { font-size: 0.82rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .rl-cap { font-size: 0.9rem; color: var(--ink-soft); }
+
+  /* — kontrolki + tabela (wzorzec jak przeglądarka monitoringu) — */
+  .rl-controls {
+    display: flex; flex-wrap: wrap; gap: 0.9rem; align-items: end;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    padding: 0.9rem 1rem; margin-bottom: 0.6rem;
+  }
+  .rl-field { display: flex; flex-direction: column; gap: 0.25rem; }
+  .rl-grow { flex: 1 1 16rem; }
+  .rl-field span { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
+  .rl-field input, .rl-field select {
+    font: inherit; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line-2); border-radius: 8px; padding: 0.45rem 0.6rem; min-width: 8rem;
+  }
+  .rl-field input:focus-visible, .rl-field select:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 1px; }
+  .rl-count { font-size: 0.85rem; color: var(--ink-faint); margin: 0 0 0.9rem; }
+
+  .rl-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .rl-scroll:focus-visible { outline: 2px solid var(--brand-link); }
+  .rl-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 56rem; }
+  .rl-table th, .rl-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .rl-table thead th { position: sticky; top: 0; background: var(--paper); z-index: 1; border-bottom: 1px solid var(--line-2); padding: 0; }
+  .rl-table thead th:last-child { padding: 0.55rem 0.65rem; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); }
+  .rl-table thead button {
+    all: unset; box-sizing: border-box; display: block; width: 100%; cursor: pointer;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ink-soft); padding: 0.55rem 0.65rem; white-space: nowrap;
+  }
+  .rl-table thead button:hover { color: var(--brand-link); }
+  .rl-table thead button:focus-visible { outline: 2px solid var(--brand-link); outline-offset: -2px; }
+  .rl-table thead th[aria-sort] button { color: var(--brand-link); }
+  .rl-table thead th[aria-sort='ascending'] button::after { content: ' ↑'; }
+  .rl-table thead th[aria-sort='descending'] button::after { content: ' ↓'; }
+  .rl-table tbody tr:hover { background: var(--surface-2); }
+  .rl-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rl-rada { max-width: 16rem; }
+  .rl-forma { max-width: 12rem; }
+
+  .rl-pager { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 1rem 0 1.5rem; }
+  .rl-pager button {
+    font: inherit; font-size: 0.88rem; color: var(--brand-link); background: var(--surface);
+    border: 1px solid var(--line-2); border-radius: 8px; padding: 0.4rem 0.9rem; cursor: pointer;
+  }
+  .rl-pager button:hover:not(:disabled) { border-color: var(--brand-link); }
+  .rl-pager button:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 1px; }
+  .rl-pager button:disabled { color: var(--ink-faint); cursor: default; opacity: 0.6; }
+  .rl-pager span { font-size: 0.88rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+</style>
+
+<script is:inline>
+  (function () {
+    var table = document.getElementById('rl-table');
+    if (!table) return;
+    var tbody = table.tBodies[0];
+    var q = document.getElementById('rl-q');
+    var perPage = document.getElementById('rl-pp');
+    var count = document.getElementById('rl-count');
+    var pager = { prev: document.getElementById('rl-prev'), next: document.getElementById('rl-next'), info: document.getElementById('rl-page') };
+    var total = tbody.rows.length;
+    var page = 1;
+
+    function applyFilter() {
+      var needle = q.value.trim().toLowerCase();
+      var matched = [];
+      for (var i = 0; i < tbody.rows.length; i++) {
+        var r = tbody.rows[i];
+        var ok = !needle || r.dataset.szukaj.indexOf(needle) !== -1;
+        r.hidden = true;
+        if (ok) matched.push(r);
+      }
+      var pp = parseInt(perPage.value, 10) || matched.length || 1;
+      var pages = Math.max(1, Math.ceil(matched.length / pp));
+      if (page > pages) page = pages;
+      var start = (page - 1) * pp;
+      matched.slice(start, start + pp).forEach(function (r) { r.hidden = false; });
+      count.textContent = 'Oświadczeń: ' + matched.length + (matched.length < total ? ' (z ' + total + ')' : '');
+      pager.info.textContent = 'strona ' + page + ' z ' + pages;
+      pager.prev.disabled = page <= 1;
+      pager.next.disabled = page >= pages;
+    }
+
+    var current = { key: 'dochod', dir: -1 };
+    function applySort() {
+      var key = current.key, dir = current.dir;
+      var btn = table.querySelector('[data-sort="' + key + '"]');
+      var type = btn.dataset.type;
+      var sorted = Array.prototype.slice.call(tbody.rows).sort(function (a, b) {
+        if (type === 'num') {
+          var av = parseFloat(a.dataset[key]), bv = parseFloat(b.dataset[key]);
+          if (av === -1 && bv === -1) return 0;
+          if (av === -1) return 1;
+          if (bv === -1) return -1;
+          return (av - bv) * dir;
+        }
+        return a.dataset[key].localeCompare(b.dataset[key], 'pl') * dir;
+      });
+      for (var i = 0; i < sorted.length; i++) tbody.appendChild(sorted[i]);
+      var ths = table.tHead.rows[0].cells;
+      for (var j = 0; j < ths.length; j++) ths[j].removeAttribute('aria-sort');
+      btn.parentElement.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+    }
+
+    table.tHead.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-sort]');
+      if (!btn) return;
+      var key = btn.dataset.sort;
+      if (current.key === key) current.dir = -current.dir;
+      else current = { key: key, dir: btn.dataset.type === 'num' ? -1 : 1 };
+      page = 1;
+      applySort();
+      applyFilter();
+    });
+    [q, perPage].forEach(function (el) {
+      el.addEventListener('input', function () { page = 1; applyFilter(); });
+    });
+    pager.prev.addEventListener('click', function () { if (page > 1) { page--; applyFilter(); } });
+    pager.next.addEventListener('click', function () { page++; applyFilter(); });
+    applySort();
+    applyFilter();
+  })();
+</script>

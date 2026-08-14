@@ -58,6 +58,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Ile trafia do jednego lekarza',
     subtitle: '54 szpitale ujawniły pełne listy płac. Mediana ~200 tys. zł rocznie, co siódme rozliczenie ponad pół miliona, dziesiątki powyżej miliona — a każda kwota to zapłata jednego tylko szpitala.',
   },
+  'dane/monitoring-watchdog': {
+    tag: 'Dane · Przeglądarka',
+    title: 'Przeglądarka monitoringu płac lekarzy',
+    subtitle: '1358 publicznych placówek: kto ujawnił zarobki lekarzy, kto odmówił, kto milczy — z agregatami płac tam, gdzie padły pełne listy. Źródło: Watchdog Polska.',
+  },
   'dane/wedlug-specjalizacji': {
     tag: 'Dane · Specjalizacje',
     title: 'Zarobki według specjalizacji',
@@ -80,6 +85,11 @@ export const ogPages: Record<string, OgPage> = {
   },
 
   // — Analizy —
+  'analizy/lekarze-radni': {
+    tag: 'Analizy · Lekarze-radni',
+    title: 'Jedyni lekarze, których dochód widać w całości',
+    subtitle: '184 lekarzy-radnych ma z mocy prawa jawny pełny roczny dochód — mediana ok. 635 tys. zł, 30 osób ponad milion. Pozostałych ~165 tys. lekarzy nie widać wcale.',
+  },
   'analizy/monitor-reformy-zdrowia': {
     tag: 'Analiza · Monitor',
     title: 'Monitor reformy zdrowia',

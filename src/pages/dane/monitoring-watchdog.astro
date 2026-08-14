@@ -1,0 +1,393 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+import dataset from '../../data/watchdog-placowki.json';
+
+// WERSJA ROBOCZA (niepublikowana). Przeglądarka obywatelskiego monitoringu
+// „Ile zarabiają lekarze?" (Watchdog Polska): wszystkie 1358 placówek —
+// kto odpowiedział, kto odmówił, kto milczy — a dla placówek z pełnymi
+// rocznymi listami płac: agregaty (fundusz, mediana, max, koncentracja).
+// Zasady rdzenia:
+//  • agregaty per placówka, nie listy nazwisko+kwota;
+//  • agregat tylko z czystych list rocznych (≥10 wierszy, mediana ≥60 tys.);
+//  • ujawnienie = dobra praktyka (zielone), odmowa/cisza = problem systemowy;
+//  • kredyt + link do Watchdog Polska; każdy wiersz linkuje do sprawy u źródła.
+// Dane: src/data/watchdog-placowki.json, generowane LOKALNIE skryptem
+// research/watchdog/08-export.mjs (research/ poza gitem — CI nie ma bazy).
+
+const { placowki, sync } = dataset;
+const SYNC_HR = new Intl.DateTimeFormat('pl-PL', {
+  day: 'numeric', month: 'long', year: 'numeric',
+}).format(new Date(sync));
+
+const fmt = (n) => new Intl.NumberFormat('pl-PL').format(n);
+// Kwoty skracamy do „x,x mln" / „xxx tys." — tabela ma być czytelna, nie księgowa.
+const short = (n) =>
+  n >= 1e6 ? `${(n / 1e6).toFixed(2).replace('.', ',')} mln` : `${Math.round(n / 1e3)} tys.`;
+
+const KAT = {
+  A: { label: 'dane', cls: 'ok', desc: 'odpowiedź z danymi' },
+  B: { label: 'odmowa', cls: 'alert', desc: 'wprost odmówiła' },
+  C: { label: 'inna odpowiedź', cls: 'mid', desc: 'np. przedłużenie terminu' },
+  E: { label: 'inna instytucja', cls: 'mid', desc: 'odpowiedź z innej instytucji' },
+  G: { label: 'nieustalona', cls: 'mid', desc: 'charakter odpowiedzi nieustalony' },
+  receipt: { label: 'tylko potwierdzenie', cls: 'mute', desc: 'samo potwierdzenie doręczenia' },
+  none: { label: 'cisza', cls: 'mute', desc: 'żadnej odpowiedzi' },
+};
+
+const woje = [...new Set(placowki.map((p) => p.woj).filter(Boolean))].sort((a, b) =>
+  a.localeCompare(b, 'pl'),
+);
+
+// Domyślny porządek: najpierw placówki z listami (fundusz malejąco), potem reszta alfabetycznie.
+const rows = [...placowki].sort((a, b) =>
+  (b.fundusz ?? -1) - (a.fundusz ?? -1) || a.nazwa.localeCompare(b.nazwa, 'pl'),
+);
+
+const N = placowki.length;
+const N_DANE = placowki.filter((p) => p.kat === 'A').length;
+const N_ODMOWA = placowki.filter((p) => p.kat === 'B').length;
+const N_CISZA = placowki.filter((p) => p.kat === 'none').length;
+const N_LISTY = placowki.filter((p) => p.n).length;
+
+const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabiaja-lekarze';
+---
+
+<BaseLayout
+  title="Przeglądarka monitoringu „Ile zarabiają lekarze?” — zarobkilekarzy.pl"
+  description={`Wszystkie ${fmt(N)} placówek z obywatelskiego monitoringu płac lekarzy: kto ujawnił dane, kto odmówił, kto milczy — z agregatami płac dla placówek, które podały pełne listy. Wyszukiwarka, filtry, sortowanie. Źródło: Watchdog Polska.`}
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane/">Dane</a> · Przeglądarka monitoringu</p>
+      <h1>Przeglądarka monitoringu „Ile zarabiają lekarze?”</h1>
+      <Aktualizacja zrodla=" · obywatelski monitoring „Ile zarabiają lekarze?” (Sieć Obywatelska Watchdog Polska)." />
+      <p class="lead">
+        <a href={MONITORING} target="_blank" rel="noopener noreferrer">Watchdog Polska zapytał</a>
+        <strong> {fmt(N)} publicznych placówek</strong> o roczne brutto lekarzy za 2025 r.
+        Tu możesz przejrzeć <strong>każdą z nich</strong>: kto ujawnił dane, kto odmówił, kto
+        milczy — a dla {N_LISTY} placówek z pełnymi rocznymi listami płac także
+        <strong> ile lekarzy, jaki fundusz i jak bardzo skoncentrowany</strong>. Każdy wiersz
+        prowadzi do sprawy u źródła. Stan na {SYNC_HR}.
+      </p>
+
+      <div class="wm-chips" role="group" aria-label="Podsumowanie monitoringu">
+        <span class="wm-chip"><strong>{fmt(N)}</strong> wniosków</span>
+        <span class="wm-chip is-ok"><strong>{N_DANE}</strong> ujawniło dane</span>
+        <span class="wm-chip is-alert"><strong>{N_ODMOWA}</strong> odmówiło</span>
+        <span class="wm-chip is-mute"><strong>{N_CISZA}</strong> milczy</span>
+        <span class="wm-chip"><strong>{N_LISTY}</strong> pełnych rocznych list płac</span>
+      </div>
+
+      <!-- ————————————————— KONTROLKI ————————————————— -->
+      <form class="wm-controls" id="wm-controls" aria-label="Filtry tabeli">
+        <label class="wm-field wm-grow">
+          <span>Szukaj placówki</span>
+          <input type="search" id="wm-q" placeholder="np. Sławno, szpital powiatowy…" autocomplete="off" />
+        </label>
+        <label class="wm-field">
+          <span>Województwo</span>
+          <select id="wm-woj">
+            <option value="">wszystkie</option>
+            {woje.map((w) => <option value={w}>{w}</option>)}
+          </select>
+        </label>
+        <label class="wm-field">
+          <span>Odpowiedź</span>
+          <select id="wm-kat">
+            <option value="">wszystkie</option>
+            <option value="A">ujawniła dane</option>
+            <option value="B">odmówiła</option>
+            <option value="C">inna odpowiedź</option>
+            <option value="receipt">tylko potwierdzenie</option>
+            <option value="none">cisza</option>
+            <option value="E">inna instytucja</option>
+            <option value="G">nieustalona</option>
+          </select>
+        </label>
+        <label class="wm-field">
+          <span>Na stronę</span>
+          <select id="wm-pp">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="0">wszystkie</option>
+          </select>
+        </label>
+        <label class="wm-check">
+          <input type="checkbox" id="wm-tylko-listy" />
+          <span>tylko z listami płac ({N_LISTY})</span>
+        </label>
+      </form>
+      <p class="wm-count" id="wm-count" aria-live="polite">Placówek: {fmt(N)}</p>
+
+      <!-- ————————————————— TABELA ————————————————— -->
+      <div class="wm-scroll" tabindex="0" role="region" aria-label="Tabela placówek monitoringu">
+        <table class="wm-table" id="wm-table">
+          <thead>
+            <tr>
+              <th scope="col"><button type="button" data-sort="nazwa" data-type="text">Placówka</button></th>
+              <th scope="col"><button type="button" data-sort="woj" data-type="text">Woj.</button></th>
+              <th scope="col"><button type="button" data-sort="kat" data-type="text">Odpowiedź</button></th>
+              <th scope="col" class="num"><button type="button" data-sort="n" data-type="num">Lekarzy</button></th>
+              <th scope="col" class="num"><button type="button" data-sort="fundusz" data-type="num">Fundusz płac</button></th>
+              <th scope="col" class="num"><button type="button" data-sort="mediana" data-type="num">Mediana</button></th>
+              <th scope="col" class="num"><button type="button" data-sort="max" data-type="num">Najwyższa</button></th>
+              <th scope="col" class="num"><button type="button" data-sort="n500k" data-type="num">&gt;500 tys.</button></th>
+              <th scope="col" class="num"><button type="button" data-sort="n1m" data-type="num">&gt;1 mln</button></th>
+              <th scope="col" class="num"><button type="button" data-sort="top10" data-type="num">Top&nbsp;10 = %&nbsp;funduszu</button></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((p) => {
+              const k = KAT[p.kat] ?? KAT.none;
+              return (
+                <tr
+                  data-nazwa={`${p.nazwa} ${p.miasto}`.toLowerCase()}
+                  data-woj={p.woj}
+                  data-kat={p.kat}
+                  data-n={p.n ?? -1}
+                  data-fundusz={p.fundusz ?? -1}
+                  data-mediana={p.mediana ?? -1}
+                  data-max={p.max ?? -1}
+                  data-n500k={p.n ? p.n500k : -1}
+                  data-n1m={p.n ? p.n1m : -1}
+                  data-top10={p.top10 ?? -1}
+                >
+                  <td class="wm-name">
+                    <a href={`https://fedrowanie.siecobywatelska.pl/sprawy/${p.slug}`} target="_blank" rel="noopener noreferrer">{p.nazwa}</a>
+                    {p.miasto && <span class="wm-city">{p.miasto}</span>}
+                  </td>
+                  <td class="wm-woj">{p.woj}</td>
+                  <td><span class={`wm-badge is-${k.cls}`} title={k.desc}>{k.label}</span></td>
+                  <td class="num">{p.n ?? ''}</td>
+                  <td class="num">{p.fundusz ? short(p.fundusz) : ''}</td>
+                  <td class="num">{p.mediana ? short(p.mediana) : ''}</td>
+                  <td class="num">{p.max ? short(p.max) : ''}</td>
+                  <td class="num">{p.n ? p.n500k : ''}</td>
+                  <td class="num">{p.n ? p.n1m : ''}</td>
+                  <td class="num">{p.top10 != null ? `${p.top10}%` : ''}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="wm-pager" aria-label="Stronicowanie tabeli">
+        <button type="button" id="wm-prev">‹ poprzednia</button>
+        <span id="wm-page" aria-live="polite"></span>
+        <button type="button" id="wm-next">następna ›</button>
+      </nav>
+
+      <div class="callout" style="border-left-color: var(--amber); background: var(--amber-50)">
+        <p>
+          <strong>Ostrzeżenie: dane zbierane maszynowo.</strong> Kwoty i klasyfikacje odpowiedzi
+          zostały wyłuskane automatycznie z jawnej korespondencji (w tym z OCR skanów) — tabela
+          <strong> może zawierać błędy</strong>: źle sklejone kwoty, sumy policzone z niepełnych
+          list, mylną kategorię odpowiedzi. Zanim zacytujesz konkretną liczbę,
+          <strong> sprawdź ją w sprawie u źródła</strong> (link w każdym wierszu).
+        </p>
+      </div>
+
+      <!-- ————————————————— JAK CZYTAĆ ————————————————— -->
+      <section aria-labelledby="jak-czytac">
+        <h2 id="jak-czytac">Jak czytać tę tabelę</h2>
+        <ul>
+          <li>
+            <strong>Kolumny płacowe wypełniamy tylko dla {N_LISTY} placówek</strong>, które ujawniły
+            pełne, wierszowe listy <em>rocznego</em> brutto per lekarz (co najmniej 10 wierszy,
+            mediana ≥ 60 tys. zł — to odsiewa listy miesięczne i cząstkowe). Pozostałe odpowiedzi
+            „z danymi" to np. widełki, sumy oddziałów albo skany, których nie da się rzetelnie
+            zliczyć.
+          </li>
+          <li>
+            <strong>Fundusz płac</strong> = suma ujawnionych rocznych kwot dla lekarzy tej placówki
+            (nie cały budżet szpitala). <strong>Top&nbsp;10</strong> = jaki procent tego funduszu
+            trafia do dziesięciu najlepiej opłacanych lekarzy — miara koncentracji.
+          </li>
+          <li>
+            <strong>Każda kwota to zapłata jednej placówki.</strong> Lekarz pracujący w kilku
+            miejscach ma tu tylko fragment przychodu — sum per osoba nikt w Polsce nie zna,
+            bo nie ma jawnego rejestru per&nbsp;PWZ. To dolne granice.
+          </li>
+          <li>
+            <strong>Kolumnę „Odpowiedź” klasyfikuje automat</strong> platformy fedrowanie
+            (po treści maila) — bywa omylny, np. mail „w załączeniu skan odpowiedzi” z pełną
+            tabelą płac w załączniku potrafi oznaczyć jako odmowę. Placówkom, których listę
+            płac pokazujemy, przypisujemy „dane” niezależnie od tej klasyfikacji.
+          </li>
+          <li>
+            Kwoty wyłuskaliśmy automatycznie z jawnej korespondencji — przed cytowaniem
+            konkretnej liczby sprawdź ją w sprawie u źródła (link w każdym wierszu).
+            Ujawnienie danych to <strong>dobra praktyka</strong>, nie zarzut wobec placówki.
+          </li>
+        </ul>
+      </section>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .wm-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.1rem 0 1.6rem; }
+  .wm-chip {
+    font-size: 0.85rem; color: var(--ink-soft); background: var(--surface);
+    border: 1px solid var(--line-2); border-radius: 999px; padding: 0.3rem 0.75rem;
+  }
+  .wm-chip strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .wm-chip.is-ok { border-color: var(--ok); }
+  .wm-chip.is-ok strong { color: var(--ok); }
+  .wm-chip.is-alert { border-color: var(--alert); }
+  .wm-chip.is-alert strong { color: var(--alert); }
+  .wm-chip.is-mute { border-style: dashed; }
+
+  /* — kontrolki — */
+  .wm-controls {
+    display: flex; flex-wrap: wrap; gap: 0.9rem; align-items: end;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    padding: 0.9rem 1rem; margin-bottom: 0.6rem;
+  }
+  .wm-field { display: flex; flex-direction: column; gap: 0.25rem; }
+  .wm-grow { flex: 1 1 16rem; }
+  .wm-field span { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
+  .wm-field input, .wm-field select {
+    font: inherit; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line-2); border-radius: 8px; padding: 0.45rem 0.6rem; min-width: 11rem;
+  }
+  .wm-field input:focus-visible, .wm-field select:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 1px; }
+  .wm-check { display: flex; align-items: center; gap: 0.45rem; font-size: 0.9rem; color: var(--ink-soft); padding-bottom: 0.5rem; cursor: pointer; }
+  .wm-check input { width: 1.05rem; height: 1.05rem; accent-color: var(--brand-link); }
+  .wm-count { font-size: 0.85rem; color: var(--ink-faint); margin: 0 0 0.9rem; }
+
+  /* — tabela — */
+  .wm-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .wm-scroll:focus-visible { outline: 2px solid var(--brand-link); }
+  .wm-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 64rem; }
+  .wm-table th, .wm-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .wm-table thead th { position: sticky; top: 0; background: var(--paper); z-index: 1; border-bottom: 1px solid var(--line-2); padding: 0; }
+  .wm-table thead button {
+    all: unset; box-sizing: border-box; display: block; width: 100%; cursor: pointer;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ink-soft); padding: 0.55rem 0.65rem; white-space: nowrap;
+  }
+  .wm-table thead button:hover { color: var(--brand-link); }
+  .wm-table thead button:focus-visible { outline: 2px solid var(--brand-link); outline-offset: -2px; }
+  .wm-table thead th[aria-sort] button { color: var(--brand-link); }
+  .wm-table thead th[aria-sort='ascending'] button::after { content: ' ↑'; }
+  .wm-table thead th[aria-sort='descending'] button::after { content: ' ↓'; }
+  .wm-table tbody tr:hover { background: var(--surface-2); }
+  .wm-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .wm-name a { color: var(--ink); text-decoration-color: var(--line-2); }
+  .wm-name a:hover { color: var(--brand-link); }
+  .wm-city { display: block; font-size: 0.78rem; color: var(--ink-faint); }
+  .wm-woj { white-space: nowrap; color: var(--ink-soft); }
+
+  .wm-badge {
+    display: inline-block; font-size: 0.72rem; font-weight: 600; border-radius: 999px;
+    padding: 0.1rem 0.55rem; white-space: nowrap; border: 1px solid transparent;
+  }
+  .wm-badge.is-ok { color: var(--ok); background: var(--ok-50); border-color: var(--ok); }
+  .wm-badge.is-alert { color: var(--alert); background: var(--alert-50); border-color: var(--alert); }
+  .wm-badge.is-mid { color: var(--ink-soft); background: var(--paper); border-color: var(--line-2); }
+  .wm-badge.is-mute { color: var(--ink-faint); background: transparent; border-color: var(--line-2); border-style: dashed; }
+
+  /* — stronicowanie — */
+  .wm-pager { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 1rem 0 2rem; }
+  .wm-pager button {
+    font: inherit; font-size: 0.88rem; color: var(--brand-link); background: var(--surface);
+    border: 1px solid var(--line-2); border-radius: 8px; padding: 0.4rem 0.9rem; cursor: pointer;
+  }
+  .wm-pager button:hover:not(:disabled) { border-color: var(--brand-link); }
+  .wm-pager button:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 1px; }
+  .wm-pager button:disabled { color: var(--ink-faint); cursor: default; opacity: 0.6; }
+  .wm-pager span { font-size: 0.88rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+</style>
+
+<script is:inline>
+  (function () {
+    var table = document.getElementById('wm-table');
+    if (!table) return;
+    var tbody = table.tBodies[0];
+    var all = Array.prototype.slice.call(tbody.rows);
+    var q = document.getElementById('wm-q');
+    var woj = document.getElementById('wm-woj');
+    var kat = document.getElementById('wm-kat');
+    var tylkoListy = document.getElementById('wm-tylko-listy');
+    var perPage = document.getElementById('wm-pp');
+    var count = document.getElementById('wm-count');
+    var pager = { prev: document.getElementById('wm-prev'), next: document.getElementById('wm-next'), info: document.getElementById('wm-page') };
+    var page = 1;
+
+    // Filtr wyznacza pasujące wiersze, paginacja pokazuje wycinek — w kolejności
+    // DOM, którą ustawia sortowanie.
+    function applyFilter() {
+      var needle = q.value.trim().toLowerCase();
+      var w = woj.value, k = kat.value, listy = tylkoListy.checked;
+      // Iterujemy po tbody.rows — to kolejność po sortowaniu.
+      var matched = [];
+      for (var i = 0; i < tbody.rows.length; i++) {
+        var r = tbody.rows[i], d = r.dataset;
+        var ok =
+          (!needle || d.nazwa.indexOf(needle) !== -1) &&
+          (!w || d.woj === w) &&
+          (!k || d.kat === k) &&
+          (!listy || d.n !== '-1');
+        r.hidden = true;
+        if (ok) matched.push(r);
+      }
+      var pp = parseInt(perPage.value, 10) || matched.length || 1;
+      var pages = Math.max(1, Math.ceil(matched.length / pp));
+      if (page > pages) page = pages;
+      var start = (page - 1) * pp;
+      matched.slice(start, start + pp).forEach(function (r) { r.hidden = false; });
+
+      var shown = matched.length;
+      count.textContent = 'Placówek: ' + shown.toLocaleString('pl-PL') + (shown < all.length ? ' (z ' + all.length.toLocaleString('pl-PL') + ')' : '');
+      pager.info.textContent = 'strona ' + page + ' z ' + pages;
+      pager.prev.disabled = page <= 1;
+      pager.next.disabled = page >= pages;
+    }
+
+    // Sortowanie: klik w nagłówek; drugi klik odwraca. Wiersze bez danych (-1)
+    // zawsze na końcu, niezależnie od kierunku.
+    var current = { key: 'fundusz', dir: -1 };
+    function applySort() {
+      var key = current.key, dir = current.dir;
+      var btn = table.querySelector('[data-sort="' + key + '"]');
+      var type = btn.dataset.type;
+      var sorted = all.slice().sort(function (a, b) {
+        if (type === 'num') {
+          var av = parseFloat(a.dataset[key]), bv = parseFloat(b.dataset[key]);
+          if (av === -1 && bv === -1) return 0;
+          if (av === -1) return 1;
+          if (bv === -1) return -1;
+          return (av - bv) * dir;
+        }
+        return a.dataset[key].localeCompare(b.dataset[key], 'pl') * dir;
+      });
+      for (var i = 0; i < sorted.length; i++) tbody.appendChild(sorted[i]);
+      var ths = table.tHead.rows[0].cells;
+      for (var j = 0; j < ths.length; j++) ths[j].removeAttribute('aria-sort');
+      btn.parentElement.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+    }
+
+    table.tHead.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-sort]');
+      if (!btn) return;
+      var key = btn.dataset.sort;
+      if (current.key === key) current.dir = -current.dir;
+      else current = { key: key, dir: btn.dataset.type === 'num' ? -1 : 1 };
+      page = 1;
+      applySort();
+      applyFilter();
+    });
+
+    [q, woj, kat, tylkoListy, perPage].forEach(function (el) {
+      el.addEventListener('input', function () { page = 1; applyFilter(); });
+    });
+    pager.prev.addEventListener('click', function () { if (page > 1) { page--; applyFilter(); } });
+    pager.next.addEventListener('click', function () { page++; applyFilter(); });
+    applySort();
+    applyFilter();
+  })();
+</script>

@@ -41,6 +41,9 @@ const bands = [
 ].map((b) => ({ ...b, n: dochody.filter((d) => d >= b.lo && d < b.hi).length }));
 const histMax = Math.max(...bands.map((b) => b.n));
 
+// Lata rozliczeń obecne w zbiorze (malejąco) — do filtra nad tabelą.
+const lata = [...new Set(radni.map((r) => r.rok).filter(Boolean))].sort((a, b) => b - a);
+
 const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric', month: 'long', year: 'numeric',
 }).format(new Date(stan + 'T12:00:00'));
@@ -120,6 +123,13 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
         <label class="rl-field rl-grow">
           <span>Szukaj (rada, specjalizacja, forma)</span>
           <input type="search" id="rl-q" placeholder="np. chirurg, sejmik, JDG…" autocomplete="off" />
+        </label>
+        <label class="rl-field">
+          <span>Rok dochodu</span>
+          <select id="rl-rok">
+            <option value="">wszystkie</option>
+            {lata.map((r) => <option value={r}>{r}</option>)}
+          </select>
         </label>
         <label class="rl-field">
           <span>Na stronę</span>
@@ -288,6 +298,7 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
     if (!table) return;
     var tbody = table.tBodies[0];
     var q = document.getElementById('rl-q');
+    var rok = document.getElementById('rl-rok');
     var perPage = document.getElementById('rl-pp');
     var count = document.getElementById('rl-count');
     var pager = { prev: document.getElementById('rl-prev'), next: document.getElementById('rl-next'), info: document.getElementById('rl-page') };
@@ -296,10 +307,12 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
 
     function applyFilter() {
       var needle = q.value.trim().toLowerCase();
+      var y = rok.value;
       var matched = [];
       for (var i = 0; i < tbody.rows.length; i++) {
         var r = tbody.rows[i];
-        var ok = !needle || r.dataset.szukaj.indexOf(needle) !== -1;
+        var ok = (!needle || r.dataset.szukaj.indexOf(needle) !== -1) &&
+          (!y || r.dataset.rok === y);
         r.hidden = true;
         if (ok) matched.push(r);
       }
@@ -345,7 +358,7 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
       applySort();
       applyFilter();
     });
-    [q, perPage].forEach(function (el) {
+    [q, rok, perPage].forEach(function (el) {
       el.addEventListener('input', function () { page = 1; applyFilter(); });
     });
     pager.prev.addEventListener('click', function () { if (page > 1) { page--; applyFilter(); } });

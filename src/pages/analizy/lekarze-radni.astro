@@ -29,6 +29,26 @@ const maxDochod = dochody[0];
 const maxPrzychod = Math.max(...radni.map((r) => r.przychod ?? 0));
 const zJdg = radni.filter((r) => /JDG|NZOZ|praktyka/i.test(r.forma ?? '')).length;
 const kobiety = radni.filter((r) => r.plec === 'kobieta').length;
+// Ile osób nie rozdzieliło przychodu od dochodu (autor wpisywał wtedy tę samą kwotę w obie).
+const rownePK = radni.filter((r) => r.przychod != null && r.przychod === r.dochod).length;
+
+// Kontrargument „to właściciele NZOZ-ów windują te liczby" — sprawdzamy go wprost.
+const med = (arr: number[]) => {
+  const s = [...arr].sort((a, b) => a - b);
+  return s.length % 2 ? s[(s.length - 1) / 2] : Math.round((s[s.length / 2 - 1] + s[s.length / 2]) / 2);
+};
+const nzozDoch = radni.filter((r) => /NZOZ/i.test(r.forma ?? '')).map((r) => r.dochod);
+const bezNzozDoch = radni.filter((r) => !/NZOZ/i.test(r.forma ?? '')).map((r) => r.dochod);
+const bezNzoz = {
+  n: bezNzozDoch.length,
+  mediana: med(bezNzozDoch),
+  nadMilion: bezNzozDoch.filter((d) => d > 1_000_000).length,
+};
+const nzoz = {
+  n: nzozDoch.length,
+  mediana: med(nzozDoch),
+  nadMilion: nzozDoch.filter((d) => d > 1_000_000).length,
+};
 
 // Histogram dochodów (roczne brutto-dochody, nie przychody).
 const bands = [
@@ -111,6 +131,38 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
         pokazuje rozpiętość, nie „medianę typowego lekarza”.
       </p>
 
+      <h2>„To właściciele przychodni windują te liczby” — sprawdźmy</h2>
+      <p>
+        Najczęstszy kontrargument brzmi: wysokie kwoty to nie zarobki z leczenia, tylko obroty
+        <strong> właścicieli NZOZ-ów</strong>. Da się to sprawdzić wprost, bo forma rozliczenia
+        jest w oświadczeniach. Odpowiedź: <strong>zarzut nie tłumaczy tych liczb</strong>.
+      </p>
+      <div class="rl-cmp">
+        <div class="rl-cmp-card">
+          <span class="rl-cmp-tag">Bez właścicieli NZOZ</span>
+          <span class="rl-cmp-num">{tys(bezNzoz.mediana)} zł</span>
+          <span class="rl-cmp-cap">
+            mediana dochodu — <strong>{bezNzoz.n}</strong> osób;
+            <strong> {bezNzoz.nadMilion}</strong> z nich przekroczyło milion
+          </span>
+        </div>
+        <div class="rl-cmp-card is-alt">
+          <span class="rl-cmp-tag">Właściciele NZOZ</span>
+          <span class="rl-cmp-num">{tys(nzoz.mediana)} zł</span>
+          <span class="rl-cmp-cap">
+            mediana dochodu — <strong>{nzoz.n}</strong> osób;
+            <strong> {nzoz.nadMilion}</strong> z nich przekroczyło milion
+          </span>
+        </div>
+      </div>
+      <p class="rl-cap">
+        Właściciele przychodni faktycznie zarabiają więcej, ale <strong>większość milionerów
+        z tego zbioru ({bezNzoz.nadMilion} z {nadMilion}) NIE prowadzi NZOZ-u</strong>, a mediana
+        po ich wyłączeniu wciąż wynosi <strong>ok. {tys(bezNzoz.mediana)} zł</strong> — czyli
+        kilkakrotność etatowej siatki płac. Wyjęcie właścicieli przychodni zmienia skalę
+        o kilkanaście procent, nie o rząd wielkości.
+      </p>
+
       <!-- ————————————————— TABELA ————————————————— -->
       <h2>Wszystkie {N} oświadczeń — przeglądaj sam</h2>
       <p>
@@ -187,13 +239,18 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
 
       <div class="callout" style="border-left-color: var(--amber); background: var(--amber-50)">
         <p>
-          <strong>Ostrzeżenie: dane zbierane maszynowo.</strong> Kwoty zostały odczytane
-          (częściowo automatycznie) ze skanów oświadczeń o różnej jakości — tabela
-          <strong> może zawierać błędy</strong>: literówki w kwotach, pomylony rok, przychód
-          wpisany jako dochód. Zanim zacytujesz konkretną liczbę, <strong>sprawdź ją
-          w oświadczeniu u źródła</strong> (link „BIP” w wierszu). Rok w tabeli to rok,
-          <strong>którego dotyczy rozliczenie</strong> (a nie rok złożenia oświadczenia —
-          to składa się w roku następnym).
+          <strong>Ostrzeżenie: kwoty przepisywane ręcznie.</strong> Autor zestawienia
+          przepisywał je z oświadczeń <strong>ręcznie</strong> — bo każde jest wypełnione
+          inaczej, a automat robiłby tu głupie błędy. Ryzykiem nie jest więc zły odczyt
+          maszyny, lecz zwykła <strong>pomyłka w przepisaniu</strong>. Zanim zacytujesz
+          konkretną liczbę, <strong>sprawdź ją w oświadczeniu u źródła</strong>
+          (link „BIP” w wierszu). Rok w tabeli to rok, <strong>którego dotyczy
+          rozliczenie</strong> (oświadczenie składa się w roku następnym).
+        </p>
+        <p>
+          Gdy lekarz <strong>nie rozdzielił przychodu od dochodu</strong>, ta sama kwota trafiła
+          w obie kolumny — dotyczy to {rownePK} z {N} wierszy. Przy takich pozycjach „dochód”
+          może być w rzeczywistości przychodem, czyli liczbą <em>zawyżoną</em>.
         </p>
         <p>
           <strong>Widzisz błąd w swoim wierszu?</strong> Napisz na
@@ -207,7 +264,14 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
         <strong>Metoda.</strong> Oddolna kompilacja jawnych oświadczeń majątkowych radnych będących
         lekarzami (dokumenty publiczne w BIP; stan zbioru: {STAN_HR}). Zestawienie udostępnione
         dzięki uprzejmości użytkownika X
-        <a href="https://x.com/nicobogu" target="_blank" rel="noopener noreferrer">@nicobogu</a>.
+        <a href="https://x.com/nicobogu" target="_blank" rel="noopener noreferrer">@nicobogu</a>,
+        który zidentyfikował radnych-lekarzy przez <strong>rejestr CEIDG</strong>, a następnie
+        <strong>ręcznie</strong> przepisał kwoty ze wszystkich oświadczeń.
+        <strong> To nie jest komplet</strong>: powiązanie przez CEIDG jest z natury niepełne
+        (wychwytuje przede wszystkim tych z zarejestrowaną działalnością, więc udział form
+        gabinetowych jest tu z góry zawyżony), a <strong>dyrektorów placówek, którzy bywają
+        jednocześnie lekarzami, zbiór w ogóle nie obejmuje</strong>. Z zestawienia wyłączono też
+        jedną osobę, która okazała się małżonką radnego, a nie radną.
         Kwoty to dochód/przychód
         <strong> wyłącznie z działalności leczniczej</strong> zadeklarowany w oświadczeniu —
         bez pozostałych źródeł (np. diety radnego, najmu, emerytury), więc łączne dochody tych
@@ -243,6 +307,14 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
   .rl-hbar.is-top { background: var(--alert); }
   .rl-hval { font-size: 0.82rem; color: var(--ink); font-variant-numeric: tabular-nums; }
   .rl-cap { font-size: 0.9rem; color: var(--ink-soft); }
+
+  /* — porównanie NZOZ vs reszta — */
+  .rl-cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.9rem; margin: 1.1rem 0 0.7rem; }
+  .rl-cmp-card { background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 0.9rem 1rem; }
+  .rl-cmp-card.is-alt { background: var(--paper); }
+  .rl-cmp-tag { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-faint); }
+  .rl-cmp-num { display: block; font-family: var(--font-serif); font-size: 1.7rem; color: var(--ink); margin: 0.2rem 0 0.35rem; font-variant-numeric: tabular-nums; }
+  .rl-cmp-cap { display: block; font-size: 0.86rem; color: var(--ink-soft); line-height: 1.45; }
 
   /* — kontrolki + tabela (wzorzec jak przeglądarka monitoringu) — */
   .rl-controls {

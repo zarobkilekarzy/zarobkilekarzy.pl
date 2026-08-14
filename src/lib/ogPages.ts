@@ -88,7 +88,7 @@ export const ogPages: Record<string, OgPage> = {
   'analizy/lekarze-radni': {
     tag: 'Analizy · Lekarze-radni',
     title: 'Jedyni lekarze, których dochód widać w całości',
-    subtitle: '184 lekarzy-radnych ma z mocy prawa jawny pełny roczny dochód — mediana ok. 635 tys. zł, 30 osób ponad milion. Pozostałych ~165 tys. lekarzy nie widać wcale.',
+    subtitle: '183 lekarzy-radnych ma z mocy prawa jawny pełny roczny dochód z praktyki — mediana ok. 633 tys. zł, 30 osób ponad milion. Pozostałych ~165 tys. lekarzy nie widać wcale.',
   },
   'analizy/monitor-reformy-zdrowia': {
     tag: 'Analiza · Monitor',

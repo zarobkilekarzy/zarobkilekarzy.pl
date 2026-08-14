@@ -118,6 +118,12 @@ export const strony: Record<string, Strona> = {
     opis: 'Od pensji rezydenta po górny 1% — cała rozpiętość, per forma zatrudnienia.',
     tematy: ['pieniadz-nfz'],
   },
+  '/dane/monitoring-watchdog': {
+    dzial: 'dane',
+    tytul: 'Przeglądarka monitoringu płac lekarzy',
+    opis: 'Wszystkie 1358 publicznych placówek, do których Watchdog Polska wysłał wniosek o wynagrodzenia lekarzy: kto ujawnił dane, kto odmówił, kto milczy — z agregatami płac tam, gdzie padły pełne listy. Wyszukiwarka, filtry (w tym sieć szpitali) i link do każdej sprawy u źródła.',
+    tematy: ['jawnosc', 'pieniadz-nfz'],
+  },
   '/dane/zarobki-ujawnione-listy': {
     dzial: 'dane',
     tytul: 'Zarobki z ujawnionych list płac',
@@ -257,6 +263,12 @@ export const strony: Record<string, Strona> = {
     tytul: 'Zarezerwowane dla lekarzy: rynek urody, który wyciąga ich z kolejki',
     opis: 'Państwo oddaje lekarzom wyłączność na dochodową medycynę estetyczną. Skoro tylko oni mogą — gotówka przeciąga deficytowe godziny od pacjenta. Miarą ciągu jest cały zagrożony rynek beauty, nie garstka dzisiejszych lekarzy.',
     tematy: ['dostep-do-zawodu'],
+  },
+  '/analizy/lekarze-radni': {
+    dzial: 'analizy',
+    tytul: 'Lekarze-radni: jedyni, których dochód widać w całości',
+    opis: 'Lekarz, który zasiada w radzie, składa jawne oświadczenie majątkowe — i wtedy widać jego pełny roczny dochód z praktyki, a nie zapłatę jednej placówki. W 183 takich oświadczeniach mediana to ok. 633 tys. zł, a 30 osób przekroczyło milion. Tabela z linkami do BIP. Sedno: tych ludzi widać przez przypadek pełnienia funkcji, a pozostałych ~165 tys. lekarzy nie widać wcale.',
+    tematy: ['jawnosc', 'pieniadz-nfz'],
   },
   '/analizy/odpowiedzialnosc-zawodowa-lekarzy': {
     dzial: 'analizy',

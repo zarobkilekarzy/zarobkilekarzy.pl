@@ -15,7 +15,7 @@ import dataset from '../../data/watchdog-placowki.json';
 // Dane: src/data/watchdog-placowki.json, generowane LOKALNIE skryptem
 // research/watchdog/08-export.mjs (research/ poza gitem — CI nie ma bazy).
 
-const { placowki, sync } = dataset;
+const { placowki, sync, ludnoscRok } = dataset;
 const SYNC_HR = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric', month: 'long', year: 'numeric',
 }).format(new Date(sync));
@@ -24,6 +24,20 @@ const fmt = (n) => new Intl.NumberFormat('pl-PL').format(n);
 // Kwoty skracamy do „x,x mln" / „xxx tys." — tabela ma być czytelna, nie księgowa.
 const short = (n) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(2).replace('.', ',')} mln` : `${Math.round(n / 1e3)} tys.`;
+
+// Wielkość miejscowości (GUS BDL, ludność wg faktycznego miejsca zamieszkania).
+// Skala: „1,9 mln" dla metropolii, „673 tys." dla dużych miast, „19,7 tys." dla
+// małych — poniżej 100 tys. z jednym miejscem po przecinku, żeby zaokrąglenie nie
+// przerzucało miasta przez próg filtra („do 20 tys." pokazujące „20 tys.").
+const pop = (n) =>
+  n >= 1e6
+    ? `${(n / 1e6).toFixed(1).replace('.', ',')} mln`
+    : n >= 1e5
+      ? `${Math.round(n / 1e3)} tys.`
+      : `${(n / 1e3).toFixed(1).replace('.', ',')} tys.`;
+// Trzy progi zamiast surowej liczby — po to, by dało się porównać koncentrację
+// płac w małych i dużych ośrodkach, a nie licytować pojedyncze miasta.
+const bucket = (n) => (!n ? '' : n < 20000 ? 'S' : n < 100000 ? 'M' : 'L');
 
 const KAT = {
   A: { label: 'dane', cls: 'ok', desc: 'odpowiedź z danymi' },
@@ -62,7 +76,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
     <div class="container">
       <p class="eyebrow"><a href="/dane/">Dane</a> · Przeglądarka monitoringu</p>
       <h1>Przeglądarka monitoringu „Ile zarabiają lekarze?”</h1>
-      <Aktualizacja zrodla=" · obywatelski monitoring „Ile zarabiają lekarze?” (Sieć Obywatelska Watchdog Polska)." />
+      <Aktualizacja zrodla=" · obywatelski monitoring „Ile zarabiają lekarze?” (Sieć Obywatelska Watchdog Polska); ludność miejscowości — GUS, Bank Danych Lokalnych." />
       <p class="lead">
         <a href={MONITORING} target="_blank" rel="noopener noreferrer">Watchdog Polska zapytał</a>
         <strong> {fmt(N)} publicznych placówek</strong> o roczne brutto lekarzy za 2025 r.
@@ -107,6 +121,15 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
           </select>
         </label>
         <label class="wm-field">
+          <span>Wielkość miejscowości</span>
+          <select id="wm-lud">
+            <option value="">wszystkie</option>
+            <option value="S">do 20 tys.</option>
+            <option value="M">20–100 tys.</option>
+            <option value="L">ponad 100 tys.</option>
+          </select>
+        </label>
+        <label class="wm-field">
           <span>Na stronę</span>
           <select id="wm-pp">
             <option value="25" selected>25</option>
@@ -133,6 +156,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
             <tr>
               <th scope="col"><button type="button" data-sort="nazwa" data-type="text">Placówka</button></th>
               <th scope="col"><button type="button" data-sort="woj" data-type="text">Woj.</button></th>
+              <th scope="col" class="num"><button type="button" data-sort="ludnosc" data-type="num">Mieszkańcy</button></th>
               <th scope="col"><button type="button" data-sort="kat" data-type="text">Odpowiedź</button></th>
               <th scope="col" class="num"><button type="button" data-sort="n" data-type="num">Lekarzy</button></th>
               <th scope="col" class="num"><button type="button" data-sort="fundusz" data-type="num">Fundusz płac</button></th>
@@ -152,6 +176,8 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                   data-woj={p.woj}
                   data-kat={p.kat}
                   data-psz={p.psz ? '1' : '0'}
+                  data-ludnosc={p.ludnosc ?? -1}
+                  data-lud={bucket(p.ludnosc)}
                   data-n={p.n ?? -1}
                   data-fundusz={p.fundusz ?? -1}
                   data-mediana={p.mediana ?? -1}
@@ -166,6 +192,14 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                     {p.psz && <span class="wm-psz" title={`Sieć szpitali (PSZ)${p.pszPoziom ? ' — ' + p.pszPoziom : ''}`}>sieć</span>}
                   </td>
                   <td class="wm-woj">{p.woj}</td>
+                  <td class="num wm-pop">
+                    {p.ludnosc ? (
+                      <span title={`${fmt(p.ludnosc)} mieszkańców — ${p.ludnoscTyp === 'gmina' ? 'cała gmina' : 'miasto'} (GUS, ${ludnoscRok})`}>
+                        {pop(p.ludnosc)}
+                        {p.ludnoscTyp === 'gmina' && <span class="wm-pop-typ">gmina</span>}
+                      </span>
+                    ) : ''}
+                  </td>
                   <td><span class={`wm-badge is-${k.cls}`} title={k.desc}>{k.label}</span></td>
                   <td class="num">{p.n ?? ''}</td>
                   <td class="num">{p.fundusz ? short(p.fundusz) : ''}</td>
@@ -180,6 +214,11 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
           </tbody>
         </table>
       </div>
+
+      <p class="wm-empty" id="wm-empty" hidden>
+        <strong>Żadna placówka nie spełnia tych kryteriów.</strong>
+        Poluzuj filtry albo <button type="button" id="wm-reset">wyczyść wszystkie</button>.
+      </p>
 
       <nav class="wm-pager" aria-label="Stronicowanie tabeli">
         <button type="button" id="wm-prev">‹ poprzednia</button>
@@ -222,6 +261,16 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
             <strong>Każda kwota to zapłata jednej placówki.</strong> Lekarz pracujący w kilku
             miejscach ma tu tylko fragment przychodu — sum per osoba nikt w Polsce nie zna,
             bo nie ma jawnego rejestru per&nbsp;PWZ. To dolne granice.
+          </li>
+          <li>
+            <strong>Mieszkańcy</strong> to ludność miejscowości, w której zarejestrowana jest
+            placówka — dane GUS (Bank Danych Lokalnych, stan na koniec {ludnoscRok} r.),
+            złączone po kodzie gminy <strong>TERYT</strong>. Dla placówek w gminach wiejskich
+            i na obszarach wiejskich podajemy ludność <strong>całej gminy</strong> (podpis
+            „gmina”), dla dzielnic dużych miast — ludność całego miasta. Kolumna nic nie mówi
+            o wielkości samego szpitala; pozwala zestawić koncentrację płac
+            (<strong>Top&nbsp;10</strong>) w małych i dużych ośrodkach — z zastrzeżeniem, że
+            w mniejszej placówce dziesięciu lekarzy to z natury większa część zespołu.
           </li>
           <li>
             Znacznik <strong>„sieć”</strong> oznacza szpital zakwalifikowany do
@@ -283,7 +332,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
   /* — tabela — */
   .wm-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
   .wm-scroll:focus-visible { outline: 2px solid var(--brand-link); }
-  .wm-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 64rem; }
+  .wm-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 69rem; }
   .wm-table th, .wm-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
   .wm-table thead th { position: sticky; top: 0; background: var(--paper); z-index: 1; border-bottom: 1px solid var(--line-2); padding: 0; }
   .wm-table thead button {
@@ -307,6 +356,10 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
     border: 1px solid var(--line-2); border-radius: 999px; padding: 0.02rem 0.4rem;
   }
   .wm-woj { white-space: nowrap; color: var(--ink-soft); }
+  .wm-pop { color: var(--ink-soft); }
+  .wm-pop-typ {
+    display: block; font-size: 0.68rem; color: var(--ink-faint); letter-spacing: 0.04em;
+  }
 
   .wm-badge {
     display: inline-block; font-size: 0.72rem; font-weight: 600; border-radius: 999px;
@@ -317,8 +370,21 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
   .wm-badge.is-mid { color: var(--ink-soft); background: var(--paper); border-color: var(--line-2); }
   .wm-badge.is-mute { color: var(--ink-faint); background: transparent; border-color: var(--line-2); border-style: dashed; }
 
+  /* — pusty wynik — */
+  .wm-empty {
+    margin: 1rem 0 0; padding: 1rem 1.1rem; font-size: 0.92rem; color: var(--ink-soft);
+    background: var(--paper); border: 1px dashed var(--line-2); border-radius: 12px;
+  }
+  .wm-empty strong { color: var(--ink); }
+  .wm-empty button {
+    font: inherit; color: var(--brand-link); background: none; border: 0; padding: 0;
+    cursor: pointer; text-decoration: underline;
+  }
+  .wm-empty button:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 2px; }
+
   /* — stronicowanie — */
   .wm-pager { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 1rem 0 2rem; }
+  .wm-pager[hidden] { display: none; } /* [hidden] przegrywa z display:flex */
   .wm-pager button {
     font: inherit; font-size: 0.88rem; color: var(--brand-link); background: var(--surface);
     border: 1px solid var(--line-2); border-radius: 8px; padding: 0.4rem 0.9rem; cursor: pointer;
@@ -338,18 +404,23 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
     var q = document.getElementById('wm-q');
     var woj = document.getElementById('wm-woj');
     var kat = document.getElementById('wm-kat');
+    var lud = document.getElementById('wm-lud');
     var tylkoListy = document.getElementById('wm-tylko-listy');
     var tylkoPsz = document.getElementById('wm-tylko-psz');
     var perPage = document.getElementById('wm-pp');
     var count = document.getElementById('wm-count');
+    var empty = document.getElementById('wm-empty');
+    var reset = document.getElementById('wm-reset');
+    var scroll = table.closest('.wm-scroll');
     var pager = { prev: document.getElementById('wm-prev'), next: document.getElementById('wm-next'), info: document.getElementById('wm-page') };
+    var pagerNav = document.querySelector('.wm-pager');
     var page = 1;
 
     // Filtr wyznacza pasujące wiersze, paginacja pokazuje wycinek — w kolejności
     // DOM, którą ustawia sortowanie.
     function applyFilter() {
       var needle = q.value.trim().toLowerCase();
-      var w = woj.value, k = kat.value, listy = tylkoListy.checked, psz = tylkoPsz.checked;
+      var w = woj.value, k = kat.value, l = lud.value, listy = tylkoListy.checked, psz = tylkoPsz.checked;
       // Iterujemy po tbody.rows — to kolejność po sortowaniu.
       var matched = [];
       for (var i = 0; i < tbody.rows.length; i++) {
@@ -358,6 +429,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
           (!needle || d.nazwa.indexOf(needle) !== -1) &&
           (!w || d.woj === w) &&
           (!k || d.kat === k) &&
+          (!l || d.lud === l) &&
           (!listy || d.n !== '-1') &&
           (!psz || d.psz === '1');
         r.hidden = true;
@@ -371,6 +443,11 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
 
       var shown = matched.length;
       count.textContent = 'Placówek: ' + shown.toLocaleString('pl-PL') + (shown < all.length ? ' (z ' + all.length.toLocaleString('pl-PL') + ')' : '');
+      // Pusta tabela nic nie tłumaczy — przy zerze pokazujemy komunikat i chowamy
+      // samą tabelę razem ze stronicowaniem.
+      empty.hidden = shown > 0;
+      scroll.hidden = shown === 0;
+      pagerNav.hidden = shown === 0;
       pager.info.textContent = 'strona ' + page + ' z ' + pages;
       pager.prev.disabled = page <= 1;
       pager.next.disabled = page >= pages;
@@ -410,8 +487,16 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
       applyFilter();
     });
 
-    [q, woj, kat, tylkoListy, tylkoPsz, perPage].forEach(function (el) {
+    [q, woj, kat, lud, tylkoListy, tylkoPsz, perPage].forEach(function (el) {
       el.addEventListener('input', function () { page = 1; applyFilter(); });
+    });
+    reset.addEventListener('click', function () {
+      q.value = '';
+      woj.value = kat.value = lud.value = '';
+      tylkoListy.checked = tylkoPsz.checked = false;
+      page = 1;
+      applyFilter();
+      q.focus();
     });
     pager.prev.addEventListener('click', function () { if (page > 1) { page--; applyFilter(); } });
     pager.next.addEventListener('click', function () { page++; applyFilter(); });

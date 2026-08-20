@@ -323,9 +323,9 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                         {p.hist && (
                         <p class="wm-dist-head">
                           <strong>Rozkład {fmt(p.n)} ujawnionych kwot</strong> — roczne brutto
-                          wypłacone przez tę placówkę
+                          wypłacone przez tę placówkę; procent to udział w liście tej placówki
                         </p>
-                        <div class="wm-bars" role="img" aria-label={`Rozkład wynagrodzeń: ${p.hist.map((v, i) => `${HIST_ETY[i]} — ${v}`).join('; ')}.`}>
+                        <div class="wm-bars" role="img" aria-label={`Rozkład wynagrodzeń: ${p.hist.map((v, i) => `${HIST_ETY[i]} — ${v} lekarzy, ${Math.round((v / p.n) * 100)} procent`).join('; ')}.`}>
                           {p.hist.map((v, i) => (
                             <div class="wm-bar-row">
                               <span class="wm-bar-lab">{HIST_ETY[i]}</span>
@@ -336,6 +336,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                                 ></span>
                               </span>
                               <span class="wm-bar-val">{v}</span>
+                              <span class="wm-bar-pct">{Math.round((v / p.n) * 100)}%</span>
                             </div>
                           ))}
                         </div>
@@ -540,13 +541,17 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
   .wm-dist-head { margin: 0 0 0.6rem; font-size: 0.85rem; color: var(--ink-soft); }
   .wm-dist-head strong { color: var(--ink); }
   .wm-bars { display: grid; gap: 0.28rem; max-width: 34rem; }
-  .wm-bar-row { display: grid; grid-template-columns: 8.5rem 1fr 2.2rem; align-items: center; gap: 0.55rem; }
+  .wm-bar-row { display: grid; grid-template-columns: 8.5rem 1fr 2.2rem 2.6rem; align-items: center; gap: 0.55rem; }
   .wm-bar-lab { font-size: 0.76rem; color: var(--ink-faint); text-align: right; white-space: nowrap; }
   .wm-bar-track { height: 0.72rem; background: var(--paper-2); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
   .wm-bar { display: block; height: 100%; background: var(--brand-link); border-radius: 3px; min-width: 1px; }
   .wm-bar.is-lo { background: var(--neutral-fill); }
   .wm-bar.is-hi { background: var(--amber); }
-  .wm-bar-val { font-size: 0.78rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .wm-bar-val { font-size: 0.78rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; text-align: right; }
+  /* Procent obok liczby: udział przedziału w całej liście tej placówki. Liczba mówi
+     „ilu", procent mówi „jak duża część zespołu" — przy 446 i przy 16 lekarzach to
+     dwie różne informacje. */
+  .wm-bar-pct { font-size: 0.78rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; text-align: right; }
   .wm-dist-foot { margin: 0.7rem 0 0; font-size: 0.78rem; color: var(--ink-faint); max-width: 46rem; line-height: 1.5; }
   .wm-dist-foot strong { color: var(--ink-soft); }
   .wm-pop { color: var(--ink-soft); }

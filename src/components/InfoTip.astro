@@ -1,0 +1,168 @@
+---
+// Ikonka „(i)" z krótkim wyjaśnieniem terminu — do nagłówków kolumn w tabelach,
+// gdzie znaczenie kolumny nie jest oczywiste („mediana", „fundusz płac", „dochód").
+// Dymek jest w warstwie `popover` (top layer), więc nie przycina go
+// `overflow: auto` przewijanej tabeli ani `position: sticky` nagłówka.
+// Treść wyjaśnienia idzie slotem; `termin` jest nazwą dla czytników ekranu.
+interface Props {
+  termin: string;
+}
+const { termin } = Astro.props;
+---
+
+<span class="itip">
+  <button
+    type="button"
+    class="itip-btn"
+    aria-label={`Co to znaczy: ${termin}`}
+    aria-expanded="false"
+    data-itip
+  >i</button>
+  <span class="itip-bubble" role="tooltip" popover="manual">
+    <strong class="itip-term">{termin}</strong>
+    <span class="itip-text"><slot /></span>
+  </span>
+</span>
+
+<style>
+  .itip { display: inline-block; line-height: 0; }
+  .itip-btn {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-grid;
+    place-items: center;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-left: 0.3rem;
+    border: 1px solid var(--line-2);
+    border-radius: 50%;
+    cursor: help;
+    font-size: 0.68rem;
+    font-weight: 700;
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink-faint);
+    background: var(--surface);
+    vertical-align: middle;
+  }
+  .itip-btn:hover,
+  .itip-btn[aria-expanded='true'] {
+    color: var(--brand-link);
+    border-color: var(--brand-link);
+  }
+  .itip-btn:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 1px; }
+
+  .itip-bubble:popover-open {
+    display: block;
+    position: fixed;
+    margin: 0;
+    inset: auto;
+    max-width: min(22rem, calc(100vw - 1.5rem));
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    background: var(--panel, var(--surface));
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+    font-size: 0.82rem;
+    font-weight: 400;
+    font-style: normal;
+    line-height: 1.45;
+    letter-spacing: 0;
+    text-align: left;
+    text-transform: none;
+    white-space: normal;
+    color: var(--ink-soft);
+  }
+  .itip-term {
+    display: block;
+    color: var(--ink);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .itip-text { display: block; margin-top: 0.2rem; }
+  .itip-text :global(strong) { color: var(--ink); }
+</style>
+
+<script>
+  // Jeden nasłuch na dokument dla wszystkich ikonek (skrypt hoistowany przez Astro,
+  // więc wykonuje się raz, niezależnie od liczby instancji komponentu).
+  (() => {
+    let open: HTMLElement | null = null;
+    let openBtn: HTMLElement | null = null;
+
+    const bubbleOf = (btn: Element) =>
+      btn.parentElement?.querySelector<HTMLElement>('.itip-bubble') ?? null;
+
+    const hide = () => {
+      if (open) {
+        open.hidePopover();
+        open = null;
+      }
+      if (openBtn) {
+        openBtn.setAttribute('aria-expanded', 'false');
+        openBtn = null;
+      }
+    };
+
+    const show = (btn: HTMLElement) => {
+      const bubble = bubbleOf(btn);
+      if (!bubble || bubble === open) return;
+      hide();
+      bubble.showPopover();
+      btn.setAttribute('aria-expanded', 'true');
+      open = bubble;
+      openBtn = btn;
+      place(btn, bubble);
+    };
+
+    // Pozycja liczona ręcznie: dymek jest w top layer, więc odnosimy go do
+    // viewportu i dociskamy do jego krawędzi (marginesem 8 px).
+    const place = (btn: HTMLElement, bubble: HTMLElement) => {
+      const b = btn.getBoundingClientRect();
+      const r = bubble.getBoundingClientRect();
+      const M = 8;
+      let left = b.left + b.width / 2 - r.width / 2;
+      left = Math.max(M, Math.min(left, window.innerWidth - r.width - M));
+      // Domyślnie pod ikonką; jeśli nie ma miejsca u dołu — nad nią.
+      let top = b.bottom + 6;
+      if (top + r.height > window.innerHeight - M) {
+        top = Math.max(M, b.top - r.height - 6);
+      }
+      bubble.style.left = `${Math.round(left)}px`;
+      bubble.style.top = `${Math.round(top)}px`;
+    };
+
+    const btnFrom = (t: EventTarget | null) =>
+      t instanceof Element ? t.closest<HTMLElement>('[data-itip]') : null;
+
+    document.addEventListener('pointerover', (e) => {
+      const btn = btnFrom(e.target);
+      if (btn) show(btn);
+      else if (open && !(e.target instanceof Element && e.target.closest('.itip-bubble'))) hide();
+    });
+    document.addEventListener('focusin', (e) => {
+      const btn = btnFrom(e.target);
+      if (btn) show(btn);
+      else hide();
+    });
+    // Dotyk: klik przełącza (na telefonie nie ma hoveru).
+    document.addEventListener('click', (e) => {
+      const btn = btnFrom(e.target);
+      if (!btn) {
+        if (!(e.target instanceof Element && e.target.closest('.itip-bubble'))) hide();
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      if (openBtn === btn) hide();
+      else show(btn);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') hide();
+    });
+    window.addEventListener('scroll', hide, true);
+    window.addEventListener('resize', hide);
+  })();
+</script>

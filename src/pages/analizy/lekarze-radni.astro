@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Aktualizacja from '../../components/Aktualizacja.astro';
 import dataset from '../../data/radni-lekarze.json';
+import InfoTip from '../../components/InfoTip.astro';
 
 // Analiza „Lekarze-radni": jedyna grupa lekarzy z JAWNYM pełnym rocznym dochodem
 // (oświadczenia majątkowe, BIP). Rdzeń: mechanizm jawności wybiórczej — widać ich
@@ -199,11 +200,47 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
           <thead>
             <tr>
               <th scope="col"><button type="button" data-sort="rada" data-type="text">Rada</button></th>
-              <th scope="col"><button type="button" data-sort="rok" data-type="num">Rok dochodu</button></th>
+              <th scope="col">
+                <div class="rl-th">
+                  <button type="button" data-sort="rok" data-type="num">Rok dochodu</button>
+                  <InfoTip termin="Rok dochodu">
+                    Rok, <strong>którego dotyczy rozliczenie</strong> — nie rok złożenia
+                    oświadczenia. Oświadczenie za dany rok składa się w roku następnym.
+                  </InfoTip>
+                </div>
+              </th>
               <th scope="col"><button type="button" data-sort="spec" data-type="text">Specjalizacja</button></th>
-              <th scope="col"><button type="button" data-sort="forma" data-type="text">Forma</button></th>
-              <th scope="col" class="num"><button type="button" data-sort="dochod" data-type="num">Dochód (zł/rok)</button></th>
-              <th scope="col" class="num"><button type="button" data-sort="przychod" data-type="num">Przychód</button></th>
+              <th scope="col">
+                <div class="rl-th">
+                  <button type="button" data-sort="forma" data-type="text">Forma</button>
+                  <InfoTip termin="Forma">
+                    Jak lekarz rozlicza praktykę: <strong>JDG</strong> (jednoosobowa działalność
+                    gospodarcza, czyli kontrakt), własny <strong>NZOZ</strong> (niepubliczny zakład
+                    opieki zdrowotnej, czyli przychodnia), praktyka lekarska albo etat. Przepisane
+                    z oświadczenia.
+                  </InfoTip>
+                </div>
+              </th>
+              <th scope="col" class="num">
+                <div class="rl-th">
+                  <button type="button" data-sort="dochod" data-type="num">Dochód (zł/rok)</button>
+                  <InfoTip termin="Dochód">
+                    Kwota <strong>po odjęciu kosztów</strong> działalności — to na niej opieramy
+                    wszystkie statystyki. Obejmuje wyłącznie działalność leczniczą (bez diety
+                    radnego, najmu czy emerytury) i sumuje <strong>wszystkie miejsca pracy</strong>.
+                  </InfoTip>
+                </div>
+              </th>
+              <th scope="col" class="num">
+                <div class="rl-th">
+                  <button type="button" data-sort="przychod" data-type="num">Przychód</button>
+                  <InfoTip termin="Przychód">
+                    Kwota <strong>przed odjęciem kosztów</strong> — z natury wyższa od dochodu
+                    i dlatego mniej porównywalna. Pusta, gdy oświadczenie jej nie rozdziela
+                    (część osób wpisuje tę samą liczbę w obu rubrykach).
+                  </InfoTip>
+                </div>
+              </th>
               <th scope="col">Źródło</th>
             </tr>
           </thead>
@@ -343,6 +380,9 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
     font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--ink-soft); padding: 0.55rem 0.65rem; white-space: nowrap;
   }
+  .rl-table thead .rl-th { display: flex; align-items: center; padding-right: 0.5rem; }
+  .rl-table thead .rl-th button { width: auto; flex: 1 1 auto; }
+  .rl-table thead .num .rl-th { justify-content: flex-end; }
   .rl-table thead button:hover { color: var(--brand-link); }
   .rl-table thead button:focus-visible { outline: 2px solid var(--brand-link); outline-offset: -2px; }
   .rl-table thead th[aria-sort] button { color: var(--brand-link); }
@@ -417,7 +457,7 @@ const STAN_HR = new Intl.DateTimeFormat('pl-PL', {
       for (var i = 0; i < sorted.length; i++) tbody.appendChild(sorted[i]);
       var ths = table.tHead.rows[0].cells;
       for (var j = 0; j < ths.length; j++) ths[j].removeAttribute('aria-sort');
-      btn.parentElement.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+      btn.closest('th').setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
     }
 
     table.tHead.addEventListener('click', function (e) {

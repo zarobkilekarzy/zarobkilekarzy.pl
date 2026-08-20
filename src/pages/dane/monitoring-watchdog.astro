@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Aktualizacja from '../../components/Aktualizacja.astro';
 import dataset from '../../data/watchdog-placowki.json';
+import InfoTip from '../../components/InfoTip.astro';
 
 // WERSJA ROBOCZA (niepublikowana). Przeglądarka obywatelskiego monitoringu
 // „Ile zarabiają lekarze?" (Watchdog Polska): wszystkie 1358 placówek —
@@ -156,15 +157,93 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
             <tr>
               <th scope="col"><button type="button" data-sort="nazwa" data-type="text">Placówka</button></th>
               <th scope="col"><button type="button" data-sort="woj" data-type="text">Woj.</button></th>
-              <th scope="col" class="num"><button type="button" data-sort="ludnosc" data-type="num">Mieszkańcy</button></th>
-              <th scope="col"><button type="button" data-sort="kat" data-type="text">Odpowiedź</button></th>
-              <th scope="col" class="num"><button type="button" data-sort="n" data-type="num">Lekarzy</button></th>
-              <th scope="col" class="num"><button type="button" data-sort="fundusz" data-type="num">Fundusz płac</button></th>
-              <th scope="col" class="num"><button type="button" data-sort="mediana" data-type="num">Mediana</button></th>
-              <th scope="col" class="num"><button type="button" data-sort="max" data-type="num">Najwyższa</button></th>
-              <th scope="col" class="num"><button type="button" data-sort="n500k" data-type="num">&gt;500 tys.</button></th>
-              <th scope="col" class="num"><button type="button" data-sort="n1m" data-type="num">&gt;1 mln</button></th>
-              <th scope="col" class="num"><button type="button" data-sort="top10" data-type="num">Top&nbsp;10 = %&nbsp;funduszu</button></th>
+              <th scope="col" class="num">
+                <div class="wm-th">
+                  <button type="button" data-sort="ludnosc" data-type="num">Mieszkańcy</button>
+                  <InfoTip termin="Mieszkańcy">
+                    Ludność miejscowości, w której zarejestrowana jest placówka (GUS, Bank Danych
+                    Lokalnych, koniec {ludnoscRok} r.). Dla gmin wiejskich — ludność
+                    <strong> całej gminy</strong>. Kolumna <strong>nie mówi o wielkości szpitala</strong>,
+                    tylko o skali ośrodka.
+                  </InfoTip>
+                </div>
+              </th>
+              <th scope="col">
+                <div class="wm-th">
+                  <button type="button" data-sort="kat" data-type="text">Odpowiedź</button>
+                  <InfoTip termin="Odpowiedź">
+                    Jak placówka zareagowała na wniosek o informację publiczną: ujawniła dane,
+                    odmówiła, odpisała inaczej albo milczy. Kategorię nadaje
+                    <strong> automat</strong> platformy fedrowanie po treści maila — bywa omylny.
+                  </InfoTip>
+                </div>
+              </th>
+              <th scope="col" class="num">
+                <div class="wm-th">
+                  <button type="button" data-sort="n" data-type="num">Lekarzy</button>
+                  <InfoTip termin="Lekarzy">
+                    Liczba osób na ujawnionej rocznej liście płac tej placówki — nie cała kadra
+                    szpitala, tylko tylu lekarzy obejmuje udostępniony wykaz.
+                  </InfoTip>
+                </div>
+              </th>
+              <th scope="col" class="num">
+                <div class="wm-th">
+                  <button type="button" data-sort="fundusz" data-type="num">Fundusz płac</button>
+                  <InfoTip termin="Fundusz płac">
+                    Suma wszystkich ujawnionych rocznych kwot brutto wypłaconych lekarzom przez tę
+                    placówkę. <strong>Nie</strong> jest to budżet szpitala ani koszt całego personelu.
+                  </InfoTip>
+                </div>
+              </th>
+              <th scope="col" class="num">
+                <div class="wm-th">
+                  <button type="button" data-sort="mediana" data-type="num">Mediana</button>
+                  <InfoTip termin="Mediana">
+                    Wartość <strong>środkowa</strong>: połowa lekarzy z listy zarobiła mniej, połowa
+                    więcej. Inaczej niż średnia, nie jest windowana przez kilka rekordowych kwot —
+                    dlatego lepiej pokazuje „typową” wypłatę.
+                  </InfoTip>
+                </div>
+              </th>
+              <th scope="col" class="num">
+                <div class="wm-th">
+                  <button type="button" data-sort="max" data-type="num">Najwyższa</button>
+                  <InfoTip termin="Najwyższa">
+                    Największa roczna kwota brutto na liście tej placówki — zapłata
+                    <strong> jednej osobie przez jeden szpital</strong>. Ile ta osoba zarobiła
+                    łącznie, ze wszystkich miejsc pracy, nie wie nikt.
+                  </InfoTip>
+                </div>
+              </th>
+              <th scope="col" class="num">
+                <div class="wm-th">
+                  <button type="button" data-sort="n500k" data-type="num">&gt;500 tys.</button>
+                  <InfoTip termin="Ponad 500 tys.">
+                    Ilu lekarzy z listy tej placówki dostało od niej ponad 500 tys. zł brutto
+                    w ciągu roku.
+                  </InfoTip>
+                </div>
+              </th>
+              <th scope="col" class="num">
+                <div class="wm-th">
+                  <button type="button" data-sort="n1m" data-type="num">&gt;1 mln</button>
+                  <InfoTip termin="Ponad 1 mln">
+                    Ilu lekarzy z listy tej placówki dostało od niej ponad milion złotych brutto
+                    w ciągu roku.
+                  </InfoTip>
+                </div>
+              </th>
+              <th scope="col" class="num">
+                <div class="wm-th">
+                  <button type="button" data-sort="top10" data-type="num">Top&nbsp;10 = %&nbsp;funduszu</button>
+                  <InfoTip termin="Top 10 = % funduszu">
+                    Jaki procent funduszu płac trafia do dziesięciu najlepiej opłacanych lekarzy —
+                    miara <strong>koncentracji</strong>. W małej placówce dziesięć osób to z natury
+                    większa część zespołu, więc wartości porównuj w obrębie podobnej wielkości.
+                  </InfoTip>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -340,6 +419,9 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
     font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     color: var(--ink-soft); padding: 0.55rem 0.65rem; white-space: nowrap;
   }
+  .wm-table thead .wm-th { display: flex; align-items: center; padding-right: 0.5rem; }
+  .wm-table thead .wm-th button { width: auto; flex: 1 1 auto; }
+  .wm-table thead .num .wm-th { justify-content: flex-end; }
   .wm-table thead button:hover { color: var(--brand-link); }
   .wm-table thead button:focus-visible { outline: 2px solid var(--brand-link); outline-offset: -2px; }
   .wm-table thead th[aria-sort] button { color: var(--brand-link); }
@@ -473,7 +555,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
       for (var i = 0; i < sorted.length; i++) tbody.appendChild(sorted[i]);
       var ths = table.tHead.rows[0].cells;
       for (var j = 0; j < ths.length; j++) ths[j].removeAttribute('aria-sort');
-      btn.parentElement.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+      btn.closest('th').setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
     }
 
     table.tHead.addEventListener('click', function (e) {

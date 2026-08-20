@@ -40,6 +40,13 @@ const pop = (n) =>
 // płac w małych i dużych ośrodkach, a nie licytować pojedyncze miasta.
 const bucket = (n) => (!n ? '' : n < 20000 ? 'S' : n < 100000 ? 'M' : 'L');
 
+// Koszyki histogramu — te same progi co HIST_PROGI w research/watchdog/08-export.mjs.
+// Zmiana w jednym miejscu bez drugiego rozjedzie opis z danymi.
+const HIST_ETY = [
+  'do 100 tys.', '100–200 tys.', '200–300 tys.', '300–500 tys.',
+  '500–750 tys.', '750 tys.–1 mln', 'ponad 1 mln',
+];
+
 const KAT = {
   A: { label: 'dane', cls: 'ok', desc: 'odpowiedź z danymi' },
   B: { label: 'odmowa', cls: 'alert', desc: 'wprost odmówiła' },
@@ -249,7 +256,9 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
           <tbody>
             {rows.map((p) => {
               const k = KAT[p.kat] ?? KAT.none;
+              const histMax = p.hist ? Math.max(...p.hist) : 0;
               return (
+                <Fragment>
                 <tr
                   data-nazwa={`${p.nazwa} ${p.miasto}`.toLowerCase()}
                   data-woj={p.woj}
@@ -266,6 +275,19 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                   data-top10={p.top10 ?? -1}
                 >
                   <td class="wm-name">
+                    {(p.hist || p.komentarz) && (
+                      <button
+                        type="button"
+                        class="wm-toggle"
+                        data-detail={`d-${p.nr}`}
+                        aria-expanded="false"
+                        aria-controls={`d-${p.nr}`}
+                      ><span class="wm-toggle-ico" aria-hidden="true"></span>
+                        <span class="sr-only">
+                          Pokaż {p.hist ? 'rozkład wynagrodzeń' : 'uwagę o danych'} — {p.nazwa}
+                        </span>
+                      </button>
+                    )}
                     <a href={`https://fedrowanie.siecobywatelska.pl/sprawy/${p.slug}`} target="_blank" rel="noopener noreferrer">{p.nazwa}</a>
                     {p.miasto && <span class="wm-city">{p.miasto}</span>}
                     {p.psz && <span class="wm-psz" title={`Sieć szpitali (PSZ)${p.pszPoziom ? ' — ' + p.pszPoziom : ''}`}>sieć</span>}
@@ -288,6 +310,50 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                   <td class="num">{p.n ? p.n1m : ''}</td>
                   <td class="num">{p.top10 != null ? `${p.top10}%` : ''}</td>
                 </tr>
+                {(p.hist || p.komentarz) && (
+                  <tr class="wm-detail" id={`d-${p.nr}`} hidden>
+                    <td colspan="11">
+                      <div class="wm-dist">
+                        {p.komentarz && (
+                          <p class="wm-uwaga">
+                            <strong>Skąd bierze się problem z tymi danymi:</strong> {p.komentarz}
+                            {' '}Sprawdź w sprawie u źródła (link w nazwie placówki).
+                          </p>
+                        )}
+                        {p.hist && (
+                        <p class="wm-dist-head">
+                          <strong>Rozkład {fmt(p.n)} ujawnionych kwot</strong> — roczne brutto
+                          wypłacone przez tę placówkę
+                        </p>
+                        <div class="wm-bars" role="img" aria-label={`Rozkład wynagrodzeń: ${p.hist.map((v, i) => `${HIST_ETY[i]} — ${v}`).join('; ')}.`}>
+                          {p.hist.map((v, i) => (
+                            <div class="wm-bar-row">
+                              <span class="wm-bar-lab">{HIST_ETY[i]}</span>
+                              <span class="wm-bar-track">
+                                <span
+                                  class={`wm-bar${i >= 4 ? ' is-hi' : i < 2 ? ' is-lo' : ''}`}
+                                  style={`width:${histMax ? Math.round((v / histMax) * 100) : 0}%`}
+                                ></span>
+                              </span>
+                              <span class="wm-bar-val">{v}</span>
+                            </div>
+                          ))}
+                        </div>
+                        )}
+                        {p.hist && (
+                        <p class="wm-dist-foot">
+                          Środkowa połowa zespołu mieści się między <strong>{short(p.p25)}</strong>
+                          a <strong>{short(p.p75)}</strong> zł; mediana <strong>{short(p.mediana)}</strong> zł.
+                          Koszyki są takie same dla wszystkich placówek, więc rozkłady da się
+                          porównywać. Pokazujemy wyłącznie <strong>liczebności</strong> —
+                          pojedynczych kwot nie publikujemy.
+                        </p>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>
@@ -335,6 +401,13 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
             <strong>Fundusz płac</strong> = suma ujawnionych rocznych kwot dla lekarzy tej placówki
             (nie cały budżet szpitala). <strong>Top&nbsp;10</strong> = jaki procent tego funduszu
             trafia do dziesięciu najlepiej opłacanych lekarzy — miara koncentracji.
+          </li>
+          <li>
+            <strong>Trójkącik przy nazwie rozwija rozkład</strong> — histogram pokazuje, ilu
+            lekarzy zmieściło się w każdym przedziale rocznego brutto, oraz gdzie leży środkowa
+            połowa zespołu (kwartyle). Przedziały są <strong>identyczne dla wszystkich placówek</strong>,
+            więc rozkłady da się między sobą porównywać. Publikujemy wyłącznie liczebności
+            przedziałów — nigdy pojedynczych kwot.
           </li>
           <li>
             <strong>Każda kwota to zapłata jednej placówki.</strong> Lekarz pracujący w kilku
@@ -438,6 +511,44 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
     border: 1px solid var(--line-2); border-radius: 999px; padding: 0.02rem 0.4rem;
   }
   .wm-woj { white-space: nowrap; color: var(--ink-soft); }
+
+  /* — rozwijanie wiersza — */
+  .wm-toggle {
+    all: unset; box-sizing: border-box; float: left; cursor: pointer;
+    width: 1.15rem; height: 1.15rem; margin: 0.05rem 0.4rem 0 0;
+    display: inline-grid; place-items: center;
+    border: 1px solid var(--line-2); border-radius: 5px; background: var(--paper);
+  }
+  .wm-toggle:hover { border-color: var(--brand-link); }
+  .wm-toggle:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 1px; }
+  .wm-toggle-ico { display: block; width: 0; height: 0;
+    border-left: 4px solid var(--ink-soft); border-top: 3.5px solid transparent;
+    border-bottom: 3.5px solid transparent; margin-left: 1px; }
+  .wm-toggle[aria-expanded='true'] { border-color: var(--brand-link); background: var(--surface-2); }
+  .wm-toggle[aria-expanded='true'] .wm-toggle-ico {
+    border-left: 3.5px solid transparent; border-right: 3.5px solid transparent;
+    border-top: 4px solid var(--brand-link); border-bottom: 0; margin: 1px 0 0;
+  }
+
+  .wm-detail > td { background: var(--paper); padding: 0.9rem 1.1rem 1.1rem; }
+  .wm-uwaga {
+    margin: 0 0 0.85rem; padding: 0.6rem 0.8rem; max-width: 52rem;
+    font-size: 0.82rem; line-height: 1.55; color: var(--ink-soft);
+    background: var(--amber-50); border-left: 3px solid var(--amber); border-radius: 0 6px 6px 0;
+  }
+  .wm-uwaga strong { color: var(--ink); }
+  .wm-dist-head { margin: 0 0 0.6rem; font-size: 0.85rem; color: var(--ink-soft); }
+  .wm-dist-head strong { color: var(--ink); }
+  .wm-bars { display: grid; gap: 0.28rem; max-width: 34rem; }
+  .wm-bar-row { display: grid; grid-template-columns: 8.5rem 1fr 2.2rem; align-items: center; gap: 0.55rem; }
+  .wm-bar-lab { font-size: 0.76rem; color: var(--ink-faint); text-align: right; white-space: nowrap; }
+  .wm-bar-track { height: 0.72rem; background: var(--paper-2); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .wm-bar { display: block; height: 100%; background: var(--brand-link); border-radius: 3px; min-width: 1px; }
+  .wm-bar.is-lo { background: var(--neutral-fill); }
+  .wm-bar.is-hi { background: var(--amber); }
+  .wm-bar-val { font-size: 0.78rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .wm-dist-foot { margin: 0.7rem 0 0; font-size: 0.78rem; color: var(--ink-faint); max-width: 46rem; line-height: 1.5; }
+  .wm-dist-foot strong { color: var(--ink-soft); }
   .wm-pop { color: var(--ink-soft); }
   .wm-pop-typ {
     display: block; font-size: 0.68rem; color: var(--ink-faint); letter-spacing: 0.04em;
@@ -482,7 +593,15 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
     var table = document.getElementById('wm-table');
     if (!table) return;
     var tbody = table.tBodies[0];
-    var all = Array.prototype.slice.call(tbody.rows);
+    // Wiersze danych i doczepione do nich szuflady z wykresem. Szuflada NIE jest
+    // wierszem danych: nie sortuje się, nie liczy do wyników, jedzie za swoim.
+    var all = Array.prototype.slice.call(tbody.rows).filter(function (r) {
+      return !r.classList.contains('wm-detail');
+    });
+    var detailOf = function (row) {
+      var next = row.nextElementSibling;
+      return next && next.classList.contains('wm-detail') ? next : null;
+    };
     var q = document.getElementById('wm-q');
     var woj = document.getElementById('wm-woj');
     var kat = document.getElementById('wm-kat');
@@ -505,8 +624,11 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
       var w = woj.value, k = kat.value, l = lud.value, listy = tylkoListy.checked, psz = tylkoPsz.checked;
       // Iterujemy po tbody.rows — to kolejność po sortowaniu.
       var matched = [];
-      for (var i = 0; i < tbody.rows.length; i++) {
-        var r = tbody.rows[i], d = r.dataset;
+      var dataRows = Array.prototype.slice.call(tbody.rows).filter(function (r) {
+        return !r.classList.contains('wm-detail');
+      });
+      for (var i = 0; i < dataRows.length; i++) {
+        var r = dataRows[i], d = r.dataset;
         var ok =
           (!needle || d.nazwa.indexOf(needle) !== -1) &&
           (!w || d.woj === w) &&
@@ -515,13 +637,20 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
           (!listy || d.n !== '-1') &&
           (!psz || d.psz === '1');
         r.hidden = true;
+        var det = detailOf(r);
+        if (det) det.hidden = true;
         if (ok) matched.push(r);
       }
       var pp = parseInt(perPage.value, 10) || matched.length || 1;
       var pages = Math.max(1, Math.ceil(matched.length / pp));
       if (page > pages) page = pages;
       var start = (page - 1) * pp;
-      matched.slice(start, start + pp).forEach(function (r) { r.hidden = false; });
+      matched.slice(start, start + pp).forEach(function (r) {
+        r.hidden = false;
+        var det = detailOf(r);
+        // Szuflada wraca tylko tam, gdzie użytkownik ją otworzył.
+        if (det) det.hidden = det.dataset.open !== '1';
+      });
 
       var shown = matched.length;
       count.textContent = 'Placówek: ' + shown.toLocaleString('pl-PL') + (shown < all.length ? ' (z ' + all.length.toLocaleString('pl-PL') + ')' : '');
@@ -552,11 +681,26 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
         }
         return a.dataset[key].localeCompare(b.dataset[key], 'pl') * dir;
       });
-      for (var i = 0; i < sorted.length; i++) tbody.appendChild(sorted[i]);
+      for (var i = 0; i < sorted.length; i++) {
+        var det = detailOf(sorted[i]);
+        tbody.appendChild(sorted[i]);
+        if (det) tbody.appendChild(det); // szuflada zawsze tuż za swoim wierszem
+      }
       var ths = table.tHead.rows[0].cells;
       for (var j = 0; j < ths.length; j++) ths[j].removeAttribute('aria-sort');
       btn.closest('th').setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
     }
+
+    tbody.addEventListener('click', function (e) {
+      var btn = e.target.closest('.wm-toggle');
+      if (!btn) return;
+      var det = document.getElementById(btn.dataset.detail);
+      if (!det) return;
+      var open = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+      det.hidden = open;
+      if (open) delete det.dataset.open; else det.dataset.open = '1';
+    });
 
     table.tHead.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-sort]');

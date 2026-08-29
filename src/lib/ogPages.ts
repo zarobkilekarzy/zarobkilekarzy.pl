@@ -183,6 +183,12 @@ export const ogPages: Record<string, OgPage> = {
     subtitle: 'Średni wiek pielęgniarki to 54 lata, 34% jest już w wieku emerytalnym, a do 2030 r. będzie ich 65%. Wchodzi 6205 rocznie, w wiek emerytalny — nawet 10 tys. Drabina wieku i mechanika nadchodzącego niedoboru.',
   },
 
+  'analizy/jedno-pwz': {
+    tag: 'Analiza · Jawność',
+    title: 'Jeden lekarz, wiele strumieni',
+    subtitle: 'Kontrakt, dyżury, gotowość i poradnia mogą zbiegać się na jednym numerze PWZ. Nikt tego nie sumuje — i właśnie dlatego łącznej kwoty dziś nie da się podać.',
+  },
+
   // — Mechanizmy —
   'mechanizmy': {
     tag: 'Mechanizmy',
@@ -193,6 +199,11 @@ export const ogPages: Record<string, OgPage> = {
     tag: 'Mechanizm',
     title: 'Wieloetatowość',
     subtitle: 'Ten sam lekarz rozlicza kontrakty w kilku placówkach naraz — a nikt tego nie sumuje.',
+  },
+  'mechanizmy/kontrakt-vs-etat': {
+    tag: 'Mechanizm',
+    title: 'Kontrakt czy etat',
+    subtitle: 'Ok. 73% specjalistów rozlicza się z placówkami na umowach cywilnoprawnych, nie na etacie. Płaca etatowa jest jawna w taryfie; kontrakt to przychód firmy poza rejestrem płac.',
   },
   'mechanizmy/dyzury-i-gotowosc': {
     tag: 'Mechanizm',
@@ -280,6 +291,11 @@ export const ogPages: Record<string, OgPage> = {
     tag: 'O projekcie',
     title: 'O projekcie',
     subtitle: 'Obywatelski watchdog jawności pieniędzy publicznych w ochronie zdrowia. Po stronie pacjentów i uczciwych lekarzy.',
+  },
+  'slownik': {
+    tag: 'Informacje',
+    title: 'Słowniczek pojęć',
+    subtitle: 'Kontrakt/B2B, kapitacja, ryczałt, nadwykonania, AOTMiT, PWZ, gotowość, opt-out — po ludzku, jednym zdaniem, bez żargonu.',
   },
   'prywatnosc': {
     tag: 'Informacje',

@@ -419,7 +419,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </header>
 
   <div class="kol-l">
-  <div class="instrukcja"><span><b>1.</b> Klikaj</span><span><b>2.</b> Mnóż pieniądze</span></div>
+  <div class="instrukcja"><span><b>1.</b> Klikaj</span><span><b>2.</b> Mnóż pieniądze</span><span><b>3.</b> Zarabiaj jak lekarz</span></div>
   <div class="plansza-ramka" id="planszaRamka">
     <div class="p-naglowek">
       <span class="marka">DRUGI LICZNIK</span>
@@ -702,7 +702,7 @@ function renderPlansza() {
   for (const b of tu) {
     const el = document.createElement('div');
     el.className = 'blok t-' + b.typ + (b.kreska && !S.rejestrDziala ? ' kreska' : '');
-    el.textContent = TYPY[b.typ].et;
+    el.textContent = b.typ === 'cito' ? 'CITO×' + (b.m || 3) : TYPY[b.typ].et;
     const szer = (w - 0.9) / L;
     el.style.left = 'calc(' + (b.c * w + 0.45 + b.lane * szer) + '% + 1px)';
     el.style.width = 'calc(' + szer + '% - 2px)';
@@ -776,10 +776,12 @@ function mnoznikEnergii() { return 0.35 + 0.65 * S.energia / 100; }
 function bonusSzkolen() { let b = 0; for (let i = 0; i < S.szkolenia; i++) b += SZKOLENIA[i].b; return b; }
 function stawkaBloku(b) {
   const t = TYPY[b.typ];
+  if (b.typ === 'cito') return 150 * (b.m || 3) * S.indeks * mnoznikNeg() * (b.lane === 0 ? mnoznikEnergii() : 1);
   const obok = b.typ === 'obok' ? S.mnoznikObok : 1;
   return t.st() * (t.rynek ? S.indeks : 1) * obok * mnoznikNeg() * (b.lane === 0 ? mnoznikEnergii() : 1);
 }
 function stawkaBazowa(b) { // bez mnożnika energii — do offline i sum tygodniowych
+  if (b.typ === 'cito') return 150 * (b.m || 3) * S.indeks * mnoznikNeg();
   const t = TYPY[b.typ];
   const obok = b.typ === 'obok' ? S.mnoznikObok : 1;
   return t.st() * (t.rynek ? S.indeks : 1) * obok * mnoznikNeg();
@@ -1284,21 +1286,25 @@ $('negocjujBtn').addEventListener('click', () => {
 /* ── DECYZJE (8) — wspólny harmonogram ── */
 function kosztBlokady() { return Math.round(T.REJESTR_KOSZT0 * Math.pow(T.REJESTR_R, S.blokadyRejestru)); }
 const DECYZJE = [
-  { id: 'cito', cd: 0, min: 55, max: 115, gdy: () => S.tier >= 1,
-    buduj: () => ({
-      tytul: iko('telefon') + ' Dyrektor (5:40)',
-      opis: '„Padł nam grafik na weekend. Na cito, potrójna stawka, wchodzi pan?"',
-      ttl: 12000,
-      opcje: [
-        { label: 'ODBIERZ', kons: 'złoty blok CITO w grafiku (znika po odegraniu)', fn() {
-          const sloty = znajdzSloty(1, [aktualnaKomorka().r]);
-          if (sloty) { const s = sloty[0]; S.bloki.push({ c: s.c, r: s.r, lane: s.lane, typ: 'cito', kreska: S.b2b, cito: true, p: s.p }); renderPlansza(); return 'blok CITO ×3 w grafiku'; }
-          return 'grafik pełny — dyżur przepadł';
-        } },
-        { label: 'ODRZUĆ', kons: '+10 energii (sen)', fn() { S.energia = Math.min(100, S.energia + 10); return '+10 energii'; } },
-      ],
-    }) },
-  { id: 'dziennikarz', cd: 0, min: 110, max: 190, gdy: () => S.b2b && !S.rejestrDziala,
+  { id: 'cito', cd: 0, min: 75, max: 150, gdy: () => S.tier >= 1,
+    buduj: () => {
+      const m = [2, 2, 3, 3, 3, 4][Math.floor(Math.random() * 6)];
+      const slowo = { 2: 'podwójna', 3: 'potrójna', 4: 'POCZWÓRNA' }[m];
+      return {
+        tytul: iko('telefon') + ' Dyrektor (5:40)',
+        opis: '„Padł nam grafik na weekend. Na cito, ' + slowo + ' stawka, wchodzi pan?"',
+        ttl: 12000,
+        opcje: [
+          { label: 'ODBIERZ (×' + m + ')', kons: 'złoty blok CITO×' + m + ' w grafiku (znika po odegraniu)', fn() {
+            const sloty = znajdzSloty(1, [aktualnaKomorka().r, 0, 1, 5, 4, 2, 3]);
+            if (sloty) { const s = sloty[0]; S.bloki.push({ c: s.c, r: s.r, lane: s.lane, typ: 'cito', kreska: S.b2b, cito: true, m, p: s.p }); renderPlansza(); return 'blok CITO ×' + m + ' w grafiku'; }
+            return 'grafik pełny — dyżur przepadł';
+          } },
+          { label: 'ODRZUĆ', kons: '+10 energii (sen)', fn() { S.energia = Math.min(100, S.energia + 10); return '+10 energii'; } },
+        ],
+      };
+    } },
+  { id: 'dziennikarz', cd: 0, min: 150, max: 260, gdy: () => S.b2b && !S.rejestrDziala,
     buduj: () => {
       const opcje = [];
       if (S.cennik) opcje.push({ label: 'Wystaw fakturę: 8 000 zł', kons: '+8 000 zł · dziennikarz odpuszcza', fn() { S.portfel += 8000; return '+8 000 zł, wniosek wycofany'; } });
@@ -1306,7 +1312,7 @@ const DECYZJE = [
       opcje.push({ label: 'Milcz', kons: 'ryzyko +5 · jak co trzeci szpital', fn() { S.ryzyko += 5; return 'cisza. Ryzyko +5'; } });
       return { tytul: iko('gazeta') + ' Dziennikarz', opis: 'Wniosek o informację publiczną: wynagrodzenia lekarzy w twoim szpitalu, z podziałem na formy zatrudnienia.', opcje, link: '/dane/monitoring-watchdog' };
     } },
-  { id: 'protest', cd: 0, min: 140, max: 240, gdy: () => S.tier >= 2,
+  { id: 'protest', cd: 0, min: 200, max: 340, gdy: () => S.tier >= 2,
     buduj: () => ({
       tytul: iko('ludzie') + ' Protest rezydentów',
       opis: 'Młodsi koledzy głodują o wyższe JAWNE pensje — przy twoich stawkach to grosze. Kamera lokalnej telewizji stoi przed wejściem.',
@@ -1316,7 +1322,7 @@ const DECYZJE = [
       ],
       link: '/dane/pensje-rezydentow',
     }) },
-  { id: 'licytacja', cd: 0, min: 160, max: 260, gdy: () => S.gen.obok >= 1 && S.mnoznikObok < 1.44,
+  { id: 'licytacja', cd: 0, min: 220, max: 360, gdy: () => S.gen.obok >= 1 && S.mnoznikObok < 1.44,
     buduj: () => ({
       tytul: iko('walizka') + ' Licytacja powiatów',
       opis: 'Dyrektor z powiatu obok: „Dołożę 20% do stawki. Bez pana nie mam oddziału". On to wie. Ty to wiesz. Wszyscy to wiedzą.',
@@ -1326,7 +1332,7 @@ const DECYZJE = [
       ],
       link: '/analizy/dlaczego-brakuje-lekarzy',
     }) },
-  { id: 'audyt', cd: 0, min: 180, max: 300, gdy: () => S.bilokacja >= 1,
+  { id: 'audyt', cd: 0, min: 240, max: 400, gdy: () => S.bilokacja >= 1,
     buduj: () => ({
       tytul: iko('zegar') + ' Audyt nowego zarządu',
       opis: 'W powiecie zmienił się zarząd. Nowa księgowa porównuje grafiki placówek godzina po godzinie. To jedyny sposób, w jaki KIEDYKOLWIEK wykrywano nakładki.',
@@ -1347,32 +1353,32 @@ const DECYZJE = [
       ],
       link: '/dane/rekordy',
     }) },
-  { id: 'stazysta', cd: 0, min: 130, max: 220, gdy: () => S.tier >= 2,
+  { id: 'stazysta', cd: 0, min: 190, max: 320, gdy: () => S.tier >= 2,
     buduj: () => ({
       tytul: iko('ludzie') + ' Stażysta prosi o pomoc',
       opis: '„Doktorze, wesele siostry… weźmie pan mój dyżur? Dyrekcja płaci podwójnie za zastępstwo z łapanki."',
       opcje: [
-        { label: 'Weź dyżur', kons: 'złoty blok CITO + energia −10', fn() {
+        { label: 'Weź dyżur', kons: 'złoty blok CITO×2 + energia −10', fn() {
           S.energia = Math.max(0, S.energia - 10);
-          const sloty = znajdzSloty(1, [0, 1, 5]);
-          if (sloty) { const s = sloty[0]; S.bloki.push({ c: s.c, r: s.r, lane: s.lane, typ: 'cito', kreska: S.b2b, cito: true, p: s.p }); renderPlansza(); return 'blok CITO w grafiku, młody zapamięta'; }
+          const sloty = znajdzSloty(1, [0, 1, 5, 4, 2, 3]);
+          if (sloty) { const s = sloty[0]; S.bloki.push({ c: s.c, r: s.r, lane: s.lane, typ: 'cito', kreska: S.b2b, cito: true, m: 2, p: s.p }); renderPlansza(); return 'blok CITO ×2 w grafiku, młody zapamięta'; }
           return 'grafik pełny — młody radzi sobie sam';
         } },
         { label: 'Odmów', kons: 'energia +5 · młody zapamięta co innego', fn() { S.energia = Math.min(100, S.energia + 5); return 'weekend twój'; } },
       ],
       link: '/dane/pensje-rezydentow',
     }) },
-  { id: 'ryczalt', cd: 0, min: 150, max: 250, gdy: () => S.b2b,
+  { id: 'ryczalt', cd: 0, min: 210, max: 340, gdy: () => S.b2b,
     buduj: () => ({
       tytul: iko('gov') + ' Domknięcie ryczałtu',
       opis: 'Szpitalowi brakuje 2% wykonania planu NFZ. Dyrekcja prosi o serię szybkich teleporad „na statystykę" — do końca kwartału zostały godziny.',
       opcje: [
-        { label: 'Klikam serię', kons: '+12 000 zł od dyrekcji · energia −15', fn() { S.portfel += 12000; S.energia = Math.max(0, S.energia - 15); return '+12 000 zł, punkty domknięte'; } },
+        { label: 'Klikam serię', kons: '+9–16 tys. zł od dyrekcji · energia −15', fn() { const kw = 9000 + Math.floor(Math.random() * 8) * 1000; S.portfel += kw; S.energia = Math.max(0, S.energia - 15); return '+' + fmt(kw) + ', punkty domknięte'; } },
         { label: 'Nie ma mnie', kons: 'ryczałt się nie domknie · dyrekcja pamięta', fn() { return 'plan niedomknięty. Nie twój problem. Na razie'; } },
       ],
       link: '/mechanizmy/rozliczenia-nfz',
     }) },
-  { id: 'rejestr', cd: 0, min: 100, max: 170, gdy: () => S.b2b && S.lifetime >= T.REJESTR_OD && !S.fin,
+  { id: 'rejestr', cd: 0, min: 130, max: 220, gdy: () => S.b2b && S.lifetime >= T.REJESTR_OD && !S.fin,
     buduj: () => {
       const koszt = kosztBlokady();
       const stac = S.portfel >= koszt;
@@ -1393,18 +1399,18 @@ const DECYZJE = [
       };
     } },
 ];
-let decyzjaTimer = 40;
+let decyzjaTimer = 55;
 function eventyDecyzje(sek) {
   if (S.fin || fonZajety) return;
   decyzjaTimer -= sek;
   if (decyzjaTimer > 0) return;
   const teraz = S.gh;
   const dostepne = DECYZJE.filter(d => d.gdy() && teraz >= d.cd);
-  if (!dostepne.length) { decyzjaTimer = 20; return; }
+  if (!dostepne.length) { decyzjaTimer = 25; return; }
   const rejestr = dostepne.find(d => d.id === 'rejestr');
   const d = (rejestr && Math.random() < 0.45) ? rejestr : dostepne[Math.floor(Math.random() * dostepne.length)];
   d.cd = teraz + (d.min + Math.random() * (d.max - d.min)) * H(); // cooldown w godzinach gry
-  decyzjaTimer = 45 + Math.random() * 45;
+  decyzjaTimer = 70 + Math.random() * 60;
   decyzja(d.buduj());
 }
 
@@ -1415,7 +1421,7 @@ function eventyToasty(sek) {
   if (S.ryzyko >= 10) {
     nastepnaKontrola -= sek;
     if (nastepnaKontrola <= 0) {
-      nastepnaKontrola = 90 + Math.random() * 60;
+      nastepnaKontrola = 120 + Math.random() * 80;
       S.kontrole++;
       const kara = S.ryzyko >= 40 ? Math.floor(S.portfel * 0.005) : 0;
       if (kara > 0) S.portfel -= kara;
@@ -1433,7 +1439,7 @@ function eventyToasty(sek) {
   if (S.b2b && !S.rejestrDziala) {
     nastepnaAnkieta -= sek;
     if (nastepnaAnkieta <= 0) {
-      nastepnaAnkieta = 240 + Math.random() * 140;
+      nastepnaAnkieta = 340 + Math.random() * 180;
       toast({ html: iko('gov') + ' <b>PAŃSTWO CIĘ POLICZY.</b> Ankieta o wynagrodzeniach. Rubryki „jeżeli dotyczy" zostawiasz puste. Sankcji: brak. <a href="' + LINK('/analizy/ustawa-o-danych-a-jawny-rejestr') + '" target="_blank" rel="noopener">tak uchwalono →</a>', ttl: 11000 });
     }
   }
@@ -1701,7 +1707,7 @@ function zapisz() {
   try {
     const kopia = Object.assign({}, S, {
       ostatnioOnline: Date.now(),
-      bloki: S.bloki.map(b => ({ c: b.c, r: b.r, lane: b.lane, typ: b.typ, kreska: b.kreska, cito: b.cito, p: b.p || 0 })),
+      bloki: S.bloki.map(b => ({ c: b.c, r: b.r, lane: b.lane, typ: b.typ, kreska: b.kreska, cito: b.cito, m: b.m, p: b.p || 0 })),
     });
     localStorage.setItem(ZAPIS, JSON.stringify(kopia));
   } catch (e) {}

@@ -192,6 +192,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     transition:transform .06s, box-shadow .06s;
   }
   #przyjmij.wcisniety { transform:translateY(4px); box-shadow:0 1px 0 #4e7a22; }
+  #przyjmij:disabled { background:var(--panel-2); color:var(--tekst-3); box-shadow:none; cursor:default; }
+  #przyjmij:disabled small { color:var(--tekst-3); }
   #przyjmij:focus-visible, button:focus-visible, a:focus-visible { outline:3px solid var(--teal); outline-offset:2px; }
   #przyjmij small { display:block; font-family:var(--ui); font-weight:700; font-size:.64rem; color:#2c4010; }
   .akcje-strip { display:flex; gap:8px; margin-top:8px; }
@@ -406,7 +408,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div class="tor" id="energiaPas" role="button" tabindex="0" title="Kliknij: czym jest energia?"><i style="width:100%"></i></div>
       <span class="op" id="energiaOp">100%</span>
       <button class="akcja" id="kawaBtn" title="+15 energii; każda kolejna w tygodniu droższa"><svg class="i"><use href="#i-kawa"/></svg> <span id="kawaCena">300 zł</span></button>
-      <button class="akcja" id="urlopBtn" title="20 s bez dochodu, +40 energii"><svg class="i"><use href="#i-sen"/></svg> <span id="urlopTxt">odeśpij</span></button>
+      <button class="akcja" id="urlopBtn" title="12 s bez dochodu, +40 energii"><svg class="i"><use href="#i-sen"/></svg> <span id="urlopTxt">odeśpij</span></button>
     </div>
     <span class="spacer"></span>
     <div class="chips">
@@ -528,7 +530,7 @@ const T = {
   CEGIELKA_TYG: 0.02,
   KLIK_ENERGIA: 0.8,
   KAWA_CENA0: 300, KAWA_R: 1.6, KAWA_PLUS: 20,
-  URLOP_MS: 20000, URLOP_PLUS: 40, URLOP_CD_MS: 30000,
+  URLOP_MS: 12000, URLOP_PLUS: 40, URLOP_CD_MS: 30000,
   NEG_CD_MS: 45000,
   REJESTR_OD: 120000, REJESTR_KOSZT0: 40000, REJESTR_R: 3,
   OFFLINE_MIN_S: 45, OFFLINE_CAP_S: 8 * 3600, OFFLINE_TEMPO: 0.5,
@@ -816,6 +818,7 @@ function wartoscKlikuBrutto() {
     * mnoznikEnergii() * (naDyzurze() ? 2 : 1) * (S.kolejka > 0 ? 1.5 : 1);
 }
 function klik() {
+  if (naUrlopie()) { pFloat('śpisz…', 40 + Math.random() * 20, 50, 'zly'); return; }
   const brutto = wartoscKlikuBrutto();
   const klin = S.b2b ? nettoB2B() : klinUoP();
   S.portfel += brutto * klin;
@@ -1613,9 +1616,12 @@ function render() {
   $('indeksW').textContent = S.indeks.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (S.negocjacje > 0) $('negW').textContent = '+' + Math.round((mnoznikNeg() - 1) * 100) + '%';
   $('jawnyMies').textContent = fmt(jawneTygodniowo() * 4.33);
-  $('klikInfo').textContent = '+' + Math.floor(wartoscKlikuBrutto() * (S.b2b ? nettoB2B() : klinUoP())).toLocaleString('pl-PL') + ' zł'
-    + (S.kolejka > 0 ? ' · kolejka: ' + S.kolejka + ' (×1,5)' : ' · z ulicy')
-    + (naDyzurze() ? ' · dyżur ×2' : '');
+  przyjmijBtn.disabled = naUrlopie();
+  $('klikInfo').textContent = naUrlopie()
+    ? 'ŚPISZ… ' + Math.ceil((S.urlopDo - Date.now()) / 1000) + ' s'
+    : '+' + Math.floor(wartoscKlikuBrutto() * (S.b2b ? nettoB2B() : klinUoP())).toLocaleString('pl-PL') + ' zł'
+      + (S.kolejka > 0 ? ' · kolejka: ' + S.kolejka + ' (×1,5)' : ' · z ulicy')
+      + (naDyzurze() ? ' · dyżur ×2' : '');
 
   const nb = $('negocjujBtn');
   if (!nb.classList.contains('hide')) {
@@ -1672,7 +1678,7 @@ $('urlopBtn').addEventListener('click', () => {
   S.urlopDo = Date.now() + T.URLOP_MS;
   S.urlopCd = Date.now() + T.URLOP_MS + T.URLOP_CD_MS;  // sen 20 s + 30 s przerwy
   S.energia = Math.min(100, S.energia + T.URLOP_PLUS);
-  log('Urlop. 20 sekund ciszy. Telefon i tak zadzwoni.');
+  log('Urlop. 12 sekund ciszy. Telefon i tak zadzwoni.');
 });
 $('kawaBtn').addEventListener('click', () => {
   const cena = kawaCena();

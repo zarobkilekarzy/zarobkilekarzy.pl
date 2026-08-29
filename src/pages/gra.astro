@@ -63,7 +63,33 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     text-shadow:0 0 18px rgba(245,197,66,.25);
   }
   .hud .tempo { font-family:var(--mono); font-size:.7rem; color:var(--kasa); }
+  .hud .portfel.blysk { animation:kasablysk .5s ease-out; }
+  @keyframes kasablysk { 30% { transform:scale(1.12); text-shadow:0 0 30px rgba(245,197,66,.8); } }
   .hud .spacer { flex:1; }
+  .hud-energia { display:flex; align-items:center; gap:7px; background:var(--panel); border:1px solid var(--linia); border-radius:12px; padding:5px 10px; }
+  .hud-energia .ikona { font-size:.9rem; color:var(--kasa); line-height:1; }
+  .hud-energia .ikona.srednio { color:var(--amber); }
+  .hud-energia .ikona.malo { color:var(--czerwien); animation:puls-czerw 1s infinite; }
+  @keyframes puls-czerw { 50% { opacity:.4; } }
+  .hud-energia .tor { width:96px; height:10px; background:var(--wglad); border-radius:6px; overflow:hidden; border:1px solid var(--linia); cursor:help; }
+  .hud-energia .tor i { display:block; height:100%; border-radius:6px; transition:width .3s; }
+  .hud-energia .op { font-family:var(--mono); font-size:.64rem; color:var(--tekst-2); min-width:52px; }
+  .hud-energia .akcja { font-size:.62rem; font-weight:700; border-radius:8px; padding:3px 8px; cursor:pointer; background:var(--panel-2); color:var(--tekst-2); border:1px solid var(--linia); white-space:nowrap; }
+  .hud-energia .akcja:disabled { opacity:.45; cursor:default; }
+
+  /* monety — deszcz przy kliku i zakupie */
+  .moneta {
+    position:fixed; z-index:60; pointer-events:none; width:15px; height:15px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ffe9a0, #f5c542 55%, #b9861e);
+    border:1px solid #8a6a14; box-shadow:0 1px 3px rgba(0,0,0,.45);
+    animation:moneta-lot var(--t, .9s) cubic-bezier(.25,.4,.6,1) forwards;
+  }
+  .moneta::after { content:"zł"; position:absolute; inset:0; display:grid; place-items:center; font:700 7px var(--mono); color:#7a5a10; }
+  @keyframes moneta-lot {
+    0%   { transform:translate(0,0) rotate(0) scale(1); opacity:1; }
+    30%  { transform:translate(calc(var(--dx) * .45), var(--wys)) rotate(200deg) scale(1.1); opacity:1; }
+    100% { transform:translate(var(--dx), var(--spad)) rotate(560deg) scale(.8); opacity:0; }
+  }
   .chips { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .chip { font-family:var(--mono); font-size:.68rem; padding:3px 10px; border-radius:99px; background:var(--panel); border:1px solid var(--linia); color:var(--tekst-2); }
   button.chip { cursor:help; }
@@ -135,6 +161,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   @keyframes frunie { to { transform:translateY(-36px); opacity:0; } }
   .p-blip { position:absolute; width:6px; height:6px; border-radius:50%; background:var(--kasa); box-shadow:0 0 8px rgba(126,224,138,.8); z-index:4; animation:blipznik 2.4s forwards; }
   @keyframes blipznik { to { opacity:0; } }
+  /* paski w stopce grafiku */
+  .p-stopka { display:flex; gap:14px; margin-top:7px; align-items:center; }
+  .p-stopka .czesc { flex:1; display:flex; align-items:center; gap:6px; }
+  .p-stopka .ikona { color:var(--tekst-3); font-size:.85rem; line-height:1; }
+  .p-stopka .tor { flex:1; height:9px; background:var(--panel); border-radius:5px; overflow:hidden; border:1px solid var(--linia); cursor:pointer; }
+  .p-stopka .tor i { display:block; height:100%; border-radius:5px; transition:width .3s; }
+  .p-stopka .op { font-family:var(--mono); font-size:.6rem; color:var(--tekst-2); white-space:nowrap; }
+  .p-stopka .akcja { font-size:.58rem; font-weight:700; border-radius:6px; padding:1px 6px; cursor:pointer; background:var(--panel-2); color:var(--tekst-2); border:1px solid var(--linia); }
 
   #przyjmij {
     display:block; width:100%; margin-top:10px; min-height:58px; cursor:pointer;
@@ -302,6 +336,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .akt td { padding:3px 4px; border-bottom:1px solid var(--linia); color:var(--tekst-2); text-align:left; }
   .akt td:last-child { text-align:right; color:var(--tekst); }
 
+  .gra-stopka { grid-column:1 / -1; margin-top:18px; padding-top:10px; border-top:1px solid var(--linia); font-size:.66rem; color:var(--tekst-3); text-align:center; }
   .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   @media (prefers-reduced-motion: reduce) { #gra-app * { animation:none !important; transition:none !important; } .p-float, .p-blip { display:none; } }
 </style>
@@ -351,6 +386,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <span class="portfel" id="portfelW">0 zł</span>
       <span class="tempo" id="tempoW"></span>
     </div>
+    <div class="hud-energia hide" id="energiaStan">
+      <span class="ikona" id="energiaIkona"><svg class="i"><use href="#i-bateria"/></svg></span>
+      <div class="tor" id="energiaPas" role="button" tabindex="0" title="Kliknij: czym jest energia?"><i style="width:100%"></i></div>
+      <span class="op" id="energiaOp">100%</span>
+      <button class="akcja" id="kawaBtn" title="+15 energii; każda kolejna w tygodniu droższa"><svg class="i"><use href="#i-kawa"/></svg> <span id="kawaCena">300 zł</span></button>
+      <button class="akcja" id="urlopBtn" title="20 s bez dochodu, +40 energii"><svg class="i"><use href="#i-sen"/></svg> odeśpij</button>
+    </div>
     <span class="spacer"></span>
     <div class="chips">
       <button class="chip" id="indeksChip">Indeks <b class="mono" id="indeksW">1,00</b><span class="znak">ⓘ</span></button>
@@ -382,32 +424,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div class="playhead" id="playhead"></div>
       </div>
     </div>
+    <div class="p-stopka">
+      <div class="czesc hide" id="tydzienStan">
+        <span class="ikona"><svg class="i"><use href="#i-kalendarz"/></svg></span>
+        <div class="tor" id="tydzienPas" role="button" tabindex="0" title="Kliknij: skąd te godziny?"><i style="width:0%"></i></div>
+        <span class="op"><span id="hUz">0</span>/<span id="hCap">48</span> h fiz.</span>
+        <button class="akcja" id="tydzienInfo" title="Skąd te godziny?">?</button>
+      </div>
+      <div class="czesc hide" id="dobaStan">
+        <span class="ikona"><svg class="i"><use href="#i-warstwy"/></svg></span>
+        <div class="tor" id="dobaPas"><i style="width:0%"></i></div>
+        <span class="op"><span id="dobaW">0</span> h/dobę</span>
+      </div>
+    </div>
   </div>
 
   <button id="przyjmij">PRZYJMIJ PACJENTA<small id="klikInfo">+10 zł</small></button>
   <div class="akcje-strip">
     <button id="negocjujBtn" class="hide"><svg class="i"><use href="#i-dymek"/></svg> Negocjuj stawkę<small id="negocjujInfo"></small></button>
-  </div>
-
-  <div class="stany">
-    <div class="stan" id="energiaStan">
-      <span class="ikona dobrze" id="energiaIkona"><svg class="i"><use href="#i-bateria"/></svg></span>
-      <div class="tor" id="energiaPas" title="Energia — praca i klikanie ją zużywają, sen w wolne noce oddaje"><i style="width:100%"></i></div>
-      <span class="op" id="energiaOp">100% sił</span>
-      <button class="akcja" id="kawaBtn" title="+15 energii; każda kolejna w tygodniu droższa"><svg class="i"><use href="#i-kawa"/></svg> <span id="kawaCena">300 zł</span></button>
-      <button class="akcja" id="urlopBtn" title="20 s bez dochodu, +40 energii"><svg class="i"><use href="#i-sen"/></svg> odeśpij</button>
-    </div>
-    <div class="stan" id="tydzienStan">
-      <span class="ikona"><svg class="i"><use href="#i-kalendarz"/></svg></span>
-      <div class="tor" id="tydzienPas" role="button" tabindex="0" title="Kliknij: skąd te godziny?"><i style="width:0%"></i></div>
-      <span class="op"><span id="hUz">0</span>/<span id="hCap">48</span> h fiz.</span>
-      <button class="akcja" id="tydzienInfo" title="Skąd te godziny?">?</button>
-    </div>
-    <div class="stan" id="dobaStan">
-      <span class="ikona"><svg class="i"><use href="#i-warstwy"/></svg></span>
-      <div class="tor" id="dobaPas"><i style="width:0%"></i></div>
-      <span class="op"><span id="dobaW">0</span> h/dobę rozl.</span>
-    </div>
   </div>
 
   <div class="kariera" id="kariera"></div>
@@ -437,6 +471,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <ol id="dziennik"></ol>
   </details>
   </div><!-- /kol-p -->
+
+  <footer class="gra-stopka">Gra ma charakter satyryczny — mechanizmy są celowo przerysowane, ale każdy istnieje naprawdę:
+  sprawdź „to działa naprawdę →" przy przedmiotach. <a href="https://zarobkilekarzy.pl" target="_blank" rel="noopener">zarobkilekarzy.pl</a></footer>
 </div>
 
 <div class="fon" id="fon" role="alertdialog" aria-labelledby="fonTytul">
@@ -666,6 +703,29 @@ $('pTaby').addEventListener('click', e => {
   S.aktywnaPlansza = +b.dataset.p;
   renderPlansza();
 });
+/* deszcz monet */
+let ostatniPunkt = null;
+addEventListener('pointerdown', e => { ostatniPunkt = { x: e.clientX, y: e.clientY }; }, true);
+function monety(x, y, n, sila) {
+  if (redMotion) return;
+  sila = sila || 1;
+  for (let i = 0; i < n; i++) {
+    const m = document.createElement('div');
+    m.className = 'moneta';
+    m.style.left = (x - 8 + (Math.random() - 0.5) * 18) + 'px';
+    m.style.top = (y - 8) + 'px';
+    m.style.setProperty('--dx', ((Math.random() - 0.5) * 190 * sila) + 'px');
+    m.style.setProperty('--wys', (-(45 + Math.random() * 90) * sila) + 'px');
+    m.style.setProperty('--spad', (150 + Math.random() * 280) + 'px');
+    m.style.setProperty('--t', (0.7 + Math.random() * 0.5) + 's');
+    document.body.appendChild(m);
+    setTimeout(() => m.remove(), 1300);
+  }
+}
+function monetyZ(el, n, sila) {
+  const r = el.getBoundingClientRect();
+  monety(r.left + r.width / 2, r.top + r.height / 2, n, sila);
+}
 function pFloat(tekst, xPct, yPct, klasa) {
   if (redMotion) return;
   const f = document.createElement('span');
@@ -742,6 +802,8 @@ function klik() {
     setTimeout(() => b.remove(), 2500);
   }
   pFloat('+' + Math.floor(brutto * klin).toLocaleString('pl-PL') + ' zł', poz * 100 + 1, 14 + Math.random() * 30);
+  if (ostatniPunkt) monety(ostatniPunkt.x, ostatniPunkt.y, 4 + (naDyzurze() ? 2 : 0), 1);
+  else monetyZ(przyjmijBtn, 4, 1);
   postep();
 }
 const przyjmijBtn = $('przyjmij');
@@ -868,9 +930,9 @@ const PRZEDMIOTY = [
     kup() { S.cennik = true; }, link: '/mechanizmy/brak-jawnosci' },
 
   { id: 'kawalerka', panel: 'pMajatek', kat: 'kat-majatek', ikona: 'budynek', nazwa: 'Kawalerka pod wynajem',
-    flavor: 'Ryczałt od najmu: 8,5%. Lokator płaci jak NFZ, tylko punktualnie.',
-    efekt: () => '+900 zł/tydz. czynszu · nie zajmuje grafiku',
-    koszt: () => kosztG(35000, 1.35, S.mieszkania), ile: () => S.mieszkania, max: () => S.mieszkania >= 8,
+    flavor: 'Ryczałt od najmu: 8,5%. Lokator płaci jak NFZ, tylko punktualnie. Beton przyjmie każdą nadwyżkę.',
+    efekt: () => '+900 zł/tydz. czynszu · nie zajmuje grafiku · bez limitu',
+    koszt: () => kosztG(35000, 1.35, S.mieszkania), ile: () => S.mieszkania,
     kup() { S.mieszkania++; S.ryzyko += 2; sprawdzKsiegi(); }, link: '/analizy/lekarze-radni' },
   { id: 'panamerka', panel: 'pMajatek', kat: 'kat-majatek', ikona: 'auto', nazwa: 'Panamerka (leasing na firmę)',
     flavor: 'Auto służbowe — do wizyt domowych. Parking pod szpitalem wie o tobie więcej niż rejestr płac.',
@@ -881,8 +943,8 @@ const PRZEDMIOTY = [
     link: '/mechanizmy/kontrakt-vs-etat' },
   { id: 'apartament', panel: 'pMajatek', kat: 'kat-majatek', ikona: 'miasto', nazwa: 'Apartament „pod inwestycję"',
     flavor: 'Deweloper mówi „produkt inwestycyjny". Księga wieczysta mówi wszystko.',
-    efekt: () => '+2 600 zł/tydz. czynszu · nie zajmuje grafiku',
-    koszt: () => kosztG(140000, 1.4, S.apartamenty), ile: () => S.apartamenty, max: () => S.apartamenty >= 4,
+    efekt: () => '+2 600 zł/tydz. czynszu · nie zajmuje grafiku · bez limitu',
+    koszt: () => kosztG(140000, 1.4, S.apartamenty), ile: () => S.apartamenty,
     wymog: () => S.mieszkania >= 1 ? null : 'wymaga: pierwsza kawalerka',
     kup() { S.apartamenty++; S.ryzyko += 2; sprawdzKsiegi(); }, link: '/analizy/lekarze-radni' },
 ];
@@ -909,6 +971,9 @@ function budujSklepy() {
       if (p.slotyPotrzebne && p.slotyPotrzebne() > 0 && !znajdzSloty(p.slotyPotrzebne(), p.preferRows, null, p.slotyPlansza || 0)) return;
       S.portfel -= k;
       p.kup();
+      monetyZ(btn, 14, 1.7);
+      const pw = $('portfelW');
+      pw.classList.remove('blysk'); void pw.offsetWidth; pw.classList.add('blysk');
       czytnik('Kupiono: ' + (typeof p.nazwa === 'function' ? p.nazwa() : p.nazwa));
       postep(); renderSklepy();
     };
@@ -1006,6 +1071,17 @@ function godzinyModal() {
 $('tydzienInfo').addEventListener('click', godzinyModal);
 $('tydzienPas').addEventListener('click', godzinyModal);
 $('tydzienPas').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); godzinyModal(); } });
+
+/* wyjaśnienie energii — klik w pasek */
+function energiaModal() {
+  infoModal('Energia',
+    '<p><b>Twoje siły fizyczne.</b> Zużywa je wszystko, co robisz OSOBIŚCIE: każdy przyjęty pacjent (−0,5) i każda godzina, gdy linia „teraz" przechodzi przez twój blok (dyżury nocne najbardziej).</p>' +
+    '<p><b>Regenerujesz się tylko we śnie</b> — czyli w WOLNE nocne sloty grafiku. Zastawisz noce dyżurami — nie masz kiedy spać.</p>' +
+    '<p>Przy niskiej energii praca osobista jest warta ułamek stawki (35–100%). Ratunki: <b>kawa</b> (drożeje z każdą w tygodniu) i <b>odeśpij</b> (20 s bez dochodu).</p>' +
+    '<p class="mala">Tory bilokacji NIE męczą — tam pracuje papier, nie ciało. W realnych grafikach po 30 godzinach bez snu też się operuje. <a href="' + LINK('/mechanizmy/wieloetatowosc') + '" target="_blank" rel="noopener">to działa naprawdę →</a></p>');
+}
+$('energiaPas').addEventListener('click', energiaModal);
+$('energiaPas').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); energiaModal(); } });
 
 /* ── awanse / modale ── */
 function awans(nowy) {
@@ -1304,9 +1380,9 @@ function eventyToasty(sek) {
 function postep() {
   if (S.portfel >= 100 && !S.odslony.sklep) { S.odslony.sklep = true; $('sklepy').style.display = 'block'; log('Stać cię na pierwsze szkolenie.', true); }
   if (S.lifetime >= 250 && !S.odslony.praca) { S.odslony.praca = true; $('tabPraca').classList.remove('hide'); }
-  if (S.tier >= 1 && !S.odslony.energia) { S.odslony.energia = true; $('energiaStan').classList.add('on'); $('tydzienStan').classList.add('on'); }
+  if (S.tier >= 1 && !S.odslony.energia) { S.odslony.energia = true; $('energiaStan').classList.remove('hide'); $('tydzienStan').classList.remove('hide'); }
   if (S.tier >= 2 && !S.odslony.neg) { S.odslony.neg = true; $('negocjujBtn').classList.remove('hide'); }
-  if (S.bilokacja >= 1 && !S.odslony.doba) { S.odslony.doba = true; $('dobaStan').classList.add('on'); }
+  if (S.bilokacja >= 1 && !S.odslony.doba) { S.odslony.doba = true; $('dobaStan').classList.remove('hide'); }
   if (S.tier >= 2 && S.lifetime >= 12000 && !S.systemOtwarty) {
     S.systemOtwarty = true;
     const t = $('tabSystem');
@@ -1488,7 +1564,7 @@ function render() {
   pas.querySelector('i').style.width = e + '%';
   pas.classList.toggle('malo', e < 25);
   pas.classList.toggle('srednio', e >= 25 && e < 60);
-  $('energiaOp').textContent = e + '% sił';
+  $('energiaOp').textContent = e + '%';
   const ei = $('energiaIkona');
   ei.classList.toggle('dobrze', e >= 60);
   ei.classList.toggle('srednio', e >= 25 && e < 60);
@@ -1640,11 +1716,11 @@ if (S.kliki > 0 || S.bloki.length > 0) {
   S.odslony = S.odslony || {};
   if (S.odslony.sklep || S.lifetime >= 100) $('sklepy').style.display = 'block';
   if (S.odslony.praca || S.lifetime >= 250) $('tabPraca').classList.remove('hide');
-  if (S.tier >= 1) { renderKariere(); $('tabSystem').classList.remove('hide'); $('energiaStan').classList.add('on'); $('tydzienStan').classList.add('on'); }
+  if (S.tier >= 1) { renderKariere(); $('tabSystem').classList.remove('hide'); $('energiaStan').classList.remove('hide'); $('tydzienStan').classList.remove('hide'); }
   if (S.tier >= 2) $('negocjujBtn').classList.remove('hide');
   if (S.systemOtwarty) { const t = $('tabSystem'); t.disabled = false; t.innerHTML = iko('system') + ' System'; }
   if (S.odslony.majatek) $('tabMajatek').classList.remove('hide');
-  if (S.bilokacja >= 1) $('dobaStan').classList.add('on');
+  if (S.bilokacja >= 1) $('dobaStan').classList.remove('hide');
   if (S.negocjacje > 0) $('negChip').classList.remove('hide');
   if (S.b2b) $('okoBtn').classList.remove('hide');
   if (S.rejestrDziala) { okoEl.classList.add('rejestr'); $('okoEtyk').textContent = 'rejestr — widzą wszyscy:'; }

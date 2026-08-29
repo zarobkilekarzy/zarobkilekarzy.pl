@@ -411,7 +411,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <button class="chip" id="indeksChip">Indeks <b class="mono" id="indeksW">1,00</b><span class="znak">ⓘ</span></button>
       <button class="chip hide" id="negChip">Wynegocjowane <b class="mono" id="negW">+0%</b><span class="znak">ⓘ</span></button>
       <button class="chip rozjazd hide" id="rozjazd">ROZJAZD <b id="rozjazdX">×1,0</b><span class="znak">ⓘ</span></button>
-      <button class="chip" id="tempoChip" title="Zmień tempo gry"><svg class="i"><use href="#i-zegar"/></svg> <b class="mono" id="szybkoscW">×3</b></button>
+      <button class="chip" id="tempoChip" title="Zmień poziom trudności (tempo gry)"><svg class="i"><use href="#i-zegar"/></svg> poziom trudności <b class="mono" id="szybkoscW">×3</b></button>
       <button class="chip" id="resetBtn" title="Zacznij od nowa"><svg class="i"><use href="#i-reset"/></svg> nowa gra</button>
     </div>
   </header>
@@ -723,14 +723,16 @@ let ostatniPunkt = null;
 addEventListener('pointerdown', e => { ostatniPunkt = { x: e.clientX, y: e.clientY }; }, true);
 function monety(x, y, n, sila, banknoty) {
   if (redMotion) return;
-  if (document.querySelectorAll('.moneta,.banknot').length > 140) return;
+  if (document.querySelectorAll('.moneta,.banknot').length > 260) return;
   sila = sila || 1;
   for (let i = 0; i < n; i++) {
     const m = document.createElement('div');
     m.className = (banknoty && Math.random() < 0.3) ? 'banknot' : 'moneta';
-    m.style.left = (x - 8 + (Math.random() - 0.5) * 18) + 'px';
+    const rozmiar = 12 + Math.random() * 8;
+    m.style.width = rozmiar + 'px'; m.style.height = (m.className === 'banknot' ? rozmiar * 0.55 : rozmiar) + 'px';
+    m.style.left = (x - 8 + (Math.random() - 0.5) * 30) + 'px';
     m.style.top = (y - 8) + 'px';
-    m.style.setProperty('--dx', ((Math.random() - 0.5) * 190 * sila) + 'px');
+    m.style.setProperty('--dx', ((Math.random() - 0.5) * 300 * sila) + 'px');
     m.style.setProperty('--wys', (-(45 + Math.random() * 90) * sila) + 'px');
     m.style.setProperty('--spad', (150 + Math.random() * 280) + 'px');
     m.style.setProperty('--t', (0.7 + Math.random() * 0.5) + 's');
@@ -749,7 +751,7 @@ function deszczMonet(n) {
     m.className = ((Math.random() < 0.25) ? 'banknot' : 'moneta') + ' deszczowa';
     m.style.left = (Math.random() * innerWidth) + 'px';
     m.style.top = '-20px';
-    m.style.setProperty('--dx', ((Math.random() - 0.5) * 140) + 'px');
+    m.style.setProperty('--dx', ((Math.random() - 0.5) * 220) + 'px');
     m.style.setProperty('--t', (1.2 + Math.random() * 1.1) + 's');
     document.body.appendChild(m);
     setTimeout(() => m.remove(), 2500);
@@ -831,8 +833,8 @@ function klik() {
     setTimeout(() => b.remove(), 2500);
   }
   pFloat('+' + Math.floor(brutto * klin).toLocaleString('pl-PL') + ' zł', poz * 100 + 1, 14 + Math.random() * 30);
-  if (ostatniPunkt) monety(ostatniPunkt.x, ostatniPunkt.y, 7 + (naDyzurze() ? 3 : 0) + (S.kolejka > 0 ? 2 : 0), 1.15, S.tier >= 2);
-  else monetyZ(przyjmijBtn, 7, 1.15, S.tier >= 2);
+  if (ostatniPunkt) monety(ostatniPunkt.x, ostatniPunkt.y, 13 + (naDyzurze() ? 5 : 0) + (S.kolejka > 0 ? 3 : 0), 1.35, S.tier >= 2);
+  else monetyZ(przyjmijBtn, 13, 1.35, S.tier >= 2);
   postep();
 }
 const przyjmijBtn = $('przyjmij');
@@ -1000,7 +1002,7 @@ function budujSklepy() {
       if (p.slotyPotrzebne && p.slotyPotrzebne() > 0 && !znajdzSloty(p.slotyPotrzebne(), p.preferRows, null, p.slotyPlansza || 0)) return;
       S.portfel -= k;
       p.kup();
-      monetyZ(btn, 24, 2, true);
+      monetyZ(btn, 40, 2.3, true);
       const pw = $('portfelW');
       pw.classList.remove('blysk'); void pw.offsetWidth; pw.classList.add('blysk');
       czytnik('Kupiono: ' + (typeof p.nazwa === 'function' ? p.nazwa() : p.nazwa));
@@ -1109,7 +1111,7 @@ const TEMPA = [
 ];
 function tempoModal(przyStarcie) {
   $('aktBox').innerHTML =
-    '<div class="eyebrow">' + (przyStarcie ? 'Nowa kariera' : 'Tempo gry') + '</div><h2>Ile masz czasu?</h2>' +
+    '<div class="eyebrow">Poziom trudności</div><h2>Ile masz czasu?</h2>' +
     '<p>Tempo zmienia tylko szybkość grafiku (dochód pasywny i eventy). Klikanie płaci tyle samo. Możesz zmienić w każdej chwili.</p>' +
     '<div class="opcje-tempa"></div>';
   const box = $('aktBox').querySelector('.opcje-tempa');
@@ -1482,7 +1484,7 @@ function finalRejestru(powod) {
     '<a class="zrodlo-a" href="' + LINK('/postulat') + '" target="_blank" rel="noopener">tak mógłby wyglądać naprawdę →</a>',
     'Graj dalej (rejestr już działa)',
     () => {
-      deszczMonet(44);
+      deszczMonet(70);
       S.rejestrDziala = true;
       S.jawneCum = S.realCum;
       renderPlansza();
@@ -1507,7 +1509,7 @@ setInterval(() => {
   if (h < prevH) {
     S.tydzienNr++;
     S.kawyTydzien = 0;
-    if (S.tydzienSuma > 500 && !S.fin) { toast({ wynik: true, html: iko('log') + ' <b>Wypłata tygodnia ' + (S.tydzienNr - 1) + ':</b> +' + fmt(S.tydzienSuma), ttl: 4500 }); deszczMonet(16); }
+    if (S.tydzienSuma > 500 && !S.fin) { toast({ wynik: true, html: iko('log') + ' <b>Wypłata tygodnia ' + (S.tydzienNr - 1) + ':</b> +' + fmt(S.tydzienSuma), ttl: 4500 }); deszczMonet(28); }
     S.tydzienSuma = 0;
     playheadEl.classList.add('przeskok');
   } else playheadEl.classList.remove('przeskok');
@@ -1572,12 +1574,12 @@ setInterval(() => {
   if (S.cegielki > 0) S.indeks *= Math.pow(1 + T.CEGIELKA_TYG * S.cegielki, gh / 168);
 
   floatTimer += sek;
-  if (floatTimer > 0.7) {
+  if (floatTimer > 0.5) {
     floatTimer = 0;
     if (zysk > 0) {
       pFloat('+' + Math.floor(zysk / sek).toLocaleString('pl-PL') + ' zł/s', poz * 100 + 1.5, 8, blokiW(c, r).some(b => b.typ === 'cito') ? 'zloty' : '');
       const pr = plansza.getBoundingClientRect();
-      if (pr.bottom > 0 && pr.top < innerHeight) monety(pr.left + poz * pr.width, pr.top + (r + 0.5) / 6 * pr.height, 2, 0.6);
+      if (pr.bottom > 0 && pr.top < innerHeight) monety(pr.left + poz * pr.width, pr.top + (r + 0.5) / 6 * pr.height, 4, 0.8);
     }
   }
 
@@ -1772,7 +1774,7 @@ function rozliczOffline() {
     '</table>' +
     '<p class="mala">Odespałeś (energia 100%). W poczekalni czeka pełna kolejka.</p>',
     'Do roboty');
-  deszczMonet(30);
+  deszczMonet(50);
   log('Powrót po ' + Math.floor(tygodnie) + ' tyg. System pracował za ciebie: +' + fmt(zysk), true);
 }
 

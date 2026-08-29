@@ -50,6 +50,13 @@ export interface Strona {
 // Klucz = ścieżka bez końcowego „/" (jak w pageDates.mjs).
 export const strony: Record<string, Strona> = {
   // — Mechanizmy —
+  // Gra: osobna trasa /gra, wystawiona na hubie mechanizmów (dzial steruje hubem).
+  '/gra': {
+    dzial: 'mechanizmy',
+    tytul: 'Drugi licznik — symulator kariery',
+    opis: 'Idle clicker: przejdź od stażysty do walizkowca i zobacz, ile z twoich rozliczeń widzi świat. Satyra — ale każdy mechanizm z gry istnieje naprawdę.',
+    tematy: ['pieniadz-nfz'],
+  },
   '/mechanizmy/wieloetatowosc': {
     dzial: 'mechanizmy',
     tytul: 'Wieloetatowość i równoległe kontrakty',

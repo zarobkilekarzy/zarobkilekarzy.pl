@@ -1,7 +1,8 @@
 ---
-// „Drugi licznik" — satyryczny symulator kariery w ochronie zdrowia.
-// CICHY START: bez wpisu w pages.ts (brak linku w nawigacji i hubach), noindex,
-// poza mapą strony (filtr w astro.config.mjs) — dostępny tylko z bezpośredniego URL.
+// „Drugi licznik" — satyryczny symulator kariery w ochronie zdrowia (idle clicker).
+// Wystawiony na hubie mechanizmów (rejestr: src/lib/pages.ts), z własnym OG
+// (src/lib/ogPages.ts) i datą w src/lib/pageDates.mjs. `search={false}`, bo treść
+// gry (etykiety przycisków) nie powinna śmiecić w wyszukiwarce Pagefind.
 // Fonty gry bundlowane przez fontsource (CSP: font-src 'self' — bez hostów Google).
 // Koncepcja i decyzje projektowe: research/gra-idle-clicker/00-synteza.md
 import '@fontsource/baloo-2/600.css';
@@ -15,7 +16,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 <BaseLayout
   title="Drugi licznik — symulator kariery"
   description="Idle clicker o polskim systemie ochrony zdrowia: grafik, dyżury, kontrakty i dwa liczniki — jawny i prawdziwy. Mechanizmy z gry istnieją naprawdę."
-  noindex={true}
+  search={false}
 >
 <style is:inline>
   #gra-app {
@@ -798,6 +799,15 @@ function jawneTygodniowo() {
   for (const b of S.bloki) if (!b.kreska) s += stawkaBazowa(b) * 4;
   return s;
 }
+/* efektywne (z karą energii za pracę osobistą na torze 0) — do naliczania dochodu */
+function tygodnioweEfekt() {
+  let jaw = 0, krs = 0;
+  for (const b of S.bloki) {
+    const st = stawkaBazowa(b) * (b.lane === 0 ? mnoznikEnergii() : 1) * 4;
+    if (b.kreska) krs += st; else jaw += st;
+  }
+  return { jaw, krs };
+}
 function kreskoweTygodniowo() {
   let s = 0;
   for (const b of S.bloki) if (b.kreska) s += stawkaBazowa(b) * 4;
@@ -1552,11 +1562,8 @@ setInterval(() => {
   let zysk = 0;
   if (!naUrlopie()) {
     const tu = blokiW(c, r);
-    let jawneH = 0, kreskH = 0;
-    for (const b of tu) {
-      const st = stawkaBloku(b);
-      if (b.kreska) kreskH += st; else jawneH += st;
-    }
+    const ef = tygodnioweEfekt();
+    const jawneH = ef.jaw / 168, kreskH = ef.krs / 168;   // średnia — grafik płaci cały czas
     const netto = jawneH * klinUoP() + kreskH * nettoB2B();
     zysk = netto * gh;
     S.portfel += zysk;
@@ -1605,12 +1612,9 @@ setInterval(() => {
 function kawaCena() { return Math.round(T.KAWA_CENA0 * Math.pow(T.KAWA_R, S.kawyTydzien)); }
 function render() {
   $('portfelW').textContent = fmt(S.portfel);
-  const { c, r } = aktualnaKomorka();
-  const tu = blokiW(c, r);
-  let chwilowe = 0;
-  for (const b of tu) chwilowe += stawkaBloku(b) * (b.kreska ? nettoB2B() : klinUoP());
-  chwilowe = (chwilowe + czynszNaGodzine() * 0.915) * H();
-  $('tempoW').textContent = naUrlopie() ? 'urlop — grafik stoi' : chwilowe > 0 ? '+' + fmt(chwilowe) + '/s teraz' : 'pusty slot — klikaj';
+  const ef = tygodnioweEfekt();
+  const chwilowe = (ef.jaw / 168 * klinUoP() + ef.krs / 168 * nettoB2B() + czynszNaGodzine() * 0.915) * H();
+  $('tempoW').textContent = naUrlopie() ? 'urlop — grafik stoi' : chwilowe > 0 ? '+' + fmt(chwilowe) + '/s' : 'pusty grafik — klikaj';
   $('tydzienNr').textContent = 'tydzień ' + S.tydzienNr;
   $('szybkoscW').textContent = '×' + S.tempo;
   $('indeksW').textContent = S.indeks.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

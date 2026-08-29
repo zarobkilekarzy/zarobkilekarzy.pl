@@ -28,6 +28,8 @@ export const pageDates = {
   '/analizy/odpowiedzialnosc-zawodowa-lekarzy': '2026-07-21',
   '/analizy/lekarze-radni': '2026-08-14',
   // Mechanizmy (strony wyjaśniające).
+  // Gra (symulator na hubie mechanizmów).
+  '/gra': '2026-08-29',
   '/mechanizmy/reglamentacja-dostepu': '2026-07-14',
   '/mechanizmy/kontrakt-vs-etat': '2026-08-14',
   '/mechanizmy/brak-jawnosci': '2026-07-22',

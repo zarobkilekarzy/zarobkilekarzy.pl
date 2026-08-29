@@ -17,6 +17,13 @@ export const ogPages: Record<string, OgPage> = {
     subtitle: 'Część lekarzy rozlicza miliony ze środków publicznych, a pacjenci czekają w kolejce. Zbieramy dane i postulujemy jawny rejestr.',
   },
 
+  // — Gra —
+  'gra': {
+    tag: 'Symulator · Satyra',
+    title: 'Drugi licznik',
+    subtitle: 'Idle clicker o pieniądzu publicznym w ochronie zdrowia: grafik, dyżury, kontrakty — i dwa liczniki: jawny i prawdziwy. Każdy mechanizm z gry istnieje naprawdę.',
+  },
+
   // — Dane —
   'dane': {
     tag: 'Dane',

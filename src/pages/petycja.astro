@@ -739,22 +739,22 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
   import { buildFilledPetycjaPdf } from '../lib/petycja-pdf';
   import { KORESPONDENCJA } from '../lib/petycja';
 
-  const imieEl = document.getElementById('imie');
-  const miejEl = document.getElementById('miejscowosc');
+  const imieEl = document.querySelector<HTMLInputElement>('input#imie');
+  const miejEl = document.querySelector<HTMLInputElement>('input#miejscowosc');
   const warnEl = document.getElementById('genWarn');
-  const pdfBtns = document.querySelectorAll('button[data-pdf]');
+  const pdfBtns = document.querySelectorAll<HTMLButtonElement>('button[data-pdf]');
 
   if (pdfBtns.length && imieEl && miejEl) {
     // Fonty TTF pobierane raz i cache'owane (jsPDF osadza sfnt jako base64).
-    let fontsPromise;
+    let fontsPromise: Promise<{ regular: string; bold: string }> | null = null;
     const loadFonts = () => {
       if (fontsPromise) return fontsPromise;
-      const toB64 = async (url) => {
+      const toB64 = async (url: string) => {
         const buf = new Uint8Array(await (await fetch(url)).arrayBuffer());
         let s = '';
         const CH = 0x8000;
         for (let i = 0; i < buf.length; i += CH) {
-          s += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
+          s += String.fromCharCode.apply(null, Array.from(buf.subarray(i, i + CH)));
         }
         return btoa(s);
       };
@@ -765,7 +765,7 @@ const LISTA_MZ_URL = 'https://www.gov.pl/web/zdrowie/petycje2';
       return fontsPromise;
     };
 
-    const beacon = (slug) => {
+    const beacon = (slug: string) => {
       try {
         const key = 'clk:' + slug;
         const now = Date.now();

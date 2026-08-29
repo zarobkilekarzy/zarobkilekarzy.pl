@@ -46,27 +46,34 @@
   const TURNSTILE_API = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
   const root = document.getElementById('licznik-petycji');
   if (root) {
-    const nEl = root.querySelector('#licz-n');
-    const osobyEl = root.querySelector('#licz-osoby');
-    const btn = root.querySelector('#licz-btn');
-    const doneEl = root.querySelector('#licz-done');
-    const turnstileEl = root.querySelector('.licz-turnstile');
-    const alertEl = root.querySelector('.licz-alert');
-    const lineEl = nEl.closest('.licz-line'); // linia z liczbą
-    const startEl = root.querySelector('.licz-start'); // linia startowa (poniżej progu)
-    const senatEl = root.querySelector('.licz-senat'); // dopalacz senacki (po deklaracji)
+    const nEl = root.querySelector<HTMLElement>('#licz-n');
+    const osobyEl = root.querySelector<HTMLElement>('#licz-osoby');
+    const btn = root.querySelector<HTMLButtonElement>('#licz-btn');
+    const doneEl = root.querySelector<HTMLElement>('#licz-done');
+    const turnstileEl = root.querySelector<HTMLElement>('.licz-turnstile');
+    const alertEl = root.querySelector<HTMLElement>('.licz-alert');
+    const lineEl = nEl?.closest<HTMLElement>('.licz-line') ?? null; // linia z liczbą
+    const startEl = root.querySelector<HTMLElement>('.licz-start'); // linia startowa (poniżej progu)
+    const senatEl = root.querySelector<HTMLElement>('.licz-senat'); // dopalacz senacki (po deklaracji)
 
-    let count = null;
+    // Jedna bramka zamiast `!` przy każdym użyciu — patrz bliźniacza Sonda.astro.
+    // `senatEl` celowo POZA bramką: jest opcjonalny (renderowany warunkowo), więc
+    // jego brak to normalny stan, nie błąd szablonu.
+    if (!nEl || !osobyEl || !btn || !doneEl || !turnstileEl || !alertEl || !lineEl || !startEl) {
+      throw new Error('LicznikPetycji: brak elementu w DOM — sprawdź id/klasy w szablonie komponentu.');
+    }
+
+    let count: number | null = null;
     let done = false;             // zgłoszono / zablokowane na stałe
     let submitting = false;       // trwa wysyłka — anty-double-click „w locie"
-    let tsToken = null;           // ostatni token Turnstile (null = brak/wygasł)
-    let tsWidgetId = null;        // id wyrenderowanego widżetu (do execute/reset)
-    let tsSiteKey = null;         // klucz publiczny (potrzebny przy execute)
+    let tsToken: string | null = null;    // ostatni token Turnstile (null = brak/wygasł)
+    let tsWidgetId: string | null = null; // id wyrenderowanego widżetu (do execute/reset)
+    let tsSiteKey: string | null = null;  // klucz publiczny (potrzebny przy execute)
     let turnstileEnabled = false; // czy serwer wymaga tokenu dla tego sluga
 
     // Odmiana frazy do liczby: 1 → „osoba zadeklarowała"; końcówka 2–4 (ale nie 12–14)
     // → „osoby zadeklarowały"; reszta (w tym 5–21) → „osób zadeklarowało".
-    const formaOsoby = (n) => {
+    const formaOsoby = (n: number) => {
       if (n === 1) return 'osoba zadeklarowała';
       const d = n % 10, s = n % 100;
       if (d >= 2 && d <= 4 && !(s >= 12 && s <= 14)) return 'osoby zadeklarowały';
@@ -80,7 +87,7 @@
       startEl.hidden = !startowa;
       lineEl.hidden = startowa;
     };
-    const showAlert = (msg) => { alertEl.textContent = msg || ''; alertEl.hidden = !msg; };
+    const showAlert = (msg: string) => { alertEl.textContent = msg || ''; alertEl.hidden = !msg; };
     const markDone = () => {
       done = true;
       btn.disabled = true;
@@ -92,20 +99,20 @@
     };
 
     // Zgłoszono już w tej przeglądarce? → od razu stan „zrobione", bez Turnstile.
-    let prev = null;
+    let prev: string | null = null;
     try { prev = localStorage.getItem(KEY); } catch (e) {}
     if (prev) markDone();
 
     // Stan początkowy (zanim GET zwróci liczbę / gdy zawiedzie): linia startowa, nie „—".
     render();
 
-    const loadScript = (src) => new Promise((res, rej) => {
+    const loadScript = (src: string) => new Promise<void>((res, rej) => {
       const s = document.createElement('script');
-      s.src = src; s.async = true; s.defer = true; s.onload = res; s.onerror = rej;
+      s.src = src; s.async = true; s.defer = true; s.onload = () => res(); s.onerror = rej;
       document.head.appendChild(s);
     });
 
-    const postClick = async (token) => {
+    const postClick = async (token: string | null) => {
       try {
         const body = token ? { slug: SLUG, turnstileToken: token } : { slug: SLUG };
         // fetch + keepalive (nie sendBeacon) — musimy dołożyć token i odczytać status.
@@ -120,7 +127,7 @@
     };
 
     // Wysyłka ze świeżym (lub żadnym) tokenem: optymistyczny +1, POST, obsługa 403.
-    const submitWith = async (token) => {
+    const submitWith = async (token: string | null) => {
       try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
       if (count != null) { count += 1; render(); } // optymistycznie
       const res = await postClick(token);
@@ -141,7 +148,7 @@
     };
 
     // Świeży token z execute() → dokończ trwającą wysyłkę tym tokenem.
-    const onToken = (token) => {
+    const onToken = (token: string) => {
       tsToken = token;
       showAlert('');
       if (submitting) submitWith(token);
@@ -161,11 +168,11 @@
     // i wygasłby, zanim ktoś kliknie po faktycznym wysłaniu petycji — to była przyczyna
     // 403 „Weryfikacja nie powiodła się" na prodzie). Wyzwanie odpalamy DOPIERO przy
     // kliknięciu, tuż przed POST → token zawsze świeży i jednorazowy.
-    const initTurnstile = async (siteKey) => {
+    const initTurnstile = async (siteKey: string) => {
       try {
         await loadScript(TURNSTILE_API);
         // poczekaj aż globalne `turnstile` będzie gotowe (maks. ~5 s)
-        await new Promise((res) => {
+        await new Promise<void>((res) => {
           if (window.turnstile) return res();
           const iv = setInterval(() => { if (window.turnstile) { clearInterval(iv); res(); } }, 50);
           setTimeout(() => { clearInterval(iv); res(); }, 5000);
@@ -181,7 +188,7 @@
           'expired-callback': () => { tsToken = null; },
           'error-callback': () => { onTurnstileFail(); },
           'timeout-callback': () => { onTurnstileFail(); },
-        });
+        }) ?? null;
         return true;
       } catch (e) { return false; }
     };
@@ -190,7 +197,8 @@
     // włączony i jeszcze nie zgłoszono — wyrenderuj widżet (execute, bez rozwiązywania).
     // Błąd/brak bindingu → zostaje „—", przycisk działa dalej (fallback bez tokenu).
     (async () => {
-      let cfg = null;
+      /** Odpowiedź `/api/clicks`: liczniki per slug + opcjonalny klucz Turnstile. */
+      let cfg: { counts?: Record<string, number>; turnstileSiteKey?: string | null } | null = null;
       try { const r = await fetch(API); if (r.ok) cfg = await r.json(); } catch (e) {}
       if (!cfg) return;
       count = (cfg.counts && cfg.counts[SLUG]) || 0;
@@ -218,7 +226,7 @@
         }
         showAlert('Weryfikacja antybotowa…');
         // execute() → onToken(świeży token) → submitWith; onTurnstileFail obsługuje błąd/timeout.
-        try { window.turnstile.execute(turnstileEl, { sitekey: tsSiteKey }); }
+        try { window.turnstile.execute(turnstileEl, { sitekey: tsSiteKey ?? '' }); }
         catch (e) { onTurnstileFail(); }
       } else {
         submitWith(null);

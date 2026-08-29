@@ -21,16 +21,16 @@ const SYNC_HR = new Intl.DateTimeFormat('pl-PL', {
   day: 'numeric', month: 'long', year: 'numeric',
 }).format(new Date(sync));
 
-const fmt = (n) => new Intl.NumberFormat('pl-PL').format(n);
+const fmt = (n: number) => new Intl.NumberFormat('pl-PL').format(n);
 // Kwoty skracamy do „x,x mln" / „xxx tys." — tabela ma być czytelna, nie księgowa.
-const short = (n) =>
+const short = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(2).replace('.', ',')} mln` : `${Math.round(n / 1e3)} tys.`;
 
 // Wielkość miejscowości (GUS BDL, ludność wg faktycznego miejsca zamieszkania).
 // Skala: „1,9 mln" dla metropolii, „673 tys." dla dużych miast, „19,7 tys." dla
 // małych — poniżej 100 tys. z jednym miejscem po przecinku, żeby zaokrąglenie nie
 // przerzucało miasta przez próg filtra („do 20 tys." pokazujące „20 tys.").
-const pop = (n) =>
+const pop = (n: number) =>
   n >= 1e6
     ? `${(n / 1e6).toFixed(1).replace('.', ',')} mln`
     : n >= 1e5
@@ -38,7 +38,7 @@ const pop = (n) =>
       : `${(n / 1e3).toFixed(1).replace('.', ',')} tys.`;
 // Trzy progi zamiast surowej liczby — po to, by dało się porównać koncentrację
 // płac w małych i dużych ośrodkach, a nie licytować pojedyncze miasta.
-const bucket = (n) => (!n ? '' : n < 20000 ? 'S' : n < 100000 ? 'M' : 'L');
+const bucket = (n: number) => (!n ? '' : n < 20000 ? 'S' : n < 100000 ? 'M' : 'L');
 
 // Koszyki histogramu — te same progi co HIST_PROGI w research/watchdog/08-export.mjs.
 // Zmiana w jednym miejscu bez drugiego rozjedzie opis z danymi.
@@ -255,7 +255,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
           </thead>
           <tbody>
             {rows.map((p) => {
-              const k = KAT[p.kat] ?? KAT.none;
+              const k = KAT[p.kat as keyof typeof KAT] ?? KAT.none;
               const histMax = p.hist ? Math.max(...p.hist) : 0;
               return (
                 <Fragment>

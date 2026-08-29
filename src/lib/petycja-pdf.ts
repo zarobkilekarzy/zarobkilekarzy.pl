@@ -76,7 +76,7 @@ export function buildFilledPetycjaPdf(jsPDFCtor: any, fonts: Fonts, d: PetycjaPd
   const block = (
     text: string,
     { size = 10.5, font = 'normal', col = COL.ink, align = 'left', x = M.left, width = CW, lh = 1.35, gap = 0.6 }:
-      { size?: number; font?: 'normal' | 'bold'; col?: readonly number[]; align?: 'left' | 'center' | 'justify'; x?: number; width?: number; lh?: number; gap?: number } = {},
+      { size?: number; font?: 'normal' | 'bold'; col?: readonly number[]; align?: 'left' | 'center' | 'justify' | 'right'; x?: number; width?: number; lh?: number; gap?: number } = {},
   ) => {
     set(font, size, col);
     const ls = linesOf(text, size, width);

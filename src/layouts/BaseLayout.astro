@@ -126,7 +126,7 @@ if (wantSchema) {
     acc += `/${s}`;
     const last = i === segs.length - 1;
     crumbs.push({
-      name: last ? headline : (SECTION_LABELS[s] ?? s),
+      name: last ? headline : (SECTION_LABELS[s as keyof typeof SECTION_LABELS] ?? s),
       url: new URL(acc, Astro.site).toString(),
     });
   });
@@ -308,16 +308,16 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
       // boczną szynę (≥1180 px) — na węższych ekranach reguła `display: none`
       // trzyma go schowanym, więc nie zabiera miejsca treści.
       (() => {
-        const toc = document.querySelector('nav[data-toc]');
+        const toc = document.querySelector<HTMLElement>('nav[data-toc]');
         if (!toc) return;
         // Numer sekcji bywa już w tekście nagłówka („2. Po najwyższą karę…") —
         // zdejmujemy go, żeby nie dublować numeracji spisu.
-        const clean = (h) => {
-          const copy = h.cloneNode(true);
+        const clean = (h: Element) => {
+          const copy = h.cloneNode(true) as Element;
           copy.querySelectorAll('.hanchor').forEach((a) => a.remove());
-          return copy.textContent.trim().replace(/^\s*\d+[.)]\s*/, '');
+          return (copy.textContent ?? '').trim().replace(/^\s*\d+[.)]\s*/, '');
         };
-        const heads = [...document.querySelectorAll('main h2[id]')].filter(
+        const heads = [...document.querySelectorAll<HTMLElement>('main h2[id]')].filter(
           (h) => h.offsetParent !== null && clean(h),
         );
         if (heads.length < 4) return;
@@ -378,15 +378,15 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
       // Nadajemy fokusowalność + nazwę tylko tym, które faktycznie się przewijają
       // (zależy od szerokości/zoomu), i aktualizujemy przy zmianie rozmiaru.
       (() => {
-        const wraps = document.querySelectorAll('.table-wrap');
+        const wraps = document.querySelectorAll<HTMLElement>('.table-wrap');
         if (!wraps.length) return;
         // Tekst nagłówka bez doklejonego anchora („#") — inaczej wpadłby do nazwy tabeli.
-        const headingText = (h) => {
-          const copy = h.cloneNode(true);
+        const headingText = (h: Element) => {
+          const copy = h.cloneNode(true) as Element;
           copy.querySelectorAll('.hanchor').forEach((a) => a.remove());
-          return copy.textContent.trim();
+          return (copy.textContent ?? '').trim();
         };
-        const label = (el) => {
+        const label = (el: HTMLElement) => {
           if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')) return;
           let h = el.previousElementSibling;
           while (h && !/^H[2-6]$/.test(h.tagName)) h = h.previousElementSibling;
@@ -407,7 +407,7 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
           });
         };
         sync();
-        let t;
+        let t: ReturnType<typeof setTimeout>;
         window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(sync, 200); });
       })();
     </script>
@@ -417,14 +417,15 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
       // przeglądarce). Bez ciasteczek, bez danych osobowych. No-op, gdy na
       // stronie nie ma kart artykułów lub gdy D1 nie jest jeszcze podpięte.
       (async () => {
-        const badges = document.querySelectorAll('.article-clicks[data-clicks-for]');
+        const badges = document.querySelectorAll<HTMLElement>('.article-clicks[data-clicks-for]');
         if (badges.length) {
           try {
             const res = await fetch('/api/clicks');
             if (res.ok) {
-              const { counts } = await res.json();
+              const { counts } = (await res.json()) as { counts?: Record<string, number> };
               badges.forEach((el) => {
-                const n = (counts && counts[el.dataset.clicksFor]) || 0;
+                const slug = el.dataset.clicksFor;
+                const n = (slug && counts && counts[slug]) || 0;
                 if (n > 0) {
                   el.textContent = n + ' ↗';
                   el.title = 'Przejścia do źródła: ' + n;
@@ -437,7 +438,7 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
         document.addEventListener('click', (e) => {
           const t = e.target;
           if (!(t instanceof Element)) return;
-          const a = t.closest('a.article-link[data-slug]');
+          const a = t.closest<HTMLAnchorElement>('a.article-link[data-slug]');
           if (!a) return;
           const slug = a.dataset.slug;
           try {

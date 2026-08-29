@@ -735,24 +735,24 @@ const opisLista = kolejnoscStatus.map((s) => `${STATUSY[s].label} — ${STATUSY[
   // Interaktywna oś czasu: filtry po statusie (wielokrotny wybór) + „rozwiń widoczne".
   // Progresywne wzbogacenie — bez JS wszystkie wpisy są widoczne i rozwijalne natywnie.
   document.querySelectorAll('[data-mrz-tl]').forEach((tl) => {
-    const btns = Array.from(tl.querySelectorAll('.mrz-fbtn'));
-    const items = Array.from(tl.querySelectorAll('.mrz-item'));
-    const empty = tl.querySelector('.mrz-empty');
-    const count = tl.querySelector('.mrz-count');
-    const expand = tl.querySelector('[data-expand]');
+    const btns = Array.from(tl.querySelectorAll<HTMLElement>('.mrz-fbtn'));
+    const items = Array.from(tl.querySelectorAll<HTMLElement>('.mrz-item'));
+    const empty = tl.querySelector<HTMLElement>('.mrz-empty');
+    const count = tl.querySelector<HTMLElement>('.mrz-count');
+    const expand = tl.querySelector<HTMLElement>('[data-expand]');
     const total = items.length;
-    const active = new Set();
+    const active = new Set<string>();
 
     const sync = () => {
       let shown = 0;
       items.forEach((it) => {
-        const on = active.size === 0 || active.has(it.dataset.status);
+        const on = active.size === 0 || (!!it.dataset.status && active.has(it.dataset.status));
         it.hidden = !on;
         if (on) shown += 1;
       });
       btns.forEach((b) => {
         const f = b.dataset.filter;
-        const on = f === 'all' ? active.size === 0 : active.has(f);
+        const on = f === 'all' ? active.size === 0 : !!f && active.has(f);
         b.classList.toggle('is-on', on);
         b.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
@@ -763,6 +763,7 @@ const opisLista = kolejnoscStatus.map((s) => `${STATUSY[s].label} — ${STATUSY[
     btns.forEach((b) =>
       b.addEventListener('click', () => {
         const f = b.dataset.filter;
+        if (!f) return;
         if (f === 'all') active.clear();
         else if (active.has(f)) active.delete(f);
         else active.add(f);
@@ -773,9 +774,10 @@ const opisLista = kolejnoscStatus.map((s) => `${STATUSY[s].label} — ${STATUSY[
     if (expand) {
       expand.addEventListener('click', () => {
         const vis = items.filter((it) => !it.hidden);
-        const anyClosed = vis.some((it) => !it.querySelector('details').open);
+        const anyClosed = vis.some((it) => !it.querySelector('details')?.open);
         vis.forEach((it) => {
-          it.querySelector('details').open = anyClosed;
+          const d = it.querySelector('details');
+          if (d) d.open = anyClosed;
         });
         expand.textContent = anyClosed ? 'Zwiń widoczne' : 'Rozwiń widoczne';
         expand.setAttribute('aria-expanded', anyClosed ? 'true' : 'false');

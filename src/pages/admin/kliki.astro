@@ -53,30 +53,34 @@ const articles = (await getCollection('articles')).sort((a, b) =>
   <script>
     (async () => {
       const tbody = document.getElementById('klik-rows');
-      const rows = Array.from(tbody.querySelectorAll('tr[data-slug]'));
-      let counts = {};
+      const sumEl = document.getElementById('klik-sum');
+      if (!tbody || !sumEl) return;
+      const rows = Array.from(tbody.querySelectorAll<HTMLElement>('tr[data-slug]'));
+      let counts: Record<string, number> = {};
       try {
         const r = await fetch('/api/clicks');
-        if (r.ok) counts = (await r.json()).counts || {};
+        if (r.ok) counts = ((await r.json()) as { counts?: Record<string, number> }).counts || {};
       } catch (e) {}
 
       let total = 0;
       rows.forEach((tr) => {
-        const n = counts[tr.dataset.slug] || 0;
+        const slug = tr.dataset.slug;
+        const n = (slug && counts[slug]) || 0;
         total += n;
         tr.dataset.n = String(n);
-        tr.querySelector('[data-cnt]').textContent = String(n);
+        const cntEl = tr.querySelector('[data-cnt]');
+        if (cntEl) cntEl.textContent = String(n);
       });
 
       rows
         .sort((a, b) => Number(b.dataset.n) - Number(a.dataset.n))
         .forEach((tr, i) => {
-          tr.querySelector('.rank').textContent = String(i + 1);
+          const rankEl = tr.querySelector('.rank');
+          if (rankEl) rankEl.textContent = String(i + 1);
           tbody.appendChild(tr);
         });
 
-      document.getElementById('klik-sum').textContent =
-        `${rows.length} artykułów · ${total} przejść łącznie`;
+      sumEl.textContent = `${rows.length} artykułów · ${total} przejść łącznie`;
     })();
   </script>
 

@@ -55,32 +55,43 @@
 <script>
   const KEY = 'sonda-ai-rutyna-v1';
   const API = '/api/sonda';
+  /** Klucze odpowiedzi — jedyne wartości, jakie sonda przyjmuje i odsyła. */
   const LABELS = { tak: 'Tak', nie: 'Nie', 'nie-wiem': 'Trudno powiedzieć' };
+  type Wybor = keyof typeof LABELS;
+  type Wyniki = Partial<Record<Wybor, number>>;
   const TURNSTILE_API = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
   const root = document.getElementById('sonda');
   if (root) {
-    const btns = [...root.querySelectorAll('.sonda-btn')];
-    const optionsEl = root.querySelector('.sonda-options');
-    const turnstileEl = root.querySelector('.sonda-turnstile');
-    const hintEl = root.querySelector('.sonda-hint');
-    const resultsEl = root.querySelector('.sonda-results');
-    const thanksEl = root.querySelector('.sonda-thanks');
-    const totalEl = root.querySelector('.sres-total');
+    const btns = [...root.querySelectorAll<HTMLButtonElement>('button.sonda-btn')];
+    const optionsEl = root.querySelector<HTMLElement>('.sonda-options');
+    const turnstileEl = root.querySelector<HTMLElement>('.sonda-turnstile');
+    const hintEl = root.querySelector<HTMLElement>('.sonda-hint');
+    const resultsEl = root.querySelector<HTMLElement>('.sonda-results');
+    const thanksEl = root.querySelector<HTMLElement>('.sonda-thanks');
+    const totalEl = root.querySelector<HTMLElement>('.sres-total');
 
-    let tsToken = null;            // aktualny token Turnstile (null = brak/wygasł)
-    let tsWidgetId = null;         // id wyrenderowanego widżetu (do execute/reset)
-    let tsSiteKey = null;          // klucz publiczny (potrzebny przy execute)
+    // Jedna bramka zamiast `!` przy każdym użyciu: albo cały szkielet sondy jest
+    // w DOM, albo nie robimy nic. Wszystkie te węzły pochodzą z szablonu tego
+    // komponentu, więc w praktyce zawsze są — ale jeśli kiedyś ktoś zmieni klasę
+    // w markupie, sonda po cichu się nie uruchomi zamiast sypać błędami w konsoli.
+    if (!optionsEl || !turnstileEl || !hintEl || !resultsEl || !thanksEl || !totalEl) {
+      throw new Error('Sonda: brak elementu w DOM — sprawdź klasy w szablonie komponentu.');
+    }
+
+    let tsToken: string | null = null;      // aktualny token Turnstile (null = brak/wygasł)
+    let tsWidgetId: string | null = null;   // id wyrenderowanego widżetu (do execute/reset)
+    let tsSiteKey: string | null = null;    // klucz publiczny (potrzebny przy execute)
     let turnstileEnabled = false;  // czy serwer wymaga tokenu (ustawiane po wczytaniu configu)
     let done = false;              // głos już oddany / wyniki pokazane → blokuj ponowne
     let submitting = false;        // trwa wysyłka — anty-double-click „w locie"
-    let pendingChoice = null;      // wybór zapamiętany do chwili, gdy execute() zwróci token
+    let pendingChoice: Wybor | null = null; // wybór zapamiętany do chwili, gdy execute() zwróci token
 
-    const showHint = (msg) => { hintEl.textContent = msg; hintEl.hidden = !msg; };
+    const showHint = (msg: string) => { hintEl.textContent = msg; hintEl.hidden = !msg; };
 
     const loadConfig = async () => {
       try { const r = await fetch(API); if (!r.ok) return null; return await r.json(); } catch (e) { return null; }
     };
-    const postVote = async (choice, token) => {
+    const postVote = async (choice: Wybor, token: string | null) => {
       try {
         const body = token ? { choice, turnstileToken: token } : { choice };
         const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -89,15 +100,17 @@
       } catch (e) { return { ok: false, status: 0, data: null }; }
     };
 
-    const showResults = (counts, mine) => {
+    const showResults = (counts: Wyniki, mine: Wybor | null) => {
       done = true;
       const total = (counts.tak || 0) + (counts.nie || 0) + (counts['nie-wiem'] || 0);
       resultsEl.querySelectorAll('.sres-row').forEach((row) => {
-        const k = row.getAttribute('data-k');
-        const n = counts[k] || 0;
+        const k = row.getAttribute('data-k') as Wybor | null;
+        const n = (k && counts[k]) || 0;
         const pct = total ? Math.round((n / total) * 100) : 0;
-        row.querySelector('.sres-pct').textContent = pct + '%';
-        row.querySelector('.sres-fill').style.width = pct + '%';
+        const pctEl = row.querySelector<HTMLElement>('.sres-pct');
+        const fillEl = row.querySelector<HTMLElement>('.sres-fill');
+        if (pctEl) pctEl.textContent = pct + '%';
+        if (fillEl) fillEl.style.width = pct + '%';
         row.classList.toggle('mine', k === mine);
       });
       totalEl.textContent = 'Łącznie głosów: ' + total + (mine ? ' · Twój głos: ' + LABELS[mine] : '');
@@ -108,7 +121,7 @@
       resultsEl.hidden = false;
     };
 
-    const showThanksFallback = (mine) => {
+    const showThanksFallback = (mine: Wybor) => {
       done = true;
       btns.forEach((b) => { b.disabled = true; if (b.getAttribute('data-vote') === mine) b.classList.add('chosen'); });
       turnstileEl.hidden = true;
@@ -116,14 +129,14 @@
       thanksEl.hidden = false;
     };
 
-    const loadScript = (src) => new Promise((res, rej) => {
+    const loadScript = (src: string) => new Promise<void>((res, rej) => {
       const s = document.createElement('script');
-      s.src = src; s.async = true; s.defer = true; s.onload = res; s.onerror = rej;
+      s.src = src; s.async = true; s.defer = true; s.onload = () => res(); s.onerror = rej;
       document.head.appendChild(s);
     });
 
     // Wysyłka ze świeżym (lub żadnym) tokenem: zapisz w localStorage, POST, obsłuż wynik/403.
-    const submitWith = async (choice, token) => {
+    const submitWith = async (choice: Wybor, token: string | null) => {
       try { localStorage.setItem(KEY, choice); } catch (e) {}
       const res = await postVote(choice, token);
       if (res.ok && res.data) {
@@ -143,7 +156,7 @@
     };
 
     // Świeży token z execute() → dokończ trwającą wysyłkę dla zapamiętanego wyboru.
-    const onToken = (token) => {
+    const onToken = (token: string) => {
       tsToken = token;
       showHint('');
       if (submitting && pendingChoice) submitWith(pendingChoice, token);
@@ -163,11 +176,11 @@
     // Turnstile w trybie EXECUTE: NIE rozwiązujemy wyzwania na starcie (token żyje ~300 s
     // i mógłby wygasnąć, zanim ktoś kliknie) — wyzwanie odpalamy DOPIERO przy kliknięciu,
     // tuż przed POST → token zawsze świeży i jednorazowy (wzorem LicznikPetycji.astro).
-    const initTurnstile = async (siteKey) => {
+    const initTurnstile = async (siteKey: string) => {
       try {
         await loadScript(TURNSTILE_API);
         // poczekaj aż globalne `turnstile` będzie gotowe (maks. ~5 s)
-        await new Promise((res) => {
+        await new Promise<void>((res) => {
           if (window.turnstile) return res();
           const iv = setInterval(() => { if (window.turnstile) { clearInterval(iv); res(); } }, 50);
           setTimeout(() => { clearInterval(iv); res(); }, 5000);
@@ -183,7 +196,7 @@
           'expired-callback': () => { tsToken = null; },
           'error-callback': () => { onTurnstileFail(); },
           'timeout-callback': () => { onTurnstileFail(); },
-        });
+        }) ?? null;
         return true;
       } catch (e) { return false; }
     };
@@ -195,7 +208,8 @@
     btns.forEach((b) => {
       b.addEventListener('click', () => {
         if (done || submitting) return;
-        const choice = b.getAttribute('data-vote');
+        const choice = b.getAttribute('data-vote') as Wybor | null;
+        if (!choice) return;
         submitting = true;
         showHint('');
         btns.forEach((x) => (x.disabled = true));
@@ -211,7 +225,7 @@
           pendingChoice = choice;
           showHint('Weryfikacja antybotowa…');
           // execute() → onToken(świeży token) → submitWith; onTurnstileFail obsługuje błąd/timeout.
-          try { window.turnstile.execute(turnstileEl, { sitekey: tsSiteKey }); }
+          try { window.turnstile.execute(turnstileEl, { sitekey: tsSiteKey ?? '' }); }
           catch (e) { onTurnstileFail(); }
         } else {
           submitWith(choice, null);
@@ -221,8 +235,13 @@
 
     // Tło: jeśli już głosowano — pokaż wyniki; w przeciwnym razie ewentualnie włącz Turnstile.
     (async () => {
-      let voted = null;
-      try { voted = localStorage.getItem(KEY); } catch (e) {}
+      let voted: Wybor | null = null;
+      try {
+        const zapis = localStorage.getItem(KEY);
+        // localStorage może trzymać zapis ze starej wersji sondy — bierzemy tylko
+        // wartości, które nadal są prawidłowymi odpowiedziami.
+        if (zapis && zapis in LABELS) voted = zapis as Wybor;
+      } catch (e) {}
       const cfg = await loadConfig();
       if (voted) {
         if (cfg) showResults(cfg, voted); else showThanksFallback(voted);

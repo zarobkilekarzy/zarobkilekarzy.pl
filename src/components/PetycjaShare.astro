@@ -66,7 +66,7 @@ const xShare = `https://twitter.com/intent/tweet?text=${encodeURIComponent(share
   // chronione Turnstile, więc przyjmują beacon bez tokenu). Dedup ~12 h per slug w
   // localStorage (jak w BaseLayout). Fire-and-forget, bez danych osobowych i bez
   // przeszkadzania domyślnej nawigacji/pobieraniu.
-  const beacon = (slug) => {
+  const beacon = (slug: string) => {
     try {
       const key = 'clk:' + slug;
       const now = Date.now();
@@ -77,7 +77,7 @@ const xShare = `https://twitter.com/intent/tweet?text=${encodeURIComponent(share
   };
   // X / Facebook / pobierz grafikę (oba .scard-dl) — slug z data-beacon.
   document.querySelectorAll('[data-beacon]').forEach((el) => {
-    el.addEventListener('click', () => beacon(el.getAttribute('data-beacon')));
+    el.addEventListener('click', () => { const s = el.getAttribute('data-beacon'); if (s) beacon(s); });
   });
 
   // Kopiuj link — obsługa wszystkich przycisków [data-copy-link] (działa dla wielu instancji).

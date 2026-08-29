@@ -12,7 +12,10 @@ export default defineConfig({
       // /admin/* to strony wewnętrzne (noindex) — poza mapą strony.
       // /druk/ to wyciągi do wydruku — powielają treść strony źródłowej, więc do
       // indeksu nie idą (mają też noindex; zgłaszanie ich w mapie byłoby sprzeczne).
-      filter: (page) => !page.includes('/admin/') && !page.includes('/druk/'),
+      // /gra to symulator w cichym starcie (noindex, bez linku w nawigacji) —
+      // dostępny tylko z bezpośredniego adresu, więc mapa strony go nie zgłasza.
+      filter: (page) =>
+        !page.includes('/admin/') && !page.includes('/druk/') && !page.includes('/gra/'),
       // <lastmod> z centralnej mapy dat (te same daty co widoczna „Ostatnia
       // aktualizacja") — sygnał świeżości przyspieszający rekrawl po zmianie.
       serialize(item) {

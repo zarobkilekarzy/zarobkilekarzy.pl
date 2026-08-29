@@ -1,0 +1,1386 @@
+---
+// „Drugi licznik" — satyryczny symulator kariery w ochronie zdrowia.
+// CICHY START: bez wpisu w pages.ts (brak linku w nawigacji i hubach), noindex,
+// poza mapą strony (filtr w astro.config.mjs) — dostępny tylko z bezpośredniego URL.
+// Fonty gry bundlowane przez fontsource (CSP: font-src 'self' — bez hostów Google).
+// Koncepcja i decyzje projektowe: research/gra-idle-clicker/00-synteza.md
+import '@fontsource/baloo-2/600.css';
+import '@fontsource/baloo-2/800.css';
+import '@fontsource/nunito/400.css';
+import '@fontsource/nunito/600.css';
+import '@fontsource/nunito/700.css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Drugi licznik — symulator kariery"
+  description="Idle clicker o polskim systemie ochrony zdrowia: grafik, dyżury, kontrakty i dwa liczniki — jawny i prawdziwy. Mechanizmy z gry istnieją naprawdę."
+  noindex={true}
+>
+<style is:inline>
+  #gra-app {
+    --noc:#0a1120; --panel:#141f33; --panel-2:#1a2740; --wglad:#0d1526;
+    --linia:#26375a; --linia-2:#39508a;
+    --tekst:#e8eefb; --tekst-2:#9fb0cc; --tekst-3:#6f809e;
+    --zloto:#f5c542; --zloto-2:#ffdf7e; --kasa:#7ee08a;
+    --teal:#45c4cf; --czerwien:#ff6b61; --amber:#ffb84d; --fiolet:#c48bff;
+    --gra:"Baloo 2","Trebuchet MS",sans-serif;
+    --ui:"Nunito","Segoe UI",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  #gra-app *, #gra-app *::before, #gra-app *::after { box-sizing:border-box; }
+  #gra-app {
+    background:var(--noc);
+    border-radius:16px; margin:10px auto 28px; max-width:1240px;
+    overflow:clip; border:1px solid #26375a; color:var(--tekst);
+    font-family:var(--ui); font-size:15px; line-height:1.45;
+    background-image:radial-gradient(ellipse 120% 60% at 50% -10%, #16233d 0%, var(--noc) 60%);
+    min-height:100vh;
+  }
+  #gra-app a { color:var(--teal); }
+  #gra-app button { font-family:inherit; }
+  .mono { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  .hide { display:none !important; }
+  .i { width:1em; height:1em; vertical-align:-0.14em; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .wrap { max-width:700px; margin:0 auto; padding:0 10px 46px; }
+  @media (min-width:1000px) {
+    .wrap { max-width:1180px; display:grid; grid-template-columns:1.05fr .95fr; gap:0 28px; align-items:start; }
+    .hud { grid-column:1 / -1; }
+    .kol-l { position:sticky; top:10px; }
+  }
+  .wrap.trzesie { animation:shake .45s; }
+  @keyframes shake {
+    0%,100%{transform:translate(0,0)} 20%{transform:translate(-6px,2px)}
+    40%{transform:translate(5px,-3px)} 60%{transform:translate(-4px,-2px)} 80%{transform:translate(3px,2px)}
+  }
+
+  /* ── HUD ── */
+  .hud { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 2px 6px; }
+  .hud .kasa-box { display:flex; flex-direction:column; }
+  .hud .etyk { font-size:.58rem; letter-spacing:.16em; color:var(--tekst-3); text-transform:uppercase; font-weight:700; }
+  .hud .portfel {
+    font-family:var(--mono); font-weight:600; color:var(--zloto);
+    font-size:clamp(1.2rem, 5.2vw, 1.6rem); line-height:1.1; white-space:nowrap;
+    text-shadow:0 0 18px rgba(245,197,66,.25);
+  }
+  .hud .tempo { font-family:var(--mono); font-size:.7rem; color:var(--kasa); }
+  .hud .spacer { flex:1; }
+  .chips { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .chip {
+    font-family:var(--mono); font-size:.68rem; padding:3px 10px; border-radius:99px;
+    background:var(--panel); border:1px solid var(--linia); color:var(--tekst-2);
+  }
+  button.chip { cursor:help; }
+  button.chip:hover { border-color:var(--linia-2); color:var(--tekst); }
+  button.chip .znak { opacity:.6; font-size:.6rem; margin-left:2px; }
+  .chip.rozjazd b { color:var(--amber); }
+  .chip.rozjazd.mega b { color:var(--czerwien); }
+  #resetBtn { cursor:pointer; }
+
+  /* ── PLANSZA ── */
+  .plansza-ramka {
+    position:relative; border-radius:14px; border:1px solid var(--linia);
+    background:var(--wglad); box-shadow:0 14px 40px rgba(0,0,0,.45);
+    padding:10px 10px 8px; transition:border-color .3s, box-shadow .3s;
+  }
+  .plansza-ramka.alarm { border-color:var(--amber); box-shadow:0 0 26px rgba(255,184,77,.35); }
+  .p-naglowek { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px; }
+  .p-naglowek .marka { font-family:var(--gra); font-weight:600; font-size:.62rem; color:rgba(232,238,251,.45); }
+  .p-naglowek .tydzien { font-family:var(--mono); font-size:.62rem; color:var(--teal); }
+  .p-oko {
+    font-family:var(--mono); font-size:.64rem; cursor:zoom-in; user-select:none; -webkit-user-select:none;
+    color:var(--tekst-2); background:var(--panel); border:1px solid var(--linia-2);
+    border-radius:99px; padding:3px 11px;
+  }
+  .p-oko b { color:var(--tekst); font-weight:600; }
+  .p-oko.podglad { border-color:var(--kasa); color:var(--kasa); box-shadow:0 0 10px rgba(126,224,138,.35); }
+  .p-oko.rejestr { border-color:var(--kasa); color:var(--kasa); cursor:default; }
+  .p-oko.rejestr b { color:var(--kasa); }
+  .p-dni { display:grid; grid-template-columns:26px repeat(7,1fr); font-family:var(--mono); font-size:.58rem; color:var(--tekst-3); text-align:center; margin-bottom:2px; }
+  .p-cialo { display:grid; grid-template-columns:26px 1fr; }
+  .p-godz { display:grid; grid-template-rows:repeat(6,1fr); font-family:var(--mono); font-size:.5rem; color:var(--tekst-3); text-align:right; padding-right:5px; }
+  .p-godz span { align-self:center; }
+  #plansza {
+    position:relative; height:246px; border-radius:8px; cursor:pointer; touch-action:manipulation;
+    background:
+      repeating-linear-gradient(90deg, transparent 0, transparent calc(100%/7 - 1px), var(--linia) calc(100%/7 - 1px), var(--linia) calc(100%/7)),
+      repeating-linear-gradient(0deg, transparent 0, transparent calc(100%/6 - 1px), var(--linia) calc(100%/6 - 1px), var(--linia) calc(100%/6)),
+      var(--panel);
+  }
+  @media (min-width:1000px) { #plansza { height:308px; } }
+  .p-hint { position:absolute; inset:0; display:grid; place-items:center; font-size:.72rem; color:var(--tekst-3); text-align:center; padding:0 20px; pointer-events:none; }
+  .blok {
+    position:absolute; border-radius:3px; font-family:var(--mono); font-size:.52rem; font-weight:600;
+    padding:1px 3px; overflow:hidden; white-space:nowrap; transition:opacity .4s, left .3s, width .3s, top .3s, height .3s;
+    animation:spad .45s cubic-bezier(.2,1.6,.4,1); line-height:1.3;
+  }
+  @keyframes spad { from { transform:translateY(-30px); opacity:0; } to { transform:none; opacity:1; } }
+  .blok.t-etat { background:rgba(69,196,207,.3); border:1px solid var(--teal); color:#a9e6ec; }
+  .blok.t-dyzur { background:rgba(255,107,97,.24); border:1px solid var(--czerwien); color:#ffb3ad; }
+  .blok.t-poradnia { background:rgba(245,197,66,.2); border:1px solid var(--zloto); color:#ffe6a1; }
+  .blok.t-kontrakt { background:rgba(196,139,255,.2); border:1px solid var(--fiolet); color:#e3ccff; }
+  .blok.t-obok { background:rgba(245,197,66,.26); border:1px solid #d99b28; color:#ffe6a1; }
+  .blok.t-cito { background:rgba(245,197,66,.45); border:1px solid var(--zloto); color:#fff3cd; box-shadow:0 0 10px rgba(245,197,66,.55); z-index:3; }
+  .blok.kreska { background-image:repeating-linear-gradient(45deg, transparent 0 3px, rgba(255,255,255,.1) 3px 5px); }
+  .swiat-widok .blok.kreska { opacity:.07; }
+  .playhead { position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--kasa); box-shadow:0 0 10px rgba(126,224,138,.7); z-index:5; transition:left .25s linear; }
+  .playhead.przeskok { transition:none; }
+  .p-float { position:absolute; z-index:6; font-family:var(--mono); font-size:.62rem; font-weight:600; color:var(--kasa); animation:frunie .8s ease-out forwards; pointer-events:none; white-space:nowrap; }
+  .p-float.zly { color:var(--czerwien); }
+  .p-float.zloty { color:var(--zloto); }
+  @keyframes frunie { to { transform:translateY(-36px); opacity:0; } }
+  .p-blip { position:absolute; width:6px; height:6px; border-radius:50%; background:var(--kasa); box-shadow:0 0 8px rgba(126,224,138,.8); z-index:4; animation:blipznik 2.4s forwards; }
+  @keyframes blipznik { to { opacity:0; } }
+
+  /* ── przyciski ── */
+  #przyjmij {
+    display:block; width:100%; margin-top:10px; min-height:58px; cursor:pointer;
+    font-family:var(--gra); font-weight:800; font-size:1.15rem; letter-spacing:.03em;
+    color:#1c2606; border:none; border-radius:14px;
+    background:linear-gradient(180deg,#a8e063,#7cb93e);
+    box-shadow:0 5px 0 #4e7a22, 0 10px 24px rgba(124,185,62,.28);
+    transition:transform .06s, box-shadow .06s;
+  }
+  #przyjmij.wcisniety { transform:translateY(4px); box-shadow:0 1px 0 #4e7a22; }
+  #przyjmij:focus-visible, button:focus-visible, a:focus-visible { outline:3px solid var(--teal); outline-offset:2px; }
+  #przyjmij small { display:block; font-family:var(--ui); font-weight:700; font-size:.64rem; color:#2c4010; }
+  .akcje-strip { display:flex; gap:8px; margin-top:8px; }
+  .akcje-strip button {
+    flex:1; font-family:var(--gra); font-weight:600; font-size:.78rem; cursor:pointer;
+    background:var(--panel-2); color:var(--tekst); border:1px solid var(--linia-2);
+    border-radius:12px; padding:7px 10px;
+  }
+  .akcje-strip button:disabled { opacity:.5; cursor:default; }
+  .akcje-strip button small { display:block; font-family:var(--mono); font-size:.58rem; color:var(--tekst-3); }
+
+  /* ── stany ── */
+  .stany { display:flex; flex-direction:column; gap:7px; margin-top:12px; }
+  .stan { display:none; align-items:center; gap:8px; }
+  .stan.on { display:flex; }
+  .stan .ikona { width:22px; text-align:center; font-size:.95rem; color:var(--tekst-2); }
+  .stan .ikona.dobrze { color:var(--kasa); }
+  .stan .ikona.srednio { color:var(--amber); }
+  .stan .ikona.malo { color:var(--czerwien); }
+  .stan .tor { flex:1; height:12px; background:var(--panel); border-radius:7px; overflow:hidden; border:1px solid var(--linia); cursor:pointer; }
+  .stan .tor i { display:block; height:100%; border-radius:7px; transition:width .3s; }
+  .stan .op { font-family:var(--mono); font-size:.66rem; color:var(--tekst-2); min-width:92px; text-align:right; }
+  #energiaPas i { background:linear-gradient(90deg,#7ee08a,#a8e063); }
+  #energiaPas.srednio i { background:linear-gradient(90deg,#ffb84d,#ffd27e); }
+  #energiaPas.malo i { background:linear-gradient(90deg,#ff6b61,#ff8f7a); }
+  #tydzienPas i { background:linear-gradient(90deg,#45c4cf,#6fdbe4); }
+  #tydzienPas.ponad i { background:linear-gradient(90deg,#ff6b61,#ffb84d); }
+  #dobaPas i { background:linear-gradient(90deg,#c48bff,#e0b8ff); }
+  #dobaPas.absurd i { background:linear-gradient(90deg,#ff6b61,#c48bff); }
+  .stan .akcja { font-size:.64rem; font-weight:700; border-radius:8px; padding:3px 9px; cursor:pointer; background:var(--panel-2); color:var(--tekst-2); border:1px solid var(--linia); white-space:nowrap; }
+  .stan .akcja:disabled { opacity:.45; cursor:default; }
+
+  /* ── kariera ── */
+  .kariera { display:none; margin-top:12px; gap:5px; flex-wrap:wrap; }
+  .kariera.on { display:flex; }
+  .kariera .k { font-family:var(--gra); font-weight:600; font-size:.64rem; padding:2px 9px; border-radius:99px; background:var(--panel); border:1px solid var(--linia); color:var(--tekst-3); }
+  .kariera .k.teraz { background:#243c1e; border-color:#7cb93e; color:#c9f29b; }
+  .kariera .k.byl { color:var(--tekst-2); }
+
+  /* ── sklepy ── */
+  .sklepy { display:none; margin-top:14px; }
+  .taby { display:flex; gap:6px; flex-wrap:wrap; }
+  .taby [role="tab"] { font-family:var(--gra); font-weight:600; font-size:.8rem; cursor:pointer; background:var(--panel); color:var(--tekst-2); border:1px solid var(--linia); border-radius:10px; padding:6px 12px; }
+  .taby [aria-selected="true"] { background:var(--panel-2); color:var(--tekst); border-color:var(--linia-2); }
+  .taby [role="tab"]:disabled { color:var(--tekst-3); font-family:var(--mono); cursor:default; }
+  .taby .tab-system[aria-selected="true"] { border-color:var(--czerwien); color:#ffb3ad; }
+  .lista { list-style:none; margin:0; padding:10px 0 0; display:flex; flex-direction:column; gap:8px; }
+  .karta { position:relative; background:var(--panel); border:1px solid var(--linia); border-radius:12px; padding:10px 12px; }
+  .karta.kat-praca { border-left:3px solid var(--teal); }
+  .karta.kat-system { border-left:3px solid var(--czerwien); }
+  .karta.kat-majatek { border-left:3px solid var(--zloto); }
+  .karta .rzad { display:flex; gap:8px; align-items:baseline; }
+  .karta .ikonka { color:var(--tekst-2); }
+  .karta .ikonka .i { width:17px; height:17px; }
+  .karta h3 { margin:0; font-family:var(--gra); font-weight:600; font-size:.94rem; flex:1; }
+  .karta .koszt { font-family:var(--mono); font-size:.8rem; color:var(--zloto); white-space:nowrap; }
+  .karta .zysk { margin:5px 0 2px; font-size:.8rem; font-weight:700; color:var(--kasa); }
+  .karta .zysk::before { content:"▸ "; opacity:.7; }
+  .karta .flavor { font-size:.73rem; color:var(--tekst-3); margin:2px 0 8px; }
+  .karta .dol { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .karta .kup {
+    font-family:var(--gra); font-weight:800; font-size:.82rem; cursor:pointer; color:#1c2606;
+    background:linear-gradient(180deg,#f5c542,#dfa32b); border:none; border-radius:9px;
+    padding:6px 16px; box-shadow:0 3px 0 #a67a1c; touch-action:manipulation;
+  }
+  .karta .kup:not(:disabled) { animation:puls 1.6s infinite; }
+  @keyframes puls { 0%,100%{ box-shadow:0 3px 0 #a67a1c, 0 0 0 rgba(245,197,66,0);} 50%{ box-shadow:0 3px 0 #a67a1c, 0 0 16px rgba(245,197,66,.5);} }
+  .karta .kup:disabled { background:var(--panel-2); color:var(--tekst-3); box-shadow:none; cursor:default; animation:none; }
+  .karta .ile { font-family:var(--mono); font-size:.7rem; color:var(--teal); }
+  .karta .zrodlo { margin-left:auto; font-size:.66rem; opacity:.85; }
+  .karta .powod { font-size:.68rem; color:var(--amber); margin-top:4px; }
+  .karta .powod button { background:none; border:none; color:var(--amber); text-decoration:underline; font-size:.68rem; cursor:pointer; padding:0; }
+  .karta.oplacona::after { content:"✓"; position:absolute; right:10px; top:8px; font-family:var(--gra); font-weight:800; color:#7ee08a; font-size:1rem; }
+
+  /* ── dziennik ── */
+  .dziennik { display:none; margin-top:14px; }
+  .dziennik summary { cursor:pointer; font-family:var(--gra); font-weight:600; font-size:.76rem; color:var(--tekst-3); }
+  .dziennik ol { list-style:none; margin:6px 0 0; padding:8px 10px; background:#0d1526; border:1px solid var(--linia); border-radius:10px; font-family:var(--mono); font-size:.66rem; line-height:1.6; color:var(--tekst-2); max-height:9rem; overflow-y:auto; }
+  .dziennik li b { color:var(--tekst); font-weight:600; }
+  .dziennik li .czas { color:var(--tekst-3); }
+
+  /* ── KARTA DECYZJI — wyśrodkowana, jak powiadomienie ── */
+  .fon {
+    position:fixed; z-index:47; left:50%; top:42%; transform:translate(-50%,-50%) scale(.92);
+    width:min(92vw, 500px); opacity:0; pointer-events:none;
+    background:var(--panel-2); border:2px solid var(--amber); border-radius:18px;
+    padding:18px 20px 14px; transition:transform .22s ease-out, opacity .2s;
+    box-shadow:0 24px 70px rgba(0,0,0,.7), 0 0 34px rgba(255,184,77,.22);
+  }
+  .fon.dzwoni { transform:translate(-50%,-50%) scale(1); opacity:1; pointer-events:auto; }
+  .fon-tytul { font-family:var(--gra); font-weight:800; font-size:1.1rem; margin-bottom:5px; color:var(--amber); }
+  .fon-tytul .i { width:1.1em; height:1.1em; }
+  .fon-tresc { font-size:.92rem; color:var(--tekst-2); margin-bottom:12px; line-height:1.45; }
+  .fon-akcje button {
+    display:block; width:100%; text-align:left; border:1px solid var(--linia-2); background:var(--panel);
+    color:var(--tekst); border-radius:12px; padding:10px 14px; margin-bottom:8px;
+    font-family:var(--gra); font-weight:700; font-size:.9rem; cursor:pointer;
+  }
+  .fon-akcje button:hover { border-color:var(--amber); }
+  .fon-akcje button:first-child { background:linear-gradient(180deg,#a8e063,#7cb93e); color:#1c2606; border:none; font-weight:800; box-shadow:0 3px 0 #4e7a22; }
+  .fon-akcje button small { display:block; font-family:var(--mono); font-weight:500; font-size:.68rem; opacity:.85; margin-top:2px; }
+  .fon-zegar { height:3px; background:var(--panel); border-radius:2px; overflow:hidden; margin-top:4px; }
+  .fon-zegar i { display:block; height:100%; background:var(--amber); }
+  .fon-link { font-size:.7rem; display:inline-block; margin-bottom:8px; }
+
+  /* ── powiadomienia: wyśrodkowane, modalowe (nie blokują gry) ── */
+  .toast {
+    position:fixed; z-index:46; left:50%; top:42%; transform:translate(-50%,-50%);
+    width:min(92vw, 480px);
+    background:var(--panel-2); border:2px solid var(--linia-2); border-radius:18px;
+    padding:16px 18px 13px; box-shadow:0 24px 70px rgba(0,0,0,.7); display:none;
+  }
+  .toast.on { display:block; animation:toastIn .22s ease-out; }
+  @keyframes toastIn { from { transform:translate(-50%,-50%) scale(.92); opacity:0; } to { transform:translate(-50%,-50%) scale(1); opacity:1; } }
+  .toast.alertowy { border-color:var(--czerwien); box-shadow:0 24px 70px rgba(0,0,0,.7), 0 0 30px rgba(255,107,97,.25); }
+  .toast.wynikowy { border-color:var(--kasa); }
+  .toast .tt { font-size:.95rem; line-height:1.5; }
+  .toast .tt b { font-family:var(--gra); }
+  .toast .tt .i { width:1.15em; height:1.15em; }
+  .toast .toast-ok {
+    display:block; margin:11px auto 0; font-family:var(--gra); font-weight:800; font-size:.82rem;
+    cursor:pointer; color:#1c2606; background:linear-gradient(180deg,#a8e063,#7cb93e);
+    border:none; border-radius:10px; padding:6px 22px; box-shadow:0 3px 0 #4e7a22;
+  }
+  .toast .zegar { height:3px; background:var(--panel); border-radius:2px; margin-top:10px; overflow:hidden; }
+  .toast .zegar i { display:block; height:100%; background:var(--amber); }
+
+  /* ── modale ── */
+  .zaslona { position:fixed; inset:0; z-index:50; background:rgba(4,8,16,.72); display:none; align-items:center; justify-content:center; padding:14px; }
+  .zaslona.on { display:flex; }
+  .akt {
+    background:var(--panel-2); border:2px solid var(--zloto); border-radius:18px;
+    max-width:460px; width:100%; padding:20px 20px 16px; text-align:center;
+    box-shadow:0 0 60px rgba(245,197,66,.18); max-height:88vh; overflow-y:auto;
+  }
+  .akt .eyebrow { font-family:var(--mono); font-size:.58rem; letter-spacing:.22em; text-transform:uppercase; color:var(--tekst-3); }
+  .akt h2 { font-family:var(--gra); font-weight:800; font-size:1.45rem; margin:6px 0 8px; color:var(--zloto-2); }
+  .akt p { font-size:.85rem; color:var(--tekst-2); margin:6px 0; }
+  .akt .duze { font-family:var(--mono); font-size:.98rem; color:var(--tekst); }
+  .akt .ok-btn { margin-top:12px; font-family:var(--gra); font-weight:800; font-size:.92rem; cursor:pointer; color:#1c2606; background:linear-gradient(180deg,#a8e063,#7cb93e); border:none; border-radius:12px; padding:9px 24px; box-shadow:0 4px 0 #4e7a22; }
+  .akt .zrodlo-a { display:inline-block; font-size:.72rem; margin-top:8px; }
+  .akt .split { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin:10px 0; text-align:left; }
+  .akt .split > div { background:var(--panel); border:1px solid var(--linia); border-radius:10px; padding:8px 10px; }
+  .akt .split h3 { margin:0 0 2px; font-size:.54rem; letter-spacing:.12em; text-transform:uppercase; color:var(--tekst-3); font-family:var(--ui); font-weight:700; }
+  .akt .split .w { font-family:var(--mono); font-size:.92rem; }
+  .akt .mala { font-size:.62rem; color:var(--tekst-3); }
+  .akt table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:.74rem; margin:8px 0; }
+  .akt td { padding:3px 4px; border-bottom:1px solid var(--linia); color:var(--tekst-2); text-align:left; }
+  .akt td:last-child { text-align:right; color:var(--tekst); }
+
+  .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  @media (prefers-reduced-motion: reduce) { #gra-app * { animation:none !important; transition:none !important; } .p-float, .p-blip { display:none; } }
+</style>
+
+<div id="gra-app">
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-rozwoj" viewBox="0 0 24 24"><path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.8V16c0 1.3 2.5 2.5 5.5 2.5s5.5-1.2 5.5-2.5v-4.2"/><path d="M21.5 9.5V15"/></symbol>
+  <symbol id="i-praca" viewBox="0 0 24 24"><path d="M9.5 3.5h5V9H20v5h-5.5v5.5h-5V14H4V9h5.5z"/></symbol>
+  <symbol id="i-pytanie" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.3a2.6 2.6 0 1 1 3.7 2.4c-.9.4-1.3 1-1.3 1.8"/><path d="M12 16.8v.1"/></symbol>
+  <symbol id="i-system" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="9.6" r="2.1"/><path d="M11 11.5 10 16.5h4l-1-5"/></symbol>
+  <symbol id="i-majatek" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></symbol>
+  <symbol id="i-dyzur" viewBox="0 0 24 24"><path d="M20 13.5A8.5 8.5 0 1 1 10.5 4 7 7 0 0 0 20 13.5z"/></symbol>
+  <symbol id="i-poradnia" viewBox="0 0 24 24"><path d="M4.5 20V8l7.5-4 7.5 4v12"/><path d="M12 10v6M9 13h6"/><path d="M3 20h18"/></symbol>
+  <symbol id="i-pioro" viewBox="0 0 24 24"><path d="M4.5 19.5 5.5 16 16 5.5l2.5 2.5L8 18.5l-3.5 1z"/><path d="M14 7.5l2.5 2.5"/></symbol>
+  <symbol id="i-walizka" viewBox="0 0 24 24"><rect x="4.5" y="7.5" width="15" height="12" rx="2"/><path d="M9 7.5v-2A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v2"/><path d="M9 11v5.5M15 11v5.5"/></symbol>
+  <symbol id="i-teczka" viewBox="0 0 24 24"><rect x="3.5" y="8" width="17" height="11" rx="2"/><path d="M9.5 8V6.5A1.5 1.5 0 0 1 11 5h2a1.5 1.5 0 0 1 1.5 1.5V8"/><path d="M3.5 12.5h17"/></symbol>
+  <symbol id="i-cegla" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="12"/><path d="M3.5 10h17M3.5 14h17M9 6v4M15 10v4M9 14v4"/></symbol>
+  <symbol id="i-kalendarz" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 9.5h16M8.5 3.5v3.5M15.5 3.5v3.5"/></symbol>
+  <symbol id="i-bilokacja" viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3"/><path d="M3.5 19.5c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8"/><g opacity=".55"><circle cx="16.5" cy="9" r="2.4"/><path d="M15.5 15c2.8.2 5 1.8 5 4.5"/></g></symbol>
+  <symbol id="i-rachunek" viewBox="0 0 24 24"><path d="M6.5 3.5h11V20l-1.8-1.3L14 20l-2-1.3L10 20l-1.7-1.3L6.5 20z"/><path d="M9.5 8h5M9.5 11.5h5"/></symbol>
+  <symbol id="i-budynek" viewBox="0 0 24 24"><rect x="6.5" y="4" width="11" height="16"/><path d="M9.5 8h1.6M13 8h1.6M9.5 11.5h1.6M13 11.5h1.6M11 20v-3.5h2V20"/><path d="M4.5 20h15"/></symbol>
+  <symbol id="i-auto" viewBox="0 0 24 24"><path d="M3.5 17.5v-3l2-5h13l2 5v3"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/><path d="M9.4 17.5h5.2"/></symbol>
+  <symbol id="i-miasto" viewBox="0 0 24 24"><path d="M3.5 20V10h5.5v10M9 20V4.5h6V20M15 20v-7.5h5.5V20"/><path d="M2.5 20h19"/></symbol>
+  <symbol id="i-bateria" viewBox="0 0 24 24"><rect x="2.5" y="8.5" width="16" height="8" rx="1.5"/><path d="M21.5 11v3"/><path d="M5.5 11v3M8.5 11v3M11.5 11v3"/></symbol>
+  <symbol id="i-warstwy" viewBox="0 0 24 24"><path d="M12 3.5 21 8.5l-9 5-9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 17l9 5 9-5"/></symbol>
+  <symbol id="i-kawa" viewBox="0 0 24 24"><path d="M5 8.5h11v5.5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 9.5h2a2.5 2.5 0 0 1 0 5h-2"/><path d="M8 5.5c0-1 1-1 1-2M12 5.5c0-1 1-1 1-2"/></symbol>
+  <symbol id="i-sen" viewBox="0 0 24 24"><path d="M4 8.5h5L4 14h5"/><path d="M12.5 4.5h4l-4 5h4"/><path d="M16 14h3.5L16 18.5h3.5"/></symbol>
+  <symbol id="i-dymek" viewBox="0 0 24 24"><path d="M4 5.5h16V15h-9.5L5 19.5V15H4z"/></symbol>
+  <symbol id="i-oko" viewBox="0 0 24 24"><path d="M2.5 12S6.5 5.8 12 5.8 21.5 12 21.5 12 17.5 18.2 12 18.2 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.7"/></symbol>
+  <symbol id="i-telefon" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.2"/><path d="M10.8 18.2h2.4"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 21.5 20h-19z"/><path d="M12 10.5v4M12 17.3v.1"/></symbol>
+  <symbol id="i-trofeum" viewBox="0 0 24 24"><path d="M8 4.5h8v4.7a4 4 0 0 1-8 0z"/><path d="M8 6H4.8a3.2 3.2 0 0 0 3.4 3.6M16 6h3.2a3.2 3.2 0 0 1-3.4 3.6"/><path d="M12 13.2v3.3M8.5 20h7M10 16.5h4V20"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.8l4.6 4.7L19.5 6.5"/></symbol>
+  <symbol id="i-gazeta" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 12.5h8M8 16h4.5"/></symbol>
+  <symbol id="i-gov" viewBox="0 0 24 24"><path d="M3.5 10 12 4.5l8.5 5.5"/><path d="M5.5 10v7.5M10 10v7.5M14 10v7.5M18.5 10v7.5"/><path d="M3.5 20h17"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.6-5.7"/><path d="M17 2.8v3.8h3.8"/></symbol>
+  <symbol id="i-log" viewBox="0 0 24 24"><path d="M8.5 6.5H20M8.5 12H20M8.5 17.5H20"/><path d="M4 6.5h.1M4 12h.1M4 17.5h.1"/></symbol>
+</svg>
+
+<div class="wrap" id="wrap">
+  <header class="hud">
+    <div class="kasa-box">
+      <span class="etyk">Portfel</span>
+      <span class="portfel" id="portfelW">0 zł</span>
+      <span class="tempo" id="tempoW"></span>
+    </div>
+    <span class="spacer"></span>
+    <div class="chips">
+      <button class="chip" id="indeksChip">Indeks <b class="mono" id="indeksW">1,00</b><span class="znak">ⓘ</span></button>
+      <button class="chip hide" id="negChip">Wynegocjowane <b class="mono" id="negW">+0%</b><span class="znak">ⓘ</span></button>
+      <button class="chip rozjazd hide" id="rozjazd">ROZJAZD <b id="rozjazdX">×1,0</b><span class="znak">ⓘ</span></button>
+      <button class="chip" id="resetBtn" title="Zacznij od nowa"><svg class="i"><use href="#i-reset"/></svg> nowa gra</button>
+    </div>
+  </header>
+
+  <div class="kol-l">
+  <div class="plansza-ramka" id="planszaRamka">
+    <div class="p-naglowek">
+      <span class="marka">DRUGI LICZNIK</span>
+      <span class="tydzien mono" id="tydzienNr">tydzień 1</span>
+      <button class="p-oko hide" id="okoBtn" title="Przytrzymaj: twój grafik oczami świata"
+              aria-label="Przytrzymaj, aby zobaczyć grafik tak, jak widzi go rejestr płac">
+        <svg class="i"><use href="#i-oko"/></svg> <span id="okoEtyk">na papierze:</span> <b class="mono" id="jawnyMies">0 zł</b>/mies.
+      </button>
+    </div>
+    <div class="p-dni"><span></span><span>pon</span><span>wt</span><span>śr</span><span>czw</span><span>pt</span><span>sob</span><span>nd</span></div>
+    <div class="p-cialo">
+      <div class="p-godz"><span>0–4</span><span>4–8</span><span>8–12</span><span>12–16</span><span>16–20</span><span>20–24</span></div>
+      <div id="plansza">
+        <div class="p-hint" id="planszaHint">Twój grafik jest pusty.<br>Przyjmuj pacjentów z ulicy, aż będzie cię stać na LEK.</div>
+        <div class="playhead" id="playhead"></div>
+      </div>
+    </div>
+  </div>
+
+  <button id="przyjmij">PRZYJMIJ PACJENTA<small id="klikInfo">+10 zł</small></button>
+  <div class="akcje-strip">
+    <button id="negocjujBtn" class="hide"><svg class="i"><use href="#i-dymek"/></svg> Negocjuj stawkę<small id="negocjujInfo"></small></button>
+  </div>
+
+  <div class="stany">
+    <div class="stan" id="energiaStan">
+      <span class="ikona dobrze" id="energiaIkona"><svg class="i"><use href="#i-bateria"/></svg></span>
+      <div class="tor" id="energiaPas" title="Energia — dyżury nią płacisz"><i style="width:100%"></i></div>
+      <span class="op" id="energiaOp">100% sił</span>
+      <button class="akcja" id="kawaBtn" title="+20 energii"><svg class="i"><use href="#i-kawa"/></svg> 300 zł</button>
+      <button class="akcja" id="urlopBtn" title="15 s bez dochodu, +50 energii"><svg class="i"><use href="#i-sen"/></svg> odeśpij</button>
+    </div>
+    <div class="stan" id="tydzienStan">
+      <span class="ikona"><svg class="i"><use href="#i-kalendarz"/></svg></span>
+      <div class="tor" id="tydzienPas" role="button" tabindex="0" title="Kliknij: skąd te godziny?"><i style="width:0%"></i></div>
+      <span class="op"><span id="hUz">0</span>/<span id="hCap">48</span> h fiz.</span>
+      <button class="akcja" id="tydzienInfo" title="Skąd te godziny?">?</button>
+    </div>
+    <div class="stan" id="dobaStan">
+      <span class="ikona"><svg class="i"><use href="#i-warstwy"/></svg></span>
+      <div class="tor" id="dobaPas"><i style="width:0%"></i></div>
+      <span class="op"><span id="dobaW">0</span> h/dobę rozl.</span>
+    </div>
+  </div>
+
+  <div class="kariera" id="kariera"></div>
+  </div><!-- /kol-l -->
+
+  <div class="kol-p">
+  <div class="sklepy" id="sklepy">
+    <div class="taby" role="tablist" aria-label="Sklepy">
+      <button role="tab" id="tabRozwoj" aria-selected="true" aria-controls="pRozwoj"><svg class="i"><use href="#i-rozwoj"/></svg> Rozwój</button>
+      <button role="tab" id="tabPraca" aria-selected="false" aria-controls="pPraca" class="hide"><svg class="i"><use href="#i-praca"/></svg> Praca</button>
+      <button role="tab" id="tabSystem" aria-selected="false" aria-controls="pSystem" class="tab-system hide" disabled><svg class="i"><use href="#i-pytanie"/></svg> ???</button>
+      <button role="tab" id="tabMajatek" aria-selected="false" aria-controls="pMajatek" class="hide"><svg class="i"><use href="#i-majatek"/></svg> Majątek</button>
+    </div>
+    <ul class="lista" id="pRozwoj" role="tabpanel" aria-labelledby="tabRozwoj"></ul>
+    <ul class="lista hide" id="pPraca" role="tabpanel" aria-labelledby="tabPraca"></ul>
+    <ul class="lista hide" id="pSystem" role="tabpanel" aria-labelledby="tabSystem"></ul>
+    <ul class="lista hide" id="pMajatek" role="tabpanel" aria-labelledby="tabMajatek"></ul>
+  </div>
+
+  <details class="dziennik" id="dziennikBox">
+    <summary><svg class="i"><use href="#i-log"/></svg> Dziennik zdarzeń</summary>
+    <ol id="dziennik"></ol>
+  </details>
+  </div><!-- /kol-p -->
+</div>
+
+<div class="fon" id="fon" role="alertdialog" aria-labelledby="fonTytul">
+  <div class="fon-tytul" id="fonTytul"></div>
+  <div class="fon-tresc" id="fonTresc"></div>
+  <div class="fon-akcje" id="fonAkcje"></div>
+  <a class="fon-link hide" id="fonLink" href="#" target="_blank" rel="noopener">to dzieje się naprawdę →</a>
+  <div class="fon-zegar"><i id="fonZegar"></i></div>
+</div>
+
+<div class="toast" id="toast" role="status">
+  <div class="tt" id="toastTxt"></div>
+  <button class="toast-ok" id="toastOk">OK</button>
+  <div class="zegar"><i id="toastZegar"></i></div>
+</div>
+
+<div class="zaslona" id="zaslona">
+  <div class="akt" role="dialog" aria-modal="true" id="aktBox"></div>
+</div>
+
+<div class="sr-only" aria-live="polite" id="czytnik"></div>
+
+<script is:inline>
+'use strict';
+/* ── DRUGI LICZNIK v5 — poprawki UX: pointerdown, ikony SVG, czytelne karty,
+   duże powiadomienia, popovery, „na papierze" scalone z okiem na planszy    */
+
+const T = {
+  H_NA_SEK: 6,
+  KLIK_BAZA: 10,
+  TIER_MNOZNIK: [1, 2, 4, 8],
+  NETTO_UOP_NISKI: 0.72, NETTO_UOP_WYSOKI: 0.55, PROG_ROCZNY: 120000,
+  NETTO_B2B: 0.84,
+  CEGIELKA_TYG: 0.02,
+  FINAL_LIFETIME: 300000,
+  KAWA_CENA: 300,
+  NEG_CD_MS: 45000,
+  KOL: 7, RZED: 6,
+};
+const TIERY = ['Stażysta', 'Rezydent', 'Specjalista', 'Kontraktowiec', 'Walizkowiec…'];
+const LINK = p => 'https://zarobkilekarzy.pl' + p;
+const iko = n => '<svg class="i"><use href="#i-' + n + '"/></svg>';
+
+const SZKOLENIA = [
+  { n: 'Kurs USG', k: 100, b: 2, f: 'Weekend w hotelu konferencyjnym, certyfikat na ścianę.' },
+  { n: 'Kurs echo serca', k: 450, b: 3, f: 'Serce pacjenta na ekranie. Twoje: 140/min, bo kredyt.' },
+  { n: 'Kurs endoskopii', k: 1800, b: 4, f: 'Zaglądasz ludziom w głąb. NFZ zagląda w twoje punkty.' },
+  { n: 'Studia podyplomowe', k: 7000, b: 6, f: 'Dwa lata weekendów. Dyplom uprawnia do kolejnych studiów.' },
+  { n: 'Doktorat', k: 28000, b: 8, f: 'Litery przed nazwiskiem. Do rozliczenia z NFZ nie wchodzą.' },
+];
+const BILOKACJA = [
+  { k: 150000, ef: 'komórki grafiku dzielą się na 2 tory — te same godziny, druga wypłata', f: 'Szkolenie weekendowe: jak być w dwóch miejscach naraz. Nikt nie porównuje grafików.' },
+  { k: 1200000, ef: 'trzy tory w komórce — te same godziny, trzy wypłaty', f: 'Trzy oddziały, jedno ciało. Rekordzista z życia rozliczał doby po 72 godziny.' },
+];
+const TYPY = {
+  etat:     { et: 'ETAT',   st: () => S.tier >= 2 ? 87 : 50, dren: 0.25, rynek: false },
+  dyzur:    { et: 'DYŻUR',  st: () => 110, dren: 1.1,  rynek: true },
+  poradnia: { et: 'PORAD',  st: () => 130, dren: 0.35, rynek: true },
+  kontrakt: { et: 'FIRMA',  st: () => 170, dren: 0.45, rynek: true },
+  obok:     { et: 'OBOK',   st: () => 220, dren: 0.45, rynek: true },
+  cito:     { et: 'CITO×3', st: () => 500, dren: 1.2,  rynek: true },
+};
+
+let S = {
+  portfel: 0, lifetime: 0, jawneCum: 0, realCum: 0,
+  kliki: 0, pacjenci: 0,
+  szkolenia: 0, tier: 0, etat: false, b2b: false,
+  gen: { dyzur: 0, poradnia: 0, obok: 0 },
+  bloki: [],
+  mieszkania: 0, apartamenty: 0, panamerka: false,
+  hCap: 48, optout: false, grafik: false, cennik: false,
+  cegielki: 0, indeks: 1, negocjacje: 0,
+  energia: 100, urlopDo: 0,
+  bilokacja: 0,
+  ryzyko: 0, kontrole: 0,
+  gh: 8, tydzienNr: 1, tydzienSuma: 0,
+  odslony: {}, achv: {},
+  systemOtwarty: false, fin: false, rejestrDziala: false,
+};
+
+const $ = id => document.getElementById(id);
+const fmt = n => Math.floor(n).toLocaleString('pl-PL') + ' zł';
+const fmtX = n => '×' + n.toLocaleString('pl-PL', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const DNI = ['pon', 'wt', 'śr', 'czw', 'pt', 'sob', 'nd'];
+const zegar = () => {
+  const d = Math.floor(S.gh / 24) % 7, h = Math.floor(S.gh % 24), m = Math.floor((S.gh % 1) * 60);
+  return DNI[d] + ' ' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+};
+const czytnik = t => { $('czytnik').textContent = t; };
+const redMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* pointerdown + klik-z-klawiatury (detail===0), bez podwójnego odpalenia */
+function zywyPrzycisk(el, fn) {
+  el.addEventListener('pointerdown', e => { if (e.button === 0 || e.pointerType !== 'mouse') { e.preventDefault(); fn(e); } });
+  el.addEventListener('click', e => { if (e.detail === 0) fn(e); });
+}
+
+function log(txt, wazne) {
+  const li = document.createElement('li');
+  li.innerHTML = '<span class="czas">' + zegar() + '</span> ' + (wazne ? '<b>' + txt + '</b>' : txt);
+  const ol = $('dziennik');
+  ol.prepend(li);
+  while (ol.children.length > 40) ol.lastChild.remove();
+  $('dziennikBox').style.display = 'block';
+}
+
+/* ── plansza: sloty, godziny ── */
+const kluczKom = (c, r) => c + ',' + r;
+function komorkiFizyczne() {
+  const s = new Set();
+  for (const b of S.bloki) if (b.lane === 0) s.add(kluczKom(b.c, b.r));
+  return s;
+}
+function hFizyczne() { return komorkiFizyczne().size * 4; }
+function hRozliczane() { return S.bloki.length * 4; }
+function dobaRozliczana() { return hRozliczane() / 7; }
+function naUrlopie() { return Date.now() < S.urlopDo; }
+
+function znajdzSloty(n, preferRows, blokiStan) {
+  const bloki = blokiStan || S.bloki;
+  const rzedy = preferRows || [0, 1, 5, 4, 2, 3];
+  const zajete = new Set(bloki.map(b => b.c + ',' + b.r + ',' + b.lane));
+  const fiz = new Set(bloki.filter(b => b.lane === 0).map(b => kluczKom(b.c, b.r)));
+  const L = 1 + S.bilokacja;
+  const wynik = [];
+  for (let lane = 0; lane < L && wynik.length < n; lane++) {
+    for (const r of rzedy) {
+      for (let c = 0; c < T.KOL && wynik.length < n; c++) {
+        const klucz = c + ',' + r + ',' + lane;
+        if (zajete.has(klucz)) continue;
+        const kom = kluczKom(c, r);
+        if (lane === 0) {
+          if (!fiz.has(kom) && (fiz.size + 1) * 4 > S.hCap) continue;
+          fiz.add(kom);
+        } else if (!fiz.has(kom)) continue;
+        zajete.add(klucz);
+        wynik.push({ c, r, lane });
+      }
+    }
+  }
+  return wynik.length === n ? wynik : null;
+}
+function dodajBloki(n, typ, kreska, preferRows) {
+  const sloty = znajdzSloty(n, preferRows);
+  if (!sloty) return false;
+  for (const s of sloty) S.bloki.push({ c: s.c, r: s.r, lane: s.lane, typ, kreska: !!kreska });
+  renderPlansza();
+  return true;
+}
+
+const plansza = $('plansza');
+function renderPlansza() {
+  for (const el of plansza.querySelectorAll('.blok')) el.remove();
+  $('planszaHint').style.display = S.bloki.length ? 'none' : 'grid';
+  const L = 1 + S.bilokacja;
+  const w = 100 / T.KOL, h = 100 / T.RZED;
+  for (const b of S.bloki) {
+    const el = document.createElement('div');
+    el.className = 'blok t-' + b.typ + (b.kreska && !S.rejestrDziala ? ' kreska' : '');
+    el.textContent = TYPY[b.typ].et;
+    const szer = (w - 0.9) / L;
+    el.style.left = 'calc(' + (b.c * w + 0.45 + b.lane * szer) + '% + 1px)';
+    el.style.width = 'calc(' + szer + '% - 2px)';
+    el.style.top = 'calc(' + (b.r * h) + '% + 2px)';
+    el.style.height = 'calc(' + h + '% - 5px)';
+    plansza.appendChild(el);
+  }
+}
+function pFloat(tekst, xPct, yPct, klasa) {
+  if (redMotion) return;
+  const f = document.createElement('span');
+  f.className = 'p-float' + (klasa ? ' ' + klasa : '');
+  f.textContent = tekst;
+  f.style.left = Math.min(88, xPct) + '%'; f.style.top = yPct + '%';
+  plansza.appendChild(f);
+  setTimeout(() => f.remove(), 820);
+}
+
+/* ── dochód ── */
+function mnoznikNeg() { return Math.pow(1.1, S.negocjacje); }
+function mnoznikEnergii() { return 0.55 + 0.45 * S.energia / 100; }
+function bonusSzkolen() { let b = 0; for (let i = 0; i < S.szkolenia; i++) b += SZKOLENIA[i].b; return b; }
+function stawkaBloku(b) {
+  const t = TYPY[b.typ];
+  return t.st() * (t.rynek ? S.indeks : 1) * mnoznikNeg() * (b.lane === 0 ? mnoznikEnergii() : 1);
+}
+function aktualnaKomorka() {
+  const h = S.gh % 168;
+  return { c: Math.floor(h / 24), r: Math.floor((h % 24) / 4), poz: h / 168 };
+}
+function blokiW(c, r) { return S.bloki.filter(b => b.c === c && b.r === r); }
+function jawneTygodniowo() {
+  let s = 0;
+  for (const b of S.bloki) if (!b.kreska) s += TYPY[b.typ].st() * (TYPY[b.typ].rynek ? S.indeks : 1) * mnoznikNeg() * 4;
+  return s;
+}
+function klinUoP() { return jawneTygodniowo() * 52 > T.PROG_ROCZNY ? T.NETTO_UOP_WYSOKI : T.NETTO_UOP_NISKI; }
+function nettoB2B() { return T.NETTO_B2B + (S.panamerka ? 0.03 : 0); }
+function czynszNaGodzine() { return (S.mieszkania * 900 + S.apartamenty * 2600) / 168; }
+
+/* ── klik (zawsze działa) ── */
+function naDyzurze() {
+  const { c, r } = aktualnaKomorka();
+  return blokiW(c, r).some(b => b.lane === 0);
+}
+function wartoscKlikuBrutto() {
+  const baza = T.KLIK_BAZA + bonusSzkolen();
+  return baza * T.TIER_MNOZNIK[Math.min(S.tier, 3)] * S.indeks * mnoznikNeg()
+    * mnoznikEnergii() * (naDyzurze() ? 2 : 1);
+}
+function klik() {
+  const brutto = wartoscKlikuBrutto();
+  const klin = S.b2b ? nettoB2B() : klinUoP();
+  S.portfel += brutto * klin;
+  S.lifetime += brutto; S.realCum += brutto;
+  if (!S.b2b || S.rejestrDziala) S.jawneCum += brutto;
+  S.kliki++; S.pacjenci++;
+  const { poz } = aktualnaKomorka();
+  if (!redMotion) {
+    const b = document.createElement('span');
+    b.className = 'p-blip';
+    b.style.left = 'calc(' + (poz * 100) + '% - 3px)';
+    b.style.top = (12 + Math.random() * 76) + '%';
+    plansza.appendChild(b);
+    setTimeout(() => b.remove(), 2500);
+  }
+  pFloat('+' + Math.floor(brutto * klin).toLocaleString('pl-PL') + ' zł', poz * 100 + 1, 14 + Math.random() * 30);
+  postep();
+}
+const przyjmijBtn = $('przyjmij');
+przyjmijBtn.addEventListener('pointerdown', e => {
+  if (e.button === 0 || e.pointerType !== 'mouse') {
+    e.preventDefault();
+    przyjmijBtn.classList.add('wcisniety');
+    klik();
+  }
+});
+addEventListener('pointerup', () => przyjmijBtn.classList.remove('wcisniety'));
+przyjmijBtn.addEventListener('click', e => { if (e.detail === 0) klik(); });
+plansza.addEventListener('pointerdown', () => klik());
+
+/* ── sklepy ── */
+function kosztG(c0, r, n) { return Math.round(c0 * Math.pow(r, n)); }
+const powodSlotow = () => '<button data-godziny>brak miejsca w grafiku — sprawdź dlaczego</button>';
+
+const PRZEDMIOTY = [
+  /* Rozwój */
+  { id: 'szkolenie', panel: 'pRozwoj', kat: '', ikona: 'rozwoj',
+    nazwa: () => S.szkolenia < SZKOLENIA.length ? SZKOLENIA[S.szkolenia].n : 'Szkolenia (komplet)',
+    flavor: () => S.szkolenia < SZKOLENIA.length ? SZKOLENIA[S.szkolenia].f : 'Więcej kursów nie wymyślono.',
+    efekt: () => S.szkolenia < SZKOLENIA.length ? '+' + SZKOLENIA[S.szkolenia].b + ' zł za pacjenta z klikania' : 'razem +' + bonusSzkolen() + ' zł za pacjenta',
+    koszt: () => S.szkolenia < SZKOLENIA.length ? SZKOLENIA[S.szkolenia].k : 0,
+    ile: () => S.szkolenia, max: () => S.szkolenia >= SZKOLENIA.length,
+    kup() { S.szkolenia++; if (S.szkolenia === 2) setTimeout(() => log('Kolega z oddziału: „Kursy? Poważnie? Nikt tu do niczego nie doszedł kursami."', true), 4000); },
+    link: '/dane/stawki' },
+  { id: 'lek', panel: 'pRozwoj', kat: '', ikona: 'pioro', nazwa: 'Egzamin LEK + etat',
+    flavor: 'Zdajesz, podpisujesz umowę o pracę. Pensja z ustawy — jawna co do złotówki.',
+    efekt: () => '10 bloków etatu w grafiku · 50 zł/h · awans: Rezydent',
+    koszt: () => 600, max: () => S.tier >= 1,
+    kup() { S.etat = true; dodajBloki(10, 'etat', false, [2, 3, 4]); awans(1); log('Podpisano umowę o pracę. Dziesięć bloków wskoczyło do grafiku.', true); },
+    link: '/dane/pensje-rezydentow' },
+  { id: 'pes', panel: 'pRozwoj', kat: '', ikona: 'trofeum', nazwa: 'Egzamin PES',
+    flavor: 'Specjalizacja. Im mniej kolegów po fachu, tym wyższa twoja stawka.',
+    efekt: () => 'etat drożeje: 50 → 87 zł/h · awans: Specjalista',
+    koszt: () => 4000, max: () => S.tier >= 2,
+    wymog: () => S.tier >= 1 ? null : 'wymaga: Rezydent',
+    kup() { awans(2); renderPlansza(); }, link: '/analizy/lejek-ksztalcenia' },
+
+  /* Praca */
+  { id: 'dyzur', panel: 'pPraca', kat: 'kat-praca', ikona: 'dyzur', nazwa: 'Dyżur (2 bloki nocne)',
+    flavor: 'Linia „teraz" na dyżurze drenuje baterię — za to płacą jak za złoto.',
+    efekt: () => '+8 h/tydz. po 110 zł/h · kosztuje energię',
+    koszt: () => kosztG(300, 1.35, S.gen.dyzur),
+    ile: () => S.gen.dyzur, max: () => S.gen.dyzur >= 8,
+    slotyPotrzebne: () => 2, preferRows: [0, 1, 5],
+    wymog: () => S.tier >= 1 ? null : 'wymaga: Rezydent',
+    kup() { S.gen.dyzur++; dodajBloki(2, 'dyzur', S.b2b, [0, 1, 5]); },
+    link: '/mechanizmy/dyzury-i-gotowosc' },
+  { id: 'poradnia', panel: 'pPraca', kat: 'kat-praca', ikona: 'poradnia', nazwa: 'Poradnia (2 bloki)',
+    flavor: 'NFZ do 18:00. Te same drzwi, inna kasa. Lżejsze niż dyżur.',
+    efekt: () => '+8 h/tydz. po 130 zł/h',
+    koszt: () => kosztG(6000, 1.18, S.gen.poradnia),
+    ile: () => S.gen.poradnia, max: () => S.gen.poradnia >= 6,
+    slotyPotrzebne: () => 2, preferRows: [4, 5, 3],
+    wymog: () => S.tier >= 2 ? null : 'wymaga: Specjalista',
+    kup() { S.gen.poradnia++; dodajBloki(2, 'poradnia', S.b2b, [4, 5, 3]); },
+    link: '/dane/kolejki' },
+  { id: 'optout', panel: 'pPraca', kat: 'kat-praca', ikona: 'pioro', nazwa: 'Klauzula opt-out',
+    flavor: 'Jeden podpis znosi limit 48 godzin tygodniowo. Legalnie. Wszyscy podpisują.',
+    efekt: () => 'limit godzin: 48 → 78 h/tydz.', koszt: () => 1200, max: () => S.optout,
+    wymog: () => S.tier >= 1 ? null : 'wymaga: Rezydent',
+    kup() { S.optout = true; S.hCap = 78; log('Opt-out podpisany. Doba nadal ma 24 godziny. Na razie.', true); },
+    link: '/mechanizmy/wieloetatowosc' },
+  { id: 'obok', panel: 'pPraca', kat: 'kat-praca', ikona: 'walizka', nazwa: 'Kontrakt w powiecie obok',
+    flavor: '45 minut autem. Tamten szpital zna tylko swój wycinek grafiku.',
+    efekt: () => '+24 h/tydz. po 220 zł/h (6 bloków)' + (S.panamerka ? ' · dojazd −25%' : ''),
+    koszt: () => Math.round(kosztG(30000, 1.3, S.gen.obok) * (S.panamerka ? 0.75 : 1)),
+    ile: () => S.gen.obok, max: () => S.gen.obok >= 4,
+    slotyPotrzebne: () => 6,
+    wymog: () => S.b2b ? null : 'wymaga: własna firma + kontrakt (B2B)',
+    kup() { S.gen.obok++; dodajBloki(6, 'obok', true); if (S.gen.obok === 2) achievement('trzyPieczatki', 'Trzy pieczątki, jedno ciało', 'Każda placówka zna tylko swój kawałek twojego grafiku.', '/mechanizmy/wieloetatowosc'); },
+    link: '/mechanizmy/wieloetatowosc' },
+
+  /* System */
+  { id: 'cegielka', panel: 'pSystem', kat: 'kat-system', ikona: 'cegla', nazwa: 'Cegiełka: Komitet Obrony Jakości Kształcenia',
+    flavor: 'Kampania przeciw nowym kierunkom lekarskim. Lekarzy nie przybywa, twoje stawki rosną.',
+    efekt: () => 'Indeks stawek +2 p.p. na tydzień — wszystkie stawki, na zawsze',
+    koszt: () => kosztG(8000, 1.6, S.cegielki), ile: () => S.cegielki,
+    kup() { S.cegielki++; if (S.cegielki === 1) { log('Indeks stawek rynkowych drgnął.', true); setTimeout(() => achievement('podaz', 'Podaż i popyt', 'Najlepsza inwestycja w twoją stawkę to brak twojego konkurenta.', '/mechanizmy/reglamentacja-dostepu'), 25000); } },
+    link: '/mechanizmy/reglamentacja-dostepu' },
+  { id: 'b2b', panel: 'pSystem', kat: 'kat-system', ikona: 'teczka', nazwa: 'Firma + kontrakt OBOK etatu',
+    flavor: 'Nie rzucasz etatu — zostajesz na ćwiartce, dla ZUS-u i statystyk. Resztę tej samej pracy robisz jako firma.',
+    efekt: () => 'ryczałt 14% zamiast III progu · portfel ~×3 · na papierze zostają grosze',
+    koszt: () => 5000, max: () => S.b2b,
+    wymog() {
+      if (S.tier < 2) return 'wymaga: Specjalista';
+      if (!S.etat) return 'wymaga: etat (LEK)';
+      const bez = S.bloki.filter(b => b.typ !== 'etat');
+      const zostaja = S.bloki.filter(b => b.typ === 'etat').slice(0, 2);
+      if (!znajdzSloty(10, null, bez.concat(zostaja))) return powodSlotow();
+      return null;
+    },
+    kup() { przejscieB2B(); }, link: '/mechanizmy/kontrakt-vs-etat' },
+  { id: 'grafik', panel: 'pSystem', kat: 'kat-system', ikona: 'kalendarz', nazwa: 'Grafik się nie pokrywa (na papierze)',
+    flavor: 'Twojej firmy nie obejmuje ewidencja czasu pracy. Nikt nie sumuje twoich godzin. Nikt.',
+    efekt: () => 'limit godzin: 78 → 120 h/tydz.',
+    koszt: () => 12000, max: () => S.grafik,
+    wymog: () => S.b2b ? null : 'wymaga: własna firma + kontrakt (B2B)',
+    kup() { S.grafik = true; S.hCap = 120; S.ryzyko += 15; log('Limit godzin przestał istnieć. Formalnie nigdy nie istniał.', true); },
+    link: '/dane/rekordy' },
+  { id: 'bilokacja', panel: 'pSystem', kat: 'kat-system', ikona: 'bilokacja',
+    nazwa: () => 'Kurs bilokacji — ' + (S.bilokacja === 0 ? 'I' : 'II') + ' stopień',
+    flavor: () => BILOKACJA[Math.min(S.bilokacja, 1)].f,
+    efekt: () => BILOKACJA[Math.min(S.bilokacja, 1)].ef,
+    koszt: () => BILOKACJA[Math.min(S.bilokacja, 1)].k, ile: () => S.bilokacja,
+    max: () => S.bilokacja >= 2,
+    wymog: () => S.grafik ? null : 'wymaga: grafik na papierze',
+    kup() {
+      S.bilokacja++;
+      renderPlansza();
+      if (S.bilokacja === 1) log('Bilokacja opanowana. Każda komórka grafiku ma teraz DWA tory. Męczy się tylko tor pierwszy.', true);
+      else log('Bilokacja II. Trzy tory. Trzy wypłaty za te same godziny.', true);
+    },
+    link: '/dane/rekordy' },
+  { id: 'cennik', panel: 'pSystem', kat: 'kat-system', ikona: 'rachunek', nazwa: 'Cennik za informację publiczną',
+    flavor: 'Ktoś pyta o listę płac? Szpital wystawia wycenę „kosztów przygotowania".',
+    efekt: () => 'wniosek dziennikarza = +8 000 zł zamiast kłopotów',
+    koszt: () => 3000, max: () => S.cennik,
+    kup() { S.cennik = true; }, link: '/mechanizmy/brak-jawnosci' },
+
+  /* Majątek */
+  { id: 'kawalerka', panel: 'pMajatek', kat: 'kat-majatek', ikona: 'budynek', nazwa: 'Kawalerka pod wynajem',
+    flavor: 'Ryczałt od najmu: 8,5%. Lokator płaci jak NFZ, tylko punktualnie.',
+    efekt: () => '+900 zł/tydz. czynszu · nie zajmuje grafiku',
+    koszt: () => kosztG(35000, 1.35, S.mieszkania), ile: () => S.mieszkania, max: () => S.mieszkania >= 8,
+    kup() { S.mieszkania++; S.ryzyko += 2; sprawdzKsiegi(); }, link: '/analizy/lekarze-radni' },
+  { id: 'panamerka', panel: 'pMajatek', kat: 'kat-majatek', ikona: 'auto', nazwa: 'Panamerka (leasing na firmę)',
+    flavor: 'Auto służbowe — do wizyt domowych. Parking pod szpitalem wie o tobie więcej niż rejestr płac.',
+    efekt: () => 'netto 84% → 87% · kontrakty obok −25%',
+    koszt: () => 280000, max: () => S.panamerka,
+    wymog: () => S.b2b ? null : 'wymaga: własna firma (koszty)',
+    kup() { S.panamerka = true; S.ryzyko += 3; log('Panamerka pod szpitalem. Sąsiedzi nie znają twoich przychodów. Znają twoje auto.', true); },
+    link: '/mechanizmy/kontrakt-vs-etat' },
+  { id: 'apartament', panel: 'pMajatek', kat: 'kat-majatek', ikona: 'miasto', nazwa: 'Apartament „pod inwestycję"',
+    flavor: 'Deweloper mówi „produkt inwestycyjny". Księga wieczysta mówi wszystko.',
+    efekt: () => '+2 600 zł/tydz. czynszu · nie zajmuje grafiku',
+    koszt: () => kosztG(140000, 1.4, S.apartamenty), ile: () => S.apartamenty, max: () => S.apartamenty >= 4,
+    wymog: () => S.mieszkania >= 1 ? null : 'wymaga: pierwsza kawalerka',
+    kup() { S.apartamenty++; S.ryzyko += 2; sprawdzKsiegi(); }, link: '/analizy/lekarze-radni' },
+];
+
+const kartyRef = {};
+function sprawdzKsiegi() {
+  if (S.mieszkania + S.apartamenty >= 3) {
+    achievement('ksiegi', 'Portfel widać w księgach wieczystych',
+      'Świat nie zna twoich przychodów. Zna twój parking i twoje nieruchomości.', '/analizy/lekarze-radni');
+  }
+}
+
+function budujSklepy() {
+  for (const p of PRZEDMIOTY) {
+    const li = document.createElement('li');
+    li.className = 'karta ' + (p.kat || '');
+    li.innerHTML =
+      '<div class="rzad"><span class="ikonka">' + iko(p.ikona) + '</span><h3></h3><span class="koszt"></span></div>' +
+      '<p class="zysk"></p>' +
+      '<p class="flavor"></p>' +
+      '<div class="dol"><button class="kup">Kup</button><span class="ile"></span>' +
+      '<a class="zrodlo" href="' + LINK(p.link) + '" target="_blank" rel="noopener">to działa naprawdę →</a></div>' +
+      '<div class="powod"></div>';
+    const btn = li.querySelector('.kup');
+    const kupuj = () => {
+      const k = p.koszt();
+      if (S.portfel < k || (p.max && p.max())) return;
+      if (p.wymog && p.wymog()) return;
+      if (p.slotyPotrzebne && p.slotyPotrzebne() > 0 && !znajdzSloty(p.slotyPotrzebne(), p.preferRows)) return;
+      S.portfel -= k;
+      p.kup();
+      czytnik('Kupiono: ' + (typeof p.nazwa === 'function' ? p.nazwa() : p.nazwa));
+      postep(); renderSklepy();
+    };
+    zywyPrzycisk(btn, kupuj);
+    li.querySelector('.powod').addEventListener('click', e => {
+      if (e.target.matches('[data-godziny]')) godzinyModal();
+    });
+    $(p.panel).appendChild(li);
+    kartyRef[p.id] = { li, btn, cache: {}, el: {
+      h3: li.querySelector('h3'), flavor: li.querySelector('.flavor'), zysk: li.querySelector('.zysk'),
+      koszt: li.querySelector('.koszt'), ile: li.querySelector('.ile'), powod: li.querySelector('.powod'),
+    } };
+  }
+}
+
+/* aktualizuj DOM tylko przy zmianie — bez migotania i gubienia kliknięć */
+function renderSklepy() {
+  for (const p of PRZEDMIOTY) {
+    const r = kartyRef[p.id], c = r.cache;
+    const maxed = p.max && p.max();
+    const wymog = p.wymog ? p.wymog() : null;
+    const brakSlotow = !maxed && !wymog && p.slotyPotrzebne && p.slotyPotrzebne() > 0
+      && !znajdzSloty(p.slotyPotrzebne(), p.preferRows);
+    const v = {
+      h3: typeof p.nazwa === 'function' ? p.nazwa() : p.nazwa,
+      flavor: typeof p.flavor === 'function' ? p.flavor() : p.flavor,
+      zysk: p.efekt(),
+      koszt: maxed ? '' : fmt(p.koszt()),
+      ile: p.ile && p.ile() > 0 ? '×' + p.ile() : '',
+      oplacona: !!maxed,
+      disabled: maxed || !!wymog || brakSlotow || S.portfel < p.koszt(),
+      btnTekst: maxed ? 'Masz' : 'Kup',
+      powod: wymog ? wymog : brakSlotow ? powodSlotow() : '',
+    };
+    if (c.h3 !== v.h3) { r.el.h3.textContent = v.h3; c.h3 = v.h3; }
+    if (c.flavor !== v.flavor) { r.el.flavor.textContent = v.flavor; c.flavor = v.flavor; }
+    if (c.zysk !== v.zysk) { r.el.zysk.textContent = v.zysk; c.zysk = v.zysk; }
+    if (c.koszt !== v.koszt) { r.el.koszt.textContent = v.koszt; c.koszt = v.koszt; }
+    if (c.ile !== v.ile) { r.el.ile.textContent = v.ile; c.ile = v.ile; }
+    if (c.oplacona !== v.oplacona) { r.li.classList.toggle('oplacona', v.oplacona); c.oplacona = v.oplacona; }
+    if (c.disabled !== v.disabled) { r.btn.disabled = v.disabled; c.disabled = v.disabled; }
+    if (c.btnTekst !== v.btnTekst) { r.btn.textContent = v.btnTekst; c.btnTekst = v.btnTekst; }
+    if (c.powod !== v.powod) { r.el.powod.innerHTML = v.powod; c.powod = v.powod; }
+  }
+}
+
+const TABY = [['tabRozwoj', 'pRozwoj'], ['tabPraca', 'pPraca'], ['tabSystem', 'pSystem'], ['tabMajatek', 'pMajatek']];
+function pokazTab(tabId) {
+  for (const [t, p] of TABY) {
+    $(t).setAttribute('aria-selected', String(t === tabId));
+    $(p).classList.toggle('hide', t !== tabId);
+  }
+}
+TABY.forEach(([t]) => $(t).addEventListener('click', () => { if (!$(t).disabled) pokazTab(t); }));
+
+/* ── popovery informacyjne ── */
+function infoModal(tytul, html) { modal('<div class="eyebrow">Co to jest?</div><h2>' + tytul + '</h2><div style="text-align:left">' + html + '</div>', 'Rozumiem'); }
+$('indeksChip').addEventListener('click', () => infoModal('Indeks stawek',
+  '<p><b>Mnożnik wszystkich stawek rynkowych</b> (dyżury, kontrakty, poradnia — wszystko poza ustawową pensją etatu).</p>' +
+  '<p>Rośnie, gdy lekarzy na rynku ubywa — np. po wpłacie <b>Cegiełki</b> w zakładce System. Nigdy nie spada.</p>' +
+  '<p class="mala">Mechanizm z życia: sztywna podaż lekarzy + nieodkładalny popyt = rosnące stawki. <a href="' + LINK('/mechanizmy/reglamentacja-dostepu') + '" target="_blank" rel="noopener">to działa naprawdę →</a></p>'));
+$('rozjazd').addEventListener('click', () => infoModal('ROZJAZD',
+  '<p><b>Ile razy więcej pieniędzy wpłynęło do twojego portfela, niż widać w oficjalnych rejestrach.</b></p>' +
+  '<p>Przed założeniem firmy oba liczniki są równe (etat widać co do złotówki). Po przejściu na kontrakt większość wpływów znika z papierów — rozjazd rośnie.</p>' +
+  '<p>Przytrzymaj ' + iko('oko') + ' <b>na planszy</b>, żeby zobaczyć swój tydzień oczami świata.</p>' +
+  '<p class="mala"><a href="' + LINK('/mechanizmy/kontrakt-vs-etat') + '" target="_blank" rel="noopener">to działa naprawdę →</a></p>'));
+$('negChip').addEventListener('click', () => infoModal('Wynegocjowane',
+  '<p><b>Trwały, osobisty mnożnik wszystkich twoich stawek</b> — suma podwyżek wychodzonych u dyrektora przyciskiem „Negocjuj stawkę".</p>' +
+  '<p>Szansa negocjacji rośnie, gdy lekarzy brakuje — dyrektor nie ma cię kim zastąpić.</p>'));
+
+/* ── popup godzin ── */
+function godzinyModal() {
+  const fiz = hFizyczne(), rozl = hRozliczane();
+  const rzedy = [];
+  const licz = t => S.bloki.filter(b => b.typ === t).length * 4;
+  if (licz('etat')) rzedy.push(['Etat' + (S.b2b ? ' (część)' : ''), licz('etat') + ' h']);
+  if (licz('kontrakt')) rzedy.push(['Kontrakt z twoim szpitalem', licz('kontrakt') + ' h']);
+  if (licz('dyzur')) rzedy.push(['Dyżury', licz('dyzur') + ' h']);
+  if (licz('poradnia')) rzedy.push(['Poradnia', licz('poradnia') + ' h']);
+  if (licz('obok')) rzedy.push(['Kontrakty obok', licz('obok') + ' h']);
+  if (!rzedy.length) rzedy.push(['(pusty grafik)', '0 h']);
+  const dalej = !S.optout ? 'Podpisz <b>opt-out</b> (Praca): limit 48 → 78 h.'
+    : !S.grafik ? 'Kup <b>„Grafik się nie pokrywa"</b> (System): limit 78 → 120 h.'
+    : S.bilokacja < 2 ? '<b>Bilokacja</b> (System) dzieli komórki na tory — te same godziny, kolejne wypłaty, zero godzin fizycznych.'
+    : 'Limity to już tylko wspomnienie.';
+  modal(
+    '<div class="eyebrow">Twój tydzień</div><h2>Godziny</h2>' +
+    '<table>' + rzedy.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') +
+    '<tr><td><b>Fizycznie w pracy</b> (limit ' + S.hCap + ' h)</td><td><b>' + fiz + ' h</b></td></tr>' +
+    '<tr><td><b>Rozliczone na papierze</b></td><td><b>' + rozl + ' h</b></td></tr></table>' +
+    '<p style="text-align:left">' + dalej + '</p>' +
+    '<p class="mala" style="text-align:left">Limit dotyczy tylko godzin FIZYCZNYCH (tor 1). Tory bilokacji rozliczają te same godziny jeszcze raz — ich żaden limit nie widzi.</p>',
+    'Rozumiem');
+}
+$('tydzienInfo').addEventListener('click', godzinyModal);
+$('tydzienPas').addEventListener('click', godzinyModal);
+$('tydzienPas').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); godzinyModal(); } });
+
+/* ── awanse / modale ── */
+function awans(nowy) {
+  S.tier = nowy;
+  renderKariere();
+  const opisy = {
+    1: 'Twoją pensję określa ustawa, więc jest jawna. System wkrótce naprawi ten błąd młodości.',
+    2: 'Papier jest. Kolejka do ciebie też. Im mniej kolegów po fachu, tym wyższa twoja stawka.',
+    3: 'Etat zostaje — malutki, jawny, dla statystyk. Prawdziwe pieniądze płyną obok, kreskowanym torem.',
+  };
+  modal('<div class="eyebrow">Awans</div><h2>' + iko('trofeum') + ' ' + TIERY[nowy] + '</h2><p>' + (opisy[nowy] || '') + '</p>', 'Przyjmuję');
+  czytnik('Awans: ' + TIERY[nowy]);
+}
+function renderKariere() {
+  const c = $('kariera'); c.classList.add('on'); c.innerHTML = '';
+  TIERY.forEach((t, i) => {
+    const s = document.createElement('span');
+    s.className = 'k' + (i === S.tier ? ' teraz' : i < S.tier ? ' byl' : '');
+    s.textContent = t;
+    c.appendChild(s);
+  });
+}
+function przejscieB2B() {
+  const etaty = S.bloki.filter(b => b.typ === 'etat');
+  const zostaja = etaty.slice(0, 2);
+  S.bloki = S.bloki.filter(b => b.typ !== 'etat').concat(zostaja);
+  for (const b of S.bloki) if (b.typ === 'dyzur' || b.typ === 'poradnia') b.kreska = true;
+  S.b2b = true; S.tier = 3; S.ryzyko += 5;
+  dodajBloki(10, 'kontrakt', true, [2, 3, 4, 1, 0, 5]);
+  renderKariere(); renderPlansza();
+  $('okoBtn').classList.remove('hide');
+  $('wrap').classList.add('trzesie');
+  setTimeout(() => $('wrap').classList.remove('trzesie'), 500);
+  const mies = Math.round(jawneTygodniowo() * 4.33);
+  modal(
+    '<div class="eyebrow">Komunikat</div><h2>Witaj w systemie</h2>' +
+    '<p class="duze">Na papierze: <b>' + fmt(mies) + '/mies.</b> <span class="mala">(część etatu — dla ZUS i statystyk)</span></p>' +
+    '<p class="duze">Portfel: <b style="color:var(--kasa)">przyspieszył ~3×</b></p>' +
+    '<p>Ta sama praca, ten sam oddział. Etat skurczył się do ćwiartki, reszta pojechała kreskowanym torem: ryczałt 14% zamiast trzeciego progu. Na planszy pojawiło się ' + iko('oko') + ' — przytrzymaj je, a zobaczysz swój tydzień oczami świata.</p>' +
+    '<a class="zrodlo-a" href="' + LINK('/mechanizmy/kontrakt-vs-etat') + '" target="_blank" rel="noopener">prawdziwy mechanizm →</a>',
+    'Dalej');
+  log('Etat skurczony do 8 h. Kontrakt podpisany. Ten sam oddział.', true);
+  czytnik('Kontrakt B2B podpisany obok etatu.');
+}
+function modal(html, przycisk, poZamknieciu) {
+  $('aktBox').innerHTML = html + '<div><button class="ok-btn">' + przycisk + '</button></div>';
+  $('zaslona').classList.add('on');
+  const b = $('aktBox').querySelector('.ok-btn');
+  b.addEventListener('click', () => { $('zaslona').classList.remove('on'); if (poZamknieciu) poZamknieciu(); });
+  b.focus();
+}
+
+/* ── TELEFON: karty decyzji ── */
+let fonZajety = false;
+function decyzja(o) {
+  if (fonZajety) return false;
+  fonZajety = true;
+  $('planszaRamka').classList.add('alarm');
+  $('fonTytul').innerHTML = o.tytul;
+  $('fonTresc').innerHTML = o.opis;
+  const ak = $('fonAkcje'); ak.innerHTML = '';
+  const lnk = $('fonLink');
+  if (o.link) { lnk.href = LINK(o.link); lnk.classList.remove('hide'); } else lnk.classList.add('hide');
+  let zamkniety = false;
+  const zamknij = wybor => {
+    if (zamkniety) return; zamkniety = true; fonZajety = false;
+    $('fon').classList.remove('dzwoni');
+    $('planszaRamka').classList.remove('alarm');
+    if (wybor) {
+      const skutek = wybor.fn ? wybor.fn() : null;
+      toast({ wynik: true, html: iko('check') + ' <b>' + wybor.label + '</b> → ' + (skutek || wybor.kons), ttl: 6000 });
+    }
+  };
+  o.opcje.forEach(op => {
+    const b = document.createElement('button');
+    b.innerHTML = op.label + '<small>' + op.kons + '</small>';
+    b.addEventListener('click', () => zamknij(op));
+    ak.appendChild(b);
+  });
+  $('fon').classList.add('dzwoni');
+  const ttl = o.ttl || 14000;
+  const z = $('fonZegar');
+  z.style.transition = 'none'; z.style.width = '100%';
+  requestAnimationFrame(() => { z.style.transition = 'width ' + ttl + 'ms linear'; z.style.width = '0%'; });
+  setTimeout(() => { if (!zamkniety) zamknij(o.opcje[o.opcje.length - 1]); }, ttl);
+  czytnik('Telefon: ' + $('fonTytul').textContent);
+  return true;
+}
+
+/* ── toasty ── */
+let toastAktywny = false, toastTimer = 0; const toastKolejka = [];
+function toast(o) { toastKolejka.push(o); if (!toastAktywny) nastToast(); }
+function zamknijToast() {
+  clearTimeout(toastTimer);
+  $('toast').classList.remove('on');
+  setTimeout(nastToast, 300);
+}
+function nastToast() {
+  const o = toastKolejka.shift();
+  if (!o) { toastAktywny = false; return; }
+  toastAktywny = true;
+  const t = $('toast');
+  t.classList.toggle('alertowy', !!o.alert);
+  t.classList.toggle('wynikowy', !!o.wynik);
+  $('toastTxt').innerHTML = o.html;
+  t.classList.add('on');
+  const ttl = o.ttl || 9000;
+  const z = $('toastZegar');
+  z.style.transition = 'none'; z.style.width = '100%';
+  requestAnimationFrame(() => { z.style.transition = 'width ' + ttl + 'ms linear'; z.style.width = '0%'; });
+  toastTimer = setTimeout(zamknijToast, ttl);
+  czytnik(o.sr || $('toastTxt').textContent);
+}
+$('toastOk').addEventListener('click', zamknijToast);
+function achievement(id, nazwa, opis, link) {
+  if (S.achv[id]) return;
+  S.achv[id] = true;
+  toast({ html: iko('trofeum') + ' <b>' + nazwa + '</b><br>' + opis + ' <a href="' + LINK(link) + '" target="_blank" rel="noopener">to działa naprawdę →</a>', ttl: 12000 });
+}
+
+/* ── negocjacje ── */
+let negCd = 0;
+function szansaNeg() { return Math.min(0.85, 0.35 + 0.12 * S.cegielki + (S.grafik ? 0.1 : 0) + (S.gen.obok ? 0.1 : 0)); }
+$('negocjujBtn').addEventListener('click', () => {
+  if (Date.now() < negCd || S.tier < 2) return;
+  negCd = Date.now() + T.NEG_CD_MS;
+  if (Math.random() < szansaNeg()) {
+    S.negocjacje++;
+    toast({ wynik: true, html: iko('dymek') + ' <b>Dyrektor westchnął i podpisał.</b> Stawki +10% (łącznie +' + Math.round((mnoznikNeg() - 1) * 100) + '%). Nie ma cię kim zastąpić. <a href="' + LINK('/analizy/dlaczego-brakuje-lekarzy') + '" target="_blank" rel="noopener">to działa naprawdę →</a>', ttl: 9000 });
+    log('Wynegocjowano +10% stawki. Niedobór to twoja dźwignia.', true);
+    $('negChip').classList.remove('hide');
+  } else {
+    toast({ html: iko('dymek') + ' <b>„Budżetu nie ma."</b> Dyrektor obiecał wrócić do tematu. Zastąpić cię też nie ma kim — spróbuj za chwilę.', ttl: 7000 });
+  }
+  render();
+});
+
+/* ── eventy ── */
+let nastepnyTelefon = 45, nastepnaKontrola = 0, nastepnyDziennikarz = 0, nastepnaAnkieta = 0;
+function eventy(sek) {
+  if (S.fin && !S.rejestrDziala) return;
+  nastepnyTelefon -= sek;
+  if (nastepnyTelefon <= 0 && S.tier >= 1 && !fonZajety) {
+    nastepnyTelefon = 55 + Math.random() * 60;
+    decyzja({
+      tytul: iko('telefon') + ' Dyrektor (5:40)',
+      opis: '„Padł nam grafik na weekend. Na cito, potrójna stawka, wchodzi pan?"',
+      ttl: 12000,
+      opcje: [
+        { label: 'ODBIERZ', kons: 'złoty blok CITO ląduje w grafiku (znika po odegraniu)', fn() {
+          const sloty = znajdzSloty(1, [aktualnaKomorka().r]);
+          if (sloty) { const s = sloty[0]; S.bloki.push({ c: s.c, r: s.r, lane: s.lane, typ: 'cito', kreska: S.b2b, cito: true }); renderPlansza(); return 'blok CITO ×3 w grafiku'; }
+          return 'grafik pełny — dyżur przepadł';
+        } },
+        { label: 'ODRZUĆ', kons: '+10 energii (sen)', fn() { S.energia = Math.min(100, S.energia + 10); return '+10 energii'; } },
+      ],
+    });
+    return;
+  }
+  if (S.ryzyko >= 10) {
+    nastepnaKontrola -= sek;
+    if (nastepnaKontrola <= 0) {
+      nastepnaKontrola = 90 + Math.random() * 60;
+      S.kontrole++;
+      const kara = S.ryzyko >= 40 ? Math.floor(S.portfel * 0.005) : 0;
+      if (kara > 0) S.portfel -= kara;
+      toast({
+        alert: true,
+        html: iko('alert') + ' <b>KONTROLA NFZ.</b> ' + (kara > 0
+          ? 'Wykryto nieprawidłowości. Kara: zwrot środków — ' + fmt(kara) + '. Bez odsetek.'
+          : 'Skontrolowano 2% dokumentacji. Nie stwierdzono nieprawidłowości.') +
+          '<br><span class="mono" style="font-size:.7rem">Kontrole: ' + S.kontrole + ' · realne sankcje: 0</span>',
+        ttl: 10000,
+      });
+      if (S.kontrole === 3) achievement('kontrole', 'Ćwierć wieku spokoju', 'Prawo wykonywania zawodu traci prawomocnie ~1 lekarz rocznie w całym kraju.', '/analizy/odpowiedzialnosc-zawodowa-lekarzy');
+      return;
+    }
+  }
+  if (S.b2b && !S.rejestrDziala && !fonZajety) {
+    nastepnyDziennikarz -= sek;
+    if (nastepnyDziennikarz <= 0) {
+      nastepnyDziennikarz = 110 + Math.random() * 80;
+      const opcje = [];
+      if (S.cennik) opcje.push({ label: 'Wystaw fakturę: 8 000 zł', kons: '+8 000 zł · dziennikarz odpuszcza', fn() { S.portfel += 8000; return '+8 000 zł, wniosek wycofany'; } });
+      opcje.push({ label: 'Odpowiedz uczciwie', kons: 'kawałek prawdy „na papier" · ryzyko −5', fn() { S.jawneCum += S.realCum * 0.1; S.ryzyko = Math.max(0, S.ryzyko - 5); return 'ujawniono część, ryzyko −5'; } });
+      opcje.push({ label: 'Milcz', kons: 'ryzyko +5 · jak co trzeci szpital', fn() { S.ryzyko += 5; return 'cisza. Ryzyko +5'; } });
+      decyzja({
+        tytul: iko('gazeta') + ' Dziennikarz',
+        opis: 'Wniosek o informację publiczną: wynagrodzenia lekarzy w twoim szpitalu, z podziałem na formy zatrudnienia.',
+        opcje, link: '/dane/monitoring-watchdog',
+      });
+      return;
+    }
+    nastepnaAnkieta -= sek;
+    if (nastepnaAnkieta <= 0) {
+      nastepnaAnkieta = 220 + Math.random() * 120;
+      toast({ html: iko('gov') + ' <b>PAŃSTWO CIĘ POLICZY.</b> Ankieta o wynagrodzeniach. Rubryki „jeżeli dotyczy" zostawiasz puste. Sankcji: brak. <a href="' + LINK('/analizy/ustawa-o-danych-a-jawny-rejestr') + '" target="_blank" rel="noopener">tak uchwalono →</a>', ttl: 11000 });
+    }
+  }
+}
+
+/* ── postęp ── */
+function postep() {
+  if (S.portfel >= 100 && !S.odslony.sklep) { S.odslony.sklep = true; $('sklepy').style.display = 'block'; log('Stać cię na pierwsze szkolenie.', true); }
+  if (S.lifetime >= 250 && !S.odslony.praca) { S.odslony.praca = true; $('tabPraca').classList.remove('hide'); }
+  if (S.tier >= 1 && !S.odslony.energia) { S.odslony.energia = true; $('energiaStan').classList.add('on'); $('tydzienStan').classList.add('on'); }
+  if (S.tier >= 2 && !S.odslony.neg) { S.odslony.neg = true; $('negocjujBtn').classList.remove('hide'); }
+  if (S.bilokacja >= 1 && !S.odslony.doba) { S.odslony.doba = true; $('dobaStan').classList.add('on'); }
+  if (S.tier >= 2 && S.lifetime >= 12000 && !S.systemOtwarty) {
+    S.systemOtwarty = true;
+    const t = $('tabSystem');
+    t.classList.remove('hide'); t.disabled = false;
+    t.innerHTML = iko('system') + ' System';
+    log('Zrozumiałeś, jak to działa.', true);
+  } else if (S.tier >= 1 && !S.odslony.tajny) {
+    S.odslony.tajny = true; $('tabSystem').classList.remove('hide');
+  }
+  if ((S.b2b || S.portfel >= 30000) && !S.odslony.majatek) {
+    S.odslony.majatek = true; $('tabMajatek').classList.remove('hide');
+    log('Dzwonił doradca z banku. Podobno lekarzom „nie odmawia się kredytu".', true);
+  }
+  const doba = dobaRozliczana();
+  if (doba > 24) achievement('doba27', '27. godzina', 'Twoja doba rozliczeniowa przekroczyła 24 godziny. Papier przyjmie każdą.', '/dane/rekordy');
+  if (doba >= 36) achievement('doba36', 'Doba z gumy', 'Ponad 36 rozliczonych godzin na dobę. Rekordzista z życia i tak cię wyprzedza: jego doby liczono po 72.', '/dane/rekordy');
+  if (!S.fin && S.lifetime >= T.FINAL_LIFETIME) { S.fin = true; finalPrzegiales(); }
+}
+
+/* ── finał ── */
+function finalPrzegiales() {
+  $('wrap').classList.add('trzesie');
+  setTimeout(() => $('wrap').classList.remove('trzesie'), 500);
+  modal(
+    '<div class="eyebrow">Finał</div><h2>Przegiąłeś</h2>' +
+    '<p>Twoje rozliczenia sięgnęły <b>90% budżetu szpitala</b>. Lokalna gazeta to policzyła, sieć się zagotowała, ' +
+    'a Sejm — pierwszy raz od lat w tempie ekspresowym — uchwalił <b>jawny rejestr wynagrodzeń ze środków publicznych</b>.</p>' +
+    '<div class="split">' +
+    '<div><h3>Widział świat</h3><div class="w">' + fmt(S.jawneCum) + '</div><div class="mala">do dziś</div></div>' +
+    '<div><h3>Wpłynęło naprawdę</h3><div class="w" style="color:var(--kasa)">' + fmt(S.realCum) + '</div><div class="mala">od dziś widzą to wszyscy</div></div>' +
+    '</div>' +
+    '<p class="mala">Czego nie widział żaden licznik: ' + Math.floor(S.pacjenci).toLocaleString('pl-PL') + ' przyjętych pacjentów.</p>' +
+    ((S.mieszkania + S.apartamenty > 0 || S.panamerka)
+      ? '<p class="mala">Co widzieli sąsiedzi od dawna: ' + (S.mieszkania + S.apartamenty) + ' nieruchomości' + (S.panamerka ? ' i panamerka pod szpitalem' : '') + '.</p>' : '') +
+    '<p>Nic ci nie zabrano. Po prostu kreskowane bloki przestały być kreskowane.</p>' +
+    '<a class="zrodlo-a" href="' + LINK('/postulat') + '" target="_blank" rel="noopener">tak mógłby wyglądać naprawdę →</a>',
+    'Graj dalej (rejestr już działa)',
+    () => {
+      S.rejestrDziala = true;
+      S.jawneCum = S.realCum;
+      renderPlansza();
+      const oko = $('okoBtn');
+      oko.classList.add('rejestr');
+      $('okoEtyk').textContent = 'rejestr — widzą wszyscy:';
+      log('Jawny rejestr wszedł w życie. Cały grafik stał się publiczny.', true);
+    });
+}
+
+/* ── pętla główna ── */
+const playheadEl = $('playhead');
+let ostatni = Date.now(), floatTimer = 0, prevKom = null, prevH = 0;
+setInterval(() => {
+  const teraz = Date.now(), sek = Math.min(2, (teraz - ostatni) / 1000);
+  ostatni = teraz;
+  const gh = sek * T.H_NA_SEK;
+  S.gh += gh;
+
+  const { c, r, poz } = aktualnaKomorka();
+  const h = S.gh % 168;
+  if (h < prevH) {
+    S.tydzienNr++;
+    if (S.tydzienSuma > 500 && !S.fin) toast({ wynik: true, html: iko('log') + ' <b>Wypłata tygodnia ' + (S.tydzienNr - 1) + ':</b> +' + fmt(S.tydzienSuma), ttl: 4500 });
+    S.tydzienSuma = 0;
+    playheadEl.classList.add('przeskok');
+  } else playheadEl.classList.remove('przeskok');
+  prevH = h;
+  playheadEl.style.left = (poz * 100) + '%';
+
+  const kom = kluczKom(c, r);
+  if (prevKom && prevKom !== kom) {
+    const [pc, pr] = prevKom.split(',').map(Number);
+    const cita = S.bloki.filter(b => b.cito && b.c === pc && b.r === pr);
+    if (cita.length) {
+      S.bloki = S.bloki.filter(b => !(b.cito && b.c === pc && b.r === pr));
+      renderPlansza();
+      log('Dyżur na cito odbyty. Blok znika z grafiku. Wypłata nie.');
+    }
+  }
+  prevKom = kom;
+
+  let zysk = 0;
+  if (!naUrlopie()) {
+    const tu = blokiW(c, r);
+    let jawneH = 0, kreskH = 0;
+    for (const b of tu) {
+      const st = stawkaBloku(b);
+      if (b.kreska) kreskH += st; else jawneH += st;
+    }
+    const netto = jawneH * klinUoP() + kreskH * nettoB2B();
+    zysk = netto * gh;
+    S.portfel += zysk;
+    S.lifetime += (jawneH + kreskH) * gh;
+    S.realCum += (jawneH + kreskH) * gh;
+    S.jawneCum += (S.rejestrDziala ? (jawneH + kreskH) : jawneH) * gh;
+    S.tydzienSuma += zysk;
+    if (tu.length) S.pacjenci += sek * 0.4;
+
+    const tor0 = tu.find(b => b.lane === 0);
+    if (tor0) S.energia -= TYPY[tor0.typ].dren * gh;
+    else S.energia += 0.5 * gh;
+    S.energia = Math.max(0, Math.min(100, S.energia));
+    if (S.energia === 0 && !S.odslony.padl) { S.odslony.padl = true; log('Zasypiasz na stojąco. Wszystko, co robisz osobiście, jest warte mniej.', true); }
+  } else {
+    S.energia = Math.min(100, S.energia + 0.6 * gh);
+  }
+  const czynsz = czynszNaGodzine() * gh * 0.915;
+  S.portfel += czynsz; S.tydzienSuma += czynsz;
+
+  if (S.cegielki > 0) S.indeks *= Math.pow(1 + T.CEGIELKA_TYG * S.cegielki, gh / 168);
+
+  floatTimer += sek;
+  if (floatTimer > 0.7) {
+    floatTimer = 0;
+    if (zysk > 0) pFloat('+' + Math.floor(zysk / sek).toLocaleString('pl-PL') + ' zł/s', poz * 100 + 1.5, 8, blokiW(c, r).some(b => b.typ === 'cito') ? 'zloty' : '');
+  }
+
+  eventy(sek);
+  postep();
+  render();
+}, 250);
+
+/* ── render ── */
+function render() {
+  $('portfelW').textContent = fmt(S.portfel);
+  const { c, r } = aktualnaKomorka();
+  const tu = blokiW(c, r);
+  let chwilowe = 0;
+  for (const b of tu) chwilowe += stawkaBloku(b) * (b.kreska ? nettoB2B() : klinUoP());
+  chwilowe = (chwilowe + czynszNaGodzine() * 0.915) * T.H_NA_SEK;
+  $('tempoW').textContent = naUrlopie() ? 'urlop — grafik stoi' : chwilowe > 0 ? '+' + fmt(chwilowe) + '/s teraz' : 'pusty slot — klikaj';
+  $('tydzienNr').textContent = 'tydzień ' + S.tydzienNr;
+  $('indeksW').textContent = S.indeks.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (S.negocjacje > 0) $('negW').textContent = '+' + Math.round((mnoznikNeg() - 1) * 100) + '%';
+  $('jawnyMies').textContent = fmt(jawneTygodniowo() * 4.33);
+  $('klikInfo').textContent = '+' + Math.floor(wartoscKlikuBrutto() * (S.b2b ? nettoB2B() : klinUoP())).toLocaleString('pl-PL') + ' zł' + (naDyzurze() ? ' · na dyżurze ×2' : ' · z ulicy');
+
+  const nb = $('negocjujBtn');
+  if (!nb.classList.contains('hide')) {
+    const zostalo = Math.max(0, negCd - Date.now());
+    nb.disabled = zostalo > 0;
+    $('negocjujInfo').textContent = zostalo > 0
+      ? 'dyrektor unika cię jeszcze ' + Math.ceil(zostalo / 1000) + ' s'
+      : 'szansa ~' + Math.round(szansaNeg() * 100) + '% — rośnie, gdy lekarzy brak';
+  }
+
+  const ratio = S.jawneCum > 0 ? S.realCum / S.jawneCum : 1;
+  if (ratio >= 1.25 && !S.rejestrDziala) {
+    const rz = $('rozjazd');
+    rz.classList.remove('hide');
+    rz.classList.toggle('mega', ratio >= 4);
+    $('rozjazdX').textContent = fmtX(ratio);
+  } else if (S.rejestrDziala) $('rozjazd').classList.add('hide');
+
+  const e = Math.round(S.energia);
+  const pas = $('energiaPas');
+  pas.querySelector('i').style.width = e + '%';
+  pas.classList.toggle('malo', e < 25);
+  pas.classList.toggle('srednio', e >= 25 && e < 60);
+  $('energiaOp').textContent = e + '% sił';
+  const ei = $('energiaIkona');
+  ei.classList.toggle('dobrze', e >= 60);
+  ei.classList.toggle('srednio', e >= 25 && e < 60);
+  ei.classList.toggle('malo', e < 25);
+  $('urlopBtn').disabled = naUrlopie();
+  $('kawaBtn').disabled = S.portfel < T.KAWA_CENA || S.energia >= 99;
+
+  const fiz = hFizyczne();
+  $('hUz').textContent = fiz; $('hCap').textContent = S.hCap;
+  $('tydzienPas').querySelector('i').style.width = Math.min(100, fiz / S.hCap * 100) + '%';
+  $('tydzienPas').classList.toggle('ponad', fiz > 78);
+
+  const doba = dobaRozliczana();
+  $('dobaW').textContent = doba.toLocaleString('pl-PL', { maximumFractionDigits: 1 });
+  $('dobaPas').querySelector('i').style.width = Math.min(100, doba / 48 * 100) + '%';
+  $('dobaPas').classList.toggle('absurd', doba > 24);
+
+  renderSklepy();
+}
+
+/* ── akcje ── */
+$('urlopBtn').addEventListener('click', () => {
+  if (naUrlopie()) return;
+  S.urlopDo = Date.now() + 15000;
+  S.energia = Math.min(100, S.energia + 50);
+  log('Urlop. 15 sekund ciszy. Telefon i tak zadzwoni.');
+});
+$('kawaBtn').addEventListener('click', () => {
+  if (S.portfel < T.KAWA_CENA) return;
+  S.portfel -= T.KAWA_CENA;
+  S.energia = Math.min(100, S.energia + 20);
+  render();
+});
+
+/* „co widzi świat" — przytrzymanie oka na planszy */
+const okoEl = $('okoBtn');
+function swiatOn() {
+  if (S.rejestrDziala) return;
+  $('planszaRamka').classList.add('swiat-widok');
+  okoEl.classList.add('podglad');
+  if (!S.odslony.swiat && S.b2b) { S.odslony.swiat = true; log('Tak wygląda twój tydzień w rejestrze płac. Spokojny, prawda?', true); }
+}
+function swiatOff() {
+  $('planszaRamka').classList.remove('swiat-widok');
+  okoEl.classList.remove('podglad');
+}
+okoEl.addEventListener('mouseenter', swiatOn);
+okoEl.addEventListener('mouseleave', swiatOff);
+okoEl.addEventListener('pointerdown', e => { e.preventDefault(); swiatOn(); });
+addEventListener('pointerup', swiatOff);
+addEventListener('pointercancel', swiatOff);
+okoEl.addEventListener('focus', swiatOn);
+okoEl.addEventListener('blur', swiatOff);
+
+/* ── zapis ── */
+const ZAPIS = 'drugi-licznik-proto-v5';
+function zapisz() {
+  try {
+    const kopia = Object.assign({}, S, { bloki: S.bloki.map(b => ({ c: b.c, r: b.r, lane: b.lane, typ: b.typ, kreska: b.kreska, cito: b.cito })) });
+    localStorage.setItem(ZAPIS, JSON.stringify(kopia));
+  } catch (e) {}
+}
+function wczytaj() {
+  try {
+    const z = localStorage.getItem(ZAPIS);
+    if (!z) return;
+    S = Object.assign(S, JSON.parse(z), { urlopDo: 0 });
+  } catch (e) {}
+}
+setInterval(zapisz, 5000);
+addEventListener('beforeunload', zapisz);
+$('resetBtn').addEventListener('click', () => {
+  if (confirm('Zaczynasz od nowa. Nikt się nie dowie — jak zwykle.')) {
+    try { localStorage.removeItem(ZAPIS); } catch (e) {}
+    location.reload();
+  }
+});
+
+/* ── start ── */
+wczytaj();
+budujSklepy();
+renderPlansza();
+if (S.kliki > 0 || S.bloki.length > 0) {
+  S.odslony = S.odslony || {};
+  if (S.odslony.sklep || S.lifetime >= 100) $('sklepy').style.display = 'block';
+  if (S.odslony.praca || S.lifetime >= 250) $('tabPraca').classList.remove('hide');
+  if (S.tier >= 1) { renderKariere(); $('tabSystem').classList.remove('hide'); $('energiaStan').classList.add('on'); $('tydzienStan').classList.add('on'); }
+  if (S.tier >= 2) $('negocjujBtn').classList.remove('hide');
+  if (S.systemOtwarty) { const t = $('tabSystem'); t.disabled = false; t.innerHTML = iko('system') + ' System'; }
+  if (S.odslony.majatek) $('tabMajatek').classList.remove('hide');
+  if (S.bilokacja >= 1) $('dobaStan').classList.add('on');
+  if (S.negocjacje > 0) $('negChip').classList.remove('hide');
+  if (S.b2b) $('okoBtn').classList.remove('hide');
+  if (S.rejestrDziala) { okoEl.classList.add('rejestr'); $('okoEtyk').textContent = 'rejestr — widzą wszyscy:'; }
+  log('Wróciłeś. Grafik pracował za ciebie.');
+} else {
+  log('Dzień pierwszy. Masz dyplom, pieczątkę i pusty grafik.');
+  $('dziennikBox').style.display = 'none';
+}
+render();
+
+window.__gra = { S, T, TYPY, znajdzSloty, dodajBloki, hFizyczne, hRozliczane, renderPlansza, render, postep, decyzja, toast };
+</script>
+</div>
+
+</BaseLayout>

@@ -63,6 +63,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     font-size:clamp(1.2rem, 5.2vw, 1.6rem); line-height:1.1; white-space:nowrap;
     text-shadow:0 0 18px rgba(245,197,66,.25);
   }
+  /* od miliona w górę: mniejszy stopień, żeby HUD nie łamał się na dwie linie */
+  .hud .portfel.dlugi { font-size:clamp(1rem, 4vw, 1.25rem); }
   .hud .tempo { font-family:var(--mono); font-size:.7rem; color:var(--kasa); }
   .hud .portfel.blysk { animation:kasablysk .5s ease-out; }
   @keyframes kasablysk { 30% { transform:scale(1.12); text-shadow:0 0 30px rgba(245,197,66,.8); } }
@@ -227,11 +229,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .stan .akcja { font-size:.64rem; font-weight:700; border-radius:8px; padding:3px 9px; cursor:pointer; background:var(--panel-2); color:var(--tekst-2); border:1px solid var(--linia); white-space:nowrap; }
   .stan .akcja:disabled { opacity:.45; cursor:default; }
 
-  .kariera { display:none; margin-top:12px; gap:5px; flex-wrap:wrap; }
-  .kariera.on { display:flex; }
-  .kariera .k { font-family:var(--gra); font-weight:600; font-size:.64rem; padding:2px 9px; border-radius:99px; background:var(--panel); border:1px solid var(--linia); color:var(--tekst-3); }
-  .kariera .k.teraz { background:#243c1e; border-color:#7cb93e; color:#c9f29b; }
-  .kariera .k.byl { color:var(--tekst-2); }
+  /* tryb wypowiadania godzin: klik w blok grafiku oddaje go do puli */
+  #plansza.wyp { cursor:default; }
+  #plansza.wyp .blok { cursor:pointer; }
+  #plansza.wyp .blok:hover { outline:2px solid var(--czerwien); outline-offset:1px; }
+  .akcja.on { border-color:var(--czerwien); color:var(--czerwien); }
 
   .sklepy { display:none; margin-top:14px; }
   .taby { display:flex; gap:6px; flex-wrap:wrap; }
@@ -310,24 +312,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .fon-link { font-size:.7rem; display:inline-block; margin-bottom:8px; }
 
   .toast {
-    position:fixed; z-index:46; left:50%; top:42%; transform:translate(-50%,-50%);
-    width:min(92vw, 480px);
-    background:var(--panel-2); border:2px solid var(--linia-2); border-radius:18px;
-    padding:16px 18px 13px; box-shadow:0 24px 70px rgba(0,0,0,.7); display:none;
+    position:fixed; z-index:46; right:14px; bottom:14px;
+    width:min(92vw, 350px);
+    background:var(--panel-2); border:2px solid var(--linia-2); border-radius:14px;
+    padding:12px 14px 10px; box-shadow:0 16px 50px rgba(0,0,0,.6); display:none;
   }
   .toast.on { display:block; animation:toastIn .22s ease-out; }
-  @keyframes toastIn { from { transform:translate(-50%,-50%) scale(.92); opacity:0; } to { transform:translate(-50%,-50%) scale(1); opacity:1; } }
-  .toast.alertowy { border-color:var(--czerwien); box-shadow:0 24px 70px rgba(0,0,0,.7), 0 0 30px rgba(255,107,97,.25); }
+  @keyframes toastIn { from { transform:translateX(26px); opacity:0; } to { transform:none; opacity:1; } }
+  .toast.alertowy { border-color:var(--czerwien); box-shadow:0 16px 50px rgba(0,0,0,.6), 0 0 24px rgba(255,107,97,.25); }
   .toast.wynikowy { border-color:var(--kasa); }
-  .toast .tt { font-size:.95rem; line-height:1.5; }
+  .toast .tt { font-size:.8rem; line-height:1.45; }
   .toast .tt b { font-family:var(--gra); }
   .toast .tt .i { width:1.15em; height:1.15em; }
   .toast .toast-ok {
-    display:block; margin:11px auto 0; font-family:var(--gra); font-weight:800; font-size:.82rem;
+    display:block; margin:9px 0 0 auto; font-family:var(--gra); font-weight:800; font-size:.74rem;
     cursor:pointer; color:#1c2606; background:linear-gradient(180deg,#a8e063,#7cb93e);
-    border:none; border-radius:10px; padding:6px 22px; box-shadow:0 3px 0 #4e7a22;
+    border:none; border-radius:9px; padding:4px 16px; box-shadow:0 3px 0 #4e7a22;
   }
-  .toast .zegar { height:3px; background:var(--panel); border-radius:2px; margin-top:10px; overflow:hidden; }
+  .toast .zegar { height:3px; background:var(--panel); border-radius:2px; margin-top:8px; overflow:hidden; }
   .toast .zegar i { display:block; height:100%; background:var(--amber); }
 
   .zaslona { position:fixed; inset:0; z-index:50; background:rgba(4,8,16,.72); display:none; align-items:center; justify-content:center; padding:14px; }
@@ -352,8 +354,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .akt td { padding:3px 4px; border-bottom:1px solid var(--linia); color:var(--tekst-2); text-align:left; }
   .akt td:last-child { text-align:right; color:var(--tekst); }
 
-  .instrukcja { display:flex; gap:18px; font-family:var(--gra); font-weight:600; font-size:.8rem; color:var(--tekst-2); padding:2px 4px 8px; }
-  .instrukcja b { color:var(--kasa); }
   .gra-stopka { grid-column:1 / -1; margin-top:18px; padding-top:10px; border-top:1px solid var(--linia); font-size:.66rem; color:var(--tekst-3); text-align:center; }
   .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   @media (prefers-reduced-motion: reduce) { #gra-app * { animation:none !important; transition:none !important; } .p-float, .p-blip { display:none; } }
@@ -416,13 +416,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <button class="chip" id="indeksChip">Indeks <b class="mono" id="indeksW">1,00</b><span class="znak">ⓘ</span></button>
       <button class="chip hide" id="negChip">Wynegocjowane <b class="mono" id="negW">+0%</b><span class="znak">ⓘ</span></button>
       <button class="chip rozjazd hide" id="rozjazd">ROZJAZD <b id="rozjazdX">×1,0</b><span class="znak">ⓘ</span></button>
-      <button class="chip" id="tempoChip" title="Zmień poziom trudności (tempo gry)"><svg class="i"><use href="#i-zegar"/></svg> poziom trudności <b class="mono" id="szybkoscW">×6</b></button>
+      <button class="chip" id="tempoChip" title="Zmień poziom trudności (tempo gry)"><svg class="i"><use href="#i-zegar"/></svg> poziom trudności <b class="mono" id="szybkoscW">×10</b></button>
       <button class="chip" id="resetBtn" title="Zacznij od nowa"><svg class="i"><use href="#i-reset"/></svg> nowa gra</button>
     </div>
   </header>
 
   <div class="kol-l">
-  <div class="instrukcja"><span><b>1.</b> Klikaj</span><span><b>2.</b> Mnóż pieniądze</span><span><b>3.</b> Zarabiaj jak lekarz</span></div>
   <div class="plansza-ramka" id="planszaRamka">
     <div class="p-naglowek">
       <span class="marka">DRUGI LICZNIK</span>
@@ -450,6 +449,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div class="tor" id="tydzienPas" role="button" tabindex="0" title="Kliknij: skąd te godziny?"><i style="width:0%"></i></div>
         <span class="op"><span id="hUz">0</span>/<span id="hCap">48</span> h fiz.</span>
         <button class="akcja" id="tydzienInfo" title="Skąd te godziny?">?</button>
+        <button class="akcja" id="wypowiedzBtn" title="Wypowiedz godziny: włącz tryb i kliknij blok w grafiku, żeby go oddać"><svg class="i"><use href="#i-pioro"/></svg> wypowiedz</button>
       </div>
       <div class="czesc hide" id="dobaStan">
         <span class="ikona"><svg class="i"><use href="#i-warstwy"/></svg></span>
@@ -464,7 +464,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <button id="negocjujBtn" class="hide"><svg class="i"><use href="#i-dymek"/></svg> Negocjuj stawkę<small id="negocjujInfo"></small></button>
   </div>
 
-  <div class="kariera" id="kariera"></div>
   </div><!-- /kol-l -->
 
   <div class="kol-p">
@@ -539,10 +538,10 @@ const T = {
   REJESTR_OD: 120000, REJESTR_KOSZT0: 40000, REJESTR_R: 3,
   OFFLINE_MIN_S: 45, OFFLINE_CAP_S: 8 * 3600, OFFLINE_TEMPO: 0.5,
   KOL: 7, RZED: 6,
-  WERSJA: 8,
+  WERSJA: 9,
 };
-const H = () => S.tempo || 6;
-const regenBonus = () => H() >= 12 ? T.REGEN_TURBO : 1;
+const H = () => S.tempo || 10;
+const regenBonus = () => H() >= 20 ? T.REGEN_TURBO : 1;
 const TIERY = ['Stażysta', 'Rezydent', 'Specjalista', 'Kontraktowiec', 'Walizkowiec'];
 const LINK = p => 'https://zarobkilekarzy.pl' + p;
 const iko = n => '<svg class="i"><use href="#i-' + n + '"/></svg>';
@@ -570,7 +569,7 @@ const TYPY = {   /* dyżur = płatna drzemka (ujemny drenaż); męczy taśma dzi
 
 let S = {
   wersja: T.WERSJA,
-  tempo: 6, tempoWybrane: false,
+  tempo: 10, tempoWybrane: false,
   portfel: 0, lifetime: 0, jawneCum: 0, realCum: 0,
   kliki: 0, pacjenci: 0, zKolejki: 0, kolejka: 2,
   szkolenia: 0, tier: 0, etat: false, b2b: false,
@@ -709,6 +708,7 @@ function renderPlansza() {
   for (const b of tu) {
     const el = document.createElement('div');
     el.className = 'blok t-' + b.typ + (b.kreska && !S.rejestrDziala ? ' kreska' : '');
+    el.dataset.b = S.bloki.indexOf(b);
     el.textContent = b.typ === 'cito' ? 'CITO×' + (b.m || 3) : TYPY[b.typ].et;
     const szer = (w - 0.9) / L;
     el.style.left = 'calc(' + (b.c * w + 0.45 + b.lane * szer) + '% + 1px)';
@@ -875,7 +875,33 @@ przyjmijBtn.addEventListener('pointerdown', e => {
 });
 addEventListener('pointerup', () => przyjmijBtn.classList.remove('wcisniety'));
 przyjmijBtn.addEventListener('click', e => { if (e.detail === 0) klik(); });
-plansza.addEventListener('pointerdown', () => klik());
+plansza.addEventListener('pointerdown', e => { if (trybWypowiedz) wypowiedzBlok(e); else klik(); });
+
+/* ── wypowiadanie godzin (uwalnia miejsce w grafiku — pełny grafik blokował zakupy) ── */
+let trybWypowiedz = false;
+$('wypowiedzBtn').addEventListener('click', () => {
+  trybWypowiedz = !trybWypowiedz;
+  $('wypowiedzBtn').classList.toggle('on', trybWypowiedz);
+  plansza.classList.toggle('wyp', trybWypowiedz);
+  if (trybWypowiedz && !S.odslony.wypowiedz) {
+    S.odslony.wypowiedz = true;
+    toast({ html: iko('pioro') + ' <b>Tryb wypowiadania.</b> Kliknij blok w grafiku, żeby oddać te godziny. Pieniądze za nie przestają płynąć — a zwolnione miejsce można sprzedać drożej.', ttl: 8000 });
+  }
+  log(trybWypowiedz ? 'Tryb wypowiadania włączony — kliknij blok, żeby go oddać.' : 'Tryb wypowiadania wyłączony.');
+});
+function wypowiedzBlok(e) {
+  const el = e.target.closest('.blok');
+  if (!el) return;
+  const b = S.bloki[+el.dataset.b];
+  if (!b) return;
+  /* tor 0 zabiera ze sobą nadbudowane tory bilokacji — wiszą na jego godzinach */
+  const usun = S.bloki.filter(x => x === b ||
+    (b.lane === 0 && x.lane > 0 && (x.p || 0) === (b.p || 0) && x.c === b.c && x.r === b.r));
+  S.bloki = S.bloki.filter(x => !usun.includes(x));
+  renderPlansza(); postep();
+  pFloat('wypowiedziane', b.c / 7 * 100 + 2, (b.r + 0.5) / 6 * 100, 'zly');
+  log('Wypowiedziane: ' + TYPY[b.typ].et + (usun.length > 1 ? ' (+' + (usun.length - 1) + ' tor. bilokacji)' : '') + '. Godziny wróciły do puli.');
+}
 
 /* ── sklepy ── */
 function kosztG(c0, r, n) { return Math.round(c0 * Math.pow(r, n)); }
@@ -1120,12 +1146,15 @@ function godzinyModal() {
     : !S.grafik ? 'Kup <b>„Grafik się nie pokrywa"</b> (System): limit 78 → 120 h.'
     : S.bilokacja < 2 ? '<b>Bilokacja</b> (System) dzieli komórki na tory — te same godziny, kolejne wypłaty, zero godzin fizycznych.'
     : 'Limity to już tylko wspomnienie.';
+  const wypowiedzHint = fiz > 0
+    ? '<p style="text-align:left">Grafik pełny? Przycisk <b>„wypowiedz"</b> przy pasku godzin włącza tryb, w którym klikasz blok, żeby oddać te godziny — miejsce zwalnia się pod lepiej płatną pracę.</p>'
+    : '';
   modal(
     '<div class="eyebrow">Twój tydzień</div><h2>Godziny</h2>' +
     '<table>' + rzedy.map(r => '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td></tr>').join('') +
     '<tr><td><b>Fizycznie w pracy</b> (limit ' + S.hCap + ' h, obie placówki)</td><td><b>' + fiz + ' h</b></td></tr>' +
     '<tr><td><b>Rozliczone na papierze</b></td><td><b>' + rozl + ' h</b></td></tr></table>' +
-    '<p style="text-align:left">' + dalej + '</p>' +
+    '<p style="text-align:left">' + dalej + '</p>' + wypowiedzHint +
     '<p class="mala" style="text-align:left">Limit dotyczy tylko godzin FIZYCZNYCH (tor 1). Tory bilokacji rozliczają te same godziny jeszcze raz — ich żaden limit nie widzi.</p>',
     'Rozumiem');
 }
@@ -1135,9 +1164,9 @@ $('tydzienPas').addEventListener('keydown', e => { if (e.key === 'Enter' || e.ke
 
 /* wybór tempa gry */
 const TEMPA = [
-  { v: 12, n: 'Ostry dyżur', o: '×12 — wszystko pędzi; pierwszy finał w kilka minut. Adrenalina: energia regeneruje się o 30% szybciej.' },
-  { v: 6, n: 'Rezydentura', o: '×6 — normalna sesja; pierwszy finał w kwadrans. Domyślne.' },
-  { v: 1, n: 'Ordynatura', o: '×1 — sekunda = godzina grafiku. Kampania na dni; offline pracuje za ciebie.' },
+  { v: 20, n: 'Łatwy (mam rodziców lekarzy)', o: '×20 — wszystko pędzi, drzwi same się otwierają. Energia regeneruje się o 30% szybciej.' },
+  { v: 10, n: 'Normalny (tata developer, mama prokurator)', o: '×10 — dobre plecy, ale medycynę musisz przejść sam. Domyślne.' },
+  { v: 5, n: 'Trudny', o: '×5 — bez pleców. Wszystko wolniej kapie; klikanie znaczy więcej.' },
 ];
 function tempoModal(przyStarcie) {
   $('aktBox').innerHTML =
@@ -1176,7 +1205,6 @@ $('energiaPas').addEventListener('keydown', e => { if (e.key === 'Enter' || e.ke
 /* ── awanse / modale ── */
 function awans(nowy) {
   S.tier = nowy;
-  renderKariere();
   const opisy = {
     1: 'Twoją pensję określa ustawa, więc jest jawna. System wkrótce naprawi ten błąd młodości.',
     2: 'Papier jest. Kolejka do ciebie też. Im mniej kolegów po fachu, tym wyższa twoja stawka.',
@@ -1184,15 +1212,6 @@ function awans(nowy) {
   };
   modal('<div class="eyebrow">Awans</div><h2>' + iko('trofeum') + ' ' + TIERY[nowy] + '</h2><p>' + (opisy[nowy] || '') + '</p>', 'Przyjmuję');
   czytnik('Awans: ' + TIERY[nowy]);
-}
-function renderKariere() {
-  const c = $('kariera'); c.classList.add('on'); c.innerHTML = '';
-  TIERY.forEach((t, i) => {
-    const s = document.createElement('span');
-    s.className = 'k' + (i === S.tier ? ' teraz' : i < S.tier ? ' byl' : '');
-    s.textContent = t;
-    c.appendChild(s);
-  });
 }
 function przejscieB2B() {
   const etaty = S.bloki.filter(b => b.typ === 'etat');
@@ -1205,7 +1224,7 @@ function przejscieB2B() {
   let nKontrakt = 10;
   while (nKontrakt > 0 && !dodajBloki(nKontrakt, 'kontrakt', true, [2, 3, 4, 1, 0, 5])) nKontrakt--;
   if (nKontrakt < 10) log('Grafik pęka w szwach — kontrakt wciśnięty w ' + nKontrakt + ' bloków. Resztę godzin dopisze papier.', true);
-  renderKariere(); renderPlansza();
+  renderPlansza();
   $('okoBtn').classList.remove('hide');
   $('wrap').classList.add('trzesie');
   setTimeout(() => $('wrap').classList.remove('trzesie'), 500);
@@ -1626,7 +1645,9 @@ setInterval(() => {
 /* ── render ── */
 function kawaCena() { return Math.round(T.KAWA_CENA0 * Math.pow(T.KAWA_R, S.kawyTydzien)); }
 function render() {
-  $('portfelW').textContent = fmt(S.portfel);
+  const pTxt = fmt(S.portfel);
+  $('portfelW').textContent = pTxt;
+  $('portfelW').classList.toggle('dlugi', pTxt.length > 10);   // od miliona: mniejszy stopień
   const ef = tygodnioweEfekt();
   const chwilowe = (ef.jaw / 168 * klinUoP() + ef.krs / 168 * nettoB2B() + czynszNaGodzine() * 0.915) * H();
   $('tempoW').textContent = naUrlopie() ? 'urlop — grafik stoi' : chwilowe > 0 ? '+' + fmt(chwilowe) + '/s' : 'pusty grafik — klikaj';
@@ -1762,6 +1783,11 @@ function migruj(stan) {
     if (stan.tempo === 3) stan.tempo = 6;       // ×3 znikło z drabinki — najbliższe to nowe domyślne ×6
     stan.wersja = 8;
   }
+  if (stan.wersja < 9) {
+    // drabinka ×12/×6/×1 → ×20/×10/×5
+    stan.tempo = { 12: 20, 6: 10, 3: 10, 1: 5 }[stan.tempo] || 10;
+    stan.wersja = 9;
+  }
   return stan;
 }
 function wczytaj() {
@@ -1831,7 +1857,7 @@ if (S.kliki > 0 || S.bloki.length > 0) {
   S.odslony = S.odslony || {};
   if (S.odslony.sklep || S.lifetime >= 100) $('sklepy').style.display = 'block';
   if (S.odslony.praca || S.lifetime >= 250) $('tabPraca').classList.remove('hide');
-  if (S.tier >= 1) { renderKariere(); $('tabSystem').classList.remove('hide'); $('energiaStan').classList.remove('hide'); $('tydzienStan').classList.remove('hide'); }
+  if (S.tier >= 1) { $('tabSystem').classList.remove('hide'); $('energiaStan').classList.remove('hide'); $('tydzienStan').classList.remove('hide'); }
   if (S.tier >= 2) $('negocjujBtn').classList.remove('hide');
   if (S.systemOtwarty) { const t = $('tabSystem'); t.disabled = false; t.innerHTML = iko('system') + ' System'; }
   if (S.odslony.majatek) $('tabMajatek').classList.remove('hide');

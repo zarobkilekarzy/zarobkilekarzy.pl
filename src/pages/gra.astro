@@ -349,6 +349,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .akt td { padding:3px 4px; border-bottom:1px solid var(--linia); color:var(--tekst-2); text-align:left; }
   .akt td:last-child { text-align:right; color:var(--tekst); }
 
+  .instrukcja { display:flex; gap:18px; font-family:var(--gra); font-weight:600; font-size:.8rem; color:var(--tekst-2); padding:2px 4px 8px; }
+  .instrukcja b { color:var(--kasa); }
   .gra-stopka { grid-column:1 / -1; margin-top:18px; padding-top:10px; border-top:1px solid var(--linia); font-size:.66rem; color:var(--tekst-3); text-align:center; }
   .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   @media (prefers-reduced-motion: reduce) { #gra-app * { animation:none !important; transition:none !important; } .p-float, .p-blip { display:none; } }
@@ -417,6 +419,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </header>
 
   <div class="kol-l">
+  <div class="instrukcja"><span><b>1.</b> Klikaj</span><span><b>2.</b> Mnóż pieniądze</span></div>
   <div class="plansza-ramka" id="planszaRamka">
     <div class="p-naglowek">
       <span class="marka">DRUGI LICZNIK</span>
@@ -549,13 +552,13 @@ const BILOKACJA = [
   { k: 1200000, ef: 'trzy tory w komórce — te same godziny, trzy wypłaty', f: 'Trzy oddziały, jedno ciało. Rekordzista z życia rozliczał doby po 72 godziny.' },
 ];
 /* energia: praca kosztuje (tor 0), sen oddaje tylko w WOLNE noce */
-const TYPY = {
-  etat:     { et: 'ETAT',   st: () => S.tier >= 2 ? 87 : 50, dren: 0.35, rynek: false },
-  dyzur:    { et: 'DYŻUR',  st: () => 110, dren: 1.6,  rynek: true },
-  poradnia: { et: 'PORAD',  st: () => 130, dren: 0.5,  rynek: true },
-  kontrakt: { et: 'FIRMA',  st: () => 170, dren: 0.6,  rynek: true },
-  obok:     { et: 'OBOK',   st: () => 220, dren: 0.7,  rynek: true },
-  cito:     { et: 'CITO×3', st: () => 500, dren: 1.8,  rynek: true },
+const TYPY = {   /* dyżur = płatna drzemka (ujemny drenaż); męczy taśma dzienna i CITO */
+  etat:     { et: 'ETAT',   st: () => S.tier >= 2 ? 87 : 50, dren: 0.55, rynek: false },
+  dyzur:    { et: 'DYŻUR',  st: () => 110, dren: -0.25, rynek: true },
+  poradnia: { et: 'PORAD',  st: () => 130, dren: 0.9,  rynek: true },
+  kontrakt: { et: 'FIRMA',  st: () => 170, dren: 0.7,  rynek: true },
+  obok:     { et: 'OBOK',   st: () => 220, dren: 0.9,  rynek: true },
+  cito:     { et: 'CITO×3', st: () => 500, dren: 2.0,  rynek: true },
 };
 
 let S = {
@@ -876,8 +879,8 @@ const PRZEDMIOTY = [
     kup() { awans(2); renderPlansza(); }, link: '/analizy/lejek-ksztalcenia' },
 
   { id: 'dyzur', panel: 'pPraca', kat: 'kat-praca', ikona: 'dyzur', nazwa: 'Dyżur (2 bloki nocne)',
-    flavor: 'Nocna praca zżera energię i sen. Za to płacą jak za złoto.',
-    efekt: () => '+8 h/tydz. po 110 zł/h · mocno męczy, zabiera noce',
+    flavor: 'Śpisz w dyżurce, telefon przy poduszce. Płacą za bycie, nie za robienie — dyżur to czas na odespanie.',
+    efekt: () => '+8 h/tydz. po 110 zł/h · odsypiasz na dyżurze (nie męczy)',
     koszt: () => kosztG(300, 1.35, S.gen.dyzur),
     ile: () => S.gen.dyzur, max: () => S.gen.dyzur >= 8,
     slotyPotrzebne: () => 2, preferRows: [0, 1, 5],
@@ -885,8 +888,8 @@ const PRZEDMIOTY = [
     kup() { S.gen.dyzur++; dodajBloki(2, 'dyzur', S.b2b, [0, 1, 5]); },
     link: '/mechanizmy/dyzury-i-gotowosc' },
   { id: 'poradnia', panel: 'pPraca', kat: 'kat-praca', ikona: 'poradnia', nazwa: 'Poradnia (2 bloki)',
-    flavor: 'NFZ do 18:00. Te same drzwi, inna kasa. Lżejsze niż dyżur.',
-    efekt: () => '+8 h/tydz. po 130 zł/h',
+    flavor: 'NFZ do 18:00. Trzydziestu pacjentów na cztery godziny. To TU się człowiek męczy, nie na dyżurze.',
+    efekt: () => '+8 h/tydz. po 130 zł/h · taśma pacjentów — męczy',
     koszt: () => kosztG(6000, 1.18, S.gen.poradnia),
     ile: () => S.gen.poradnia, max: () => S.gen.poradnia >= 6,
     slotyPotrzebne: () => 2, preferRows: [4, 5, 3],
@@ -1135,10 +1138,10 @@ $('tempoChip').addEventListener('click', () => tempoModal(false));
 /* wyjaśnienie energii — klik w pasek */
 function energiaModal() {
   infoModal('Energia',
-    '<p><b>Twoje siły fizyczne.</b> Zużywa je wszystko, co robisz OSOBIŚCIE: każdy przyjęty pacjent (−0,5) i każda godzina, gdy linia „teraz" przechodzi przez twój blok (dyżury nocne najbardziej).</p>' +
-    '<p><b>Regenerujesz się tylko we śnie</b> — czyli w WOLNE nocne sloty grafiku. Zastawisz noce dyżurami — nie masz kiedy spać.</p>' +
+    '<p><b>Twoje siły fizyczne.</b> Zużywa je praca DZIENNA: każdy przyjęty pacjent z klikania (−0,5), taśma w poradni, etat, dojazdy do drugiej placówki i dyżury NA CITO.</p>' +
+    '<p><b>Dyżur zwykły nie męczy — na dyżurze się odsypia.</b> Śpisz w dyżurce, płacą za gotowość. Regenerujesz się też w wolne nocne sloty grafiku.</p>' +
     '<p>Przy niskiej energii praca osobista jest warta ułamek stawki (35–100%). Ratunki: <b>kawa</b> (drożeje z każdą w tygodniu) i <b>odeśpij</b> (20 s bez dochodu).</p>' +
-    '<p class="mala">Tory bilokacji NIE męczą — tam pracuje papier, nie ciało. W realnych grafikach po 30 godzinach bez snu też się operuje. <a href="' + LINK('/mechanizmy/wieloetatowosc') + '" target="_blank" rel="noopener">to działa naprawdę →</a></p>');
+    '<p class="mala">Tory bilokacji NIE męczą — tam pracuje papier, nie ciało. A płatna gotowość, w trakcie której się śpi, istnieje naprawdę. <a href="' + LINK('/mechanizmy/dyzury-i-gotowosc') + '" target="_blank" rel="noopener">to działa naprawdę →</a></p>');
 }
 $('energiaPas').addEventListener('click', energiaModal);
 $('energiaPas').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); energiaModal(); } });

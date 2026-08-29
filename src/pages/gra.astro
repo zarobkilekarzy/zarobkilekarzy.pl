@@ -416,7 +416,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <button class="chip" id="indeksChip">Indeks <b class="mono" id="indeksW">1,00</b><span class="znak">ⓘ</span></button>
       <button class="chip hide" id="negChip">Wynegocjowane <b class="mono" id="negW">+0%</b><span class="znak">ⓘ</span></button>
       <button class="chip rozjazd hide" id="rozjazd">ROZJAZD <b id="rozjazdX">×1,0</b><span class="znak">ⓘ</span></button>
-      <button class="chip" id="tempoChip" title="Zmień poziom trudności (tempo gry)"><svg class="i"><use href="#i-zegar"/></svg> poziom trudności <b class="mono" id="szybkoscW">×3</b></button>
+      <button class="chip" id="tempoChip" title="Zmień poziom trudności (tempo gry)"><svg class="i"><use href="#i-zegar"/></svg> poziom trudności <b class="mono" id="szybkoscW">×6</b></button>
       <button class="chip" id="resetBtn" title="Zacznij od nowa"><svg class="i"><use href="#i-reset"/></svg> nowa gra</button>
     </div>
   </header>
@@ -530,15 +530,19 @@ const T = {
   NETTO_B2B: 0.84,
   CEGIELKA_TYG: 0.02,
   KLIK_ENERGIA: 0.8,
+  REGEN_BAZA: 1.6,          // samoistna odnowa /gh przy 0% energii (maleje liniowo do 0 przy 100%)
+  REGEN_NOC: 0.4, REGEN_SWIT: 0.15,   // dodatkowy sen w WOLNE sloty nocne
+  REGEN_TURBO: 1.3,         // ×12: adrenalina — regeneracja szybsza
   KAWA_CENA0: 300, KAWA_R: 1.6, KAWA_PLUS: 20,
   URLOP_MS: 12000, URLOP_PLUS: 40, URLOP_CD_MS: 30000,
   NEG_CD_MS: 45000,
   REJESTR_OD: 120000, REJESTR_KOSZT0: 40000, REJESTR_R: 3,
   OFFLINE_MIN_S: 45, OFFLINE_CAP_S: 8 * 3600, OFFLINE_TEMPO: 0.5,
   KOL: 7, RZED: 6,
-  WERSJA: 7,
+  WERSJA: 8,
 };
-const H = () => S.tempo || 3;
+const H = () => S.tempo || 6;
+const regenBonus = () => H() >= 12 ? T.REGEN_TURBO : 1;
 const TIERY = ['Stażysta', 'Rezydent', 'Specjalista', 'Kontraktowiec', 'Walizkowiec'];
 const LINK = p => 'https://zarobkilekarzy.pl' + p;
 const iko = n => '<svg class="i"><use href="#i-' + n + '"/></svg>';
@@ -566,7 +570,7 @@ const TYPY = {   /* dyżur = płatna drzemka (ujemny drenaż); męczy taśma dzi
 
 let S = {
   wersja: T.WERSJA,
-  tempo: 3, tempoWybrane: false,
+  tempo: 6, tempoWybrane: false,
   portfel: 0, lifetime: 0, jawneCum: 0, realCum: 0,
   kliki: 0, pacjenci: 0, zKolejki: 0, kolejka: 2,
   szkolenia: 0, tier: 0, etat: false, b2b: false,
@@ -774,8 +778,13 @@ function pFloat(tekst, xPct, yPct, klasa) {
 }
 
 /* ── dochód ── */
-function mnoznikNeg() { return Math.pow(1.1, S.negocjacje); }
-function mnoznikEnergii() { return 0.35 + 0.65 * S.energia / 100; }
+/* addytywnie (+10 p.p. za negocjację) — składany 1,1^n dawał +33% po trzech „+10%" */
+function mnoznikNeg() { return 1 + 0.1 * S.negocjacje; }
+/* poniżej 20% energii wartość pracy osobistej zjeżdża do ZERA (przy 0% nie zarabiasz nic) */
+function mnoznikEnergii() {
+  const bazowy = 0.35 + 0.65 * S.energia / 100;
+  return S.energia < 20 ? bazowy * S.energia / 20 : bazowy;
+}
 function bonusSzkolen() { let b = 0; for (let i = 0; i < S.szkolenia; i++) b += SZKOLENIA[i].b; return b; }
 function stawkaBloku(b) {
   const t = TYPY[b.typ];
@@ -829,6 +838,7 @@ function wartoscKlikuBrutto() {
 }
 function klik() {
   if (naUrlopie()) { pFloat('śpisz…', 40 + Math.random() * 20, 50, 'zly'); return; }
+  if (S.energia <= 0) { pFloat('zero sił — kawa albo odeśpij', 30 + Math.random() * 20, 50, 'zly'); return; }
   const brutto = wartoscKlikuBrutto();
   const klin = S.b2b ? nettoB2B() : klinUoP();
   S.portfel += brutto * klin;
@@ -945,9 +955,11 @@ const PRZEDMIOTY = [
     wymog() {
       if (S.tier < 2) return 'wymaga: Specjalista';
       if (!S.etat) return 'wymaga: etat (LEK)';
+      /* ścięcie etatu do 2 bloków zwalnia miejsce na kontrakt — wystarczy 1 wolny
+         slot po ścięciu (twardy wymóg 10 zakleszczał grę przy pełnym grafiku) */
       const bez = S.bloki.filter(b => b.typ !== 'etat');
       const zostaja = S.bloki.filter(b => b.typ === 'etat').slice(0, 2);
-      if (!znajdzSloty(10, null, bez.concat(zostaja), 0)) return powodSlotow();
+      if (!znajdzSloty(1, null, bez.concat(zostaja), 0)) return powodSlotow();
       return null;
     },
     kup() { przejscieB2B(); }, link: '/mechanizmy/kontrakt-vs-etat' },
@@ -1123,14 +1135,14 @@ $('tydzienPas').addEventListener('keydown', e => { if (e.key === 'Enter' || e.ke
 
 /* wybór tempa gry */
 const TEMPA = [
-  { v: 6, n: 'Ostry dyżur', o: '×6 — wszystko pędzi; pierwszy finał w kwadrans. Tryb „na przerwie".' },
-  { v: 3, n: 'Rezydentura', o: '×3 — spokojna sesja; kampania na godzinę-dwie. Domyślne.' },
+  { v: 12, n: 'Ostry dyżur', o: '×12 — wszystko pędzi; pierwszy finał w kilka minut. Adrenalina: energia regeneruje się o 30% szybciej.' },
+  { v: 6, n: 'Rezydentura', o: '×6 — normalna sesja; pierwszy finał w kwadrans. Domyślne.' },
   { v: 1, n: 'Ordynatura', o: '×1 — sekunda = godzina grafiku. Kampania na dni; offline pracuje za ciebie.' },
 ];
 function tempoModal(przyStarcie) {
   $('aktBox').innerHTML =
     '<div class="eyebrow">Poziom trudności</div><h2>Ile masz czasu?</h2>' +
-    '<p>Tempo zmienia tylko szybkość grafiku (dochód pasywny i eventy). Klikanie płaci tyle samo. Możesz zmienić w każdej chwili.</p>' +
+    '<p>Tempo zmienia szybkość grafiku (dochód pasywny i eventy). Klikanie płaci tyle samo; najszybsze tempo daje też szybszą regenerację energii. Możesz zmienić w każdej chwili.</p>' +
     '<div class="opcje-tempa"></div>';
   const box = $('aktBox').querySelector('.opcje-tempa');
   for (const tpo of TEMPA) {
@@ -1154,8 +1166,8 @@ $('tempoChip').addEventListener('click', () => tempoModal(false));
 function energiaModal() {
   infoModal('Energia',
     '<p><b>Twoje siły fizyczne.</b> Zużywa je praca DZIENNA: każdy przyjęty pacjent z klikania (−0,5), taśma w poradni, etat, dojazdy do drugiej placówki i dyżury NA CITO.</p>' +
-    '<p><b>Dyżur zwykły nie męczy — na dyżurze się odsypia.</b> Śpisz w dyżurce, płacą za gotowość. Regenerujesz się też w wolne nocne sloty grafiku.</p>' +
-    '<p>Przy niskiej energii praca osobista jest warta ułamek stawki (35–100%). Ratunki: <b>kawa</b> (drożeje z każdą w tygodniu) i <b>odeśpij</b> (20 s bez dochodu).</p>' +
+    '<p><b>Dyżur zwykły nie męczy — na dyżurze się odsypia.</b> Śpisz w dyżurce, płacą za gotowość. Regenerujesz się też w wolne nocne sloty grafiku, a organizm odnawia się sam — tym szybciej, im bardziej jest zajechany.</p>' +
+    '<p>Przy niskiej energii praca osobista jest warta ułamek stawki, a <b>przy 0% nie zarabiasz osobiście nic</b> — ani klikiem, ani z toru 0 grafiku (tory bilokacji płacą dalej: tam pracuje papier). Ratunki: <b>kawa</b> (drożeje z każdą w tygodniu) i <b>odeśpij</b> (12 s bez dochodu).</p>' +
     '<p class="mala">Tory bilokacji NIE męczą — tam pracuje papier, nie ciało. A płatna gotowość, w trakcie której się śpi, istnieje naprawdę. <a href="' + LINK('/mechanizmy/dyzury-i-gotowosc') + '" target="_blank" rel="noopener">to działa naprawdę →</a></p>');
 }
 $('energiaPas').addEventListener('click', energiaModal);
@@ -1188,7 +1200,11 @@ function przejscieB2B() {
   S.bloki = S.bloki.filter(b => b.typ !== 'etat').concat(zostaja);
   for (const b of S.bloki) if (b.typ === 'dyzur' || b.typ === 'poradnia') b.kreska = true;
   S.b2b = true; S.tier = 3; S.ryzyko += 5;
-  dodajBloki(10, 'kontrakt', true, [2, 3, 4, 1, 0, 5]);
+  /* kontrakt wchodzi w tyle bloków, ile się zmieści (ścięty etat zwalnia 8 komórek) —
+     twardy wymóg 10 slotów zakleszczał grę przy pełnym grafiku */
+  let nKontrakt = 10;
+  while (nKontrakt > 0 && !dodajBloki(nKontrakt, 'kontrakt', true, [2, 3, 4, 1, 0, 5])) nKontrakt--;
+  if (nKontrakt < 10) log('Grafik pęka w szwach — kontrakt wciśnięty w ' + nKontrakt + ' bloków. Resztę godzin dopisze papier.', true);
   renderKariere(); renderPlansza();
   $('okoBtn').classList.remove('hide');
   $('wrap').classList.add('trzesie');
@@ -1573,14 +1589,13 @@ setInterval(() => {
     S.tydzienSuma += zysk;
     if (tu.length) S.pacjenci += sek * 0.4;
 
-    /* energia: praca (tor 0) kosztuje; sen tylko w WOLNE noce */
+    /* energia: ciało samo się regeneruje (tym szybciej, im bardziej zajechane),
+       praca na torze 0 drenuje, sen dodatkowo w WOLNE noce; ×12 regeneruje szybciej */
     const tor0 = tu.filter(b => b.lane === 0);
-    if (tor0.length) {
-      S.energia -= Math.max(...tor0.map(b => TYPY[b.typ].dren)) * gh;
-    } else {
-      const regen = (r === 0 || r === 5) ? 0.25 : (r === 1 ? 0.1 : 0);
-      S.energia += regen * gh;
-    }
+    let dE = T.REGEN_BAZA * (1 - S.energia / 100);
+    if (tor0.length) dE -= Math.max(...tor0.map(b => TYPY[b.typ].dren));
+    else dE += (r === 0 || r === 5) ? T.REGEN_NOC : (r === 1 ? T.REGEN_SWIT : 0);
+    S.energia += dE * (dE > 0 ? regenBonus() : 1) * gh;
     S.energia = Math.max(0, Math.min(100, S.energia));
     if (S.energia === 0) achievement('zombie');
     if (S.energia < 25 && !S.odslony.zmeczony) { S.odslony.zmeczony = true; log('Ledwo stoisz. Wszystko, co robisz osobiście, jest warte ułamek stawki. Kawa albo wolna noc.', true); }
@@ -1623,6 +1638,8 @@ function render() {
   przyjmijBtn.disabled = naUrlopie();
   $('klikInfo').textContent = naUrlopie()
     ? 'ŚPISZ… ' + Math.ceil((S.urlopDo - Date.now()) / 1000) + ' s'
+    : S.energia <= 0
+    ? 'ZERO SIŁ — kawa albo odeśpij'
     : '+' + Math.floor(wartoscKlikuBrutto() * (S.b2b ? nettoB2B() : klinUoP())).toLocaleString('pl-PL') + ' zł'
       + (S.kolejka > 0 ? ' · kolejka: ' + S.kolejka + ' (×1,5)' : ' · z ulicy')
       + (naDyzurze() ? ' · dyżur ×2' : '');
@@ -1740,6 +1757,10 @@ function migruj(stan) {
   if (stan.wersja < 7) {
     stan.tempo = 6; stan.tempoWybrane = true;   // istniejące zapisy: bez zmiany tempa
     stan.wersja = 7;
+  }
+  if (stan.wersja < 8) {
+    if (stan.tempo === 3) stan.tempo = 6;       // ×3 znikło z drabinki — najbliższe to nowe domyślne ×6
+    stan.wersja = 8;
   }
   return stan;
 }

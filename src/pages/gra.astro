@@ -90,6 +90,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     30%  { transform:translate(calc(var(--dx) * .45), var(--wys)) rotate(200deg) scale(1.1); opacity:1; }
     100% { transform:translate(var(--dx), var(--spad)) rotate(560deg) scale(.8); opacity:0; }
   }
+  .banknot {
+    position:fixed; z-index:60; pointer-events:none; width:24px; height:13px; border-radius:2px;
+    background:linear-gradient(120deg, #9fd98a, #5fae4e 55%, #3d7a32); border:1px solid #2d5c25;
+    box-shadow:0 1px 3px rgba(0,0,0,.4);
+    animation:moneta-lot var(--t, 1.1s) cubic-bezier(.3,.45,.6,1) forwards;
+  }
+  .banknot::after { content:"100"; position:absolute; inset:0; display:grid; place-items:center; font:700 7px var(--mono); color:#1e3d18; }
+  .deszczowa { animation:moneta-deszcz var(--t, 1.6s) cubic-bezier(.4,.1,.7,1) forwards; }
+  @keyframes moneta-deszcz {
+    0%   { transform:translate(0,-30px) rotate(0); opacity:1; }
+    85%  { opacity:1; }
+    100% { transform:translate(var(--dx), 105vh) rotate(680deg); opacity:0; }
+  }
   .chips { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .chip { font-family:var(--mono); font-size:.68rem; padding:3px 10px; border-radius:99px; background:var(--panel); border:1px solid var(--linia); color:var(--tekst-2); }
   button.chip { cursor:help; }
@@ -398,6 +411,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <button class="chip" id="indeksChip">Indeks <b class="mono" id="indeksW">1,00</b><span class="znak">ⓘ</span></button>
       <button class="chip hide" id="negChip">Wynegocjowane <b class="mono" id="negW">+0%</b><span class="znak">ⓘ</span></button>
       <button class="chip rozjazd hide" id="rozjazd">ROZJAZD <b id="rozjazdX">×1,0</b><span class="znak">ⓘ</span></button>
+      <button class="chip" id="tempoChip" title="Zmień tempo gry"><svg class="i"><use href="#i-zegar"/></svg> <b class="mono" id="szybkoscW">×3</b></button>
       <button class="chip" id="resetBtn" title="Zacznij od nowa"><svg class="i"><use href="#i-reset"/></svg> nowa gra</button>
     </div>
   </header>
@@ -504,7 +518,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
    8 decyzji, kolejka pacjentów, gablota osiągnięć, migracje zapisu.            */
 
 const T = {
-  H_NA_SEK: 6,
   KLIK_BAZA: 10,
   TIER_MNOZNIK: [1, 2, 4, 8],
   NETTO_UOP_NISKI: 0.72, NETTO_UOP_WYSOKI: 0.55, PROG_ROCZNY: 120000,
@@ -517,8 +530,9 @@ const T = {
   REJESTR_OD: 120000, REJESTR_KOSZT0: 40000, REJESTR_R: 3,
   OFFLINE_MIN_S: 45, OFFLINE_CAP_S: 8 * 3600, OFFLINE_TEMPO: 0.5,
   KOL: 7, RZED: 6,
-  WERSJA: 6,
+  WERSJA: 7,
 };
+const H = () => S.tempo || 3;
 const TIERY = ['Stażysta', 'Rezydent', 'Specjalista', 'Kontraktowiec', 'Walizkowiec'];
 const LINK = p => 'https://zarobkilekarzy.pl' + p;
 const iko = n => '<svg class="i"><use href="#i-' + n + '"/></svg>';
@@ -546,6 +560,7 @@ const TYPY = {
 
 let S = {
   wersja: T.WERSJA,
+  tempo: 3, tempoWybrane: false,
   portfel: 0, lifetime: 0, jawneCum: 0, realCum: 0,
   kliki: 0, pacjenci: 0, zKolejki: 0, kolejka: 2,
   szkolenia: 0, tier: 0, etat: false, b2b: false,
@@ -706,12 +721,13 @@ $('pTaby').addEventListener('click', e => {
 /* deszcz monet */
 let ostatniPunkt = null;
 addEventListener('pointerdown', e => { ostatniPunkt = { x: e.clientX, y: e.clientY }; }, true);
-function monety(x, y, n, sila) {
+function monety(x, y, n, sila, banknoty) {
   if (redMotion) return;
+  if (document.querySelectorAll('.moneta,.banknot').length > 140) return;
   sila = sila || 1;
   for (let i = 0; i < n; i++) {
     const m = document.createElement('div');
-    m.className = 'moneta';
+    m.className = (banknoty && Math.random() < 0.3) ? 'banknot' : 'moneta';
     m.style.left = (x - 8 + (Math.random() - 0.5) * 18) + 'px';
     m.style.top = (y - 8) + 'px';
     m.style.setProperty('--dx', ((Math.random() - 0.5) * 190 * sila) + 'px');
@@ -722,9 +738,22 @@ function monety(x, y, n, sila) {
     setTimeout(() => m.remove(), 1300);
   }
 }
-function monetyZ(el, n, sila) {
+function monetyZ(el, n, sila, banknoty) {
   const r = el.getBoundingClientRect();
-  monety(r.left + r.width / 2, r.top + r.height / 2, n, sila);
+  monety(r.left + r.width / 2, r.top + r.height / 2, n, sila, banknoty);
+}
+function deszczMonet(n) {
+  if (redMotion) return;
+  for (let i = 0; i < n; i++) {
+    const m = document.createElement('div');
+    m.className = ((Math.random() < 0.25) ? 'banknot' : 'moneta') + ' deszczowa';
+    m.style.left = (Math.random() * innerWidth) + 'px';
+    m.style.top = '-20px';
+    m.style.setProperty('--dx', ((Math.random() - 0.5) * 140) + 'px');
+    m.style.setProperty('--t', (1.2 + Math.random() * 1.1) + 's');
+    document.body.appendChild(m);
+    setTimeout(() => m.remove(), 2500);
+  }
 }
 function pFloat(tekst, xPct, yPct, klasa) {
   if (redMotion) return;
@@ -802,8 +831,8 @@ function klik() {
     setTimeout(() => b.remove(), 2500);
   }
   pFloat('+' + Math.floor(brutto * klin).toLocaleString('pl-PL') + ' zł', poz * 100 + 1, 14 + Math.random() * 30);
-  if (ostatniPunkt) monety(ostatniPunkt.x, ostatniPunkt.y, 4 + (naDyzurze() ? 2 : 0), 1);
-  else monetyZ(przyjmijBtn, 4, 1);
+  if (ostatniPunkt) monety(ostatniPunkt.x, ostatniPunkt.y, 7 + (naDyzurze() ? 3 : 0) + (S.kolejka > 0 ? 2 : 0), 1.15, S.tier >= 2);
+  else monetyZ(przyjmijBtn, 7, 1.15, S.tier >= 2);
   postep();
 }
 const przyjmijBtn = $('przyjmij');
@@ -971,7 +1000,7 @@ function budujSklepy() {
       if (p.slotyPotrzebne && p.slotyPotrzebne() > 0 && !znajdzSloty(p.slotyPotrzebne(), p.preferRows, null, p.slotyPlansza || 0)) return;
       S.portfel -= k;
       p.kup();
-      monetyZ(btn, 14, 1.7);
+      monetyZ(btn, 24, 2, true);
       const pw = $('portfelW');
       pw.classList.remove('blysk'); void pw.offsetWidth; pw.classList.add('blysk');
       czytnik('Kupiono: ' + (typeof p.nazwa === 'function' ? p.nazwa() : p.nazwa));
@@ -1071,6 +1100,35 @@ function godzinyModal() {
 $('tydzienInfo').addEventListener('click', godzinyModal);
 $('tydzienPas').addEventListener('click', godzinyModal);
 $('tydzienPas').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); godzinyModal(); } });
+
+/* wybór tempa gry */
+const TEMPA = [
+  { v: 6, n: 'Ostry dyżur', o: '×6 — wszystko pędzi; pierwszy finał w kwadrans. Tryb „na przerwie".' },
+  { v: 3, n: 'Rezydentura', o: '×3 — spokojna sesja; kampania na godzinę-dwie. Domyślne.' },
+  { v: 1, n: 'Ordynatura', o: '×1 — sekunda = godzina grafiku. Kampania na dni; offline pracuje za ciebie.' },
+];
+function tempoModal(przyStarcie) {
+  $('aktBox').innerHTML =
+    '<div class="eyebrow">' + (przyStarcie ? 'Nowa kariera' : 'Tempo gry') + '</div><h2>Ile masz czasu?</h2>' +
+    '<p>Tempo zmienia tylko szybkość grafiku (dochód pasywny i eventy). Klikanie płaci tyle samo. Możesz zmienić w każdej chwili.</p>' +
+    '<div class="opcje-tempa"></div>';
+  const box = $('aktBox').querySelector('.opcje-tempa');
+  for (const tpo of TEMPA) {
+    const b = document.createElement('button');
+    b.className = 'ok-btn';
+    b.style.cssText = 'display:block;width:100%;margin:8px 0 0;text-align:left;padding:10px 16px;' + (tpo.v === S.tempo ? '' : 'background:var(--panel);color:var(--tekst);box-shadow:none;border:1px solid var(--linia-2);');
+    b.innerHTML = '<b>' + tpo.n + '</b><br><span style="font-family:var(--ui);font-weight:600;font-size:.72rem;opacity:.85">' + tpo.o + '</span>';
+    b.addEventListener('click', () => {
+      S.tempo = tpo.v; S.tempoWybrane = true;
+      $('zaslona').classList.remove('on');
+      $('szybkoscW').textContent = '×' + S.tempo;
+      log('Tempo gry: ' + tpo.n + ' (×' + tpo.v + ').');
+    });
+    box.appendChild(b);
+  }
+  $('zaslona').classList.add('on');
+}
+$('tempoChip').addEventListener('click', () => tempoModal(false));
 
 /* wyjaśnienie energii — klik w pasek */
 function energiaModal() {
@@ -1340,7 +1398,7 @@ function eventyDecyzje(sek) {
   if (!dostepne.length) { decyzjaTimer = 20; return; }
   const rejestr = dostepne.find(d => d.id === 'rejestr');
   const d = (rejestr && Math.random() < 0.45) ? rejestr : dostepne[Math.floor(Math.random() * dostepne.length)];
-  d.cd = teraz + (d.min + Math.random() * (d.max - d.min)) * T.H_NA_SEK; // cooldown w godzinach gry
+  d.cd = teraz + (d.min + Math.random() * (d.max - d.min)) * H(); // cooldown w godzinach gry
   decyzjaTimer = 45 + Math.random() * 45;
   decyzja(d.buduj());
 }
@@ -1424,6 +1482,7 @@ function finalRejestru(powod) {
     '<a class="zrodlo-a" href="' + LINK('/postulat') + '" target="_blank" rel="noopener">tak mógłby wyglądać naprawdę →</a>',
     'Graj dalej (rejestr już działa)',
     () => {
+      deszczMonet(44);
       S.rejestrDziala = true;
       S.jawneCum = S.realCum;
       renderPlansza();
@@ -1440,7 +1499,7 @@ let ostatni = Date.now(), floatTimer = 0, prevKom = null, prevH = 0, kolejkaTime
 setInterval(() => {
   const teraz = Date.now(), sek = Math.min(2, (teraz - ostatni) / 1000);
   ostatni = teraz;
-  const gh = sek * T.H_NA_SEK;
+  const gh = sek * H();
   S.gh += gh;
 
   const { c, r, poz } = aktualnaKomorka();
@@ -1448,7 +1507,7 @@ setInterval(() => {
   if (h < prevH) {
     S.tydzienNr++;
     S.kawyTydzien = 0;
-    if (S.tydzienSuma > 500 && !S.fin) toast({ wynik: true, html: iko('log') + ' <b>Wypłata tygodnia ' + (S.tydzienNr - 1) + ':</b> +' + fmt(S.tydzienSuma), ttl: 4500 });
+    if (S.tydzienSuma > 500 && !S.fin) { toast({ wynik: true, html: iko('log') + ' <b>Wypłata tygodnia ' + (S.tydzienNr - 1) + ':</b> +' + fmt(S.tydzienSuma), ttl: 4500 }); deszczMonet(16); }
     S.tydzienSuma = 0;
     playheadEl.classList.add('przeskok');
   } else playheadEl.classList.remove('przeskok');
@@ -1515,7 +1574,11 @@ setInterval(() => {
   floatTimer += sek;
   if (floatTimer > 0.7) {
     floatTimer = 0;
-    if (zysk > 0) pFloat('+' + Math.floor(zysk / sek).toLocaleString('pl-PL') + ' zł/s', poz * 100 + 1.5, 8, blokiW(c, r).some(b => b.typ === 'cito') ? 'zloty' : '');
+    if (zysk > 0) {
+      pFloat('+' + Math.floor(zysk / sek).toLocaleString('pl-PL') + ' zł/s', poz * 100 + 1.5, 8, blokiW(c, r).some(b => b.typ === 'cito') ? 'zloty' : '');
+      const pr = plansza.getBoundingClientRect();
+      if (pr.bottom > 0 && pr.top < innerHeight) monety(pr.left + poz * pr.width, pr.top + (r + 0.5) / 6 * pr.height, 2, 0.6);
+    }
   }
 
   eventyDecyzje(sek);
@@ -1532,9 +1595,10 @@ function render() {
   const tu = blokiW(c, r);
   let chwilowe = 0;
   for (const b of tu) chwilowe += stawkaBloku(b) * (b.kreska ? nettoB2B() : klinUoP());
-  chwilowe = (chwilowe + czynszNaGodzine() * 0.915) * T.H_NA_SEK;
+  chwilowe = (chwilowe + czynszNaGodzine() * 0.915) * H();
   $('tempoW').textContent = naUrlopie() ? 'urlop — grafik stoi' : chwilowe > 0 ? '+' + fmt(chwilowe) + '/s teraz' : 'pusty slot — klikaj';
   $('tydzienNr').textContent = 'tydzień ' + S.tydzienNr;
+  $('szybkoscW').textContent = '×' + S.tempo;
   $('indeksW').textContent = S.indeks.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (S.negocjacje > 0) $('negW').textContent = '+' + Math.round((mnoznikNeg() - 1) * 100) + '%';
   $('jawnyMies').textContent = fmt(jawneTygodniowo() * 4.33);
@@ -1648,6 +1712,10 @@ function migruj(stan) {
     stan.mnoznikObok = 1; stan.blokadyRejestru = 0;
     stan.wersja = 6;
   }
+  if (stan.wersja < 7) {
+    stan.tempo = 6; stan.tempoWybrane = true;   // istniejące zapisy: bez zmiany tempa
+    stan.wersja = 7;
+  }
   return stan;
 }
 function wczytaj() {
@@ -1682,7 +1750,7 @@ function rozliczOffline() {
   const sekOff = (Date.now() - S.ostatnioOnline) / 1000;
   if (sekOff < T.OFFLINE_MIN_S) return;
   const eff = Math.min(sekOff, T.OFFLINE_CAP_S);
-  const tygodnie = (eff / 28) * T.OFFLINE_TEMPO;         // 28 s realnych = tydzień gry
+  const tygodnie = (eff / (168 / H())) * T.OFFLINE_TEMPO; // tydzień gry = 168/tempo sekund realnych
   const jawneTyg = jawneTygodniowo(), kreskTyg = kreskoweTygodniowo();
   const bruttoTyg = jawneTyg + kreskTyg;
   const nettoTyg = jawneTyg * klinUoP() + kreskTyg * nettoB2B() + czynszNaGodzine() * 168 * 0.915;
@@ -1704,6 +1772,7 @@ function rozliczOffline() {
     '</table>' +
     '<p class="mala">Odespałeś (energia 100%). W poczekalni czeka pełna kolejka.</p>',
     'Do roboty');
+  deszczMonet(30);
   log('Powrót po ' + Math.floor(tygodnie) + ' tyg. System pracował za ciebie: +' + fmt(zysk), true);
 }
 
@@ -1729,6 +1798,7 @@ if (S.kliki > 0 || S.bloki.length > 0) {
 } else {
   log('Dzień pierwszy. Masz dyplom, pieczątkę i pusty grafik.');
   $('dziennikBox').style.display = 'none';
+  if (!S.tempoWybrane) tempoModal(true);
 }
 render();
 

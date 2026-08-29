@@ -1,0 +1,38 @@
+# Automatyczne PR-y z aktualizacjami zależności.
+#
+# Powód: przez pierwsze dwa kwartały projektu lockfile ruszał się wyłącznie przy
+# okazji nowych funkcji (14.07, 17.07, 29.08). Efekt — 9 podatności naraz, w tym
+# XML injection w @astrojs/rss, którego RSS na tej stronie realnie używa.
+# Comiesięczny PR jest tańszy niż odrabianie takiego długu hurtem.
+#
+# `open-pull-requests-limit: 3` — świadomie mało. Ma przypominać, nie zasypywać;
+# `main` wymaga PR + approval, więc każdy z nich i tak przechodzi przez człowieka.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      # Astro i jego oficjalne integracje muszą iść razem — rozjechane wersje
+      # (np. astro 7 + sitemap na starym peerze) wywracają build, a nie dają się
+      # sensownie zrecenzować osobno.
+      astro:
+        patterns:
+          - astro
+          - '@astrojs/*'
+      # Fonty: pięć paczek @fontsource wypuszcza patche niezależnie od siebie.
+      # PUŁAPKA: nie importować samego subsetu `latin-ext` — gubi „ó".
+      fontsource:
+        patterns:
+          - '@fontsource/*'
+
+  # Akcje w deploy.yml są przypięte po SHA (odporność na przejęcie tagu).
+  # Dependabot rozumie ten zapis i podbija SHA razem z komentarzem wersji —
+  # bez tego pin po SHA znaczy „nigdy nie aktualizowane".
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3

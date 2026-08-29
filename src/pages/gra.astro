@@ -406,7 +406,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div class="tor" id="energiaPas" role="button" tabindex="0" title="Kliknij: czym jest energia?"><i style="width:100%"></i></div>
       <span class="op" id="energiaOp">100%</span>
       <button class="akcja" id="kawaBtn" title="+15 energii; każda kolejna w tygodniu droższa"><svg class="i"><use href="#i-kawa"/></svg> <span id="kawaCena">300 zł</span></button>
-      <button class="akcja" id="urlopBtn" title="20 s bez dochodu, +40 energii"><svg class="i"><use href="#i-sen"/></svg> odeśpij</button>
+      <button class="akcja" id="urlopBtn" title="20 s bez dochodu, +40 energii"><svg class="i"><use href="#i-sen"/></svg> <span id="urlopTxt">odeśpij</span></button>
     </div>
     <span class="spacer"></span>
     <div class="chips">
@@ -526,9 +526,9 @@ const T = {
   NETTO_UOP_NISKI: 0.72, NETTO_UOP_WYSOKI: 0.55, PROG_ROCZNY: 120000,
   NETTO_B2B: 0.84,
   CEGIELKA_TYG: 0.02,
-  KLIK_ENERGIA: 0.5,
-  KAWA_CENA0: 300, KAWA_R: 1.6, KAWA_PLUS: 15,
-  URLOP_MS: 20000, URLOP_PLUS: 40, URLOP_CD_MS: 60000,
+  KLIK_ENERGIA: 0.8,
+  KAWA_CENA0: 300, KAWA_R: 1.6, KAWA_PLUS: 20,
+  URLOP_MS: 20000, URLOP_PLUS: 40, URLOP_CD_MS: 30000,
   NEG_CD_MS: 45000,
   REJESTR_OD: 120000, REJESTR_KOSZT0: 40000, REJESTR_R: 3,
   OFFLINE_MIN_S: 45, OFFLINE_CAP_S: 8 * 3600, OFFLINE_TEMPO: 0.5,
@@ -553,12 +553,12 @@ const BILOKACJA = [
 ];
 /* energia: praca kosztuje (tor 0), sen oddaje tylko w WOLNE noce */
 const TYPY = {   /* dyżur = płatna drzemka (ujemny drenaż); męczy taśma dzienna i CITO */
-  etat:     { et: 'ETAT',   st: () => S.tier >= 2 ? 87 : 50, dren: 0.55, rynek: false },
-  dyzur:    { et: 'DYŻUR',  st: () => 110, dren: -0.25, rynek: true },
-  poradnia: { et: 'PORAD',  st: () => 130, dren: 0.9,  rynek: true },
-  kontrakt: { et: 'FIRMA',  st: () => 170, dren: 0.7,  rynek: true },
-  obok:     { et: 'OBOK',   st: () => 220, dren: 0.9,  rynek: true },
-  cito:     { et: 'CITO×3', st: () => 500, dren: 2.0,  rynek: true },
+  etat:     { et: 'ETAT',   st: () => S.tier >= 2 ? 87 : 50, dren: 0.7,  rynek: false },
+  dyzur:    { et: 'DYŻUR',  st: () => 110, dren: -0.35, rynek: true },
+  poradnia: { et: 'PORAD',  st: () => 130, dren: 1.2,  rynek: true },
+  kontrakt: { et: 'FIRMA',  st: () => 170, dren: 0.9,  rynek: true },
+  obok:     { et: 'OBOK',   st: () => 220, dren: 1.1,  rynek: true },
+  cito:     { et: 'CITO×3', st: () => 500, dren: 2.2,  rynek: true },
 };
 
 let S = {
@@ -1568,14 +1568,14 @@ setInterval(() => {
     if (tor0.length) {
       S.energia -= Math.max(...tor0.map(b => TYPY[b.typ].dren)) * gh;
     } else {
-      const regen = (r === 0 || r === 5) ? 0.9 : (r === 1 ? 0.4 : 0.1);
+      const regen = (r === 0 || r === 5) ? 0.25 : (r === 1 ? 0.1 : 0);
       S.energia += regen * gh;
     }
     S.energia = Math.max(0, Math.min(100, S.energia));
     if (S.energia === 0) achievement('zombie');
     if (S.energia < 25 && !S.odslony.zmeczony) { S.odslony.zmeczony = true; log('Ledwo stoisz. Wszystko, co robisz osobiście, jest warte ułamek stawki. Kawa albo wolna noc.', true); }
   } else {
-    S.energia = Math.min(100, S.energia + 1.2 * gh);
+    S.energia = Math.min(100, S.energia + 0.5 * gh);
   }
   const czynsz = czynszNaGodzine() * gh * 0.915;
   S.portfel += czynsz; S.tydzienSuma += czynsz;
@@ -1646,6 +1646,10 @@ function render() {
   ei.classList.toggle('malo', e < 25);
   const urlopCzeka = Date.now() < (S.urlopCd || 0);
   $('urlopBtn').disabled = naUrlopie() || urlopCzeka;
+  const ut = $('urlopTxt');
+  if (naUrlopie()) ut.textContent = 'śpisz ' + Math.ceil((S.urlopDo - Date.now()) / 1000) + ' s';
+  else if (urlopCzeka) ut.textContent = 'odeśpij za ' + Math.ceil(((S.urlopCd || 0) - Date.now()) / 1000) + ' s';
+  else ut.textContent = 'odeśpij';
   $('kawaBtn').disabled = S.portfel < kawaCena() || S.energia >= 95;
   $('kawaCena').textContent = fmt(kawaCena());
 
@@ -1666,7 +1670,7 @@ function render() {
 $('urlopBtn').addEventListener('click', () => {
   if (naUrlopie() || Date.now() < (S.urlopCd || 0)) return;
   S.urlopDo = Date.now() + T.URLOP_MS;
-  S.urlopCd = Date.now() + T.URLOP_MS + T.URLOP_CD_MS;
+  S.urlopCd = Date.now() + T.URLOP_MS + T.URLOP_CD_MS;  // sen 20 s + 30 s przerwy
   S.energia = Math.min(100, S.energia + T.URLOP_PLUS);
   log('Urlop. 20 sekund ciszy. Telefon i tak zadzwoni.');
 });

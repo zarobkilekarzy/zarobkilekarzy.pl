@@ -229,11 +229,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   .stan .akcja { font-size:.64rem; font-weight:700; border-radius:8px; padding:3px 9px; cursor:pointer; background:var(--panel-2); color:var(--tekst-2); border:1px solid var(--linia); white-space:nowrap; }
   .stan .akcja:disabled { opacity:.45; cursor:default; }
 
-  /* tryb wypowiadania godzin: klik w blok grafiku oddaje go do puli */
-  #plansza.wyp { cursor:default; }
-  #plansza.wyp .blok { cursor:pointer; }
-  #plansza.wyp .blok:hover { outline:2px solid var(--czerwien); outline-offset:1px; }
-  .akcja.on { border-color:var(--czerwien); color:var(--czerwien); }
 
   .sklepy { display:none; margin-top:14px; }
   .taby { display:flex; gap:6px; flex-wrap:wrap; }
@@ -449,7 +444,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <div class="tor" id="tydzienPas" role="button" tabindex="0" title="Kliknij: skąd te godziny?"><i style="width:0%"></i></div>
         <span class="op"><span id="hUz">0</span>/<span id="hCap">48</span> h fiz.</span>
         <button class="akcja" id="tydzienInfo" title="Skąd te godziny?">?</button>
-        <button class="akcja" id="wypowiedzBtn" title="Wypowiedz godziny: włącz tryb i kliknij blok w grafiku, żeby go oddać"><svg class="i"><use href="#i-pioro"/></svg> wypowiedz</button>
       </div>
       <div class="czesc hide" id="dobaStan">
         <span class="ikona"><svg class="i"><use href="#i-warstwy"/></svg></span>
@@ -663,16 +657,17 @@ function naUrlopie() { return Date.now() < S.urlopDo; }
 
 /* tor 0: tylko komórki wolne GLOBALNIE (jedno ciało — bez nakładek między
    placówkami); tory 1..2 nad własnym torem 0 tej samej planszy (bilokacja) */
-function znajdzSloty(n, preferRows, blokiStan, p) {
+function znajdzSloty(n, preferRows, blokiStan, p, minLane) {
   p = p || 0;
   const bloki = blokiStan || S.bloki;
   const rzedy = preferRows || [0, 1, 5, 4, 2, 3];
   const zajete = new Set(bloki.map(b => (b.p || 0) + '|' + b.c + ',' + b.r + ',' + b.lane));
   const fizGlobal = komorkiFizyczne(bloki);
-  const tor0Tu = new Set(bloki.filter(b => b.lane === 0 && (b.p || 0) === p).map(b => kluczKom(b.c, b.r)));
+  /* CITO nie jest oparciem dla torów — zniknie po odegraniu i osierociłby nadbudowę */
+  const tor0Tu = new Set(bloki.filter(b => b.lane === 0 && !b.cito && (b.p || 0) === p).map(b => kluczKom(b.c, b.r)));
   const L = 1 + S.bilokacja;
   const wynik = [];
-  for (let lane = 0; lane < L && wynik.length < n; lane++) {
+  for (let lane = minLane || 0; lane < L && wynik.length < n; lane++) {
     for (const r of rzedy) {
       for (let c = 0; c < T.KOL && wynik.length < n; c++) {
         const klucz = p + '|' + c + ',' + r + ',' + lane;
@@ -698,6 +693,124 @@ function dodajBloki(n, typ, kreska, preferRows, p) {
   return true;
 }
 
+/* ── liniowa ekonomia grafiku ──
+   Liczba KUPIEN dostępna na danym etapie jest zbilansowana z pojemnością
+   grafików, żeby wszystko zawsze się mieściło — nic nie wypada, nikt niczym
+   nie zarządza. Budżet komórek fizycznych (globalnie, po 4 h):
+   start 12/12 (etat 10 + 1 dyżur) → opt-out 18/19 → B2B wymiana zero-netto
+   (kontrakt 8 bloków w miejsce ściętego etatu) → grafik 28/30; nadwyżka
+   kupien po bilokacji idzie w tory (zero godzin fizycznych). */
+function limitDyzur() { return 1 + (S.optout ? 2 : 0) + (S.grafik ? 1 : 0) + (S.bilokacja >= 1 ? 2 : 0) + (S.bilokacja >= 2 ? 2 : 0); }
+function limitPoradnia() { return (S.optout ? 1 : 0) + (S.grafik ? 1 : 0) + (S.bilokacja >= 1 ? 2 : 0) + (S.bilokacja >= 2 ? 2 : 0); }
+function limitObok() { return (S.grafik ? 1 : 0) + (S.bilokacja >= 1 ? 1 : 0) + (S.bilokacja >= 2 ? 1 : 0); }
+/* kupna ponad próg fizyczny idą WYŁĄCZNIE w tory bilokacji — dzięki temu budżet
+   komórek fizycznych jest stały (28/30) niezależnie od kolejności zakupów */
+function minLaneDyzur() { return S.gen.dyzur >= 4 ? 1 : 0; }
+function minLanePoradnia() { return S.gen.poradnia >= 2 ? 1 : 0; }
+function minLaneObok() { return S.gen.obok >= 1 ? 1 : 0; }
+function coDalej(typ) {
+  const progi = [
+    { jest: S.optout, n: 'klauzuli opt-out', dot: ['dyzur', 'poradnia'] },
+    { jest: S.grafik, n: '„Grafiku na papierze"', dot: ['dyzur', 'poradnia', 'obok'] },
+    { jest: S.bilokacja >= 1, n: 'kursie bilokacji I', dot: ['dyzur', 'poradnia', 'obok'] },
+    { jest: S.bilokacja >= 2, n: 'kursie bilokacji II', dot: ['dyzur', 'poradnia', 'obok'] },
+  ];
+  const p = progi.find(x => !x.jest && x.dot.includes(typ));
+  return p ? 'kolejne godziny wejdą po: ' + p.n : null;
+}
+
+/* ── cichy bezpiecznik (stare zapisy sprzed liniowej ekonomii) ──
+   Gdyby mimo budżetu zabrakło miejsca, nowa (lepiej płatna) praca wypycha
+   najtańsze godziny. Chronione: etat i CITO. Tory bilokacji nad wypchniętym
+   blokiem przesiadają się na inny blok tej samej planszy. */
+function stawkaTypu(typ) { return typ === 'obok' ? 220 * S.mnoznikObok : TYPY[typ].st(); }
+function zbedneTansze(typ) {
+  const prog = stawkaTypu(typ);
+  return S.bloki
+    .filter(b => b.lane === 0 && b.typ !== 'etat' && b.typ !== 'cito' && stawkaTypu(b.typ) < prog)
+    .sort((a, b) => stawkaTypu(a.typ) - stawkaTypu(b.typ));
+}
+function daSieZmiescic(n, typ, p) {
+  if (znajdzSloty(n, null, null, p || 0)) return true;
+  const zbedne = zbedneTansze(typ);
+  if (!zbedne.length) return false;
+  return !!znajdzSloty(n, null, S.bloki.filter(b => !zbedne.includes(b)), p || 0);
+}
+function przesadSieroty() {
+  let stracone = 0;
+  const maTor0 = new Set(S.bloki.filter(b => b.lane === 0).map(b => (b.p || 0) + '|' + b.c + ',' + b.r));
+  const sieroty = S.bloki.filter(b => b.lane > 0 && !maTor0.has((b.p || 0) + '|' + b.c + ',' + b.r));
+  for (const s of sieroty) {
+    const zajete = new Set(S.bloki.map(b => (b.p || 0) + '|' + b.c + ',' + b.r + ',' + b.lane));
+    let dom = null;
+    for (const t of S.bloki) {
+      if (t.lane !== 0 || (t.p || 0) !== (s.p || 0)) continue;
+      for (let lane = 1; lane <= S.bilokacja && !dom; lane++)
+        if (!zajete.has((t.p || 0) + '|' + t.c + ',' + t.r + ',' + lane)) dom = { c: t.c, r: t.r, lane };
+      if (dom) break;
+    }
+    if (dom) { s.c = dom.c; s.r = dom.r; s.lane = dom.lane; }
+    else { S.bloki.splice(S.bloki.indexOf(s), 1); stracone++; }
+  }
+  return stracone;
+}
+function dodajBlokiPrzemeblowaniem(n, typ, kreska, preferRows, p) {
+  if (dodajBloki(n, typ, kreska, preferRows, p)) return true;
+  const kopia = S.bloki.slice();
+  const oddane = [];
+  for (const k of zbedneTansze(typ)) {
+    S.bloki.splice(S.bloki.indexOf(k), 1);
+    oddane.push(k);
+    if (dodajBloki(n, typ, kreska, preferRows, p)) {
+      const stracone = przesadSieroty();
+      const ile = {};
+      for (const o of oddane) ile[TYPY[o.typ].et] = (ile[TYPY[o.typ].et] || 0) + 4;
+      log('Grafik przemeblował się sam: ' + TYPY[typ].et + ' wypchnął ' +
+        Object.entries(ile).map(([e, h]) => h + ' h (' + e + ')').join(', ') +
+        '. Najsłabsza stawka wypada pierwsza.' +
+        (stracone ? ' Bez oparcia wypadły też ' + stracone + ' tor(y) bilokacji.' : ''), true);
+      renderPlansza();
+      return true;
+    }
+  }
+  S.bloki = kopia;
+  renderPlansza();
+  return false;
+}
+/* kupno karty: najpierw przypisane miejsce (tory dla kupien ponad próg fizyczny),
+   potem kaskada awaryjna dla starych zapisów (fizycznie → przemeblowanie) */
+function dodajBlokiKarty(n, typ, kreska, preferRows, p, minLane) {
+  if (minLane > 0) {
+    const sloty = znajdzSloty(n, preferRows, null, p || 0, minLane);
+    if (sloty) {
+      for (const s of sloty) S.bloki.push({ c: s.c, r: s.r, lane: s.lane, typ, kreska: !!kreska, p: s.p });
+      renderPlansza();
+      return true;
+    }
+  }
+  return dodajBlokiPrzemeblowaniem(n, typ, kreska, preferRows, p);
+}
+function daSieZmiescicKarty(k) {
+  const n = k.slotyPotrzebne(), pl = k.slotyPlansza || 0, ml = k.minLane ? k.minLane() : 0;
+  if (ml > 0 && znajdzSloty(n, k.preferRows, null, pl, ml)) return true;
+  return daSieZmiescic(n, k.typBloku, pl);
+}
+/* CITO ma najwyższą stawkę — przy pełnym grafiku wypycha jeden najtańszy blok */
+function slotNaCito() {
+  const rzedy = [aktualnaKomorka().r, 0, 1, 5, 4, 2, 3];
+  let sloty = znajdzSloty(1, rzedy);
+  if (!sloty) {
+    const z = zbedneTansze('cito')[0];
+    if (z) {
+      S.bloki.splice(S.bloki.indexOf(z), 1);
+      przesadSieroty();
+      sloty = znajdzSloty(1, rzedy);
+      if (sloty) log('CITO wypchnęło z grafiku 4 h (' + TYPY[z.typ].et + ').');
+    }
+  }
+  return sloty;
+}
+
 const plansza = $('plansza');
 function renderPlansza() {
   for (const el of plansza.querySelectorAll('.blok')) el.remove();
@@ -708,7 +821,6 @@ function renderPlansza() {
   for (const b of tu) {
     const el = document.createElement('div');
     el.className = 'blok t-' + b.typ + (b.kreska && !S.rejestrDziala ? ' kreska' : '');
-    el.dataset.b = S.bloki.indexOf(b);
     el.textContent = b.typ === 'cito' ? 'CITO×' + (b.m || 3) : TYPY[b.typ].et;
     const szer = (w - 0.9) / L;
     el.style.left = 'calc(' + (b.c * w + 0.45 + b.lane * szer) + '% + 1px)';
@@ -875,33 +987,7 @@ przyjmijBtn.addEventListener('pointerdown', e => {
 });
 addEventListener('pointerup', () => przyjmijBtn.classList.remove('wcisniety'));
 przyjmijBtn.addEventListener('click', e => { if (e.detail === 0) klik(); });
-plansza.addEventListener('pointerdown', e => { if (trybWypowiedz) wypowiedzBlok(e); else klik(); });
-
-/* ── wypowiadanie godzin (uwalnia miejsce w grafiku — pełny grafik blokował zakupy) ── */
-let trybWypowiedz = false;
-$('wypowiedzBtn').addEventListener('click', () => {
-  trybWypowiedz = !trybWypowiedz;
-  $('wypowiedzBtn').classList.toggle('on', trybWypowiedz);
-  plansza.classList.toggle('wyp', trybWypowiedz);
-  if (trybWypowiedz && !S.odslony.wypowiedz) {
-    S.odslony.wypowiedz = true;
-    toast({ html: iko('pioro') + ' <b>Tryb wypowiadania.</b> Kliknij blok w grafiku, żeby oddać te godziny. Pieniądze za nie przestają płynąć — a zwolnione miejsce można sprzedać drożej.', ttl: 8000 });
-  }
-  log(trybWypowiedz ? 'Tryb wypowiadania włączony — kliknij blok, żeby go oddać.' : 'Tryb wypowiadania wyłączony.');
-});
-function wypowiedzBlok(e) {
-  const el = e.target.closest('.blok');
-  if (!el) return;
-  const b = S.bloki[+el.dataset.b];
-  if (!b) return;
-  /* tor 0 zabiera ze sobą nadbudowane tory bilokacji — wiszą na jego godzinach */
-  const usun = S.bloki.filter(x => x === b ||
-    (b.lane === 0 && x.lane > 0 && (x.p || 0) === (b.p || 0) && x.c === b.c && x.r === b.r));
-  S.bloki = S.bloki.filter(x => !usun.includes(x));
-  renderPlansza(); postep();
-  pFloat('wypowiedziane', b.c / 7 * 100 + 2, (b.r + 0.5) / 6 * 100, 'zly');
-  log('Wypowiedziane: ' + TYPY[b.typ].et + (usun.length > 1 ? ' (+' + (usun.length - 1) + ' tor. bilokacji)' : '') + '. Godziny wróciły do puli.');
-}
+plansza.addEventListener('pointerdown', () => klik());
 
 /* ── sklepy ── */
 function kosztG(c0, r, n) { return Math.round(c0 * Math.pow(r, n)); }
@@ -934,36 +1020,49 @@ const PRZEDMIOTY = [
     efekt: () => '+8 h/tydz. po 110 zł/h · odsypiasz na dyżurze (nie męczy)',
     koszt: () => kosztG(300, 1.35, S.gen.dyzur),
     ile: () => S.gen.dyzur, max: () => S.gen.dyzur >= 8,
-    slotyPotrzebne: () => 2, preferRows: [0, 1, 5],
-    wymog: () => S.tier >= 1 ? null : 'wymaga: Rezydent',
-    kup() { S.gen.dyzur++; dodajBloki(2, 'dyzur', S.b2b, [0, 1, 5]); },
+    slotyPotrzebne: () => 2, preferRows: [0, 1, 5], typBloku: 'dyzur', minLane: minLaneDyzur,
+    wymog() {
+      if (S.tier < 1) return 'wymaga: Rezydent';
+      if (S.gen.dyzur >= limitDyzur()) return coDalej('dyzur');
+      return null;
+    },
+    kup() { const ml = minLaneDyzur(); S.gen.dyzur++; dodajBlokiKarty(2, 'dyzur', S.b2b, [0, 1, 5], 0, ml); },
     link: '/mechanizmy/dyzury-i-gotowosc' },
   { id: 'poradnia', panel: 'pPraca', kat: 'kat-praca', ikona: 'poradnia', nazwa: 'Poradnia (2 bloki)',
     flavor: 'NFZ do 18:00. Trzydziestu pacjentów na cztery godziny. To TU się człowiek męczy, nie na dyżurze.',
     efekt: () => '+8 h/tydz. po 130 zł/h · taśma pacjentów — męczy',
     koszt: () => kosztG(6000, 1.18, S.gen.poradnia),
     ile: () => S.gen.poradnia, max: () => S.gen.poradnia >= 6,
-    slotyPotrzebne: () => 2, preferRows: [4, 5, 3],
-    wymog: () => S.tier >= 2 ? null : 'wymaga: Specjalista',
-    kup() { S.gen.poradnia++; dodajBloki(2, 'poradnia', S.b2b, [4, 5, 3]); },
+    slotyPotrzebne: () => 2, preferRows: [4, 5, 3], typBloku: 'poradnia', minLane: minLanePoradnia,
+    wymog() {
+      if (S.tier < 2) return 'wymaga: Specjalista';
+      if (S.gen.poradnia >= limitPoradnia()) return coDalej('poradnia');
+      return null;
+    },
+    kup() { const ml = minLanePoradnia(); S.gen.poradnia++; dodajBlokiKarty(2, 'poradnia', S.b2b, [4, 5, 3], 0, ml); },
     link: '/dane/kolejki' },
   { id: 'optout', panel: 'pPraca', kat: 'kat-praca', ikona: 'pioro', nazwa: 'Klauzula opt-out',
     flavor: 'Jeden podpis znosi limit 48 godzin tygodniowo. Legalnie. Wszyscy podpisują.',
     efekt: () => 'limit godzin: 48 → 78 h/tydz.', koszt: () => 1200, max: () => S.optout,
     wymog: () => S.tier >= 1 ? null : 'wymaga: Rezydent',
-    kup() { S.optout = true; S.hCap = 78; log('Opt-out podpisany. Doba nadal ma 24 godziny. Na razie.', true); },
+    kup() { S.optout = true; S.hCap = Math.max(S.hCap, 78); log('Opt-out podpisany. Doba nadal ma 24 godziny. Na razie.', true); },
     link: '/mechanizmy/wieloetatowosc' },
   { id: 'obok', panel: 'pPraca', kat: 'kat-praca', ikona: 'walizka', nazwa: 'Kontrakt w powiecie obok',
     flavor: '45 minut autem. Osobna placówka, osobny grafik — tamten szpital zna tylko swój.',
     efekt: () => '+24 h/tydz. po ' + Math.round(220 * S.mnoznikObok) + ' zł/h · druga zakładka grafiku' + (S.panamerka ? ' · dojazd −25%' : ''),
     koszt: () => Math.round(kosztG(30000, 1.3, S.gen.obok) * (S.panamerka ? 0.75 : 1)),
-    ile: () => S.gen.obok, max: () => S.gen.obok >= 4,
-    slotyPotrzebne: () => 6, slotyPlansza: 1,
-    wymog: () => S.b2b ? null : 'wymaga: własna firma + kontrakt (B2B)',
+    ile: () => S.gen.obok, max: () => S.gen.obok >= 3,
+    slotyPotrzebne: () => 6, slotyPlansza: 1, typBloku: 'obok', minLane: minLaneObok,
+    wymog() {
+      if (!S.b2b) return 'wymaga: własna firma + kontrakt (B2B)';
+      if (S.gen.obok >= limitObok()) return coDalej('obok');
+      return null;
+    },
     kup() {
+      const ml = minLaneObok();
       S.gen.obok++;
       if (S.plansze === 1) { S.plansze = 2; S.aktywnaPlansza = 1; achievement('walizkowiec'); log('Druga placówka. Nad grafikiem pojawiła się zakładka „Powiat obok".', true); }
-      dodajBloki(6, 'obok', true, null, 1);
+      dodajBlokiKarty(6, 'obok', true, null, 1, ml);
       if (S.gen.obok === 2) achievement('trzyPieczatki');
     },
     link: '/mechanizmy/wieloetatowosc' },
@@ -994,7 +1093,7 @@ const PRZEDMIOTY = [
     efekt: () => 'limit godzin: 78 → 120 h/tydz.',
     koszt: () => 12000, max: () => S.grafik,
     wymog: () => S.b2b ? null : 'wymaga: własna firma + kontrakt (B2B)',
-    kup() { S.grafik = true; S.hCap = 120; S.ryzyko += 15; log('Limit godzin przestał istnieć. Formalnie nigdy nie istniał.', true); },
+    kup() { S.grafik = true; S.hCap = Math.max(S.hCap, 120); S.ryzyko += 15; log('Limit godzin przestał istnieć. Formalnie nigdy nie istniał.', true); },
     link: '/dane/rekordy' },
   { id: 'bilokacja', panel: 'pSystem', kat: 'kat-system', ikona: 'bilokacja',
     nazwa: () => 'Kurs bilokacji — ' + (S.bilokacja === 0 ? 'I' : 'II') + ' stopień',
@@ -1055,7 +1154,7 @@ function budujSklepy() {
       const k = p.koszt();
       if (S.portfel < k || (p.max && p.max())) return;
       if (p.wymog && p.wymog()) return;
-      if (p.slotyPotrzebne && p.slotyPotrzebne() > 0 && !znajdzSloty(p.slotyPotrzebne(), p.preferRows, null, p.slotyPlansza || 0)) return;
+      if (p.slotyPotrzebne && p.slotyPotrzebne() > 0 && !daSieZmiescicKarty(p)) return;
       S.portfel -= k;
       p.kup();
       monetyZ(btn, 40, 2.3, true);
@@ -1083,7 +1182,7 @@ function renderSklepy() {
     const maxed = p.max && p.max();
     const wymog = p.wymog ? p.wymog() : null;
     const brakSlotow = !maxed && !wymog && p.slotyPotrzebne && p.slotyPotrzebne() > 0
-      && !znajdzSloty(p.slotyPotrzebne(), p.preferRows, null, p.slotyPlansza || 0);
+      && !daSieZmiescicKarty(p);
     const v = {
       h3: typeof p.nazwa === 'function' ? p.nazwa() : p.nazwa,
       flavor: typeof p.flavor === 'function' ? p.flavor() : p.flavor,
@@ -1147,7 +1246,7 @@ function godzinyModal() {
     : S.bilokacja < 2 ? '<b>Bilokacja</b> (System) dzieli komórki na tory — te same godziny, kolejne wypłaty, zero godzin fizycznych.'
     : 'Limity to już tylko wspomnienie.';
   const wypowiedzHint = fiz > 0
-    ? '<p style="text-align:left">Grafik pełny? Przycisk <b>„wypowiedz"</b> przy pasku godzin włącza tryb, w którym klikasz blok, żeby oddać te godziny — miejsce zwalnia się pod lepiej płatną pracę.</p>'
+    ? '<p style="text-align:left">Grafikiem zarządza gra: gdy kupujesz lepiej płatną pracę przy pełnym grafiku, <b>najtańsze godziny same wypadają</b>. Etat zostaje — ktoś musi płacić ZUS.</p>'
     : '';
   modal(
     '<div class="eyebrow">Twój tydzień</div><h2>Godziny</h2>' +
@@ -1221,9 +1320,11 @@ function przejscieB2B() {
   S.b2b = true; S.tier = 3; S.ryzyko += 5;
   /* kontrakt wchodzi w tyle bloków, ile się zmieści (ścięty etat zwalnia 8 komórek) —
      twardy wymóg 10 slotów zakleszczał grę przy pełnym grafiku */
-  let nKontrakt = 10;
-  while (nKontrakt > 0 && !dodajBloki(nKontrakt, 'kontrakt', true, [2, 3, 4, 1, 0, 5])) nKontrakt--;
-  if (nKontrakt < 10) log('Grafik pęka w szwach — kontrakt wciśnięty w ' + nKontrakt + ' bloków. Resztę godzin dopisze papier.', true);
+  /* wymiana zero-netto: kontrakt (8 bloków) wchodzi dokładnie w miejsce
+     ściętego etatu (10→2) — B2B nigdy nie potrzebuje dodatkowych komórek */
+  let nKontrakt = 8;
+  while (nKontrakt > 0 && !dodajBlokiPrzemeblowaniem(nKontrakt, 'kontrakt', true, [2, 3, 4, 1, 0, 5])) nKontrakt--;
+  if (nKontrakt < 8) log('Grafik pęka w szwach — kontrakt wciśnięty w ' + nKontrakt + ' bloków. Resztę godzin dopisze papier.', true);
   renderPlansza();
   $('okoBtn').classList.remove('hide');
   $('wrap').classList.add('trzesie');
@@ -1344,7 +1445,7 @@ const DECYZJE = [
         ttl: 12000,
         opcje: [
           { label: 'ODBIERZ (×' + m + ')', kons: 'złoty blok CITO×' + m + ' w grafiku (znika po odegraniu)', fn() {
-            const sloty = znajdzSloty(1, [aktualnaKomorka().r, 0, 1, 5, 4, 2, 3]);
+            const sloty = slotNaCito();
             if (sloty) { const s = sloty[0]; S.bloki.push({ c: s.c, r: s.r, lane: s.lane, typ: 'cito', kreska: S.b2b, cito: true, m, p: s.p }); renderPlansza(); return 'blok CITO ×' + m + ' w grafiku'; }
             return 'grafik pełny — dyżur przepadł';
           } },
@@ -1408,7 +1509,7 @@ const DECYZJE = [
       opcje: [
         { label: 'Weź dyżur', kons: 'złoty blok CITO×2 + energia −10', fn() {
           S.energia = Math.max(0, S.energia - 10);
-          const sloty = znajdzSloty(1, [0, 1, 5, 4, 2, 3]);
+          const sloty = slotNaCito();
           if (sloty) { const s = sloty[0]; S.bloki.push({ c: s.c, r: s.r, lane: s.lane, typ: 'cito', kreska: S.b2b, cito: true, m: 2, p: s.p }); renderPlansza(); return 'blok CITO ×2 w grafiku, młody zapamięta'; }
           return 'grafik pełny — młody radzi sobie sam';
         } },
@@ -1579,6 +1680,7 @@ setInterval(() => {
     const cita = S.bloki.filter(b => b.cito && b.c === pc && b.r === pr);
     if (cita.length) {
       S.bloki = S.bloki.filter(b => !(b.cito && b.c === pc && b.r === pr));
+      przesadSieroty();   // pas bezpieczeństwa: stare zapisy mogły ustawić tor na CITO
       renderPlansza();
       log('Dyżur na cito odbyty. Blok znika z grafiku. Wypłata nie.');
     }
@@ -1874,7 +1976,7 @@ if (S.kliki > 0 || S.bloki.length > 0) {
 }
 render();
 
-window.__gra = { S, T, TYPY, DECYZJE, ACHV, znajdzSloty, dodajBloki, hFizyczne, hRozliczane, renderPlansza, render, postep, decyzja, toast, achievement, rozliczOffline, finalRejestru, kosztBlokady };
+window.__gra = { S, T, TYPY, DECYZJE, ACHV, PRZEDMIOTY, znajdzSloty, dodajBloki, dodajBlokiPrzemeblowaniem, dodajBlokiKarty, daSieZmiescic, daSieZmiescicKarty, zbedneTansze, slotNaCito, limitDyzur, limitPoradnia, limitObok, hFizyczne, hRozliczane, renderPlansza, render, postep, decyzja, toast, achievement, rozliczOffline, finalRejestru, kosztBlokady };
 </script>
 </div>
 

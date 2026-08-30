@@ -1,0 +1,683 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import dane from '../../data/politycy.json';
+import { SZABLONY_LISTA } from '../../lib/mailing';
+
+// Płeć wyliczana z imienia (polska reguła „-a" + krótka lista wyjątków) — służy
+// wyłącznie do zwrotu grzecznościowego i tytułu, nigdzie jej nie zapisujemy.
+const MESKIE_NA_A = new Set(['kuba', 'barnaba', 'bonawentura', 'kosma']);
+const INSTYTUCJE = new Set(['urzad', 'sejm-kluby', 'partia-biuro']);
+
+// Szukajka musi działać bez ogonków — „malecka" ma znaleźć „Małecka-Libera".
+// `ł` nie rozkłada się przez NFD (to osobna litera, nie l z diakrytem), więc
+// wymieniamy je ręcznie przed normalizacją.
+function bezOgonkow(t: string) {
+  return t
+    .replace(/ł/g, 'l')
+    .replace(/Ł/g, 'L')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function kobieta(osoba: string) {
+  const imie = osoba.split(' ')[0].toLowerCase();
+  return imie.endsWith('a') && !MESKIE_NA_A.has(imie);
+}
+
+function zwrotDla(o: { osoba: string; kat: string; izba: string }) {
+  if (INSTYTUCJE.has(o.kat)) return 'Szanowni Państwo';
+  const k = kobieta(o.osoba);
+  if (o.izba === 'Sejm') return k ? 'Szanowna Pani Poseł' : 'Szanowny Panie Pośle';
+  if (o.izba === 'Senat') return k ? 'Szanowna Pani Senator' : 'Szanowny Panie Senatorze';
+  return k ? 'Szanowna Pani' : 'Szanowny Panie';
+}
+
+// „Do kogo piszemy" — tytuł adresata. W wierszu listy ma stać TO, a nie
+// kancelaryjne „kontakt / biuro ministra".
+function tytulDla(o: { osoba: string; kat: string; izba: string; funkcja: string }) {
+  if (o.kat === 'sejm-kluby') return 'Klub parlamentarny';
+  if (o.kat === 'partia-biuro') return 'Biuro partii';
+  if (o.kat === 'urzad') {
+    if (/^Ministerstwo/.test(o.osoba)) return 'Ministerstwo';
+    if (/^Kancelaria/.test(o.osoba)) return 'Kancelaria';
+    if (/^Rzecznik/.test(o.osoba)) return 'Rzecznik';
+    return 'Instytucja';
+  }
+  const k = kobieta(o.osoba);
+  if (o.izba === 'Sejm') return k ? 'Posłanka' : 'Poseł';
+  if (o.izba === 'Senat') return k ? 'Senatorka' : 'Senator';
+  return 'Adresat';
+}
+
+// Funkcja bywa albo realną rolą („Przewodnicząca Komisji Zdrowia" — to chcemy
+// widzieć), albo nazwą skrzynki („kontakt", „kancelaria" — to szum).
+const FUNKCJA_ISTOTNA =
+  /przewodnicz|zastępc|marszał|minister|prezes|rzecznik|sekretarz|lider|szef|członek|wiceprem/i;
+
+// Który z pięciu szablonów dostaje adresat. Decyduje INSTRUMENT, jakim dysponuje,
+// a nie ranga — i nigdy partia (różnicowanie po partii ustawiłoby nas jako gracza
+// politycznego). Mapowanie jest mechaniczne z `kat`, poza organami kontroli, które
+// trzeba wskazać z nazwy.
+const ORGANY_KONTROLI = new Set([
+  'Rzecznik Praw Pacjenta',
+  'Najwyższa Izba Kontroli',
+  // Nie jako kontroler, tylko jako gospodarz prawa karnego: art. 23 ustawy
+  // o dostępie do informacji publicznej czyni nieudostępnienie informacji
+  // przestępstwem, a 472 milczące podmioty to pytanie o ściganie.
+  'Ministerstwo Sprawiedliwości',
+]);
+
+
+function szablonDla(o: { osoba: string; kat: string }) {
+  if (ORGANY_KONTROLI.has(o.osoba)) return 'kontrola';
+  if (o.kat === 'urzad') return 'resort';
+  if (o.kat.endsWith('komisja-zdrowia')) return 'komisja';
+  if (['sejm-kluby', 'partia-biuro', 'sejm-liderzy'].includes(o.kat)) return 'klub';
+  return 'parlament'; // prezydia obu izb + pozostali senatorowie
+}
+
+// Blok adresowy pisma. Nazwisko stoi w MIANOWNIKU — dzięki temu personalizujemy po
+// nazwisku bez odmiany, której w polskim nie da się zautomatyzować („Panie Pośle
+// Nowaku" kontra „Nowak" to wpadka, po której cała wysyłka wygląda na mail-merge).
+function blokDla(o: {
+  osoba: string;
+  kat: string;
+  izba: string;
+  tytul: string;
+  funkcjaTekst: string;
+}) {
+  if (INSTYTUCJE.has(o.kat)) return o.osoba;
+  const linie = [kobieta(o.osoba) ? 'Pani' : 'Pan', o.osoba];
+  // Linia funkcji: realna rola, a gdy jej nie ma — sam tytuł. Bez „Senator
+  // Rzeczypospolitej Polskiej" nad „Senat Rzeczypospolitej Polskiej", bo to się dubluje.
+  const funkcja = o.funkcjaTekst || o.tytul;
+  linie.push(funkcja.charAt(0).toUpperCase() + funkcja.slice(1));
+  if (o.izba === 'Sejm') linie.push('Sejm Rzeczypospolitej Polskiej');
+  if (o.izba === 'Senat') linie.push('Senat Rzeczypospolitej Polskiej');
+  return linie.join('\n');
+}
+
+const osoby = dane.osoby.map((o) => {
+  const tytul = tytulDla(o);
+  const funkcjaIstotna = FUNKCJA_ISTOTNA.test(o.funkcja) ? o.funkcja : '';
+  const funkcjaTekst = funkcjaIstotna
+    .replace(/\s*\([^)]*\)/g, '')
+    .replace(/\bKZ\b/g, 'Komisji Zdrowia')
+    .trim();
+  return {
+    ...o,
+    rola: szablonDla(o),
+    zwrot: zwrotDla(o),
+    pan: kobieta(o.osoba) ? 'Pani' : 'Pan',
+    panDopelniacz: kobieta(o.osoba) ? 'Pani' : 'Pana',
+    // Interpelacja to instrument WYŁĄCZNIE sejmowy. Senator składa oświadczenie
+    // senatorskie — pomylenie tego u senatora natychmiast pokazuje, że nadawca
+    // nie wie, jak działa parlament.
+    instrument: o.izba === 'Senat' ? 'oświadczeniu senatorskim' : 'interpelacji',
+    izbaNarz: o.izba === 'Senat' ? 'Senatem' : 'Sejmem',
+    tytul,
+    blok: blokDla({ ...o, tytul, funkcjaTekst }),
+    // Wersja funkcji do wklejenia w zdanie listu: bez skrótów i nawiasowych dat
+    // („zastępca przewodniczącej KZ (od 18.11.2025)" źle brzmi w treści).
+    funkcjaTekst,
+    // Druga linia wiersza: kim jest adresat (+ realna funkcja, jeśli coś wnosi).
+    // Gdy nazwa już zaczyna się od tytułu („Ministerstwo Zdrowia" + „Ministerstwo"),
+    // powtarzanie go jest szumem — wtedy pokazujemy samą funkcję skrzynki.
+    podpis: o.osoba.startsWith(tytul)
+      ? o.funkcja
+      : funkcjaIstotna
+        ? `${tytul} · ${funkcjaIstotna}`
+        : tytul,
+  };
+});
+
+const partie = [...new Set(osoby.map((o) => o.grupa))]
+  .filter((g) => g !== 'urząd')
+  .sort((a, b) => a.localeCompare(b, 'pl'));
+const szablony = SZABLONY_LISTA;
+
+// Adresy nie mogą stać w HTML otwartym tekstem — `nazwa@domena.pl` wyłapuje z niego
+// każdy prymitywny scraper (a to jedyny rodzaj, który realnie zbiera adresy hurtem).
+// Kodujemy base64 i składamy dopiero w przeglądarce, przy kliknięciu. To nie jest
+// szyfr — bot uruchamiający JS i tak je zdobędzie — ale wycina masowe zbieranie
+// regexem po surowym HTML-u. W DOM adres pojawia się wyłącznie na żądanie
+// użytkownika (po kliknięciu „Kopiuj adres"), nigdy przy wczytaniu strony.
+const osobyKlient = osoby.map(({ email, zrodlo, ...reszta }) => ({
+  ...reszta,
+  zrodlo,
+  e: Buffer.from(email, 'utf8').toString('base64'),
+}));
+---
+
+<BaseLayout
+  title="Napisz do polityka — narzędzie"
+  description="Wybierz adresata, sprawdź gotową treść, wyślij ze swojej skrzynki. Adresy pochodzą z oficjalnych źródeł."
+  noindex={true}
+>
+  <div class="narzedzie">
+    <header class="naglowek">
+      <p class="eyebrow">Działaj</p>
+      <h1>Napisz do polityka</h1>
+      <ol class="kroki">
+        <li>
+          <b>Wybierz, do kogo napisać</b>
+          <span>Lista po lewej. Szukaj po nazwisku, funkcji, izbie albo partii.</span>
+        </li>
+        <li>
+          <b>Podpisz się</b>
+          <span>Imię, nazwisko i miejscowość pod treścią listu. Wpisujesz raz.</span>
+        </li>
+        <li>
+          <b>Wyślij ze swojej skrzynki</b>
+          <span>
+            „Wyślij" otwiera gotową wiadomość w Twoim programie pocztowym. Nie masz
+            takiego? Skopiuj temat, treść i adres, i wklej u siebie.
+          </span>
+        </li>
+      </ol>
+
+      <details class="jak">
+        <summary>Co warto wiedzieć</summary>
+        <ul>
+          <li>Treść dobiera się sama do funkcji adresata — możesz ją zmienić przed wysyłką i warto, własne zdanie waży więcej niż kopia.</li>
+          <li>Ta strona nie wysyła niczego i nie zapisuje u siebie ani Twoich danych, ani tego, do kogo piszesz. Wysyłasz Ty, ze swojego konta.</li>
+          <li>Odhaczone wiersze pamięta ta przeglądarka — możesz wrócić i dokończyć.</li>
+        </ul>
+      </details>
+    </header>
+
+    <div class="plansza">
+      <!-- LEWA: adresaci -->
+      <aside class="lista" aria-label="Lista adresatów">
+        <input
+          type="search"
+          id="q"
+          placeholder="Szukaj: nazwisko, funkcja, partia…"
+          aria-label="Szukaj adresata"
+          autocomplete="off"
+        />
+
+        <div class="filtry">
+          <select id="partia" aria-label="Filtr partii">
+            <option value="">każda partia</option>
+            {partie.map((p) => <option value={p}>{p}</option>)}
+          </select>
+        </div>
+
+        <ol class="osoby" id="osoby">
+          {
+            osoby.map((o, idx) => (
+              <li
+                data-izba={o.izba}
+                data-grupa={o.grupa}
+                data-szukaj={bezOgonkow(`${o.osoba} ${o.podpis} ${o.grupa} ${o.izba}`)}
+              >
+                <input
+                  type="checkbox"
+                  class="osoba-chk"
+                  data-idx={idx}
+                  aria-label={`Oznacz jako wysłane: ${o.osoba}`}
+                  title="Wysłane"
+                />
+                <button type="button" class="osoba" data-idx={idx}>
+                  <span class="osoba-nazwa">{o.osoba}</span>
+                  <span class="osoba-meta">
+                    {o.podpis}
+                    {o.grupa !== 'urząd' && <> · {o.grupa}</>}
+                  </span>
+                </button>
+              </li>
+            ))
+          }
+        </ol>
+
+        <p class="lista-stopka">
+          <span id="licznik"></span> ·
+          <button type="button" class="link-btn" id="ukryj-wyslane" aria-pressed="false">ukryj wysłane</button>
+        </p>
+      </aside>
+
+      <!-- PRAWA: list -->
+      <section class="list" aria-label="Treść wiadomości">
+        <header class="adresat">
+          <div>
+            <h2 id="a-osoba">—</h2>
+            <p id="a-funkcja" class="adresat-meta"></p>
+          </div>
+          <p class="adresat-mail">
+            <a id="a-zrodlo" href="#" target="_blank" rel="noopener noreferrer">źródło adresu ↗</a>
+          </p>
+        </header>
+
+        <div class="temat-rzad">
+          <input type="text" id="temat" aria-label="Temat wiadomości" />
+          <label class="szablon">
+            szablon
+            <select id="szablon">
+              {szablony.map((s) => <option value={s.id} title={s.komu}>{s.nazwa}</option>)}
+            </select>
+          </label>
+        </div>
+
+        <textarea id="tresc" spellcheck="true" aria-label="Treść wiadomości"></textarea>
+
+        <div class="podpis-rzad">
+          <span class="podpis-label">Podpisujesz się jako</span>
+          <input type="text" id="f-imie" placeholder="Imię" autocomplete="given-name" aria-label="Imię" />
+          <input type="text" id="f-nazwisko" placeholder="Nazwisko" autocomplete="family-name" aria-label="Nazwisko" />
+          <input type="text" id="f-miasto" placeholder="Miejscowość" autocomplete="address-level2" aria-label="Miejscowość" />
+        </div>
+
+        <div class="akcje">
+          <a class="btn btn-primary" id="wyslij" href="#">Wyślij</a>
+          <button type="button" class="link-btn" id="kopiuj">Kopiuj treść</button>
+          <button type="button" class="link-btn" id="kopiuj-temat">Kopiuj temat</button>
+          <button type="button" class="link-btn" id="kopiuj-mail">Kopiuj adres</button>
+          <span class="skroty">
+            <kbd>↑</kbd><kbd>↓</kbd> wybór · <kbd>Enter</kbd> wyślij · <kbd>⌘</kbd><kbd>↵</kbd> kopiuj
+          </span>
+        </div>
+
+        <p class="drobne">
+          Adresy pochodzą z oficjalnych źródeł (API i profile Sejmu, profile Senatu, BIP),
+          stan na {dane.stan_na}. To jawne, służbowe kanały kontaktu z osobami pełniącymi
+          funkcje publiczne. Pisz rzeczowo — to zwykły list obywatela.
+        </p>
+      </section>
+    </div>
+  </div>
+
+  <script define:vars={{ osoby: osobyKlient, szablony }}>
+    const $ = (s) => document.querySelector(s);
+    const KLUCZ_NADAWCA = 'zl-nadawca';
+    const KLUCZ_WYSLANE = 'zl-wyslane';
+
+    // To samo składanie ogonków, co przy budowaniu `data-szukaj` — inaczej zapytanie
+    // z diakrytami nie trafiłoby w pozbawiony ich indeks.
+    const bezOgonkow = (t) =>
+      t
+        .replace(/ł/g, 'l')
+        .replace(/Ł/g, 'L')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+    const wiersze = [...document.querySelectorAll('#osoby > li')];
+    const przyciski = [...document.querySelectorAll('.osoba')];
+    const checkboxy = [...document.querySelectorAll('.osoba-chk')];
+    const szablonyMapa = Object.fromEntries(szablony.map((s) => [s.id, s]));
+
+    const adres = (o) => atob(o.e);
+
+    let wybrany = 0;
+    let recznie = false; // czy użytkownik ruszył treść ręcznie
+    let szablonWymuszony = null;
+
+    const czytaj = (k, d) => {
+      try {
+        return JSON.parse(localStorage.getItem(k)) ?? d;
+      } catch {
+        return d;
+      }
+    };
+    const zapisz = (k, v) => {
+      try {
+        localStorage.setItem(k, JSON.stringify(v));
+      } catch {}
+    };
+
+    let nadawca = czytaj(KLUCZ_NADAWCA, { imie: '', nazwisko: '', miasto: '' });
+    let wyslane = new Set(czytaj(KLUCZ_WYSLANE, []));
+
+    $('#f-imie').value = nadawca.imie;
+    $('#f-nazwisko').value = nadawca.nazwisko;
+    $('#f-miasto').value = nadawca.miasto;
+
+    for (const id of ['imie', 'nazwisko', 'miasto']) {
+      $('#f-' + id).addEventListener('input', (e) => {
+        nadawca[id] = e.target.value.trim();
+        zapisz(KLUCZ_NADAWCA, nadawca);
+        if (!recznie) render();
+      });
+    }
+
+    function podstaw(tekst, o) {
+      return tekst
+        .replaceAll('{blok}', o.blok)
+        .replaceAll('{zwrot}', o.zwrot)
+        .replaceAll('{pan}', o.pan)
+        .replaceAll('{pan_dopelniacz}', o.panDopelniacz)
+        .replaceAll('{instrument}', o.instrument)
+        .replaceAll('{izba_narz}', o.izbaNarz)
+        .replaceAll('{osoba}', o.osoba)
+        .replaceAll('{funkcja}', o.funkcjaTekst || o.tytul.toLowerCase())
+        .replaceAll('{grupa}', o.grupa)
+        .replaceAll('{izba}', o.izba === 'Senat' ? 'Senatu' : 'Sejmu')
+        .replaceAll('{imie}', nadawca.imie || '[Imię]')
+        .replaceAll('{nazwisko}', nadawca.nazwisko || '[Nazwisko]')
+        .replaceAll('{miasto}', nadawca.miasto || '[Miejscowość]');
+    }
+
+    function render() {
+      const o = osoby[wybrany];
+      if (!o) return;
+      const sz = szablonyMapa[szablonWymuszony || o.rola];
+
+      $('#a-osoba').textContent = o.osoba;
+      $('#a-funkcja').textContent = `${o.podpis}${o.grupa === 'urząd' ? '' : ' · ' + o.grupa}`;
+      $('#a-zrodlo').href = o.zrodlo;
+      $('#szablon').value = sz.id;
+
+      if (!recznie) {
+        $('#temat').value = podstaw(sz.temat, o);
+        $('#tresc').value = podstaw(sz.tresc, o);
+      }
+
+      wiersze.forEach((li, i) => li.classList.toggle('wybrana', i === wybrany));
+      wiersze[wybrany].scrollIntoView({ block: 'nearest' });
+    }
+
+    function odswiezWyslane() {
+      wiersze.forEach((li, i) => {
+        const jest = wyslane.has(osoby[i].id);
+        li.classList.toggle('wyslana', jest);
+        checkboxy[i].checked = jest;
+      });
+      $('#licznik').textContent = `wysłane: ${wyslane.size} z ${osoby.length}`;
+      filtruj();
+    }
+
+    const widoczne = () => wiersze.filter((li) => !li.hidden);
+
+    function wybierz(i) {
+      wybrany = i;
+      recznie = false;
+      szablonWymuszony = null;
+      render();
+    }
+
+    function dalej(krok) {
+      const w = widoczne();
+      if (!w.length) return;
+      const teraz = w.indexOf(wiersze[wybrany]);
+      const cel = w[Math.min(Math.max(teraz + krok, 0), w.length - 1)] ?? w[0];
+      wybierz(wiersze.indexOf(cel));
+    }
+
+    function ustawWyslane(i, jest) {
+      const id = osoby[i].id;
+      if (jest) wyslane.add(id);
+      else wyslane.delete(id);
+      zapisz(KLUCZ_WYSLANE, [...wyslane]);
+      odswiezWyslane();
+    }
+
+    // — filtrowanie —
+    // Izby i partii nie filtrujemy osobnymi przyciskami: szukajka przeszukuje też
+    // `podpis`, partię i izbę, więc chipy tylko dublowały to samo.
+    function filtruj() {
+      const q = bezOgonkow($('#q').value.trim());
+      const partia = $('#partia').value;
+      const ukryj = $('#ukryj-wyslane').getAttribute('aria-pressed') === 'true';
+      let n = 0;
+      wiersze.forEach((li, i) => {
+        const ok =
+          (!q || li.dataset.szukaj.includes(q)) &&
+          (!partia || li.dataset.grupa === partia) &&
+          (!ukryj || !wyslane.has(osoby[i].id));
+        li.hidden = !ok;
+        if (ok) n++;
+      });
+      $('#osoby').classList.toggle('pusto', n === 0);
+      // Selekcja zawsze na czymś widocznym — „wpisz i Enter" ma działać od razu.
+      if (n && wiersze[wybrany].hidden) wybierz(wiersze.indexOf(widoczne()[0]));
+    }
+
+    $('#q').addEventListener('input', filtruj);
+    $('#partia').addEventListener('change', filtruj);
+    $('#ukryj-wyslane').addEventListener('click', (e) => {
+      const teraz = e.target.getAttribute('aria-pressed') === 'true';
+      e.target.setAttribute('aria-pressed', String(!teraz));
+      e.target.textContent = teraz ? 'ukryj wysłane' : 'pokaż wszystkie';
+      filtruj();
+    });
+    przyciski.forEach((b) => b.addEventListener('click', () => wybierz(+b.dataset.idx)));
+    checkboxy.forEach((c) =>
+      c.addEventListener('change', () => ustawWyslane(+c.dataset.idx, c.checked)),
+    );
+
+    $('#szablon').addEventListener('change', (e) => {
+      szablonWymuszony = e.target.value;
+      recznie = false;
+      render();
+    });
+    $('#tresc').addEventListener('input', () => {
+      recznie = true;
+      render();
+    });
+    $('#temat').addEventListener('input', () => {
+      recznie = true;
+      render();
+    });
+
+    // Potwierdzenie pokazujemy NIEZALEŻNIE od tego, czy schowek zadziałał — gdy
+    // przeglądarka odmówi zapisu, użytkownik i tak zobaczy adres i skopiuje ręcznie.
+    async function kopiuj(tekst, btn, etykieta, czas = 1200) {
+      let ok = true;
+      try {
+        await navigator.clipboard.writeText(tekst);
+      } catch {
+        ok = false;
+      }
+      const stara = btn.dataset.etykieta ?? btn.textContent;
+      btn.dataset.etykieta = stara;
+      btn.textContent = ok ? etykieta : tekst;
+      clearTimeout(btn._t);
+      btn._t = setTimeout(() => (btn.textContent = stara), czas);
+    }
+
+    $('#kopiuj').addEventListener('click', (e) =>
+      kopiuj(`${$('#temat').value}\n\n${$('#tresc').value}`, e.target, 'Skopiowane ✓'),
+    );
+    $('#kopiuj-temat').addEventListener('click', (e) =>
+      kopiuj($('#temat').value, e.target, 'Skopiowane ✓'),
+    );
+    // Adres pokazujemy dopiero tutaj — na życzenie, żeby było widać, dokąd idzie list.
+    $('#kopiuj-mail').addEventListener('click', (e) =>
+      kopiuj(adres(osoby[wybrany]), e.target, `✓ ${adres(osoby[wybrany])}`, 2500),
+    );
+    // `href` budujemy dopiero w momencie kliknięcia — w HTML nie ma żadnego `mailto:`,
+    // a to drugi (obok tekstu) cel scraperów adresów.
+    $('#wyslij').addEventListener('click', (e) => {
+      e.preventDefault();
+      const o = osoby[wybrany];
+      window.location.href =
+        'mailto:' +
+        adres(o) +
+        '?subject=' +
+        encodeURIComponent($('#temat').value) +
+        '&body=' +
+        encodeURIComponent($('#tresc').value);
+      ustawWyslane(wybrany, true);
+      setTimeout(() => dalej(1), 400);
+    });
+    // — klawiatura —
+    document.addEventListener('keydown', (e) => {
+      const wPolu =
+        ['TEXTAREA', 'SELECT'].includes(e.target.tagName) ||
+        (e.target.tagName === 'INPUT' && e.target.type === 'text');
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        $('#kopiuj').click();
+        return;
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        if (wPolu) return;
+        e.preventDefault();
+        dalej(e.key === 'ArrowDown' ? 1 : -1);
+      }
+      if (e.key === 'Enter' && (e.target === $('#q') || !wPolu)) {
+        e.preventDefault();
+        $('#wyslij').click();
+      }
+      if (e.key === 'Escape') $('#q').focus();
+      // Zwykła litera poza polem = zacznij szukać, bez sięgania po myszkę.
+      if (!wPolu && !e.metaKey && !e.ctrlKey && !e.altKey && /^[\p{L}\d]$/u.test(e.key)) {
+        $('#q').focus();
+      }
+    });
+
+    odswiezWyslane();
+    wybierz(0);
+  </script>
+
+  <style>
+    /* Zasada tej strony: JEDNA krawędź (linia między kolumnami) i JEDEN akcent
+       (niebieski — tylko „Wyślij" i zaznaczony wiersz). Reszta trzyma się na
+       odstępach i kontraście tekstu, nie na ramkach i tłach. */
+    .narzedzie { width: 100%; max-width: 1560px; margin: 0 auto; padding: 2.25rem 1.5rem 4rem; }
+
+    .naglowek { margin-bottom: 1.75rem; }
+    .naglowek h1 { margin: 0.25rem 0 0.5rem; font-size: 2rem; }
+    .kroki {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.25rem 2rem; margin: 0; padding: 0; list-style: none;
+      counter-reset: krok; max-width: 1100px;
+    }
+    .kroki li {
+      counter-increment: krok;
+      display: grid; grid-template-columns: 1.4rem minmax(0, 1fr); gap: 0.5rem;
+    }
+    .kroki li::before {
+      content: counter(krok);
+      font-family: var(--font-serif); font-size: 1.2rem; font-weight: 600;
+      color: var(--brand-link); line-height: 1.25;
+    }
+        /* Numer siedzi w kolumnie 1 (::before), obie linie tekstu MUSZĄ być jawnie
+       przypięte do kolumny 2 — inaczej auto-placement wrzuci opis pod numer. */
+    .kroki b { grid-column: 2; font-weight: 600; font-size: 0.98rem; }
+    .kroki span { grid-column: 2; margin-top: 0.15rem; font-size: 0.87rem; line-height: 1.5; color: var(--ink-faint); }
+
+    .jak { margin-top: 1rem; font-size: 0.87rem; }
+    .jak summary { cursor: pointer; color: var(--brand-link); width: fit-content; }
+    .jak summary::marker, .jak summary::-webkit-details-marker { display: none; content: ''; }
+    .jak[open] summary { color: var(--ink-faint); }
+    .jak ul { margin: 0.6rem 0 0; padding-left: 1.1rem; line-height: 1.6; max-width: 72ch; color: var(--ink-soft); }
+    .jak li + li { margin-top: 0.25rem; }
+
+    /* Pola: bez pudełek. Cienka linia pod spodem i tyle. */
+    input[type='text'], input[type='search'], select, textarea {
+      font: inherit; color: var(--ink); background: transparent;
+      border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+      padding: 0.35rem 0.1rem;
+    }
+    input::placeholder { color: var(--ink-faint); }
+    input:focus, select:focus, textarea:focus { outline: 0; border-bottom-color: var(--brand); }
+    input:focus-visible, select:focus-visible, .osoba:focus-visible {
+      outline: 2px solid var(--brand); outline-offset: 2px;
+    }
+
+    .plansza { display: grid; grid-template-columns: 21rem minmax(0, 1fr); gap: 2.5rem; align-items: start; }
+
+    /* — lewa: adresaci — */
+    .lista { position: sticky; top: 4.5rem; max-height: calc(100vh - 6.5rem); display: flex; flex-direction: column; }
+    .lista > input[type='search'] { width: 100%; font-size: 1rem; padding-bottom: 0.5rem; }
+
+    .filtry { display: flex; align-items: center; gap: 0.5rem; margin: 0.6rem 0 0.2rem; }
+    .filtry select { font-size: 0.82rem; color: var(--ink-soft); border-bottom-color: transparent; max-width: 9rem; }
+    .filtry select:hover { border-bottom-color: var(--line); }
+
+    .osoby { list-style: none; margin: 0.4rem 0 0; padding: 0; overflow-y: auto; flex: 1; }
+    .osoby.pusto::after { content: 'Nic nie pasuje.'; display: block; padding: 1rem 0; color: var(--ink-faint); font-size: 0.9rem; }
+    /* `display:grid` na <li> bije domyślne [hidden]{display:none} — filtr musi mieć
+       własną regułę, inaczej „ukryte" wiersze dalej są widoczne. */
+    .osoby > li[hidden] { display: none; }
+    .osoby > li {
+      display: grid; grid-template-columns: 1.15rem minmax(0, 1fr);
+      align-items: center; gap: 0.45rem; border-radius: var(--radius);
+      padding-left: 0.4rem; margin-right: 0.35rem;
+    }
+    .osoby > li:hover { background: var(--paper); }
+    .osoby > li.wybrana { background: var(--brand-50); box-shadow: inset 2px 0 0 var(--brand); }
+    /* Nie „zaznacz wiele", tylko „załatwione" — pusty krążek, który po kliknięciu
+       wypełnia się zielenią z ptaszkiem. */
+    .osoba-chk {
+      appearance: none; -webkit-appearance: none; margin: 0;
+      width: 1.15rem; height: 1.15rem; border-radius: 50%;
+      border: 1.5px solid var(--line-2); background: transparent;
+      display: grid; place-items: center; cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease;
+    }
+    .osoba-chk::after { content: '✓'; font-size: 0.75rem; font-weight: 700; line-height: 1; color: transparent; }
+    .osoba-chk:hover { border-color: var(--ok); }
+    .osoba-chk:checked { background: var(--ok); border-color: var(--ok); }
+    .osoba-chk:checked::after { color: #fff; }
+    .osoba {
+      width: 100%; display: block; text-align: left; cursor: pointer;
+      background: none; border: 0; padding: 0.5rem 0.4rem; font: inherit; color: var(--ink);
+    }
+    .osoba-nazwa { display: block; font-size: 0.95rem; line-height: 1.3; }
+    .osoby > li.wybrana .osoba-nazwa { font-weight: 600; }
+    .osoby > li.wyslana .osoba-nazwa { color: var(--ink-faint); }
+    .osoba-meta {
+      display: block; font-size: 0.8rem; color: var(--ink-faint); line-height: 1.35;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .lista-stopka { margin: 0.6rem 0 0; font-size: 0.78rem; color: var(--ink-faint); }
+    .lista-stopka .link-btn { font-size: 0.78rem; }
+
+    /* — prawa: list — */
+    .list { border-left: 1px solid var(--line); padding-left: 2.5rem; min-height: 70vh; }
+    .adresat { display: flex; justify-content: space-between; align-items: baseline; gap: 1.5rem; flex-wrap: wrap; }
+    .adresat h2 { margin: 0; font-size: 1.45rem; line-height: 1.2; }
+    .adresat-meta { margin: 0.2rem 0 0; font-size: 0.88rem; color: var(--ink-soft); }
+    .adresat-mail { margin: 0; display: flex; align-items: baseline; gap: 0.75rem; font-size: 0.8rem; flex-wrap: wrap; }
+    .adresat-mail code { font-size: 0.8rem; color: var(--ink-soft); }
+    .link-btn {
+      font: inherit; font-size: 0.85rem; background: none; border: 0; padding: 0;
+      cursor: pointer; color: var(--brand-link); text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .adresat-mail .link-btn, .adresat-mail a { font-size: 0.8rem; }
+
+    .temat-rzad { display: flex; align-items: end; gap: 1.5rem; margin: 1.75rem 0 0; }
+    #temat { flex: 1; font-size: 1.05rem; font-weight: 600; padding-bottom: 0.5rem; }
+    .szablon { display: flex; align-items: baseline; gap: 0.4rem; font-size: 0.8rem; color: var(--ink-faint); white-space: nowrap; }
+    .szablon select { font-size: 0.85rem; color: var(--ink-soft); border-bottom-color: transparent; }
+    .szablon select:hover { border-bottom-color: var(--line); }
+
+    /* Treść ma wyglądać jak kartka listu, nie jak pole formularza. */
+    #tresc {
+      display: block; width: 100%; max-width: 74ch; min-height: 30rem;
+      margin: 1.5rem 0 0; padding: 0; border: 0;
+      font-size: 1rem; line-height: 1.75; resize: vertical;
+    }
+    #tresc:focus { border: 0; }
+
+    .podpis-rzad {
+      display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap;
+      max-width: 74ch; margin-top: 0.75rem;
+    }
+    .podpis-label { font-size: 0.85rem; color: var(--ink-faint); }
+    .podpis-rzad input { width: 8.5rem; font-size: 0.95rem; }
+
+    .akcje { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; margin-top: 2rem; }
+    .akcje .btn { padding: 0.6rem 1.6rem; }
+    .skroty { margin-left: auto; font-size: 0.76rem; color: var(--ink-faint); }
+    kbd {
+      font: inherit; font-size: 0.72rem; font-family: var(--font-mono);
+      color: var(--ink-faint); padding: 0 0.15rem;
+    }
+    .drobne { margin: 1.5rem 0 0; font-size: 0.78rem; line-height: 1.6; color: var(--ink-faint); max-width: 74ch; }
+
+    @media (max-width: 1000px) {
+      .narzedzie { padding: 1.5rem 1.25rem 3rem; }
+      .kroki { grid-template-columns: 1fr; gap: 0.7rem; }
+      .plansza { grid-template-columns: 1fr; gap: 1.5rem; }
+      .lista { position: static; max-height: 22rem; }
+      .list { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; padding-top: 1.5rem; min-height: 0; }
+      .skroty { display: none; }
+    }
+  </style>
+</BaseLayout>

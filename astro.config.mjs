@@ -12,7 +12,12 @@ export default defineConfig({
       // /admin/* to strony wewnętrzne (noindex) — poza mapą strony.
       // /druk/ to wyciągi do wydruku — powielają treść strony źródłowej, więc do
       // indeksu nie idą (mają też noindex; zgłaszanie ich w mapie byłoby sprzeczne).
-      filter: (page) => !page.includes('/admin/') && !page.includes('/druk/'),
+      // /dzialaj/napisz to narzędzie, nie treść — ma noindex, więc zgłaszanie go
+      // w mapie byłoby sprzecznym sygnałem dla wyszukiwarki.
+      filter: (page) =>
+        !page.includes('/admin/') &&
+        !page.includes('/druk/') &&
+        !page.includes('/dzialaj/napisz'),
       // <lastmod> z centralnej mapy dat (te same daty co widoczna „Ostatnia
       // aktualizacja") — sygnał świeżości przyspieszający rekrawl po zmianie.
       serialize(item) {

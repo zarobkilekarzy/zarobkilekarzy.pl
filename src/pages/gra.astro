@@ -521,7 +521,12 @@ const T = {
   TIER_MNOZNIK: [1, 2, 4, 8],
   NETTO_UOP_NISKI: 0.72, NETTO_UOP_WYSOKI: 0.55, PROG_ROCZNY: 120000,
   NETTO_B2B: 0.84,
-  CEGIELKA_TYG: 0.02,
+  /* cegiełka: sufit indeksu rośnie liniowo z liczbą cegiełek, indeks pełznie do niego.
+     Wcześniej indeks był MNOŻONY co tydzień o (1 + 2 p.p. × cegiełki) — przy koszcie
+     rosnącym tylko geometrycznie dawało to podwójną wykładniczą: po ~godzinie gry
+     241 cegiełek, indeks 7,7 × 10³⁷ i portfel rozwalający nagłówek na kilka linii. */
+  CEGIELKA_PLUS: 0.25,      // o ile p.p. jedna cegiełka podnosi SUFIT indeksu
+  CEGIELKA_TEMPO: 0.35,     // jak szybko indeks dochodzi do sufitu (na tydzień)
   KLIK_ENERGIA: 0.8,
   REGEN_BAZA: 1.6,          // samoistna odnowa /gh przy 0% energii (maleje liniowo do 0 przy 100%)
   REGEN_NOC: 0.4, REGEN_SWIT: 0.15,   // dodatkowy sen w WOLNE sloty nocne
@@ -532,7 +537,7 @@ const T = {
   REJESTR_OD: 120000, REJESTR_KOSZT0: 40000, REJESTR_R: 3,
   OFFLINE_MIN_S: 45, OFFLINE_CAP_S: 8 * 3600, OFFLINE_TEMPO: 0.5,
   KOL: 7, RZED: 6,
-  WERSJA: 9,
+  WERSJA: 10,
 };
 const H = () => S.tempo || 10;
 const regenBonus = () => H() >= 20 ? T.REGEN_TURBO : 1;
@@ -584,7 +589,22 @@ let S = {
 };
 
 const $ = id => document.getElementById(id);
-const fmt = n => Math.floor(n).toLocaleString('pl-PL') + ' zł';
+/* liczby: pełne cyfry do miliarda, wyżej skrót (mld / bln), a od biliarda notacja
+   wykładnicza — inaczej wielkie kwoty rozjeżdżają nagłówek i karty sklepu. */
+const SUP = { '-': '\u207b', 0: '\u2070', 1: '\u00b9', 2: '\u00b2', 3: '\u00b3', 4: '\u2074', 5: '\u2075', 6: '\u2076', 7: '\u2077', 8: '\u2078', 9: '\u2079' };
+function fmtL(n) {
+  if (!isFinite(n)) return n > 0 ? '\u221e' : '0';
+  const a = Math.abs(n), zn = n < 0 ? '\u2212' : '';
+  if (a < 1e9) return Math.floor(n).toLocaleString('pl-PL');
+  if (a < 1e15) {
+    const d = a < 1e12 ? 1e9 : 1e12;
+    return zn + (a / d).toLocaleString('pl-PL', { maximumFractionDigits: 2 }) + (d === 1e9 ? ' mld' : ' bln');
+  }
+  const e = Math.floor(Math.log10(a));
+  return zn + (a / Math.pow(10, e)).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    + ' \u00d7 10' + String(e).split('').map(c => SUP[c]).join('');
+}
+const fmt = n => fmtL(n) + ' z\u0142';
 const fmtX = n => '×' + n.toLocaleString('pl-PL', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const DNI = ['pon', 'wt', 'śr', 'czw', 'pt', 'sob', 'nd'];
 const zegar = () => {
@@ -892,6 +912,7 @@ function pFloat(tekst, xPct, yPct, klasa) {
 /* ── dochód ── */
 /* addytywnie (+10 p.p. za negocjację) — składany 1,1^n dawał +33% po trzech „+10%" */
 function mnoznikNeg() { return 1 + 0.1 * S.negocjacje; }
+function indeksCel() { return 1 + T.CEGIELKA_PLUS * S.cegielki; }
 /* poniżej 20% energii wartość pracy osobistej zjeżdża do ZERA (przy 0% nie zarabiasz nic) */
 function mnoznikEnergii() {
   const bazowy = 0.35 + 0.65 * S.energia / 100;
@@ -972,7 +993,7 @@ function klik() {
     plansza.appendChild(b);
     setTimeout(() => b.remove(), 2500);
   }
-  pFloat('+' + Math.floor(brutto * klin).toLocaleString('pl-PL') + ' zł', poz * 100 + 1, 14 + Math.random() * 30);
+  pFloat('+' + fmtL(brutto * klin) + ' zł', poz * 100 + 1, 14 + Math.random() * 30);
   if (ostatniPunkt) monety(ostatniPunkt.x, ostatniPunkt.y, 13 + (naDyzurze() ? 5 : 0) + (S.kolejka > 0 ? 3 : 0), 1.35, S.tier >= 2);
   else monetyZ(przyjmijBtn, 13, 1.35, S.tier >= 2);
   postep();
@@ -1069,7 +1090,7 @@ const PRZEDMIOTY = [
 
   { id: 'cegielka', panel: 'pSystem', kat: 'kat-system', ikona: 'cegla', nazwa: 'Cegiełka: Komitet Obrony Jakości Kształcenia',
     flavor: 'Kampania przeciw nowym kierunkom lekarskim. Lekarzy nie przybywa, twoje stawki rosną.',
-    efekt: () => 'Indeks stawek +2 p.p. na tydzień — wszystkie stawki, na zawsze',
+    efekt: () => 'Indeks stawek pełznie w górę do \u00d7' + (indeksCel() + T.CEGIELKA_PLUS).toLocaleString('pl-PL', { maximumFractionDigits: 2 }) + ' — wszystkie stawki rynkowe, na zawsze',
     koszt: () => kosztG(8000, 1.6, S.cegielki), ile: () => S.cegielki,
     kup() { S.cegielki++; if (S.cegielki === 1) { log('Indeks stawek rynkowych drgnął.', true); setTimeout(() => achievement('podaz'), 25000); } },
     link: '/mechanizmy/reglamentacja-dostepu' },
@@ -1219,7 +1240,7 @@ TABY.forEach(([t]) => $(t).addEventListener('click', () => { if (!$(t).disabled)
 function infoModal(tytul, html) { modal('<div class="eyebrow">Co to jest?</div><h2>' + tytul + '</h2><div style="text-align:left">' + html + '</div>', 'Rozumiem'); }
 $('indeksChip').addEventListener('click', () => infoModal('Indeks stawek',
   '<p><b>Mnożnik wszystkich stawek rynkowych</b> (dyżury, kontrakty, poradnia — wszystko poza ustawową pensją etatu).</p>' +
-  '<p>Rośnie, gdy lekarzy na rynku ubywa — np. po wpłacie <b>Cegiełki</b> w zakładce System. Nigdy nie spada.</p>' +
+  '<p>Rośnie, gdy lekarzy na rynku ubywa — np. po wpłacie <b>Cegiełki</b> w zakładce System. Każda cegiełka podnosi <b>sufit</b>, do którego indeks dopełza przez kilka tygodni. Nigdy nie spada.</p>' +
   '<p class="mala">Mechanizm z życia: sztywna podaż lekarzy + nieodkładalny popyt = rosnące stawki. <a href="' + LINK('/mechanizmy/reglamentacja-dostepu') + '" target="_blank" rel="noopener">to działa naprawdę →</a></p>'));
 $('rozjazd').addEventListener('click', () => infoModal('ROZJAZD',
   '<p><b>Ile razy więcej pieniędzy wpłynęło do twojego portfela, niż widać w oficjalnych rejestrach.</b></p>' +
@@ -1635,7 +1656,7 @@ function finalRejestru(powod) {
     '<div><h3>Widział świat</h3><div class="w">' + fmt(S.jawneCum) + '</div><div class="mala">do dziś</div></div>' +
     '<div><h3>Wpłynęło naprawdę</h3><div class="w" style="color:var(--kasa)">' + fmt(S.realCum) + '</div><div class="mala">od dziś widzą to wszyscy</div></div>' +
     '</div>' +
-    '<p class="mala">Czego nie widział żaden licznik: ' + Math.floor(S.pacjenci).toLocaleString('pl-PL') + ' przyjętych pacjentów.</p>' +
+    '<p class="mala">Czego nie widział żaden licznik: ' + fmtL(S.pacjenci) + ' przyjętych pacjentów.</p>' +
     ((S.mieszkania + S.apartamenty > 0 || S.panamerka)
       ? '<p class="mala">Co widzieli sąsiedzi od dawna: ' + (S.mieszkania + S.apartamenty) + ' nieruchomości' + (S.panamerka ? ' i panamerka pod szpitalem' : '') + '.</p>' : '') +
     '<p>Nic ci nie zabrano. Po prostu kreskowane bloki przestały być kreskowane.</p>' +
@@ -1726,13 +1747,16 @@ setInterval(() => {
   const czynsz = czynszNaGodzine() * gh * 0.915;
   S.portfel += czynsz; S.tydzienSuma += czynsz;
 
-  if (S.cegielki > 0) S.indeks *= Math.pow(1 + T.CEGIELKA_TYG * S.cegielki, gh / 168);
+  if (S.cegielki > 0 && S.indeks < indeksCel()) {
+    const cel = indeksCel();
+    S.indeks = Math.min(cel, S.indeks + (cel - S.indeks) * (1 - Math.exp(-T.CEGIELKA_TEMPO * gh / 168)));
+  }
 
   floatTimer += sek;
   if (floatTimer > 0.5) {
     floatTimer = 0;
     if (zysk > 0) {
-      pFloat('+' + Math.floor(zysk / sek).toLocaleString('pl-PL') + ' zł/s', poz * 100 + 1.5, 8, blokiW(c, r).some(b => b.typ === 'cito') ? 'zloty' : '');
+      pFloat('+' + fmtL(zysk / sek) + ' zł/s', poz * 100 + 1.5, 8, blokiW(c, r).some(b => b.typ === 'cito') ? 'zloty' : '');
       const pr = plansza.getBoundingClientRect();
       if (pr.bottom > 0 && pr.top < innerHeight) monety(pr.left + poz * pr.width, pr.top + (r + 0.5) / 6 * pr.height, 4, 0.8);
     }
@@ -1755,7 +1779,7 @@ function render() {
   $('tempoW').textContent = naUrlopie() ? 'urlop — grafik stoi' : chwilowe > 0 ? '+' + fmt(chwilowe) + '/s' : 'pusty grafik — klikaj';
   $('tydzienNr').textContent = 'tydzień ' + S.tydzienNr;
   $('szybkoscW').textContent = '×' + S.tempo;
-  $('indeksW').textContent = S.indeks.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  $('indeksW').textContent = S.indeks < 1e6 ? S.indeks.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : fmtL(S.indeks);
   if (S.negocjacje > 0) $('negW').textContent = '+' + Math.round((mnoznikNeg() - 1) * 100) + '%';
   $('jawnyMies').textContent = fmt(jawneTygodniowo() * 4.33);
   przyjmijBtn.disabled = naUrlopie();
@@ -1890,6 +1914,16 @@ function migruj(stan) {
     stan.tempo = { 12: 20, 6: 10, 3: 10, 1: 5 }[stan.tempo] || 10;
     stan.wersja = 9;
   }
+  if (stan.wersja < 10) {
+    // cegiełka przestała mnożyć indeks co tydzień — stare zapisy miały indeks
+    // rozpędzony do absurdu (10^30+); sprowadzamy go do nowego sufitu
+    const cel = 1 + 0.25 * (stan.cegielki || 0);
+    if (!isFinite(stan.indeks) || !(stan.indeks > 0) || stan.indeks > cel) { stan.indeks = cel; stan.przeliczonyIndeks = true; }
+    for (const k of ['portfel', 'lifetime', 'jawneCum', 'realCum', 'tydzienSuma', 'pacjenci']) {
+      if (!isFinite(stan[k])) stan[k] = 0;
+    }
+    stan.wersja = 10;
+  }
   return stan;
 }
 function wczytaj() {
@@ -1968,6 +2002,10 @@ if (S.kliki > 0 || S.bloki.length > 0) {
   if (S.b2b) $('okoBtn').classList.remove('hide');
   if (S.rejestrDziala) { okoEl.classList.add('rejestr'); $('okoEtyk').textContent = 'rejestr — widzą wszyscy:'; }
   log('Wróciłeś. Grafik pracował za ciebie.');
+  if (S.przeliczonyIndeks) {
+    S.przeliczonyIndeks = false;
+    log('Indeks stawek przeliczony: cegiełki mają teraz sufit, a nie rozpędzają go bez końca.', true);
+  }
   rozliczOffline();
 } else {
   log('Dzień pierwszy. Masz dyplom, pieczątkę i pusty grafik.');

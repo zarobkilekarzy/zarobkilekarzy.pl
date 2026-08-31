@@ -8,6 +8,11 @@ export interface OgPage {
   title: string;      // duży nagłówek (serif)
   subtitle: string;   // jednozdaniowy opis (sans)
   tag: string;        // etykieta sekcji (mała, wersaliki)
+  // Wariant szablonu. Brak = wspólna karta (granat + EKG). 'arcade' = automat z lat 80.,
+  // zarezerwowany dla /gra — patrz src/lib/ogCardGra.ts. Nie rozsiewać po innych trasach:
+  // wyłom działa dopóki jest jeden.
+  variant?: 'arcade';
+  short?: string;     // krótka stopka wariantu arcade (długi `subtitle` nie mieści się w neonie)
 }
 
 export const ogPages: Record<string, OgPage> = {
@@ -19,6 +24,8 @@ export const ogPages: Record<string, OgPage> = {
 
   // — Gra —
   'gra': {
+    variant: 'arcade',
+    short: 'Każdy mechanizm z gry istnieje naprawdę',
     tag: 'Symulator · Satyra',
     title: 'Drugi licznik',
     subtitle: 'Idle clicker o pieniądzu publicznym w ochronie zdrowia: grafik, dyżury, kontrakty — i dwa liczniki: jawny i prawdziwy. Każdy mechanizm z gry istnieje naprawdę.',

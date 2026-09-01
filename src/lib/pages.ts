@@ -244,7 +244,7 @@ export const strony: Record<string, Strona> = {
   '/analizy/ciecie-limitow-na-medycyne': {
     dzial: 'analizy',
     tytul: 'Cięcie limitów na medycynę',
-    opis: 'Portugalia obcięła nabór o trzy czwarte, Francja o ponad połowę — obie wracały pokolenie. Co z tego wynikło dla pacjentów i według jakiego kryterium wolno ustalać limit przyjęć.',
+    opis: 'Polska ścięła nabór z ponad 6000 miejsc do 2090 i wracała 38 lat. Wyrwę widać w rejestrze: lekarzy 46–50 lat o 27% mniej niż o dekadę starszych. To samo przeszły Portugalia i Francja.',
     tematy: ['dostep-do-zawodu'],
   },
   '/analizy/lejek-ksztalcenia': {

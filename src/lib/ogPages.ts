@@ -131,8 +131,8 @@ export const ogPages: Record<string, OgPage> = {
   },
   'analizy/ciecie-limitow-na-medycyne': {
     tag: 'Analiza',
-    title: 'Cięcie limitów na medycynę',
-    subtitle: 'Portugalia obcięła nabór o trzy czwarte, Francja o ponad połowę. Obie wracały pokolenie — rachunek zapłacili pacjenci.',
+    title: 'Polska już raz to zrobiła',
+    subtitle: 'Nabór na medycynę: ponad 6000 miejsc w 1987 r., 2090 w 2003 r. Poziom sprzed cięcia odzyskaliśmy po 38 latach.',
   },
   'analizy/lejek-ksztalcenia': {
     tag: 'Analiza',

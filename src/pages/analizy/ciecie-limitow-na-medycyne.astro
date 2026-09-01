@@ -67,6 +67,42 @@ const frPkt = [
   { r: 2019, v: 8000 },
 ];
 
+// Polska oś czasu — miejsca na studiach DZIENNYCH/STACJONARNYCH w języku polskim.
+// UWAGA na definicje: 1987 i 1990 to „miejsca na I roku" z relacji prasowej (za ówczesnym
+// prezesem NRL), 2003 to „studia dzienne", od 2005 „stacjonarne w j. polskim". Kategorie
+// przez cztery dekady nie są idealnie tożsame — dlatego w podpisie jest o tym zastrzeżenie.
+// Punkty kontrolne zgadzają się z naszą bazą: 2015 = 3 589, 2019/20 = 5 042.
+const PL = { x0: 62, x1: 596, y0: 214, yTop: 52, r0: 1987, r1: 2025, vMax: 7000 };
+const plX = (r: number) => PL.x0 + ((r - PL.r0) / (PL.r1 - PL.r0)) * (PL.x1 - PL.x0);
+const plY = (v: number) => PL.y0 - (v / PL.vMax) * (PL.y0 - PL.yTop);
+const plPkt = [
+  { r: 1987, v: 6000 },
+  { r: 1990, v: 3300 },
+  { r: 2003, v: 2090 },
+  { r: 2005, v: 2360 },
+  { r: 2010, v: 3023 },
+  { r: 2015, v: 3589 },
+  { r: 2019, v: 5042 },
+  { r: 2022, v: 5830 },
+  { r: 2025, v: 6880 },
+];
+
+// Piramida wieku lekarzy WYKONUJĄCYCH ZAWÓD — rejestr NIL, stan 16 I 2026 (baza projektu).
+// „start studiów" to przybliżenie: rok urodzenia + 19 lat. Dołek 46–50 lat odpowiada
+// rocznikom, które szły na studia w drugiej połowie lat 90. — czyli w dnie cięcia.
+const wiekPL = [
+  { grupa: '66–70', v: 14830, studia: 'ok. 1975–79' },
+  { grupa: '61–65', v: 15183, studia: 'ok. 1980–84' },
+  { grupa: '56–60', v: 15963, studia: 'ok. 1985–89' },
+  { grupa: '51–55', v: 12563, studia: 'ok. 1990–94' },
+  { grupa: '46–50', v: 11607, studia: 'ok. 1995–99', dol: true },
+  { grupa: '41–45', v: 12787, studia: 'ok. 2000–04', dol: true },
+  { grupa: '36–40', v: 17008, studia: 'ok. 2005–09' },
+  { grupa: '31–35', v: 19834, studia: 'ok. 2010–14' },
+  { grupa: '26–30', v: 20346, studia: 'ok. 2015–19' },
+];
+const maxWiek = Math.max(...wiekPL.map((w) => w.v));
+
 // Francuska gęstość lekarzy jako INDEKS (2021 = 100). DREES używa dwóch mierników
 // (prostego i standaryzowanego wiekiem) — indeks pozwala ich nie mieszać.
 const frGest = [
@@ -80,35 +116,31 @@ const gY = (i: number) => 196 - ((i - 90) / 20) * 136;
 ---
 
 <BaseLayout
-  title="Cięcie limitów na medycynę: rachunek z dwóch krajów, które to zrobiły — zarobkilekarzy.pl"
-  description="Portugalia obcięła nabór na medycynę o trzy czwarte, Francja o ponad połowę. Obie odbudowywały go pokolenie i obie płacą do dziś: 1,6 mln Portugalczyków bez lekarza rodzinnego, francuski dołek kadrowy dopiero przed nami. W Polsce trwa spór o cięcie z 7797 do ok. 4100 miejsc. Co się dzieje po takiej decyzji i według jakiego kryterium wolno ją podejmować."
+  title="Cięcie limitów na medycynę: Polska już raz to zrobiła — zarobkilekarzy.pl"
+  description="Polska obcięła nabór na medycynę z ponad 6000 miejsc w 1987 r. do 2090 w 2003 r. i poziom sprzed cięcia odzyskała dopiero teraz — po 38 latach. Wyrwę widać w rejestrze: lekarzy w wieku 46–50 lat jest o 27% mniej niż o dekadę starszych. To samo zrobiły Portugalia i Francja. Dziś proponuje się cięcie po raz drugi."
 >
   <section class="section">
     <div class="container">
       <p class="eyebrow"><a href="/analizy/">Analizy</a> · Dostęp do zawodu</p>
-      <h1>Cięcie limitów na medycynę: rachunek z dwóch krajów, które to zrobiły</h1>
+      <h1>Cięcie limitów na medycynę: Polska już raz to zrobiła</h1>
       <Aktualizacja />
       <p class="lead">
-        Spór o to, czy Polska kształci za dużo lekarzy, nie jest hipotetyczny. <strong>Dwa kraje europejskie przeprowadziły dokładnie ten eksperyment</strong> — Portugalia obcięła nabór na medycynę o trzy czwarte, Francja o ponad połowę. Obie decyzje zapadły z powodów, które brzmią rozsądnie: jakość kształcenia i koszty publiczne. Obie kosztowały pokolenie. Portugalia wracała do punktu wyjścia <strong>21 lat</strong>; Francja spóźniła się z korektą o <strong>dziesięć lat</strong> i jej dołek kadrowy wypada dopiero <strong>w 2028 r.</strong> Poniżej: co leży dziś na polskim stole, co stało się tam — i według jakiego kryterium wolno taką decyzję podejmować.
+        Spór o to, czy Polska kształci za dużo lekarzy, nie jest hipotetyczny — i nie jest nowy. <strong>Ten eksperyment już u nas przeprowadzono.</strong> Nabór na medycynę spadł z ponad <strong>6000 miejsc w 1987 r. do 2090 w 2003 r.</strong>, a poziom sprzed cięcia odzyskaliśmy dopiero teraz — <strong>po 38 latach</strong>. Wyrwa jest policzalna w rejestrze izby lekarskiej: lekarzy w wieku <strong>46–50 lat jest o 27% mniej</strong> niż tych o dekadę starszych. To samo zrobiły Portugalia (nabór w dół o trzy czwarte) i Francja (o ponad połowę) — obie z powodów, które brzmiały rozsądnie, i żadna z powodu potrzeb zdrowotnych. Dziś proponuje się, żeby ciąć <strong>po raz drugi</strong>.
       </p>
 
       <h2 style="margin-top: 2.5rem">Cztery liczby, które ustawiają temat</h2>
       <div class="fact-grid">
         <div class="fact">
-          <span class="fact-num">805 → 190</span>
-          <span class="fact-cap">Portugalski limit przyjęć na medycynę między 1979 a <strong>1986 r.</strong> — cięcie o <strong>76%</strong>. Poziom z 1979 r. odzyskano dopiero w 2000/01.</span>
+          <span class="fact-num">6 000 → 2 090</span> <span class="fact-cap">Miejsca na polskich studiach lekarskich: 1987 → <strong>2003</strong>. Spadek o dwie trzecie; poziom z 1987 r. odzyskany dopiero <strong>po 38 latach</strong>.</span>
         </div>
         <div class="fact">
-          <span class="fact-num">9 000 → 3 500</span>
-          <span class="fact-cap">Francuski numerus clausus od połowy lat 70. do początku lat 90. OECD nazywa tę politykę wprost <strong>„podejściem jo-jo”</strong>.</span>
+          <span class="fact-num">−27%</span> <span class="fact-cap">O tyle mniej jest dziś czynnych lekarzy w wieku <strong>46–50 lat</strong> niż w wieku 56–60. To rocznik, który szedł na studia w dnie cięcia.</span>
         </div>
         <div class="fact">
-          <span class="fact-num">15 lat</span>
-          <span class="fact-cap">Tyle mija od rozpoczęcia studiów do samodzielnej pracy w opiece kontraktowej — <strong>„wenigstens 15 Jahre”</strong>, czyli co najmniej 15 lat (niemiecki instytut Zi, 2024). Tyle trwa też pomyłka.</span>
+          <span class="fact-num">15 lat</span> <span class="fact-cap">Tyle mija od rozpoczęcia studiów do samodzielnej pracy w opiece kontraktowej — <strong>„wenigstens 15 Jahre”</strong>, czyli co najmniej 15 lat (niemiecki instytut Zi, 2024). Tyle trwa też pomyłka.</span>
         </div>
         <div class="fact">
-          <span class="fact-num">0</span>
-          <span class="fact-cap">Tyle razy w analizie NIL pada słowo o <strong>wynagrodzeniach lekarzy</strong>. Uzasadnieniem jest koszt publiczny i bilans rynku pracy — i tak to referujemy.</span>
+          <span class="fact-num">0</span> <span class="fact-cap">Tyle razy w analizie NIL pada słowo o <strong>wynagrodzeniach lekarzy</strong>. Uzasadnieniem jest koszt publiczny i bilans rynku pracy — i tak to referujemy.</span>
         </div>
       </div>
 
@@ -129,9 +161,7 @@ const gY = (i: number) => 196 - ((i - 90) / 20) * 136;
         <div class="chart" role="img" aria-label="Limit przyjęć na kierunek lekarski w Polsce rósł z 3 213 miejsc w roku 2007/08 do 10 504 w roku 2025/26">
           {limity.map((l) => (
             <div class="bar-row">
-              <span class="bar-lab">{l.rok}</span>
-              <span class="bar-track"><span class="bar-fill" style={`width:${(l.v / maxLimit) * 100}%`}></span></span>
-              <span class="bar-val">{fmt(l.v)}</span>
+              <span class="bar-lab">{l.rok}</span> <span class="bar-track"><span class="bar-fill" style={`width:${(l.v / maxLimit) * 100}%`}></span></span> <span class="bar-val">{fmt(l.v)}</span>
             </div>
           ))}
         </div>
@@ -262,54 +292,137 @@ const gY = (i: number) => 196 - ((i - 90) / 20) * 136;
           Po pięćdziesięciu latach regulowania liczby lekarzy i pięciu latach po zniesieniu limitu Francja <strong>nadal nie ma uzgodnionej metody liczenia potrzeb zdrowotnych</strong>. To dokładnie ten sam problem, który mamy w Polsce — tylko o pół wieku starszy.
         </p>
 
-        <h2>4. Trzy kraje, jedno pytanie: według czego ustawiano tę liczbę</h2>
+        <h2>4. Polska: my ten eksperyment już przeprowadziliśmy</h2>
+        <p>
+          I tu dochodzimy do rzeczy, która ustawia całą polską debatę na głowie. Nie stoimy przed
+          decyzją, czy uruchomić eksperyment z cięciem naboru. <strong>Polska go już
+          przeprowadziła</strong> — na przełomie lat 80. i 90., w skali porównywalnej z francuską —
+          i właśnie z tego cięcia się podnosimy.
+        </p>
+        <div class="tl">
+          <svg viewBox="0 0 640 250" role="img" aria-label="Miejsca na studiach lekarskich w Polsce: ponad 6000 w 1987, około 3300 w 1990, dno 2090 w 2003, potem odbudowa do 3589 w 2015, 5042 w 2019 i 6880 w roku 2025/26.">
+            <line x1={PL.x0} y1={PL.y0} x2={PL.x1} y2={PL.y0} class="ax"></line>
+            <line x1={PL.x0} y1={plY(6000)} x2={PL.x1} y2={plY(6000)} class="ref"></line>
+            <text x={PL.x0 + 4} y={plY(6000) - 7} class="reflab">poziom z 1987 r. — ponad 6 000 miejsc</text>
+            <polyline points={plPkt.map((p) => `${plX(p.r)},${plY(p.v)}`).join(' ')} class="ln"></polyline>
+            {plPkt.map((p) => <circle cx={plX(p.r)} cy={plY(p.v)} r="4.5" class="dot"></circle>)}
+            <text x={plX(2003)} y={plY(2090) + 19} text-anchor="middle" class="val">2 090</text>
+            <text x={plX(2003) + 38} y={plY(2090) + 19} class="note">−66%</text>
+            <text x={plX(2025)} y={plY(6880) - 12} text-anchor="end" class="val">6 880</text>
+            {[1987, 1990, 2003, 2015, 2025].map((r) => (
+              <text x={plX(r)} y={PL.y0 + 20} text-anchor="middle" class="yr">{r}</text>
+            ))}
+          </svg>
+        </div>
+        <p class="source-note">
+          Miejsca na studiach dziennych/stacjonarnych w języku polskim. <strong>Uwaga na definicje:</strong> wartości za 1987 i 1990 r. pochodzą z relacji prasowej powołującej się na ówczesnego prezesa Naczelnej Rady Lekarskiej, 2003 r. dotyczy „studiów dziennych”, a od 2005 r. — stacjonarnych w języku polskim; kategorie z czterech dekad nie są idealnie tożsame, więc czytamy ten wykres jako <strong>kształt, nie jako szereg co do jednego miejsca</strong>. Punkty kontrolne zgadzają się jednak z niezależnymi źródłami: 3 589 (2015) i 5 042 (2019/20). Źródła: <a href="https://www.rynekzdrowia.pl/Nauka/Limity-przyjec-na-medycyne-wyraznie-rosna-Czy-odbudujemy-lekarskie-kadry,198210,9.html" target="_blank" rel="noopener noreferrer">Rynek Zdrowia (16.09.2019)</a> — 1987, 1990, 2003, 2009/10, 2019/20; <a href="https://miesiecznik.forumakademickie.pl/czasopisma/fa-9-2022/lekarskie-limity%E2%80%A9/" target="_blank" rel="noopener noreferrer">Forum Akademickie 9/2022</a> — 2005, 2010, 2015, 2022; rozporządzenia MZ — 2025/26.
+        </p>
+        <p>
+          Skala jest tego samego rzędu co portugalska i francuska: <strong>ponad 6000 miejsc
+          w 1987 r., ok. 3300 w 1990 r., a na dnie — w 2003 r. — 2090 miejsc na studiach
+          dziennych</strong>. To spadek o dwie trzecie. Powód też brzmi znajomo i też nie miał
+          nic wspólnego z potrzebami zdrowotnymi: uznano, że absolwentów jest za dużo, bo Polska
+          kształciła ich rzekomo <strong>na potrzeby zaplecza medycznego Układu Warszawskiego</strong> — tak tłumaczył to później ówczesny prezes Naczelnej Rady Lekarskiej.
+        </p>
+        <p>
+          Portugalia ma na to swoje określenie — „hiato geracional”. My możemy je policzyć wprost
+          z rejestru Naczelnej Izby Lekarskiej. Poniżej lekarze <strong>wykonujący zawód</strong> według grup wieku, stan na 16 stycznia 2026 r., z przypisanym przybliżonym rokiem
+          rozpoczęcia studiów:
+        </p>
+        <div class="chart">
+          {wiekPL.map((w) => (
+            <div class="bar-row bar-row-w">
+              <span class="bar-lab">{w.grupa} lat</span> <span class="bar-track"><span class={w.dol ? 'bar-fill bar-fill-dol' : 'bar-fill'} style={`width:${(w.v / maxWiek) * 100}%`}></span></span> <span class="bar-val">{fmt(w.v)}</span> <span class="bar-note">{w.studia}</span>
+            </div>
+          ))}
+        </div>
+        <p class="source-note">
+          Rejestr NIL, stan 16 I 2026 (baza danych projektu). „Start studiów” to przybliżenie: rok urodzenia powiększony o 19 lat — służy do zestawienia kohorty z polityką naboru, nie jest datą z dokumentu.
+        </p>
+        <p>
+          Dziura jest dokładnie tam, gdzie powinna być. Najmniej liczna grupa czynnych lekarzy to <strong>46–50 lat — 11 607 osób</strong>, czyli rocznik, który szedł na studia w drugiej
+          połowie lat 90., w dnie cięcia. Jest ich <strong>o 27% mniej niż lekarzy w wieku
+          56–60 lat</strong> (15 963), którzy zaczynali studia jeszcze przed cięciem, i <strong>o 43% mniej niż grupy 26–30 lat</strong> (20 346), która weszła na studia już po
+          odbudowie limitów. To nie jest łagodne falowanie — to wyrwa w środku drabiny zawodowej,
+          czyli akurat tam, gdzie system potrzebuje samodzielnych specjalistów i kierowników
+          specjalizacji.
+        </p>
+        <div class="callout" style="border-left-color: var(--alert); background: var(--alert-50)">
+          <p>
+            <strong>I rzecz, która wyklucza najwygodniejsze wytłumaczenie.</strong> Można by
+            przypuszczać, że tych lekarzy jest mniej, bo mniej było wtedy w ogóle młodych ludzi.
+            Jest odwrotnie: rocznik 41–45 lat to osoby urodzone ok. 1981–1985, czyli w szczycie <strong>ostatniego wyżu demograficznego</strong> — w 1983 r. urodziło się w Polsce
+            blisko <strong>724 tys.</strong> dzieci, najwięcej od dekad. Największe roczniki dały
+            jedne z najmniejszych grup lekarzy. <strong>Ograniczeniem nie byli chętni, tylko liczba
+            miejsc.</strong>
+          </p>
+        </div>
+        <p>
+          Uczciwie: cięcie limitów nie jest jedynym wyjaśnieniem tej wyrwy. Ten sam rocznik miał
+          20–28 lat w 2004 r., gdy otwarcie unijnego rynku pracy zbiegło się z falą wyjazdów —
+          część tej dziury to <strong>emigracja</strong>, a nie tylko nieprzyjęci na studia.
+          Rozdzielić tych dwóch przyczyn nie da się na publicznych danych, bo — jak pisaliśmy
+          w analizie o <a href="/analizy/ucieczka-lekarzy/">wychodzeniu z zawodu</a> — państwo nie
+          prowadzi ewidencji tego, kto faktycznie wyjechał. Obie przyczyny prowadzą jednak do tego
+          samego wniosku: <strong>system stracił to pokolenie i odrabia to od dwudziestu lat</strong>.
+        </p>
+
+
+        <h2>5. Trzy kraje, jedno pytanie: według czego ustawiano tę liczbę</h2>
         <p>
           Zestawmy to, co da się zestawić — nie same liczby miejsc (są nieporównywalne), lecz <strong>powód decyzji i to, co po niej nastąpiło</strong>.
         </p>
         <div class="table-wrap">
           <table class="cmp">
             <thead>
-              <tr><th>&nbsp;</th><th>Portugalia</th><th>Francja</th><th>Polska (dziś)</th></tr>
+              <tr><th>&nbsp;</th><th>Portugalia</th><th>Francja</th><th>Polska</th></tr>
             </thead>
             <tbody>
               <tr>
                 <th scope="row">Ruch</th>
                 <td>805 → 190 miejsc<br /><span class="sub">1979 → 1986</span></td>
                 <td>~9 000 → 3 500<br /><span class="sub">poł. lat 70. → 1992</span></td>
-                <td>propozycja 7797 → ~4100<br /><span class="sub">wariant A, od 2027</span></td>
+                <td>ponad 6 000 → 2 090<br /><span class="sub">1987 → 2003</span></td>
               </tr>
               <tr>
                 <th scope="row">Podany powód</th>
                 <td>jakość kształcenia, brak kadry dydaktycznej</td>
                 <td>pojemność szpitali; nieoficjalnie — <strong>kontrola wydatków</strong></td>
-                <td>koszt publiczny (do 15 mld zł), bilans rynku pracy</td>
+                <td>„nadprodukcja” absolwentów kształconych rzekomo na potrzeby Układu Warszawskiego</td>
               </tr>
               <tr>
                 <th scope="row">Oparte na potrzebach zdrowotnych?</th>
                 <td class="no">nie</td>
                 <td class="no">nie — izba obrachunkowa stwierdza brak metody do dziś</td>
-                <td>model państwa jest jawny, <strong>metodologii tej analizy nie opublikowano</strong></td>
+                <td class="no">nie</td>
               </tr>
               <tr>
                 <th scope="row">Ile trwał powrót</th>
                 <td><strong>21 lat</strong> do poziomu sprzed cięcia</td>
                 <td>korekta <strong>10 lat</strong> po terminie; dołek 2028, powrót ok. 2035</td>
-                <td>skutek cięcia ok. 2038, jego odwrócenia — ok. 2050</td>
+                <td>poziom z 1987 r. odzyskany dopiero <strong>ok. 2025</strong> — <strong>38 lat</strong></td>
               </tr>
               <tr>
                 <th scope="row">Kto zapłacił</th>
                 <td>1,6 mln osób bez lekarza rodzinnego; praca z agencji zamiast etatów</td>
                 <td>pacjenci w „pustyniach medycznych”; gęstość spada mimo wzrostu naboru</td>
-                <td class="q">—</td>
+                <td>wyrwa w kadrze: rocznik 46–50 lat o <strong>27% mniejszy</strong> od rocznika 56–60</td>
               </tr>
             </tbody>
           </table>
         </div>
         <p>
-          Wzór jest w obu krajach ten sam: <strong>liczbę kształconych lekarzy ustawiono według czegoś innego niż zdrowie ludności</strong> — raz według pojemności uczelni, raz według budżetu — a rachunek przyszedł po kilkunastu latach i zapłacili go pacjenci. W żadnym z tych krajów limitu nie ustalała zresztą izba lekarska; robiło to państwo. Pytanie nie brzmi więc „kto ma rację”, tylko <strong>jakim kryterium wolno się przy tej liczbie posługiwać</strong>.
+          Wzór jest we wszystkich trzech krajach ten sam: <strong>liczbę kształconych lekarzy ustawiono według czegoś innego niż zdrowie ludności</strong> — raz według pojemności uczelni, raz według budżetu, raz według geopolityki — a rachunek przyszedł po kilkunastu latach i zapłacili go pacjenci. W żadnym z tych krajów limitu nie ustalała zresztą izba lekarska; robiło to państwo. Pytanie nie brzmi więc „kto ma rację”, tylko <strong>jakim kryterium wolno się przy tej liczbie posługiwać</strong>.
+        </p>
+        <p>
+          I stąd bierze się właściwa waga dzisiejszej propozycji. Wariant A oznaczałby zejście
+          z 7797 do ok. 4100 miejsc — czyli <strong>mniej więcej tam, gdzie Polska była w połowie
+          drogi w dół w latach 90.</strong> Nie rozważamy więc, czy zacząć eksperyment. Rozważamy,
+          czy <strong>powtórzyć go po raz drugi</strong>, mając wyrwę po pierwszym wciąż w tabeli
+          rejestru.
         </p>
 
-        <h2>5. Pułapka wskaźnika: liczymy licencje, nie lekarzy przy pacjencie</h2>
+        <h2>6. Pułapka wskaźnika: liczymy licencje, nie lekarzy przy pacjencie</h2>
         <p>
           Wszystkie te prognozy — polskie, portugalskie i francuskie — stoją na wskaźniku „lekarzy na 1000 mieszkańców”. A ten wskaźnik mierzy co innego, niż się wydaje. Portugalia bywa opisywana jako kraj nadmiaru lekarzy, bo ma <strong>5,8 na 1000</strong>. OECD sama ostrzega, żeby tego tak nie czytać:
         </p>
@@ -351,8 +464,7 @@ const gY = (i: number) => 196 - ((i - 90) / 20) * 136;
             <text x="596" y="58" text-anchor="end" font-size="12" class="brk-lab-new" font-weight="600">3,9</text>
           </svg>
           <div class="brk-legend">
-            <span class="bl-item"><span class="bl-dot bl-old"></span>Stara sprawozdawczość (do ~2019/2020)</span>
-            <span class="bl-item"><span class="bl-dot bl-new"></span>Rejestry administracyjne GUS (od ~2021)</span>
+            <span class="bl-item"><span class="bl-dot bl-old"></span>Stara sprawozdawczość (do ~2019/2020)</span> <span class="bl-item"><span class="bl-dot bl-new"></span>Rejestry administracyjne GUS (od ~2021)</span>
           </div>
         </div>
         <p class="source-note">
@@ -365,12 +477,12 @@ const gY = (i: number) => 196 - ((i - 90) / 20) * 136;
           Do tego dochodzi rozkład, którego średnia nie pokazuje. Lekarze rodzinni to w Polsce <strong>6,7% wszystkich lekarzy wobec 19,9% średniej unijnej</strong> — jeden z najniższych udziałów w Unii. Portugalia miała pod tym względem jeden z najwyższych i to jej nie uratowało. <strong>Sama liczba nie mówi nic o dostępie.</strong>
         </p>
 
-        <h2>6. Czego uczą oba te rachunki</h2>
+        <h2>7. Czego uczą te trzy rachunki</h2>
         <p>
-          Portugalia obcięła nabór w imię jakości kształcenia. Francja — w imię kontroli wydatków. Żaden z tych powodów nie był zły sam w sobie; oba były po prostu <strong>nie tym kryterium</strong>. Skutek jest w obu krajach ten sam i widać go dopiero po kilkunastu latach: nie brakuje „lekarzy w ogóle”, brakuje <strong>lekarza, do którego można się dostać</strong> — w konkretnym regionie, w konkretnej dziedzinie, w publicznym systemie.
+          Portugalia obcięła nabór w imię jakości kształcenia. Francja — w imię kontroli wydatków. Polska — w imię tego, że kształciła rzekomo dla Układu Warszawskiego. Żaden z tych powodów nie był absurdalny w swoim czasie; wszystkie były po prostu <strong>nie tym kryterium</strong>. Skutek jest w obu krajach ten sam i widać go dopiero po kilkunastu latach: nie brakuje „lekarzy w ogóle”, brakuje <strong>lekarza, do którego można się dostać</strong> — w konkretnym regionie, w konkretnej dziedzinie, w publicznym systemie.
         </p>
         <p>
-          Dlatego jedyne kryterium, które broni się przy tej decyzji, to <strong>potrzeby zdrowotne ludności</strong>: ilu ludzi, gdzie, na co choruje i jak długo czeka. Nie pojemność uczelni, nie stan budżetu i nie sytuacja dochodowa jakiejkolwiek grupy zawodowej — także wtedy, gdy akurat ta grupa ma rację co do liczb. Portugalia i Francja pokazują, że decyzja podjęta według innego kryterium nie wraca po roku ani po pięciu. Wraca po piętnastu i wraca jako <strong>kolejka pacjenta</strong>.
+          Dlatego jedyne kryterium, które broni się przy tej decyzji, to <strong>potrzeby zdrowotne ludności</strong>: ilu ludzi, gdzie, na co choruje i jak długo czeka. Nie pojemność uczelni, nie stan budżetu, nie geopolityka i nie sytuacja dochodowa jakiejkolwiek grupy zawodowej — także wtedy, gdy akurat ta grupa ma rację co do liczb. Decyzja podjęta według innego kryterium nie wraca po roku ani po pięciu. Wraca po piętnastu i wraca jako <strong>kolejka pacjenta</strong> — a w polskim przypadku wracała <strong>trzydzieści osiem lat</strong>.
         </p>
         <div class="callout" style="border-left-color: var(--brand)">
           <p>
@@ -416,6 +528,15 @@ const gY = (i: number) => 196 - ((i - 90) / 20) * 136;
   .bar-track { background: var(--line); border-radius: 999px; height: 0.85rem; overflow: hidden; }
   .bar-fill { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
   .bar-val { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; text-align: right; }
+  /* wariant z czwartą kolumną — piramida wieku (grupa | pasek | liczba | start studiów) */
+  .bar-row-w { grid-template-columns: 4.6rem 1fr 3.6rem 7.2rem; }
+  .bar-note { font-size: 0.76rem; color: var(--ink-soft); white-space: nowrap; }
+  /* dołek pokoleniowy — jedyny czerwony akcent w tym wykresie */
+  .bar-fill-dol { background: var(--alert); }
+  @media (max-width: 560px) {
+    .bar-row-w { grid-template-columns: 4.2rem 1fr 3.4rem; }
+    .bar-note { display: none; }
+  }
 
   /* osie czasu PT / FR — kolory z tokenów, więc dark mode działa sam */
   .tl { margin: 1.25rem 0 0.75rem; max-width: 720px; }

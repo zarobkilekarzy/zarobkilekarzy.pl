@@ -129,6 +129,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Dlaczego brakuje lekarzy — choć miejsc jest dużo',
     subtitle: 'Miejsc do kształcenia sporo, a lekarza „nie ma". Sześć mechanizmów paradoksu i lejek liczby lekarzy.',
   },
+  'analizy/ciecie-limitow-na-medycyne': {
+    tag: 'Analiza',
+    title: 'Cięcie limitów na medycynę',
+    subtitle: 'Portugalia obcięła nabór o trzy czwarte, Francja o ponad połowę. Obie wracały pokolenie — rachunek zapłacili pacjenci.',
+  },
   'analizy/lejek-ksztalcenia': {
     tag: 'Analiza',
     title: 'Lejek kształcenia lekarzy',

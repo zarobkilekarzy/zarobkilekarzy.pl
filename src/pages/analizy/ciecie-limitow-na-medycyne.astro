@@ -1,0 +1,461 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareRow from '../../components/ShareRow.astro';
+import Aktualizacja from '../../components/Aktualizacja.astro';
+
+// Analiza: cięcie limitów przyjęć na medycynę, oparta na dwóch krajach, które ten eksperyment
+// PRZEPROWADZIŁY — Portugalii i Francji. Ciężar tekstu na SKUTKACH, nie na sporze o intencje.
+//
+// Korekty wobec wiralowej wersji tematu (sprawdzone u źródła osobiście, nie przez agentów):
+//   1. „7797 → 4100" to analiza ZESPOŁU eksperckiego NIL z 11.06.2024, nie uchwała NRL.
+//   2. 7797 = miejsca PO POLSKU z PROJEKTU na 2024/25. Obowiązujący limit: 10 504 (rozp. 07.08.2025).
+//   3. Analiza NIL ANI RAZU nie mówi o wynagrodzeniach — motyw „obrona stawek" to zarzut
+//      publicystów. Fakt ≠ zarzut, więc nie wkładamy izbie tego w usta.
+//
+// KOREKTA WCZEŚNIEJSZEJ WERSJI TEJ STRONY: było twierdzenie, że strona MZ z modelem
+// popytowo-podażowym jest pusta. NIE JEST. Osadza 8-stronicowy raport Power BI (definicje,
+// źródła: CRL/NFZ/SZOI/PP/ZUS/GUS, podaż, popyt, analiza scenariuszowa). WebFetch tego nie
+// widzi, bo treść siedzi w <embed> do app.powerbi.com. Sprawdzone w przeglądarce 01.09.2026.
+// Właściwa asymetria: MZ model UDOSTĘPNIA, NIL swojego nie opublikował.
+//
+// Pointa: limit przyjęć ma wynikać z POTRZEB ZDROWOTNYCH, nie z rachunku czyjegokolwiek
+// interesu — a sprawdzić to można tylko wtedy, gdy model jest jawny.
+// Bez nazwisk; mechanizm i dokumenty, nie osoby.
+
+const warianty = [
+  { tag: 'Wariant A', tresc: 'Utrzymać 7797 miejsc, a od 2027 r. „obciąć liczbę miejsc skokowo o niemal połowę, do ~4100 miejsc rocznie”.' },
+  { tag: 'Wariant B', tresc: '„Stopniowo zmniejszać liczbę miejsc co roku o ok. 9%” — do około 4200 miejsc rocznie.' },
+  { tag: 'Wariant C', tresc: 'Zmniejszyć limit „o 1500 już od 2024 roku” (do ~6300), a potem „zmniejszać liczbę miejsc o 4% każdego roku od 2026 do 2034”.' },
+];
+
+// Limity przyjęć na kierunek lekarski — łącznie (stacjonarne + niestacjonarne + obcojęzyczne),
+// z rozporządzeń MZ. Baza researchu projektu, wartości finalne (nie projekty).
+const limity = [
+  { rok: '2007/08', v: 3213 },
+  { rok: '2015/16', v: 6188 },
+  { rok: '2019/20', v: 8170 },
+  { rok: '2022/23', v: 9406 },
+  { rok: '2024/25', v: 10095 },
+  { rok: '2025/26', v: 10504 },
+];
+const maxLimit = Math.max(...limity.map((l) => l.v));
+// Intl nie grupuje liczb 4-cyfrowych w pl-PL (3213 obok 10 504) — grupujemy sami,
+// twardą spacją, żeby kolumna wartości była typograficznie spójna.
+const fmt = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+// — Osie czasu: przeliczenia współrzędnych w JS, żeby SVG nie był ścianą magicznych liczb.
+const PT = { x0: 62, x1: 596, y0: 214, yTop: 52, r0: 1979, r1: 2011, vMax: 1800 };
+const ptX = (r: number) => PT.x0 + ((r - PT.r0) / (PT.r1 - PT.r0)) * (PT.x1 - PT.x0);
+const ptY = (v: number) => PT.y0 - (v / PT.vMax) * (PT.y0 - PT.yTop);
+const ptPkt = [
+  { r: 1979, v: 805 },
+  { r: 1986, v: 190 },
+  { r: 1999, v: 564 },
+  { r: 2001, v: 850 },
+  { r: 2010, v: 1700 },
+];
+
+const FR = { x0: 62, x1: 596, y0: 214, yTop: 52, r0: 1972, r1: 2019, vMax: 9000 };
+const frX = (r: number) => FR.x0 + ((r - FR.r0) / (FR.r1 - FR.r0)) * (FR.x1 - FR.x0);
+const frY = (v: number) => FR.y0 - (v / FR.vMax) * (FR.y0 - FR.yTop);
+const frPkt = [
+  { r: 1972, v: 8500 },
+  { r: 1976, v: 9000 },
+  { r: 1992, v: 3500 },
+  { r: 2007, v: 7500 },
+  { r: 2011, v: 8000 },
+  { r: 2019, v: 8000 },
+];
+
+// Francuska gęstość lekarzy jako INDEKS (2021 = 100). DREES używa dwóch mierników
+// (prostego i standaryzowanego wiekiem) — indeks pozwala ich nie mieszać.
+const frGest = [
+  { r: 2012, i: 106 },
+  { r: 2021, i: 100 },
+  { r: 2028, i: 95 },
+  { r: 2035, i: 100 },
+];
+const gX = (r: number) => 62 + ((r - 2012) / (2035 - 2012)) * 534;
+const gY = (i: number) => 196 - ((i - 90) / 20) * 136;
+---
+
+<BaseLayout
+  title="Cięcie limitów na medycynę: rachunek z dwóch krajów, które to zrobiły — zarobkilekarzy.pl"
+  description="Portugalia obcięła nabór na medycynę o trzy czwarte, Francja o ponad połowę. Obie odbudowywały go pokolenie i obie płacą do dziś: 1,6 mln Portugalczyków bez lekarza rodzinnego, francuski dołek kadrowy dopiero przed nami. W Polsce trwa spór o cięcie z 7797 do ok. 4100 miejsc. Co się dzieje po takiej decyzji i według jakiego kryterium wolno ją podejmować."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/analizy/">Analizy</a> · Dostęp do zawodu</p>
+      <h1>Cięcie limitów na medycynę: rachunek z dwóch krajów, które to zrobiły</h1>
+      <Aktualizacja />
+      <p class="lead">
+        Spór o to, czy Polska kształci za dużo lekarzy, nie jest hipotetyczny. <strong>Dwa kraje europejskie przeprowadziły dokładnie ten eksperyment</strong> — Portugalia obcięła nabór na medycynę o trzy czwarte, Francja o ponad połowę. Obie decyzje zapadły z powodów, które brzmią rozsądnie: jakość kształcenia i koszty publiczne. Obie kosztowały pokolenie. Portugalia wracała do punktu wyjścia <strong>21 lat</strong>; Francja spóźniła się z korektą o <strong>dziesięć lat</strong> i jej dołek kadrowy wypada dopiero <strong>w 2028 r.</strong> Poniżej: co leży dziś na polskim stole, co stało się tam — i według jakiego kryterium wolno taką decyzję podejmować.
+      </p>
+
+      <h2 style="margin-top: 2.5rem">Cztery liczby, które ustawiają temat</h2>
+      <div class="fact-grid">
+        <div class="fact">
+          <span class="fact-num">805 → 190</span>
+          <span class="fact-cap">Portugalski limit przyjęć na medycynę między 1979 a <strong>1986 r.</strong> — cięcie o <strong>76%</strong>. Poziom z 1979 r. odzyskano dopiero w 2000/01.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-num">9 000 → 3 500</span>
+          <span class="fact-cap">Francuski numerus clausus od połowy lat 70. do początku lat 90. OECD nazywa tę politykę wprost <strong>„podejściem jo-jo”</strong>.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-num">15 lat</span>
+          <span class="fact-cap">Tyle mija od rozpoczęcia studiów do samodzielnej pracy w opiece kontraktowej — <strong>„wenigstens 15 Jahre”</strong> (niemiecki instytut Zi, 2024). Tyle trwa też pomyłka.</span>
+        </div>
+        <div class="fact">
+          <span class="fact-num">0</span>
+          <span class="fact-cap">Tyle razy w analizie NIL pada słowo o <strong>wynagrodzeniach lekarzy</strong>. Uzasadnieniem jest koszt publiczny i bilans rynku pracy — i tak to referujemy.</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <h2>1. Co dokładnie leży na polskim stole</h2>
+        <p>
+          W czerwcu 2024 r. <strong>zespół ekspercki Naczelnej Izby Lekarskiej</strong> — nie sama Rada — opublikował analizę pod tytułem „Polska na drodze do marnowania miliarda złotych rocznie na kształcenie nadmiarowych lekarzy”. Opiera się na modelu kadrowym o horyzoncie <strong>25 lat, do 2048 r.</strong>: zapotrzebowanie oszacowano na ok. <strong>5,14 lekarza na 1000</strong> mieszkańców, a przy utrzymaniu obecnych limitów doszlibyśmy do <strong>6,3</strong> — ok. 20% ponad potrzebę, co wyceniono na <strong>do 15 mld zł</strong> w całym okresie prognozy. Zespół przedstawił trzy warianty i <strong>nie wskazał, który rekomenduje</strong>:
+        </p>
+        <ul class="warianty">
+          {warianty.map((w) => (
+            <li><strong>{w.tag}.</strong> {w.tresc}</li>
+          ))}
+        </ul>
+        <p>
+          Dwie rzeczy trzeba tu powiedzieć precyzyjnie, bo w obiegu funkcjonują przekręcone. Po pierwsze: <strong>7797 to nie jest dzisiejszy limit</strong> — to suma miejsc <strong>w języku polskim</strong> z <em>projektu</em> rozporządzenia na rok 2024/25, czyli liczba aktualna wiosną 2024 r., gdy powstawała analiza. Dziś limit na kierunku lekarskim, razem ze studiami niestacjonarnymi i obcojęzycznymi, wynosi <strong>10 504</strong>. Po drugie: krąży teza, że izbie chodzi o obronę stawek. <strong>W analizie nie ma o wynagrodzeniach ani słowa</strong> — sprawdziliśmy w źródle. Motyw płacowy przypisują izbie publicyści; to <strong>zarzut, nie ustalenie</strong>, i tak go tu podajemy.
+        </p>
+        <p>Szersze tło jest zgodne z tezą NIL — wejście do zawodu rzeczywiście mocno poszerzono:</p>
+        <div class="chart" role="img" aria-label="Limit przyjęć na kierunek lekarski w Polsce rósł z 3 213 miejsc w roku 2007/08 do 10 504 w roku 2025/26">
+          {limity.map((l) => (
+            <div class="bar-row">
+              <span class="bar-lab">{l.rok}</span>
+              <span class="bar-track"><span class="bar-fill" style={`width:${(l.v / maxLimit) * 100}%`}></span></span>
+              <span class="bar-val">{fmt(l.v)}</span>
+            </div>
+          ))}
+        </div>
+        <p class="source-note">
+          Limit łączny (stacjonarne + niestacjonarne + obcojęzyczne) z rozporządzeń Ministra Zdrowia; wartości finalne, po nowelizacjach. <strong>Uwaga na definicję:</strong> limit ≠ przyjęci ≠ absolwenci — z tych miejsc ok. 1,9 tys. to studia obcojęzyczne, po których w Polsce zostaje <a href="/analizy/english-division/">mniej niż 1% absolwentów</a>.
+        </p>
+        <p>
+          Ministerstwo Zdrowia liczy inaczej, a dochodzi do podobnego wniosku: limity na I rok wzrosły <strong>o 239% w latach 2005–2023</strong>, liczba absolwentów narodowości polskiej z <strong>3695</strong> (2019/20) do <strong>4755</strong> (2023/24), a „podaż liczby lekarzy przewyższy zapotrzebowanie do 2034”. Konkluzja resortu z <a href="https://www.gov.pl/web/zdrowie/ksztalcenie-i-liczba-lekarzy--trendy-i-wyzwania" target="_blank" rel="noopener noreferrer">7 listopada 2025 r.</a> brzmi:
+        </p>
+        <blockquote>
+          „Wyzwaniem dla ochrony zdrowia na przyszłość nie będą więc braki kadrowe wśród lekarzy.”
+          <cite>Ministerstwo Zdrowia, 7.11.2025</cite>
+        </blockquote>
+        <p>
+          Spór nie przebiega więc między „izbą chcącą ciąć” a „państwem chcącym kształcić”. <strong>Obie strony mówią to samo.</strong> Różni je co innego — i to jest różnica, która powinna interesować obywatela. <strong>Ministerstwo swój model pokazuje:</strong> <a href="https://basiw.mz.gov.pl/mapy-informacje/mapa-2022-2026/analizy/kadry-medyczne/model-popytowo-podazowy-lekarzy/" target="_blank" rel="noopener noreferrer">model popytowo-podażowy lekarzy</a> to ośmiostronicowy, publicznie dostępny raport z definicjami, wskazanymi źródłami danych (rejestr NIL, NFZ, ZUS, GUS), rozbiciem na podaż i popyt oraz <strong>analizą scenariuszową</strong>. <strong>Analiza NIL opublikowanej metodologii nie ma</strong> — jest artykułem na stronie izby, bez pliku, bez danych, bez sposobu odtworzenia rachunku. A to właśnie ona niesie liczbę „4100”.
+        </p>
+
+        <h2>2. Portugalia: cięcie o trzy czwarte i 21 lat powrotu</h2>
+        <p>
+          Portugalski numerus clausus na medycynie wprowadzono w latach 70., uzasadniając go <strong>jakością kształcenia</strong> i brakiem wykwalifikowanej kadry dydaktycznej — argumentem, który dziś słyszymy w Polsce. Potem limit spadał przez kilkanaście lat.
+        </p>
+        <div class="tl">
+          <svg viewBox="0 0 640 250" role="img" aria-label="Portugalski limit przyjęć na medycynę: 805 miejsc w 1979, spadek do 190 w 1986, około 564 w 1999, przekroczenie poziomu z 1979 dopiero w 2001, około 1700 miejsc w 2010.">
+            <line x1={PT.x0} y1={PT.y0} x2={PT.x1} y2={PT.y0} class="ax"></line>
+            <line x1={PT.x0} y1={ptY(805)} x2={PT.x1} y2={ptY(805)} class="ref"></line>
+            <text x={PT.x0 + 4} y={ptY(805) - 7} class="reflab">poziom z 1979 r. — 805 miejsc</text>
+            <polyline points={ptPkt.map((p) => `${ptX(p.r)},${ptY(p.v)}`).join(' ')} class="ln"></polyline>
+            {ptPkt.map((p) => <circle cx={ptX(p.r)} cy={ptY(p.v)} r="4.5" class="dot"></circle>)}
+            <text x={ptX(1979)} y={ptY(805) - 20} text-anchor="middle" class="val">805</text>
+            <text x={ptX(1986)} y={ptY(190) - 13} text-anchor="middle" class="val">190</text>
+            <text x={ptX(2010)} y={ptY(1700) - 12} text-anchor="end" class="val">~1 700</text>
+            {[1979, 1986, 1999, 2010].map((r) => (
+              <text x={ptX(r)} y={PT.y0 + 20} text-anchor="middle" class="yr">{r}</text>
+            ))}
+            <text x={ptX(1986) + 30} y={ptY(190) - 13} class="note">−76%</text>
+            <text x={ptX(2001) + 8} y={ptY(850) - 16} class="note">2000/01: pierwszy raz powyżej 1979 r.</text>
+          </svg>
+        </div>
+        <p class="source-note">
+          Szereg za <a href="https://www.edulog.pt/storage/app/uploads/public/5ee/948/5ad/5ee9485ad5289214937284.pdf" target="_blank" rel="noopener noreferrer">EDULOG, „Há falta de médicos em Portugal?” (2018)</a>: „o numerus clausus global em Medicina era de 805 vagas […] com um mínimo de 190 em 1986”; w 1999/00 nabór stanowił „apenas 70%” poziomu z 1979 r. Dzisiejsze <strong>1656 miejsc na 2026/27</strong> dotyczy konkursu krajowego (<a href="https://www.dges.gov.pt/pt/noticia/acesso-ao-ensino-superior-2026-27-regime-geral-concursos-e-regimes-especiais-de-acesso-ao" target="_blank" rel="noopener noreferrer">DGES, 16.02.2026</a>) — to inny tryb niż limit globalny, więc nie zestawiamy tych liczb na jednym wykresie.
+        </p>
+        <p><strong>Co z tego wynikło — konkretnie:</strong></p>
+        <ul class="mech">
+          <li>
+            <strong>Dziura pokoleniowa w kadrze.</strong> Studium Uniwersytetu w Coimbrze dla portugalskiej izby lekarskiej nazywa ją „hiato geracional”: rocznik 40–49 lat to <strong>tylko 15% wszystkich lekarzy</strong> — bezpośredni ślad cięcia z lat 80.
+          </li>
+          <li>
+            <strong>Kadra odchodzi szybciej, niż przychodzi.</strong> Dziś <strong>jedna trzecia specjalistów publicznego systemu ma 55 lat lub więcej, a 12% lekarzy przekroczyło 65</strong>.
+          </li>
+          <li>
+            <strong>1,6 mln ludzi bez lekarza rodzinnego</strong> (15% ludności, początek 2025 r.) — przy czym to problem <strong>rozkładu</strong>: 31% w regionie Lizbony wobec 3% na Północy.
+          </li>
+          <li>
+            <strong>System kupuje godziny zamiast zatrudniać.</strong> Nadgodziny sięgnęły 19,8 mln godzin (2022, +51% wobec 2018), a praca lekarzy z agencji <strong>4,7 mln godzin — 84% całej pracy agencyjnej</strong> w publicznym systemie. Rządowa agencja PlanAPP szacuje, że odejście od nadgodzin i agencji wymagałoby <strong>ok. 6100 dodatkowych etatów lekarskich</strong> — ok. 30% zasobu specjalistów.
+          </li>
+        </ul>
+        <p>
+          I rzecz, która przesądza o diagnozie: <strong>Portugalia traci ludzi nie na studiach, tylko po dyplomie</strong>. W konkursie specjalizacyjnym 2025 obsadzono <strong>1862 z 2331 miejsc</strong>; w medycynie rodzinnej <strong>461 z 690</strong>, w internie <strong>106 z 204</strong>. Profil OECD opisuje mechanizm bez ogródek: młodzi lekarze <strong>przechodzą do lepiej płatnej pracy agencyjnej, zanim w ogóle zaczną specjalizację</strong>. W czerwcu 2025 r. obsadzono <strong>mniej niż połowę</strong> etatów lekarza rodzinnego zaoferowanych kończącym rezydenturę.
+        </p>
+        <p>
+          Warto to zapamiętać przy każdej dyskusji o „nadmiarze lekarzy”: ok. <strong>30% specjalistów portugalskiego systemu publicznego pracuje w medycynie rodzinnej — jeden z najwyższych udziałów w Europie</strong>. I to nie wystarczyło.
+        </p>
+
+        <h2>3. Francja: to samo cięcie, większa skala, spóźniona korekta</h2>
+        <p>
+          Francja wprowadziła numerus clausus ustawą z 1971 r., z kwotami od 1972. Oficjalnym powodem była pojemność szkoleniowa szpitali. OECD odnotowuje jednak drugi, mniej jawny:
+        </p>
+        <blockquote>
+          „Another less explicit reason was to curb the existing number of doctors and avoid adding undue pressures on expenditures in a system based on fee-for-services.”
+          <cite>OECD, <em>Health Workforce Policies in OECD Countries</em> (2016)</cite>
+        </blockquote>
+        <p>
+          Czyli: liczbę kształconych lekarzy ustawiono <strong>pod kontrolę wydatków</strong>, a nie pod potrzeby zdrowotne ludności. Efekt w liczbach:
+        </p>
+        <div class="tl">
+          <svg viewBox="0 0 640 250" role="img" aria-label="Francuski numerus clausus: około 8500 miejsc w 1972, blisko 9000 w połowie lat 70., spadek do 3500 w 1992, powrót do 7500 dopiero w 2007 i około 8000 w 2011, zniesienie limitu w 2019.">
+            <line x1={FR.x0} y1={FR.y0} x2={FR.x1} y2={FR.y0} class="ax"></line>
+            <line x1={FR.x0} y1={frY(9000)} x2={FR.x1} y2={frY(9000)} class="ref"></line>
+            <text x={FR.x0 + 4} y={frY(9000) - 7} class="reflab">szczyt z połowy lat 70. — ok. 9 000</text>
+            <polyline points={frPkt.map((p) => `${frX(p.r)},${frY(p.v)}`).join(' ')} class="ln"></polyline>
+            {frPkt.map((p) => <circle cx={frX(p.r)} cy={frY(p.v)} r="4.5" class="dot"></circle>)}
+            <text x={frX(1992)} y={frY(3500) + 19} text-anchor="middle" class="val">3 500</text>
+            <text x={frX(2007)} y={frY(7500) - 12} text-anchor="middle" class="val">7 500</text>
+            {[1972, 1992, 2007, 2019].map((r) => (
+              <text x={frX(r)} y={FR.y0 + 20} text-anchor="middle" class="yr">{r}</text>
+            ))}
+            <text x={frX(1992) + 38} y={frY(3500) + 19} class="note">−61%</text>
+            <text x={frX(2019)} y={frY(8000) + 22} text-anchor="end" class="note">2019: limit zniesiony</text>
+          </svg>
+        </div>
+        <p class="source-note">
+          Szczyt i dno za <a href="https://www.oecd.org/content/dam/oecd/en/publications/reports/2016/03/health-workforce-policies-in-oecd-countries_g1g57f0f/9789264239517-en.pdf" target="_blank" rel="noopener noreferrer">OECD (2016)</a>: „It came down from nearly 9 000 students admitted per year in the mid-1970s to 3 500 in the 1990s”, a od końca lat 90. do 2011 r. „the numbers went back up to 8 000”. Wartość 3 500 dla 1992 r. i próg 7 500 w 2007 r. — <a href="https://www.academie-medecine.fr/wp-content/uploads/2016/03/PAGES-DE-1367-1378.pdf" target="_blank" rel="noopener noreferrer">Académie nationale de médecine (2014)</a>. Koniec numerus clausus w 2019 r. — <a href="https://www.ccomptes.fr/sites/default/files/2024-12/20241211-Lacces-aux-%C3%A9tudes-de-sante.pdf" target="_blank" rel="noopener noreferrer">Cour des comptes (2024)</a>.
+        </p>
+        <p>
+          Najciekawsze jest tu nie samo cięcie, lecz <strong>spóźnienie korekty</strong>. Académie nationale de médecine pisze, że pod koniec lat 80. limit <strong>powinien był zostać podniesiony</strong> — tak jak zakładano już w 1979 r. — a zrobiono to <strong>„dopiero dziesięć lat później”</strong>, dochodząc do 7 500 miejsc w 2007 r. Dziesięć lat zwłoki na decyzji, której skutek i tak przychodzi po piętnastu.
+        </p>
+        <p>
+          Rachunek za to płacony jest <strong>dziś i jeszcze przez dekadę</strong>. Według projekcji francuskiego urzędu statystyki zdrowia (DREES) gęstość lekarzy była w 2021 r. <strong>niższa niż w 2012 r.</strong>, dołek wypada <strong>w 2028 r.</strong>, a powrót do poziomu z 2021 r. — dopiero <strong>około 2035 r.</strong>
+        </p>
+        <div class="tl">
+          <svg viewBox="0 0 640 236" role="img" aria-label="Gęstość lekarzy we Francji jako indeks, 2021 równa się 100: w 2012 około 106, w 2021 sto, dołek w 2028 na poziomie 95, powrót do stu dopiero w 2035.">
+            <line x1="62" y1="196" x2="596" y2="196" class="ax"></line>
+            <line x1="62" y1={gY(100)} x2="596" y2={gY(100)} class="ref"></line>
+            <text x="66" y={gY(100) - 7} class="reflab">poziom 2021 = 100</text>
+            <polyline points={frGest.map((p) => `${gX(p.r)},${gY(p.i)}`).join(' ')} class="ln"></polyline>
+            {frGest.map((p) => <circle cx={gX(p.r)} cy={gY(p.i)} r="4.5" class="dot"></circle>)}
+            {frGest.map((p) => <text x={gX(p.r)} y={gY(p.i) - 13} text-anchor="middle" class="val">{p.i}</text>)}
+            {frGest.map((p) => <text x={gX(p.r)} y="216" text-anchor="middle" class="yr">{p.r}</text>)}
+            <text x={gX(2028)} y={gY(95) + 24} text-anchor="middle" class="note">DOŁEK</text>
+          </svg>
+        </div>
+        <p class="source-note">
+          Indeks własny na podstawie <a href="https://drees.solidarites-sante.gouv.fr/communique-de-presse/medecins-sages-femmes-chirurgiens-dentistes-et-pharmaciens-combien-de" target="_blank" rel="noopener noreferrer">DREES (2021)</a>: gęstość 318 lekarzy na 100 tys. mieszkańców w 2021 r. wobec 325 w 2012 r.; gęstość standaryzowana spada do minimum w 2028 r. (−5% wobec 2021 r.) i wraca do poziomu z 2021 r. około 2035 r. Podajemy <strong>indeks, nie wartości bezwzględne</strong>, bo DREES używa dwóch mierników (prostego i standaryzowanego wiekiem) i nie wolno ich mieszać.
+        </p>
+        <p>
+          I liczba, która powinna kończyć każdą dyskusję o tym, że „limit da się szybko odkręcić”: w tych samych projekcjach scenariusz <strong>zwiększenia naboru o 20% przyspiesza wyjście z dołka o około trzy lata</strong>. Nie likwiduje go — przesuwa.
+        </p>
+        <p>
+          Francja zniosła numerus clausus w 2019 r. Pięć lat później Cour des comptes, tamtejsza izba obrachunkowa, wystawiła rachunek nie liczbie miejsc, lecz <strong>sposobowi jej ustalania</strong>: wzrost przyjęć na medycynę „bez widocznego związku z potrzebami terytoriów”, a przede wszystkim —
+        </p>
+        <blockquote>
+          „L’absence à ce stade d’une méthodologie partagée sur l’estimation des besoins de santé […] ne permet pas de garantir la pertinence des objectifs actuels.”
+          <cite>Cour des comptes, <em>L’accès aux études de santé</em>, grudzień 2024</cite>
+        </blockquote>
+        <p>
+          Po pięćdziesięciu latach regulowania liczby lekarzy i pięciu latach po zniesieniu limitu Francja <strong>nadal nie ma uzgodnionej metody liczenia potrzeb zdrowotnych</strong>. To dokładnie ten sam problem, który mamy w Polsce — tylko o pół wieku starszy.
+        </p>
+
+        <h2>4. Trzy kraje, jedno pytanie: według czego ustawiano tę liczbę</h2>
+        <p>
+          Zestawmy to, co da się zestawić — nie same liczby miejsc (są nieporównywalne), lecz <strong>powód decyzji i to, co po niej nastąpiło</strong>.
+        </p>
+        <div class="table-wrap">
+          <table class="cmp">
+            <thead>
+              <tr><th>&nbsp;</th><th>Portugalia</th><th>Francja</th><th>Polska (dziś)</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Ruch</th>
+                <td>805 → 190 miejsc<br /><span class="sub">1979 → 1986</span></td>
+                <td>~9 000 → 3 500<br /><span class="sub">poł. lat 70. → 1992</span></td>
+                <td>propozycja 7797 → ~4100<br /><span class="sub">wariant A, od 2027</span></td>
+              </tr>
+              <tr>
+                <th scope="row">Podany powód</th>
+                <td>jakość kształcenia, brak kadry dydaktycznej</td>
+                <td>pojemność szpitali; nieoficjalnie — <strong>kontrola wydatków</strong></td>
+                <td>koszt publiczny (do 15 mld zł), bilans rynku pracy</td>
+              </tr>
+              <tr>
+                <th scope="row">Oparte na potrzebach zdrowotnych?</th>
+                <td class="no">nie</td>
+                <td class="no">nie — izba obrachunkowa stwierdza brak metody do dziś</td>
+                <td>model państwa jest jawny, <strong>metodologii tej analizy nie opublikowano</strong></td>
+              </tr>
+              <tr>
+                <th scope="row">Ile trwał powrót</th>
+                <td><strong>21 lat</strong> do poziomu sprzed cięcia</td>
+                <td>korekta <strong>10 lat</strong> po terminie; dołek 2028, powrót ok. 2035</td>
+                <td>skutek cięcia ok. 2038, jego odwrócenia — ok. 2050</td>
+              </tr>
+              <tr>
+                <th scope="row">Kto zapłacił</th>
+                <td>1,6 mln osób bez lekarza rodzinnego; praca z agencji zamiast etatów</td>
+                <td>pacjenci w „pustyniach medycznych”; gęstość spada mimo wzrostu naboru</td>
+                <td class="q">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Wzór jest w obu krajach ten sam: <strong>liczbę kształconych lekarzy ustawiono według czegoś innego niż zdrowie ludności</strong> — raz według pojemności uczelni, raz według budżetu — a rachunek przyszedł po kilkunastu latach i zapłacili go pacjenci. W żadnym z tych krajów limitu nie ustalała zresztą izba lekarska; robiło to państwo. Pytanie nie brzmi więc „kto ma rację”, tylko <strong>jakim kryterium wolno się przy tej liczbie posługiwać</strong>.
+        </p>
+
+        <h2>5. Pułapka wskaźnika: liczymy licencje, nie lekarzy przy pacjencie</h2>
+        <p>
+          Wszystkie te prognozy — polskie, portugalskie i francuskie — stoją na wskaźniku „lekarzy na 1000 mieszkańców”. A ten wskaźnik mierzy co innego, niż się wydaje. Portugalia bywa opisywana jako kraj nadmiaru lekarzy, bo ma <strong>5,8 na 1000</strong>. OECD sama ostrzega, żeby tego tak nie czytać:
+        </p>
+        <blockquote>
+          „Portugal remains one of only three EU countries unable to report practising physician numbers. The headline 5.8 licensed doctors per 1 000 population counts retirees and others who are currently not practising, overstating capacity”
+          <cite>OECD / European Observatory, <em>Portugal: Country Health Profile 2025</em></cite>
+        </blockquote>
+        <p>
+          Gdy portugalski urząd statystyczny policzył w 2026 r. lekarzy <em>praktykujących</em>, wyszło <strong>ponad 46 tys.</strong> wobec ok. 64 tys. zarejestrowanych — przy ludności ok. 10,6 mln daje to ok. <strong>4,3 na 1000</strong>, czyli równo średnią unijną <span class="muted">(przeliczenie własne)</span>. Kraj „nadmiaru” okazał się przeciętny.
+        </p>
+        <p>
+          <strong>Polski wskaźnik ma dokładnie tę samą wadę</strong> — i widać ją gołym okiem, gdy zestawić szereg sprzed i po zmianie metody liczenia przez GUS:
+        </p>
+        <div class="brk-chart">
+          <svg viewBox="0 0 640 300" role="img" aria-label="Liczba lekarzy na 1000 mieszkańców w Polsce: stara sprawozdawczość 2,2 w 2010 i 2,4 w 2019, a po zmianie metody na rejestry administracyjne 3,4 w 2021 i 3,9 w 2023. Między 2019 a 2021 przerwa w szeregu.">
+            <rect x="437" y="40" width="81" height="210" class="brk-band"></rect>
+            <text x="477" y="205" text-anchor="middle" font-size="11" class="brk-bandlab" transform="rotate(-90 477 205)" font-weight="600">BREAK w szeregu</text>
+            <line x1="70" y1="250" x2="600" y2="250" class="ax"></line>
+            <line x1="70" y1="68" x2="600" y2="68" class="brk-oecd"></line>
+            <text x="74" y="62" font-size="11" class="brk-oecdlab">średnia OECD 2023 ≈ 3,9</text>
+            <text x="60" y="254" text-anchor="end" font-size="11" class="yr">0</text>
+            <text x="60" y="161" text-anchor="end" font-size="11" class="yr">2</text>
+            <text x="60" y="67" text-anchor="end" font-size="11" class="yr">4</text>
+            <text x="70" y="272" text-anchor="middle" font-size="12" class="yr">2010</text>
+            <text x="437" y="272" text-anchor="middle" font-size="12" class="yr">2019</text>
+            <text x="518" y="272" text-anchor="middle" font-size="12" class="yr">2021</text>
+            <text x="600" y="272" text-anchor="middle" font-size="12" class="yr">2023</text>
+            <polyline points="70,147 437,138" class="brk-old"></polyline>
+            <line x1="437" y1="138" x2="518" y2="91" class="brk-gap"></line>
+            <polyline points="518,91 600,68" class="brk-new"></polyline>
+            <circle cx="70" cy="147" r="4" class="brk-dot-old"></circle>
+            <circle cx="437" cy="138" r="4" class="brk-dot-old"></circle>
+            <circle cx="518" cy="91" r="4" class="brk-dot-new"></circle>
+            <circle cx="600" cy="68" r="4" class="brk-dot-new"></circle>
+            <text x="80" y="165" text-anchor="middle" font-size="12" class="brk-lab-old" font-weight="600">2,2</text>
+            <text x="437" y="128" text-anchor="middle" font-size="12" class="brk-lab-old" font-weight="600">2,4</text>
+            <text x="518" y="81" text-anchor="middle" font-size="12" class="brk-lab-new" font-weight="600">3,4</text>
+            <text x="596" y="58" text-anchor="end" font-size="12" class="brk-lab-new" font-weight="600">3,9</text>
+          </svg>
+          <div class="brk-legend">
+            <span class="bl-item"><span class="bl-dot bl-old"></span>Stara sprawozdawczość (do ~2019/2020)</span>
+            <span class="bl-item"><span class="bl-dot bl-new"></span>Rejestry administracyjne GUS (od ~2021)</span>
+          </div>
+        </div>
+        <p class="source-note">
+          Wskaźnik „skoczył” z 2,4 do 3,9 w dwa–trzy lata, bo GUS przeszedł na <strong>rejestry administracyjne</strong> — nie dlatego, że tylu lekarzy przybyło przy pacjencie. Danych sprzed i po zmianie <strong>nie wolno zestawiać jak jednego trendu</strong>. Szerzej: <a href="/analizy/dlaczego-brakuje-lekarzy/">dlaczego brakuje lekarzy</a>.
+        </p>
+        <p>
+          Skala rozjazdu jest w Polsce policzalna: rejestr Naczelnej Izby Lekarskiej podaje ok. <strong>174 tys.</strong> lekarzy z prawem wykonywania zawodu i ok. <strong>165 tys.</strong> wykonujących, a GUS — ok. <strong>141 tys.</strong> pracujących <strong>bezpośrednio z pacjentem</strong>. To trzy różne liczby tej samej rzeczy, różniące się o ponad 30 tysięcy osób. <strong>Nadwyżki nie da się wiarygodnie policzyć w populacji, której nikt nie umie policzyć</strong> — a na tym wskaźniku opierają się wszystkie prognozy: i „2028” Porozumienia Rezydentów, i „2032” NIL, i „2034” ministerstwa.
+        </p>
+        <p>
+          Do tego dochodzi rozkład, którego średnia nie pokazuje. Lekarze rodzinni to w Polsce <strong>6,7% wszystkich lekarzy wobec 19,9% średniej unijnej</strong> — jeden z najniższych udziałów w Unii. Portugalia miała pod tym względem jeden z najwyższych i to jej nie uratowało. <strong>Sama liczba nie mówi nic o dostępie.</strong>
+        </p>
+
+        <h2>6. Czego uczą oba te rachunki</h2>
+        <p>
+          Portugalia obcięła nabór w imię jakości kształcenia. Francja — w imię kontroli wydatków. Żaden z tych powodów nie był zły sam w sobie; oba były po prostu <strong>nie tym kryterium</strong>. Skutek jest w obu krajach ten sam i widać go dopiero po kilkunastu latach: nie brakuje „lekarzy w ogóle”, brakuje <strong>lekarza, do którego można się dostać</strong> — w konkretnym regionie, w konkretnej dziedzinie, w publicznym systemie.
+        </p>
+        <p>
+          Dlatego jedyne kryterium, które broni się przy tej decyzji, to <strong>potrzeby zdrowotne ludności</strong>: ilu ludzi, gdzie, na co choruje i jak długo czeka. Nie pojemność uczelni, nie stan budżetu i nie sytuacja dochodowa jakiejkolwiek grupy zawodowej — także wtedy, gdy akurat ta grupa ma rację co do liczb. Portugalia i Francja pokazują, że decyzja podjęta według innego kryterium nie wraca po roku ani po pięciu. Wraca po piętnastu i wraca jako <strong>kolejka pacjenta</strong>.
+        </p>
+        <div class="callout" style="border-left-color: var(--brand)">
+          <p>
+            Z tego wynika prosty test dla każdej propozycji zmiany limitu — po której stronie by nie padła. <strong>Pokaż model.</strong> Jakie potrzeby zdrowotne przyjmujesz, na jakich danych, przy jakim czasie pracy lekarza, z jakim rozbiciem na regiony i dziedziny — i co się dzieje, gdy te założenia zmienić. Ministerstwo Zdrowia taki model <a href="https://basiw.mz.gov.pl/mapy-informacje/mapa-2022-2026/analizy/kadry-medyczne/model-popytowo-podazowy-lekarzy/" target="_blank" rel="noopener noreferrer">udostępnia</a>. Analiza, z której pochodzi liczba „4100”, <strong>nie</strong>. Dopóki tak jest, nie da się sprawdzić, czy liczba wynika z potrzeb ludzi, czy z czegoś innego — i właśnie dlatego trzeba tego wymagać, zanim ktokolwiek podejmie decyzję na piętnaście lat.
+          </p>
+        </div>
+
+        <p class="source-note">
+          <strong>Źródła.</strong> Analiza NIL: <a href="https://nil.org.pl/aktualnosci/8502-polska-na-drodze-do-marnowania-miliarda-zlotych-rocznie-na-ksztalcenie-nadmiarowych-lekarzy" target="_blank" rel="noopener noreferrer">nil.org.pl, 11.06.2024</a>. Stanowisko i model MZ: <a href="https://www.gov.pl/web/zdrowie/ksztalcenie-i-liczba-lekarzy--trendy-i-wyzwania" target="_blank" rel="noopener noreferrer">gov.pl, 7.11.2025</a> oraz <a href="https://basiw.mz.gov.pl/mapy-informacje/mapa-2022-2026/analizy/kadry-medyczne/model-popytowo-podazowy-lekarzy/" target="_blank" rel="noopener noreferrer">model popytowo-podażowy lekarzy</a> (sprawdzony 1.09.2026). Portugalia — historia limitu: <a href="https://www.edulog.pt/storage/app/uploads/public/5ee/948/5ad/5ee9485ad5289214937284.pdf" target="_blank" rel="noopener noreferrer">EDULOG (2018)</a>; wskaźniki, dostęp, kadry i praca agencyjna: <a href="https://eurohealthobservatory.who.int/publications/m/portugal-country-health-profile-2025" target="_blank" rel="noopener noreferrer">OECD / European Observatory, <em>Portugal: Country Health Profile 2025</em></a>; konkurs specjalizacyjny 2025: <a href="https://ordemdosmedicos.pt/internato-medico-2025-vagas-nao-preenchidas-expoem-crise-estrutural-nas-especialidades-fundamentais-do-sns" target="_blank" rel="noopener noreferrer">Ordem dos Médicos, 30.11.2025</a>; lekarze praktykujący wg INE: <a href="https://eco.sapo.pt/2026/07/24/um-terco-dos-medicos-em-exercicio-tem-menos-de-35-anos/" target="_blank" rel="noopener noreferrer">ECO, 24.07.2026</a>. Francja: <a href="https://www.oecd.org/content/dam/oecd/en/publications/reports/2016/03/health-workforce-policies-in-oecd-countries_g1g57f0f/9789264239517-en.pdf" target="_blank" rel="noopener noreferrer">OECD (2016)</a>, <a href="https://www.academie-medecine.fr/wp-content/uploads/2016/03/PAGES-DE-1367-1378.pdf" target="_blank" rel="noopener noreferrer">Académie nationale de médecine (2014)</a>, <a href="https://www.ccomptes.fr/sites/default/files/2024-12/20241211-Lacces-aux-%C3%A9tudes-de-sante.pdf" target="_blank" rel="noopener noreferrer">Cour des comptes (2024)</a>, <a href="https://drees.solidarites-sante.gouv.fr/communique-de-presse/medecins-sages-femmes-chirurgiens-dentistes-et-pharmaciens-combien-de" target="_blank" rel="noopener noreferrer">DREES (2021)</a>. Polska w porównaniu unijnym: <a href="https://www.oecd.org/en/publications/country-health-profile-2025-country-notes_c0e8b8be-en.html" target="_blank" rel="noopener noreferrer"><em>Poland: Country Health Profile 2025</em></a>. Czas od decyzji do lekarza: <a href="https://www.zi.de/fileadmin/Downloads/Service/Medien/MI/Zi-Bericht-Studienplaetze_2024.pdf" target="_blank" rel="noopener noreferrer">Zi (2024)</a>. Limity przyjęć — rozporządzenia MZ, za bazą danych projektu. <strong>Pokrewne:</strong> <a href="/analizy/lejek-ksztalcenia/">lejek kształcenia</a>, <a href="/analizy/dlaczego-brakuje-lekarzy/">dlaczego brakuje lekarzy</a>, <a href="/mechanizmy/reglamentacja-dostepu/">reglamentacja dostępu do zawodu</a>.
+        </p>
+      </div>
+
+      <p class="pager"><a href="/analizy/">← Wszystkie analizy</a> · <a href="/postulat/">Postulat →</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ShareRow heading="Pomóż nagłośnić sprawę:" />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .mech { padding-left: 1.25rem; }
+  .mech li { margin: 0.7rem 0; line-height: 1.6; }
+  .warianty { padding-left: 1.25rem; }
+  .warianty li { margin: 0.6rem 0; line-height: 1.6; }
+  .fact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1.25rem 0 0.75rem; }
+  .fact { display: flex; flex-direction: column; gap: 0.4rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
+  .fact-num { font-family: var(--font-mono); font-size: clamp(1.1rem, 2.8vw, 1.45rem); font-weight: 700; color: var(--brand-link); line-height: 1.05; }
+  .fact-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.5; }
+  blockquote { margin: 1.25rem 0; padding: 0.9rem 1.15rem; border-left: 3px solid var(--brand); background: var(--surface-2); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; font-size: 0.97rem; line-height: 1.6; }
+  blockquote cite { display: block; margin-top: 0.5rem; font-size: 0.82rem; color: var(--ink-soft); font-style: normal; }
+
+  /* słupki limitów PL */
+  .chart { margin: 1.25rem 0; display: flex; flex-direction: column; gap: 0.45rem; }
+  .bar-row { display: grid; grid-template-columns: 4.6rem 1fr 3.6rem; align-items: center; gap: 0.6rem; }
+  .bar-lab { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft); }
+  .bar-track { background: var(--line); border-radius: 999px; height: 0.85rem; overflow: hidden; }
+  .bar-fill { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
+  .bar-val { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; text-align: right; }
+
+  /* osie czasu PT / FR — kolory z tokenów, więc dark mode działa sam */
+  .tl { margin: 1.25rem 0 0.75rem; max-width: 720px; }
+  .tl svg { width: 100%; height: auto; display: block; }
+  .tl svg text { font-family: var(--font-sans); }
+  .tl .ax { stroke: var(--line-2); stroke-width: 1; }
+  .tl .ref { stroke: var(--ok); stroke-width: 1; stroke-dasharray: 3 3; }
+  .tl .reflab { font-size: 11px; fill: var(--ok); }
+  .tl .ln { fill: none; stroke: var(--brand-link); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .tl .dot { fill: var(--brand-link); }
+  .tl .val { font-family: var(--font-mono); font-size: 12px; font-weight: 700; fill: var(--ink); }
+  .tl .yr { font-size: 12px; fill: var(--ink-soft); }
+  .tl .note { font-size: 11px; fill: var(--alert); font-weight: 600; }
+
+  /* wykres „break w szeregu" — przeniesiony z /analizy/dlaczego-brakuje-lekarzy;
+     kolory zamienione na tokeny (oryginał miał literały i nie działał w dark) */
+  .brk-chart { margin: 1.25rem 0 0.75rem; max-width: 720px; }
+  .brk-chart svg { width: 100%; height: auto; display: block; }
+  .brk-chart svg text { font-family: var(--font-sans); }
+  .brk-chart .ax { stroke: var(--line-2); stroke-width: 1; }
+  .brk-chart .yr { fill: var(--ink-soft); }
+  .brk-band { fill: var(--paper-2); }
+  .brk-bandlab { fill: var(--ink-faint); }
+  .brk-oecd { stroke: var(--ok); stroke-width: 1; stroke-dasharray: 3 3; }
+  .brk-oecdlab { fill: var(--ok); }
+  .brk-old { fill: none; stroke: var(--alert); stroke-width: 3; stroke-linecap: round; }
+  .brk-new { fill: none; stroke: var(--brand-link); stroke-width: 3; stroke-linecap: round; }
+  .brk-gap { stroke: var(--neutral-fill); stroke-width: 2; stroke-dasharray: 5 4; }
+  .brk-dot-old { fill: var(--alert); }
+  .brk-dot-new { fill: var(--brand-link); }
+  .brk-lab-old { fill: var(--alert); }
+  .brk-lab-new { fill: var(--brand-link); }
+  .brk-legend { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-top: 0.5rem; font-size: 0.85rem; color: var(--ink-soft); }
+  .bl-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .bl-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .bl-old { background: var(--alert); }
+  .bl-new { background: var(--brand-link); }
+
+  /* tabela porównawcza */
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0; }
+  .cmp { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 640px; }
+  .cmp th, .cmp td { border: 1px solid var(--line); padding: 0.6rem 0.7rem; text-align: left; vertical-align: top; line-height: 1.45; }
+  .cmp thead th { background: var(--paper-2); font-size: 0.85rem; }
+  .cmp tbody th { background: var(--paper); font-weight: 600; width: 12rem; }
+  .cmp .sub { color: var(--ink-soft); font-size: 0.8rem; }
+  .cmp .no { color: var(--alert); font-weight: 600; }
+  .cmp .q { color: var(--ink-faint); text-align: center; }
+  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+</style>

@@ -241,6 +241,12 @@ export const strony: Record<string, Strona> = {
     opis: 'Lekarze spoza UE wchodzą do zawodu decyzją ministra, z pominięciem izb i weryfikacji dyplomu. Mechanizm, liczby i luki jawności.',
     tematy: ['dostep-do-zawodu', 'kadra'],
   },
+  '/analizy/ciecie-limitow-na-medycyne': {
+    dzial: 'analizy',
+    tytul: 'Cięcie limitów na medycynę',
+    opis: 'Portugalia obcięła nabór o trzy czwarte, Francja o ponad połowę — obie wracały pokolenie. Co z tego wynikło dla pacjentów i według jakiego kryterium wolno ustalać limit przyjęć.',
+    tematy: ['dostep-do-zawodu'],
+  },
   '/analizy/lejek-ksztalcenia': {
     dzial: 'analizy',
     tytul: 'Lejek kształcenia',

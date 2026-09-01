@@ -247,6 +247,12 @@ export const strony: Record<string, Strona> = {
     opis: 'Polska ścięła nabór z ponad 6000 miejsc do 2090 i wracała 38 lat. Wyrwę widać w rejestrze: lekarzy 46–50 lat o 27% mniej niż o dekadę starszych. To samo przeszły Portugalia i Francja.',
     tematy: ['dostep-do-zawodu'],
   },
+  '/analizy/symulator-podazy-lekarzy': {
+    dzial: 'analizy',
+    tytul: 'Symulator podaży lekarzy',
+    opis: 'Ustaw nabór na medycynę rok po roku — od 1987 do 2050 — i zobacz, ilu lekarzy będzie na rynku. Model startuje od prawdziwego rejestru izby (164 892 lekarzy wykonujących zawód) i prawdziwych limitów z rozporządzeń, więc pokazuje, ile lat mija między decyzją a jej skutkiem.',
+    tematy: ['dostep-do-zawodu'],
+  },
   '/analizy/lejek-ksztalcenia': {
     dzial: 'analizy',
     tytul: 'Lejek kształcenia',

@@ -12,6 +12,7 @@ export const pageDates = {
   '/analizy/sladem-zlotowki': '2026-07-10',
   '/analizy/jedno-pwz': '2026-07-07',
   '/analizy/ciecie-limitow-na-medycyne': '2026-09-01',
+  '/analizy/symulator-podazy-lekarzy': '2026-09-01',
   '/analizy/lejek-ksztalcenia': '2026-07-08',
   '/analizy/english-division': '2026-08-02',
   '/analizy/lekarze-ze-wschodu': '2026-07-08',

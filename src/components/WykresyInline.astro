@@ -1,0 +1,164 @@
+---
+// Wykresy SVG osadzane w treści (progressive enhancement).
+// Markdown wstawia wykresy jako <img> — działają bez JS. Ten skrypt podmienia je na SVG inline
+// (klasa .zl-inline): kolory z tokenów strony (także przy ręcznym przełączniku motywu), tytuł
+// i źródło w <figcaption>, podpowiedzi z data-tip, tabela „Pokaż dane” z <metadata> wykresu.
+// Wykresy generuje skrypt z bazy researchu; format pliku opisany w jego nagłówku.
+// Komponent obsługuje wykresy wewnątrz `.prose`.
+---
+
+<style is:global>
+  /* ── wykresy osadzone (zl = zarobkilekarzy) ───────────────────────────── */
+  svg.zl-inline {
+    --zl-s1: #2a78d6; --zl-s2: #eb6834; --zl-s3: #1baf7a;
+    --zl-ink: var(--ink); --zl-soft: var(--ink-soft); --zl-faint: var(--ink-faint);
+    --zl-grid: var(--line); --zl-axis: var(--line-2); --zl-bg: var(--bg);
+    font-family: var(--font-sans);
+    display: block; width: 100%; height: auto; overflow: visible;
+  }
+  :root[data-theme="dark"] svg.zl-inline { --zl-s1: #3987e5; --zl-s2: #d95926; --zl-s3: #199e70; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) svg.zl-inline { --zl-s1: #3987e5; --zl-s2: #d95926; --zl-s3: #199e70; }
+  }
+  .zl-fig { margin: 2rem 0 2.4rem; }
+  .zl-cap { display: block; margin: 0 0 0.7rem; }
+  .zl-title { display: block; font-weight: 600; color: var(--ink); font-size: 1.02rem; line-height: 1.35; }
+  .zl-sub { display: block; color: var(--ink-soft); font-size: 0.88rem; margin-top: 0.2rem; line-height: 1.4; }
+  .prose .zl-foot p { margin: 0.15rem 0; font-size: 0.8rem; line-height: 1.45; color: var(--ink-faint); }
+  .zl-foot { margin-top: 0.4rem; }
+  .zl-foot a { color: var(--brand-link); }
+  .zl-data { margin-top: 0.4rem; font-size: 0.82rem; }
+  .zl-data summary { cursor: pointer; color: var(--brand-link); width: max-content; }
+  .zl-data table { border-collapse: collapse; margin-top: 0.5rem; width: 100%; font-size: 0.82rem; }
+  .zl-data th, .zl-data td { border-bottom: 1px solid var(--line); padding: 0.3rem 0.5rem; text-align: left; }
+  .zl-data th:not(:first-child), .zl-data td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  .zl-tip {
+    position: fixed; z-index: 60; pointer-events: none; max-width: 300px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line-2); border-radius: 8px;
+    padding: 0.45rem 0.65rem; font-size: 0.8rem; line-height: 1.4; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  }
+  .zl-tip strong { display: block; font-weight: 600; margin-bottom: 0.15rem; }
+  .zl-tip span { display: block; color: var(--ink-soft); }
+  /* ── tabela w treści (porównanie krajów) ─────────────────────────────── */
+  .prose table { border-collapse: collapse; width: 100%; margin: 1.2rem 0 1rem; font-size: 0.95rem; }
+  .prose th, .prose td { border-bottom: 1px solid var(--line); padding: 0.5rem 0.6rem; text-align: left; vertical-align: top; }
+  .prose thead th { color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--line-2); }
+  .prose td:last-child, .prose th:last-child { white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+</style>
+
+<script>
+  const svgImgs = [...document.querySelectorAll<HTMLImageElement>('.prose img')].filter((img) =>
+    /\.svg/.test(decodeURIComponent(img.src)),
+  );
+
+  function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  async function enhance(img: HTMLImageElement) {
+    const res = await fetch(img.currentSrc || img.src);
+    if (!res.ok) return;
+    const doc = new DOMParser().parseFromString(await res.text(), 'image/svg+xml');
+    const src = doc.documentElement;
+    if (src.nodeName !== 'svg') return;
+    const svg = document.importNode(src, true) as unknown as SVGSVGElement;
+    svg.classList.add('zl-inline');
+    const crop = svg.getAttribute('data-inline-viewbox');
+    if (crop) svg.setAttribute('viewBox', crop);
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    type Meta = { title: string; subtitle: string; notes: string[]; source: string; source_url: string; table: { head: string[]; rows: string[][] } | null };
+    const meta: Meta = JSON.parse(svg.querySelector('metadata.zl-meta')?.textContent || '{}');
+
+    const fig = el('figure', 'zl-fig');
+    const cap = el('figcaption', 'zl-cap');
+    cap.append(el('span', 'zl-title', meta.title ?? ''), el('span', 'zl-sub', meta.subtitle ?? ''));
+    fig.append(cap, svg);
+
+    const foot = el('div', 'zl-foot');
+    for (const n of meta.notes ?? []) foot.append(el('p', undefined, n));
+    const srcP = el('p', undefined, 'Źródło: ');
+    const url = meta.source_url;
+    const name = meta.source ?? '';
+    if (url) {
+      const a = el('a', undefined, name);
+      a.href = url;
+      srcP.append(a);
+    } else srcP.append(name);
+    foot.append(srcP);
+    fig.append(foot);
+
+    const table = meta.table;
+    if (table) {
+      const det = el('details', 'zl-data');
+      det.append(el('summary', undefined, 'Pokaż dane'));
+      const t = el('table');
+      const thead = el('thead');
+      const hr = el('tr');
+      for (const h of table.head) hr.append(el('th', undefined, h));
+      thead.append(hr);
+      const tbody = el('tbody');
+      for (const r of table.rows) {
+        const tr = el('tr');
+        for (const c of r) tr.append(el('td', undefined, c));
+        tbody.append(tr);
+      }
+      t.append(thead, tbody);
+      det.append(t);
+      fig.append(det);
+    }
+    const holder = img.parentElement;
+    if (holder && holder.tagName === 'P' && holder.childElementCount === 1) holder.replaceWith(fig);
+    else img.replaceWith(fig);
+  }
+
+  svgImgs.forEach((img) => enhance(img).catch(() => {}));
+
+  // Podpowiedzi: jeden element dla wszystkich wykresów.
+  const tip = el('div', 'zl-tip');
+  tip.hidden = true;
+  document.body.append(tip);
+  let active: Element | null = null;
+
+  function place(x: number, y: number) {
+    const pad = 14;
+    const r = tip.getBoundingClientRect();
+    let left = x + pad;
+    let top = y + pad;
+    if (left + r.width > window.innerWidth - 8) left = x - r.width - pad;
+    if (top + r.height > window.innerHeight - 8) top = y - r.height - pad;
+    tip.style.left = `${Math.max(8, left)}px`;
+    tip.style.top = `${Math.max(8, top)}px`;
+  }
+
+  document.addEventListener('pointerover', (e) => {
+    const target = (e.target as Element).closest('svg.zl-inline [data-tip]');
+    if (!target || target === active) return;
+    active?.classList.remove('is-on');
+    active = target;
+    target.classList.add('is-on');
+    const lines = (target.getAttribute('data-tip') ?? '').split('|');
+    tip.replaceChildren(...lines.map((line, i) => el(i ? 'span' : 'strong', undefined, line)));
+    tip.hidden = false;
+    place(e.clientX, e.clientY);
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!tip.hidden) place(e.clientX, e.clientY);
+  });
+  document.addEventListener('pointerout', (e) => {
+    if (!active) return;
+    const to = e.relatedTarget as Node | null;
+    if (to && active.contains(to)) return;
+    if ((e.target as Element).closest('svg.zl-inline [data-tip]') !== active) return;
+    active.classList.remove('is-on');
+    active = null;
+    tip.hidden = true;
+  });
+
+  // Nagłówek przypisów (dla czytników ekranu) po polsku.
+  const fnLabel = document.querySelector('.prose #footnote-label');
+  if (fnLabel && fnLabel.firstChild) fnLabel.firstChild.textContent = 'Przypisy';
+</script>

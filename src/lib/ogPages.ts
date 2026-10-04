@@ -134,6 +134,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Polska już raz to zrobiła',
     subtitle: 'Nabór na medycynę: ponad 6000 miejsc w 1987 r., 2090 w 2003 r. Poziom sprzed cięcia odzyskaliśmy po 38 latach.',
   },
+  'analizy/odsiew-na-medycynie': {
+    tag: 'Analiza',
+    title: 'Kto odpada z medycyny',
+    subtitle: 'Co piąty student nie kończy w terminie, odsiew to pierwszy rok, a po dyplomie bez składki ZUS w Polsce jest 5% absolwentów.',
+  },
   'analizy/symulator-podazy-lekarzy': {
     tag: 'Analiza · Symulator',
     title: 'Symulator podaży lekarzy',

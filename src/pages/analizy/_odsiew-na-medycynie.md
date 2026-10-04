@@ -71,6 +71,19 @@ Okno tych danych ma jednak swoje granice. W ankiecie Ośrodka Badań nad Migracj
 
 Cudzoziemcy to około jednej piątej absolwentów (w roku 2023/24: 1 231 z 6 007).[^mz] Duża część z nich studiuje w płatnych programach anglojęzycznych i po dyplomie wyjeżdża. Według monitoringu ELA w polskich danych ZUS widać mniej niż 1% absolwentów-cudzoziemców nauk medycznych i nauk o zdrowiu.[^ela] Rosnącej liczby absolwentów nie należy więc utożsamiać z przyszłą kadrą polskiego systemu.
 
+## Od miejsca na studiach do prawa wykonywania zawodu
+
+Ten sam lejek da się policzyć na skróty: od miejsc na studiach odjąć lekarzy, którzy kilka lat później mają prawo wykonywania zawodu (PWZ). Naczelna Izba Lekarska nie publikuje, ile takich praw wydaje co roku, ale podaje strukturę wieku: w połowie 2026 r. PWZ miało **20 457** lekarzy w wieku 26–30 lat, licząc rocznikami.[^nil-wiek] To w przybliżeniu ci, którzy zaczynali studia w latach 2015–2019 — a limit przyjęć wynosił wtedy łącznie **36 891** miejsc.[^limity] Do prawa wykonywania zawodu dochodzi więc mniej więcej **55%** miejsc. Różnica, ok. 16,4 tys., w większości nie jest jednak odsiewem:
+
+| skąd się bierze różnica | osoby | część limitu |
+|---|---|---|
+| miejsca na studiach w języku obcym i dla cudzoziemców (ich absolwenci zwykle wyjeżdżają) | ok. 9,3 tys. | 25% |
+| Polacy, którzy nie skończyli studiów w terminie | ok. 5,5 tys. | 15% |
+| absolwenci, których nie ma wśród lekarzy z PWZ w wieku 26–30 lat | ok. 2,6 tys. | 7% |
+| na I semestrze było więcej Polaków niż miejsc po polsku (powtarzający rok, Polacy na studiach anglojęzycznych) | ok. −1,0 tys. | −3% |
+
+Ostatniej pozycji nie da się rozłożyć dalej. Mieszczą się w niej absolwenci, którzy zaczęli studia później niż w wieku 19 lat i wypadają poza przedział wieku, osoby, które nie wzięły PWZ — oraz, w przeciwnym kierunku, lekarze z dyplomami zagranicznymi. Tych ostatnich nie jest mało: pod koniec 2024 r. PWZ na czas stażu miało **5 927** osób,[^stazysci] a polskich absolwentów w roku akademickim 2023/24 było **4 776**.[^mz] Do LEK po raz pierwszy podchodzi rocznie 860–1 180 osób z dyplomem zagranicznej uczelni.[^cem] Ubytek na polskich uczelniach jest więc w dużej mierze uzupełniany z zagranicy. Ilu z tych lekarzy to Polacy po studiach w innych krajach, nie wiadomo — takiej statystyki nikt nie publikuje, podobnie jak danych o powtarzaniu roku czy urlopach dziekańskich.
+
 ## Specjalizacja: tu dane się urywają
 
 Do uzyskania prawa wykonywania zawodu da się prześledzić niemal każdy krok, później dane się urywają. Wiadomo, że:
@@ -108,7 +121,7 @@ Polski wynik obejmuje także opóźnienia, a niemiecki — tylko definitywne por
 
 ## Metoda
 
-Dane studentów pochodzą z aplikacji MZ „Studenci i absolwenci kierunków medycznych” (POL-on; odczyt 4.10.2026).[^mz] Filtr „semestr studenta” ma wartości 1–6 i oznacza semestry, nie lata studiów: suma studentów z semestrów 1–6 przekracza liczbę wszystkich studentów, bo ta sama osoba liczy się w obu semestrach roku. Odsiew pierwszego roku to skreśleni w semestrach 1–2 jako odsetek studentów semestru 1. „Kończy w terminie” to absolwenci z roku t podzieleni przez studentów semestru 1 z roku t−5. Rok 2024/25 może być w danych niezamknięty. „Bez składki ZUS” oznacza, że w danym roku żaden płatnik nie odprowadzał za absolwenta składki. Wyniki LEK porównano jako odchylenie średniej uczelni od średniej sesji (zdający po polsku z polskich uczelni), ważone liczbą zdających.[^cem]
+Dane studentów pochodzą z aplikacji MZ „Studenci i absolwenci kierunków medycznych” (POL-on; odczyt 4.10.2026).[^mz] Filtr „semestr studenta” ma wartości 1–6 i oznacza semestry, nie lata studiów: suma studentów z semestrów 1–6 przekracza liczbę wszystkich studentów, bo ta sama osoba liczy się w obu semestrach roku. Odsiew pierwszego roku to skreśleni w semestrach 1–2 jako odsetek studentów semestru 1. „Kończy w terminie” to absolwenci z roku t podzieleni przez studentów semestru 1 z roku t−5. Rok 2024/25 może być w danych niezamknięty. „Bez składki ZUS” oznacza, że w danym roku żaden płatnik nie odprowadzał za absolwenta składki. Wyniki LEK porównano jako odchylenie średniej uczelni od średniej sesji (zdający po polsku z polskich uczelni), ważone liczbą zdających.[^cem] Rachunek „od miejsca do PWZ” zestawia sumę limitów przyjęć z lat 2015/16–2019/20 z liczbą lekarzy z PWZ w wieku 26–30 lat; NIL liczy wiek rocznikami, więc są to urodzeni w latach 1996–2000, czyli — przy typowym starcie studiów w wieku 19 lat — przyjęci w latach 2015–2019.
 
 ---
 
@@ -145,3 +158,6 @@ Dane studentów pochodzą z aplikacji MZ „Studenci i absolwenci kierunków med
 [^hu]: Eduline.hu, [„Riasztó lemorzsolódási adatok: orvos- és egészségtudományi szakok”](https://eduline.hu/felsooktatas/20190226_orvosi-kepzesek-lemorzsolodas), 2019 (na podstawie analiz Oktatási Hivatal; źródło wtórne).
 [^cz]: [Zdravotnický deník, wywiad z dziekanem 1. Wydziału Lekarskiego Uniwersytetu Karola](https://www.zdravotnickydenik.cz/2019/04/zebricky-lekarskych-fakult-ano-podle-profesionalni-metodiky-rika-dekan-1-lf-aleksi-sedo/), 2019 (wypowiedź, nie dane administracyjne).
 [^limit]: [Rozporządzenie Ministra Zdrowia z 7 sierpnia 2025 r. w sprawie limitu przyjęć na studia na kierunkach lekarskim i lekarsko-dentystycznym](https://eli.gov.pl/api/acts/DU/2025/1086/text.pdf), Dz.U. 2025 poz. 1086, zał. 1 (suma — obliczenie własne).
+[^nil-wiek]: Naczelna Izba Lekarska, [Zestawienie liczbowe lekarzy i lekarzy dentystów wg wieku, płci i tytułu zawodowego, stan na 30.06.2026](https://nil.org.pl/uploaded_files/1783510889_30062026-zestawienie-nr-3.pdf) — przedziały wieku liczone rocznikowo; lekarze bez lekarzy dentystów.
+[^limity]: Rozporządzenia Ministra Zdrowia w sprawie limitu przyjęć na kierunki lekarski i lekarsko-dentystyczny na lata 2015/16–2019/20: [Dz.U. 2015 poz. 1119](https://eli.gov.pl/api/acts/DU/2015/1119/text.pdf), [Dz.U. 2016 poz. 982](https://eli.gov.pl/api/acts/DU/2016/982/text.pdf), [Dz.U. 2017 poz. 1251](https://eli.gov.pl/api/acts/DU/2017/1251/text.pdf), [Dz.U. 2018 poz. 1381](https://eli.gov.pl/api/acts/DU/2018/1381/text.pdf), [Dz.U. 2019 poz. 1344](https://eli.gov.pl/api/acts/DU/2019/1344/text.pdf) (z późniejszymi zmianami); sumy — obliczenia własne.
+[^stazysci]: Naczelna Izba Lekarska, [Zestawienie ilościowe wg rodzaju prawa wykonywania zawodu, stan na 31.12.2024](https://nil.org.pl/uploaded_files/1737380333_zestawienie-nr-7-31122024.pdf) — PWZ lekarza na czas odbycia stażu.

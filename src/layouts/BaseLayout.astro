@@ -469,5 +469,33 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
         });
       })();
     </script>
+    <script>
+      // Zwijane przypisy (integrations/rehype-przypisy.mjs): sekcja jest zamknięta, więc
+      // przed skokiem do przypisu — z odnośnika w tekście albo z adresu #przypisu —
+      // trzeba ją otworzyć; przed drukiem rozwijamy wszystkie. No-op bez przypisów.
+      (() => {
+        if (!document.querySelector('details.przypisy')) return;
+        const otworz = (id: string) => {
+          const cel = id ? document.getElementById(id) : null;
+          const sekcja = cel?.closest<HTMLDetailsElement>('details.przypisy');
+          if (!sekcja || sekcja.open) return null;
+          sekcja.open = true;
+          return cel;
+        };
+        const zAdresu = () => {
+          const cel = otworz(decodeURIComponent(location.hash.slice(1)));
+          cel?.scrollIntoView();
+        };
+        document.addEventListener('click', (e) => {
+          const a = e.target instanceof Element ? e.target.closest('a[href^="#"]') : null;
+          if (a) otworz(decodeURIComponent((a.getAttribute('href') ?? '').slice(1)));
+        });
+        addEventListener('hashchange', zAdresu);
+        addEventListener('beforeprint', () => {
+          document.querySelectorAll<HTMLDetailsElement>('details.przypisy').forEach((d) => (d.open = true));
+        });
+        zAdresu();
+      })();
+    </script>
   </body>
 </html>

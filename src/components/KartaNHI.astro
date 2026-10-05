@@ -4,9 +4,32 @@
 // generyczna sylwetka, zamiast godła NHI — uproszczony znak. Objaśnienia zawierają tylko
 // to, co tekst analizy podaje ze źródłem (karta od 2004, zapis wizyt, hasło na karcie).
 // Karta jest przedmiotem fizycznym, więc ma własne, stałe kolory w obu motywach strony.
+// Numerki to przyciski HTML nałożone na SVG (dostępne z klawiatury i dla czytników):
+// najechanie/fokus pokazuje popover, klik (dotyk) go przypina, Escape zamyka.
+// Lista pod kartą zostaje — to wersja bez JS i podsumowanie dla czytników ekranu.
+
+interface Objasnienie {
+  nr: number;
+  x: number; // współrzędne numerka w układzie viewBox 856×540
+  y: number;
+  tytul: string;
+  tekst: string;
+}
+
+const objasnienia: Objasnienie[] = [
+  { nr: 1, x: 139, y: 178, tytul: 'Chip', tekst: 'Przy każdej wizycie placówka zapisuje na nim wizytę i jej kolejny numer, a dane w ciągu 24 godzin trafiają do NHIA. Pacjent może ustawić na karcie hasło, które blokuje odczyt jego danych.' },
+  { nr: 2, x: 232, y: 228, tytul: 'Imię i nazwisko', tekst: 'Posiadacza karty — tu zmyślone.' },
+  { nr: 3, x: 232, y: 318, tytul: 'Numer identyfikacyjny', tekst: 'Posiadacza karty — tu zmyślony.' },
+  { nr: 4, x: 232, y: 368, tytul: 'Data urodzenia', tekst: 'W kalendarzu Republiki Chińskiej: 89/01/01 to 1 stycznia 2000 r.' },
+  { nr: 5, x: 822, y: 168, tytul: 'Zdjęcie', tekst: 'Zdjęcie posiadacza — tu zastąpione ilustracją.' },
+  { nr: 6, x: 50, y: 458, tytul: 'Numer karty', tekst: 'Tu zmyślony.' },
+  { nr: 7, x: 400, y: 446, tytul: '樣本 — „wzór”', tekst: 'Tak oznacza się przykładowe karty.' },
+];
+const pct = (v: number, max: number) => `${((v / max) * 100).toFixed(2)}%`;
 ---
 
-<figure class="karta">
+<figure class="karta" data-karta>
+  <div class="karta-scena">
   <svg
     class="karta-svg"
     viewBox="0 0 856 540"
@@ -91,26 +114,28 @@
       <path d="M606 402 C 606 330, 652 306, 706 306 C 760 306, 806 330, 806 402 Z" />
     </g>
 
-    <!-- numery objaśnień -->
-    <g class="k-znaczniki">
-      <g transform="translate(139 178)"><circle r="17" /><text y="6">1</text></g>
-      <g transform="translate(232 228)"><circle r="17" /><text y="6">2</text></g>
-      <g transform="translate(232 318)"><circle r="17" /><text y="6">3</text></g>
-      <g transform="translate(232 368)"><circle r="17" /><text y="6">4</text></g>
-      <g transform="translate(822 168)"><circle r="17" /><text y="6">5</text></g>
-      <g transform="translate(50 458)"><circle r="17" /><text y="6">6</text></g>
-      <g transform="translate(400 446)"><circle r="17" /><text y="6">7</text></g>
-    </g>
   </svg>
+  {objasnienia.map((o) => (
+    <button
+      type="button"
+      class="karta-nr"
+      style={`left:${pct(o.x, 856)};top:${pct(o.y, 540)}`}
+      data-nr={o.nr}
+      data-tytul={o.tytul}
+      data-tekst={o.tekst}
+      aria-label={`${o.nr}. ${o.tytul}: ${o.tekst}`}
+      aria-expanded="false"
+      aria-controls="karta-pop"
+    >{o.nr}</button>
+  ))}
+  <div class="karta-pop" id="karta-pop" role="tooltip" hidden data-karta-pop>
+    <strong data-karta-pop-tytul></strong>
+    <span data-karta-pop-tekst></span>
+  </div>
+  </div>
 
   <ol class="karta-legenda">
-    <li><strong>Chip.</strong> Przy każdej wizycie placówka zapisuje na nim wizytę i jej kolejny numer, a dane w ciągu 24 godzin trafiają do NHIA. Pacjent może ustawić na karcie hasło, które blokuje odczyt jego danych.</li>
-    <li><strong>Imię i nazwisko</strong> posiadacza.</li>
-    <li><strong>Numer identyfikacyjny</strong> posiadacza.</li>
-    <li><strong>Data urodzenia</strong> w kalendarzu Republiki Chińskiej: 89/01/01 to 1 stycznia 2000 r.</li>
-    <li><strong>Zdjęcie</strong> posiadacza — tu zastąpione sylwetką.</li>
-    <li><strong>Numer karty.</strong></li>
-    <li><strong>樣本</strong> — „wzór”: tak oznacza się przykładowe karty.</li>
+    {objasnienia.map((o) => <li><strong>{o.tytul}.</strong> {o.tekst}</li>)}
   </ol>
 
   <figcaption>
@@ -121,12 +146,11 @@
 
 <style>
   .karta { margin: 2rem 0 1.5rem; }
+  .karta-scena { position: relative; max-width: 520px; margin: 0 auto; }
   .karta-svg {
     display: block;
     width: 100%;
-    max-width: 520px;
     height: auto;
-    margin: 0 auto;
     filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.22));
   }
   .k-zh { font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Heiti TC", sans-serif; }
@@ -147,14 +171,44 @@
     fill: #d32f2f;
     letter-spacing: 4px;
   }
-  .k-znaczniki circle { fill: var(--brand); stroke: #fff; stroke-width: 3; }
-  .k-znaczniki text {
-    font-family: var(--font-sans);
-    font-size: 19px;
-    font-weight: 700;
-    fill: #fff;
-    text-anchor: middle;
+  .karta-nr {
+    position: absolute;
+    width: 1.55rem;
+    height: 1.55rem;
+    margin: -0.775rem 0 0 -0.775rem;
+    padding: 0;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    font: 700 0.78rem/1 var(--font-sans);
+    cursor: help;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: transform 0.12s, box-shadow 0.12s;
   }
+  .karta-nr:hover,
+  .karta-nr:focus-visible,
+  .karta-nr[aria-expanded='true'] {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 4px rgba(42, 120, 214, 0.35), 0 2px 6px rgba(0, 0, 0, 0.3);
+    outline: none;
+  }
+  .karta-pop {
+    position: absolute;
+    z-index: 10;
+    width: min(17rem, 90%);
+    padding: 0.6rem 0.75rem;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    box-shadow: 0 10px 28px -10px rgba(0, 0, 0, 0.45);
+    font-size: 0.86rem;
+    line-height: 1.45;
+  }
+  .karta-pop strong { display: block; margin-bottom: 0.15rem; }
+  .karta-pop span { color: var(--ink-soft); }
+  @media (prefers-reduced-motion: reduce) { .karta-nr { transition: none; } }
 
   .karta-legenda {
     max-width: 560px;
@@ -174,3 +228,60 @@
     line-height: 1.45;
   }
 </style>
+
+<script>
+  for (const karta of document.querySelectorAll<HTMLElement>('[data-karta]')) {
+    const scena = karta.querySelector<HTMLElement>('.karta-scena');
+    const pop = karta.querySelector<HTMLElement>('[data-karta-pop]');
+    const tytul = karta.querySelector<HTMLElement>('[data-karta-pop-tytul]');
+    const tekst = karta.querySelector<HTMLElement>('[data-karta-pop-tekst]');
+    const przyciski = [...karta.querySelectorAll<HTMLButtonElement>('.karta-nr')];
+    if (!scena || !pop || !tytul || !tekst) continue;
+    let przypiety: HTMLButtonElement | null = null;
+
+    const pokaz = (b: HTMLButtonElement) => {
+      tytul.textContent = b.dataset.tytul ?? '';
+      tekst.textContent = b.dataset.tekst ?? '';
+      for (const x of przyciski) x.setAttribute('aria-expanded', String(x === b));
+      pop.hidden = false;
+      // Pozycja: nad numerkiem, a gdy brak miejsca — pod nim; w poziomie w granicach karty.
+      const s = scena.getBoundingClientRect();
+      const r = b.getBoundingClientRect();
+      const w = pop.offsetWidth;
+      const h = pop.offsetHeight;
+      const srodek = r.left - s.left + r.width / 2;
+      pop.style.left = `${Math.max(0, Math.min(srodek - w / 2, s.width - w))}px`;
+      const nad = r.top - s.top - h - 8;
+      pop.style.top = `${nad >= 0 ? nad : r.bottom - s.top + 8}px`;
+    };
+    const ukryj = () => {
+      pop.hidden = true;
+      for (const x of przyciski) x.setAttribute('aria-expanded', 'false');
+    };
+    const przywroc = () => (przypiety ? pokaz(przypiety) : ukryj());
+
+    for (const b of przyciski) {
+      b.addEventListener('mouseenter', () => pokaz(b));
+      b.addEventListener('focus', () => pokaz(b));
+      b.addEventListener('mouseleave', przywroc);
+      b.addEventListener('blur', przywroc);
+      b.addEventListener('click', () => {
+        przypiety = przypiety === b ? null : b;
+        if (przypiety) pokaz(b);
+        else ukryj();
+      });
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        przypiety = null;
+        ukryj();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (przypiety && e.target instanceof Node && !scena.contains(e.target)) {
+        przypiety = null;
+        ukryj();
+      }
+    });
+  }
+</script>

@@ -215,6 +215,8 @@ h3 { font-family: var(--font-sans); font-size: 1.1rem; font-weight: 600; margin:
    w <main>. Domyślnie niewidoczne: to narzędzie do linkowania, nie ozdoba.
    Zapas przewijania, bo nawigacja jest przyklejona (`.site-nav`, ~60 px). */
 :is(h1, h2, h3)[id] { scroll-margin-top: 5rem; }
+/* Przypisy i odnośniki do nich (skok w obie strony) — też poniżej przyklejonej nawigacji. */
+.footnotes li[id], a[data-footnote-ref] { scroll-margin-top: 5rem; }
 .hanchor {
   display: inline-block;
   margin-left: 0.35em;
@@ -421,6 +423,38 @@ main { display: block; }
 .prose ul, .prose ol { padding-left: 1.3rem; margin: 0 0 1.2rem; }
 .prose li { margin: 0.4rem 0; }
 .prose strong { font-weight: 600; }
+/* Przypisy z Markdownu — zwijane w <details> (integrations/rehype-przypisy.mjs).
+   Zamknięte nie wydłużają tekstu; pasek pokazuje, ile ich jest. */
+.footnotes { margin-top: 2rem; }
+.przypisy { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.prose hr + .footnotes .przypisy { border-top: 0; }
+.przypisy-pasek {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 0.1rem;
+  cursor: pointer;
+  list-style: none;
+}
+.przypisy-pasek::-webkit-details-marker { display: none; }
+.przypisy-pasek::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: 0 0.2rem 0 0.15rem;
+  border-right: 2px solid var(--ink-soft);
+  border-bottom: 2px solid var(--ink-soft);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+.przypisy[open] > .przypisy-pasek::before { transform: rotate(45deg); }
+.prose .przypisy-naglowek { margin: 0; font-size: 1.05rem; }
+.przypisy-licznik { color: var(--ink-faint); font-size: 0.9rem; }
+.przypisy-pasek:hover .przypisy-naglowek { color: var(--brand-link); }
+.przypisy-pasek:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+.przypisy > ol { margin: 0.4rem 0 1.2rem; }
+@media (prefers-reduced-motion: reduce) { .przypisy-pasek::before { transition: none; } }
 /* Trzy poziomy wyróżnienia — hierarchia ważności (używać świadomie):
    .callout.alert  = alarm/pointa (czerwony) — maks. jeden na stronę;
    .callout        = kluczowa myśl (granat);

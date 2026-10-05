@@ -1,5 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import { addHeadingAnchors } from './lib/headingAnchors';
+import { zwinPrzypisy } from './lib/przypisy';
 
 // Anchory nagłówków doklejane do gotowego HTML — jedno miejsce zamiast ~230
 // ręcznych `id` w szablonach (i bez pilnowania ich przy każdej nowej sekcji).
@@ -14,7 +15,8 @@ export const onRequest = defineMiddleware(async (_context, next) => {
   // Tylko strony. Obrazy OG (/og/*.png), /llms.txt i RSS zostawiamy w spokoju.
   if (!(response.headers.get('content-type') ?? '').includes('text/html')) return response;
 
-  const { html } = addHeadingAnchors(await response.text());
+  // Najpierw zwijane przypisy (nagłówek dostaje data-anchor="off"), potem kotwice.
+  const { html } = addHeadingAnchors(zwinPrzypisy(await response.text()));
   const headers = new Headers(response.headers);
   headers.delete('content-length'); // długość zmieniona przez transformację
   return new Response(html, { status: response.status, statusText: response.statusText, headers });

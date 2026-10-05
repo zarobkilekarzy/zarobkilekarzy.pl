@@ -14,10 +14,12 @@ export default defineConfig({
       // indeksu nie idą (mają też noindex; zgłaszanie ich w mapie byłoby sprzeczne).
       // /dzialaj/napisz to narzędzie, nie treść — ma noindex, więc zgłaszanie go
       // w mapie byłoby sprzecznym sygnałem dla wyszukiwarki.
+      // /preview/ to podglądy tekstów przed publikacją (noindex) — też poza mapą.
       filter: (page) =>
         !page.includes('/admin/') &&
         !page.includes('/druk/') &&
-        !page.includes('/dzialaj/napisz'),
+        !page.includes('/dzialaj/napisz') &&
+        !page.includes('/preview/'),
       // <lastmod> z centralnej mapy dat (te same daty co widoczna „Ostatnia
       // aktualizacja") — sygnał świeżości przyspieszający rekrawl po zmianie.
       serialize(item) {

@@ -1,7 +1,10 @@
 ---
+import portret from '../assets/tajwan/nosacz-portret.webp';
+
 // Wzór tajwańskiej karty ubezpieczenia NHI (analiza o Tajwanie) — uproszczona ilustracja SVG.
 // Dane zmyślone (ten sam „Jan Kowalski” co na przykładowym rachunku), zamiast zdjęcia
-// generyczna sylwetka, zamiast godła NHI — uproszczony znak. Objaśnienia zawierają tylko
+// nosacz (src/assets/tajwan/nosacz-portret.webp — przycięty, bez metadanych), zamiast godła
+// NHI — uproszczony znak. Objaśnienia zawierają tylko
 // to, co tekst analizy podaje ze źródłem (karta od 2004, zapis wizyt, hasło na karcie).
 // Karta jest przedmiotem fizycznym, więc ma własne, stałe kolory w obu motywach strony.
 // Numerki to przyciski HTML nałożone na SVG (dostępne z klawiatury i dla czytników):
@@ -21,7 +24,7 @@ const objasnienia: Objasnienie[] = [
   { nr: 2, x: 232, y: 228, tytul: 'Imię i nazwisko', tekst: 'Posiadacza karty — tu zmyślone.' },
   { nr: 3, x: 232, y: 318, tytul: 'Numer identyfikacyjny', tekst: 'Posiadacza karty — tu zmyślony.' },
   { nr: 4, x: 232, y: 368, tytul: 'Data urodzenia', tekst: 'W kalendarzu Republiki Chińskiej: 89/01/01 to 1 stycznia 2000 r.' },
-  { nr: 5, x: 822, y: 168, tytul: 'Zdjęcie', tekst: 'Zdjęcie posiadacza — tu zastąpione ilustracją.' },
+  { nr: 5, x: 822, y: 168, tytul: 'Zdjęcie', tekst: 'Zdjęcie posiadacza — tu, zamiast prawdziwej osoby, nosacz.' },
   { nr: 6, x: 50, y: 458, tytul: 'Numer karty', tekst: 'Tu zmyślony.' },
   { nr: 7, x: 400, y: 446, tytul: '樣本 — „wzór”', tekst: 'Tak oznacza się przykładowe karty.' },
 ];
@@ -40,7 +43,7 @@ const pct = (v: number, max: number) => `${((v / max) * 100).toFixed(2)}%`;
     <desc id="karta-opis">
       Karta z chipem, napisem 全民健康保險 / National Health Insurance, imieniem i nazwiskiem
       Jan Kowalski, numerem identyfikacyjnym, datą urodzenia 89/01/01, numerem karty
-      i czerwonym napisem 樣本 (wzór). Zamiast zdjęcia — sylwetka.
+      i czerwonym napisem 樣本 (wzór). W miejscu zdjęcia — portret nosacza.
     </desc>
     <defs>
       <linearGradient id="karta-tlo" x1="0" y1="0" x2="1" y2="1">
@@ -52,10 +55,6 @@ const pct = (v: number, max: number) => `${((v / max) * 100).toFixed(2)}%`;
         <stop offset="0" stop-color="#f3d27a" />
         <stop offset="0.5" stop-color="#d8a93c" />
         <stop offset="1" stop-color="#b98a22" />
-      </linearGradient>
-      <linearGradient id="karta-foto" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#eef3f7" />
-        <stop offset="1" stop-color="#dfe7ee" />
       </linearGradient>
       <clipPath id="karta-ramka"><rect x="0" y="0" width="856" height="540" rx="34" /></clipPath>
       <clipPath id="karta-foto-clip"><rect x="606" y="150" width="200" height="252" rx="6" /></clipPath>
@@ -107,12 +106,15 @@ const pct = (v: number, max: number) => `${((v / max) * 100).toFixed(2)}%`;
     <text x="420" y="466" class="k-zh k-wzor">樣　本</text>
     <text x="70" y="472" class="k-numer">0000 1234 5678</text>
 
-    <!-- „zdjęcie” — generyczna sylwetka -->
-    <rect x="606" y="150" width="200" height="252" rx="6" fill="url(#karta-foto)" stroke="#c4d2dc" stroke-width="2" />
-    <g clip-path="url(#karta-foto-clip)" fill="#9aabbb">
-      <circle cx="706" cy="248" r="50" />
-      <path d="M606 402 C 606 330, 652 306, 706 306 C 760 306, 806 330, 806 402 Z" />
-    </g>
+    <!-- „zdjęcie” — nosacz zamiast prawdziwego posiadacza -->
+    <rect x="606" y="150" width="200" height="252" rx="6" fill="#ffffff" />
+    <image
+      href={portret.src}
+      x="606" y="150" width="200" height="252"
+      preserveAspectRatio="xMidYMid slice"
+      clip-path="url(#karta-foto-clip)"
+    />
+    <rect x="606" y="150" width="200" height="252" rx="6" fill="none" stroke="#c4d2dc" stroke-width="2" />
 
   </svg>
   {objasnienia.map((o) => (

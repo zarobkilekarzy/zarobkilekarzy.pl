@@ -1,0 +1,114 @@
+/* Baner „reklamowy" symulatora podaży lekarzy — wstawiany jako surowy HTML w treści
+   analiz (Markdown nie przyjmuje komponentów Astro, więc style są w osobnym pliku,
+   importowanym przez stronę). Kolory wyłącznie z tokenów → działa w obu motywach.
+   Cała karta jest jednym linkiem; wnętrze to spany, bo .prose stylizuje p/li. */
+
+.sym-baner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem 1.25rem;
+  margin: 1.75rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--brand) 45%, transparent);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(115deg, var(--brand-50) 0%, var(--surface) 78%);
+  box-shadow: 0 8px 22px -14px color-mix(in srgb, var(--brand) 70%, transparent);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.sym-baner:hover {
+  border-color: var(--brand);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px -14px color-mix(in srgb, var(--brand) 85%, transparent);
+}
+.sym-baner:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 3px; }
+
+.sym-baner-graf {
+  display: block;
+  width: 124px;
+  height: auto;
+  padding: 6px 6px 2px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.sym-baner-graf .sb-os { stroke: var(--line-2); stroke-width: 1; }
+.sym-baner-graf .sb-dzis { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 2 2; }
+.sym-baner-graf .sb-hist { fill: var(--neutral-fill); opacity: 0.55; }
+.sym-baner-graf .sb-fut { fill: var(--brand); opacity: 0.85; }
+.sym-baner-graf .sb-zm rect { fill: var(--amber); }
+.sym-baner-graf .sb-zm { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 0.25s ease; }
+.sym-baner-graf .sb-ref { fill: none; stroke: var(--ink); stroke-width: 1; opacity: 0.45; }
+.sym-baner-graf .sb-galka { fill: var(--amber); stroke: var(--surface); stroke-width: 1.5; }
+.sym-baner-graf .sb-puls {
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sb-puls 2.4s ease-out infinite;
+}
+.sym-baner:hover .sb-zm, .sym-baner:focus-visible .sb-zm { transform: scaleY(1.08); }
+
+@keyframes sb-puls {
+  0% { transform: scale(1); opacity: 0.7; }
+  70%, 100% { transform: scale(2.6); opacity: 0; }
+}
+
+.sym-baner-tag {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-link);
+}
+.sym-baner-tytul {
+  display: block;
+  margin: 0.2rem 0 0.3rem;
+  font-size: 1.1rem;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--ink);
+}
+.sym-baner-opis { display: block; font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); }
+
+.sym-baner-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sym-baner-strzalka { display: inline-block; transition: transform 0.15s ease; }
+.sym-baner:hover .sym-baner-strzalka { transform: translateX(3px); }
+
+/* Telefon: mini-wykres obok nadtytułu i tytułu, opis i przycisk na całą szerokość.
+   `display: contents` wypuszcza spany z treści do siatki banera. */
+@media (max-width: 640px) {
+  .sym-baner {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "graf tag" "graf tytul" "opis opis" "cta cta";
+    gap: 0.15rem 0.85rem;
+    padding: 0.9rem 1rem 1rem;
+  }
+  .sym-baner-tresc { display: contents; }
+  .sym-baner-graf { grid-area: graf; width: 76px; align-self: center; }
+  .sym-baner-tag { grid-area: tag; align-self: end; }
+  .sym-baner-tytul { grid-area: tytul; align-self: start; margin: 0; font-size: 1.02rem; }
+  .sym-baner-opis { grid-area: opis; margin-top: 0.55rem; }
+  .sym-baner-cta { grid-area: cta; justify-content: center; margin-top: 0.8rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sym-baner, .sym-baner-graf .sb-zm, .sym-baner-strzalka { transition: none; }
+  .sym-baner:hover { transform: none; }
+  .sym-baner-graf .sb-puls { animation: none; opacity: 0; }
+}

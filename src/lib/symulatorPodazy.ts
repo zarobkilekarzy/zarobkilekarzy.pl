@@ -114,7 +114,34 @@ export const LIMIT_DZIS = kotwice[2025];
  *  proporcjonalnie względem niej, a nie względem dzisiejszego limitu. */
 export const NIL_BAZA = 7797;
 
-export interface Ustawienia {
+/** Losy rocznika między przyjęciem na studia a pracą w zawodzie — trzy przepływy
+ *  zmierzone w analizie /analizy/odsiew-na-medycynie. Działają tylko na roczniki,
+ *  których nie ma jeszcze w rejestrze (nabór od 2020 r.); starsze roczniki rejestr
+ *  zna już po odsiewie, wyjazdach i napływie. */
+export interface Wskazniki {
+  /** Udział przyjętych, którzy kończą studia (0–1). */
+  konczy: number;
+  /** Udział absolwentów, którzy nie pracują w Polsce (0–1). */
+  wyjazdy: number;
+  /** Lekarze z dyplomem zagranicznym wchodzący co roku na rynek (osoby). */
+  naplyw: number;
+}
+
+export const WSKAZNIKI_ZMIERZONE: Wskazniki = {
+  // MZ (POL-on): absolwenci-Polacy wobec I semestru sprzed pięciu lat — 80–82%
+  // w czterech ostatnich pełnych rocznikach. Kto kończy z opóźnieniem, w modelu
+  // przepada; część tej luki pokrywa napływ z zagranicy.
+  konczy: 0.8,
+  // MZ (POL-on × ZUS): 5,0% absolwentów-Polaków bez składki ZUS w Polsce sześć
+  // lat po dyplomie. Górna granica wyjazdów w tym oknie (obejmuje też przerwy w pracy).
+  wyjazdy: 0.05,
+  // CEM: do LEK po raz pierwszy podchodzi co roku 860–1210 osób z dyplomem
+  // zagranicznej uczelni, zdaje 790–1120 (2024–2026). Nie wiadomo, ilu zostaje —
+  // przyjmujemy okrągłe 1000.
+  naplyw: 1000,
+};
+
+export interface Ustawienia extends Wskazniki {
   /** Wiek, do którego lekarz pracuje. */
   wiekOdejscia: number;
   /** Udział rocznika, który kończy specjalizację (0–1). */
@@ -125,6 +152,7 @@ export const USTAWIENIA_DOMYSLNE: Ustawienia = {
   wiekOdejscia: 70,
   // 64,5% lekarzy pracujących z pacjentem miało w 2024 r. tytuł specjalisty (GUS).
   udzialSpec: 0.65,
+  ...WSKAZNIKI_ZMIERZONE,
 };
 
 export interface PunktProgozy {
@@ -169,7 +197,7 @@ function udzialCzynnych(wiekWRoku: number, R: number, latOdStartu: number): numb
  * @param nabor tablica naboru rok po roku, indeksowana `rok - ROK_MIN`
  */
 export function symuluj(nabor: number[], u: Ustawienia = USTAWIENIA_DOMYSLNE): PunktProgozy[] {
-  const { wiekOdejscia: R, udzialSpec: p } = u;
+  const { wiekOdejscia: R, udzialSpec: p, konczy, wyjazdy, naplyw } = u;
   const wynik: PunktProgozy[] = [];
 
   for (let rok = ROK0; rok <= ROK_KONIEC; rok++) {
@@ -207,10 +235,16 @@ export function symuluj(nabor: number[], u: Ustawienia = USTAWIENIA_DOMYSLNE): P
     }
 
     // 3. Roczniki, które dopiero wejdą na rynek (nabór od 2020 r. — dyplom w 2026 r.
-    //    lub później). Zgodnie z założeniem: studia kończy 100% przyjętych.
+    //    lub później): przyjęci pomniejszeni o odsiew i wyjazdy, plus napływ lekarzy
+    //    z dyplomem zagranicznym. Napływ nie zależy od naboru (wygaszenie studiów go
+    //    nie zatrzymuje) i wchodzi w tym samym wieku co absolwenci — wieku tej grupy
+    //    nikt nie publikuje. Odsiew to sprawa pierwszego roku, więc zmiana udziału
+    //    kończących działa dopiero od naboru ROK0: roczniki 2020–2025 mają pierwszy
+    //    rok za sobą i zostają przy wartości zmierzonej.
     for (let e = OSTATNI_W_REJESTRZE + 1; e <= ROK_MAX; e++) {
       if (e + STUDIA >= rok) break;
-      const osoby0 = nabor[e - ROK_MIN];
+      const k = e >= ROK0 ? konczy : WSKAZNIKI_ZMIERZONE.konczy;
+      const osoby0 = nabor[e - ROK_MIN] * k * (1 - wyjazdy) + naplyw;
       const wiekWRoku = WIEK_STARTU + STUDIA + (rok - (e + STUDIA));
       const czynni = udzialCzynnych(wiekWRoku, R, latOdStartu);
       if (czynni === 0) continue;
@@ -222,6 +256,16 @@ export function symuluj(nabor: number[], u: Ustawienia = USTAWIENIA_DOMYSLNE): P
     wynik.push({ rok, lekarze: Math.round(lekarze), specjalisci: Math.round(specjalisci) });
   }
   return wynik;
+}
+
+/** Ilu lekarzy w roku `rok` daje jedno dodatkowe miejsce na studiach, dodawane co roku
+ *  od ROK0. Model jest liniowy w naborze, więc to przelicznik „zmiana wskaźnika =
+ *  tyle a tyle dodatkowych miejsc". Liczone na 1000 miejsc, żeby zaokrąglenia
+ *  w `symuluj` nie zjadały wyniku. */
+export function efektMiejsca(u: Ustawienia, rok: number): number {
+  const plus = naborBazowy.map((v, i) => (ROK_MIN + i >= ROK0 ? v + 1000 : v));
+  const i = rok - ROK0;
+  return (symuluj(plus, u)[i].lekarze - symuluj(naborBazowy, u)[i].lekarze) / 1000;
 }
 
 export interface Preset {

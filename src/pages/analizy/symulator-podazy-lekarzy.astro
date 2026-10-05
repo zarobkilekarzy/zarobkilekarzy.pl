@@ -5,7 +5,7 @@ import Aktualizacja from '../../components/Aktualizacja.astro';
 import {
   ROK_MIN, ROK0, ROK_DOKLADNE_OD,
   STUDIA, SPECJALIZACJA, REJESTR_DATA, REJESTR_SUMA, GUS_PRZY_PACJENCIE,
-  LIMIT_DZIS, NIL_BAZA, naborBazowy, presety, symuluj, USTAWIENIA_DOMYSLNE,
+  LIMIT_DZIS, NIL_BAZA, naborBazowy, presety, symuluj, USTAWIENIA_DOMYSLNE, WSKAZNIKI_ZMIERZONE,
   WYK, NABOR_MAX, szerSlupka, naborX, naborY, wynikX, wynikY, skalaWyniku, sciezka,
   fmt, tys,
 } from '../../lib/symulatorPodazy';
@@ -36,6 +36,25 @@ const lataOsiWynik = [2026, 2032, 2038, 2044, 2050, 2056, 2062];
 const siatkaNabor = [3000, 6000, 9000, 12000];
 const dzisX = naborX(ROK0);
 
+// Losy rocznika — trzy wskaźniki z analizy o odsiewie. `skala` przelicza wartość
+// suwaka na pole modelu (procenty → ułamek); skrypt czyta ją z data-skala.
+const suwakiWsk = [
+  {
+    pole: 'konczy', przed: 'Kończy studia', po: 'przyjętych', min: 50, max: 100, krok: 1, skala: 100,
+    zrodlo: 'Dziś 80–82% Polaków kończy w terminie.',
+  },
+  {
+    pole: 'wyjazdy', przed: 'Nie pracuje w Polsce', po: 'absolwentów', min: 0, max: 40, krok: 1, skala: 100,
+    zrodlo: 'Dziś 5% nie ma składki ZUS sześć lat po dyplomie. Z Rumunii wyjechało 33% lekarzy (OECD).',
+  },
+  {
+    pole: 'naplyw', przed: 'Napływ z zagranicy', po: 'lekarzy rocznie', min: 0, max: 4000, krok: 100, skala: 1,
+    zrodlo: 'Do LEK podchodzi co roku 860–1 210 osób z dyplomem zagranicznym.',
+  },
+] as const;
+const wartoscWsk = (s: (typeof suwakiWsk)[number]) => Math.round(WSKAZNIKI_ZMIERZONE[s.pole] * s.skala);
+const opisWsk = (s: (typeof suwakiWsk)[number]) => (s.skala === 100 ? `${wartoscWsk(s)}%` : fmt(wartoscWsk(s)));
+
 ---
 
 <BaseLayout
@@ -53,7 +72,7 @@ const dzisX = naborX(ROK0);
 
       <div class="callout">
         <p>
-          <strong>Jak to czytać.</strong> Przy nietkniętych suwakach symulator odtwarza rzeczywistość: rok {ROK0} to co do osoby wydruk z rejestru izby lekarskiej, a historia naboru to rozporządzenia Ministra Zdrowia. Wszystko, co zmienisz, model liczy jako odchylenie od tego stanu. Dlatego <strong>wiarygodne są różnice między scenariuszami, nie poziomy bezwzględne</strong> — model nie odejmuje rezygnacji, wyjazdów za granicę ani śmierci przed emeryturą, więc każdą krzywą traktuj jako górną granicę.
+          <strong>Jak to czytać.</strong> Przy nietkniętych suwakach symulator odtwarza rzeczywistość: rok {ROK0} to co do osoby wydruk z rejestru izby lekarskiej, a historia naboru to rozporządzenia Ministra Zdrowia. Wszystko, co zmienisz, model liczy jako odchylenie od tego stanu. Z przyszłych roczników odejmuje tych, którzy nie kończą studiów albo nie pracują w Polsce, i dolicza lekarzy z dyplomem zagranicznym — domyślnie w wartościach <a href="/analizy/odsiew-na-medycynie/">zmierzonych w danych ministerstwa i CEM</a>. To jednak uproszczenie, więc <strong>wiarygodne są przede wszystkim różnice między scenariuszami, nie poziomy bezwzględne</strong>.
         </p>
       </div>
     </div>
@@ -148,22 +167,55 @@ const dzisX = naborX(ROK0);
             ))}
           </div>
 
-          <div class="sym-kontrolki">
-            <div class="sym-pole sym-pole-szeroki">
-              <label for="sym-spec">
-                Kończy specjalizację: <output id="sym-spec-out">{Math.round(USTAWIENIA_DOMYSLNE.udzialSpec * 100)}%</output> rocznika
-              </label>
-              <input type="range" id="sym-spec" min="0" max="100" step="5" value={Math.round(USTAWIENIA_DOMYSLNE.udzialSpec * 100)} />
+          <fieldset class="sym-grupa">
+            <legend>Losy rocznika</legend>
+            <p class="sym-grupa-opis">
+              Wartości domyślne pochodzą z analizy <a href="/analizy/odsiew-na-medycynie/">„Kto odpada z medycyny, a kto wyjeżdża”</a>. Zmieniają tylko twój scenariusz — odniesienie zostaje przy wartościach zmierzonych. Odsiew działa od naboru {ROK0}, bo starsze roczniki mają pierwszy rok za sobą.
+              <button type="button" id="sym-wsk-reset" class="sym-pop-link" hidden>przywróć zmierzone</button>
+            </p>
+            <div class="sym-kontrolki sym-kontrolki-wsk">
+              {suwakiWsk.map((s) => (
+                <div class="sym-pole">
+                  <label for={`sym-${s.pole}`}>
+                    {s.przed}: <output id={`sym-${s.pole}-out`}>{opisWsk(s)}</output> {s.po}
+                  </label>
+                  <input
+                    type="range"
+                    id={`sym-${s.pole}`}
+                    data-wsk={s.pole}
+                    data-skala={s.skala}
+                    min={s.min}
+                    max={s.max}
+                    step={s.krok}
+                    value={wartoscWsk(s)}
+                    aria-describedby={`sym-${s.pole}-zr`}
+                  />
+                  <span id={`sym-${s.pole}-zr`} class="sym-zrodlo">{s.zrodlo}</span>
+                </div>
+              ))}
             </div>
-            <fieldset class="sym-pole sym-fieldset">
-              <legend>Pracuje do wieku</legend>
-              <div class="sym-radia">
-                {[65, 70, 75].map((r) => (
-                  <label><input type="radio" name="sym-wiek" value={r} checked={r === USTAWIENIA_DOMYSLNE.wiekOdejscia} />{` ${r} lat`}</label>
-                ))}
+          </fieldset>
+
+          <fieldset class="sym-grupa">
+            <legend>Założenia modelu</legend>
+            <p class="sym-grupa-opis">Przesuwają obie krzywe — twoją i odniesienie.</p>
+            <div class="sym-kontrolki">
+              <div class="sym-pole sym-pole-szeroki">
+                <label for="sym-spec">
+                  Kończy specjalizację: <output id="sym-spec-out">{Math.round(USTAWIENIA_DOMYSLNE.udzialSpec * 100)}%</output> rocznika
+                </label>
+                <input type="range" id="sym-spec" min="0" max="100" step="5" value={Math.round(USTAWIENIA_DOMYSLNE.udzialSpec * 100)} />
               </div>
-            </fieldset>
-          </div>
+              <fieldset class="sym-pole sym-fieldset">
+                <legend>Pracuje do wieku</legend>
+                <div class="sym-radia">
+                  {[65, 70, 75].map((r) => (
+                    <label><input type="radio" name="sym-wiek" value={r} checked={r === USTAWIENIA_DOMYSLNE.wiekOdejscia} />{` ${r} lat`}</label>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
+          </fieldset>
           <p id="sym-status" class="sym-status" aria-live="polite"></p>
         </div>
 
@@ -172,7 +224,7 @@ const dzisX = naborX(ROK0);
           <div class="sym-head">
             <h2 id="sym-h-wynik">2. Zobacz, ilu będzie lekarzy</h2>
             <p class="sym-hint">
-              Rocznik przyjęty w roku R wchodzi na rynek w R+{STUDIA}, a jako specjalista — w R+{STUDIA + SPECJALIZACJA}. Przerywana linia to scenariusz odniesienia: prawdziwa historia i utrzymanie dzisiejszego limitu.
+              Rocznik przyjęty w roku R wchodzi na rynek w R+{STUDIA}, a jako specjalista — w R+{STUDIA + SPECJALIZACJA}. Przerywana linia to scenariusz odniesienia: prawdziwa historia, utrzymanie dzisiejszego limitu i zmierzone losy rocznika.
             </p>
           </div>
 
@@ -260,25 +312,25 @@ const dzisX = naborX(ROK0);
         <ol class="sym-lista">
           <li><strong>Startuje od rejestru, nie od szacunku.</strong> Punkt wyjścia to wydruk z rejestru izby lekarskiej z {REJESTR_DATA}: <strong>{fmt(REJESTR_SUMA)}</strong> lekarzy wykonujących zawód, w jedenastu grupach wieku. Przy nietkniętych suwakach rok {ROK0} na wykresie równa się tej liczbie co do osoby.</li>
           <li><strong>Przypisuje roczniki rejestru do roczników naboru.</strong> Lekarz, który ma dziś 48 lat, zaczynał studia około 1997 r. Kiedy przesuniesz suwak dla 1997 r., model skaluje ten rocznik proporcjonalnie — i dlatego zmiana przeszłości od razu zmienia dzisiejszy stan.</li>
-          <li><strong>Dolicza roczniki, które dopiero wejdą.</strong> Kto zaczął studia w 2020 r., kończy je w 2026 r.; kto zacznie w 2050 r. — w 2056 r. Zgodnie z założeniem: studia kończy 100% przyjętych.</li>
+          <li><strong>Dolicza roczniki, które dopiero wejdą — po odsiewie i wyjazdach.</strong> Kto zaczął studia w 2020 r., kończy je w 2026 r.; kto zacznie w 2050 r. — w 2056 r. Z każdego rocznika model odejmuje tych, którzy nie kończą studiów (domyślnie {100 - Math.round(WSKAZNIKI_ZMIERZONE.konczy * 100)}% przyjętych) i nie pracują w Polsce ({Math.round(WSKAZNIKI_ZMIERZONE.wyjazdy * 100)}% absolwentów), a co roku dolicza {fmt(WSKAZNIKI_ZMIERZONE.naplyw)} lekarzy z dyplomem zagranicznym. Skąd te liczby — w analizie <a href="/analizy/odsiew-na-medycynie/">o odsiewie na medycynie</a>.</li>
           <li><strong>Odejmuje odchodzących.</strong> Rocznik wygasa po jednej piątej rocznie między wybranym wiekiem odejścia a pięcioma latami później. Tak samo model traktuje tych, którzy dziś już ten wiek przekroczyli — a to <strong>{tys(24595)} osób powyżej 70 lat</strong>, które rejestr wciąż liczy jako wykonujące zawód.</li>
         </ol>
 
         <h2>Czego ten model nie robi</h2>
         <div class="callout alert">
           <p>
-            <strong>Nikt nie rezygnuje, nikt nie wyjeżdża, nikt nie umiera przed emeryturą.</strong> Ministerstwo Zdrowia podaje <strong>4755</strong> absolwentów narodowości polskiej w roku 2023/24 — wobec <strong>5722</strong> miejsc polskojęzycznych sześć lat wcześniej. To ok. <strong>83%</strong>, nie 100%. Model liczy 100%, bo takie jest jego założenie wyjściowe, więc każdy poziom bezwzględny jest <strong>zawyżony</strong>. Różnica między dwoma scenariuszami zostaje wiarygodna — obie krzywe są zawyżone tak samo.
+            <strong>Losy rocznika to trzy stałe liczby, a nie prognoza.</strong> Odsiew, wyjazdy i napływ z zagranicy zmieniają się z roku na rok, a model trzyma je na jednym poziomie. Kto kończy studia z opóźnieniem, w modelu przepada; nikt nie umiera przed emeryturą ani nie odchodzi z zawodu. Wyjazdy są zmierzone tylko w pierwszych sześciu latach po dyplomie — późniejszych dane ZUS jeszcze nie obejmują. Różnica między dwoma scenariuszami zostaje wiarygodna, bo obie krzywe liczone są tak samo.
           </p>
         </div>
         <ul class="sym-lista">
           <li><strong>Nie liczy godzin ani miejsca pracy.</strong> Lekarz w modelu to osoba w rejestrze, nie etat w szpitalu powiatowym. Dlatego na wykresie jest linia GUS: z {fmt(REJESTR_SUMA)} lekarzy w rejestrze <strong>{fmt(GUS_PRZY_PACJENCIE)}</strong> pracuje bezpośrednio z pacjentem. Cała różnica między „ilu ich jest" a „czy lekarz jest, gdy go potrzebujesz" siedzi w <a href="/analizy/dlaczego-brakuje-lekarzy/">sześciu mechanizmach paradoksu</a>.</li>
           <li><strong>Nie rozróżnia dziedzin.</strong> Deficyt jest specjalizacyjny i lokalny; model daje jedną liczbę na cały kraj. Miejsca specjalizacyjne bywają puste nie dlatego, że brak chętnych na medycynę, lecz dlatego, że <a href="/analizy/lejek-ksztalcenia/">lejek kształcenia</a> ma inne wąskie gardło.</li>
           <li><strong>Nie zna popytu.</strong> Pokazuje podaż, a nie potrzeby zdrowotne starzejącego się społeczeństwa. To zresztą jest sedno całego sporu: <a href="https://www.ccomptes.fr/sites/default/files/2024-12/20241211-Lacces-aux-%C3%A9tudes-de-sante.pdf" target="_blank" rel="noopener noreferrer">francuska izba obrachunkowa</a> po pięćdziesięciu latach regulowania liczby lekarzy stwierdziła, że wspólnej metody liczenia potrzeb wciąż nie ma.</li>
-          <li><strong>Nie liczy napływu z zagranicy.</strong> Lekarze przyjeżdżający na uproszczonej ścieżce nie występują w modelu, choć w rejestrze już są — to jedna z przyczyn, dla których historyczne roczniki bywają liczniejsze niż nabór sprzed sześciu lat.</li>
+          <li><strong>Liczy napływ z zagranicy tylko na skróty.</strong> Model dolicza stałą liczbę lekarzy z dyplomem zagranicznym, ale nie wie, ilu z nich to Polacy po studiach w innych krajach, ilu zostaje na stałe ani w jakim są wieku — takich danych nikt nie publikuje. Lekarze przyjeżdżający na uproszczonej ścieżce w przyszłych rocznikach nie występują wcale, choć dzisiejszy rejestr już ich obejmuje.</li>
         </ul>
 
         <p class="source-note">
-          Dane: rejestr Naczelnej Izby Lekarskiej (stan na {REJESTR_DATA}) — liczba lekarzy wykonujących zawód w grupach wieku; rozporządzenia Ministra Zdrowia w sprawie limitów przyjęć na kierunek lekarski (roczniki {ROK_DOKLADNE_OD}–2025); GUS, „Zdrowie i ochrona zdrowia" (2024) — lekarze pracujący z pacjentem i udział specjalistów; warianty cięcia — analiza zespołu eksperckiego NIL z czerwca 2024 r., przeliczona proporcjonalnie z {fmt(NIL_BAZA)} miejsc z projektu rozporządzenia na 2024/25 na dzisiejszy limit {fmt(LIMIT_DZIS)}. Model i wszystkie założenia: <code>src/lib/symulatorPodazy.ts</code>.
+          Dane: rejestr Naczelnej Izby Lekarskiej (stan na {REJESTR_DATA}) — liczba lekarzy wykonujących zawód w grupach wieku; rozporządzenia Ministra Zdrowia w sprawie limitów przyjęć na kierunek lekarski (roczniki {ROK_DOKLADNE_OD}–2025); GUS, „Zdrowie i ochrona zdrowia" (2024) — lekarze pracujący z pacjentem i udział specjalistów; losy rocznika — aplikacja Ministerstwa Zdrowia „Studenci i absolwenci kierunków medycznych” (POL-on, ZUS) i statystyki LEK Centrum Egzaminów Medycznych, zestawione w <a href="/analizy/odsiew-na-medycynie/">analizie o odsiewie</a>; warianty cięcia — analiza zespołu eksperckiego NIL z czerwca 2024 r., przeliczona proporcjonalnie z {fmt(NIL_BAZA)} miejsc z projektu rozporządzenia na 2024/25 na dzisiejszy limit {fmt(LIMIT_DZIS)}. Model i wszystkie założenia: <code>src/lib/symulatorPodazy.ts</code>.
         </p>
       </div>
 
@@ -451,6 +503,13 @@ const dzisX = naborX(ROK0);
     align-items: end;
   }
   .sym-pole { display: flex; flex-direction: column; gap: 0.3rem; }
+  /* Losy rocznika: etykieta, suwak i podpis w trzech wspólnych wierszach siatki
+     (subgrid) — etykiety zawijają się różnie, a suwaki mają stać w jednej linii. */
+  .sym-kontrolki-wsk { align-items: start; }
+  @supports (grid-template-rows: subgrid) {
+    .sym-kontrolki-wsk .sym-pole { display: grid; grid-row: span 3; grid-template-rows: subgrid; align-items: end; row-gap: 0.3rem; }
+    .sym-kontrolki-wsk .sym-zrodlo { align-self: start; }
+  }
   .sym-pole label, .sym-fieldset legend { font-size: 0.82rem; color: var(--ink-soft); font-weight: 600; }
   .sym-pole select, .sym-pole input[type='number'] {
     font: inherit;
@@ -463,6 +522,13 @@ const dzisX = naborX(ROK0);
   }
   .sym-pole input[type='range'] { accent-color: var(--brand); width: 100%; }
   .sym-fieldset { border: 0; padding: 0; margin: 0; }
+  .sym-grupa { border: 0; border-top: 1px solid var(--line); padding: 0.9rem 0 0; margin: 0 0 1.1rem; min-width: 0; }
+  .sym-grupa > legend { font-size: 0.92rem; font-weight: 600; color: var(--ink); padding: 0 0.5rem 0 0; }
+  .sym-grupa-opis { margin: 0.1rem 0 0.75rem; font-size: 0.82rem; color: var(--ink-faint); max-width: 78ch; line-height: 1.5; }
+  .sym-grupa-opis .sym-pop-link { margin-left: 0.3rem; }
+  .sym-zrodlo { font-size: 0.76rem; color: var(--ink-faint); line-height: 1.4; }
+  .sym-pole output { font-variant-numeric: tabular-nums; color: var(--brand-link); }
+  .sym-pole input[type='range'][data-zmiana='tak'] { accent-color: var(--amber); }
   .sym-radia { display: flex; gap: 0.75rem; }
   .sym-radia label { font-weight: 400; font-size: 0.9rem; color: var(--ink); display: flex; align-items: center; gap: 0.25rem; }
   #sym-spec-out { font-variant-numeric: tabular-nums; color: var(--brand-link); }
@@ -499,10 +565,11 @@ const dzisX = naborX(ROK0);
 <script>
   import {
     ROK_MIN, ROK_MAX, ROK0, ROK_KONIEC, LICZBA_LAT, STUDIA,
-    GUS_PRZY_PACJENCIE, naborBazowy, presety, symuluj,
+    GUS_PRZY_PACJENCIE, naborBazowy, presety, symuluj, efektMiejsca,
+    USTAWIENIA_DOMYSLNE, WSKAZNIKI_ZMIERZONE,
     WYK, NABOR_MAX, szerSlupka, naborX, naborY, xNaRok, yNaNabor,
     wynikX, wynikY, skalaWyniku, sciezka, fmt, tys,
-    type Ustawienia,
+    type Ustawienia, type Wskazniki,
   } from '../../lib/symulatorPodazy';
 
   const svgNabor = document.getElementById('sym-nabor') as SVGSVGElement | null;
@@ -540,13 +607,20 @@ const dzisX = naborX(ROK0);
     const gusLab = document.querySelector<SVGTextElement>('#sym-gus-lab')!;
 
     const nabor = [...naborBazowy];
-    const ustawienia: Ustawienia = { wiekOdejscia: 70, udzialSpec: 0.65 };
+    const ustawienia: Ustawienia = { ...USTAWIENIA_DOMYSLNE };
     let wybranyRok = ROK0;
 
-    // Scenariusz odniesienia liczymy raz na komplet ustawień — zmiana wieku odejścia
-    // albo udziału specjalizacji przesuwa OBIE krzywe, więc porównanie musi zostać
-    // uczciwe: różnica ma pokazywać skutek naboru, a nie skutek zmiany założeń.
-    let baza = symuluj(naborBazowy, ustawienia);
+    // Scenariusz odniesienia liczymy raz na komplet ustawień. Założenia (wiek odejścia,
+    // udział specjalizacji) przesuwają OBIE krzywe — różnica ma pokazywać skutek decyzji,
+    // a nie skutek zmiany założeń. Losy rocznika (odsiew, wyjazdy, napływ) to natomiast
+    // dźwignie, więc odniesienie trzyma je na wartościach zmierzonych: dopiero wtedy
+    // widać, ile daje np. mniejszy odsiew.
+    const odniesienie = () => ({ ...ustawienia, ...WSKAZNIKI_ZMIERZONE });
+    let baza = symuluj(naborBazowy, odniesienie());
+
+    const suwakiWsk = Array.from(document.querySelectorAll<HTMLInputElement>('input[data-wsk]'));
+    const wskReset = document.querySelector<HTMLButtonElement>('#sym-wsk-reset')!;
+    const zmienioneWsk = () => suwakiWsk.some((s) => s.value !== s.defaultValue);
 
     const el = <T extends Element>(id: string) => document.getElementById(id) as unknown as T;
 
@@ -678,7 +752,8 @@ const dzisX = naborX(ROK0);
     function skomentuj(wynik: ReturnType<typeof symuluj>, _vMax: number): string {
       const zmienionaHistoria = nabor.some((v, i) => v !== naborBazowy[i] && ROK_MIN + i < ROK0);
       const zmienionaPrzyszlosc = nabor.some((v, i) => v !== naborBazowy[i] && ROK_MIN + i >= ROK0);
-      if (!zmienionaHistoria && !zmienionaPrzyszlosc) {
+      const zmWsk = zmienioneWsk();
+      if (!zmienionaHistoria && !zmienionaPrzyszlosc && !zmWsk) {
         return 'Na razie odtwarzasz rzeczywistość. Przesuń dowolny rocznik albo weź gotowy scenariusz.';
       }
       const kon = wynik[wynik.length - 1];
@@ -688,7 +763,29 @@ const dzisX = naborX(ROK0);
       const zera = nabor.filter((v, i) => v === 0 && ROK_MIN + i >= ROK0).length;
 
       if (zera > 10) {
-        return `Nabór wygaszony. Ostatni rocznik kończy studia w ${ROK_MAX + STUDIA} r., a potem rynek już tylko się starzeje — bez jednego nowego lekarza. Model nie protestuje; system by protestował.`;
+        // Ostatni rocznik, który jeszcze kogoś przyjął — od niego liczy się koniec dyplomów.
+        let ostatni = ROK0 - 1;
+        nabor.forEach((v, i) => { if (v > 0) ostatni = Math.max(ostatni, ROK_MIN + i); });
+        const reszta = ustawienia.naplyw > 0
+          ? `potem nowych lekarzy dają już tylko przyjazdy z zagranicy (${fmt(ustawienia.naplyw)} rocznie), a reszta rynku się starzeje.`
+          : 'a potem rynek już tylko się starzeje — bez jednego nowego lekarza.';
+        return `Nabór wygaszony. Ostatni rocznik kończy studia w ${ostatni + STUDIA} r., ${reszta} Model nie protestuje; system by protestował.`;
+      }
+      // Same losy rocznika, nabór nietknięty: przeliczamy skutek na „tyle samo dałoby
+      // N dodatkowych miejsc" — to porównanie mówi więcej niż sama liczba lekarzy.
+      if (zmWsk && !zmienionaHistoria && !zmienionaPrzyszlosc) {
+        const i50 = 2050 - ROK0;
+        const d50 = wynik[i50].lekarze - baza[i50].lekarze;
+        if (Math.abs(d50) < 1000) {
+          return 'Zmiana jest zbyt mała, żeby ruszyć rynek — w 2050 r. różnica nie przekracza tysiąca lekarzy.';
+        }
+        const miejsc = Math.round(Math.abs(d50) / efektMiejsca(odniesienie(), 2050) / 10) * 10;
+        return d50 > 0
+          ? `Bez jednego dodatkowego miejsca na studiach: w 2050 r. o ${fmt(d50)} lekarzy więcej. Tyle samo dałoby ok. ${fmt(miejsc)} nowych miejsc co roku od ${ROK0} r.`
+          : `W 2050 r. o ${fmt(-d50)} lekarzy mniej — tyle, ile odjęłoby cięcie limitu o ok. ${fmt(miejsc)} miejsc rocznie od ${ROK0} r.`;
+      }
+      if (zmWsk) {
+        return `Nabór i losy rocznika razem: w ${ROK_KONIEC} r. ${d >= 0 ? `o ${fmt(d)} lekarzy więcej` : `o ${fmt(-d)} lekarzy mniej`} niż w odniesieniu${pierwszy ? `, a różnica przekracza tysiąc od ${pierwszy.rok} r.` : '.'}`;
       }
       if (zmienionaHistoria && !zmienionaPrzyszlosc) {
         const dzis = wynik[0].lekarze - baza[0].lekarze;
@@ -884,15 +981,47 @@ const dzisX = naborX(ROK0);
     inSpec.addEventListener('input', () => {
       ustawienia.udzialSpec = Number(inSpec.value) / 100;
       outSpec.textContent = `${inSpec.value}%`;
-      baza = symuluj(naborBazowy, ustawienia);
+      baza = symuluj(naborBazowy, odniesienie());
       rysujWynik();
     });
     document.querySelectorAll<HTMLInputElement>('input[name="sym-wiek"]').forEach((r) => {
       r.addEventListener('change', () => {
         ustawienia.wiekOdejscia = Number(r.value);
-        baza = symuluj(naborBazowy, ustawienia);
+        baza = symuluj(naborBazowy, odniesienie());
         rysujWynik();
       });
+    });
+
+    // — Losy rocznika. Zmieniają tylko scenariusz użytkownika; odniesienie zostaje
+    //   przy wartościach zmierzonych (patrz `odniesienie`).
+    const opisSuwaka = (s: HTMLInputElement) =>
+      s.dataset.skala === '100' ? `${s.value}%` : fmt(Number(s.value));
+    function zastosujWsk(s: HTMLInputElement) {
+      const pole = s.dataset.wsk as keyof Wskazniki;
+      ustawienia[pole] = Number(s.value) / Number(s.dataset.skala);
+      document.querySelector(`#sym-${pole}-out`)!.textContent = opisSuwaka(s);
+      if (s.value !== s.defaultValue) s.setAttribute('data-zmiana', 'tak');
+      else s.removeAttribute('data-zmiana');
+      wskReset.hidden = !zmienioneWsk();
+    }
+    function przywrocWsk() {
+      for (const s of suwakiWsk) {
+        s.value = s.defaultValue;
+        zastosujWsk(s);
+      }
+    }
+    for (const s of suwakiWsk) {
+      s.addEventListener('input', () => {
+        zastosujWsk(s);
+        rysujWynik();
+        const etykieta = document.querySelector(`label[for="${s.id}"]`)?.textContent?.replace(/\s+/g, ' ').trim();
+        if (etykieta) status.textContent = `${etykieta}.`;
+      });
+    }
+    wskReset.addEventListener('click', () => {
+      przywrocWsk();
+      rysujWynik();
+      status.textContent = 'Losy rocznika przywrócone do wartości zmierzonych.';
     });
 
     document.querySelectorAll<HTMLButtonElement>('.sym-preset').forEach((btn) => {
@@ -901,6 +1030,7 @@ const dzisX = naborX(ROK0);
         const p = presety.find((x) => x.id === btn.dataset.preset);
         if (!p) return;
         if (p.id !== 'baza') naborBazowy.forEach((v, i) => (nabor[i] = v));
+        else przywrocWsk();
         p.zastosuj(nabor);
         odznaczPresety();
         btn.setAttribute('aria-pressed', 'true');

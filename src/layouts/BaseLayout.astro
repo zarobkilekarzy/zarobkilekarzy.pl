@@ -17,6 +17,7 @@ import bodyFontExtUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-
 import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import CytatLink from '../components/CytatLink.astro';
 import { ogPages } from '../lib/ogPages';
 import { lastmodFor, normalizePath } from '../lib/pageDates.mjs';
 
@@ -282,6 +283,9 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
         pokazuje i nic nie przeskakuje (element jest poza układem — `position: fixed`).
         Poza <main>, więc nie wchodzi do indeksu Pagefind. */}
     {kind === 'tekst' && <nav class="toc" data-toc hidden aria-label="Spis treści"></nav>}
+    {/* Zaznacz fragment → „Kopiuj link do cytatu" (Text Fragments). Tylko teksty
+        czytane liniowo — tam się cytuje; na /dane zaznacza się raczej liczby w tabelach. */}
+    {kind === 'tekst' && <CytatLink />}
     <Footer />
     <script>
       // Wejście z linku do sekcji (np. udostępnione /mechanizmy/wycena-swiadczen#6-pointa).
@@ -298,6 +302,14 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
           return; // niepoprawny %-kod w adresie — nie ma czego szukać
         }
         if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+      })();
+      // Płynne przewijanie (klik w spis treści, przypis) włącza pierwszy gest
+      // czytelnika. Do tego czasu przeglądarka sama, bez animacji, ustawia stronę
+      // na celu linku, także na cytacie `#:~:text=` (patrz `html[data-smooth]`).
+      (() => {
+        const smooth = () => document.documentElement.setAttribute('data-smooth', '');
+        addEventListener('pointerdown', smooth, { once: true, capture: true });
+        addEventListener('keydown', smooth, { once: true, capture: true });
       })();
     </script>
     <script>

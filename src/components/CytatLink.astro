@@ -1,0 +1,244 @@
+---
+// Link do cytatu. Czytelnik zaznacza fragment analizy, pojawia się przycisk
+// „Kopiuj link do cytatu", a w schowku ląduje adres `…#:~:text=…` (standard
+// Text Fragments). Przewinięcie do cytatu i podświetlenie robi po otwarciu
+// linku sama przeglądarka (Chrome, Edge, Safari ≥ 16.1, Firefox ≥ 131), więc
+// u odbiorcy nie działa żaden nasz kod.
+//
+// Dlaczego nie offsety w stylu `#w=100-200`: każda poprawka tekstu (sprostowanie)
+// przesuwa je i stary link zaczyna wskazywać inne zdanie. Fragment jest
+// zakotwiczony w samym tekście — gdy cytat zostanie poprawiony, link otworzy
+// stronę bez podświetlenia, ale nigdy nie podświetli czegoś innego.
+//
+// Generator (Google Chrome Labs, `text-fragments-polyfill`) dobiera najkrótszy
+// jednoznaczny zapis z prefiksem i sufiksem. Ładujemy go dopiero przy pierwszym
+// zaznaczeniu, więc strona, na której nikt nic nie zaznacza, za niego nie płaci.
+// Plik idzie z naszej domeny, więc CSP (`script-src 'self'`) zostaje bez zmian.
+//
+// Do zwykłego kopiowania (Cmd/Ctrl+C, menu „Kopiuj") dopisujemy na końcu
+// „źródło: ZarobkiLekarzy.pl", żeby cytat wklejony gdzie indziej nie tracił
+// pochodzenia. Link z przycisku tego nie dostaje — sam wskazuje źródło.
+---
+
+<div class="cytat" data-cytat hidden>
+  <button type="button" class="cytat-btn">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+    <span data-cytat-label>Kopiuj link do cytatu</span>
+  </button>
+</div>
+<p class="sr-only" data-cytat-status aria-live="polite"></p>
+
+<style>
+  .cytat {
+    /* Współrzędne dokumentu (nie okna) — przycisk przewija się razem z tekstem.
+       Nad spisem treści (z-index 10), pod przyklejoną nawigacją (50). */
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 40;
+    animation: cytat-in 0.12s ease-out;
+  }
+  .cytat[hidden] { display: none; }
+  @keyframes cytat-in {
+    from { opacity: 0; transform: translateY(-3px); }
+  }
+  .cytat-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.85rem;
+    border: 0;
+    border-radius: 999px;
+    /* --brand, nie --brand-700: pod białym tekstem tylko on trzyma kontrast
+       w obu motywach. */
+    background: var(--brand);
+    color: #fff;
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(10, 17, 25, 0.28);
+  }
+  .cytat-btn:hover span { text-decoration: underline; }
+  .cytat-btn:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 2px; }
+  @media (forced-colors: active) {
+    .cytat-btn { border: 1px solid; }
+  }
+  @media print {
+    .cytat { display: none !important; }
+  }
+</style>
+
+<script>
+  type Generator = typeof import('text-fragments-polyfill/dist/fragment-generation-utils.js');
+
+  (() => {
+    const box = document.querySelector<HTMLElement>('[data-cytat]');
+    const btn = box?.querySelector<HTMLButtonElement>('button');
+    const label = box?.querySelector<HTMLElement>('[data-cytat-label]');
+    const status = document.querySelector<HTMLElement>('[data-cytat-status]');
+    const main = document.querySelector('main');
+    if (!box || !btn || !label || !status || !main) return;
+
+    const idle = label.textContent ?? '';
+    // Adres kanoniczny, a nie `location` — bez doklejek z wejścia (?utm, ?fbclid).
+    const base =
+      document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href ??
+      location.origin + location.pathname;
+    // `,` `-` `&` są w dyrektywie składnią. encodeURIComponent koduje przecinek
+    // i ampersand, myślnik (np. „COVID-19") trzeba dokodować ręcznie.
+    const enc = (s: string) => encodeURIComponent(s).replace(/-/g, '%2D');
+
+    let gen: Promise<Generator> | null = null;
+    let url = '';
+    let seq = 0;
+    let mouseDown = false;
+    // Do kiedy ignorujemy `selectionchange` (patrz obsługa przycisku niżej).
+    let hold = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const hide = () => {
+      box.hidden = true;
+      url = '';
+    };
+
+    // Pod ostatnią linią zaznaczenia — tam, gdzie zwykle kończy się ruch ręki.
+    // Na dotyku niżej: tuż pod tekstem są uchwyty zaznaczenia, a nad nim
+    // systemowe menu („Kopiuj", „Udostępnij"), którego nie chcemy zasłaniać.
+    const place = (range: Range) => {
+      const rects = [...range.getClientRects()].filter((r) => r.width > 1);
+      const r = rects[rects.length - 1] ?? range.getBoundingClientRect();
+      box.hidden = false;
+      const w = box.offsetWidth;
+      const gap = matchMedia('(pointer: coarse)').matches ? 30 : 8;
+      const x = Math.min(r.left + r.width / 2 - w / 2, document.documentElement.clientWidth - w - 8);
+      box.style.top = r.bottom + scrollY + gap + 'px';
+      box.style.left = Math.max(8, x) + scrollX + 'px';
+    };
+
+    const update = async () => {
+      const my = ++seq;
+      const sel = getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) return hide();
+      const range = sel.getRangeAt(0);
+      if (!main.contains(range.commonAncestorContainer) || sel.toString().trim().length < 3) {
+        return hide();
+      }
+      try {
+        const g = await (gen ??= import('text-fragments-polyfill/dist/fragment-generation-utils.js'));
+        if (my !== seq) return; // zaznaczenie zmieniło się w trakcie ładowania
+        if (!g.isValidRangeForFragmentGeneration(range)) return hide();
+        const res = g.generateFragmentFromRange(range.cloneRange());
+        const f = res.fragment;
+        // Brak jednoznacznego zapisu (np. zdanie powtórzone na stronie) albo
+        // przekroczony czas — przycisku nie pokazujemy, zamiast dawać zły link.
+        if (res.status !== g.GenerateFragmentStatus.SUCCESS || !f) return hide();
+        url =
+          base +
+          '#:~:text=' +
+          (f.prefix ? enc(f.prefix) + '-,' : '') +
+          enc(f.textStart) +
+          (f.textEnd ? ',' + enc(f.textEnd) : '') +
+          (f.suffix ? ',-' + enc(f.suffix) : '');
+        label.textContent = idle;
+        place(range);
+      } catch {
+        gen = null; // np. zerwane pobieranie generatora — spróbujemy przy następnym zaznaczeniu
+        hide();
+      }
+    };
+
+    const schedule = (ms: number) => {
+      clearTimeout(timer);
+      timer = setTimeout(update, ms);
+    };
+
+    // Myszą: czekamy na puszczenie przycisku, żeby nie skakać za kursorem przy
+    // przeciąganiu. Dotyk i klawiatura (Shift+strzałki) nie mają takiego
+    // momentu, więc tam czekamy, aż zaznaczenie przestanie się zmieniać.
+    document.addEventListener('selectionchange', () => {
+      if (!mouseDown && Date.now() > hold) schedule(250);
+    });
+    document.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse' || box.contains(e.target as Node)) return;
+      mouseDown = true;
+      seq++;
+      hide();
+    });
+    const release = () => {
+      if (!mouseDown) return;
+      mouseDown = false;
+      schedule(10);
+    };
+    document.addEventListener('pointerup', release);
+    document.addEventListener('pointercancel', release);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !box.hidden) {
+        seq++;
+        hide();
+      }
+    });
+    addEventListener('resize', () => {
+      if (!box.hidden) schedule(150);
+    });
+
+    // Stuknięcie w przycisk potrafi zdjąć zaznaczenie, zanim dojdzie `click`,
+    // a po skopiowaniu chcemy jeszcze chwilę pokazać „Skopiowano" — na ten czas
+    // ignorujemy `selectionchange`. Myszą `preventDefault` po prostu nie pozwala
+    // kliknięciu zgubić zaznaczenia.
+    box.addEventListener('pointerdown', () => {
+      hold = Date.now() + 800;
+    });
+    box.addEventListener('mousedown', (e) => e.preventDefault());
+    btn.addEventListener('click', () => {
+      if (!url) return;
+      const copied = url;
+      const shown = seq;
+      // Zapis do schowka wprost w obsłudze kliknięcia (link policzony wcześniej):
+      // Safari odmawia zapisu, jeśli między gestem a zapisem było `await`.
+      (navigator.clipboard?.writeText(copied) ?? Promise.reject()).then(
+        () => {
+          hold = Date.now() + 1600;
+          label.textContent = 'Skopiowano';
+          status.textContent = 'Skopiowano link do cytatu.';
+          setTimeout(() => {
+            status.textContent = '';
+            if (seq === shown) hide();
+          }, 1600);
+        },
+        // Bez dostępu do schowka (stara przeglądarka, odmowa uprawnień) —
+        // pokazujemy link do ręcznego skopiowania.
+        () => {
+          hold = 0;
+          prompt('Skopiuj link do cytatu:', copied);
+        },
+      );
+    });
+
+    // Źródło przy zwykłym kopiowaniu — ten sam warunek co dla przycisku (treść
+    // w <main>, min. 3 znaki), bez pól formularzy. Ustawiamy też wersję HTML:
+    // bez niej wklejka do edytora (Docs, Word, poczta) zgubiłaby formatowanie,
+    // a tak nazwa jest dodatkowo linkiem do strony.
+    document.addEventListener('copy', (e) => {
+      const sel = getSelection();
+      if (!e.clipboardData || !sel || sel.isCollapsed || !sel.rangeCount) return;
+      if (e.target instanceof Element && e.target.closest('input, textarea, [contenteditable]')) return;
+      const range = sel.getRangeAt(0);
+      const text = sel.toString();
+      if (!main.contains(range.commonAncestorContainer) || text.trim().length < 3) return;
+      const html = document.createElement('div');
+      html.append(range.cloneContents());
+      const src = document.createElement('p');
+      const a = document.createElement('a');
+      a.href = base;
+      a.textContent = 'ZarobkiLekarzy.pl';
+      src.append('źródło: ', a);
+      html.append(src);
+      e.clipboardData.setData('text/plain', text.trimEnd() + '\n\nźródło: ZarobkiLekarzy.pl');
+      e.clipboardData.setData('text/html', html.innerHTML);
+      e.preventDefault();
+    });
+  })();
+</script>

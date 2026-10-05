@@ -40,6 +40,8 @@
   --ok-50: #eef7f1;
   --amber: #8a5a00;     /* „warunek / szacunek — jeżeli dotyczy" */
   --amber-50: #fdf0e0;
+  /* podświetlenie cytatu, do którego prowadzi link `#:~:text=` (::target-text) */
+  --mark: #fce7a1;
   --teal-50: #e6f2f3;   /* tło pod --teal (chipy „zlecenie") */
   --alert-100: #f6d3d1; /* jaśniejszy pas ostrzegawczy (pasy hazard) */
   /* Neutralny wypełniacz segmentów słupków, które NIOSĄ biały tekst
@@ -125,6 +127,7 @@
   --ok-50: #16281c;
   --amber: #e2a94f;
   --amber-50: #2c2211;
+  --mark: #56431a;
   --neutral-fill: #5c6d84;
 
   --surface: #1b2739;
@@ -167,6 +170,7 @@
     --ok-50: #16281c;
     --amber: #e2a94f;
     --amber-50: #2c2211;
+    --mark: #56431a;
     --neutral-fill: #5c6d84;
 
     --surface: #1b2739;
@@ -181,7 +185,13 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+/* Płynne przewijanie włącza dopiero pierwszy gest czytelnika (atrybut ustawia
+   BaseLayout) — każdy klik w spis treści czy przypis i tak zaczyna się od gestu.
+   Włączone od startu psuło wejście z linku: przeglądarka liczy cel (#sekcja albo
+   cytat `#:~:text=`) na wczesnym układzie, zanim dojdą fonty, i animuje do
+   nieaktualnego miejsca — cytat lądował pod dolną krawędzią ekranu. Czekanie na
+   `load` nie wystarcza: Chrome przewija do cytatu dopiero PO `load`. */
+html[data-smooth] { scroll-behavior: smooth; }
 
 body {
   margin: 0;
@@ -224,6 +234,11 @@ h3 { font-family: var(--font-sans); font-size: 1.1rem; font-weight: 600; margin:
 @media (hover: none) { .hanchor { opacity: 0.45; } }
 /* Pasmo CTA: granatowe tło — szary `--ink-faint` nie miałby na nim kontrastu. */
 .cta-band .hanchor, .cta-band .hanchor:hover { color: #fff; }
+
+/* Cytat z linku `#:~:text=…` (Text Fragments) — przeglądarka sama przewija do
+   niego i go podświetla; my tylko dobieramy kolor do motywu. Link tworzy
+   `CytatLink.astro` z zaznaczenia, ale działa też ten z menu przeglądarki. */
+::target-text { background: var(--mark); color: inherit; }
 
 p { margin: 0 0 1rem; }
 a { color: var(--brand-link); }
@@ -576,7 +591,7 @@ body[data-kind='tekst'] :is(.prose, .lead) { max-width: none; }
 
 /* Ograniczenie ruchu — dla osób wrażliwych na animacje/scroll (WCAG 2.3.3). */
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
+  html, html[data-smooth] { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

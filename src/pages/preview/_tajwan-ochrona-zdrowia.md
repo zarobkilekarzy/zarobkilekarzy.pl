@@ -14,7 +14,7 @@ Podstawą finansowania jest **budżet globalny**. Wprowadzano go sektorami: od s
 
 Wartość punktu liczy się osobno dla każdego sektora (szpitale, przychodnie, stomatologia, medycyna chińska) i każdego z sześciu regionów. Gdy w regionie wykonano więcej świadczeń, niż przewidywał budżet, niższą wartość mają wszystkie „pływające” punkty wszystkich placówek tego sektora. Zwykle wartość jest bliska 1 TWD, ale bywa wyraźnie niższa: w przychodniach regionu Tajpej punkt był w IV kw. 2023 r. wart **0,813 TWD**, a w medycynie chińskiej regionu Północnego **0,694 TWD**.[^punkty] W szpitalach prawie **połowa punktów** (w IV kw. 2024 r. 47%) ma stałą wartość — leki, zabiegi operacyjne, część świadczeń ratunkowych — więc wahania dotyczą pozostałej części.[^punkty-szpitale]
 
-Od 2025 r. system ma jeszcze jeden poziom. We wszystkich regionach działa program, w którym każdy szpital ma własny, uzgodniony z góry budżet. W regionie Centralnym punkty ponad ten budżet płacono schodkowo — po **0,75**, **0,5**, **0,25**, a w końcu **0 TWD** — a nowym szpitalom nadwyżek nie płacono.[^prospektywne] Szpital zna więc z góry swój limit i zasady płacenia za świadczenia ponad niego.
+Od 2025 r. system ma jeszcze jeden poziom. We wszystkich regionach działa program, w którym każdy szpital ma własny, uzgodniony z góry budżet. Punktem wyjścia jest przychód szpitala z tego samego kwartału poprzedniego roku, przeliczany po wartości punktu ustalonej z góry na dany kwartał. Za punkty ponad ten budżet płaci się mniej: w regionie Centralnym schodkowo po **0,75**, **0,5**, **0,25**, a po trzecim progu **0 TWD**; nowym szpitalom nadwyżek nie płacono.[^prospektywne] Szpital zna więc z góry swój limit, a niższa stawka dotyczy przede wszystkim placówki, która go przekroczyła.
 
 Budżet globalny ogranicza wypłaty dla placówek, ale nie przesądza o równowadze samego funduszu. Fundusz NHI kończył lata 2017–2021 na minusie (w 2020 r. **−67,6 mld TWD**). Lata 2022–2024 przyniosły nadwyżki po podwyżce składki, a na 2027 r. ministerstwo szacuje lukę na **55,9–84,3 mld TWD**, przy rezerwie zbliżającej się do ustawowego minimum jednego miesiąca świadczeń.[^deficyt]
 
@@ -26,14 +26,16 @@ Cennik zawiera też zachętę do poświęcania pacjentowi czasu: **opłata za po
 
 Do specjalisty można pójść bez skierowania. Wysokość dopłaty zależy od poziomu placówki i od tego, czy pacjent ma skierowanie — w dużym szpitalu bez skierowania płaci się więcej.[^doplaty]
 
-| Poziom placówki | Porada ze skierowaniem | Porada bez skierowania | SOR |
+| Poziom placówki | Porada ze skierowaniem | Porada bez skierowania | Wizyta w trybie nagłym |
 |---|---|---|---|
 | Centrum medyczne | 170 TWD (ok. 21 zł) | 420 TWD (ok. 51 zł) | 750 TWD (ok. 91 zł) |
 | Szpital regionalny | 100 TWD (ok. 12 zł) | 240 TWD (ok. 29 zł) | 400 TWD (ok. 48 zł) |
 | Szpital lokalny | 50 TWD (ok. 6 zł) | 80 TWD (ok. 10 zł) | 150 TWD (ok. 18 zł) |
 | Przychodnia | 50 TWD (ok. 6 zł) | 50 TWD (ok. 6 zł) | 150 TWD (ok. 18 zł) |
 
-Do tego dochodzi **dopłata do leków** — w centrach medycznych i szpitalach regionalnych ok. 20% ich wartości, najwyżej **300 TWD** (ok. 36 zł), a w przychodniach i szpitalach lokalnych leki do 100 TWD są bez dopłaty. Osobno placówka pobiera **opłatę rejestracyjną**, która nie jest częścią ubezpieczenia i którą od 2024 r. ustala sama.[^rejestracyjna] Przykład: wizyta bez skierowania w szpitalu lokalnym z lekami za nieco ponad 300 TWD to 80 TWD dopłaty, 60 TWD dopłaty do leków i 100 TWD opłaty rejestracyjnej — razem **240 TWD, ok. 29 zł**.[^cennik]
+W szpitalu wizyta w trybie nagłym to wizyta na SOR; w przychodni rozlicza się ją po stawce szpitala lokalnego.[^doplaty]
+
+Do tego dochodzi **dopłata do leków** — w centrach medycznych i szpitalach regionalnych ok. 20% ich wartości, najwyżej **300 TWD** (ok. 36 zł), a w przychodniach i szpitalach lokalnych leki do 100 TWD są bez dopłaty. Osobno placówka pobiera **opłatę rejestracyjną**, która nie jest częścią ubezpieczenia. Od 2010 r. ministerstwo zalecało, by mieściła się w przedziale 0–150 TWD przy wizycie ambulatoryjnej i 0–300 TWD na SOR. Od 2024 r. placówki ustalają ją same; w 26 szpitalach podległych ministerstwu wynosiła wtedy najczęściej do 100 TWD, a niektóre z nich jej nie pobierały.[^rejestracyjna] W przychodni, gdzie dopłata wynosi 50 TWD, a leki tańsze niż 100 TWD są bez dopłaty, za wizytę płaci się więc zwykle dopłatę i opłatę rejestracyjną. Przykład: wizyta bez skierowania w szpitalu lokalnym z lekami za nieco ponad 300 TWD to 80 TWD dopłaty, 60 TWD dopłaty do leków i 100 TWD opłaty rejestracyjnej — razem **240 TWD, ok. 29 zł**.[^cennik]
 
 Od 2010 r. przepisy wymagają, by **rachunek z każdej wizyty** wyszczególniał pozycje rozliczane z ubezpieczenia i płatne prywatnie, a część ubezpieczeniową rozbijał na **dopłatę pacjenta i kwotę, o którą placówka wnioskuje do NHI**.[^rachunek] Te same dane — od 2022 r. rozbite na pięć kategorii przy wizycie ambulatoryjnej i siedemnaście przy pobycie w szpitalu — pokazuje państwowa aplikacja „książeczka zdrowia” (健康存摺). Do końca sierpnia 2026 r. skorzystało z niej łącznie **12,76 mln osób**.[^ksiazeczka] Aplikacja pokazuje punkty; ile placówka ostatecznie otrzymała, zależy od wartości punktu po rozliczeniu kwartału.
 
@@ -99,8 +101,12 @@ Tekst powstał z inspiracji publicznymi wpisami w mediach społecznościowych (p
 
 Kwoty przeliczamy po kursie NBP (tabela B z 30.09.2026: **1 TWD = 0,1208 zł**), budżet 2023 — po średnim kursie z 2023 r. (0,1349 zł). Lata kalendarza Republiki Chińskiej (np. 114 = 2025) przeliczamy na lata naszej ery.
 
----
+<aside class="podziekowanie" aria-label="Podziękowanie">
+<p class="podziekowanie-label">Podziękowanie</p>
+<p>Dziękujemy <strong>Rafałowi</strong> (<a href="https://x.com/rafaltwn" target="_blank" rel="noopener noreferrer">@rafaltwn</a> w serwisie X) za pomoc i inspirację. Rafał mieszka na Tajwanie i od kilku lat opisuje tamtejszy system ochrony zdrowia z perspektywy pacjenta — jego wpisy były punktem wyjścia do tego tekstu.</p>
+</aside>
 
+---
 
 [^mohw30]: MOHW, [publikacja na 30-lecie NHI](https://www.mohw.gov.tw/dl-95349-02061fab-78e9-412b-b93e-53a8389126b8.html), 2025 („於今納保率超過 99.9%”). Wskaźnik odnosi się do osób uprawnionych, nie do całej ludności.
 [^ustawa-skladka]: [Ustawa o NHI (全民健康保險法)](https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=L0060001), art. 18 (składka za członków rodziny, maks. trzy osoby) i art. 27 (podział 30/60/10); stawka 5,17% od 1.01.2021 — [NHI Annual Report 2025-2026](https://media.nhi.gov.tw/md/dl-95246-fa6dcd93ece54f16a73a5760d5415591-3.pdf).
@@ -116,8 +122,8 @@ Kwoty przeliczamy po kursie NBP (tabela B z 30.09.2026: **1 TWD = 0,1208 zł**),
 [^widelki]: Komitet NHI, [komunikat z 1.07.2026](https://dep.mohw.gov.tw/NHIC/cp-4039-87066-116.html) („116年度總額成長率範圍為2.619%(低推估值)~5.5%(高推估值)”).
 [^ustawa-61]: Ustawa o NHI, art. 61.
 [^degresja]: NHIA, [wykaz pozycji cennika świadczeń](https://www.nhi.gov.tw/ch/dl-82686-d3fedc0752ef4ca087aeee9b187ec27c-1.pdf), stan 03.2025, kody 00109C (364 pkt, porady 1–30), 00223C (250 pkt, 31–40), 00111C/00112C (220 pkt), 00113C/00114C (160 pkt), 00117C (50 pkt, powyżej 150). Liczba porad liczona jako średnia dzienna w miesiącu.
-[^doplaty]: [NHI Annual Report 2025-2026](https://media.nhi.gov.tw/md/dl-95246-fa6dcd93ece54f16a73a5760d5415591-3.pdf), tab. 3-3 i 3-4; MOHW, [reforma dopłat od 1.07.2023](https://www.mohw.gov.tw/cp-16-74962-1.html); ustawa o NHI, art. 43. Osoby z orzeczeniem o niepełnosprawności płacą wszędzie 50 TWD.
-[^rejestracyjna]: MOHW, [komunikat z 7.03.2024](https://www.mohw.gov.tw/cp-6653-77894-1.html).
+[^doplaty]: [NHI Annual Report 2025-2026](https://media.nhi.gov.tw/md/dl-95246-fa6dcd93ece54f16a73a5760d5415591-3.pdf), tab. 3-3 i 3-4; MOHW, [reforma dopłat od 1.07.2023](https://www.mohw.gov.tw/cp-16-74962-1.html) („醫學中心調高為750元、區域醫院調高為400元，地區醫院和基層診所維持收取150元”); ustawa o NHI, art. 43. Osoby z orzeczeniem o niepełnosprawności płacą wszędzie 50 TWD.
+[^rejestracyjna]: MOHW: [zakres referencyjny od 1.07.2010](https://www.mohw.gov.tw/cp-16-26394-1.html) („門診0-150元、急診0-300元”); [zniesienie zakresu, 7.03.2024](https://www.mohw.gov.tw/cp-6653-77894-1.html); [szpitale ministerstwa, 7.03.2024](https://www.mohw.gov.tw/cp-16-77908-1.html) („門診掛號費多數醫院在100元以下，也有醫院不收掛號費”).
 [^cennik]: Obliczenie własne według tab. 3-3 i 3-4 raportu NHI (dopłata do leków w szpitalu lokalnym za leki w przedziale 301–400 TWD: 60 TWD) oraz [cennika ambulatoryjnego szpitala lokalnego w Tajczungu](https://www.tmgrgh.org.tw/CMUHPagesDetail/Medical%20Service%20Fee/Outpatient%20and%20Emergency%20Service%20Fee) (opłata rejestracyjna 100 TWD).
 [^rachunek]: [Przepisy wykonawcze do ustawy o opiece medycznej (醫療法施行細則)](https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=L0020023), art. 11 — w brzmieniu od 12.03.2010 (zob. [historia zmian](https://law.moj.gov.tw/LawClass/LawHistory.aspx?pcode=L0020023)): „前項申報全民健康保險項目，應區分自行負擔數及全民健康保險申請數”.
 [^ksiazeczka]: MOHW (komunikaty NHIA): [uruchomienie, 25.11.2014](https://www.mohw.gov.tw/fp-16-21424-1.html); [rozbicie kosztów wizyty, 15.12.2022](https://www.mohw.gov.tw/cp-5275-72819-1.html); [liczba użytkowników, 30.09.2026](https://www.mohw.gov.tw/cp-16-88091-1.html) — łącznie od uruchomienia, nie liczba aktywnych.

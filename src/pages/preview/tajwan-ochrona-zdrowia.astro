@@ -3,7 +3,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ShareRow from '../../components/ShareRow.astro';
 import Aktualizacja from '../../components/Aktualizacja.astro';
 import WykresyInline from '../../components/WykresyInline.astro';
-import { Content } from './_tajwan-ochrona-zdrowia.md';
+import RachunekTajwan from '../../components/RachunekTajwan.astro';
+import { compiledContent } from './_tajwan-ochrona-zdrowia.md';
+
+// Markdown nie przyjmuje komponentów, a rozbicie treści na dwa pliki rozbiłoby numerację
+// przypisów — więc dzielimy skompilowany HTML w miejscu znacznika i wstawiamy tam rachunek.
+const ZNACZNIK = '<div data-slot="rachunek"></div>';
+const czesci = (await compiledContent()).split(ZNACZNIK);
+if (czesci.length !== 2) throw new Error(`Brak (lub duplikat) znacznika rachunku w treści: ${czesci.length - 1}`);
+const [przedRachunkiem, poRachunku] = czesci;
 
 // Analiza: jak działa tajwańska ochrona zdrowia i co w niej jest jawne. Treść w
 // _tajwan-ochrona-zdrowia.md (Markdown z przypisami); źródła pierwotne: ustawy z law.moj.gov.tw,
@@ -28,7 +36,9 @@ import { Content } from './_tajwan-ochrona-zdrowia.md';
       <Aktualizacja data="2026-10-05" />
       <p class="lead">Tajwan coraz częściej pojawia się w polskich rozmowach o ochronie zdrowia jako przykład systemu z jednym płatnikiem, w którym do specjalisty można pójść bez skierowania, dopłata w okienku jest stała i znana z góry, a każda wizyta zostawia elektroniczny ślad. Opisujemy, jak ten system działa — na podstawie tajwańskich ustaw i danych rządowych — ze szczególnym uwzględnieniem jawności pieniędzy publicznych. Tajwańczyk dostaje z każdej wizyty rachunek z kwotą zgłoszoną do ubezpieczyciela, sprawozdania finansowe szpitali są publikowane, a państwo wie, gdzie pracuje każdy lekarz. <strong>Zarobków poszczególnych lekarzy</strong> Tajwan natomiast nie ujawnia.</p>
       <div class="prose">
-        <Content />
+        <Fragment set:html={przedRachunkiem} />
+        <RachunekTajwan />
+        <Fragment set:html={poRachunku} />
       </div>
       <p class="pager"><a href="/analizy/">← Wszystkie analizy</a> · <a href="/postulat/">Postulat →</a></p>
     </div>

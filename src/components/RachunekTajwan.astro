@@ -1,0 +1,430 @@
+---
+// Przykładowy, interaktywny rachunek z tajwańskiej wizyty (analiza o Tajwanie).
+// Kwoty z prawdziwego rachunku z wizyty neurologicznej w szpitalu lokalnym w Tajczungu
+// (zgodne z tabelą dopłat NHIA i cennikiem szpitala); pacjent, szpital i numer wizyty —
+// przykładowe. Działa bez JS (rachunek dwujęzyczny, wszystko widoczne); JS dodaje
+// podświetlanie składników sum, panel wyjaśnień i tryb „oryginał + podpowiedzi”.
+
+interface Wiersz {
+  id: string;
+  zh: string;
+  pl: string;
+  kwota: string;
+  opis: string;
+  skladniki?: string[];
+  suma?: boolean;
+}
+
+const koszty: Wiersz[] = [
+  { id: 'porada', zh: '診察費', pl: 'porada lekarska', kwota: '286',
+    opis: 'Opłata za poradę lekarza — w punktach z krajowego cennika NHI.' },
+  { id: 'badania', zh: '檢查費', pl: 'badania', kwota: '1110',
+    opis: 'Badania diagnostyczne zlecone podczas wizyty — w punktach z krajowego cennika NHI.' },
+  { id: 'leki', zh: '藥費', pl: 'leki', kwota: '308',
+    opis: 'Wartość wydanych leków. Leki rozlicza się po stałej wartości: 1 punkt = 1 TWD.' },
+  { id: 'zgloszone', zh: '健保申報點數', pl: 'zgłoszone do NHI (punkty)', kwota: '1704', suma: true,
+    skladniki: ['porada', 'badania', 'leki'],
+    opis: 'Tyle punktów placówka zgłasza do ubezpieczyciela: porada 286 + badania 1110 + leki 308 = 1704. Punkty wynikają z krajowego cennika, a nie z decyzji placówki.' },
+];
+
+const doplaty: Wiersz[] = [
+  { id: 'podstawowa', zh: '基本部份負擔', pl: 'dopłata podstawowa', kwota: '80',
+    opis: 'Stała dopłata za wizytę: 80 TWD w szpitalu lokalnym bez skierowania (ze skierowaniem 50, w przychodni 50, w centrum medycznym 420).' },
+  { id: 'doplata-leki', zh: '藥費部份負擔', pl: 'dopłata do leków', kwota: '60',
+    opis: 'Dopłata do leków według tabeli przedziałów: leki za 308 TWD mieszczą się w przedziale 301–400 TWD, za który płaci się 60 TWD.' },
+  { id: 'doplata', zh: '部份負擔', pl: 'dopłata pacjenta razem', kwota: '140', suma: true,
+    skladniki: ['podstawowa', 'doplata-leki'],
+    opis: 'Dopłata pacjenta w ramach ubezpieczenia: 80 + 60 = 140 TWD.' },
+  { id: 'nhi', zh: '健保給付', pl: 'pokrywa NHI (punkty)', kwota: '1564', suma: true,
+    skladniki: ['zgloszone', 'doplata'],
+    opis: 'Resztę pokrywa ubezpieczyciel: 1704 − 140 = 1564 punkty. Leki płaci 1:1, a wartość pozostałych punktów zależy od rozliczenia kwartału — w szpitalach średnio 0,95–0,98 TWD.' },
+];
+
+const prywatnie: Wiersz[] = [
+  { id: 'rejestracja', zh: '掛號費', pl: 'opłata rejestracyjna', kwota: '100',
+    opis: 'Opłata administracyjna placówki. Nie jest częścią ubezpieczenia — placówka ustala ją sama.' },
+  { id: 'prywatnie', zh: '自付金額合計', pl: 'płatne prywatnie razem', kwota: '100', suma: true,
+    skladniki: ['rejestracja'],
+    opis: 'Wszystko, czego nie obejmuje ubezpieczenie. Tu tylko opłata rejestracyjna: 100 TWD.' },
+];
+
+const doZaplaty: Wiersz = {
+  id: 'okienko', zh: '應繳金額', pl: 'do zapłaty w okienku', kwota: '240', suma: true,
+  skladniki: ['doplata', 'prywatnie'],
+  opis: 'Pacjent płaci dopłatę (140) i opłatę rejestracyjną (100) — razem 240 TWD, ok. 29 zł. Resztę wizyty, 1564 punkty, rozlicza ubezpieczyciel.',
+};
+
+const sekcje = [
+  { zh: '醫療費用', pl: 'Koszty świadczeń (punkty NHI)', wiersze: koszty },
+  { zh: '部份負擔明細', pl: 'Dopłata pacjenta i część ubezpieczyciela', wiersze: doplaty },
+  { zh: '自費項目', pl: 'Płatne prywatnie', wiersze: prywatnie },
+];
+
+// Pasek „kto płaci”: punkty NHI liczone 1:1 z dolarami (uproszczenie opisane w podpisie).
+const nhi = 1564;
+const doplata = 140;
+const rejestracja = 100;
+const razem = nhi + doplata + rejestracja;
+const pct = (x: number) => ((x / razem) * 100).toFixed(1);
+const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
+---
+
+<figure class="rach" data-rachunek>
+  <div class="rach-toolbar">
+    <span class="rach-tag">Przykładowy rachunek · ilustracja</span>
+    <button type="button" class="rach-toggle" data-rach-toggle aria-pressed="false">
+      Pokaż sam oryginał
+    </button>
+  </div>
+
+  <div class="rach-paper">
+    <p class="rach-title">
+      <span class="zh" lang="zh-Hant">醫療費用收據</span>
+      <span class="pl">Rachunek za świadczenia medyczne</span>
+    </p>
+
+    <dl class="rach-meta">
+      <div><dt><span class="zh" lang="zh-Hant">醫院</span><span class="pl">placówka</span></dt><dd>○○地區醫院 <small>(szpital lokalny; nazwa zmyślona)</small></dd></div>
+      <div><dt><span class="zh" lang="zh-Hant">姓名</span><span class="pl">pacjent</span></dt><dd>Jan Kowalski</dd></div>
+      <div><dt><span class="zh" lang="zh-Hant">就醫日期</span><span class="pl">data wizyty</span></dt><dd>115/09/17 <small>(= 17.09.2026)</small></dd></div>
+      <div><dt><span class="zh" lang="zh-Hant">科別</span><span class="pl">poradnia</span></dt><dd><span lang="zh-Hant">神經科</span> <small>(neurologia)</small></dd></div>
+      <div><dt><span class="zh" lang="zh-Hant">就醫序號</span><span class="pl">numer wizyty z karty NHI</span></dt><dd>0006</dd></div>
+    </dl>
+
+    {sekcje.map((s) => (
+      <section class="rach-sekcja">
+        <p class="rach-sekcja-tytul">
+          <span class="zh" lang="zh-Hant">{s.zh}</span>
+          <span class="pl">{s.pl}</span>
+        </p>
+        <ul class="rach-lista">
+          {s.wiersze.map((w) => (
+            <li>
+              <button
+                type="button"
+                class:list={['rach-wiersz', { 'rach-suma': w.suma }]}
+                data-id={w.id}
+                data-opis={w.opis}
+                data-skladniki={w.skladniki?.join(' ') ?? ''}
+              >
+                <span class="rach-etykieta">
+                  <span class="zh" lang="zh-Hant">{w.zh}</span>
+                  <span class="pl">{w.pl}</span>
+                </span>
+                <span class="rach-kwota">{w.kwota}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+
+    <button
+      type="button"
+      class="rach-wiersz rach-suma rach-okienko"
+      data-id={doZaplaty.id}
+      data-opis={doZaplaty.opis}
+      data-skladniki={doZaplaty.skladniki?.join(' ')}
+    >
+      <span class="rach-etykieta">
+        <span class="zh" lang="zh-Hant">{doZaplaty.zh}</span>
+        <span class="pl">{doZaplaty.pl}</span>
+      </span>
+      <span class="rach-kwota">{doZaplaty.kwota} <small>TWD</small></span>
+    </button>
+  </div>
+
+  <p class="rach-wyjasnienie" data-rach-wyjasnienie aria-live="polite">
+    <strong>Sprawdź sam:</strong> najedź kursorem albo kliknij dowolną pozycję. Przy sumach
+    podświetlą się składniki, z których powstały.
+  </p>
+
+  <div class="rach-pasek-wrap">
+    <p class="rach-pasek-tytul">Kto płaci za tę wizytę?</p>
+    <div class="rach-pasek" role="img" aria-label={`Ubezpieczyciel ${pct(nhi)}%, dopłata pacjenta ${pct(doplata)}%, opłata rejestracyjna ${pct(rejestracja)}%`}>
+      <span class="seg seg-nhi" style={`width:${pct(nhi)}%`}></span>
+      <span class="seg seg-doplata" style={`width:${pct(doplata)}%`}></span>
+      <span class="seg seg-rejestracja" style={`width:${pct(rejestracja)}%`}></span>
+    </div>
+    <ul class="rach-legenda">
+      <li><span class="kropka seg-nhi"></span>ubezpieczyciel NHI: 1564 pkt</li>
+      <li><span class="kropka seg-doplata"></span>dopłata pacjenta: 140 TWD</li>
+      <li><span class="kropka seg-rejestracja"></span>opłata rejestracyjna: 100 TWD</li>
+    </ul>
+    <p class="rach-pasek-wniosek">
+      W okienku pacjent zapłacił ok. <strong>{udzialPacjenta}%</strong> łącznej kwoty wizyty
+      (przy wartości punktu 1 TWD).
+    </p>
+  </div>
+
+  <figcaption>
+    Układ uproszczony. Pasek liczy punkty NHI jak dolary tajwańskie (1:1); faktyczna wypłata
+    dla szpitala zależy od wartości punktu po rozliczeniu kwartału.
+  </figcaption>
+</figure>
+
+<style>
+  .rach {
+    margin: 2rem 0 1.5rem;
+    font-family: var(--font-sans);
+  }
+  .rach-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+  .rach-tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .rach-toggle {
+    font: inherit;
+    font-size: 0.82rem;
+    color: var(--brand-link);
+    background: none;
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    padding: 0.25rem 0.8rem;
+    cursor: pointer;
+  }
+  .rach-toggle:hover { background: var(--brand-50); }
+
+  /* „Papier” rachunku — jasny w obu motywach byłby obcy stronie, więc na tokenach. */
+  .rach-paper {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.2rem 1rem;
+    box-shadow: 0 1px 0 var(--line), 0 10px 30px -18px rgba(0, 0, 0, 0.35);
+  }
+  .zh {
+    font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Heiti TC", sans-serif;
+  }
+  .pl {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--ink-faint);
+    line-height: 1.25;
+  }
+  .rach-title {
+    text-align: center;
+    margin: 0 0 0.8rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .rach-title .zh { font-size: 1.15rem; font-weight: 700; letter-spacing: 0.15em; }
+  .rach-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 0.35rem 1rem;
+    margin: 0 0 0.9rem;
+    font-size: 0.88rem;
+  }
+  .rach-meta div { display: flex; gap: 0.6rem; align-items: baseline; }
+  .rach-meta dt { flex: 0 0 auto; min-width: 5.2rem; color: var(--ink-soft); }
+  .rach-meta dd { margin: 0; }
+  .rach-meta small { color: var(--ink-faint); }
+
+  .rach-sekcja { border-top: 1px dashed var(--line-2); padding-top: 0.6rem; margin-top: 0.6rem; }
+  .rach-sekcja-tytul {
+    margin: 0 0 0.35rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .rach-lista { list-style: none; margin: 0; padding: 0; }
+  .rach-lista li { margin: 0; padding: 0; }
+
+  .rach-wiersz {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    font: inherit;
+    color: var(--ink);
+    text-align: left;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 0.3rem 0.45rem;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+  .rach-wiersz:hover,
+  .rach-wiersz:focus-visible { background: var(--paper); border-color: var(--line-2); outline: none; }
+  .rach-wiersz:focus-visible { box-shadow: 0 0 0 2px var(--brand); }
+  .rach-kwota {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.98rem;
+    white-space: nowrap;
+  }
+  .rach-etykieta { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.55rem; }
+  .rach-etykieta .pl { display: inline; font-size: 0.8rem; }
+  .rach-suma .rach-etykieta .zh { font-weight: 700; }
+  .rach-suma .rach-kwota { font-weight: 700; }
+  .rach-suma { border: 1px dashed var(--line-2); margin-top: 0.15rem; }
+
+  .rach-okienko {
+    margin-top: 0.9rem;
+    border: 2px solid var(--ink);
+    padding: 0.55rem 0.6rem;
+  }
+  .rach-okienko .rach-kwota { font-size: 1.25rem; }
+  .rach-okienko small { font-size: 0.75rem; color: var(--ink-soft); }
+
+  /* Stan aktywny: suma i jej składniki. */
+  .rach-wiersz.is-aktywna { background: var(--brand-50); border-color: var(--brand); border-style: solid; }
+  .rach-wiersz.is-skladnik { background: var(--brand-50); border-color: var(--brand); border-style: dashed; }
+  .rach-wiersz.is-skladnik .rach-kwota { color: var(--brand-link); font-weight: 700; }
+
+  .rach-wyjasnienie {
+    margin: 0.8rem 0 0;
+    padding: 0.75rem 0.95rem;
+    background: var(--paper);
+    border-left: 3px solid var(--brand);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 0.92rem;
+    min-height: 3.2rem;
+  }
+
+  /* Tryb „oryginał”: polskie podpisy chowają się i wracają jako podpowiedź przy najechaniu
+     lub fokusie. Dla czytników ekranu tekst zostaje w DOM. */
+  .rach.is-oryginal .rach-paper .pl {
+    position: absolute;
+    left: 0.45rem;
+    bottom: calc(100% + 4px);
+    z-index: 5;
+    font-size: 0.78rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line-2);
+    border-radius: 6px;
+    padding: 0.2rem 0.5rem;
+    white-space: nowrap;
+    box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(3px);
+    transition: opacity 0.12s, transform 0.12s;
+  }
+  .rach.is-oryginal .rach-wiersz:hover .pl,
+  .rach.is-oryginal .rach-wiersz:focus-visible .pl,
+  .rach.is-oryginal .rach-meta div:hover .pl,
+  .rach.is-oryginal .rach-sekcja-tytul:hover .pl,
+  .rach.is-oryginal .rach-title:hover .pl {
+    opacity: 1;
+    transform: none;
+  }
+  .rach.is-oryginal .rach-meta div,
+  .rach.is-oryginal .rach-sekcja-tytul,
+  .rach.is-oryginal .rach-title { position: relative; }
+  .rach.is-oryginal .rach-meta small { display: none; }
+
+  .rach-pasek-wrap { margin-top: 1rem; }
+  .rach-pasek-tytul { margin: 0 0 0.35rem; font-weight: 600; font-size: 0.92rem; }
+  .rach-pasek {
+    display: flex;
+    height: 14px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--line);
+  }
+  .seg { display: block; height: 100%; }
+  .seg-nhi { background: var(--brand); }
+  .seg-doplata { background: var(--amber); }
+  .seg-rejestracja { background: var(--neutral-fill); }
+  .rach-legenda {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.1rem;
+    margin: 0.45rem 0 0;
+    padding: 0;
+    font-size: 0.84rem;
+    color: var(--ink-soft);
+  }
+  .rach-legenda li { margin: 0; display: flex; align-items: center; gap: 0.35rem; }
+  .kropka { width: 0.7rem; height: 0.7rem; border-radius: 3px; display: inline-block; }
+  .rach-pasek-wniosek { margin: 0.4rem 0 0; font-size: 0.9rem; }
+
+  figcaption {
+    margin-top: 0.7rem;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    line-height: 1.45;
+  }
+
+  @media (max-width: 520px) {
+    .rach-paper { padding: 0.9rem 0.75rem 0.8rem; }
+    .rach-wiersz { gap: 0.6rem; padding: 0.3rem 0.35rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rach-wiersz, .rach.is-oryginal .rach-paper .pl { transition: none; }
+  }
+</style>
+
+<script>
+  for (const rach of document.querySelectorAll<HTMLElement>('[data-rachunek]')) {
+    const wiersze = [...rach.querySelectorAll<HTMLButtonElement>('.rach-wiersz')];
+    const wyjasnienie = rach.querySelector<HTMLElement>('[data-rach-wyjasnienie]');
+    const przelacznik = rach.querySelector<HTMLButtonElement>('[data-rach-toggle]');
+    if (!wyjasnienie) continue;
+    const domyslne = wyjasnienie.innerHTML;
+    let przypiety: HTMLButtonElement | null = null;
+
+    const wyczysc = () => {
+      for (const w of wiersze) w.classList.remove('is-aktywna', 'is-skladnik');
+    };
+
+    const pokaz = (w: HTMLButtonElement) => {
+      wyczysc();
+      w.classList.add('is-aktywna');
+      for (const id of (w.dataset.skladniki ?? '').split(' ').filter(Boolean)) {
+        rach.querySelector(`.rach-wiersz[data-id="${id}"]`)?.classList.add('is-skladnik');
+      }
+      const etykieta = w.querySelector('.pl')?.textContent ?? '';
+      const kwota = w.querySelector('.rach-kwota')?.textContent?.trim() ?? '';
+      wyjasnienie.textContent = '';
+      const naglowek = document.createElement('strong');
+      naglowek.textContent = `${etykieta[0]?.toUpperCase() ?? ''}${etykieta.slice(1)} — ${kwota}. `;
+      wyjasnienie.append(naglowek, document.createTextNode(w.dataset.opis ?? ''));
+    };
+
+    const przywroc = () => {
+      if (przypiety) {
+        pokaz(przypiety);
+      } else {
+        wyczysc();
+        wyjasnienie.innerHTML = domyslne;
+      }
+    };
+
+    for (const w of wiersze) {
+      w.addEventListener('mouseenter', () => pokaz(w));
+      w.addEventListener('focus', () => pokaz(w));
+      w.addEventListener('mouseleave', przywroc);
+      w.addEventListener('blur', przywroc);
+      // Klik (także dotyk) przypina wyjaśnienie; ponowny klik odpina.
+      w.addEventListener('click', () => {
+        przypiety = przypiety === w ? null : w;
+        if (przypiety) pokaz(w);
+        else przywroc();
+      });
+    }
+
+    przelacznik?.addEventListener('click', () => {
+      const wlaczony = rach.classList.toggle('is-oryginal');
+      przelacznik.setAttribute('aria-pressed', String(wlaczony));
+      przelacznik.textContent = wlaczony ? 'Pokaż tłumaczenie' : 'Pokaż sam oryginał';
+    });
+  }
+</script>

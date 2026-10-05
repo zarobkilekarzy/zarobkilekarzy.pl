@@ -53,7 +53,9 @@ Podobne informacje ma polski pacjent: Internetowe Konto Pacjenta pokazuje wizyty
 
 ## Karta ubezpieczenia i wspólna historia leczenia
 
-Karta chipowa ubezpieczenia działa od **1 stycznia 2004 r.**[^karta-ic] Przy każdej wizycie placówka zapisuje na niej wizytę i jej kolejny numer, a dane w ciągu **24 godzin** trafiają do NHIA — razem z identyfikatorem pracownika medycznego, który udzielił świadczenia.[^karta-przepisy] NHIA porównuje te zapisy z rozliczeniami. Placówka, która nie rejestruje wizyt, dostaje wezwanie do poprawy; awarie czytnika czy brak karty pacjenta obsługuje się specjalnymi kodami.[^karta-sankcja]
+Karta chipowa ubezpieczenia działa od **1 stycznia 2004 r.**[^karta-ic] Przy każdej wizycie placówka zapisuje na niej wizytę i jej kolejny numer, a dane w ciągu **24 godzin** trafiają do NHIA — razem z identyfikatorem pracownika medycznego, który udzielił świadczenia.[^karta-przepisy] NHIA porównuje te zapisy z rozliczeniami. Placówka, która nie rejestruje wizyt, dostaje wezwanie do poprawy; awarie czytnika czy brak karty pacjenta obsługuje się specjalnymi kodami.[^karta-sankcja] Tak wygląda karta (wzór z danymi przykładowego pacjenta):
+
+<div data-slot="karta"></div>
 
 Z kart korzysta też centralna baza historii leczenia (MediCloud). Lekarz zagląda do niej po uwierzytelnieniu **trzema kartami**: kartą pacjenta, własną kartą pracownika medycznego i kartą placówki. Pacjent może zablokować odczyt hasłem na karcie. Od 2020 r. lekarz SOR może w stanach nagłych (kategorie triażu 1–3) sprawdzić pacjenta po numerze dowodu, a każde takie zapytanie jest zapisywane przez NHIA.[^medicloud]
 

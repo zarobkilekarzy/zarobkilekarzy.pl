@@ -4,14 +4,21 @@ import ShareRow from '../../components/ShareRow.astro';
 import Aktualizacja from '../../components/Aktualizacja.astro';
 import WykresyInline from '../../components/WykresyInline.astro';
 import RachunekTajwan from '../../components/RachunekTajwan.astro';
+import KartaNHI from '../../components/KartaNHI.astro';
 import { compiledContent } from './_tajwan-ochrona-zdrowia.md';
 
-// Markdown nie przyjmuje komponentów, a rozbicie treści na dwa pliki rozbiłoby numerację
-// przypisów — więc dzielimy skompilowany HTML w miejscu znacznika i wstawiamy tam rachunek.
-const ZNACZNIK = '<div data-slot="rachunek"></div>';
-const czesci = (await compiledContent()).split(ZNACZNIK);
-if (czesci.length !== 2) throw new Error(`Brak (lub duplikat) znacznika rachunku w treści: ${czesci.length - 1}`);
-const [przedRachunkiem, poRachunku] = czesci;
+// Markdown nie przyjmuje komponentów, a rozbicie treści na kilka plików rozbiłoby numerację
+// przypisów — więc dzielimy skompilowany HTML w miejscach znaczników <div data-slot="…"></div>
+// i wstawiamy tam komponenty. Każdy znacznik musi wystąpić dokładnie raz.
+const SLOTY = ['karta', 'rachunek'] as const;
+type Slot = (typeof SLOTY)[number];
+const czesci = (await compiledContent()).split(/<div data-slot="([a-z]+)"><\/div>/);
+const znalezione = czesci.filter((_, i) => i % 2 === 1);
+for (const slot of SLOTY) {
+  const ile = znalezione.filter((z) => z === slot).length;
+  if (ile !== 1) throw new Error(`Znacznik „${slot}” w treści: ${ile} (oczekiwano 1)`);
+}
+if (znalezione.length !== SLOTY.length) throw new Error(`Nieznane znaczniki w treści: ${znalezione.join(', ')}`);
 
 // Analiza: jak działa tajwańska ochrona zdrowia i co w niej jest jawne. Treść w
 // _tajwan-ochrona-zdrowia.md (Markdown z przypisami); źródła pierwotne: ustawy z law.moj.gov.tw,
@@ -34,9 +41,11 @@ const [przedRachunkiem, poRachunku] = czesci;
       <Aktualizacja />
       <p class="lead">Tajwan coraz częściej pojawia się w polskich rozmowach o ochronie zdrowia jako przykład systemu z jednym płatnikiem, w którym do specjalisty można pójść bez skierowania, dopłata w okienku jest stała i znana z góry, a każda wizyta zostawia elektroniczny ślad. Opisujemy, jak ten system działa — na podstawie tajwańskich ustaw i danych rządowych — ze szczególnym uwzględnieniem jawności pieniędzy publicznych. Tajwańczyk dostaje z każdej wizyty rachunek z kwotą zgłoszoną do ubezpieczyciela, sprawozdania finansowe szpitali są publikowane, a państwo wie, gdzie pracuje każdy lekarz. <strong>Zarobków poszczególnych lekarzy</strong> Tajwan natomiast nie ujawnia.</p>
       <div class="prose">
-        <Fragment set:html={przedRachunkiem} />
-        <RachunekTajwan />
-        <Fragment set:html={poRachunku} />
+        {czesci.map((czesc, i) =>
+          i % 2 === 0 ? <Fragment set:html={czesc} />
+          : (czesc as Slot) === 'karta' ? <KartaNHI />
+          : <RachunekTajwan />
+        )}
       </div>
       <p class="pager"><a href="/analizy/">← Wszystkie analizy</a> · <a href="/postulat/">Postulat →</a></p>
     </div>

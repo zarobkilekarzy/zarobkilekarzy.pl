@@ -5,12 +5,13 @@ import Aktualizacja from '../../components/Aktualizacja.astro';
 import WykresyInline from '../../components/WykresyInline.astro';
 import RachunekTajwan from '../../components/RachunekTajwan.astro';
 import KartaNHI from '../../components/KartaNHI.astro';
+import DoplatyTajwan from '../../components/DoplatyTajwan.astro';
 import { compiledContent } from './_tajwan-ochrona-zdrowia.md';
 
 // Markdown nie przyjmuje komponentów, a rozbicie treści na kilka plików rozbiłoby numerację
 // przypisów — więc dzielimy skompilowany HTML w miejscach znaczników <div data-slot="…"></div>
 // i wstawiamy tam komponenty. Każdy znacznik musi wystąpić dokładnie raz.
-const SLOTY = ['karta', 'rachunek'] as const;
+const SLOTY = ['karta', 'rachunek', 'doplaty'] as const;
 type Slot = (typeof SLOTY)[number];
 const czesci = (await compiledContent()).split(/<div data-slot="([a-z]+)"><\/div>/);
 const znalezione = czesci.filter((_, i) => i % 2 === 1);
@@ -44,6 +45,7 @@ if (znalezione.length !== SLOTY.length) throw new Error(`Nieznane znaczniki w tr
         {czesci.map((czesc, i) =>
           i % 2 === 0 ? <Fragment set:html={czesc} />
           : (czesc as Slot) === 'karta' ? <KartaNHI />
+          : (czesc as Slot) === 'doplaty' ? <DoplatyTajwan />
           : <RachunekTajwan />
         )}
       </div>

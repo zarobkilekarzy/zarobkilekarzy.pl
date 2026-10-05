@@ -1,0 +1,248 @@
+---
+// Interaktywny wykres dopłaty za wizytę w zależności od poziomu placówki (analiza o Tajwanie).
+// Dane: NHI Annual Report 2025-2026, tab. 3-3 — dopłata podstawowa za wizytę ambulatoryjną
+// medycyny zachodniej, ubezpieczony bez zwolnień. Dopłaty do leków nie rysujemy: dla leków
+// za 101–1000 TWD jest jednakowa na każdym poziomie (tab. 3-4), więc nie zmienia porównania —
+// opisuje ją podpis. Bez JS wykres jest statyczny; JS dodaje wybór słupka z podsumowaniem.
+
+interface Poziom {
+  id: string;
+  pl: string;
+  zh: string;
+  zeSkierowaniem: number;
+  bezSkierowania: number;
+}
+
+const poziomy: Poziom[] = [
+  { id: 'przychodnia', pl: 'Przychodnia', zh: '診所', zeSkierowaniem: 50, bezSkierowania: 50 },
+  { id: 'lokalny', pl: 'Szpital lokalny', zh: '地區醫院', zeSkierowaniem: 50, bezSkierowania: 80 },
+  { id: 'regionalny', pl: 'Szpital regionalny', zh: '區域醫院', zeSkierowaniem: 100, bezSkierowania: 240 },
+  { id: 'centrum', pl: 'Centrum medyczne', zh: '醫學中心', zeSkierowaniem: 170, bezSkierowania: 420 },
+];
+
+const tryby = [
+  { id: 'ze', pl: 'ze skierowaniem' },
+  { id: 'bez', pl: 'bez skierowania' },
+] as const;
+
+const SKALA = 450;
+const KURS_PLN = 0.1208; // NBP, tabela B z 30.09.2026 — ten sam kurs co w tekście
+const zl = (twd: number) =>
+  `≈ ${(twd * KURS_PLN).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} zł`;
+const pct = (v: number) => `${((v / SKALA) * 100).toFixed(2)}%`;
+const podzialka = [0, 100, 200, 300, 400];
+
+const kwoty = poziomy.flatMap((p) => [p.zeSkierowaniem, p.bezSkierowania]);
+const min = Math.min(...kwoty);
+const max = Math.max(...kwoty);
+const razy = (a: number, b: number) => (a / b).toLocaleString('pl-PL', { maximumFractionDigits: 1 });
+---
+
+<figure class="dop" data-doplaty data-min={min} data-kurs={KURS_PLN}>
+  <p class="dop-wniosek">
+    {/* W jednej linii: compressHTML gubi spację przy łamaniu wiersza obok <strong>. */}
+    Dopłata za tę samą poradę: od <strong>{min} TWD</strong> w przychodni do <strong>{max} TWD</strong> w centrum medycznym bez skierowania — {razy(max, min)}× więcej.
+  </p>
+
+  <div class="dop-wykres">
+    <div class="dop-os" aria-hidden="true">
+      {podzialka.map((v) => (
+        <span style={`left:${pct(v)}`}>{v}</span>
+      ))}
+    </div>
+    {poziomy.map((p) => (
+      <div class="dop-grupa">
+        <p class="dop-grupa-nazwa">
+          {p.pl} <span class="zh" lang="zh-Hant">{p.zh}</span>
+        </p>
+        {tryby.map((t) => {
+          const kwota = t.id === 'ze' ? p.zeSkierowaniem : p.bezSkierowania;
+          const ze = p.zeSkierowaniem;
+          return (
+            <button
+              type="button"
+              class="dop-slupek"
+              data-poziom={p.id}
+              data-nazwa={p.pl}
+              data-tryb={t.pl}
+              data-kwota={kwota}
+              data-ze={ze}
+              aria-label={`${p.pl}, ${t.pl}: ${kwota} TWD`}
+              aria-pressed={p.id === 'lokalny' && t.id === 'bez' ? 'true' : 'false'}
+            >
+              <span class="dop-tryb">{t.pl}</span>
+              <span class="dop-tor">
+                <span class="dop-seg" style={`width:${pct(kwota)}`}></span>
+              </span>
+              <span class="dop-kwota">
+                <span class="dop-twd">{kwota} TWD</span>
+                <span class="dop-zl">{zl(kwota)}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    ))}
+  </div>
+
+  <p class="dop-podsumowanie" data-dop-podsumowanie aria-live="polite">
+    <strong>Szpital lokalny, bez skierowania: 80 TWD ({zl(80)}).</strong> Tyle wynosi dopłata
+    podstawowa na przykładowym rachunku niżej. Ze skierowaniem byłoby to 50 TWD.
+  </p>
+
+  <figcaption>
+    Dopłata podstawowa za wizytę ambulatoryjną u lekarza medycyny zachodniej; ubezpieczony bez
+    zwolnień. Do tego dochodzi dopłata do leków — dla leków za 101–1000 TWD jednakowa na każdym
+    poziomie (20–180 TWD), powyżej najwyżej 200 TWD w przychodni i szpitalu lokalnym, a 300 TWD
+    w szpitalu regionalnym i centrum medycznym — oraz opłata rejestracyjna, którą placówka
+    ustala sama. Źródło: <a
+      href="https://media.nhi.gov.tw/md/dl-95246-fa6dcd93ece54f16a73a5760d5415591-3.pdf"
+      >NHI Annual Report 2025-2026</a
+    >, tab. 3-3 i 3-4. Złote po kursie NBP z 30.09.2026 (1 TWD = 0,1208 zł).
+  </figcaption>
+</figure>
+
+<style>
+  .dop {
+    margin: 2rem 0 1.5rem;
+    padding: 1.1rem 1.2rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    font-family: var(--font-sans);
+    --dop-kol-tryb: 8.2rem;
+    --dop-kol-kwota: 10.2rem;
+  }
+  .zh {
+    font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Heiti TC", sans-serif;
+    font-weight: 400;
+    color: var(--ink-faint);
+    font-size: 0.85em;
+    margin-left: 0.2rem;
+  }
+
+  .dop-wniosek { margin: 0 0 0.8rem; font-size: 0.95rem; }
+
+  .dop-wykres { position: relative; }
+  /* Oś wartości wyrównana z torami słupków (ta sama siatka kolumn). */
+  .dop-os {
+    position: relative;
+    height: 1.1rem;
+    margin-left: calc(var(--dop-kol-tryb) + 0.6rem + 1px);
+    margin-right: calc(var(--dop-kol-kwota) + 0.6rem + 1px);
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .dop-os span { position: absolute; transform: translateX(-50%); }
+  .dop-os span:first-child { transform: none; }
+
+  .dop-grupa { padding: 0.45rem 0; border-top: 1px dashed var(--line-2); }
+  .dop-grupa-nazwa { margin: 0 0 0.25rem; font-weight: 600; font-size: 0.92rem; }
+
+  .dop-slupek {
+    display: grid;
+    grid-template-columns: var(--dop-kol-tryb) 1fr var(--dop-kol-kwota);
+    align-items: center;
+    column-gap: 0.6rem;
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    text-align: left;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 0.2rem 0;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+  .dop-slupek:hover { background: var(--paper); }
+  .dop-slupek:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+  .dop-slupek[aria-pressed='true'] { background: var(--brand-50); border-color: var(--brand); }
+  .dop-tryb { font-size: 0.8rem; color: var(--ink-soft); padding-left: 0.35rem; }
+  .dop-tor {
+    display: flex;
+    height: 1.05rem;
+    background: var(--paper);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .dop-seg { display: block; height: 100%; background: var(--brand); }
+  .dop-kwota {
+    display: flex;
+    justify-content: flex-end;
+    align-items: baseline;
+    gap: 0.45rem;
+    padding-right: 0.4rem;
+  }
+  .dop-twd { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.92rem; font-weight: 700; white-space: nowrap; }
+  .dop-zl { font-size: 0.74rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .dop-podsumowanie {
+    margin: 0.8rem 0 0;
+    padding: 0.7rem 0.9rem;
+    background: var(--paper);
+    border-left: 3px solid var(--brand);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 0.92rem;
+  }
+
+  figcaption { margin-top: 0.7rem; font-size: 0.8rem; color: var(--ink-faint); line-height: 1.45; }
+
+  @media (max-width: 560px) {
+    /* Na wąskim ekranie: opis i kwota w jednej linii, słupek pod nimi na całą szerokość. */
+    .dop { padding: 0.9rem 0.75rem 0.8rem; }
+    .dop-slupek {
+      grid-template-columns: 1fr auto;
+      grid-template-areas: 'tryb kwota' 'tor tor';
+      row-gap: 0.2rem;
+      padding: 0.3rem 0.35rem;
+    }
+    .dop-tryb { grid-area: tryb; padding-left: 0; }
+    .dop-kwota { grid-area: kwota; padding-right: 0; }
+    .dop-tor { grid-area: tor; }
+    .dop-os { margin: 0 calc(0.35rem + 1px); }
+    .dop-twd { font-size: 0.86rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dop-slupek { transition: none; }
+  }
+</style>
+
+<script>
+  for (const dop of document.querySelectorAll<HTMLElement>('[data-doplaty]')) {
+    const min = Number(dop.dataset.min);
+    const kurs = Number(dop.dataset.kurs);
+    const podsumowanie = dop.querySelector<HTMLElement>('[data-dop-podsumowanie]');
+    const slupki = [...dop.querySelectorAll<HTMLButtonElement>('.dop-slupek')];
+    if (!podsumowanie) continue;
+
+    const zl = (v: number) =>
+      `≈ ${(v * kurs).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} zł`;
+    const razy = (a: number, b: number) =>
+      (a / b).toLocaleString('pl-PL', { maximumFractionDigits: 1 });
+
+    const podsumuj = (b: HTMLButtonElement) => {
+      const kwota = Number(b.dataset.kwota);
+      const ze = Number(b.dataset.ze);
+      const naglowek = document.createElement('strong');
+      naglowek.textContent = `${b.dataset.nazwa}, ${b.dataset.tryb}: ${kwota} TWD (${zl(kwota)}).`;
+      let tekst =
+        kwota > min
+          ? ` To ${razy(kwota, min)}× więcej niż najtańsza możliwość: ${min} TWD w przychodni albo w szpitalu lokalnym ze skierowaniem.`
+          : ' To najtańsza możliwość.';
+      if (b.dataset.tryb === 'bez skierowania' && kwota > ze) {
+        tekst += ` Ze skierowaniem byłoby to ${ze} TWD, czyli o ${kwota - ze} TWD mniej.`;
+      }
+      podsumowanie.textContent = '';
+      podsumowanie.append(naglowek, tekst);
+    };
+
+    for (const b of slupki) {
+      b.addEventListener('click', () => {
+        for (const x of slupki) x.setAttribute('aria-pressed', String(x === b));
+        podsumuj(b);
+      });
+    }
+  }
+</script>

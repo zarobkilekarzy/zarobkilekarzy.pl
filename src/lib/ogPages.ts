@@ -139,6 +139,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Kto odpada z medycyny',
     subtitle: 'Co piąty student nie kończy w terminie, odsiew to pierwszy rok, a po dyplomie bez składki ZUS w Polsce jest 5% absolwentów.',
   },
+  'analizy/tajwan-ochrona-zdrowia': {
+    tag: 'Analiza · Świat',
+    title: 'Jak działa tajwańska ochrona zdrowia',
+    subtitle: 'Rachunek z kwotą dla ubezpieczyciela po każdej wizycie, jawne sprawozdania szpitali i rejestr miejsc pracy lekarzy. Płace lekarzy — niejawne.',
+  },
   'analizy/symulator-podazy-lekarzy': {
     tag: 'Analiza · Symulator',
     title: 'Symulator podaży lekarzy',

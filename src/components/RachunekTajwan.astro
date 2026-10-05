@@ -54,6 +54,12 @@ const doZaplaty: Wiersz = {
   opis: 'Pacjent płaci dopłatę (140) i opłatę rejestracyjną (100) — razem 240 TWD, ok. 29 zł. Resztę wizyty, 1564 punkty, rozlicza ubezpieczyciel.',
 };
 
+// Złote po kursie NBP (tabela B z 30.09.2026) — ten sam kurs co w tekście analizy.
+// Punkty NHI przeliczamy jak dolary (1 pkt = 1 TWD) — opisane w podpisie.
+const KURS_PLN = 0.1208;
+const zl = (twd: string) =>
+  `≈\u00a0${(Number(twd) * KURS_PLN).toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00a0zł`;
+
 const sekcje = [
   { zh: '醫療費用', pl: 'Koszty świadczeń (punkty NHI)', wiersze: koszty },
   { zh: '部份負擔明細', pl: 'Dopłata pacjenta i część ubezpieczyciela', wiersze: doplaty },
@@ -111,7 +117,10 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
                   <span class="zh" lang="zh-Hant">{w.zh}</span>
                   <span class="pl">{w.pl}</span>
                 </span>
-                <span class="rach-kwota">{w.kwota}</span>
+                <span class="rach-kwoty">
+                  <span class="rach-kwota">{w.kwota}</span>
+                  <span class="rach-zl">{zl(w.kwota)}</span>
+                </span>
               </button>
             </li>
           ))}
@@ -130,7 +139,10 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
         <span class="zh" lang="zh-Hant">{doZaplaty.zh}</span>
         <span class="pl">{doZaplaty.pl}</span>
       </span>
-      <span class="rach-kwota">{doZaplaty.kwota} <small>TWD</small></span>
+      <span class="rach-kwoty">
+        <span class="rach-kwota">{doZaplaty.kwota} <small>TWD</small></span>
+        <span class="rach-zl">{zl(doZaplaty.kwota)}</span>
+      </span>
     </button>
   </div>
 
@@ -147,9 +159,9 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
       <span class="seg seg-rejestracja" style={`width:${pct(rejestracja)}%`}></span>
     </div>
     <ul class="rach-legenda">
-      <li><span class="kropka seg-nhi"></span>ubezpieczyciel NHI: 1564 pkt</li>
-      <li><span class="kropka seg-doplata"></span>dopłata pacjenta: 140 TWD</li>
-      <li><span class="kropka seg-rejestracja"></span>opłata rejestracyjna: 100 TWD</li>
+      <li><span class="kropka seg-nhi"></span>ubezpieczyciel NHI: 1564 pkt ({zl('1564')})</li>
+      <li><span class="kropka seg-doplata"></span>dopłata pacjenta: 140 TWD ({zl('140')})</li>
+      <li><span class="kropka seg-rejestracja"></span>opłata rejestracyjna: 100 TWD ({zl('100')})</li>
     </ul>
     <p class="rach-pasek-wniosek">
       W okienku pacjent zapłacił ok. <strong>{udzialPacjenta}%</strong> łącznej kwoty wizyty
@@ -158,8 +170,9 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
   </div>
 
   <figcaption>
-    Układ uproszczony. Pasek liczy punkty NHI jak dolary tajwańskie (1:1); faktyczna wypłata
-    dla szpitala zależy od wartości punktu po rozliczeniu kwartału.
+    Układ uproszczony. Złote po kursie NBP z 30.09.2026 (1 TWD = 0,1208 zł). Punkty NHI
+    liczymy jak dolary tajwańskie (1:1); faktyczna wypłata dla szpitala zależy od wartości
+    punktu po rozliczeniu kwartału.
   </figcaption>
 </figure>
 
@@ -254,7 +267,8 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
     border: 1px solid transparent;
     border-radius: 6px;
     padding: 0.3rem 0.45rem;
-    cursor: pointer;
+    /* Pozycje reagują na najechanie i klik, ale nie są linkami — bez „rączki”. */
+    cursor: default;
     position: relative;
     transition: background-color 0.15s, border-color 0.15s;
   }
@@ -269,6 +283,14 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
   }
   .rach-etykieta { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.55rem; }
   .rach-etykieta .pl { display: inline; font-size: 0.8rem; }
+  .rach-kwoty { display: flex; flex-direction: column; align-items: flex-end; flex: 0 0 auto; }
+  .rach-zl {
+    font-size: 0.74rem;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .rach.is-oryginal .rach-zl { display: none; }
   .rach-suma .rach-etykieta .zh { font-weight: 700; }
   .rach-suma .rach-kwota { font-weight: 700; }
   .rach-suma { border: 1px dashed var(--line-2); margin-top: 0.15rem; }
@@ -280,6 +302,7 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
   }
   .rach-okienko .rach-kwota { font-size: 1.25rem; }
   .rach-okienko small { font-size: 0.75rem; color: var(--ink-soft); }
+  .rach-okienko .rach-zl { font-size: 0.82rem; color: var(--ink-soft); }
 
   /* Stan aktywny: suma i jej składniki. */
   .rach-wiersz.is-aktywna { background: var(--brand-50); border-color: var(--brand); border-style: solid; }

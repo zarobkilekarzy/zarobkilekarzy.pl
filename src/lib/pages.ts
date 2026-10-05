@@ -253,6 +253,12 @@ export const strony: Record<string, Strona> = {
     opis: 'Co piąty student nie kończy w terminie, odsiew to pierwszy rok, a po dyplomie bez składki ZUS w Polsce jest 5% absolwentów. Przyczyn skreśleń nie zbiera nawet POL-on.',
     tematy: ['dostep-do-zawodu'],
   },
+  '/analizy/tajwan-ochrona-zdrowia': {
+    dzial: 'analizy',
+    tytul: 'Jak działa tajwańska ochrona zdrowia',
+    opis: 'Jeden płatnik, budżet globalny z punktową wyceną i rachunek z kwotą dla ubezpieczyciela po każdej wizycie. Tajwan publikuje sprawozdania szpitali i wie, gdzie pracuje każdy lekarz — ale zarobków poszczególnych lekarzy nie ujawnia.',
+    tematy: ['jawnosc', 'pieniadz-nfz'],
+  },
   '/analizy/symulator-podazy-lekarzy': {
     dzial: 'analizy',
     tytul: 'Symulator podaży lekarzy',

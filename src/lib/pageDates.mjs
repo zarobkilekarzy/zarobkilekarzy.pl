@@ -14,6 +14,7 @@ export const pageDates = {
   '/analizy/ciecie-limitow-na-medycyne': '2026-09-01',
   '/analizy/odsiew-na-medycynie': '2026-10-05',
   '/analizy/symulator-podazy-lekarzy': '2026-10-05',
+  '/analizy/tajwan-ochrona-zdrowia': '2026-10-05',
   '/analizy/lejek-ksztalcenia': '2026-07-08',
   '/analizy/english-division': '2026-08-02',
   '/analizy/lekarze-ze-wschodu': '2026-07-08',

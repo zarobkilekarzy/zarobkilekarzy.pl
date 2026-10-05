@@ -3,7 +3,8 @@
 // Kwoty z prawdziwego rachunku z wizyty neurologicznej w szpitalu lokalnym w Tajczungu
 // (zgodne z tabelą dopłat NHIA i cennikiem szpitala); pacjent, szpital i numer wizyty —
 // przykładowe. Działa bez JS (rachunek dwujęzyczny, wszystko widoczne); JS dodaje
-// podświetlanie składników sum, panel wyjaśnień i tryb „oryginał + podpowiedzi”.
+// dymki z objaśnieniami (najechanie/fokus pokazuje, klik przypina, Escape zamyka)
+// i podświetlanie składników sum. Objaśnienia są w DOM (aria-describedby) także bez JS.
 
 interface Wiersz {
   id: string;
@@ -54,6 +55,13 @@ const doZaplaty: Wiersz = {
   opis: 'Pacjent płaci dopłatę (140) i opłatę rejestracyjną (100) — razem 240 TWD, ok. 29 zł. Resztę wizyty, 1564 punkty, rozlicza ubezpieczyciel.',
 };
 
+// Objaśnienia pól nagłówka rachunku (tylko to, co tekst analizy podaje ze źródłem).
+const metaOpis = {
+  placowka: 'Szpital lokalny (地區醫院) — od poziomu placówki (centrum medyczne, szpital regionalny, szpital lokalny, przychodnia) zależy wysokość dopłaty; zob. tabela wyżej.',
+  data: 'Data w kalendarzu Republiki Chińskiej: rok 115 to 2026 r. (lata liczy się od 1912 r.).',
+  numer: 'Kolejny numer wizyty. Placówka zapisuje go także na chipie karty ubezpieczenia (wzór karty niżej).',
+};
+
 // Złote po kursie NBP (tabela B z 30.09.2026) — ten sam kurs co w tekście analizy.
 // Punkty NHI przeliczamy jak dolary (1 pkt = 1 TWD) — opisane w podpisie.
 const KURS_PLN = 0.1208;
@@ -78,9 +86,7 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
 <figure class="rach" data-rachunek>
   <div class="rach-toolbar">
     <span class="rach-tag">Przykładowy rachunek · ilustracja</span>
-    <button type="button" class="rach-toggle" data-rach-toggle aria-pressed="false">
-      Pokaż sam oryginał
-    </button>
+    <span class="rach-hint">Najedź na pozycję lub ją kliknij — przy sumach podświetlą się składniki.</span>
   </div>
 
   <div class="rach-paper">
@@ -90,11 +96,20 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
     </p>
 
     <dl class="rach-meta">
-      <div><dt><span class="zh" lang="zh-Hant">醫院</span><span class="pl">placówka</span></dt><dd>○○地區醫院 <small>(szpital lokalny; nazwa zmyślona)</small></dd></div>
+      <div><dt><span class="zh" lang="zh-Hant">醫院</span><span class="pl">placówka</span></dt><dd>
+        <button type="button" class="rach-meta-btn" data-pop="rach-pop-placowka" aria-describedby="rach-pop-placowka"><span lang="zh-Hant">○○地區醫院</span> <small>(szpital lokalny)</small></button>
+        <span class="rach-pop" id="rach-pop-placowka" role="tooltip" hidden>{metaOpis.placowka}</span>
+      </dd></div>
       <div><dt><span class="zh" lang="zh-Hant">姓名</span><span class="pl">pacjent</span></dt><dd>Jan Kowalski</dd></div>
-      <div><dt><span class="zh" lang="zh-Hant">就醫日期</span><span class="pl">data wizyty</span></dt><dd>115/09/17 <small>(= 17.09.2026)</small></dd></div>
+      <div><dt><span class="zh" lang="zh-Hant">就醫日期</span><span class="pl">data wizyty</span></dt><dd>
+        <button type="button" class="rach-meta-btn" data-pop="rach-pop-data" aria-describedby="rach-pop-data">115/09/17 <small>(= 17.09.2026)</small></button>
+        <span class="rach-pop" id="rach-pop-data" role="tooltip" hidden>{metaOpis.data}</span>
+      </dd></div>
       <div><dt><span class="zh" lang="zh-Hant">科別</span><span class="pl">poradnia</span></dt><dd><span lang="zh-Hant">神經科</span> <small>(neurologia)</small></dd></div>
-      <div><dt><span class="zh" lang="zh-Hant">就醫序號</span><span class="pl">numer wizyty z karty NHI</span></dt><dd>0006</dd></div>
+      <div><dt><span class="zh" lang="zh-Hant">就醫序號</span><span class="pl">numer wizyty z karty NHI</span></dt><dd>
+        <button type="button" class="rach-meta-btn" data-pop="rach-pop-numer" aria-describedby="rach-pop-numer">0006</button>
+        <span class="rach-pop" id="rach-pop-numer" role="tooltip" hidden>{metaOpis.numer}</span>
+      </dd></div>
     </dl>
 
     {sekcje.map((s) => (
@@ -110,7 +125,8 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
                 type="button"
                 class:list={['rach-wiersz', { 'rach-suma': w.suma }]}
                 data-id={w.id}
-                data-opis={w.opis}
+                data-pop={`rach-pop-${w.id}`}
+                aria-describedby={`rach-pop-${w.id}`}
                 data-skladniki={w.skladniki?.join(' ') ?? ''}
               >
                 <span class="rach-etykieta">
@@ -122,17 +138,20 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
                   <span class="rach-zl">{zl(w.kwota)}</span>
                 </span>
               </button>
+              <span class="rach-pop" id={`rach-pop-${w.id}`} role="tooltip" hidden>{w.opis}</span>
             </li>
           ))}
         </ul>
       </section>
     ))}
 
+    <div class="rach-okienko-wrap">
     <button
       type="button"
       class="rach-wiersz rach-suma rach-okienko"
       data-id={doZaplaty.id}
-      data-opis={doZaplaty.opis}
+      data-pop={`rach-pop-${doZaplaty.id}`}
+      aria-describedby={`rach-pop-${doZaplaty.id}`}
       data-skladniki={doZaplaty.skladniki?.join(' ')}
     >
       <span class="rach-etykieta">
@@ -144,12 +163,9 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
         <span class="rach-zl">{zl(doZaplaty.kwota)}</span>
       </span>
     </button>
+    <span class="rach-pop" id={`rach-pop-${doZaplaty.id}`} role="tooltip" hidden>{doZaplaty.opis}</span>
+    </div>
   </div>
-
-  <p class="rach-wyjasnienie" data-rach-wyjasnienie aria-live="polite">
-    <strong>Sprawdź sam:</strong> najedź kursorem albo kliknij dowolną pozycję. Przy sumach
-    podświetlą się składniki, z których powstały.
-  </p>
 
   <div class="rach-pasek-wrap">
     <p class="rach-pasek-tytul">Kto płaci za tę wizytę?</p>
@@ -196,17 +212,7 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
     text-transform: uppercase;
     color: var(--ink-faint);
   }
-  .rach-toggle {
-    font: inherit;
-    font-size: 0.82rem;
-    color: var(--brand-link);
-    background: none;
-    border: 1px solid var(--line-2);
-    border-radius: 999px;
-    padding: 0.25rem 0.8rem;
-    cursor: pointer;
-  }
-  .rach-toggle:hover { background: var(--brand-50); }
+  .rach-hint { font-size: 0.82rem; color: var(--ink-soft); }
 
   /* „Papier” rachunku — jasny w obu motywach byłby obcy stronie, więc na tokenach. */
   .rach-paper {
@@ -239,10 +245,25 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
     margin: 0 0 0.9rem;
     font-size: 0.88rem;
   }
-  .rach-meta div { display: flex; gap: 0.6rem; align-items: baseline; }
+  .rach-meta div { display: flex; gap: 0.6rem; align-items: baseline; position: relative; }
   .rach-meta dt { flex: 0 0 auto; min-width: 5.2rem; color: var(--ink-soft); }
   .rach-meta dd { margin: 0; }
   .rach-meta small { color: var(--ink-faint); }
+  /* Pola z objaśnieniem: kropkowane podkreślenie jak przy skrótach, bez „rączki”. */
+  .rach-meta-btn {
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 0;
+    text-decoration: underline dotted var(--ink-faint);
+    text-underline-offset: 0.2em;
+    cursor: help;
+  }
+  .rach-meta-btn:hover,
+  .rach-meta-btn.is-aktywna { text-decoration-color: var(--brand); text-decoration-style: solid; }
+  .rach-meta-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 3px; }
 
   .rach-sekcja { border-top: 1px dashed var(--line-2); padding-top: 0.6rem; margin-top: 0.6rem; }
   .rach-sekcja-tytul {
@@ -252,7 +273,7 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
     color: var(--ink);
   }
   .rach-lista { list-style: none; margin: 0; padding: 0; }
-  .rach-lista li { margin: 0; padding: 0; }
+  .rach-lista li { margin: 0; padding: 0; position: relative; }
 
   .rach-wiersz {
     display: flex;
@@ -290,13 +311,12 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
-  .rach.is-oryginal .rach-zl { display: none; }
   .rach-suma .rach-etykieta .zh { font-weight: 700; }
   .rach-suma .rach-kwota { font-weight: 700; }
   .rach-suma { border: 1px dashed var(--line-2); margin-top: 0.15rem; }
 
+  .rach-okienko-wrap { position: relative; margin-top: 0.9rem; }
   .rach-okienko {
-    margin-top: 0.9rem;
     border: 2px solid var(--ink);
     padding: 0.55rem 0.6rem;
   }
@@ -309,48 +329,28 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
   .rach-wiersz.is-skladnik { background: var(--brand-50); border-color: var(--brand); border-style: dashed; }
   .rach-wiersz.is-skladnik .rach-kwota { color: var(--brand-link); font-weight: 700; }
 
-  .rach-wyjasnienie {
-    margin: 0.8rem 0 0;
-    padding: 0.75rem 0.95rem;
-    background: var(--paper);
-    border-left: 3px solid var(--brand);
-    border-radius: 0 var(--radius) var(--radius) 0;
-    font-size: 0.92rem;
-    min-height: 3.2rem;
-  }
-
-  /* Tryb „oryginał”: polskie podpisy chowają się i wracają jako podpowiedź przy najechaniu
-     lub fokusie. Dla czytników ekranu tekst zostaje w DOM. */
-  .rach.is-oryginal .rach-paper .pl {
+  /* Dymek z objaśnieniem: pod pozycją (składniki sum leżą wyżej i zostają widoczne),
+     nad nią, gdy pod spodem brakuje miejsca w oknie. Nie przechwytuje myszy. */
+  .rach-pop {
     position: absolute;
     left: 0.45rem;
-    bottom: calc(100% + 4px);
-    z-index: 5;
-    font-size: 0.78rem;
+    top: calc(100% + 6px);
+    z-index: 10;
+    width: max-content;
+    max-width: min(24rem, calc(100% - 0.9rem));
+    padding: 0.55rem 0.75rem;
+    background: var(--paper);
     color: var(--ink);
-    background: var(--surface);
     border: 1px solid var(--line-2);
-    border-radius: 6px;
-    padding: 0.2rem 0.5rem;
-    white-space: nowrap;
-    box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.4);
-    opacity: 0;
+    border-left: 3px solid var(--brand);
+    border-radius: 8px;
+    box-shadow: 0 10px 28px -10px rgba(0, 0, 0, 0.45);
+    font-size: 0.86rem;
+    line-height: 1.45;
     pointer-events: none;
-    transform: translateY(3px);
-    transition: opacity 0.12s, transform 0.12s;
   }
-  .rach.is-oryginal .rach-wiersz:hover .pl,
-  .rach.is-oryginal .rach-wiersz:focus-visible .pl,
-  .rach.is-oryginal .rach-meta div:hover .pl,
-  .rach.is-oryginal .rach-sekcja-tytul:hover .pl,
-  .rach.is-oryginal .rach-title:hover .pl {
-    opacity: 1;
-    transform: none;
-  }
-  .rach.is-oryginal .rach-meta div,
-  .rach.is-oryginal .rach-sekcja-tytul,
-  .rach.is-oryginal .rach-title { position: relative; }
-  .rach.is-oryginal .rach-meta small { display: none; }
+  .rach-pop.is-nad { top: auto; bottom: calc(100% + 6px); }
+  .rach-meta .rach-pop { left: 0; max-width: 100%; }
 
   .rach-pasek-wrap { margin-top: 1rem; }
   .rach-pasek-tytul { margin: 0 0 0.35rem; font-weight: 600; font-size: 0.92rem; }
@@ -391,63 +391,67 @@ const udzialPacjenta = Math.round(((doplata + rejestracja) / razem) * 100);
     .rach-wiersz { gap: 0.6rem; padding: 0.3rem 0.35rem; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .rach-wiersz, .rach.is-oryginal .rach-paper .pl { transition: none; }
+    .rach-wiersz { transition: none; }
   }
 </style>
 
 <script>
   for (const rach of document.querySelectorAll<HTMLElement>('[data-rachunek]')) {
-    const wiersze = [...rach.querySelectorAll<HTMLButtonElement>('.rach-wiersz')];
-    const wyjasnienie = rach.querySelector<HTMLElement>('[data-rach-wyjasnienie]');
-    const przelacznik = rach.querySelector<HTMLButtonElement>('[data-rach-toggle]');
-    if (!wyjasnienie) continue;
-    const domyslne = wyjasnienie.innerHTML;
+    const cele = [...rach.querySelectorAll<HTMLButtonElement>('[data-pop]')];
+    const dymek = (b: HTMLButtonElement) =>
+      b.dataset.pop ? rach.querySelector<HTMLElement>(`#${b.dataset.pop}`) : null;
     let przypiety: HTMLButtonElement | null = null;
 
-    const wyczysc = () => {
-      for (const w of wiersze) w.classList.remove('is-aktywna', 'is-skladnik');
+    const ukryj = () => {
+      for (const b of cele) {
+        b.classList.remove('is-aktywna', 'is-skladnik');
+        const d = dymek(b);
+        if (d) d.hidden = true;
+      }
     };
 
-    const pokaz = (w: HTMLButtonElement) => {
-      wyczysc();
-      w.classList.add('is-aktywna');
-      for (const id of (w.dataset.skladniki ?? '').split(' ').filter(Boolean)) {
+    const pokaz = (b: HTMLButtonElement) => {
+      ukryj();
+      b.classList.add('is-aktywna');
+      for (const id of (b.dataset.skladniki ?? '').split(' ').filter(Boolean)) {
         rach.querySelector(`.rach-wiersz[data-id="${id}"]`)?.classList.add('is-skladnik');
       }
-      const etykieta = w.querySelector('.pl')?.textContent ?? '';
-      const kwota = w.querySelector('.rach-kwota')?.textContent?.trim() ?? '';
-      wyjasnienie.textContent = '';
-      const naglowek = document.createElement('strong');
-      naglowek.textContent = `${etykieta[0]?.toUpperCase() ?? ''}${etykieta.slice(1)} — ${kwota}. `;
-      wyjasnienie.append(naglowek, document.createTextNode(w.dataset.opis ?? ''));
-    };
-
-    const przywroc = () => {
-      if (przypiety) {
-        pokaz(przypiety);
-      } else {
-        wyczysc();
-        wyjasnienie.innerHTML = domyslne;
+      const d = dymek(b);
+      if (!d) return;
+      d.classList.remove('is-nad');
+      d.hidden = false;
+      // Domyślnie pod pozycją; nad nią, gdy dymek wychodzi poza dół okna, a u góry jest miejsce.
+      const r = d.getBoundingClientRect();
+      if (r.bottom > window.innerHeight && b.getBoundingClientRect().top - r.height - 6 > 0) {
+        d.classList.add('is-nad');
       }
     };
 
-    for (const w of wiersze) {
-      w.addEventListener('mouseenter', () => pokaz(w));
-      w.addEventListener('focus', () => pokaz(w));
-      w.addEventListener('mouseleave', przywroc);
-      w.addEventListener('blur', przywroc);
-      // Klik (także dotyk) przypina wyjaśnienie; ponowny klik odpina.
-      w.addEventListener('click', () => {
-        przypiety = przypiety === w ? null : w;
-        if (przypiety) pokaz(w);
-        else przywroc();
+    const przywroc = () => (przypiety ? pokaz(przypiety) : ukryj());
+
+    for (const b of cele) {
+      b.addEventListener('mouseenter', () => pokaz(b));
+      b.addEventListener('focus', () => pokaz(b));
+      b.addEventListener('mouseleave', przywroc);
+      b.addEventListener('blur', przywroc);
+      // Klik (także dotyk) przypina dymek; ponowny klik odpina.
+      b.addEventListener('click', () => {
+        przypiety = przypiety === b ? null : b;
+        if (przypiety) pokaz(b);
+        else ukryj();
       });
     }
-
-    przelacznik?.addEventListener('click', () => {
-      const wlaczony = rach.classList.toggle('is-oryginal');
-      przelacznik.setAttribute('aria-pressed', String(wlaczony));
-      przelacznik.textContent = wlaczony ? 'Pokaż tłumaczenie' : 'Pokaż sam oryginał';
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        przypiety = null;
+        ukryj();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (przypiety && e.target instanceof Node && !przypiety.contains(e.target)) {
+        przypiety = null;
+        ukryj();
+      }
     });
   }
 </script>

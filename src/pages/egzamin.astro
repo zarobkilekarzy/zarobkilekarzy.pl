@@ -43,11 +43,11 @@ Jak korzystać:
 2. Rozpocznij: await lek.rozpocznij('egzamin') — cała sesja: 200 pytań, próg 56%. Szybciej: lek.rozpocznij('szybki') — 20 losowych pytań. Lista sesji: lek.sesje(); dziedziny: lek.dziedziny(). Egzamin lekarsko-dentystyczny (LDEK): sesje z prefiksem, np. await lek.rozpocznij('egzamin', 'ldek-20262'); jego dziedziny: lek.dziedziny('LDEK'). Pełny egzamin tylko z sesji oznaczonej jako kompletna.
 3. Pobieraj pytania partiami: lek.pytania(1, 25) zwraca tablicę { nr, tresc, warianty: { A…E }, dziedzina, … }. Pojedynczo: lek.pytanie(nr).
 4. Odpowiadaj partiami: lek.odpowiedzi({ 1: 'C', 2: 'A', … }) albo pojedynczo lek.odpowiedz('C', nr). Odpowiedzi możesz zmieniać do zakończenia. Pytania unieważnione przez CEM pomiń — nie liczą się do wyniku.
-5. Sprawdź braki: lek.bezOdpowiedzi(). Na końcu: lek.zakoncz() — zwraca punkty, procent, próg, wynik zdany/niezdany, wynik według dziedzin i porównanie z przeciętnym zdającym.
+5. Sprawdź braki: lek.bezOdpowiedzi(). Na końcu: lek.zakoncz() — zwraca punkty, procent, próg, wynik zdany/niezdany, wynik według dziedzin, porównanie z przeciętnym zdającym oraz listę błędnych odpowiedzi (numer pytania, Twoja i prawidłowa odpowiedź). Pozostały czas: lek.stan().pozostalyCzasSek.
 
 Zasady uczciwego sprawdzianu: odpowiadaj wyłącznie na podstawie własnej wiedzy medycznej. Nie pobieraj plików z danymi strony (/egzamin/dane/…), nie czytaj kodu strony i nie szukaj odpowiedzi w internecie — klucz jest publiczny, więc każde z tych działań unieważnia wynik. W trybie egzaminu prawidłowe odpowiedzi poznasz dopiero po lek.zakoncz().
 
-Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%, wynik według dziedzin oraz 3 dziedziny z najsłabszym wynikiem.`;
+Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%, wynik według dziedzin, 3 dziedziny z najsłabszym wynikiem i listę pytań z błędną odpowiedzią.`;
 ---
 
 <BaseLayout
@@ -1212,6 +1212,7 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
     }
     function przelaczPauze() {
       if (!stan || stan.koniec || !stan.limit) return;
+      dolicz(); // domknij odcinek czasu przed zmianą stanu
       stan.pauza = !stan.pauza; zapisz(); renderPauza();
       if (stan.pauza) $<HTMLElement>('.lek-pauza button').focus(); else $<HTMLElement>('.lek-tresc').focus({ preventScroll: true });
     }
@@ -1374,14 +1375,21 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
       }));
     }
 
+    // Zegar liczy czas rzeczywisty — także w karcie w tle (agenci zwykle działają w ukrytej
+    // karcie albo bez okna). Zatrzymuje go wyłącznie jawna pauza. dolicz() wołamy też przy
+    // odczycie stanu przez API, bo przeglądarka w tle rzadko odpala setInterval.
+    let ostatniTik = performance.now();
+    function dolicz() {
+      const teraz = performance.now();
+      if (stan && stan.limit && !stan.koniec && !stan.pauza) stan.czas += teraz - ostatniTik;
+      ostatniTik = teraz;
+    }
     function uruchomZegar() {
       zatrzymajZegar();
-      let ostatni = performance.now();
+      ostatniTik = performance.now();
       const odswiez = () => {
         if (!stan) return;
-        const teraz = performance.now();
-        if (!document.hidden && !stan.pauza) stan.czas += teraz - ostatni;
-        ostatni = teraz;
+        dolicz();
         const zostalo = stan.limit - stan.czas;
         const z = $('.lek-zegar'); z.classList.toggle('malo', zostalo < 10 * 60000);
         $('.lek-zegar-czas').textContent = zegar(zostalo);
@@ -1956,7 +1964,7 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
         notatka: notatki[k] ?? null,
       };
       if (q.o === null) wynik.uniewaznione = 'Pytanie unieważnione przez CEM — nie liczy się do wyniku, odpowiedź nie jest przyjmowana.';
-      if (q.nz) wynik.uwaga = 'Pytanie zgłoszone w komentarzach bazy CEM jako niezgodne z aktualną wiedzą (na egzaminie liczone).';
+      if (q.nz && q.o !== null) wynik.uwaga = 'Pytanie zgłoszone w komentarzach bazy CEM jako niezgodne z aktualną wiedzą (na egzaminie liczone).';
       if (q.o !== null && ujawnij(s, k)) {
         wynik.poprawna = LITERY[q.o];
         wynik.dobrze = o === q.o;
@@ -1967,13 +1975,26 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
     }
 
     function opisWyniku() {
-      const s = stan!; const w = obliczWynik(s);
+      const s = stan!;
+      // Egzamin i szybki test ujawniają wynik dopiero po zakończeniu — jak w interfejsie.
+      if (!s.koniec && !TRYBY[s.tryb].natychmiast) {
+        dolicz();
+        return { zakonczony: false, tryb: s.tryb, info: 'Wynik i prawidłowe odpowiedzi będą dostępne po zakoncz().', odpowiedziane: Object.keys(s.odp).length, pytan: s.klucze.length };
+      }
+      const w = obliczWynik(s);
+      const nrW = (k: string) => s.klucze.indexOf(k) + 1;
       return {
         zakonczony: s.koniec, tryb: s.tryb, punkty: w.pkt, maksimum: w.max, progZdania: w.prog,
         zdany: w.zdany, procent: Math.round(w.proc * 10) / 10,
         przecietnyZdajacy: w.zTr === w.max && w.max ? Math.round(w.sala) : null,
         bezOdpowiedzi: w.wazne.filter((k) => s.odp[k] === undefined).length,
         uniewaznione: s.klucze.length - w.max,
+        uniewaznionePytania: s.klucze.filter((k) => pyt.get(k)!.o === null).map(nrW),
+        bledne: w.wazne.filter((k) => s.odp[k] !== undefined && s.odp[k] !== pyt.get(k)!.o).map((k) => {
+          const q = pyt.get(k)!;
+          return { nr: nrW(k), twojaOdpowiedz: LITERY[s.odp[k]], poprawna: LITERY[q.o!], dziedzina: nazwaDz(q.d, q.typ) ?? null, procentZdajacychPoprawnie: q.p ? q.p[q.o!] : null };
+        }),
+        bezOdpowiedziPytania: w.wazne.filter((k) => s.odp[k] === undefined).map(nrW),
         wgDziedzin: dzTypu(typStanu(s)).map((d) => {
           const kl = w.wazne.filter((k) => pyt.get(k)!.d === d.id);
           if (!kl.length) return null;
@@ -2006,7 +2027,7 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
           throw new Error($('.lek-blad').textContent || 'Nie udało się wczytać pytań.');
         return opisPytania();
       },
-      stan: () => stan ? {
+      stan: () => (dolicz(), stan) ? {
         aktywny: !stan.koniec, tryb: stan.tryb, nr: stan.idx + 1, z: stan.klucze.length,
         odpowiedziane: Object.keys(stan.odp).length, oznaczone: stan.flagi.length,
         pozostalyCzasSek: stan.limit ? Math.max(0, Math.round((stan.limit - stan.czas) / 1000)) : null,

@@ -7,6 +7,10 @@ import pagefindSearch from './integrations/pagefind.mjs';
 // Adres produkcyjny — używany do generowania kanonicznych URL i mapy strony.
 export default defineConfig({
   site: 'https://zarobkilekarzy.pl',
+  // Kompresja bezstratna, jak do Astro 6. Domyślne od v7 'jsx' wycina złamanie
+  // linii między tekstem a znacznikiem, więc „to\n<strong>sedno" dawało
+  // „tosedno" na całej stronie — a szablony piszemy jak HTML, nie JSX.
+  compressHTML: true,
   integrations: [
     sitemap({
       // /admin/* to strony wewnętrzne (noindex) — poza mapą strony.

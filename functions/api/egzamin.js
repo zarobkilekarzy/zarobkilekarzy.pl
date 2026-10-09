@@ -1,4 +1,4 @@
-// Anonimowe, zbiorcze wyniki modułu /lek w Cloudflare D1 (binding EGZAMIN_DB).
+// Anonimowe, zbiorcze wyniki modułu /egzamin w Cloudflare D1 (binding EGZAMIN_DB).
 // Jeden wiersz na ukończony test: dzień (bez godziny), tryb, sesja, punkty, maksimum,
 // czas w minutach. Bez IP, bez ciasteczek, bez identyfikatorów i bez odpowiedzi na
 // poszczególne pytania — wiersza nie da się powiązać z osobą.

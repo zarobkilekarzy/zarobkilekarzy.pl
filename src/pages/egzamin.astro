@@ -1,7 +1,7 @@
 ---
 // Moduł egzaminacyjny LEK na jawnej bazie pytań CEM (z odpowiedziami i statystykami
 // zdających). Całość działa w przeglądarce: indeks sesji jest wpisany w HTML w buildzie,
-// a pytania wybranej sesji przychodzą jako statyczny JSON z /lek/dane/ —
+// a pytania wybranej sesji przychodzą jako statyczny JSON z /egzamin/dane/ —
 // bez Functions. Postęp i notatki w localStorage (tylko na urządzeniu czytelnika).
 // Jedyny zapis na serwer: anonimowy wynik ukończonego testu → functions/api/egzamin.js (D1).
 // Dane: src/data/egzamin-lek/ (normalizacja: research/narzedzia/cem_lek_normalizuj.py).
@@ -36,7 +36,7 @@ const proc = (x: number) => (x * 100).toLocaleString('pl-PL', { maximumFractionD
 
 // Gotowy prompt dla agenta AI — ten sam interfejs co window.lek / WebMCP w skrypcie poniżej.
 // Przy zmianie API (nazwy funkcji, pola) aktualizuj OBA miejsca.
-const promptAgenta = `Rozwiąż Lekarski Egzamin Końcowy (LEK) na stronie ${new URL('/lek/', Astro.site)} — prawdziwe pytania z jawnej bazy Centrum Egzaminów Medycznych.
+const promptAgenta = `Rozwiąż Lekarski Egzamin Końcowy (LEK) na stronie ${new URL('/egzamin/', Astro.site)} — prawdziwe pytania z jawnej bazy Centrum Egzaminów Medycznych.
 
 Jak korzystać:
 1. Otwórz stronę w przeglądarce. Strona udostępnia obiekt window.lek — wywołuj go, wykonując JavaScript w karcie (funkcje oznaczone „await” są asynchroniczne). W przeglądarkach z WebMCP te same funkcje są dostępne jako narzędzia lek_*.
@@ -45,7 +45,7 @@ Jak korzystać:
 4. Odpowiadaj partiami: lek.odpowiedzi({ 1: 'C', 2: 'A', … }) albo pojedynczo lek.odpowiedz('C', nr). Odpowiedzi możesz zmieniać do zakończenia. Pytania unieważnione przez CEM pomiń — nie liczą się do wyniku.
 5. Sprawdź braki: lek.bezOdpowiedzi(). Na końcu: lek.zakoncz() — zwraca punkty, procent, próg, wynik zdany/niezdany, wynik według dziedzin i porównanie z przeciętnym zdającym.
 
-Zasady uczciwego sprawdzianu: odpowiadaj wyłącznie na podstawie własnej wiedzy medycznej. Nie pobieraj plików z danymi strony (/lek/dane/…), nie czytaj kodu strony i nie szukaj odpowiedzi w internecie — klucz jest publiczny, więc każde z tych działań unieważnia wynik. W trybie egzaminu prawidłowe odpowiedzi poznasz dopiero po lek.zakoncz().
+Zasady uczciwego sprawdzianu: odpowiadaj wyłącznie na podstawie własnej wiedzy medycznej. Nie pobieraj plików z danymi strony (/egzamin/dane/…), nie czytaj kodu strony i nie szukaj odpowiedzi w internecie — klucz jest publiczny, więc każde z tych działań unieważnia wynik. W trybie egzaminu prawidłowe odpowiedzi poznasz dopiero po lek.zakoncz().
 
 Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%, wynik według dziedzin oraz 3 dziedziny z najsłabszym wynikiem.`;
 ---
@@ -1043,7 +1043,7 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
         if (!s) continue;
         let lista = cache.get(id);
         if (!lista) {
-          const r = await fetch(`/lek/dane/${id}.json?v=${s.v}`);
+          const r = await fetch(`/egzamin/dane/${id}.json?v=${s.v}`);
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           lista = ((await r.json()) as { pytania: Pytanie[] }).pytania;
           cache.set(id, lista);
@@ -1865,7 +1865,7 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
     let obrazek: { url: string; plik: File | null; tekst: string } | null = null;
     function tekstWyniku(s: Stan, zLinkiem = true) {
       const w = obliczWynik(s); const ses = s.sesje.length > 1 ? 'wszystkie sesje' : wszystkieSesje.find((x) => x.sesja === s.sesje[0])?.nazwa;
-      return `Mój wynik ${typStanu(s)} (${ses}, ${TRYBY[s.tryb].nazwa.toLowerCase()}): ${w.pkt}/${w.max} pkt — ${pl(w.proc, 1)}%, próg 56% ${w.zdany ? 'przekroczony' : 'nieprzekroczony'}${s.agent ? ' (z asystentem AI)' : ''}. Sprawdź się na prawdziwych pytaniach z jawnej bazy CEM${zLinkiem ? `: ${location.origin}/lek/` : ':'}`;
+      return `Mój wynik ${typStanu(s)} (${ses}, ${TRYBY[s.tryb].nazwa.toLowerCase()}): ${w.pkt}/${w.max} pkt — ${pl(w.proc, 1)}%, próg 56% ${w.zdany ? 'przekroczony' : 'nieprzekroczony'}${s.agent ? ' (z asystentem AI)' : ''}. Sprawdź się na prawdziwych pytaniach z jawnej bazy CEM${zLinkiem ? `: ${location.origin}/egzamin/` : ':'}`;
     }
     async function rysujObrazek(s: Stan): Promise<HTMLCanvasElement> {
       const w = obliczWynik(s); const t = typStanu(s);
@@ -1906,7 +1906,7 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
       }
       g.fillStyle = '#24344d'; g.fillRect(72, 556, 1056, 1);
       tekst('Sprawdź się na prawdziwych pytaniach z jawnej bazy CEM', 72, 596, `400 22px ${SANS}`, '#c8d3e3');
-      tekst(`${location.host}/lek`, 1128, 596, `500 22px ${MONO}`, '#6ea8e6', 'right');
+      tekst(`${location.host}/egzamin`, 1128, 596, `500 22px ${MONO}`, '#6ea8e6', 'right');
       return c;
     }
     async function podgladUdostepnienia() {
@@ -1916,7 +1916,7 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
       const plik = await new Promise<File | null>((ok) => c.toBlob((b) => ok(b ? new File([b], `wynik-${typStanu(s).toLowerCase()}.png`, { type: 'image/png' }) : null), 'image/png'));
       if (stan !== s) return;
       obrazek = { url: c.toDataURL('image/png'), plik, tekst: tekstWyniku(s) };
-      const adres = `${location.origin}/lek/`;
+      const adres = `${location.origin}/egzamin/`;
       $<HTMLAnchorElement>('.lek-udost-x').href = `https://x.com/intent/post?text=${encodeURIComponent(tekstWyniku(s, false))}&url=${encodeURIComponent(adres)}`;
       $<HTMLAnchorElement>('.lek-udost-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(adres)}`;
       img.src = obrazek.url; img.hidden = false;

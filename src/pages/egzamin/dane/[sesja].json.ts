@@ -1,5 +1,5 @@
-// Pytania jednej sesji LEK jako statyczny JSON (/lek/dane/<sesja>.json),
-// ładowany przez moduł /lek dopiero po wyborze sesji. Generowany w buildzie
+// Pytania jednej sesji LEK jako statyczny JSON (/egzamin/dane/<sesja>.json),
+// ładowany przez moduł /egzamin dopiero po wyborze sesji. Generowany w buildzie
 // z src/data/egzamin-lek/*.json (normalizacja: research/narzedzia/cem_lek_normalizuj.py)
 // — zero Functions; kompresję (brotli/gzip) robi brzeg Cloudflare.
 import type { APIRoute, GetStaticPaths } from 'astro';

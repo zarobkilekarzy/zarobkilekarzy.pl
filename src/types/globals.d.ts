@@ -43,7 +43,7 @@ interface PagefindUIOptions {
   [option: string]: unknown;
 }
 
-/** WebMCP (szkic W3C CG; Chrome w origin trial) — `document.modelContext`, patrz /lek. */
+/** WebMCP (szkic W3C CG; Chrome w origin trial) — `document.modelContext`, patrz /egzamin. */
 interface WebMcpTool {
   name: string;
   description: string;
@@ -57,7 +57,7 @@ interface WebMcpContext {
 
 interface Window {
   turnstile?: Turnstile;
-  /** Interfejs modułu /lek dla agentów (te same funkcje co narzędzia WebMCP). */
+  /** Interfejs modułu /egzamin dla agentów (te same funkcje co narzędzia WebMCP). */
   lek?: Record<string, unknown>;
   PagefindUI?: new (opts: PagefindUIOptions) => unknown;
   /** Uchwyty debugowe gry `/gra` — wystawiane celowo, do ręcznego grzebania w konsoli. */

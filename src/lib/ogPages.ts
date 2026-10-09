@@ -11,7 +11,8 @@ export interface OgPage {
   // Wariant szablonu. Brak = wspólna karta (granat + EKG). 'arcade' = automat z lat 80.,
   // zarezerwowany dla /gra — patrz src/lib/ogCardGra.ts. Nie rozsiewać po innych trasach:
   // wyłom działa dopóki jest jeden.
-  variant?: 'arcade';
+  // 'egzamin' = arkusz z prawdziwym pytaniem — dla /egzamin (src/lib/ogCardEgzamin.ts).
+  variant?: 'arcade' | 'egzamin';
   short?: string;     // krótka stopka wariantu arcade (długi `subtitle` nie mieści się w neonie)
 }
 
@@ -144,10 +145,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Jak działa tajwańska ochrona zdrowia',
     subtitle: 'Rachunek z kwotą dla ubezpieczyciela po każdej wizycie, jawne sprawozdania szpitali i rejestr miejsc pracy lekarzy. Płace lekarzy — niejawne.',
   },
-  'lek': {
-    tag: 'Dane · Egzamin',
-    title: 'Egzamin LEK — sprawdź się',
-    subtitle: '200 prawdziwych pytań z jawnej bazy CEM, 4 godziny, próg 56%. Po każdej odpowiedzi widzisz, jak odpowiadali zdający.',
+  'egzamin': {
+    variant: 'egzamin',
+    tag: 'Egzamin LEK · LDEK',
+    title: 'Zdaj LEK',
+    subtitle: 'Prawdziwe pytania z jawnej bazy CEM, z odpowiedziami i statystyką zdających.',
   },
   'analizy/symulator-podazy-lekarzy': {
     tag: 'Analiza · Symulator',

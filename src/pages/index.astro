@@ -1,256 +1,172 @@
 ---
-// Strona główna. Hero = wielkie ciemne pasmo, które ROTUJE jako karuzela 3 tematów
-// (Petycja / Postulat / Poradnik pacjenta); trzy kafle pod hero są NAWIGACJĄ karuzeli
-// (klik → zmiana slajdu, aktywny kafel podniesiony). Autoprzewijanie z pauzą, sterowanie
-// klawiaturą, `inert` na nieaktywnych slajdach.
-//
-// Panel hero: tokeny --panel/--on-panel CELOWO ciemne w OBU motywach → tekst na nim
-// jasnymi, NIEodwracalnymi kolorami (hardcode rgba(255,255,255,·) + jasny błękit na eyebrow).
+// Strona główna. Teza w pierwszym ekranie: suma, której nikt nie liczy — trzy jawne
+// mediany umów (etat + kontrakt + zlecenie) dają „?” zamiast wyniku. Pod spodem:
+// wejścia (petycja, postulat, prawa pacjenta), „O co tu chodzi” w trzech liczbach,
+// kolejki, pasmo petycji, spis najważniejszych stron, mechanizm i zakończenie.
+// Każda kwota ma źródło; czerwień tylko na brakującej sumie i działaniach petycji.
+// Nagłówki mają data-anchor="off": na stronie głównej kotwice „#” (półprzezroczyste
+// na dotyku) były szumem przy każdym tytule, a sekcji tej strony nikt nie linkuje.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AktualizacjaUstawa from '../components/AktualizacjaUstawa.astro';
 import ShareRow from '../components/ShareRow.astro';
+import zarobki from '../content/zarobki.json';
+
+// Równanie — przykład poglądowy: jeden lekarz z trzema umowami w trzech placówkach,
+// każda umowa po medianie AOTMiT dla swojej formy. Liczby i źródła z zarobki.json
+// (jedno źródło prawdy), żeby strona główna nie rozjechała się z /dane/.
+const wiersze = [
+  { forma: 'Etat', placowka: 'placówka A', z: zarobki['rozklad-mediana-etat'] },
+  { forma: 'Kontrakt (B2B)', placowka: 'placówka B', z: zarobki['rozklad-mediana-kontrakt'] },
+  { forma: 'Umowa zlecenie', placowka: 'placówka C', z: zarobki['rozklad-mediana-zlecenie'] },
+];
+const zl = new Intl.NumberFormat('pl-PL');
 ---
 
 <BaseLayout>
   <AktualizacjaUstawa pokazPrzycisk={true} />
 
-  <div class="hero-combo js-hero-carousel">
-    <!-- MEGA-HERO — karuzela slajdów -->
-    <section class="megahero">
-      <svg class="mh-pulse" viewBox="0 0 1200 120" preserveAspectRatio="none" aria-hidden="true">
-        <polyline
-          points="0,70 300,70 330,70 348,30 366,104 388,52 410,70 640,70 672,70 690,26 710,108 730,58 752,70 1200,70"
-          fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
-      </svg>
-
-      <button class="mh-play" type="button" aria-label="Zatrzymaj automatyczne przewijanie" aria-pressed="true"></button>
-
-      <div class="container">
-        <div class="mh-carousel" role="group" aria-roledescription="karuzela" aria-label="Najważniejsze: petycja, postulat, prawa pacjenta">
-          <div class="mh-track">
-            <!-- SLAJD 1 · PETYCJA -->
-            <div class="mh-slide is-active" role="group" aria-roledescription="slajd" aria-label="1 z 3: Petycja" data-title="Petycja">
-              <div class="mh-grid">
-                <div class="mh-copy">
-                  <p class="mh-eyebrow">Inicjatywa obywatelska na rzecz jawności</p>
-                  <h1 class="mh-title">Publiczne pieniądze,<br /><span class="mh-hl">niejawne zarobki</span></h1>
-                  <p class="mh-lead">
-                    Część lekarzy rozlicza miliony złotych ze środków publicznych, łącząc
-                    kontrakty w wielu placówkach — a pacjenci miesiącami czekają w kolejce.
-                    Zbieramy dane, linkujemy źródła i postulujemy jawny rejestr.
-                  </p>
-                  <div class="mh-cta">
-                    <a class="btn btn-on-brand" href="/petycja/">Wyślij petycję</a>
-                    <a class="btn btn-ghost" href="/dane/">Zobacz dane</a>
-                  </div>
-                </div>
-                <div class="mh-anchor">
-                  <p class="mh-big">0</p>
-                  <p class="mh-big-label">ogólnodostępnych rejestrów łącznego wynagrodzenia jednego lekarza ze środków publicznych</p>
-                  <span class="pill pill-alert">brak jawności</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- SLAJD 2 · POSTULAT -->
-            <div class="mh-slide" role="group" aria-roledescription="slajd" aria-label="2 z 3: Postulat" data-title="Postulat" inert>
-              <div class="mh-grid">
-                <div class="mh-copy">
-                  <p class="mh-eyebrow">Nasz postulat</p>
-                  <h1 class="mh-title">Jeden <span class="mh-hl">jawny rejestr</span><br />— po numerze PWZ</h1>
-                  <p class="mh-lead">
-                    Łączna wypłata ze środków publicznych, zsumowana po numerze prawa
-                    wykonywania zawodu — nie po PESEL, bez danych prywatnych. Dziś takiej
-                    liczby nie zna nikt.
-                  </p>
-                  <div class="mh-cta">
-                    <a class="btn btn-on-brand" href="/postulat/">Poznaj postulat</a>
-                    <a class="btn btn-ghost" href="/petycja/">Wyślij petycję</a>
-                  </div>
-                </div>
-                <div class="mh-anchor">
-                  <p class="mh-big">PWZ</p>
-                  <p class="mh-big-label">identyfikator zawodowy zamiast PESEL — jawny rejestr pobiera mniej danych niż zna dziś państwo</p>
-                  <span class="pill pill-brand">nasz postulat</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- SLAJD 3 · PORADNIK PACJENTA -->
-            <div class="mh-slide" role="group" aria-roledescription="slajd" aria-label="3 z 3: Poradnik pacjenta" data-title="Poradnik pacjenta" inert>
-              <div class="mh-grid">
-                <div class="mh-copy">
-                  <p class="mh-eyebrow mh-eyebrow-teal">Poradnik pacjenta</p>
-                  <h1 class="mh-title">Znaj swoje prawa <span class="mh-hl-teal">u lekarza</span></h1>
-                  <p class="mh-lead">
-                    Jawność zaczyna się w gabinecie. Prawo do informacji, drugiej opinii,
-                    leczenia bólu i darmowej pierwszej kopii dokumentacji — konkretne
-                    przepisy, po ludzku.
-                  </p>
-                  <div class="mh-cta">
-                    <a class="btn btn-on-brand" href="/prawa-pacjenta/">Poznaj prawa pacjenta</a>
-                    <a class="btn btn-ghost" href="/prawa-pacjenta/druk/">Karta do druku</a>
-                  </div>
-                </div>
-                <div class="mh-anchor">
-                  <p class="mh-big">0 zł</p>
-                  <p class="mh-big-label">tyle kosztuje pierwsza kopia Twojej dokumentacji medycznej (art. 28)</p>
-                  <span class="pill pill-teal">prawa pacjenta</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p class="mh-live sr-only" aria-live="polite" aria-atomic="true"></p>
+  <!-- PIERWSZY EKRAN: TYTUŁ + RÓWNANIE BEZ WYNIKU -->
+  <section class="rj-hero" aria-labelledby="rj-tytul">
+    <div class="container">
+      <p class="rj-kicker">Inicjatywa obywatelska na rzecz jawności</p>
+      <h1 class="rj-tytul" id="rj-tytul">Publiczne pieniądze, <span>niejawne zarobki</span></h1>
+      <div class="rj-intro">
+        <p class="rj-lead">
+          Część lekarzy rozlicza miliony złotych ze środków publicznych, łącząc
+          kontrakty w wielu placówkach — a pacjenci miesiącami czekają w kolejce.
+          Zbieramy dane, linkujemy źródła i postulujemy jawny rejestr.
+        </p>
+        <div class="rj-cta">
+          <a class="btn btn-signal" href="/petycja/">Wyślij petycję</a>
+          <a class="btn" href="/dane/">Zobacz dane</a>
         </div>
       </div>
-    </section>
 
-    <!-- TRZY KAFLE = NAWIGACJA KARUZELI (nachodzą na hero) -->
-    <section class="trio-wrap" aria-label="Wybierz temat">
-      <div class="container">
-        <div class="trio" role="group" aria-label="Wybór tematu w karuzeli">
-          <button class="tcard" type="button" style="--accent: var(--brand-link)" aria-current="true">
-            <span class="tc-prog" aria-hidden="true"></span>
-            <span class="tc-tag">Działaj</span>
-            <span class="tc-title">Wyślij petycję</span>
-            <span class="tc-desc">Gotowa, formalna petycja o jawny rejestr. Urząd ma obowiązek odpowiedzieć.</span>
-          </button>
-          <button class="tcard" type="button" style="--accent: var(--brand-link)" aria-current="false">
-            <span class="tc-prog" aria-hidden="true"></span>
-            <span class="tc-tag">Zrozum</span>
-            <span class="tc-title">Poznaj postulat</span>
-            <span class="tc-desc">Jeden jawny rejestr wypłat ze środków publicznych — po numerze PWZ.</span>
-          </button>
-          <button class="tcard tcard-teal" type="button" style="--accent: var(--teal)" aria-current="false">
-            <span class="tc-prog" aria-hidden="true"></span>
-            <span class="tc-tag">Skorzystaj</span>
-            <span class="tc-title">Prawa pacjenta</span>
-            <span class="tc-desc">Informacja, druga opinia, leczenie bólu i darmowa pierwsza kopia dokumentacji.</span>
-          </button>
+      <figure class="rj-suma" aria-labelledby="rj-suma-cap" aria-describedby="rj-suma-przypis">
+        <figcaption class="rj-suma-cap" id="rj-suma-cap">Ile łącznie z budżetu NFZ trafia do jednego lekarza?</figcaption>
+        <div class="rj-rownanie">
+          {wiersze.map((w, k) => (
+            <>
+              {k > 0 && <span class="rj-op" aria-hidden="true">+</span>}
+              <p class="rj-skl">
+                <span class="rj-skl-lab">{w.forma} · {w.placowka}</span>
+                <span class="rj-skl-kw"><span class="rj-kwota" data-kwota={w.z.kwota}>{zl.format(w.z.kwota)}</span><span class="rj-zl"> zł</span></span>
+              </p>
+            </>
+          ))}
+          <span class="rj-op rj-op-rowna" aria-hidden="true">=</span>
+          <p class="rj-skl rj-wynik">
+            <span class="rj-skl-lab">Łącznie dla jednego PWZ</span>
+            <span class="rj-q" aria-hidden="true">?</span>
+            <span class="sr-only">nie wiadomo</span>
+          </p>
         </div>
-      </div>
-    </section>
-  </div>
-
-  <!-- NAJWAŻNIEJSZE — NAWIGATOR -->
-  <section class="section">
-    <div class="container">
-      <p class="eyebrow">Zacznij tutaj</p>
-      <h2>Najmocniejsze dane i analizy</h2>
-      <p class="lead" style="margin-bottom: 1.5rem">
-        Sedno serwisu w kilku miejscach — od rekordowych rozliczeń po porównania
-        i mechanizmy. Każda liczba ma źródło.
-      </p>
-      <div class="home-grid">
-        <a class="home-card is-hot" href="/dane/rekordy/">
-          <span class="hc-tag">Rekordy</span>
-          <span class="hc-t">300 tys. zł <em>dziennie</em>, do 316 tys. zł/mies.</span>
-          <span class="hc-d">Udokumentowane rozliczenia ze środków publicznych — bez nazwisk, sam mechanizm.</span>
-          <span class="hc-arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="home-card" href="/dane/kolejki/">
-          <span class="hc-tag">Infografika</span>
-          <span class="hc-t">Pieniądze rosną, kolejka nie maleje</span>
-          <span class="hc-d">Budżet, składka, dopłaty i płaca minimalna w górę — a czas oczekiwania też.</span>
-          <span class="hc-arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="home-card" href="/dane/wedlug-specjalizacji/">
-          <span class="hc-tag">Dane</span>
-          <span class="hc-t">Zarobki według specjalizacji</span>
-          <span class="hc-d">Pensja rezydenta, stawka rynkowa, miejsca i konkurencja — dla 29 dziedzin.</span>
-          <span class="hc-arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="home-card" href="/mechanizmy/wieloetatowosc/">
-          <span class="hc-tag">Mechanizm</span>
-          <span class="hc-t">Wieloetatowość</span>
-          <span class="hc-d">Ten sam lekarz rozlicza kontrakty w kilku placówkach naraz — nikt tego nie sumuje.</span>
-          <span class="hc-arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="home-card" href="/dane/zadluzenie-szpitali/">
-          <span class="hc-tag">Dane</span>
-          <span class="hc-t">Pensje na kredyt: 34 mld zł długu</span>
-          <span class="hc-d">Dług szpitali idzie głównie na wynagrodzenia — spłacamy go ze środków publicznych.</span>
-          <span class="hc-arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="home-card" href="/analizy/zarobki-lekarzy-polska-sasiedzi/">
-          <span class="hc-tag">Analiza</span>
-          <span class="hc-t">Polska na tle sąsiadów</span>
-          <span class="hc-d">Czechy, Niemcy, Austria — u sąsiadów płace jawne w taryfie; u nas realny dochód ukryty w kontrakcie.</span>
-          <span class="hc-arrow" aria-hidden="true">→</span>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- W 30 SEKUND -->
-  <section class="section section-alt">
-    <div class="container">
-      <p class="eyebrow">W 30 sekund</p>
-      <h2>O co tu chodzi</h2>
-      <ol class="tldr">
-        <li><strong>Leczenie finansują publiczne pieniądze.</strong> Plan NFZ na 2026 r. to ~217 mld zł — z Twojej składki zdrowotnej.</li>
-        <li><strong>Nie wiadomo, ile łącznie trafia do jednego lekarza.</strong> Większość specjalistów rozlicza się na kontraktach — często w kilku placówkach naraz — a nikt nie sumuje tych kwot po osobie.</li>
-        <li><strong>Postulujemy jeden jawny rejestr.</strong> Łączna wypłata ze środków publicznych przy numerze prawa wykonywania zawodu (PWZ), bez danych prywatnych.</li>
-      </ol>
-      <p class="muted" style="max-width: 720px">
-        Nie jesteśmy przeciwko lekarzom — przeciwnikiem jest nieprzejrzystość. Nie znasz
-        jakiegoś pojęcia? Zajrzyj do <a href="/slownik/">słowniczka</a>.
-      </p>
-    </div>
-  </section>
-
-  <!-- NIEPRZEJRZYSTOŚĆ: NIE DA SIĘ POLICZYĆ -->
-  <section class="section section-alt">
-    <div class="container">
-      <div class="opacity-block">
-        <p class="opacity-q">Ile łącznie z budżetu NFZ trafia do jednego lekarza?</p>
-        <p class="opacity-a">
+        <p class="rj-suma-t">
           Nie wiadomo — i <strong>nie da się tego policzyć</strong>. Nie istnieje
           rejestr, który sumuje wynagrodzenia jednego lekarza ze wszystkich umów,
           zleceń i kontraktów ze środków publicznych. To nie luka techniczna — to
           <strong>sedno problemu</strong>.
         </p>
-        <a class="btn btn-primary" href="/postulat/">Dlatego żądamy jawnego rejestru →</a>
+        <p class="rj-przypis" id="rj-suma-przypis">
+          Przykład poglądowy: jeden lekarz z trzema umowami, zł/mies. Kwoty: mediana pojedynczej umowy specjalisty, dane AOTMiT (02.2026), za
+          <a href={zarobki['rozklad-mediana-etat'].zrodloUrl} target="_blank" rel="noopener noreferrer">Rzeczpospolitą</a>
+          (etat) i
+          <a href={zarobki['rozklad-mediana-kontrakt'].zrodloUrl} target="_blank" rel="noopener noreferrer">Pulsem Medycyny</a>
+          (kontrakt, zlecenie). To nie opis konkretnej osoby. Zob.
+          <a href="/analizy/jedno-pwz/">jedno PWZ, wiele strumieni</a>.
+        </p>
+      </figure>
+    </div>
+  </section>
+
+  <!-- TRZY WEJŚCIA -->
+  <nav class="container rj-wejscia" aria-label="Zacznij od">
+    <a href="/petycja/">
+      <span class="rj-w-tag">Działaj</span>
+      <span class="rj-w-t">Wyślij petycję <span class="rj-w-str" aria-hidden="true">→</span></span>
+      <span class="rj-w-d">Gotowa, formalna petycja o jawny rejestr. Urząd ma obowiązek odpowiedzieć.</span>
+    </a>
+    <a href="/postulat/">
+      <span class="rj-w-tag">Zrozum</span>
+      <span class="rj-w-t">Poznaj postulat <span class="rj-w-str" aria-hidden="true">→</span></span>
+      <span class="rj-w-d">Jeden jawny rejestr wypłat ze środków publicznych — po numerze PWZ.</span>
+    </a>
+    <a href="/prawa-pacjenta/">
+      <span class="rj-w-tag">Skorzystaj</span>
+      <span class="rj-w-t">Prawa pacjenta <span class="rj-w-str" aria-hidden="true">→</span></span>
+      <span class="rj-w-d">Informacja, druga opinia, leczenie bólu i darmowa pierwsza kopia dokumentacji.</span>
+    </a>
+  </nav>
+
+  <!-- O CO TU CHODZI — TRZY LICZBY -->
+  <section class="section section-alt">
+    <div class="container">
+      <h2 data-anchor="off">O co tu chodzi</h2>
+      <ol class="rj-trzy">
+        <li>
+          <p class="rj-fig">~217<span class="rj-fig-u"> mld zł</span></p>
+          <p class="rj-fig-lab">plan NFZ na 2026 r.</p>
+          <p class="rj-fig-t"><strong>Leczenie finansują publiczne pieniądze.</strong> Plan NFZ na 2026 r. to ~217 mld zł — z Twojej składki zdrowotnej.</p>
+        </li>
+        <li>
+          <p class="rj-fig">0</p>
+          <p class="rj-fig-lab">ogólnodostępnych rejestrów łącznego wynagrodzenia jednego lekarza ze środków publicznych</p>
+          <p class="rj-fig-t"><strong>Nie wiadomo, ile łącznie trafia do jednego lekarza.</strong> Większość specjalistów rozlicza się na kontraktach — często w kilku placówkach naraz — a nikt nie sumuje tych kwot po osobie.</p>
+        </li>
+        <li>
+          <p class="rj-fig">1<span class="rj-fig-u"> rejestr</span></p>
+          <p class="rj-fig-lab">jawny, po numerze PWZ — nie po PESEL</p>
+          <p class="rj-fig-t"><strong>Postulujemy jeden jawny rejestr.</strong> Łączna wypłata ze środków publicznych przy numerze prawa wykonywania zawodu (PWZ), bez danych prywatnych.</p>
+        </li>
+      </ol>
+      <div class="rj-teza">
+        <p class="rj-teza-t">Nie jesteśmy przeciwko lekarzom — przeciwnikiem jest nieprzejrzystość.</p>
+        <div class="rj-teza-cta">
+          <a class="btn btn-primary" href="/postulat/">Dlatego żądamy jawnego rejestru →</a>
+          <span class="rj-slownik">Nie znasz jakiegoś pojęcia? Zajrzyj do <a href="/slownik/">słowniczka</a>.</span>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- KOLEJKI vs ZAROBKI -->
+  <!-- KOLEJKI -->
   <section class="section">
     <div class="container">
-      <p class="eyebrow">Druga strona</p>
-      <h2>Ty czekasz, oni zarabiają</h2>
-      <p class="lead">
-        Na wizytę u specjalisty NFZ czeka się średnio <strong>4,2 miesiąca</strong>
-        (Barometr WHC, 2025). U tego samego lekarza prywatnie — zwykle kilka dni.
-        Różnicę napędza praca w wielu miejscach naraz.
-      </p>
-
-      <div class="queues">
-        <div class="q-row">
-          <div class="q-meta"><span class="q-name">Neurochirurg</span><span class="q-nfz">13,1 mies. NFZ</span></div>
-          <div class="q-bar"><div class="q-fill" style="width:100%"></div></div>
+      <h2 data-anchor="off">Ty czekasz, oni zarabiają</h2>
+      <div class="rj-kolejki">
+        <div class="rj-kol-fig">
+          <p class="rj-fig">4,2<span class="rj-fig-u"> mies.</span></p>
+          <p class="rj-fig-lab">średnio na wizytę u specjalisty NFZ (Barometr WHC, 2025)</p>
+          <p class="rj-kol-t">U tego samego lekarza prywatnie — zwykle kilka dni. Różnicę napędza praca w wielu miejscach naraz.</p>
         </div>
-        <div class="q-row">
-          <div class="q-meta"><span class="q-name">Endokrynolog</span><span class="q-nfz">~12,9 mies. NFZ</span></div>
-          <div class="q-bar"><div class="q-fill" style="width:98%"></div></div>
-        </div>
-        <div class="q-row">
-          <div class="q-meta"><span class="q-name">Kardiolog</span><span class="q-nfz">kilka–kilkanaście mies. · prywatnie 7–21 dni</span></div>
-          <div class="q-bar"><div class="q-fill" style="width:53%"></div></div>
-        </div>
-        <div class="q-row">
-          <div class="q-meta"><span class="q-name">Ortopeda</span><span class="q-nfz">~5 mies. NFZ · prywatnie 5–14 dni</span></div>
-          <div class="q-bar"><div class="q-fill" style="width:38%"></div></div>
-        </div>
+        <figure class="rj-wykres">
+          <!-- Cztery specjalności jak w pierwotnej wersji strony (te same długości słupków
+               i opisy). Czas prywatnej wizyty, gdy jest podany, stoi pod nazwą. -->
+          <div class="queues">
+            <div class="q-row">
+              <span class="q-name">Neurochirurg</span>
+              <div class="q-bar"><div class="q-fill" style="width:100%"><span class="q-val">13,1 mies. NFZ</span></div></div>
+            </div>
+            <div class="q-row">
+              <span class="q-name">Endokrynolog</span>
+              <div class="q-bar"><div class="q-fill" style="width:98%"><span class="q-val">~12,9 mies. NFZ</span></div></div>
+            </div>
+            <div class="q-row">
+              <span class="q-name">Kardiolog <span class="q-pryw">prywatnie 7–21 dni</span></span>
+              <div class="q-bar"><div class="q-fill" style="width:53%"></div><span class="q-val q-val-poza">kilka–kilkanaście mies.</span></div>
+            </div>
+            <div class="q-row">
+              <span class="q-name">Ortopeda <span class="q-pryw">prywatnie 5–14 dni</span></span>
+              <div class="q-bar"><div class="q-fill" style="width:38%"></div><span class="q-val q-val-poza">~5 mies. NFZ</span></div>
+            </div>
+          </div>
+        </figure>
       </div>
-
-      <p class="salary-insight">
+      <p class="rj-wniosek">
         Lekarz rozlicza ok. <strong>24 000 zł/mies.</strong>, a Ty czekasz
         <strong>miesiącami</strong>. Prywatnie, za dopłatą, ten sam specjalista przyjmie
         Cię w kilka dni.
       </p>
-
       <p class="source-note">
         Źródła:
         <a href="https://www.rynekzdrowia.pl/Polityka-zdrowotna/Barometr-Watch-Health-Care-sredni-czas-oczekiwania-na-leczenie-w-2025-r-to-ponad-4-miesiace,279890,14.html" target="_blank" rel="noopener noreferrer">Barometr WHC 2025 (Rynek Zdrowia)</a>;
@@ -262,26 +178,81 @@ import ShareRow from '../components/ShareRow.astro';
     </div>
   </section>
 
-  <!-- PASMO CTA — PETYCJA -->
+  <!-- PASMO PETYCJI -->
   <section class="cta-band">
     <div class="container cta-band-inner">
       <div>
-        <h2>Nie czekaj, aż ktoś to naprawi — zażądaj jawności sam</h2>
+        <h2 data-anchor="off">Nie czekaj, aż ktoś to naprawi — zażądaj jawności sam</h2>
         <p>
           Masz na to formalne narzędzie: petycję, którą urząd ma prawny obowiązek rozpatrzyć
-          i odpowiedzieć w trzy miesiące. Gotowa treść — wpisujesz imię i wysyłasz.
+          i odpowiedzieć w trzy miesiące. Gotowa treść&nbsp;— wpisujesz imię i wysyłasz.
         </p>
       </div>
       <a class="btn btn-on-brand" href="/petycja/">Wyślij petycję</a>
     </div>
   </section>
 
-  <!-- SPOTLIGHT: REGLAMENTACJA DOSTĘPU DO ZAWODU -->
-  <section class="section section-alt">
+  <!-- SPIS TABLIC — NAJMOCNIEJSZE DANE I ANALIZY -->
+  <section class="section">
     <div class="container">
-      <div class="spotlight">
+      <h2 data-anchor="off">Najmocniejsze dane i analizy</h2>
+      <p class="lead" style="margin-bottom: 1.75rem">
+        Sedno serwisu w kilku miejscach — od rekordowych rozliczeń po porównania
+        i mechanizmy. Każda liczba ma źródło.
+      </p>
+      <ol class="rj-spis">
+        <li><a href="/dane/rekordy/" class="is-hot">
+          <span class="rj-s-tag">Rekordy</span>
+          <span class="rj-s-t">300 tys. zł <em>dziennie</em>, do 316 tys. zł/mies.</span>
+          <span class="rj-s-d">Udokumentowane rozliczenia ze środków publicznych — bez nazwisk, sam mechanizm.</span>
+        </a></li>
+        <li><a href="/dane/kolejki/">
+          <span class="rj-s-tag">Infografika</span>
+          <span class="rj-s-t">Pieniądze rosną, kolejka nie maleje</span>
+          <span class="rj-s-d">Budżet, składka, dopłaty i płaca minimalna w górę — a czas oczekiwania też.</span>
+        </a></li>
+        <li><a href="/dane/wedlug-specjalizacji/">
+          <span class="rj-s-tag">Dane</span>
+          <span class="rj-s-t">Zarobki według specjalizacji</span>
+          <span class="rj-s-d">Pensja rezydenta, stawka rynkowa, miejsca i konkurencja — dla 29 dziedzin.</span>
+        </a></li>
+        <li><a href="/mechanizmy/wieloetatowosc/">
+          <span class="rj-s-tag">Mechanizm</span>
+          <span class="rj-s-t">Wieloetatowość</span>
+          <span class="rj-s-d">Ten sam lekarz rozlicza kontrakty w kilku placówkach naraz — nikt tego nie sumuje.</span>
+        </a></li>
+        <li><a href="/dane/zadluzenie-szpitali/">
+          <span class="rj-s-tag">Dane</span>
+          <span class="rj-s-t">Pensje na kredyt: 34 mld zł długu</span>
+          <span class="rj-s-d">Dług szpitali idzie głównie na wynagrodzenia — spłacamy go ze środków publicznych.</span>
+        </a></li>
+        <li><a href="/analizy/zarobki-lekarzy-polska-sasiedzi/">
+          <span class="rj-s-tag">Analiza</span>
+          <span class="rj-s-t">Polska na tle sąsiadów</span>
+          <span class="rj-s-d">Czechy, Niemcy, Austria — u sąsiadów płace jawne w taryfie; u nas realny dochód ukryty w kontrakcie.</span>
+        </a></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- MECHANIZM: REGLAMENTACJA DOSTĘPU — liczby po lewej, wywód po prawej -->
+  <section class="section section-alt">
+    <div class="container rj-dwa">
+      <div class="rj-dwa-h rj-porown">
         <p class="eyebrow">Mechanizm: reglamentacja dostępu</p>
-        <h2>Dlaczego lekarzy jest mało — i komu to służy</h2>
+        <dl>
+          <div>
+            <dt>Lekarze na 1000 mieszkańców</dt>
+            <dd><span class="rj-pl">3,4–3,9</span><span class="rj-ue">średnia UE: ok. 4,2</span></dd>
+          </div>
+          <div>
+            <dt>Rezygnuje z potrzebnej pomocy</dt>
+            <dd><span class="rj-pl">5,2%</span><span class="rj-ue">osób w Polsce</span></dd>
+          </div>
+        </dl>
+      </div>
+      <div class="spotlight">
+        <h2 data-anchor="off">Dlaczego lekarzy jest mało — i komu to służy</h2>
         <p>
           Polska ma ok. 3,4–3,9 lekarza na 1000 mieszkańców — poniżej średniej UE
           (ok. 4,2) — a 5,2% osób rezygnuje z potrzebnej pomocy. Wejście do zawodu jest
@@ -294,313 +265,253 @@ import ShareRow from '../components/ShareRow.astro';
           lekarzy, tym silniejsza — także płacowo — pozycja tych już w zawodzie. Mniej
           konkurencji to wyższe stawki i dłuższe kolejki dla pacjenta.
         </p>
-        <a class="btn btn-primary" href="/mechanizmy/reglamentacja-dostepu/">Jak to działa →</a>
+        <a class="btn" href="/mechanizmy/reglamentacja-dostepu/">Jak to działa →</a>
       </div>
     </div>
   </section>
 
-  <!-- OBSERWUJ NA X -->
-  <section class="section">
+  <!-- ZAMKNIĘCIE: POSTULAT + NAGŁOŚNIJ (X i udostępnianie w jednym miejscu) -->
+  <section class="section closing">
     <div class="container">
-      <a class="x-band" href="https://x.com/ZarobkiLekarzy" target="_blank" rel="noopener noreferrer" aria-label="Obserwuj @ZarobkiLekarzy na X">
-        <span class="x-logo" aria-hidden="true">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.66l-5.22-6.82-5.97 6.82H1.66l7.73-8.84L1.25 2.25h6.83l4.71 6.23 5.45-6.23zm-1.16 17.52h1.83L7.01 4.13H5.05l12.03 15.64z"></path></svg>
-        </span>
-        <span class="x-text">
-          <span class="x-title">Obserwuj nas na X</span>
-          <span class="x-sub">Tam dzieje się najwięcej — najświeższe dane, afery i dyskusja o jawności. Dołącz do rozmowy.</span>
-        </span>
-        <span class="x-cta">@ZarobkiLekarzy →</span>
-      </a>
-    </div>
-  </section>
-
-  <!-- PASMO CTA -->
-  <section class="cta-band">
-    <div class="container cta-band-inner">
-      <div>
-        <h2>Postuluj jawny rejestr wynagrodzeń lekarzy</h2>
+      <h2 data-anchor="off">Postuluj jawny rejestr wynagrodzeń lekarzy</h2>
+      <div class="closing-tresc">
         <p>
           Środki publiczne powinny być jawne — tak jak wynagrodzenia w
           administracji publicznej.
         </p>
+        <a class="btn btn-primary" href="/postulat/">Poznaj postulat</a>
+        <div class="amplify">
+          <ShareRow heading="Pomóż nagłośnić sprawę:" />
+          <a class="x-band" href="https://x.com/ZarobkiLekarzy" target="_blank" rel="noopener noreferrer">
+            <span class="x-logo" aria-hidden="true">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.66l-5.22-6.82-5.97 6.82H1.66l7.73-8.84L1.25 2.25h6.83l4.71 6.23 5.45-6.23zm-1.16 17.52h1.83L7.01 4.13H5.05l12.03 15.64z"></path></svg>
+            </span>
+            <span class="x-text">
+              <span class="x-title">Obserwuj nas na X</span>
+              <span class="x-sub">Tam dzieje się najwięcej — najświeższe dane, afery i dyskusja o jawności. Dołącz do rozmowy.</span>
+            </span>
+            <span class="x-cta">@ZarobkiLekarzy →</span>
+          </a>
+        </div>
       </div>
-      <a class="btn btn-on-brand" href="/postulat/">Poznaj postulat</a>
-    </div>
-  </section>
-
-  <!-- UDOSTĘPNIJ -->
-  <section class="section">
-    <div class="container">
-      <ShareRow heading="Pomóż nagłośnić sprawę:" />
     </div>
   </section>
 </BaseLayout>
 
 <script>
-  // Karuzela w wielkim hero. Slajdy = panele hero (fade, grid-stack, inert na nieaktywnych);
-  // NAWIGACJA = trzy kafle pod hero (aria-current, roving tabindex, strzałki). Autoprzewijanie
-  // OFF przy prefers-reduced-motion, pauza na hover/focus/ukrytej karcie; ręczny wybór wyłącza auto.
-  const PLAY_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
-  const PAUSE_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
-
-  document.querySelectorAll<HTMLElement>('.js-hero-carousel').forEach((root) => {
-    const slides = Array.from(root.querySelectorAll<HTMLElement>('.mh-slide'));
-    const tiles = Array.from(root.querySelectorAll<HTMLElement>('.tcard'));
-    const playBtn = root.querySelector<HTMLButtonElement>('.mh-play');
-    const live = root.querySelector<HTMLElement>('.mh-live');
-    const n = slides.length;
-    if (n < 2 || tiles.length !== n) return;
-
-    const rmq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const DELAY = 7000;
-    let i = Math.max(0, slides.findIndex((s) => s.classList.contains('is-active')));
-    let auto = !rmq.matches;
-    let paused = false;   // pauza CHWILOWA: focus klawiatury w karuzeli lub ukryta karta.
-                          // Świadomie NIE na hover myszą — przewijanie ma lecieć pod kursorem.
-    const canAnim = typeof root.animate === 'function';
-    let prog: Animation | null = null;   // pasek postępu = ZEGAR przewijania (koniec paska → następny slajd)
-    let timer: ReturnType<typeof setInterval> | null = null;  // fallback bez Web Animations API (brak paska, samo przewijanie)
-
-    function clearRun() {
-      if (prog) { prog.cancel(); prog = null; }
-      if (timer) { clearInterval(timer); timer = null; }
-    }
-
-    // Uzbrój odliczanie do następnego slajdu na AKTYWNYM kaflu: pasek .tc-prog
-    // odsłania się (clip-path) 0→100% przez DELAY, a jego KONIEC przewija karuzelę
-    // — jeden zegar dla paska i dla zmiany slajdu, więc nie mogą się rozjechać.
-    // Pauza (focus klawiatury / ukryta karta) zamraża pasek; wznowienie idzie
-    // od tego samego miejsca.
-    function arm() {
-      clearRun();
-      if (!auto) return;                    // autoplay off → brak odliczania (CSS pokazuje pasek pełny)
-      const fill = tiles[i].querySelector<HTMLElement>('.tc-prog');
-      if (canAnim && fill) {
-        prog = fill.animate(
-          [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)' }],
-          { duration: DELAY, easing: 'linear', fill: 'forwards' },
-        );
-        prog.onfinish = () => select(i + 1, false, false);
-        if (paused || document.hidden) prog.pause();
-      } else if (!paused && !document.hidden) {
-        timer = setInterval(() => select(i + 1, false, false), DELAY);
-      }
-    }
-
-    function refresh() {
-      const running = auto && !paused && !document.hidden;
-      if (prog) {
-        if (running) prog.play(); else prog.pause();
-      } else if (auto && !canAnim) {         // fallback: pauza = clear, wznowienie = nowy interval
-        if (running && !timer) timer = setInterval(() => select(i + 1, false, false), DELAY);
-        else if (!running && timer) { clearInterval(timer); timer = null; }
-      }
-      if (playBtn) {
-        playBtn.setAttribute('aria-pressed', String(auto));
-        playBtn.setAttribute('aria-label', auto ? 'Zatrzymaj automatyczne przewijanie' : 'Włącz automatyczne przewijanie');
-        playBtn.innerHTML = auto ? PAUSE_SVG : PLAY_SVG;
-      }
-    }
-
-    function select(to: number, announce: boolean, focusTile: boolean) {
-      i = (to + n) % n;
-      slides.forEach((s, k) => {
-        const on = k === i;
-        s.classList.toggle('is-active', on);
-        if (on) s.removeAttribute('inert'); else s.setAttribute('inert', '');
-        s.setAttribute('aria-hidden', String(!on));
-      });
-      tiles.forEach((t, k) => {
-        const on = k === i;
-        t.setAttribute('aria-current', String(on));
-        t.tabIndex = on ? 0 : -1;
-      });
-      if (focusTile) tiles[i].focus();
-      if (live) live.textContent = announce ? `Slajd ${i + 1} z ${n}: ${slides[i].dataset.title || ''}` : '';
-      arm();
-      refresh();
-    }
-
-    tiles.forEach((t, k) => {
-      t.addEventListener('click', () => { auto = false; select(k, true, false); });
-      t.addEventListener('keydown', (e: KeyboardEvent) => {
-        let to: number | null = null;
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') to = k + 1;
-        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') to = k - 1;
-        else if (e.key === 'Home') to = 0;
-        else if (e.key === 'End') to = n - 1;
-        if (to === null) return;
-        e.preventDefault();
-        auto = false;
-        select(to, true, true);
-      });
-    });
-    playBtn?.addEventListener('click', () => { auto = !auto; arm(); refresh(); });
-
-    // Bez pauzy na hover myszą (świadomie — przewijanie leci pod kursorem).
-    // Pauza tylko na focusie klawiatury: inaczej autoprzewijanie zrobiłoby inert
-    // aktywny slajd, na którym stoi focus (link CTA) → utrata focusu. Wznawia po
-    // wyjściu focusu poza karuzelę.
-    root.addEventListener('focusin', () => { paused = true; refresh(); });
-    root.addEventListener('focusout', () => {
-      if (!root.contains(document.activeElement)) { paused = false; refresh(); }
-    });
-    document.addEventListener('visibilitychange', refresh);
-
-    select(i, false, false);
-  });
+  // Jeden autorski moment ruchu: trzy kwoty „liczą się” od zera, a na końcu
+  // zamiast sumy pojawia się czerwone „?”.
+  // Stan końcowy jest w HTML od początku (treść widoczna bez JS i przy
+  // prefers-reduced-motion); skrypt tylko odtwarza drogę do niego.
+  const tabl = document.querySelector<HTMLElement>('.rj-suma');
+  const ruch = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (tabl && ruch && typeof tabl.animate === 'function') {
+    const zl = new Intl.NumberFormat('pl-PL');
+    const CZAS = 900;
+    const ease = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));   // expo-out
+    const kwoty = Array.from(tabl.querySelectorAll<HTMLElement>('.rj-kwota'));
+    const start = performance.now();
+    const krok = (teraz: number) => {
+      const t = Math.min(1, (teraz - start) / CZAS);
+      kwoty.forEach((el) => { el.textContent = zl.format(Math.round(Number(el.dataset.kwota) * ease(t))); });
+      if (t < 1) requestAnimationFrame(krok);
+    };
+    requestAnimationFrame(krok);
+    tabl.classList.add('rj-anim');
+  }
 </script>
 
 <style>
-  .hero-combo { position: relative; }
-
-  /* ===== MEGA-HERO (ciemne pasmo, karuzela) ========================= */
-  .megahero {
-    position: relative; overflow: hidden;
-    background: var(--panel); color: var(--on-panel);
-    padding: 5rem 0 8.5rem;
+  /* ===== PIERWSZY EKRAN ============================================== */
+  .rj-hero { padding: 3.25rem 0 3rem; }
+  .rj-kicker { margin: 0 0 1rem; font-size: var(--fs-label); font-weight: 650; font-stretch: 85%; color: var(--ink-faint); }
+  /* Tytuł jak okładka rocznika: szeroki (wdth 118), ciężki, na całą szerokość. */
+  .rj-tytul {
+    margin: 0; max-width: none;
+    font-size: var(--fs-display); line-height: 0.98; font-weight: 800;
+    font-stretch: 118%; letter-spacing: -0.025em;
   }
-  .megahero::before {
-    content: ""; position: absolute; inset: 0; pointer-events: none;
-    background:
-      radial-gradient(60% 90% at 82% 40%, rgba(69,184,194,0.16), transparent 70%),
-      radial-gradient(55% 80% at 12% 20%, rgba(47,111,177,0.20), transparent 70%);
-  }
-  .mh-pulse {
-    position: absolute; left: 0; right: 0; bottom: 3.2rem; width: 100%; height: 120px;
-    color: var(--teal); opacity: 0.16; pointer-events: none;
-  }
-  .megahero .container { position: relative; z-index: 1; }
-  .mh-play {
-    position: absolute; top: 1.1rem; right: 1.1rem; z-index: 3;
-    width: 40px; height: 40px; border-radius: 999px; cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.08); color: #fff;
-    display: inline-flex; align-items: center; justify-content: center;
-  }
-  .mh-play:hover { background: rgba(255,255,255,0.18); }
+  .rj-tytul span { color: var(--brand-link); }
+  .rj-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem 3rem; flex-wrap: wrap; margin-top: 1.4rem; }
+  .rj-lead { font-size: var(--fs-lead); line-height: 1.6; color: var(--ink-soft); margin: 0; max-width: 62ch; text-wrap: pretty; }
+  .rj-cta { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 
-  /* karuzela = grid-stack; align-self:start pinuje krótsze slajdy do góry (brak pustki nad tekstem) */
-  .mh-track { display: grid; }
-  .mh-slide { grid-area: 1 / 1; align-self: start; opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0.5s ease; }
-  .mh-slide.is-active { opacity: 1; visibility: visible; }
+  /* Równanie bez wyniku: trzy kwoty w skali plakatu, operatory w przygaszonym
+     kolorze, a na miejscu sumy czerwony znak zapytania. Linia nad i pod spodem
+     — przygaszona (--rule), nie w kolorze tekstu. */
+  .rj-suma { margin: 2.75rem 0 0; padding: 1.5rem 0 1.25rem; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .rj-suma-cap { font-size: var(--fs-title-s); font-weight: 760; font-stretch: 105%; line-height: 1.25; color: var(--ink); margin: 0 0 1.5rem; }
+  .rj-rownanie { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
+  .rj-skl { margin: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+  .rj-skl-lab { font-size: var(--fs-label); font-weight: 600; font-stretch: 85%; color: var(--ink-faint); }
+  .rj-skl-kw { font-size: var(--fs-eq); font-weight: 750; font-stretch: 105%; line-height: 1; letter-spacing: -0.02em; white-space: nowrap; }
+  .rj-zl { font-size: 0.5em; font-weight: 600; color: var(--ink-soft); letter-spacing: 0; }
+  .rj-op { font-size: var(--fs-eq-op); font-weight: 400; color: var(--ink-faint); line-height: 1; padding-bottom: 0.15em; }
+  .rj-wynik { align-items: flex-start; }
+  .rj-q { font-size: var(--fs-eq-q); font-weight: 800; font-stretch: 112%; line-height: 0.8; color: var(--signal); }
+  .rj-suma-t { margin: 1.25rem 0 0; max-width: 62ch; color: var(--ink-soft); }
+  .rj-suma-t strong { color: var(--ink); }
+  .rj-przypis { margin: 0.75rem 0 0; font-size: var(--fs-meta); color: var(--ink-faint); max-width: 76ch; }
 
-  .mh-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 3rem; align-items: center; }
-  .mh-eyebrow { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: #8fc7ff; margin: 0 0 0.9rem; }
-  .mh-eyebrow-teal { color: #6fd3dc; }
-  .mh-title { font-family: var(--font-serif); font-weight: 600; line-height: 1.08; letter-spacing: -0.015em; font-size: clamp(2.3rem, 5.6vw, 3.7rem); margin: 0 0 1.1rem; color: #fff; }
-  .mh-hl { color: #7fb0e0; }
-  .mh-hl-teal { color: #5fc7d1; }
-  .mh-lead { font-size: 1.2rem; line-height: 1.6; color: rgba(255,255,255,0.82); max-width: 52ch; margin: 0 0 1.75rem; }
-  .mh-cta { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-  .btn-ghost { background: transparent; border-color: rgba(255,255,255,0.45); color: #fff; }
-  .btn-ghost:hover { background: rgba(255,255,255,0.10); border-color: #fff; color: #fff; }
+  /* Ruch: kwoty liczą się w skrypcie; znak zapytania wpada na końcu. Domyślny
+     stan jest końcowym — animacja tylko z klasą od skryptu. */
+  .rj-anim .rj-q { animation: rj-pytajnik 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.85s both; }
+  @keyframes rj-pytajnik { from { opacity: 0; transform: translateY(-0.25em) scale(1.25); } to { opacity: 1; transform: none; } }
 
-  .mh-anchor { text-align: left; }
-  .mh-big { font-family: var(--font-mono); font-weight: 500; line-height: 0.9; margin: 0; color: #fff; letter-spacing: -0.03em; white-space: nowrap; font-size: clamp(4rem, 12vw, 8.5rem); }
-  .mh-big-label { font-size: 0.98rem; line-height: 1.5; color: rgba(255,255,255,0.78); margin: 0.5rem 0 1rem; max-width: 34ch; }
-  .pill-teal { background: var(--teal-50); color: var(--teal); }
-
-  /* ===== TRZY KAFLE = NAWIGACJA (nachodzą na hero) ================== */
-  .trio-wrap { position: relative; z-index: 2; margin-top: -5.25rem; padding-bottom: 1.5rem; }
-  .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }
-  .tcard {
-    position: relative; display: flex; flex-direction: column; gap: 0.4rem; text-align: left;
-    font: inherit; cursor: pointer;
-    background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--line-2);
-    border-radius: var(--radius-lg); padding: 1.4rem 1.5rem 1.5rem;
-    box-shadow: 0 12px 32px rgba(10,17,25,0.16);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  /* ===== TRZY WEJŚCIA ================================================= */
+  /* Trzy całe pola-linki rozdzielone liniami; tytuł ze strzałką w skali podtytułu. */
+  .rj-wejscia { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding-bottom: 3.5rem; }
+  .rj-wejscia a {
+    display: flex; flex-direction: column; gap: 0.45rem; padding: 1.4rem 1.5rem 1.6rem;
+    border-top: 1px solid var(--rule); text-decoration: none; color: inherit;
+    transition: background-color 0.15s ease;
   }
-  .tcard:hover { transform: translateY(-2px); }
-  /* Aktywny kafel: podniesiony; górny akcent rysuje pasek postępu (.tc-prog),
-     a border-top zostaje neutralnym „torem" pod nim. Nieaktywne przygaszone. */
-  .tcard[aria-current="true"] { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(10,17,25,0.24); }
-  .tcard[aria-current="false"] { opacity: 0.9; }
+  .rj-wejscia a + a { border-left: 1px solid var(--line); }
+  .rj-wejscia a:hover { background: var(--paper); }
+  .rj-w-tag { font-size: var(--fs-label); font-weight: 650; font-stretch: 85%; color: var(--brand-link); }
+  .rj-w-t { font-size: var(--fs-title); font-weight: 760; font-stretch: 110%; line-height: 1.1; color: var(--ink); }
+  .rj-w-str { display: inline-block; color: var(--ink-faint); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease; }
+  .rj-wejscia a:hover .rj-w-str { transform: translateX(0.25em); color: var(--brand-link); }
+  .rj-w-d { font-size: var(--fs-small); color: var(--ink-soft); line-height: 1.5; max-width: 34ch; }
 
-  /* Pasek postępu autoprzewijania. Zamiast płaskiego 4px paska (którego promień
-     przycinała jego własna wysokość → ciaśniejsze narożniki niż boks) to NAKŁADKA
-     odwzorowująca CAŁĄ ramkę aktywnego kafla: ten sam `border-radius` i ta sama
-     4px górna krawędź w akcencie, więc narożniki są 1:1 jak oryginalny border.
-     Odsłaniana z lewej do prawej przez `clip-path` (skrypt/WAAPI wypełnia 0→100%,
-     koniec = zmiana slajdu). border-top kafla zostaje neutralnym „torem" pod spodem.
-     Gdy autoplay nieaktywny (pauza/reduced-motion/ręczny wybór) — CSS pokazuje
-     nakładkę w pełni (inset 0) = statyczny wskaźnik, wygląda jak oryginalny border. */
-  .tc-prog {
-    position: absolute; top: -4px; left: -1px; right: -1px; bottom: -1px;
-    border: 1px solid transparent; border-top: 4px solid var(--accent);
-    border-radius: var(--radius-lg);
-    clip-path: inset(0 100% 0 0);
-    pointer-events: none; display: none;
-  }
-  .tcard[aria-current="true"] .tc-prog { display: block; clip-path: inset(0 0 0 0); }
-  .tc-tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; color: var(--accent); }
-  .tc-title { font-family: var(--font-serif); font-weight: 600; font-size: 1.3rem; line-height: 1.2; color: var(--ink); }
-  .tc-desc { font-size: 0.9rem; line-height: 1.5; color: var(--ink-soft); }
+  /* ===== LICZBY JAKO BOHATEROWIE ====================================== */
+  /* Wspólny język liczb pod hero: duża liczba (szeroka, ciężka), etykieta pod nią,
+     jedno zdanie wyjaśnienia — ten sam rejestr co kwoty w równaniu. */
+  .rj-fig { margin: 0; font-size: var(--fs-figure); font-weight: 800; font-stretch: 112%; line-height: 0.95; letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
+  .rj-fig-u { font-size: 0.42em; font-weight: 650; letter-spacing: 0; color: var(--ink-soft); }
+  .rj-fig-lab { margin: 0.6rem 0 0; font-size: var(--fs-label); font-weight: 600; font-stretch: 85%; color: var(--ink-faint); max-width: 30ch; }
 
-  @media (max-width: 860px) {
-    .megahero { padding: 3.5rem 0 7rem; }
-    .mh-grid { grid-template-columns: 1fr; gap: 1.4rem; }
-    .mh-anchor { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
-    .mh-big { font-size: clamp(3.6rem, 20vw, 6rem); }
-    .mh-big-label { margin: 0; }
-    .trio { grid-template-columns: 1fr; }
-    .trio-wrap { margin-top: -4.5rem; }
-    .mh-play { top: 0.75rem; right: 0.75rem; }
-  }
+  /* ===== UKŁAD „UWAG”: nagłówek w lewej kolumnie, treść w prawej ======= */
+  .rj-dwa { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 1.5rem; }
+  .rj-dwa > .rj-dwa-h { grid-column: 1 / span 4; margin: 0 0 1rem; align-self: start; }
+  .rj-dwa > :not(.rj-dwa-h) { grid-column: 5 / span 8; min-width: 0; }
+  .rj-dwa > h2.rj-dwa-h { padding-top: 0.2rem; }
 
-  /* ===== SEKCJE PONIŻEJ ============================================= */
-  /* `.salary-insight` została po wykresie płac (sekcja zdjęta ze strony głównej) —
-     nadal domyka blok o kolejkach, więc zostaje; reszta stylów tego wykresu poszła
-     razem z nim. Sam wykres żyje dalej na /dane/rozklad-wynagrodzen. */
-  .salary-insight { font-size: 1.05rem; color: var(--ink); margin: 0.5rem 0 1.25rem; }
-  .salary-insight strong { color: var(--alert); }
-  .queues { display: flex; flex-direction: column; gap: 1.1rem; margin: 1.5rem 0 1.25rem; }
-  .q-row { display: block; }
-  .q-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.35rem; }
-  .q-name { font-size: 0.95rem; font-weight: 500; }
-  .q-bar { background: var(--paper-2); border-radius: var(--radius); height: 24px; width: 100%; }
-  .q-fill { background: var(--ink-soft); height: 100%; border-radius: var(--radius); min-width: 4px; }
-  .q-nfz { font-size: 0.85rem; color: var(--ink-soft); text-align: right; }
-  @media (max-width: 600px) {
-    .q-meta { flex-direction: column; gap: 0.15rem; align-items: flex-start; }
-    .q-nfz { text-align: left; }
+  /* ===== O CO TU CHODZI — TRZY LICZBY ================================= */
+  .rj-trzy { list-style: none; margin: 2rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--rule); }
+  .rj-trzy li { padding: 1.75rem 1.75rem 0.5rem 0; }
+  .rj-trzy li + li { padding-left: 1.75rem; border-left: 1px solid var(--line); }
+  .rj-fig-t { margin: 1rem 0 0; font-size: var(--fs-small); line-height: 1.55; color: var(--ink-soft); max-width: 40ch; text-wrap: pretty; }
+  .rj-fig-t strong { color: var(--ink); }
+  /* Zero rejestrów to ta sama luka co „?” w równaniu — ten sam czerwony. */
+  .rj-trzy li:nth-child(2) .rj-fig { color: var(--signal); }
+  /* Teza ramowa dużym krojem — najważniejsze zdanie o intencji serwisu. */
+  .rj-teza { margin-top: 2.75rem; padding-top: 1.75rem; border-top: 1px solid var(--line); display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem 3rem; flex-wrap: wrap; }
+  .rj-teza-t { margin: 0; font-size: var(--fs-title); font-weight: 760; font-stretch: 110%; line-height: 1.2; max-width: 30ch; text-wrap: balance; }
+  .rj-teza-cta { display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .rj-slownik { font-size: var(--fs-meta); }
+
+  /* ===== KOLEJKI ====================================================== */
+  .rj-kolejki { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); column-gap: 3rem; margin-top: 2rem; padding-top: 1.75rem; border-top: 1px solid var(--rule); }
+  .rj-wykres { margin: 0; }
+  .rj-kol-t { margin: 1rem 0 0; font-size: var(--fs-small); line-height: 1.55; color: var(--ink-soft); max-width: 36ch; }
+  .rj-wykres figcaption { font-size: var(--fs-small); color: var(--ink-soft); margin: 0 0 1rem; }
+  .queues { display: flex; flex-direction: column; gap: 1rem; }
+  .q-row { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); column-gap: 1rem; align-items: center; }
+  .q-name { font-size: var(--fs-small); font-weight: 650; line-height: 1.25; }
+  .q-pryw { display: block; font-size: var(--fs-meta); font-weight: 400; color: var(--ink-faint); }
+  .q-bar { background: var(--paper-2); height: 2.75rem; width: 100%; display: flex; align-items: center; }
+  .q-fill { background: var(--brand); height: 100%; min-width: 4px; display: flex; align-items: center; justify-content: flex-end; }
+  .q-val { color: #fff; font-weight: 700; font-size: var(--fs-small); padding: 0 0.85rem; white-space: nowrap; }
+  /* Krótki słupek nie mieści opisu — wartość stoi za nim, na torze. */
+  .q-val-poza { color: var(--ink); }
+  .rj-wniosek { margin: 2rem 0 1rem; max-width: 56ch; font-size: var(--fs-title-s); font-weight: 500; line-height: 1.45; color: var(--ink-soft); text-wrap: pretty; }
+  .rj-wniosek strong { color: var(--ink); font-weight: 750; }
+
+  /* ===== PASMO PETYCJI ================================================= */
+  .cta-band { padding: 4.5rem 0; }
+  .cta-band h2 { font-size: var(--fs-h2); max-width: 30ch; font-stretch: 115%; font-weight: 800; margin-bottom: 0.75rem; }
+
+  /* ===== SPIS TABLIC ================================================== */
+  /* Spis jak w roczniku: dział w wąskiej kolumnie, tytuł i opis, linie między
+     pozycjami — zamiast siatki sześciu jednakowych kart. */
+  .rj-spis { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--rule); }
+  .rj-spis li { border-bottom: 1px solid var(--line-2); }
+  .rj-spis li:last-child { border-bottom: 1px solid var(--rule); }
+  .rj-spis a {
+    display: grid; grid-template-columns: 9rem minmax(0, 1fr) minmax(0, 1.25fr) 1.5rem; column-gap: 1.5rem;
+    align-items: baseline; padding: 1rem 0; text-decoration: none; color: inherit;
   }
-  .spotlight { background: var(--bg); border: 1px solid var(--line); border-left: 5px solid var(--brand); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; padding: 1.75rem 2rem; }
-  .spotlight h2 { margin-top: 0.3rem; }
-  .spotlight p { color: var(--ink-soft); margin-bottom: 1rem; }
-  .spotlight .btn { margin-top: 0.25rem; }
-  .opacity-block { max-width: 760px; }
-  .opacity-q { font-family: var(--font-serif); font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 600; color: var(--ink); line-height: 1.25; margin: 0 0 0.75rem; }
-  .opacity-a { font-size: 1.1rem; line-height: 1.65; color: var(--ink-soft); margin: 0 0 1.25rem; }
-  .opacity-a strong { color: var(--ink); }
-  .x-band { display: flex; align-items: center; gap: 1.35rem; background: #0b0b0d; color: #fff; border-radius: var(--radius-lg); padding: 1.6rem 1.9rem; text-decoration: none; transition: transform 0.15s, box-shadow 0.15s; }
-  .x-band:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
-  .x-logo { flex-shrink: 0; color: #fff; display: inline-flex; }
+  .rj-spis a::after { content: "→"; font-weight: 700; color: var(--ink-faint); justify-self: end; }
+  .rj-s-tag { font-size: var(--fs-label); font-weight: 650; font-stretch: 78%; color: var(--ink-faint); }
+  .rj-spis a.is-hot .rj-s-tag { color: var(--brand-link); }
+  .rj-s-t { font-size: var(--fs-title-s); font-weight: 760; font-stretch: 108%; line-height: 1.2; color: var(--ink); text-wrap: balance; }
+  .rj-s-t em { font-style: normal; color: var(--brand-link); }
+  .rj-s-d { font-size: var(--fs-small); color: var(--ink-soft); line-height: 1.5; }
+  .rj-spis a:hover { background: var(--paper); }
+  .rj-spis a:hover .rj-s-t { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.15em; }
+  .rj-spis a:hover::after { color: var(--ink); }
+
+  /* ===== MECHANIZM ===================================================== */
+  .rj-porown dl { margin: 1.25rem 0 0; display: grid; gap: 1.5rem; }
+  .rj-porown dt { font-size: var(--fs-label); font-weight: 600; font-stretch: 85%; color: var(--ink-faint); margin-bottom: 0.35rem; }
+  .rj-porown dd { margin: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+  .rj-pl { font-size: var(--fs-figure); font-weight: 800; font-stretch: 112%; line-height: 0.95; letter-spacing: -0.03em; color: var(--ink); }
+  .rj-ue { font-size: var(--fs-meta); color: var(--ink-soft); }
+  .spotlight h2 { margin-top: 0; }
+  .spotlight p:not(.source-note) { color: var(--ink-soft); margin-bottom: 1rem; max-width: 62ch; text-wrap: pretty; }
+  .spotlight .btn { margin-top: 0.5rem; }
+
+  /* ===== ZAMKNIĘCIE ================================================= */
+  .closing-tresc { max-width: var(--maxw-tekst); }
+  .closing p { color: var(--ink-soft); max-width: 66ch; text-wrap: balance; }
+  .amplify { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 2.75rem; padding-top: 1.75rem; border-top: 1px solid var(--rule); }
+  .x-band { display: flex; align-items: center; gap: 1.25rem; background: var(--surface); color: var(--ink); border: 1px solid var(--line-2); padding: 1.2rem 1.4rem; text-decoration: none; transition: background-color 0.15s ease; }
+  .x-band:hover { background: var(--paper); }
+  .x-band:hover .x-title { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 0.15em; }
+  .x-logo { flex-shrink: 0; color: var(--ink); display: inline-flex; }
   .x-text { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
-  .x-title { font-family: var(--font-serif); font-size: clamp(1.3rem, 3.5vw, 1.7rem); font-weight: 700; }
-  .x-sub { font-size: 0.95rem; color: #c9ccd1; line-height: 1.5; }
-  .x-cta { flex-shrink: 0; margin-left: auto; font-family: var(--font-mono); font-weight: 600; font-size: 1.05rem; white-space: nowrap; background: #fff; color: #0b0b0d; padding: 0.55rem 1rem; border-radius: var(--radius); }
+  .x-title { font-size: var(--fs-title-s); font-weight: 760; font-stretch: 110%; line-height: 1.15; }
+  .x-sub { font-size: var(--fs-small); color: var(--ink-soft); line-height: 1.5; }
+  .x-cta { flex-shrink: 0; margin-left: auto; font-weight: 650; font-size: var(--fs-small); white-space: nowrap; background: var(--ink); color: var(--bg); padding: 0.6rem 1rem; }
   @media (max-width: 680px) { .x-band { flex-wrap: wrap; gap: 0.9rem; } .x-cta { margin-left: 0; } }
-  /* Sześć kafli — `auto-fill` na szerszej stronie układał je 4 + 2, z urwanym
-     rzędem. Trzy kolumny trzymają 3 + 3 (i 2 + 2 + 2 na tablecie). */
-  .home-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-  @media (max-width: 900px) { .home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 560px) { .home-grid { grid-template-columns: 1fr; } }
-  .home-card { position: relative; display: flex; flex-direction: column; gap: 0.4rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.25rem 1.35rem 2.4rem; text-decoration: none; transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
-  .home-card:hover { border-color: var(--brand); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,76,129,0.1); }
-  .home-card.is-hot { border-left: 5px solid var(--alert); }
-  .hc-tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--ink-faint); }
-  .home-card.is-hot .hc-tag { color: var(--alert); }
-  .hc-t { font-family: var(--font-serif); font-weight: 600; font-size: 1.15rem; line-height: 1.25; color: var(--ink); }
-  .hc-t em { font-style: normal; color: var(--alert); }
-  .hc-d { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; }
-  .hc-arrow { position: absolute; left: 1.35rem; bottom: 1rem; color: var(--brand); font-weight: 700; }
-  @media (max-width: 600px) {
-    .bar-val, .bar-flag { font-size: 0.85rem; }
+
+  /* ===== RESPONSYWNOŚĆ ================================================ */
+  @media (max-width: 1100px) {
+    /* Węziej równanie łamie się na dwa wiersze; wynik zostaje po prawej. */
+    .rj-rownanie { row-gap: 1.25rem; }
   }
-  .tldr { counter-reset: step; list-style: none; padding: 0; margin: 1.25rem 0 1rem; display: flex; flex-direction: column; gap: 0.85rem; max-width: 760px; }
-  .tldr li { position: relative; padding: 0.9rem 1.15rem 0.9rem 3.2rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); line-height: 1.55; color: var(--ink-soft); }
-  .tldr li strong { color: var(--ink); }
-  .tldr li::before { counter-increment: step; content: counter(step); position: absolute; left: 1rem; top: 0.85rem; width: 1.6rem; height: 1.6rem; background: var(--brand); color: #fff; border-radius: 999px; font-family: var(--font-mono); font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; }
+  @media (max-width: 1000px) {
+    .rj-dwa > .rj-dwa-h, .rj-dwa > :not(.rj-dwa-h) { grid-column: 1 / -1; }
+    .rj-porown dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rj-porown { margin-bottom: 2rem; }
+    .rj-kolejki { grid-template-columns: 1fr; row-gap: 1.75rem; }
+    .rj-spis a { grid-template-columns: 7rem minmax(0, 1fr) 1.5rem; }
+    .rj-s-d { grid-column: 2; }
+    .rj-spis a::after { grid-column: 3; grid-row: 1; }
+  }
+  @media (max-width: 700px) {
+    .rj-hero { padding-top: 1.75rem; }
+    .rj-kicker { margin-bottom: 0.6rem; }
+    .rj-intro { margin-top: 1rem; }
+    .rj-lead { font-size: var(--fs-body); }
+    /* Telefon: równanie jak paragon — składniki jeden pod drugim (etykieta po
+       lewej, kwota po prawej), operator przed kwotą, wynik w ostatnim wierszu. */
+    .rj-suma { margin-top: 2rem; }
+    .rj-rownanie { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); column-gap: 0.5rem; row-gap: 0.85rem; align-items: end; }
+    .rj-op { grid-column: 1; padding-bottom: 0.1em; font-size: 1.6rem; }
+    .rj-skl { grid-column: 2; flex-direction: row; justify-content: space-between; align-items: baseline; gap: 1rem; }
+    .rj-rownanie > .rj-skl:first-of-type { grid-column: 2; }
+    .rj-skl-kw { font-size: 1.9rem; }
+    .rj-wynik { margin-left: 0; align-items: center; border-top: 1px solid var(--rule); padding-top: 0.5rem; }
+    .rj-op-rowna { align-self: center; }
+    .rj-q { font-size: 4.5rem; }
+    .rj-wejscia { grid-template-columns: 1fr; padding-bottom: 2rem; }
+    .rj-wejscia a { padding: 1.1rem 0 1.2rem; }
+    .rj-wejscia a + a { border-left: 0; border-top: 1px solid var(--line); }
+    .rj-wejscia a:hover { background: none; }
+    .rj-trzy { grid-template-columns: 1fr; }
+    .rj-trzy li, .rj-trzy li + li { padding: 1.5rem 0 1.25rem; border-left: 0; }
+    .rj-trzy li + li { border-top: 1px solid var(--line); }
+    .rj-teza-t { font-size: var(--fs-title-s); }
+    .q-row { grid-template-columns: 1fr; row-gap: 0.35rem; }
+    .rj-spis a { grid-template-columns: minmax(0, 1fr) 1.25rem; row-gap: 0.25rem; }
+    .rj-s-tag, .rj-s-t, .rj-s-d { grid-column: 1; }
+    .rj-spis a::after { grid-column: 2; grid-row: 2; }
+  }
+
+  /* Tryb wymuszonych kolorów: słupki zerują się do tła — w kolorze tekstu systemowego. */
+  @media (forced-colors: active) {
+    .q-fill { forced-color-adjust: none; background: CanvasText; }
+  }
 </style>

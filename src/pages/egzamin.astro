@@ -34,20 +34,28 @@ const zBazy = srednia('zBazy');
 const nowe = srednia('nowe');
 const proc = (x: number) => (x * 100).toLocaleString('pl-PL', { maximumFractionDigits: 1 });
 
+const najnowszaPelna = typy.LEK.sesje.find((s) => s.pelna) ?? sesje[0];
 // Gotowy prompt dla agenta AI — ten sam interfejs co window.lek / WebMCP w skrypcie poniżej.
 // Przy zmianie API (nazwy funkcji, pola) aktualizuj OBA miejsca.
-const promptAgenta = `Rozwiąż Lekarski Egzamin Końcowy (LEK) na stronie ${new URL('/egzamin/', Astro.site)} — prawdziwe pytania z jawnej bazy Centrum Egzaminów Medycznych.
+const promptAgenta = `Rozwiąż Lekarski Egzamin Końcowy (LEK) na ${new URL('/egzamin/', Astro.site)} — prawdziwe pytania z jawnej bazy Centrum Egzaminów Medycznych.
 
-Jak korzystać:
-1. Otwórz stronę w przeglądarce. Strona udostępnia obiekt window.lek — wywołuj go, wykonując JavaScript w karcie (funkcje oznaczone „await” są asynchroniczne). W przeglądarkach z WebMCP te same funkcje są dostępne jako narzędzia lek_*.
-2. Rozpocznij: await lek.rozpocznij('egzamin') — cała sesja: 200 pytań, próg 56%. Szybciej: lek.rozpocznij('szybki') — 20 losowych pytań. Lista sesji: lek.sesje(); dziedziny: lek.dziedziny(). Egzamin lekarsko-dentystyczny (LDEK): sesje z prefiksem, np. await lek.rozpocznij('egzamin', 'ldek-20262'); jego dziedziny: lek.dziedziny('LDEK'). Pełny egzamin tylko z sesji oznaczonej jako kompletna.
-3. Pobieraj pytania partiami: lek.pytania(1, 25) zwraca tablicę { nr, tresc, warianty: { A…E }, dziedzina, … }. Pojedynczo: lek.pytanie(nr).
-4. Odpowiadaj partiami: lek.odpowiedzi({ 1: 'C', 2: 'A', … }) albo pojedynczo lek.odpowiedz('C', nr). Odpowiedzi możesz zmieniać do zakończenia. Pytania unieważnione przez CEM pomiń — nie liczą się do wyniku.
-5. Sprawdź braki: lek.bezOdpowiedzi(). Na końcu: lek.zakoncz() — zwraca punkty, procent, próg, wynik zdany/niezdany, wynik według dziedzin, porównanie z przeciętnym zdającym oraz listę błędnych odpowiedzi (numer pytania, Twoja i prawidłowa odpowiedź). Pozostały czas: lek.stan().pozostalyCzasSek.
+API: strona udostępnia obiekt window.lek — wykonuj JavaScript w karcie; wszystkie funkcje zwracają Promise (używaj await). W przeglądarkach z WebMCP te same funkcje są dostępne jako narzędzia lek_*.
 
-Zasady uczciwego sprawdzianu: odpowiadaj wyłącznie na podstawie własnej wiedzy medycznej. Nie pobieraj plików z danymi strony (/egzamin/dane/…), nie czytaj kodu strony i nie szukaj odpowiedzi w internecie — klucz jest publiczny, więc każde z tych działań unieważnia wynik. W trybie egzaminu prawidłowe odpowiedzi poznasz dopiero po lek.zakoncz().
+1. Start: await lek.rozpocznij('egzamin') — domyślnie najnowsza kompletna sesja (LEK ${najnowszaPelna.nazwa}): 200 pytań, próg 56%, limit 4 godziny (pozostały czas: await lek.stan() → pozostalyCzasSek). Szybki test: lek.rozpocznij('szybki') — 20 losowych pytań. Inne sesje: lek.sesje() (pełny egzamin tylko z sesji z kompletna: true); LDEK: lek.rozpocznij('egzamin', 'ldek-…'). Porównując modele, używaj tej samej sesji — najnowsza zmniejsza ryzyko, że model znał pytania z danych treningowych.
+2. Pytania partiami: await lek.pytania(1, 25) → [{ nr, tresc, warianty: { A…E }, dziedzina, uniewaznione?, mozeBycUciete?, … }].
+3. Odpowiedzi partiami: await lek.odpowiedzi({ 1: 'C', 2: 'A', … }). Pytania z polem uniewaznione pomiń — nie liczą się do wyniku, a odpowiedź zostanie odrzucona. Jeśli pytanie ma pole mozeBycUciete albo treść wygląda na uciętą, odpowiedz najlepiej, jak potrafisz.
+4. Odpowiedzi, których nie jesteś pewien, oznacz: await lek.oznacz(nr). Odpowiedzi możesz zmieniać do zakończenia.
+5. Przed końcem sprawdź braki: await lek.bezOdpowiedzi(). Zakończ: await lek.zakoncz() — zwraca wynik, wynik według dziedzin z przeciętnym zdającym, listę błędnych odpowiedzi i to, ile oznaczonych odpowiedzi było błędnych.
 
-Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%, wynik według dziedzin, 3 dziedziny z najsłabszym wynikiem i listę pytań z błędną odpowiedzią.`;
+Zasady: odpowiadaj wyłącznie z własnej wiedzy medycznej. Nie pobieraj plików z danymi strony (/egzamin/dane/…), nie czytaj kodu strony, nie szukaj w internecie i nie deleguj tego innym agentom ani narzędziom — klucz jest publiczny, więc każde z tych działań unieważnia wynik.
+
+Raport końcowy:
+- nazwa modelu i sesja,
+- punkty / maksimum, procent, czy przekroczono próg 56%,
+- tabela dziedzin: poprawne / pytań, procent, przeciętny zdający,
+- 3 najsłabsze dziedziny (przy równym procencie decyduje większa liczba błędów),
+- ile odpowiedzi oznaczono jako niepewne i ile z nich było błędnych,
+- jedno zdanie potwierdzające przestrzeganie zasad.`;
 ---
 
 <BaseLayout
@@ -378,6 +386,17 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
             </div>
           </section>
 
+          <aside class="lek-wsparcie" aria-labelledby="lek-wsparcie-tytul">
+            <span class="lek-wsparcie-ikona" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+            </span>
+            <div class="lek-wsparcie-tekst">
+              <p id="lek-wsparcie-tytul" class="lek-wsparcie-tytul">Ten moduł jest darmowy i taki zostanie.</p>
+              <p>Utrzymanie strony i aktualizowanie bazy po każdej sesji CEM to praca po godzinach. Jeśli korzystasz z niego w nauce, możesz wesprzeć projekt dobrowolną darowizną.</p>
+            </div>
+            <a class="btn btn-sm" href="https://suppi.pl/zarobkilekarzy" target="_blank" rel="noopener noreferrer">suppi.pl/zarobkilekarzy ↗</a>
+          </aside>
+
           <section class="lek-spol" hidden aria-labelledby="lek-spol-tytul">
             <div class="lek-spol-glowa">
               <h3 id="lek-spol-tytul" data-anchor="off">Na tle użytkowników strony</h3>
@@ -620,8 +639,10 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
   .lek-hist-svg .prog { stroke: var(--ink-faint); stroke-width: 1.5; stroke-dasharray: 4 4; }
   .lek-hist-svg .linia { fill: none; stroke: var(--brand-link); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
   .lek-hist-svg .punkt { fill: var(--brand-link); stroke: var(--surface); stroke-width: 2; }
-  .lek-hist-svg .cel { fill: transparent; cursor: pointer; }
-  .lek-hist-svg text { font-family: var(--font-mono); font-size: 11px; fill: var(--ink-faint); }
+  /* Wykres nie dziedziczy obrysu ikon (.lek svg) — bez tego napisy i pole klikania dostawały biały kontur. */
+  .lek-hist-svg .cel { fill: transparent; stroke: none; cursor: pointer; }
+  .lek-hist-svg .cel:focus-visible { outline: none; stroke: var(--brand-link); stroke-width: 2; }
+  .lek-hist-svg text { font-family: var(--font-mono); font-size: 11px; fill: var(--ink-faint); stroke: none; }
   .lek-hist-svg text.wartosc { fill: var(--ink); font-weight: 600; font-size: 12px; }
   .lek-hist-dymek { position: absolute; pointer-events: none; transform: translate(-50%, calc(-100% - 10px)); background: var(--panel); color: var(--on-panel); font-size: .78rem; line-height: 1.4; padding: .4rem .6rem; border-radius: 6px; white-space: nowrap; box-shadow: 0 6px 18px -6px rgba(0,0,0,.4); }
   .lek-hist-podpis { font-size: .78rem; color: var(--ink-faint); margin-top: .35rem; }
@@ -640,6 +661,12 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
   .lek-udost-podglad { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); display: block; }
   .lek-udost-akcje { display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; }
   .lek-udost-akcje .btn.ok { border-color: var(--ok); color: var(--ok); }
+  .lek-wsparcie { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 1.25rem; padding: 1rem 1.2rem; background: var(--paper); border: 1px solid var(--line); border-radius: var(--lek-r); }
+  .lek-wsparcie-ikona { display: inline-grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--alert-50); color: var(--alert); flex-shrink: 0; }
+  .lek-wsparcie-ikona svg { width: 1.15rem; height: 1.15rem; }
+  .lek-wsparcie-tekst { flex: 1; min-width: 16rem; }
+  .lek-wsparcie-tekst p { margin: 0; font-size: .9rem; line-height: 1.5; color: var(--ink-soft); }
+  .lek-wsparcie-tekst .lek-wsparcie-tytul { font-weight: 600; color: var(--ink); margin-bottom: .2rem; }
   .lek-udost-social { display: flex; flex-wrap: wrap; gap: .5rem; }
   .lek-udost-social .btn { display: inline-flex; align-items: center; gap: .45rem; }
   .lek-udost-info { margin: .3rem 0 0; font-size: .8rem; color: var(--ink-faint); }
@@ -968,7 +995,7 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
 
 <script>
   type Tryb = 'egzamin' | 'nauka' | 'szybki' | 'powtorka';
-  interface Pytanie { nr: number; t: string; w: string[]; o: number | null; p: number[] | null; tr: number | null; md: number | null; nz?: boolean; d?: string; b?: 0 | 1 }
+  interface Pytanie { nr: number; t: string; w: string[]; o: number | null; p: number[] | null; tr: number | null; md: number | null; nz?: boolean; d?: string; b?: 0 | 1; uc?: boolean }
   type Typ = 'LEK' | 'LDEK';
   interface Sesja { sesja: string; nazwa: string; typ: Typ; n: number; pelna: boolean; nz: number; x: number; v: string; kategorie?: boolean; pochodzenie?: boolean }
   interface Dziedzina { id: string; nazwa: string; n: number }
@@ -1248,11 +1275,14 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
     }
 
     function ostrzezenie(el: HTMLElement, q: Pytanie) {
-      el.hidden = !(q.o === null || q.nz);
+      const teksty = [
+        q.o === null ? 'Pytanie unieważnione przez CEM — nie liczy się do wyniku, a maksimum punktów jest o nie niższe.'
+          : q.nz ? 'W bazie CEM to pytanie zgłoszono w komentarzach jako niezgodne z aktualną wiedzą medyczną. Na egzaminie było liczone.' : '',
+        q.uc ? 'Fragment treści mógł zostać utracony przy pobieraniu z bazy CEM (np. wartość po znaku „<”). Pełną treść znajdziesz na stronie CEM.' : '',
+      ].filter(Boolean);
+      el.hidden = !teksty.length;
       el.classList.toggle('x', q.o === null);
-      el.textContent = q.o === null
-        ? 'Pytanie unieważnione przez CEM — nie liczy się do wyniku, a maksimum punktów jest o nie niższe.'
-        : 'W bazie CEM to pytanie zgłoszono w komentarzach jako niezgodne z aktualną wiedzą medyczną. Na egzaminie było liczone.';
+      el.textContent = teksty.join(' ');
     }
 
     function zbudujOpcje(lista: HTMLElement, q: PytanieZ, wybrana: number | undefined, odkryj: boolean, interaktywne: boolean) {
@@ -1845,7 +1875,8 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
         svg.append(cel);
       });
       const [lx, ly] = pkt[pkt.length - 1];
-      const tw = el('text', { x: lx, y: ly - 10, 'text-anchor': 'middle', class: 'wartosc' }); tw.textContent = `${pl((ost[ost.length - 1].pkt / ost[ost.length - 1].max) * 100, 0)}%`; svg.append(tw);
+      // Etykieta nad punktem; przy wyniku blisko 100% — pod nim, żeby nie wyszła poza wykres.
+      const tw = el('text', { x: lx, y: ly < T + 18 ? ly + 22 : ly - 14, 'text-anchor': lx > W - P - 20 ? 'end' : 'middle', class: 'wartosc' }); tw.textContent = `${pl((ost[ost.length - 1].pkt / ost[ost.length - 1].max) * 100, 0)}%`; svg.append(tw);
       $('.lek-hist-svg').replaceChildren(svg);
       const egz = lista.filter((w) => w.tryb === 'egzamin');
       $('.lek-hist-podpis').textContent = `${lista.length} ${lista.length === 1 ? 'test' : lista.length % 10 >= 2 && lista.length % 10 <= 4 && (lista.length % 100 < 10 || lista.length % 100 >= 20) ? 'testy' : 'testów'} ${typ}` + (egz.length ? ` · pełnych egzaminów: ${egz.length}, zdanych: ${egz.filter((w) => w.pkt >= Math.ceil(w.max * 0.56)).length}` : '') + (lista.length > 20 ? ' · wykres: ostatnie 20' : '');
@@ -1964,6 +1995,7 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
         notatka: notatki[k] ?? null,
       };
       if (q.o === null) wynik.uniewaznione = 'Pytanie unieważnione przez CEM — nie liczy się do wyniku, odpowiedź nie jest przyjmowana.';
+      if (q.uc) wynik.mozeBycUciete = 'Fragment treści mógł zostać utracony przy pobieraniu (np. wartość po znaku „<”) — odpowiedz najlepiej, jak potrafisz.';
       if (q.nz && q.o !== null) wynik.uwaga = 'Pytanie zgłoszone w komentarzach bazy CEM jako niezgodne z aktualną wiedzą (na egzaminie liczone).';
       if (q.o !== null && ujawnij(s, k)) {
         wynik.poprawna = LITERY[q.o];
@@ -1995,6 +2027,11 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
           return { nr: nrW(k), twojaOdpowiedz: LITERY[s.odp[k]], poprawna: LITERY[q.o!], dziedzina: nazwaDz(q.d, q.typ) ?? null, procentZdajacychPoprawnie: q.p ? q.p[q.o!] : null };
         }),
         bezOdpowiedziPytania: w.wazne.filter((k) => s.odp[k] === undefined).map(nrW),
+        oznaczone: {
+          pytania: s.flagi.map(nrW).sort((a, b) => a - b),
+          bledneWsrodOznaczonych: s.flagi.filter((k) => pyt.get(k)!.o !== null && s.odp[k] !== pyt.get(k)!.o).length,
+          bledneNieoznaczone: w.wazne.filter((k) => !s.flagi.includes(k) && s.odp[k] !== undefined && s.odp[k] !== pyt.get(k)!.o).length,
+        },
         wgDziedzin: dzTypu(typStanu(s)).map((d) => {
           const kl = w.wazne.filter((k) => pyt.get(k)!.d === d.id);
           if (!kl.length) return null;
@@ -2007,7 +2044,7 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
     }
 
     const api = {
-      opis: 'Moduł egzaminacyjny LEK (zarobkilekarzy.pl). Zacznij od await rozpocznij(tryb, sesja), pobieraj pytania partiami: pytania(od, do), odpowiadaj partiami: odpowiedzi({ nr: litera }), na końcu zakoncz(). Pojedynczo: pytanie(nr), odpowiedz(litera, nr). Numery pytań 1–N w kolejności testu. Odpowiadaj z własnej wiedzy — nie pobieraj plików z danymi strony.',
+      opis: 'Moduł egzaminacyjny LEK/LDEK (zarobkilekarzy.pl). Wszystkie funkcje zwracają Promise. Zacznij od await rozpocznij(tryb, sesja), pobieraj pytania partiami: pytania(od, do), odpowiadaj partiami: odpowiedzi({ nr: litera }), na końcu zakoncz(). Pojedynczo: pytanie(nr), odpowiedz(litera, nr). Numery pytań 1–N w kolejności testu. Odpowiadaj z własnej wiedzy — nie pobieraj plików z danymi strony.',
       sesje: () => wszystkieSesje.map((x) => ({ sesja: x.sesja, egzamin: x.typ, nazwa: `${x.typ} ${x.nazwa}`, pytan: x.n, kompletna: x.pelna, uniewaznionych: x.x, dziedziny: !!x.kategorie, pochodzenie: !!x.pochodzenie })),
       dziedziny: (egzamin: Typ = 'LEK') => dzTypu(egzamin === 'LDEK' ? 'LDEK' : 'LEK').map((d) => ({ id: d.id, nazwa: d.nazwa, pytanNaEgzaminie: d.n })),
       async rozpocznij(tryb: Tryb = 'egzamin', sesja?: string, opcje: { tasuj?: boolean; dziedziny?: string[]; pochodzenie?: 'baza' | 'nowe' } = {}) {
@@ -2080,7 +2117,8 @@ Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%,
       zakoncz() { naIdx(); oznaczAgenta(); if (!stan!.koniec) zakoncz(); return opisWyniku(); },
       wynik() { naIdx(); return opisWyniku(); },
     };
-    window.lek = api;
+    window.lek = Object.fromEntries(Object.entries(api).map(([k, v]) =>
+      [k, typeof v === 'function' ? (...a: unknown[]) => Promise.resolve().then(() => (v as (...x: unknown[]) => unknown).apply(api, a)) : v]));
 
     // WebMCP — tylko tam, gdzie przeglądarka udostępnia document.modelContext (dziś: Chrome
     // w origin trial). Token wpisz do ORIGIN_TRIAL; pusty = narzędzia rejestrują się tylko

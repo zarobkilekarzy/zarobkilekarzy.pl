@@ -147,9 +147,9 @@ export const ogPages: Record<string, OgPage> = {
   },
   'egzamin': {
     variant: 'egzamin',
-    tag: 'Egzamin LEK · LDEK',
-    title: 'Zdaj LEK',
-    subtitle: 'Prawdziwe pytania z jawnej bazy CEM, z odpowiedziami i statystyką zdających.',
+    tag: 'Egzamin online · za darmo',
+    title: 'Zdaj LEK lub LDEK',
+    subtitle: 'Na prawdziwych pytaniach z jawnej bazy CEM — z odpowiedziami i statystyką zdających.',
   },
   'analizy/symulator-podazy-lekarzy': {
     tag: 'Analiza · Symulator',

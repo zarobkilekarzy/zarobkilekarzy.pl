@@ -3,9 +3,8 @@
 // z prawdziwym pytaniem i rozkładem odpowiedzi zdających. Marka trzyma się na stałych:
 // czerwony border z lewej, logo + domena u góry, granat tła.
 //
-// RZETELNOŚĆ: liczby na karcie są prawdziwe i liczone w buildzie z danych modułu
-// (src/data/egzamin-lek/) — liczba pytań w bazie i rozkład odpowiedzi konkretnego pytania
-// ze statystyk CEM. Treści pytania nie pokazujemy (nie zmieści się czytelnie), tylko jego
+// RZETELNOŚĆ: rozkład odpowiedzi na karcie jest prawdziwy — liczony w buildzie ze statystyk
+// CEM konkretnego pytania (src/data/egzamin-lek/). Treści pytania nie pokazujemy (nie zmieści się czytelnie), tylko jego
 // numer i sesję, więc każdy może je odnaleźć w bazie.
 import { el, logo, type Node } from './ogCard';
 import type { OgPage } from './ogPages';
@@ -15,7 +14,6 @@ interface Pyt { nr: number; o: number | null; p: number[] | null; tr: number | n
 const sesjeDane = import.meta.glob<{ default: { sesja: string; nazwa: string; pytania: Pyt[] } }>('../data/egzamin-lek/*.json', { eager: true });
 
 const LITERY = 'ABCDE';
-const fmt = (n: number) => n.toLocaleString('pl-PL');
 const proc = (n: number) => n.toLocaleString('pl-PL', { maximumFractionDigits: 1 });
 
 /** Pytanie na kartę: najnowsza pełna sesja LEK, pierwsze pytanie, przy którym sala się podzieliła
@@ -31,9 +29,6 @@ function przyklad() {
 }
 
 export function egzaminTemplate(p: OgPage): Node {
-  // „z prawidłowymi odpowiedziami” — bez pytań unieważnionych przez CEM (x).
-  const lek = indeks.typy.LEK.sesje.reduce((a, s) => a + s.n - s.x, 0);
-  const ldek = indeks.typy.LDEK.sesje.reduce((a, s) => a + s.n - s.x, 0);
   const q = przyklad();
 
   const arkusz: Node[] = q
@@ -63,7 +58,7 @@ export function egzaminTemplate(p: OgPage): Node {
   return el(
     {
       height: '100%', width: '100%', position: 'relative', display: 'flex', flexDirection: 'column',
-      background: '#14233a', color: '#ffffff', padding: '60px 64px 52px 72px',
+      background: '#14233a', color: '#ffffff', padding: '50px 64px 46px 72px',
       fontFamily: 'Plex Sans', borderLeft: '16px solid #b3261e',
       backgroundImage: 'radial-gradient(circle at 85% 40%, #1d3a5f 0%, #14233a 55%)',
     },
@@ -72,15 +67,16 @@ export function egzaminTemplate(p: OgPage): Node {
         logo(30, { marginRight: '16px' }),
         el({ fontFamily: 'Plex Mono', fontSize: '27px', color: '#cdd6e0', letterSpacing: '1px' }, 'zarobkilekarzy.pl'),
       ]),
-      el({ display: 'flex', flexGrow: 1, alignItems: 'center' }, [
+      // paddingBottom: arkusz nie może dotykać linii stopki.
+      el({ display: 'flex', flexGrow: 1, alignItems: 'center', paddingBottom: '30px' }, [
         // Lewa kolumna: wezwanie i zasady egzaminu
         // Szerokości jawne: obszar treści to 1048 px (1200 − border 16 − padding 72/64); satori
         // nie zwęża sam kolumny z flexGrow, więc bez tego arkusz wychodził poza kadr.
         el({ display: 'flex', flexDirection: 'column', width: '470px', marginRight: '40px' }, [
           el({ display: 'flex', fontSize: '22px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#6aa9e0', marginBottom: '18px' }, p.tag),
-          el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: '88px', lineHeight: 1, color: '#ffffff' }, p.title),
-          el({ display: 'flex', fontSize: '27px', lineHeight: 1.4, color: '#aebccb', marginTop: '22px' }, p.subtitle),
-          el({ display: 'flex', marginTop: '30px' }, [
+          el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: '68px', lineHeight: 1.04, color: '#ffffff' }, p.title),
+          el({ display: 'flex', fontSize: '26px', lineHeight: 1.38, color: '#aebccb', marginTop: '18px' }, p.subtitle),
+          el({ display: 'flex', marginTop: '24px' }, [
             ...[['200', 'pytań'], ['4 h', 'czasu'], ['56%', 'próg']].map(([a, b]) =>
               el({ display: 'flex', flexDirection: 'column', marginRight: '34px' }, [
                 el({ display: 'flex', fontFamily: 'Plex Mono', fontSize: '40px', color: '#ffffff' }, a),
@@ -95,7 +91,7 @@ export function egzaminTemplate(p: OgPage): Node {
         }, arkusz),
       ]),
       el({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '22px', borderTop: '1px solid #2c3d57', color: '#8aa0b6', fontSize: '22px' }, [
-        el({ display: 'flex' }, `${fmt(lek)} pytań LEK i ${fmt(ldek)} LDEK z prawidłowymi odpowiedziami`),
+        el({ display: 'flex' }, 'Egzamin LEK i LDEK online — za darmo, bez rejestracji'),
         el({ display: 'flex', fontFamily: 'Plex Mono', color: '#6ea8e6' }, 'zarobkilekarzy.pl/egzamin'),
       ]),
     ],

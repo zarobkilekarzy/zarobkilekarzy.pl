@@ -55,12 +55,12 @@ export const onRequest = async (context) => {
 
   if (request.method === 'GET') {
     const counts = await read(kv);
-    // Cache na brzegu CF (jak w /api/clicks): powtórne odsłony idą z cache — bez
-    // wywołania Funkcji i bez odczytu KV — co trzyma zużycie w darmowym planie.
-    // Świeżo oddany głos i tak renderuje się z odpowiedzi POST (niecache'owanej),
-    // więc ≤5 min „nieświeżości" liczb dotyczy tylko wracających gości. Dłuższy
-    // TTL = rzadsze rewalidacje = mniej wywołań Funkcji (sonda jest na stronie
-    // głównej, więc to główny konsument limitu).
+    // Cache na brzegu CF robi reguła cache strefy z repo infrastructure (cloudflare_cache.tf: GET /api/*, Edge TTL 300 s),
+    // NIE ten nagłówek — sam `Cache-Control` w odpowiedzi Funkcji brzegu nie włącza.
+    // Trafienie z brzegu nie wywołuje Funkcji ani KV, więc nie liczy się do limitu
+    // (sonda jest na stronie głównej — główny konsument). `max-age` steruje tylko
+    // cache przeglądarki. Świeżo oddany głos i tak renderuje się z odpowiedzi POST
+    // (niecache'owanej), więc ≤5 min „nieświeżości" dotyczy tylko wracających gości.
     return json(
       { ...counts, turnstileSiteKey: turnstileOn ? siteKey : null },
       200,

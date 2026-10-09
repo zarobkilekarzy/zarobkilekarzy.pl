@@ -34,6 +34,8 @@ export const pageDates = {
   // Mechanizmy (strony wyjaśniające).
   // Gra (symulator na hubie mechanizmów).
   '/gra': '2026-08-29',
+  // Moduł egzaminacyjny (hub danych) — bump przy dodaniu sesji LEK.
+  '/lek': '2026-10-08',
   '/mechanizmy/reglamentacja-dostepu': '2026-07-14',
   '/mechanizmy/kontrakt-vs-etat': '2026-08-14',
   '/mechanizmy/brak-jawnosci': '2026-07-22',

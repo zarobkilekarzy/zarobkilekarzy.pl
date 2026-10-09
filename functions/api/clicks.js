@@ -2,7 +2,7 @@
 // petycji („Wysłałem petycję") w Cloudflare D1 (binding CLICKS_DB). Anonimowo i
 // zbiorczo: trzymamy tylko `slug -> liczba`. Bez IP, bez ciasteczek, bez danych osobowych.
 //
-//   GET  /api/clicks                          -> { counts: {…}, turnstileSiteKey: <klucz|null> }  (cache 600 s)
+//   GET  /api/clicks                          -> { counts: {…}, turnstileSiteKey: <klucz|null> }  (edge 300 s, przeglądarka 600 s)
 //   POST /api/clicks  {slug[, turnstileToken]} -> 204; inkrementuje licznik sluga
 //
 // Antybot (opcjonalny, fail-open): „głosowe" slugi z listy PROTECTED (dziś tylko
@@ -78,11 +78,12 @@ export const onRequest = async (context) => {
       const { results } = await db.prepare('SELECT slug, count FROM clicks').all();
       const counts = {};
       for (const r of results || []) counts[r.slug] = r.count;
-      // Cache na brzegu CF: powtórne wejścia idą z cache (bez wywołania Funkcji
-      // i bez zapytania do D1) — trzyma koszt w granicach darmowego planu.
-      // Dłuższy TTL = rzadsze rewalidacje = mniej wywołań Funkcji; liczba przejść
-      // do źródeł spokojnie może być „nieświeża" do 10 min. `turnstileSiteKey` to
-      // klucz publiczny, więc bezpiecznie leży w odpowiedzi cache'owanej.
+      // Cache na brzegu CF robi reguła cache strefy z repo infrastructure (cloudflare_cache.tf: GET /api/*, Edge TTL 300 s),
+      // NIE ten nagłówek — sam `Cache-Control` w odpowiedzi Funkcji brzegu nie włącza.
+      // Trafienie z brzegu nie wywołuje Funkcji ani D1, więc nie liczy się do limitu.
+      // `max-age` steruje tylko cache przeglądarki (liczba przejść spokojnie może być
+      // „nieświeża" do 10 min); częstość rewalidacji na brzegu zmienia Edge TTL w tej regule.
+      // `turnstileSiteKey` to klucz publiczny, więc bezpiecznie leży w odpowiedzi cache'owanej.
       return json({ counts, turnstileSiteKey: publicSiteKey }, 200, 'public, max-age=600');
     } catch (e) {
       return json({ counts: {}, turnstileSiteKey: publicSiteKey }, 200, 'public, max-age=30');

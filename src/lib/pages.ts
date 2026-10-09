@@ -259,6 +259,12 @@ export const strony: Record<string, Strona> = {
     opis: 'Jeden płatnik, budżet globalny z punktową wyceną i rachunek z kwotą dla ubezpieczyciela po każdej wizycie. Tajwan publikuje sprawozdania szpitali i wie, gdzie pracuje każdy lekarz — ale zarobków poszczególnych lekarzy nie ujawnia.',
     tematy: ['jawnosc', 'pieniadz-nfz'],
   },
+  '/lek': {
+    dzial: 'dane',
+    tytul: 'Egzamin LEK — sprawdź się',
+    opis: 'Rozwiąż prawdziwy Lekarski Egzamin Końcowy z jawnej bazy CEM: 200 pytań, 4 godziny, próg 56%. Po każdej odpowiedzi widać, jak na to samo pytanie odpowiadali zdający.',
+    tematy: ['dostep-do-zawodu', 'jawnosc'],
+  },
   '/analizy/symulator-podazy-lekarzy': {
     dzial: 'analizy',
     tytul: 'Symulator podaży lekarzy',

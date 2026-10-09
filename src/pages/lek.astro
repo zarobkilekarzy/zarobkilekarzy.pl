@@ -1,0 +1,2209 @@
+---
+// Moduł egzaminacyjny LEK na jawnej bazie pytań CEM (z odpowiedziami i statystykami
+// zdających). Całość działa w przeglądarce: indeks sesji jest wpisany w HTML w buildzie,
+// a pytania wybranej sesji przychodzą jako statyczny JSON z /lek/dane/ —
+// bez Functions. Postęp i notatki w localStorage (tylko na urządzeniu czytelnika).
+// Jedyny zapis na serwer: anonimowy wynik ukończonego testu → functions/api/egzamin.js (D1).
+// Dane: src/data/egzamin-lek/ (normalizacja: research/narzedzia/cem_lek_normalizuj.py).
+// Zasady egzaminu: Dz.U. 2021 poz. 828 — 4 godziny (§ 10 ust. 5), unieważnione pytanie
+// obniża maksimum punktów (§ 16 ust. 2); próg 56% maksimum (art. 14f ustawy).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Aktualizacja from '../components/Aktualizacja.astro';
+import indeks from '../data/egzamin-lek/index.json';
+
+// Dwa egzaminy w jednym module: LEK (lekarski) i LDEK (lekarsko-dentystyczny). Markup
+// startowy renderujemy dla LEK; przełącznik w przeglądarce przebudowuje go z data-typy.
+const typy = indeks.typy;
+const sesje = typy.LEK.sesje;
+const najnowsza = sesje[0];
+const fmt = (n: number) => n.toLocaleString('pl-PL');
+const lacznie = sesje.reduce((s, x) => s + x.n, 0);
+const dziedziny = typy.LEK.dziedziny;
+// Pasek „co jest w bazie modułu” — liczony z indeksu w buildzie, rośnie z kolejnymi sesjami.
+const uniewaznione = sesje.reduce((a, x) => a + x.x, 0);
+const zakresSesji = sesje.length > 1 ? `${sesje[sesje.length - 1].nazwa} – ${sesje[0].nazwa}` : sesje[0].nazwa;
+const formaSesji = (n: number) => (n === 1 ? 'sesja' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'sesje' : 'sesji');
+// „Z jawnej bazy” vs „nowe” — tylko sesje, dla których normalizator mógł to ustalić
+// (baza PDF starsza od sesji). Średnia ważona liczbą pytań.
+const zPochodzeniem = sesje.flatMap((s) => ('bazaVsNowe' in s && s.bazaVsNowe ? [{ nazwa: s.nazwa, ...s.bazaVsNowe }] : []));
+const srednia = (k: 'zBazy' | 'nowe') => {
+  const n = zPochodzeniem.reduce((a, x) => a + x[k].n, 0);
+  return { n, tr: n ? zPochodzeniem.reduce((a, x) => a + x[k].n * (x[k].tr ?? 0), 0) / n : 0 };
+};
+const zBazy = srednia('zBazy');
+const nowe = srednia('nowe');
+const proc = (x: number) => (x * 100).toLocaleString('pl-PL', { maximumFractionDigits: 1 });
+
+// Gotowy prompt dla agenta AI — ten sam interfejs co window.lek / WebMCP w skrypcie poniżej.
+// Przy zmianie API (nazwy funkcji, pola) aktualizuj OBA miejsca.
+const promptAgenta = `Rozwiąż Lekarski Egzamin Końcowy (LEK) na stronie ${new URL('/lek/', Astro.site)} — prawdziwe pytania z jawnej bazy Centrum Egzaminów Medycznych.
+
+Jak korzystać:
+1. Otwórz stronę w przeglądarce. Strona udostępnia obiekt window.lek — wywołuj go, wykonując JavaScript w karcie (funkcje oznaczone „await” są asynchroniczne). W przeglądarkach z WebMCP te same funkcje są dostępne jako narzędzia lek_*.
+2. Rozpocznij: await lek.rozpocznij('egzamin') — cała sesja: 200 pytań, próg 56%. Szybciej: lek.rozpocznij('szybki') — 20 losowych pytań. Lista sesji: lek.sesje(); dziedziny: lek.dziedziny(). Egzamin lekarsko-dentystyczny (LDEK): sesje z prefiksem, np. await lek.rozpocznij('egzamin', 'ldek-20262'); jego dziedziny: lek.dziedziny('LDEK'). Pełny egzamin tylko z sesji oznaczonej jako kompletna.
+3. Pobieraj pytania partiami: lek.pytania(1, 25) zwraca tablicę { nr, tresc, warianty: { A…E }, dziedzina, … }. Pojedynczo: lek.pytanie(nr).
+4. Odpowiadaj partiami: lek.odpowiedzi({ 1: 'C', 2: 'A', … }) albo pojedynczo lek.odpowiedz('C', nr). Odpowiedzi możesz zmieniać do zakończenia. Pytania unieważnione przez CEM pomiń — nie liczą się do wyniku.
+5. Sprawdź braki: lek.bezOdpowiedzi(). Na końcu: lek.zakoncz() — zwraca punkty, procent, próg, wynik zdany/niezdany, wynik według dziedzin i porównanie z przeciętnym zdającym.
+
+Zasady uczciwego sprawdzianu: odpowiadaj wyłącznie na podstawie własnej wiedzy medycznej. Nie pobieraj plików z danymi strony (/lek/dane/…), nie czytaj kodu strony i nie szukaj odpowiedzi w internecie — klucz jest publiczny, więc każde z tych działań unieważnia wynik. W trybie egzaminu prawidłowe odpowiedzi poznasz dopiero po lek.zakoncz().
+
+Na koniec podaj: wynik (punkty / maksimum, procent), czy przekroczono próg 56%, wynik według dziedzin oraz 3 dziedziny z najsłabszym wynikiem.`;
+---
+
+<BaseLayout
+  title="Egzamin LEK online — jawna baza pytań z odpowiedziami — zarobkilekarzy.pl"
+  description="Rozwiąż prawdziwy Lekarski Egzamin Końcowy: 200 pytań z jawnej bazy CEM, 4 godziny, próg 56%. Po każdej odpowiedzi zobaczysz, jak odpowiadali zdający."
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/dane/">Dane</a> · Dostęp do zawodu</p>
+      <h1>Egzamin LEK — sprawdź się na prawdziwych pytaniach</h1>
+      <Aktualizacja />
+      <p class="lead">
+        Lekarski Egzamin Końcowy to <strong>200 pytań jednokrotnego wyboru</strong>, <strong>4 godziny</strong> i próg <strong>56%</strong>. Jego pytania są jawne: Centrum Egzaminów Medycznych publikuje je po każdej sesji razem z prawidłowymi odpowiedziami i statystyką odpowiedzi zdających. Tu możesz rozwiązać cały egzamin albo uczyć się pytanie po pytaniu — i zobaczyć, jak na każde pytanie odpowiadali lekarze, którzy do niego podeszli.
+      </p>
+    </div>
+  </section>
+
+  <section class="section section-alt lek-sekcja">
+    <div class="container">
+      <div id="lek" class="lek" data-typy={JSON.stringify(typy)}>
+        <noscript><p class="lek-noscript">Moduł egzaminacyjny działa w przeglądarce i wymaga JavaScriptu.</p></noscript>
+
+        <!-- EKRAN 1: start -->
+        <div class="lek-ekran" data-ekran="start">
+          <fieldset class="lek-typ">
+            <legend class="lek-etykieta">Egzamin</legend>
+            <div class="lek-typ-opcje">
+              <label>
+                <input type="radio" name="typ" value="LEK" checked />
+                <span class="lek-typ-karta"><i class="kropka" aria-hidden="true"></i><span><strong>LEK</strong><small>Lekarski Egzamin Końcowy</small></span></span>
+              </label>
+              <label>
+                <input type="radio" name="typ" value="LDEK" />
+                <span class="lek-typ-karta"><i class="kropka" aria-hidden="true"></i><span><strong>LDEK</strong><small>Lekarsko-Dentystyczny Egzamin Końcowy</small></span></span>
+              </label>
+            </div>
+          </fieldset>
+          <dl class="lek-baza" aria-label="Zawartość bazy pytań">
+            <div><dt>pytań z prawdziwych egzaminów</dt><dd data-pole="pytan">{fmt(lacznie)}</dd></div>
+            <div><dt>z prawidłową odpowiedzią i statystyką zdających</dt><dd data-pole="zodp">{fmt(lacznie - uniewaznione)}</dd></div>
+            <div><dt data-pole="sesjeOpis">{formaSesji(sesje.length)} LEK · {zakresSesji}</dt><dd data-pole="sesji">{sesje.length}</dd></div>
+            <div><dt>dziedzin</dt><dd data-pole="dziedzin">{dziedziny.length}</dd></div>
+          </dl>
+
+          <div class="lek-powtorka" hidden>
+            <span class="lek-powtorka-ikona" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg></span>
+            <div class="lek-powtorka-tekst">
+              <p class="lek-powtorka-tytul">Twoje słabe pytania: <strong data-pole="slabe">0</strong></p>
+              <p class="lek-powtorka-opis">Pytania z błędną odpowiedzią w Twoich testach. Pytanie znika z listy po dwóch poprawnych odpowiedziach z rzędu.</p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" data-akcja="powtorka">Powtórz</button>
+          </div>
+          <div class="lek-wznow" hidden>
+            <div>
+              <p class="lek-wznow-tytul">Masz niedokończony test</p>
+              <p class="lek-wznow-opis"></p>
+            </div>
+            <div class="lek-wznow-akcje">
+              <button type="button" class="btn btn-primary btn-sm" data-akcja="wznow">Wróć do testu</button>
+              <button type="button" class="btn btn-sm" data-akcja="porzuc">Porzuć</button>
+            </div>
+          </div>
+
+          <fieldset class="lek-tryby">
+            <legend class="lek-etykieta">1. Wybierz tryb</legend>
+            <div class="lek-tryby-siatka">
+            <label class="lek-tryb">
+              <input type="radio" name="tryb" value="egzamin" checked />
+              <span class="lek-tryb-karta">
+                <span class="lek-tryb-ikona" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2.5M9.5 2.5h5"></path></svg>
+                </span>
+                <span class="lek-tryb-nazwa">Egzamin</span>
+                <span class="lek-tryb-opis">Cała sesja, odliczanie czasu, wynik dopiero na końcu — jak w sali egzaminacyjnej.</span>
+                <span class="lek-tryb-meta">200 pytań · 4 h · próg 56%</span>
+              </span>
+            </label>
+            <label class="lek-tryb">
+              <input type="radio" name="tryb" value="nauka" />
+              <span class="lek-tryb-karta">
+                <span class="lek-tryb-ikona" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M3 6.5C5.5 5 9 5 12 7c3-2 6.5-2 9-.5V19c-2.5-1.5-6-1.5-9 .5-3-2-6.5-2-9-.5z"></path><path d="M12 7v12.5"></path></svg>
+                </span>
+                <span class="lek-tryb-nazwa">Nauka</span>
+                <span class="lek-tryb-opis">Bez limitu czasu. Po każdej odpowiedzi od razu widzisz prawidłową i to, jak odpowiadali zdający.</span>
+                <span class="lek-tryb-meta">bez limitu · natychmiastowa odpowiedź</span>
+              </span>
+            </label>
+            <label class="lek-tryb">
+              <input type="radio" name="tryb" value="szybki" />
+              <span class="lek-tryb-karta">
+                <span class="lek-tryb-ikona" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg>
+                </span>
+                <span class="lek-tryb-nazwa">Szybki test</span>
+                <span class="lek-tryb-opis">20 losowych pytań w tempie egzaminu. Dobre na przerwę na kawę.</span>
+                <span class="lek-tryb-meta">20 pytań · 24 min</span>
+              </span>
+            </label>
+            </div>
+          </fieldset>
+
+          <div class="lek-wybor">
+            <label class="lek-etykieta" for="lek-sesja">2. Wybierz sesję</label>
+            <div class="lek-select">
+              <select id="lek-sesja">
+                {sesje.map((s, i) => (
+                  <option value={s.sesja} selected={i === 0}>LEK {s.nazwa} · {s.pelna ? `${s.n} pytań` : `niepełna, ${s.n} pytań`}</option>
+                ))}
+                {sesje.length > 1 && <option value="*">Wszystkie sesje · {fmt(lacznie)} pytań</option>}
+              </select>
+            </div>
+            <label class="lek-przelacznik">
+              <input type="checkbox" id="lek-tasuj" />
+              <span>Losowa kolejność pytań</span>
+            </label>
+          </div>
+
+          <fieldset class="lek-zakres" hidden>
+            <legend class="lek-etykieta">3. Zakres <span class="lek-opcjonalne">— opcjonalnie, domyślnie wszystkie dziedziny</span></legend>
+            <div class="lek-chipy" role="group" aria-label="Dziedziny">
+              {dziedziny.map((d) => (
+                <label class="lek-chip"><input type="checkbox" name="dziedzina" value={d.id} /><span>{d.nazwa}</span></label>
+              ))}
+            </div>
+            <div class="lek-segment" role="radiogroup" aria-label="Pochodzenie pytań">
+              <label><input type="radio" name="pochodzenie" value="" checked /><span>Wszystkie pytania</span></label>
+              <label><input type="radio" name="pochodzenie" value="1" /><span>Tylko z jawnej bazy</span></label>
+              <label><input type="radio" name="pochodzenie" value="0" /><span>Tylko nowe</span></label>
+            </div>
+            <p class="lek-zakres-info"></p>
+          </fieldset>
+
+          <div class="lek-instrukcja">
+            <p>
+              <strong>Każdy test kończy się szczegółowym podsumowaniem:</strong> wynik na tle progu 56% i przeciętnego zdającego, wynik według dziedzin, przegląd wszystkich odpowiedzi ze statystyką sali i Twoimi notatkami oraz porównanie z innymi użytkownikami strony.
+            </p>
+            <p>
+              Do tego porównania zapisujemy <strong>w pełni anonimowo</strong> sam wynik ukończonego testu — sesję, tryb, liczbę punktów i czas. Bez adresu IP, ciasteczek, identyfikatorów i bez Twoich odpowiedzi; odpowiedzi, postęp i notatki zostają w tej przeglądarce. <a href="/prywatnosc/#egzamin-lek">Szczegóły</a>.
+            </p>
+          </div>
+
+          <div class="lek-start-stopka">
+            <button type="button" class="btn btn-primary lek-start" data-akcja="start">
+              Rozpocznij
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+            </button>
+            <button type="button" class="btn lek-do-bazy" data-akcja="baza">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+              Przeglądaj bazę pytań
+            </button>
+            <p class="lek-skroty">Skróty: <kbd>A</kbd>–<kbd>E</kbd> lub <kbd>1</kbd>–<kbd>5</kbd> wybór, <kbd>→</kbd> dalej, <kbd>←</kbd> wstecz, <kbd>F</kbd> oznacz, <kbd>N</kbd> notatka, <kbd>P</kbd> pauza.</p>
+          </div>
+          <p class="lek-blad" role="alert" hidden></p>
+
+          <section class="lek-historia" hidden aria-labelledby="lek-hist-tytul">
+            <div class="lek-spol-glowa">
+              <h3 id="lek-hist-tytul" data-anchor="off">Twoje wyniki</h3>
+              <button type="button" class="lek-link" data-akcja="wyczysc-historie">Wyczyść historię</button>
+            </div>
+            <div class="lek-hist-tresc">
+              <figure class="lek-hist-wykres">
+                <div class="lek-hist-svg"></div>
+                <div class="lek-hist-dymek" role="status" hidden></div>
+                <figcaption class="lek-hist-podpis"></figcaption>
+              </figure>
+              <div class="lek-hist-dz">
+                <p class="lek-hist-etyk">Najsłabsze dziedziny <span>(średnio ze wszystkich podejść)</span></p>
+                <ol></ol>
+              </div>
+            </div>
+            <details class="lek-hist-tabela">
+              <summary>Wszystkie wyniki jako tabela</summary>
+              <div class="lek-tabela"><table><thead><tr><th scope="col">Data</th><th scope="col">Test</th><th scope="col">Wynik</th><th scope="col">Czas</th></tr></thead><tbody></tbody></table></div>
+            </details>
+            <p class="lek-hist-info">Historia zostaje tylko w tej przeglądarce.</p>
+          </section>
+
+          <details class="lek-agent">
+            <summary>
+              <span class="lek-agent-ikona" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="3"></rect><path d="M12 7V4M9 12h.01M15 12h.01M9.5 15.5h5"></path></svg></span>
+              <span><strong>Sprawdź swojego agenta AI</strong><span class="lek-agent-pod">Gotowy prompt — agent rozwiąże test programistycznie przez <code>window.lek</code> lub WebMCP</span></span>
+            </summary>
+            <div class="lek-agent-tresc">
+              <p>Skopiuj prompt do agenta, który potrafi sterować przeglądarką (np. wykonywać JavaScript w karcie). Testy z udziałem agenta nie trafiają do statystyk użytkowników.</p>
+              <div class="lek-agent-prompt">
+                <button type="button" class="btn btn-sm lek-kopiuj" data-akcja="kopiuj-prompt">Kopiuj prompt</button>
+                <pre id="lek-prompt" tabindex="0">{promptAgenta}</pre>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- EKRAN 2: pytanie -->
+        <div class="lek-ekran" data-ekran="pytanie" hidden>
+          <div class="lek-pasek">
+            <div class="lek-pasek-l">
+              <span class="lek-tryb-chip"></span>
+              <span class="lek-licznik"><strong class="lek-nr-biez">1</strong> / <span class="lek-nr-max">200</span></span>
+            </div>
+            <div class="lek-pasek-p">
+              <span class="lek-wynik-na-zywo" hidden></span>
+              <span class="lek-zegar" hidden aria-live="off">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2.5"></path></svg>
+                <span class="lek-zegar-czas">4:00:00</span>
+              </span>
+              <button type="button" class="lek-ikona-btn" data-akcja="pauza" aria-pressed="false" data-tip="Wstrzymaj test (P)" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5v14M15 5v14"></path></svg>
+                <span class="sr-only">Wstrzymaj test</span>
+              </button>
+              <button type="button" class="lek-ikona-btn lek-fs" data-akcja="pelny-ekran" aria-pressed="false" data-tip="Pełny ekran" hidden>
+                <svg class="fs-wejdz" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"></path></svg>
+                <svg class="fs-wyjdz" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"></path></svg>
+                <span class="sr-only">Pełny ekran</span>
+              </button>
+              <button type="button" class="lek-ikona-btn" data-akcja="mapa" aria-expanded="false" aria-controls="lek-mapa" data-tip="Mapa pytań — skocz do dowolnego pytania">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+                <span class="sr-only">Mapa pytań</span>
+              </button>
+              <button type="button" class="btn btn-sm lek-zakoncz" data-akcja="zakoncz">Zakończ</button>
+            </div>
+          </div>
+          <div class="lek-postep" aria-hidden="true"><span class="lek-postep-wypelnienie"></span></div>
+
+          <div id="lek-mapa" class="lek-mapa" hidden>
+            <div class="lek-mapa-legenda">
+              <span><i class="lm-odp"></i>odpowiedziane</span>
+              <span><i class="lm-flaga"></i>oznaczone</span>
+              <span class="lek-tylko-nauka"><i class="lm-ok"></i>dobrze</span>
+              <span class="lek-tylko-nauka"><i class="lm-zle"></i>źle</span>
+            </div>
+            <div class="lek-mapa-siatka"></div>
+          </div>
+
+          <div class="lek-pauza" role="status" hidden>
+            <span class="lek-pauza-ikona" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"></path></svg></span>
+            <p class="lek-pauza-tytul">Test wstrzymany</p>
+            <p class="lek-pauza-opis">Zegar stoi, a pytanie jest zasłonięte. Na prawdziwym LEK nie ma przerw — pauza jest tylko tutaj.</p>
+            <button type="button" class="btn btn-primary" data-akcja="pauza">Wznów test</button>
+          </div>
+          <article class="lek-karta" aria-labelledby="lek-tresc">
+            <header class="lek-karta-glowa">
+              <span class="lek-zrodlo"></span>
+              <span class="lek-karta-akcje">
+                <button type="button" class="lek-flaga-btn lek-notatka-btn" data-akcja="notatka" aria-expanded="false" aria-controls="lek-notatka" data-tip="Twoja notatka do pytania — zobaczysz ją w podsumowaniu (N)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg>
+                  <span>Notatka</span>
+                </button>
+                <button type="button" class="lek-flaga-btn" data-akcja="flaga" aria-pressed="false" data-tip="Oznacz, żeby wrócić do pytania przed końcem — widać to na mapie (F)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4h11l-1.5 4L16 12H5"></path></svg>
+                  <span>Oznacz</span>
+                </button>
+              </span>
+            </header>
+            <div class="lek-ostrzezenie" hidden></div>
+            <div id="lek-tresc" class="lek-tresc" tabindex="-1"></div>
+            <ol class="lek-warianty" role="list"></ol>
+            <div class="lek-feedback" aria-live="polite"></div>
+            <div id="lek-notatka" class="lek-notatka" hidden>
+              <label for="lek-notatka-pole">Twoja notatka do tego pytania</label>
+              <textarea id="lek-notatka-pole" rows="3" maxlength="2000" placeholder="Np. czym różnią się warianty, co sprawdzić w podręczniku…"></textarea>
+              <p class="lek-notatka-info">Zapisuje się sama i zostaje tylko w tej przeglądarce. Zobaczysz ją w podsumowaniu i przy tym pytaniu w kolejnych testach.</p>
+            </div>
+          </article>
+
+          <div class="lek-nawigacja">
+            <button type="button" class="btn lek-wstecz" data-akcja="wstecz">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+              Poprzednie
+            </button>
+            <button type="button" class="btn btn-primary lek-dalej" data-akcja="dalej">
+              <span>Następne</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- EKRAN 3: wynik -->
+        <div class="lek-ekran" data-ekran="wynik" hidden>
+          <div class="lek-wynik-glowa">
+            <div class="lek-pierscien" aria-hidden="true">
+              <svg viewBox="0 0 120 120">
+                <circle class="lek-pierscien-tlo" cx="60" cy="60" r="52"></circle>
+                <circle class="lek-pierscien-prog" cx="60" cy="60" r="52"></circle>
+                <circle class="lek-pierscien-wynik" cx="60" cy="60" r="52"></circle>
+              </svg>
+              <div class="lek-pierscien-srodek">
+                <span class="lek-wynik-proc">0%</span>
+                <span class="lek-wynik-pkt"></span>
+              </div>
+            </div>
+            <div class="lek-wynik-opis">
+              <p class="lek-werdykt"></p>
+              <h2 class="lek-wynik-tytul" tabindex="-1" data-anchor="off"></h2>
+              <dl class="lek-statystyki"></dl>
+            </div>
+          </div>
+          <p class="lek-wynik-uwaga"></p>
+
+          <section class="lek-dz" hidden aria-labelledby="lek-dz-tytul">
+            <div class="lek-spol-glowa">
+              <h3 id="lek-dz-tytul" data-anchor="off">Wynik według dziedzin</h3>
+              <span class="lek-dz-legenda"><i class="ty"></i>Ty <i class="sala"></i>przeciętny zdający</span>
+            </div>
+            <div class="lek-dz-lista"></div>
+          </section>
+
+          <section class="lek-udost" aria-labelledby="lek-udost-tytul">
+            <div class="lek-spol-glowa"><h3 id="lek-udost-tytul" data-anchor="off">Udostępnij wynik</h3></div>
+            <div class="lek-udost-tresc">
+              <img class="lek-udost-podglad" alt="Obrazek z Twoim wynikiem" width="600" height="315" hidden />
+              <div class="lek-udost-akcje">
+                <div class="lek-udost-social">
+                  <a class="btn lek-udost-x" href="https://x.com/" target="_blank" rel="noopener noreferrer">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.66l-5.22-6.82-5.97 6.82H1.66l7.73-8.84L1.25 2.25h6.83l4.71 6.23 5.45-6.23zm-1.16 17.52h1.83L7.01 4.13H5.05l12.03 15.64z"></path></svg>
+                    Udostępnij na X
+                  </a>
+                  <a class="btn lek-udost-fb" href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.9 3.78-3.9 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.78l-.44 2.9h-2.34V22c4.78-.76 8.44-4.92 8.44-9.94z"></path></svg>
+                    Facebook
+                  </a>
+                </div>
+                <button type="button" class="btn btn-primary" data-akcja="udostepnij" hidden>Udostępnij…</button>
+                <button type="button" class="btn" data-akcja="pobierz-obrazek">Pobierz obrazek</button>
+                <button type="button" class="btn" data-akcja="kopiuj-wynik">Kopiuj tekst</button>
+                <p class="lek-udost-info">Obrazek powstaje w Twojej przeglądarce i pokazuje tylko wynik — bez żadnych danych o Tobie. X i Facebook nie pozwalają dołączyć go linkiem — pobierz go i dodaj do posta. Na X wpis zawiera Twój wynik, na Facebooku — link do testu.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="lek-spol" hidden aria-labelledby="lek-spol-tytul">
+            <div class="lek-spol-glowa">
+              <h3 id="lek-spol-tytul" data-anchor="off">Na tle użytkowników strony</h3>
+              <span class="lek-spol-n"></span>
+            </div>
+            <div class="lek-spol-tresc">
+              <dl class="lek-spol-liczby"></dl>
+              <div class="lek-histogram" role="img"></div>
+            </div>
+            <p class="lek-spol-info"></p>
+          </section>
+          <div class="lek-ts" aria-hidden="true"></div>
+
+          <div class="lek-wynik-akcje">
+            <button type="button" class="btn btn-primary" data-akcja="bledne">Przećwicz błędne</button>
+            <button type="button" class="btn" data-akcja="nowy">Nowy test</button>
+            <button type="button" class="btn" data-akcja="baza">Przeglądaj bazę pytań</button>
+          </div>
+
+          <div class="lek-przeglad">
+            <div class="lek-przeglad-glowa">
+              <h3 data-anchor="off">Przegląd odpowiedzi</h3>
+              <div class="lek-filtry" role="group" aria-label="Filtruj pytania">
+                <button type="button" class="lek-filtr" data-filtr="wszystkie" aria-pressed="true">Wszystkie</button>
+                <button type="button" class="lek-filtr" data-filtr="zle" aria-pressed="false">Błędne</button>
+                <button type="button" class="lek-filtr" data-filtr="puste" aria-pressed="false">Bez odpowiedzi</button>
+                <button type="button" class="lek-filtr" data-filtr="flagi" aria-pressed="false">Oznaczone</button>
+                <button type="button" class="lek-filtr" data-filtr="notatki" aria-pressed="false">Z notatką</button>
+              </div>
+            </div>
+            <label class="lek-szukaj">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+              <span class="sr-only">Szukaj w pytaniach testu</span>
+              <input type="search" id="lek-przeglad-szukaj" placeholder="Szukaj w treści pytań i odpowiedziach…" autocomplete="off" />
+            </label>
+            <ol class="lek-przeglad-lista" role="list"></ol>
+          </div>
+        </div>
+
+        <!-- EKRAN 4: baza pytań (przeglądarka z wyszukiwaniem i odpowiedziami) -->
+        <div class="lek-ekran" data-ekran="baza" hidden>
+          <div class="lek-baza-glowa">
+            <button type="button" class="btn btn-sm" data-akcja="wroc">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+              Wróć
+            </button>
+            <h2 data-anchor="off" tabindex="-1">Baza pytań</h2>
+          </div>
+          <label class="lek-szukaj lek-szukaj-duzy">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <span class="sr-only">Szukaj w bazie pytań</span>
+            <input type="search" id="lek-baza-szukaj" placeholder="Szukaj w treści i odpowiedziach, np. klozapina, Helicobacter…" autocomplete="off" />
+          </label>
+          <div class="lek-baza-filtry">
+            <div class="lek-select lek-select-maly">
+              <label class="sr-only" for="lek-baza-sesja">Sesja</label>
+              <select id="lek-baza-sesja">
+                <option value="">Wszystkie sesje</option>
+                {sesje.map((s) => <option value={s.sesja}>LEK {s.nazwa}</option>)}
+              </select>
+            </div>
+            <div class="lek-select lek-select-maly">
+              <label class="sr-only" for="lek-baza-dziedzina">Dziedzina</label>
+              <select id="lek-baza-dziedzina">
+                <option value="">Wszystkie dziedziny</option>
+                {dziedziny.map((d) => <option value={d.id}>{d.nazwa}</option>)}
+              </select>
+            </div>
+            <div class="lek-select lek-select-maly">
+              <label class="sr-only" for="lek-baza-sort">Kolejność</label>
+              <select id="lek-baza-sort">
+                <option value="">Kolejność egzaminu</option>
+                <option value="trudne">Najtrudniejsze najpierw</option>
+                <option value="latwe">Najłatwiejsze najpierw</option>
+              </select>
+            </div>
+            <label class="lek-przelacznik"><input type="checkbox" id="lek-baza-notatki" /><span>Tylko z notatką</span></label>
+          </div>
+          <p class="lek-baza-licznik" aria-live="polite"></p>
+          <ol class="lek-przeglad-lista lek-baza-lista" role="list"></ol>
+          <nav class="lek-paginacja" aria-label="Strony wyników" hidden></nav>
+        </div>
+
+        <dialog class="lek-dialog" aria-labelledby="lek-dialog-tytul">
+          <h3 id="lek-dialog-tytul" data-anchor="off">Zakończyć test?</h3>
+          <p class="lek-dialog-tresc"></p>
+          <div class="lek-dialog-akcje">
+            <button type="button" class="btn" data-akcja="dialog-anuluj">Wróć do pytań</button>
+            <button type="button" class="btn btn-primary" data-akcja="dialog-ok">Zakończ i pokaż wynik</button>
+          </div>
+        </dialog>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="lek-kontekst">
+    <div class="container prose">
+      <h2>Dlaczego te pytania w ogóle są jawne</h2>
+      <p>
+        Ustawa o zawodach lekarza nakazuje Centrum Egzaminów Medycznych publikować pytania z LEK <strong>wraz z prawidłowymi odpowiedziami</strong> po ich wykorzystaniu na egzaminie (art. 14c ust. 5). Z tej jawnej bazy pochodzi <strong>70% pytań</strong> każdej kolejnej sesji, a 30% to pytania nowe. Nie było tak zawsze — CEM latami nie ujawniał pytań, a jawność przyniósł dopiero spór sądowy zakończony wyrokiem Naczelnego Sądu Administracyjnego z <strong>21 maja 2020 r.</strong> (I OSK 2466/19), wygranym przez organizację strażniczą.
+      </p>
+      <p>
+        Jawna baza ma dwie strony. Jako <strong>próg wejścia do zawodu</strong> egzamin zyskuje: wszyscy przygotowują się z tych samych, publicznych materiałów, a każdą odpowiedź i jej statystykę może sprawdzić każdy. Słabiej sprawdza się natomiast jako <strong>ranking</strong> do rezydentur — gdy duża część pytań jest znana z góry, wyniki się spłaszczają i wielu zdających ma identyczną liczbę punktów. Na ten argument powołuje się projekt nowelizacji z czerwca 2026 r., który przewiduje <strong>koniec jawnej bazy pytań</strong>. To na razie projekt, nie obowiązujące prawo.
+      </p>
+      {zPochodzeniem.length > 0 && (
+        <>
+          <p>
+            Ile daje znajomość jawnej bazy, widać w statystykach CEM. Porównaliśmy treść pytań z sesji z bazą opublikowaną przed egzaminem: pytania, które w niej były, zdający rozwiązywali <strong>znacznie częściej</strong> niż pytania nowe.
+          </p>
+          <div class="lek-tabela">
+            <table>
+              <thead><tr><th scope="col">Pytania sesji {zPochodzeniem.map((x) => x.nazwa).join(', ')}</th><th scope="col">Liczba</th><th scope="col">Średni odsetek poprawnych odpowiedzi</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">z jawnej bazy CEM</th><td>{zBazy.n}</td><td><strong>{proc(zBazy.tr)}%</strong></td></tr>
+                <tr><th scope="row">nowe</th><td>{nowe.n}</td><td><strong>{proc(nowe.tr)}%</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="source-note">
+            Obliczenia własne: wskaźniki trudności CEM, pytania przypisane do bazy przez porównanie treści z plikami „Baza pytań do LEK” (CEM). {zPochodzeniem.length === 1 ? 'To jedna sesja, a różnica' : 'Różnica'} nie musi wynikać wyłącznie z jawności: nowe pytania mogą być też trudniejsze same w sobie. Pytania unieważnione pominięte.
+          </p>
+        </>
+      )}
+      <div class="callout quiet">
+        <p>
+          <strong>Jak czytać statystyki.</strong> Przy każdym pytaniu podajemy, jaki odsetek zdających wybrał każdą odpowiedź, oraz <strong>wskaźnik trudności</strong> — odsetek poprawnych odpowiedzi na egzaminie (0,9 = pytanie łatwe, 0,3 = bardzo trudne). „Przeciętny zdający” w wyniku to suma tych wskaźników, czyli oczekiwana liczba punktów osoby odpowiadającej jak cała sala. Pytania, które CEM <strong>unieważnił</strong>, nie liczą się do wyniku i obniżają maksimum punktów — tak jak na egzaminie.
+        </p>
+      </div>
+      <p class="source-note">
+        Pytania, odpowiedzi i statystyki: <a href="https://cem.edu.pl/pytcem/eula_lek_p.php" target="_blank" rel="noopener noreferrer">Centrum Egzaminów Medycznych</a> (sesja {najnowsza.nazwa} i wcześniejsze). CEM zastrzega, że treść pytań może nie odpowiadać aktualnej wiedzy medycznej i nie może być podstawą decyzji diagnostyczno-terapeutycznych; pytania zgłoszone w bazie CEM jako niezgodne z aktualną wiedzą oznaczamy. Moduł nie jest powiązany z CEM.
+        Zasady egzaminu: <a href="https://api.sejm.gov.pl/eli/acts/DU/2021/828/text.html" target="_blank" rel="noopener noreferrer">rozporządzenie MZ, Dz.U. 2021 poz. 828</a> (czas, unieważnione pytania);
+        obowiązek publikacji: <a href="https://lexlege.pl/ustawa-o-zawodach-lekarza-i-lekarza-dentysty/art-14c/" target="_blank" rel="noopener noreferrer">art. 14c ustawy o zawodach lekarza</a>;
+        wyrok NSA: <a href="https://siecobywatelska.pl/wazna-wygrana-nsa-pominal-niekonstytucyjne-przepisy-w-sprawie-jawnosci-egzaminow-medycznych/" target="_blank" rel="noopener noreferrer">Sieć Obywatelska Watchdog</a>;
+        projekt likwidacji jawnej bazy: <a href="https://www.gazetaprawna.pl/biznes/zdrowie/artykuly/11262330,lek-2026-koniec-jawnej-bazy-pytan-i-platne-kolejne-podejscia.html" target="_blank" rel="noopener noreferrer">Gazeta Prawna</a>,
+        <a href="https://www.termedia.pl/mz/LEK-i-LDEK-bez-jawnej-bazy-pytan,65929.html" target="_blank" rel="noopener noreferrer">Termedia</a>,
+        <a href="https://politykazdrowotna.com/artykul/koniec-lek-u-ze-znanych-n2327508" target="_blank" rel="noopener noreferrer">Polityka Zdrowotna</a>.
+        Twoje odpowiedzi, postęp i notatki zostają w tej przeglądarce. Do zbiorczych statystyk trafia anonimowo tylko wynik ukończonego egzaminu lub szybkiego testu (sesja, punkty, czas) — bez adresu IP i identyfikatorów; szczegóły w <a href="/prywatnosc/#egzamin-lek">polityce prywatności</a>.
+        Asystenci AI mogą rozwiązywać test przez interfejs <code>window.lek</code> lub narzędzia WebMCP — takie testy nie trafiają do statystyk.
+      </p>
+      <p>Więcej o drodze do zawodu: <a href="/analizy/lejek-ksztalcenia/">lejek kształcenia lekarzy</a> i <a href="/analizy/odsiew-na-medycynie/">odsiew na medycynie</a>.</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style is:global>
+  .lek-sekcja { padding-top: 2.25rem; }
+  /* tabela „z bazy vs nowe” — ten sam wzór co .cmp w /analizy/lejek-ksztalcenia */
+  .lek-tabela { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .lek-tabela table { border-collapse: collapse; width: 100%; min-width: 420px; font-size: 0.94rem; }
+  .lek-tabela thead th { text-align: right; padding: 0.7rem 0.9rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.82rem; border-bottom: 2px solid var(--line); }
+  .lek-tabela thead th:first-child, .lek-tabela tbody th { text-align: left; }
+  .lek-tabela tbody th { padding: 0.7rem 0.9rem; font-weight: 500; }
+  .lek-tabela td { text-align: right; padding: 0.7rem 0.9rem; font-family: var(--font-mono); }
+  .lek-tabela tbody tr + tr { border-top: 1px solid var(--line); }
+  .lek {
+    --lek-r: 14px;
+    --lek-cien: 0 1px 2px rgba(20, 35, 58, .06), 0 8px 28px -12px rgba(20, 35, 58, .18);
+    max-width: 860px; margin: 0 auto;
+    font-variant-numeric: tabular-nums;
+  }
+  .lek [hidden] { display: none !important; }
+  .lek svg { width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .lek-noscript { text-align: center; color: var(--ink-soft); }
+  .lek-ekran { animation: lek-wejscie .28s ease-out; }
+  @keyframes lek-wejscie { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .lek-ekran, .lek-opcja, .lek-pasek-pct span, .lek-pierscien circle, .lek-postep-wypelnienie { animation: none !important; transition: none !important; }
+  }
+
+  /* — start — */
+  .lek-etykieta { display: block; font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 .75rem; padding: 0; }
+  .lek-tryby { border: 0; margin: 0 0 1.75rem; padding: 0; min-width: 0; }
+  .lek-tryby-siatka { display: grid; grid-template-columns: repeat(3, 1fr); gap: .85rem; }
+  .lek-tryb { position: relative; display: flex; cursor: pointer; }
+  .lek-tryb input { position: absolute; opacity: 0; pointer-events: none; }
+  .lek-tryb-karta {
+    display: flex; flex-direction: column; gap: .35rem; width: 100%;
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--lek-r);
+    padding: 1.15rem 1.15rem 1rem; box-shadow: var(--lek-cien);
+    transition: border-color .15s, transform .15s, box-shadow .15s;
+  }
+  .lek-tryb:hover .lek-tryb-karta { border-color: var(--line-2); transform: translateY(-2px); }
+  .lek-tryb input:checked + .lek-tryb-karta { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-50), var(--lek-cien); }
+  .lek-tryb input:focus-visible + .lek-tryb-karta { outline: 3px solid var(--brand-link); outline-offset: 2px; }
+  .lek-tryb-ikona { display: inline-grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 10px; background: var(--brand-50); color: var(--brand-link); margin-bottom: .35rem; }
+  .lek-tryb-ikona svg { width: 1.3rem; height: 1.3rem; }
+  .lek-tryb input:checked + .lek-tryb-karta .lek-tryb-ikona { background: var(--brand); color: #fff; }
+  .lek-tryb-nazwa { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 600; color: var(--ink); }
+  .lek-tryb-opis { font-size: .9rem; line-height: 1.45; color: var(--ink-soft); flex: 1; }
+  .lek-tryb-meta { font-family: var(--font-mono); font-size: .74rem; color: var(--ink-faint); margin-top: .35rem; }
+
+  .lek-wybor { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.5rem; margin-bottom: 1.75rem; }
+  .lek-wybor .lek-etykieta { width: 100%; margin-bottom: 0; }
+  .lek-select { position: relative; flex: 1 1 280px; max-width: 420px; }
+  .lek-select::after { content: ""; position: absolute; right: 1rem; top: 50%; width: .5rem; height: .5rem; border-right: 2px solid var(--ink-soft); border-bottom: 2px solid var(--ink-soft); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+  .lek-select select {
+    appearance: none; width: 100%; font: inherit; font-size: 1rem; color: var(--ink);
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px;
+    padding: .75rem 2.5rem .75rem 1rem; cursor: pointer;
+  }
+  .lek-select select:focus-visible { outline: 3px solid var(--brand-link); outline-offset: 2px; }
+  .lek-przelacznik { display: inline-flex; align-items: center; gap: .6rem; font-size: .95rem; color: var(--ink-soft); cursor: pointer; user-select: none; }
+  .lek-przelacznik input { appearance: none; width: 2.5rem; height: 1.45rem; border-radius: 99px; background: var(--line-2); position: relative; cursor: pointer; transition: background .2s; margin: 0; }
+  .lek-przelacznik input::after { content: ""; position: absolute; top: .2rem; left: .2rem; width: 1.05rem; height: 1.05rem; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .lek-przelacznik input:checked { background: var(--brand); }
+  .lek-przelacznik input:checked::after { transform: translateX(1.05rem); }
+  .lek-przelacznik input:focus-visible { outline: 3px solid var(--brand-link); outline-offset: 2px; }
+
+  .lek-typ { border: 0; padding: 0; margin: 0 0 1.25rem; min-width: 0; }
+  .lek-typ-opcje { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; max-width: 640px; }
+  .lek-typ label { position: relative; display: flex; cursor: pointer; }
+  .lek-typ input { position: absolute; opacity: 0; pointer-events: none; }
+  .lek-typ-karta { display: flex; align-items: center; gap: .75rem; width: 100%; padding: .75rem 1rem; border-radius: 12px; background: var(--surface); border: 1.5px solid var(--line-2); color: var(--ink-soft); transition: border-color .15s, background .15s, box-shadow .15s; }
+  .lek-typ label:hover .lek-typ-karta { border-color: var(--brand); }
+  .lek-typ-karta strong { display: block; font-family: var(--font-mono); font-size: 1.1rem; color: var(--ink); line-height: 1.2; }
+  .lek-typ-karta small { display: block; font-size: .78rem; line-height: 1.3; color: var(--ink-soft); }
+  .lek-typ .kropka { flex-shrink: 0; width: 1.15rem; height: 1.15rem; border-radius: 50%; border: 2px solid var(--line-2); background: var(--surface); position: relative; transition: border-color .15s; }
+  .lek-typ input:checked + .lek-typ-karta { border-color: var(--brand); background: var(--brand-50); box-shadow: 0 0 0 3px var(--brand-50); }
+  .lek-typ input:checked + .lek-typ-karta .kropka { border-color: var(--brand); }
+  .lek-typ input:checked + .lek-typ-karta .kropka::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--brand); }
+  .lek-typ input:focus-visible + .lek-typ-karta { outline: 3px solid var(--brand-link); outline-offset: 2px; }
+  .lek-baza { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 0 1.75rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--lek-r); box-shadow: var(--lek-cien); overflow: hidden; }
+  .lek-baza div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: .2rem; padding: .95rem 1.1rem; }
+  .lek-baza div + div { border-left: 1px solid var(--line); }
+  .lek-baza dd { margin: 0; font-family: var(--font-mono); font-size: 1.55rem; font-weight: 500; color: var(--ink); line-height: 1.1; }
+  .lek-baza dt { font-size: .78rem; line-height: 1.35; color: var(--ink-soft); }
+  .lek-powtorka { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin: -0.75rem 0 1.75rem; padding: .85rem 1.1rem; background: var(--amber-50); border: 1px solid var(--line); border-left: 4px solid var(--amber); border-radius: 10px; }
+  .lek-powtorka-ikona { display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--surface); color: var(--amber); flex-shrink: 0; }
+  .lek-powtorka-tekst { flex: 1; min-width: 14rem; }
+  .lek-powtorka-tytul { margin: 0; font-weight: 600; color: var(--ink); }
+  .lek-powtorka-tytul strong { font-family: var(--font-mono); }
+  .lek-powtorka-opis { margin: .15rem 0 0; font-size: .86rem; color: var(--ink-soft); }
+  .lek-link { font: inherit; font-size: .82rem; color: var(--ink-soft); background: none; border: 0; padding: .2rem; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .lek-link:hover { color: var(--alert); }
+  .lek-historia { margin-top: 1.75rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--lek-r); padding: 1.2rem 1.3rem; box-shadow: var(--lek-cien); }
+  .lek-hist-tresc { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .lek-hist-wykres { position: relative; margin: 0; }
+  .lek-hist-svg svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .lek-hist-svg .siatka { stroke: var(--line); stroke-width: 1; }
+  .lek-hist-svg .prog { stroke: var(--ink-faint); stroke-width: 1.5; stroke-dasharray: 4 4; }
+  .lek-hist-svg .linia { fill: none; stroke: var(--brand-link); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .lek-hist-svg .punkt { fill: var(--brand-link); stroke: var(--surface); stroke-width: 2; }
+  .lek-hist-svg .cel { fill: transparent; cursor: pointer; }
+  .lek-hist-svg text { font-family: var(--font-mono); font-size: 11px; fill: var(--ink-faint); }
+  .lek-hist-svg text.wartosc { fill: var(--ink); font-weight: 600; font-size: 12px; }
+  .lek-hist-dymek { position: absolute; pointer-events: none; transform: translate(-50%, calc(-100% - 10px)); background: var(--panel); color: var(--on-panel); font-size: .78rem; line-height: 1.4; padding: .4rem .6rem; border-radius: 6px; white-space: nowrap; box-shadow: 0 6px 18px -6px rgba(0,0,0,.4); }
+  .lek-hist-podpis { font-size: .78rem; color: var(--ink-faint); margin-top: .35rem; }
+  .lek-hist-etyk { margin: 0 0 .6rem; font-size: .82rem; font-weight: 600; color: var(--ink); }
+  .lek-hist-etyk span { font-weight: 400; color: var(--ink-faint); }
+  .lek-hist-dz ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+  .lek-hist-dz li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem .6rem; font-size: .85rem; color: var(--ink); }
+  .lek-hist-dz li .tor { grid-column: 1 / -1; height: .45rem; background: var(--paper-2); border-radius: 99px; overflow: hidden; }
+  .lek-hist-dz li .tor i { display: block; height: 100%; background: var(--alert); border-radius: 99px; }
+  .lek-hist-dz li b { font-family: var(--font-mono); font-weight: 500; color: var(--ink-soft); }
+  .lek-hist-tabela { margin-top: 1rem; }
+  .lek-hist-tabela summary { cursor: pointer; font-size: .85rem; color: var(--ink-soft); }
+  .lek-hist-info { margin: .6rem 0 0; font-size: .76rem; color: var(--ink-faint); }
+  .lek-udost { margin-top: 1.25rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--lek-r); padding: 1.25rem 1.4rem; box-shadow: var(--lek-cien); }
+  .lek-udost-tresc { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 1.25rem; align-items: center; }
+  .lek-udost-podglad { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); display: block; }
+  .lek-udost-akcje { display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; }
+  .lek-udost-akcje .btn.ok { border-color: var(--ok); color: var(--ok); }
+  .lek-udost-social { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .lek-udost-social .btn { display: inline-flex; align-items: center; gap: .45rem; }
+  .lek-udost-info { margin: .3rem 0 0; font-size: .8rem; color: var(--ink-faint); }
+  .lek-instrukcja { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .9rem 1.1rem; margin-bottom: 1.5rem; }
+  .lek-instrukcja p { margin: 0; font-size: .9rem; line-height: 1.55; color: var(--ink-soft); }
+  .lek-instrukcja p + p { margin-top: .5rem; }
+  .lek-instrukcja strong { color: var(--ink); }
+  .lek-agent { margin-top: 1.75rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--lek-r); }
+  .lek-agent summary { list-style: none; display: flex; align-items: center; gap: .85rem; padding: .9rem 1.1rem; cursor: pointer; }
+  .lek-agent summary::-webkit-details-marker { display: none; }
+  .lek-agent summary::after { content: ""; margin-left: auto; width: .5rem; height: .5rem; border-right: 2px solid var(--ink-soft); border-bottom: 2px solid var(--ink-soft); transform: rotate(45deg); transition: transform .2s; flex-shrink: 0; }
+  .lek-agent[open] summary::after { transform: rotate(225deg); }
+  .lek-agent summary strong { display: block; color: var(--ink); }
+  .lek-agent-pod { display: block; font-size: .84rem; color: var(--ink-soft); }
+  .lek-agent-ikona { display: inline-grid; place-items: center; width: 2.3rem; height: 2.3rem; border-radius: 10px; background: var(--teal-50); color: var(--teal); flex-shrink: 0; }
+  .lek-agent-ikona svg { width: 1.25rem; height: 1.25rem; }
+  .lek-agent-tresc { padding: 0 1.1rem 1.1rem; }
+  .lek-agent-tresc > p { margin: 0 0 .75rem; font-size: .9rem; color: var(--ink-soft); }
+  .lek-agent-prompt { position: relative; }
+  .lek-agent-prompt pre { margin: 0; max-height: 22rem; overflow: auto; white-space: pre-wrap; font-family: var(--font-mono); font-size: .8rem; line-height: 1.55; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 8.5rem 1rem 1rem; }
+  .lek-agent-prompt pre:focus-visible { outline: 3px solid var(--brand-link); outline-offset: 2px; }
+  .lek-kopiuj { position: absolute; top: .6rem; right: .6rem; background: var(--surface); }
+  .lek-kopiuj.ok { border-color: var(--ok); color: var(--ok); }
+  .lek-start-stopka { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem 1.5rem; }
+  .lek-start { display: inline-flex; align-items: center; gap: .6rem; font-size: 1.05rem; padding: .85rem 1.6rem; border-radius: 10px; }
+  .lek-start svg { transition: transform .15s; }
+  .lek-start:hover svg { transform: translateX(3px); }
+  .lek-skroty { margin: 0; font-size: .82rem; color: var(--ink-faint); }
+  .lek kbd { font-family: var(--font-mono); font-size: .75rem; padding: .05rem .35rem; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 4px; background: var(--surface); color: var(--ink-soft); }
+  .lek-blad { margin: 1rem 0 0; color: var(--alert); }
+
+  .lek-wznow {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    background: var(--brand-50); border: 1px solid var(--line); border-left: 4px solid var(--brand);
+    border-radius: 10px; padding: .9rem 1.1rem; margin-bottom: 1.75rem;
+  }
+  .lek-wznow-tytul { margin: 0; font-weight: 600; color: var(--ink); }
+  .lek-wznow-opis { margin: .15rem 0 0; font-size: .9rem; color: var(--ink-soft); }
+  .lek-wznow-akcje { display: flex; gap: .5rem; }
+
+  /* — pasek testu — */
+  .lek-pasek { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; margin-bottom: .6rem; }
+  .lek-pasek-l, .lek-pasek-p { display: flex; align-items: center; gap: .65rem; }
+  .lek-tryb-chip { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--brand-link); background: var(--brand-50); padding: .3rem .6rem; border-radius: 99px; }
+  .lek-licznik { font-family: var(--font-mono); font-size: .95rem; color: var(--ink-soft); }
+  .lek-licznik strong { color: var(--ink); font-weight: 600; }
+  .lek-zegar, .lek-wynik-na-zywo { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--font-mono); font-size: .95rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .35rem .6rem; }
+  .lek-zegar.malo { color: var(--alert); border-color: var(--alert); }
+  .lek-ikona-btn { display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
+  .lek-ikona-btn:hover, .lek-ikona-btn[aria-expanded="true"] { color: var(--brand-link); border-color: var(--brand); }
+  /* Pełny ekran (Fullscreen API na całym module) — tło strony, treść wyśrodkowana, przewijanie wewnątrz. */
+  .lek .fs-wyjdz { display: none; }
+  .lek.pelny .fs-wejdz { display: none; }
+  .lek.pelny .fs-wyjdz { display: block; }
+  .lek:fullscreen { max-width: none; overflow-y: auto; background: var(--bg); padding: 1.5rem max(1rem, calc((100vw - 860px) / 2)) 3rem; }
+  .lek:fullscreen::backdrop { background: var(--bg); }
+  /* Dymki: data-tip na przycisku. Pokazywane po najechaniu i przy nawigacji klawiaturą. */
+  .lek [data-tip] { position: relative; }
+  .lek [data-tip]::after {
+    content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%; transform: translate(-50%, -2px);
+    width: max-content; max-width: 16rem; white-space: normal; text-align: left;
+    background: var(--panel); color: var(--on-panel); font: 500 .76rem/1.35 var(--font-sans); letter-spacing: 0; text-transform: none;
+    padding: .4rem .6rem; border-radius: 6px; box-shadow: 0 6px 18px -6px rgba(0,0,0,.45);
+    opacity: 0; pointer-events: none; transition: opacity .12s ease, transform .12s ease; z-index: 30;
+  }
+  .lek [data-tip]:hover::after, .lek [data-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); transition-delay: .3s; }
+  .lek .lek-karta-akcje [data-tip]::after, .lek .lek-pasek-p [data-tip]::after { left: auto; right: 0; transform: translateY(-2px); }
+  .lek .lek-karta-akcje [data-tip]:hover::after, .lek .lek-karta-akcje [data-tip]:focus-visible::after,
+  .lek .lek-pasek-p [data-tip]:hover::after, .lek .lek-pasek-p [data-tip]:focus-visible::after { transform: none; }
+  @media (hover: none) { .lek [data-tip]::after { display: none; } }
+  .lek-pauza { text-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--lek-r); box-shadow: var(--lek-cien); padding: 2.5rem 1.5rem; }
+  .lek-pauza-ikona { display: inline-grid; place-items: center; width: 3rem; height: 3rem; border-radius: 50%; background: var(--brand-50); color: var(--brand-link); margin-bottom: .75rem; }
+  .lek-pauza-ikona svg { width: 1.4rem; height: 1.4rem; }
+  .lek-pauza-tytul { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 600; color: var(--ink); margin: 0 0 .4rem; }
+  .lek-pauza-opis { color: var(--ink-soft); font-size: .92rem; max-width: 34rem; margin: 0 auto 1.25rem; }
+  .lek.wstrzymany .lek-karta, .lek.wstrzymany .lek-nawigacja, .lek.wstrzymany .lek-mapa { display: none !important; }
+  .lek.wstrzymany .lek-zegar { color: var(--amber); border-color: var(--amber); }
+  [data-akcja="pauza"][aria-pressed="true"] { color: var(--amber); border-color: var(--amber); }
+  .lek-postep { height: 4px; border-radius: 99px; background: var(--line); overflow: hidden; margin-bottom: 1.1rem; }
+  .lek-postep-wypelnienie { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--brand), var(--teal)); border-radius: 99px; transition: width .3s ease; }
+
+  .lek-mapa { background: var(--surface); border: 1px solid var(--line); border-radius: var(--lek-r); padding: 1rem; margin-bottom: 1rem; box-shadow: var(--lek-cien); }
+  .lek-mapa-legenda { display: flex; flex-wrap: wrap; gap: .4rem 1rem; font-size: .78rem; color: var(--ink-soft); margin-bottom: .75rem; }
+  .lek-mapa-legenda i { display: inline-block; width: .7rem; height: .7rem; border-radius: 3px; margin-right: .35rem; vertical-align: -1px; }
+  .lm-odp { background: var(--brand); } .lm-flaga { background: var(--amber); } .lm-ok { background: var(--ok); } .lm-zle { background: var(--alert); }
+  .lek:not(.tryb-nauka) .lek-tylko-nauka { display: none; }
+  .lek-mapa-siatka { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.1rem, 1fr)); gap: .3rem; max-height: 15rem; overflow-y: auto; padding: 2px; }
+  .lek-mapa-siatka button {
+    font-family: var(--font-mono); font-size: .72rem; height: 2rem; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-soft); position: relative;
+  }
+  .lek-mapa-siatka button:hover { border-color: var(--brand); color: var(--ink); }
+  .lek-mapa-siatka .m-odp { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .lek-mapa-siatka .m-ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .lek-mapa-siatka .m-zle { background: var(--alert); border-color: var(--alert); color: #fff; }
+  .lek-mapa-siatka .m-x { text-decoration: line-through; opacity: .6; }
+  .lek-mapa-siatka .m-flaga::after { content: ""; position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 1.5px var(--surface); }
+  .lek-mapa-siatka .m-biez { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+  /* — karta pytania — */
+  .lek-karta { background: var(--surface); border: 1px solid var(--line); border-radius: var(--lek-r); box-shadow: var(--lek-cien); padding: 1.5rem 1.6rem 1.4rem; }
+  .lek-karta-glowa { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+  .lek-zrodlo { font-family: var(--font-mono); font-size: .76rem; color: var(--ink-faint); letter-spacing: .02em; }
+  .lek-flaga-btn { display: inline-flex; align-items: center; gap: .35rem; font: inherit; font-size: .82rem; color: var(--ink-soft); background: none; border: 1px solid transparent; border-radius: 99px; padding: .3rem .7rem; cursor: pointer; }
+  .lek-flaga-btn:hover { border-color: var(--line); }
+  .lek-flaga-btn[aria-pressed="true"] { color: var(--amber); background: var(--amber-50); border-color: var(--amber); }
+  .lek-flaga-btn[aria-pressed="true"] svg { fill: currentColor; }
+  .lek-karta-akcje { display: inline-flex; gap: .25rem; flex-shrink: 0; }
+  .lek-notatka-btn.ma, .lek-notatka-btn[aria-expanded="true"] { color: var(--brand-link); background: var(--brand-50); border-color: var(--brand); }
+  .lek-notatka { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px dashed var(--line-2); animation: lek-wejscie .2s ease-out; }
+  .lek-notatka label { display: block; font-size: .8rem; font-weight: 600; color: var(--ink-soft); margin-bottom: .4rem; }
+  .lek-notatka textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: .95rem; line-height: 1.5; color: var(--ink); background: var(--paper); border: 1.5px solid var(--line); border-radius: 10px; padding: .65rem .8rem; resize: vertical; min-height: 4.5rem; }
+  .lek-notatka textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-50); }
+  .lek-notatka-info { margin: .4rem 0 0; font-size: .76rem; color: var(--ink-faint); }
+  .lek-p-notatka { margin: .9rem 0 0; padding: .7rem .9rem; border-left: 3px solid var(--brand); background: var(--brand-50); border-radius: 0 8px 8px 0; font-size: .92rem; color: var(--ink); white-space: pre-wrap; }
+  .lek-p-notatka::before { content: "Twoja notatka"; display: block; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-link); margin-bottom: .25rem; }
+  .lek-p-ikona { display: inline-flex; color: var(--brand-link); margin-right: .35rem; vertical-align: -2px; }
+  .lek-ostrzezenie { display: flex; gap: .55rem; align-items: flex-start; font-size: .86rem; line-height: 1.45; color: var(--amber); background: var(--amber-50); border-radius: 8px; padding: .6rem .8rem; margin-bottom: 1rem; }
+  .lek-ostrzezenie.x { color: var(--alert); background: var(--alert-50); }
+  .lek-tresc { font-size: 1.12rem; line-height: 1.6; color: var(--ink); margin-bottom: 1.25rem; outline: none; }
+  .lek-tresc p { margin: 0 0 .5rem; }
+  .lek-tresc ol { list-style: none; margin: .5rem 0 .75rem; padding: 0; display: grid; gap: .3rem; }
+  .lek-tresc li { display: grid; grid-template-columns: 2rem 1fr; font-size: 1.02rem; }
+  .lek-tresc li b { font-family: var(--font-mono); font-weight: 500; color: var(--ink-faint); }
+  .lek-tresc .lek-pod { color: var(--ink-soft); font-size: .98rem; margin-top: .5rem; }
+
+  .lek-warianty { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+  .lek-opcja {
+    position: relative; width: 100%; display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: .85rem;
+    text-align: left; font: inherit; font-size: 1rem; line-height: 1.45; color: var(--ink);
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 11px; padding: .8rem 1rem .8rem .8rem;
+    cursor: pointer; overflow: hidden; isolation: isolate;
+    transition: border-color .12s, background .12s, transform .08s;
+  }
+  .lek-opcja:hover:not(:disabled) { border-color: var(--brand); background: var(--brand-50); }
+  .lek-opcja:active:not(:disabled) { transform: scale(.995); }
+  .lek-opcja:focus-visible { outline: 3px solid var(--brand-link); outline-offset: 2px; }
+  .lek-opcja:disabled { cursor: default; }
+  .lek-litera {
+    display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 8px;
+    font-family: var(--font-mono); font-weight: 600; font-size: .95rem; color: var(--ink-soft);
+    background: var(--surface-2); border: 1px solid var(--line); transition: all .12s;
+  }
+  .lek-opcja[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-50); }
+  .lek-opcja[aria-pressed="true"] .lek-litera { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .lek-opcja-pct { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-faint); white-space: nowrap; }
+  .lek-opcja-pct:empty { display: none; }
+  .lek-opcja-pasek { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--paper-2); z-index: -1; transition: width .6s cubic-bezier(.2,.7,.2,1); }
+  .lek-opcja.ok { border-color: var(--ok); background: var(--ok-50); }
+  .lek-opcja.ok .lek-litera { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .lek-opcja.ok .lek-opcja-pasek { background: color-mix(in srgb, var(--ok) 16%, transparent); }
+  .lek-opcja.zle { border-color: var(--alert); background: var(--alert-50); }
+  .lek-opcja.zle .lek-litera { background: var(--alert); border-color: var(--alert); color: #fff; }
+  .lek-opcja.zle .lek-opcja-pasek { background: color-mix(in srgb, var(--alert) 14%, transparent); }
+  .lek-opcja.odkryta:not(.ok):not(.zle) { color: var(--ink-soft); }
+  .lek-opcja.ok .lek-opcja-pct, .lek-opcja.zle .lek-opcja-pct { color: var(--ink); font-weight: 600; }
+  .lek-opcja.potrzasnij { animation: lek-potrzasnij .35s; }
+  @keyframes lek-potrzasnij { 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
+
+  .lek-feedback:empty { display: none; }
+  .lek-feedback { margin-top: 1.1rem; padding: .9rem 1.05rem; border-radius: 10px; background: var(--paper); border: 1px solid var(--line); font-size: .95rem; line-height: 1.5; color: var(--ink-soft); animation: lek-wejscie .25s ease-out; }
+  .lek-feedback strong { color: var(--ink); }
+  .lek-feedback .fb-tytul { display: flex; align-items: center; gap: .45rem; font-weight: 600; font-size: 1.02rem; margin: 0 0 .3rem; }
+  .lek-feedback .fb-tytul.ok { color: var(--ok); }
+  .lek-feedback .fb-tytul.zle { color: var(--alert); }
+  .lek-feedback p { margin: 0; }
+  .lek-trudnosc { display: inline-flex; align-items: center; gap: .4rem; margin-top: .55rem; font-size: .8rem; }
+  .lek-trudnosc-skala { display: inline-flex; gap: 2px; }
+  .lek-trudnosc-skala i { width: .55rem; height: .55rem; border-radius: 2px; background: var(--line-2); }
+  .lek-trudnosc-skala i.on { background: var(--amber); }
+
+  .lek-nawigacja { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.1rem; }
+  .lek-nawigacja .btn { display: inline-flex; align-items: center; gap: .5rem; padding: .75rem 1.2rem; border-radius: 10px; }
+  .lek-nawigacja .btn:disabled { opacity: .45; cursor: default; }
+
+  /* — wynik — */
+  .lek-wynik-glowa { display: grid; grid-template-columns: 190px 1fr; gap: 2rem; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--lek-r); box-shadow: var(--lek-cien); padding: 1.75rem; }
+  .lek-pierscien { position: relative; width: 190px; height: 190px; }
+  .lek-pierscien svg { width: 100%; height: 100%; transform: rotate(-90deg); stroke-width: 10; }
+  .lek-pierscien circle { fill: none; }
+  .lek-pierscien-tlo { stroke: var(--line); }
+  .lek-pierscien-prog { stroke: var(--ink-faint); stroke-width: 12; stroke-dasharray: 1.5 400; stroke-linecap: butt !important; }
+  .lek-pierscien-wynik { stroke: var(--brand); stroke-dasharray: 0 400; transition: stroke-dasharray 1.1s cubic-bezier(.2,.7,.2,1); }
+  .lek.zdany .lek-pierscien-wynik { stroke: var(--ok); }
+  .lek.niezdany .lek-pierscien-wynik { stroke: var(--alert); }
+  .lek-pierscien-srodek { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .lek-wynik-proc { font-family: var(--font-mono); font-size: 2.4rem; font-weight: 500; color: var(--ink); line-height: 1; }
+  .lek-wynik-pkt { font-family: var(--font-mono); font-size: .82rem; color: var(--ink-faint); margin-top: .35rem; }
+  .lek-werdykt { display: inline-block; margin: 0 0 .5rem; font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: .3rem .7rem; border-radius: 99px; }
+  .lek.zdany .lek-werdykt { color: var(--ok); background: var(--ok-50); }
+  .lek.niezdany .lek-werdykt { color: var(--alert); background: var(--alert-50); }
+  .lek-wynik-tytul { margin: 0 0 1rem; font-size: 1.55rem; outline: none; }
+  .lek-statystyki { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem 1.25rem; margin: 0; }
+  .lek-statystyki div { border-left: 2px solid var(--line); padding-left: .75rem; }
+  .lek-statystyki dt { font-size: .76rem; color: var(--ink-soft); margin: 0 0 .15rem; }
+  .lek-statystyki dd { margin: 0; font-family: var(--font-mono); font-size: 1.15rem; color: var(--ink); }
+  .lek-wynik-uwaga { font-size: .85rem; color: var(--ink-faint); margin: .9rem .25rem 0; }
+  .lek-zakres { border: 0; padding: 0; margin: 0 0 1.75rem; min-width: 0; }
+  .lek-opcjonalne { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink-faint); }
+  .lek-chipy { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .8rem; }
+  .lek-chip input, .lek-segment input { position: absolute; opacity: 0; pointer-events: none; }
+  .lek-chip span { display: inline-block; font-size: .86rem; padding: .4rem .8rem; border-radius: 99px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; transition: all .12s; user-select: none; }
+  .lek-chip span:hover { border-color: var(--line-2); color: var(--ink); }
+  .lek-chip input:checked + span { background: var(--brand-50); border-color: var(--brand); color: var(--brand-link); font-weight: 600; }
+  .lek-chip input:focus-visible + span, .lek-segment input:focus-visible + span { outline: 3px solid var(--brand-link); outline-offset: 2px; }
+  .lek-segment { display: inline-flex; flex-wrap: wrap; background: var(--paper-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 2px; }
+  .lek-segment label { position: relative; }
+  .lek-segment span { display: block; font-size: .84rem; padding: .4rem .85rem; border-radius: 7px; color: var(--ink-soft); cursor: pointer; }
+  .lek-segment input:checked + span { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(20,35,58,.12); }
+  .lek-segment.wylaczony { opacity: .5; pointer-events: none; }
+  .lek-zakres-info { margin: .6rem 0 0; font-size: .82rem; color: var(--ink-faint); }
+  .lek-meta { display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+  .lek-meta-chip { font-size: .7rem; font-weight: 600; padding: .15rem .5rem; border-radius: 99px; background: var(--paper-2); color: var(--ink-soft); white-space: nowrap; }
+  .lek-meta-chip.baza { background: var(--teal-50); color: var(--teal); }
+  .lek-meta-chip.nowe { background: var(--amber-50); color: var(--amber); }
+  .lek-dz { margin-top: 1.25rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--lek-r); padding: 1.25rem 1.4rem; box-shadow: var(--lek-cien); }
+  .lek-dz-legenda { display: inline-flex; align-items: center; gap: .4rem; font-size: .76rem; color: var(--ink-soft); }
+  .lek-dz-legenda i { display: inline-block; width: .8rem; height: .5rem; border-radius: 2px; }
+  .lek-dz-legenda i.ty { background: var(--brand); }
+  .lek-dz-legenda i.sala { width: 2px; height: .8rem; background: var(--ink); margin-left: .5rem; }
+  .lek-dz-lista { display: grid; gap: .65rem; }
+  .lek-dz-wiersz { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) 6.5rem; gap: .9rem; align-items: center; font-size: .9rem; }
+  .lek-dz-wiersz.oddziel { margin-top: .5rem; padding-top: .9rem; border-top: 1px dashed var(--line-2); }
+  .lek-dz-nazwa { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lek-dz-tor { position: relative; height: .7rem; background: var(--paper-2); border-radius: 99px; }
+  .lek-dz-ty { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--brand); border-radius: 99px; transition: width .8s cubic-bezier(.2,.7,.2,1); }
+  .lek-dz-wiersz.slabo .lek-dz-ty { background: var(--alert); }
+  .lek-dz-sala { position: absolute; top: -.2rem; bottom: -.2rem; width: 2px; background: var(--ink); border-radius: 1px; }
+  .lek-dz-liczby { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-soft); text-align: right; white-space: nowrap; }
+  .lek-dz-liczby strong { color: var(--ink); font-weight: 600; }
+  .lek-spol { margin-top: 1.25rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--lek-r); padding: 1.25rem 1.4rem; box-shadow: var(--lek-cien); animation: lek-wejscie .3s ease-out; }
+  .lek-spol-glowa { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: .9rem; }
+  .lek-spol-glowa h3 { margin: 0; font-size: 1.1rem; }
+  .lek-spol-n { font-family: var(--font-mono); font-size: .78rem; color: var(--ink-faint); }
+  .lek-spol-tresc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 1.5rem; align-items: end; }
+  .lek-spol-liczby { display: grid; gap: .7rem; margin: 0; }
+  .lek-spol-liczby div { border-left: 2px solid var(--line); padding-left: .75rem; }
+  .lek-spol-liczby dt { font-size: .76rem; color: var(--ink-soft); margin: 0 0 .1rem; }
+  .lek-spol-liczby dd { margin: 0; font-family: var(--font-mono); font-size: 1.1rem; color: var(--ink); }
+  .lek-histogram { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; align-items: end; height: 120px; padding-bottom: 1.3rem; position: relative; border-bottom: 1px solid var(--line); }
+  .lek-histogram .slupek { position: relative; height: var(--h, 0%); min-height: 2px; background: var(--line-2); border-radius: 3px 3px 0 0; transition: height .6s cubic-bezier(.2,.7,.2,1); }
+  .lek-histogram .slupek.zdany { background: color-mix(in srgb, var(--ok) 45%, var(--line-2)); }
+  .lek-histogram .slupek.ty { background: var(--brand); }
+  .lek-histogram .slupek.ty::after { content: "Ty"; position: absolute; top: -1.25rem; left: 50%; transform: translateX(-50%); font-size: .7rem; font-weight: 700; color: var(--brand-link); }
+  .lek-histogram .os { position: absolute; bottom: 0; font-family: var(--font-mono); font-size: .66rem; color: var(--ink-faint); transform: translateY(100%); padding-top: .2rem; }
+  .lek-histogram .prog { position: absolute; top: 0; bottom: 0; left: 56%; border-left: 1.5px dashed var(--ink-faint); }
+  .lek-histogram .prog span { position: absolute; top: -.1rem; left: .25rem; font-size: .66rem; color: var(--ink-faint); white-space: nowrap; }
+  .lek-spol-info { margin: .9rem 0 0; font-size: .8rem; color: var(--ink-faint); }
+  .lek-ts { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .lek-wynik-akcje { display: flex; gap: .65rem; flex-wrap: wrap; margin: 1.25rem 0 2rem; }
+
+  .lek-szukaj { display: flex; align-items: center; gap: .6rem; background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 0 .9rem; margin-bottom: .9rem; color: var(--ink-faint); transition: border-color .15s, box-shadow .15s; }
+  .lek-szukaj:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-50); }
+  .lek-szukaj input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: .95rem; color: var(--ink); padding: .7rem 0; }
+  .lek-szukaj-duzy input { font-size: 1.05rem; padding: .9rem 0; }
+  .lek mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1px; }
+  .lek-do-bazy { display: inline-flex; align-items: center; gap: .5rem; padding: .85rem 1.2rem; border-radius: 10px; }
+  .lek-baza-glowa { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+  .lek-baza-glowa .btn { display: inline-flex; align-items: center; gap: .4rem; }
+  .lek-baza-glowa h2 { margin: 0; font-size: 1.5rem; outline: none; }
+  .lek-baza-filtry { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; margin-bottom: 1rem; }
+  .lek-select-maly { flex: 0 1 auto; min-width: 12rem; max-width: 100%; }
+  .lek-select-maly select { font-size: .9rem; padding: .55rem 2.3rem .55rem .85rem; }
+  .lek-baza-licznik { font-size: .85rem; color: var(--ink-soft); margin: 0 0 .7rem; }
+  .lek-paginacja { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: .3rem; margin-top: 1.25rem; }
+  .lek-paginacja button { font: inherit; font-family: var(--font-mono); font-size: .85rem; min-width: 2.4rem; height: 2.4rem; padding: 0 .7rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: .3rem; }
+  .lek-paginacja button:hover:not(:disabled) { border-color: var(--brand); color: var(--ink); }
+  .lek-paginacja button[aria-current="page"] { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+  .lek-paginacja button:disabled { opacity: .4; cursor: default; }
+  .lek-paginacja button:focus-visible { outline: 3px solid var(--brand-link); outline-offset: 2px; }
+  .lek-paginacja .kropki { color: var(--ink-faint); padding: 0 .2rem; }
+  .lek-paginacja .tekst { font-family: var(--font-sans); }
+  .lek-p-sesja { display: block; font-size: .7rem; color: var(--ink-faint); margin-top: .1rem; white-space: nowrap; }
+  .lek-przeglad-glowa { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: .9rem; }
+  .lek-przeglad-glowa h3 { margin: 0; font-size: 1.2rem; }
+  .lek-filtry { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .lek-filtr { font: inherit; font-size: .84rem; padding: .35rem .8rem; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
+  .lek-filtr[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  .lek-filtr .n { font-family: var(--font-mono); opacity: .7; margin-left: .3rem; }
+  .lek-przeglad-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .45rem; }
+  .lek-przeglad-lista details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .lek-przeglad-lista details[open] { box-shadow: var(--lek-cien); }
+  .lek-przeglad-lista summary { list-style: none; display: grid; grid-template-columns: 2.6rem 1fr auto; gap: .75rem; align-items: center; padding: .7rem .9rem; cursor: pointer; }
+  .lek-przeglad-lista summary::-webkit-details-marker { display: none; }
+  .lek-p-nr { font-family: var(--font-mono); font-size: .8rem; text-align: center; border-radius: 6px; padding: .2rem 0; background: var(--surface-2); color: var(--ink-soft); }
+  .p-ok .lek-p-nr { background: var(--ok-50); color: var(--ok); }
+  .p-zle .lek-p-nr { background: var(--alert-50); color: var(--alert); }
+  .lek-p-tekst { font-size: .93rem; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lek-p-odp { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-faint); white-space: nowrap; }
+  .lek-p-szczegoly { padding: .25rem 1rem 1rem; }
+  .lek-p-szczegoly .lek-tresc { font-size: 1rem; margin-bottom: .9rem; }
+  .lek-p-szczegoly .lek-opcja { font-size: .93rem; padding: .6rem .8rem .6rem .6rem; cursor: default; }
+  .lek-p-szczegoly .lek-litera { width: 1.9rem; height: 1.9rem; }
+  .lek-pusto { text-align: center; color: var(--ink-faint); padding: 1.5rem; }
+
+  .lek-dialog { border: 1px solid var(--line); border-radius: var(--lek-r); background: var(--surface); color: var(--ink); padding: 1.5rem; max-width: 420px; width: calc(100% - 2rem); box-shadow: 0 24px 60px -20px rgba(0,0,0,.45); }
+  .lek-dialog::backdrop { background: rgba(10, 17, 25, .45); backdrop-filter: blur(2px); }
+  .lek-dialog h3 { margin: 0 0 .5rem; }
+  .lek-dialog p { color: var(--ink-soft); margin: 0 0 1.25rem; }
+  .lek-dialog-akcje { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+
+  @media (max-width: 760px) {
+    .lek-tryby-siatka { grid-template-columns: 1fr; }
+    .lek-tryb-karta { display: grid; grid-template-columns: auto 1fr; column-gap: .9rem; row-gap: .2rem; }
+    .lek-tryb-ikona { grid-row: span 3; margin: 0; }
+    .lek-karta { padding: 1.15rem 1rem 1.1rem; }
+    .lek-tresc { font-size: 1.04rem; }
+    .lek-opcja { grid-template-columns: 2rem 1fr; padding: .7rem .8rem .7rem .65rem; }
+    .lek-opcja-pct { grid-column: 2; justify-self: start; }
+    .lek-litera { width: 2rem; height: 2rem; }
+    .lek-wynik-glowa { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 1.4rem 1.1rem; }
+    .lek-statystyki { text-align: left; width: 100%; }
+    .lek-spol-tresc { grid-template-columns: 1fr; }
+    .lek-hist-tresc, .lek-udost-tresc { grid-template-columns: 1fr; }
+    .lek-dz-wiersz { grid-template-columns: minmax(0, 1fr) 5.5rem; row-gap: .3rem; }
+    .lek-dz-tor { grid-column: 1 / -1; grid-row: 2; }
+    .lek-nawigacja .btn { flex: 1; justify-content: center; }
+    .lek-zakoncz { padding-inline: .7rem; }
+    .lek-skroty { display: none; }
+    .lek-baza { grid-template-columns: 1fr 1fr; }
+    .lek-baza div:nth-child(3) { border-left: 0; }
+    .lek-baza div:nth-child(n+3) { border-top: 1px solid var(--line); }
+    .lek-agent-prompt pre { padding-right: 1rem; padding-top: 3.2rem; }
+  }
+</style>
+
+<script>
+  type Tryb = 'egzamin' | 'nauka' | 'szybki' | 'powtorka';
+  interface Pytanie { nr: number; t: string; w: string[]; o: number | null; p: number[] | null; tr: number | null; md: number | null; nz?: boolean; d?: string; b?: 0 | 1 }
+  type Typ = 'LEK' | 'LDEK';
+  interface Sesja { sesja: string; nazwa: string; typ: Typ; n: number; pelna: boolean; nz: number; x: number; v: string; kategorie?: boolean; pochodzenie?: boolean }
+  interface Dziedzina { id: string; nazwa: string; n: number }
+  interface Zakres { d?: string[]; b?: 0 | 1 }
+  interface PytanieZ extends Pytanie { k: string; sesja: string; nazwaSesji: string; typ: Typ }
+  interface Stan {
+    v: 1; tryb: Tryb; sesje: string[]; klucze: string[];
+    odp: Record<string, number>; flagi: string[]; idx: number;
+    czas: number; limit: number; koniec: boolean; start: number;
+    /** wynik przekazany (lub celowo pominięty) do anonimowych statystyk */
+    wyslano?: boolean;
+    /** zawężenie do dziedzin / pochodzenia — taki test nie trafia do statystyk (nieporównywalny) */
+    zakres?: Zakres;
+    /** test wstrzymany (tylko tryby z czasem) — zegar stoi, pytanie zasłonięte */
+    pauza?: boolean;
+    /** test z udziałem agenta (window.lek / WebMCP) — nigdy nie trafia do statystyk ludzi */
+    agent?: boolean;
+  }
+  interface Grupa { tryb: string; sesja: string; kubel: number; n: number; zdane: number; sumaProc: number }
+
+  const KLUCZ = 'egzamin-lek:v1';
+  const LITERY = 'ABCDE';
+  const TRYBY: Record<Tryb, { nazwa: string; natychmiast: boolean; minNaPytanie: number | null; ile: number | null }> = {
+    egzamin: { nazwa: 'Egzamin', natychmiast: false, minNaPytanie: 1.2, ile: null },
+    nauka: { nazwa: 'Nauka', natychmiast: true, minNaPytanie: null, ile: null },
+    szybki: { nazwa: 'Szybki test', natychmiast: false, minNaPytanie: 1.2, ile: 20 },
+    powtorka: { nazwa: 'Powtórka', natychmiast: true, minNaPytanie: null, ile: null },
+  };
+
+  const root = document.getElementById('lek');
+  if (root) init(root);
+
+  function init(root: HTMLElement) {
+    const typy: Record<Typ, { nazwa: string; dziedziny: Dziedzina[]; sesje: Sesja[] }> = JSON.parse(root.dataset.typy || '{}');
+    const wszystkieSesje: Sesja[] = [...typy.LEK.sesje, ...typy.LDEK.sesje];
+    const typSesji = (id: string): Typ => (id.startsWith('ldek-') ? 'LDEK' : 'LEK');
+    const prefiksTypu = (t: Typ) => (t === 'LDEK' ? 'ldek-' : '');
+    const KLUCZ_TYP = 'egzamin-lek:typ';
+    // Bieżący egzamin wybrany na ekranie startowym (zapamiętany w przeglądarce).
+    let typ: Typ = (() => { try { return localStorage.getItem(KLUCZ_TYP) === 'LDEK' ? 'LDEK' : 'LEK'; } catch { return 'LEK'; } })();
+    let sesje: Sesja[] = typy[typ].sesje;
+    let dziedziny: Dziedzina[] = typy[typ].dziedziny;
+    const dzTypu = (t: Typ) => typy[t].dziedziny;
+    const nazwaDz = (id: string | undefined, t: Typ) => dzTypu(t).find((d) => d.id === id)?.nazwa;
+    const typStanu = (s: Stan) => typSesji(s.sesje[0]);
+    const $ = <T extends Element = HTMLElement>(s: string, el: ParentNode = root): T => el.querySelector(s) as T;
+    const ekrany = root.querySelectorAll<HTMLElement>('.lek-ekran');
+    const pl = (n: number, d = 1) => n.toLocaleString('pl-PL', { maximumFractionDigits: d });
+    const cache = new Map<string, Pytanie[]>();
+
+    let stan: Stan | null = wczytaj();
+    let pyt: Map<string, PytanieZ> = new Map();
+    let filtr = 'wszystkie';
+    let tik: number | undefined;
+
+    const KLUCZ_N = 'egzamin-lek:notatki:v1';
+    let notatki: Record<string, string> = (() => { try { return JSON.parse(localStorage.getItem(KLUCZ_N) || '{}') || {}; } catch { return {}; } })();
+    function zapiszNotatke(k: string, tekst: string) {
+      const t = tekst.trim();
+      if (t) notatki[k] = tekst.slice(0, 2000); else delete notatki[k];
+      try { localStorage.setItem(KLUCZ_N, JSON.stringify(notatki)); } catch { /* tryb prywatny */ }
+    }
+    function zapisz() { try { if (stan) localStorage.setItem(KLUCZ, JSON.stringify(stan)); else localStorage.removeItem(KLUCZ); } catch { /* tryb prywatny */ } }
+    function wczytaj(): Stan | null {
+      try { const s = JSON.parse(localStorage.getItem(KLUCZ) || 'null'); return s && s.v === 1 ? s : null; } catch { return null; }
+    }
+
+    async function pobierz(ids: string[]) {
+      const wynik = new Map<string, PytanieZ>();
+      for (const id of ids) {
+        const s = wszystkieSesje.find((x) => x.sesja === id);
+        if (!s) continue;
+        let lista = cache.get(id);
+        if (!lista) {
+          const r = await fetch(`/lek/dane/${id}.json?v=${s.v}`);
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          lista = ((await r.json()) as { pytania: Pytanie[] }).pytania;
+          cache.set(id, lista);
+        }
+        for (const q of lista) wynik.set(`${id}:${q.nr}`, { ...q, k: `${id}:${q.nr}`, sesja: id, nazwaSesji: s.nazwa, typ: s.typ });
+      }
+      return wynik;
+    }
+
+    const kontekst = document.getElementById('lek-kontekst');
+    // Pełny ekran: tylko tam, gdzie przeglądarka pozwala na pełny ekran elementu (iPhone — nie).
+    const btnFs = $<HTMLButtonElement>('[data-akcja="pelny-ekran"]');
+    btnFs.hidden = !document.fullscreenEnabled;
+    document.addEventListener('fullscreenchange', () => {
+      const pelny = document.fullscreenElement === root;
+      root.classList.toggle('pelny', pelny);
+      btnFs.setAttribute('aria-pressed', String(pelny));
+      btnFs.dataset.tip = pelny ? 'Wyjdź z pełnego ekranu (Esc)' : 'Pełny ekran';
+    });
+    function pokaz(nazwa: string) {
+      ekrany.forEach((e) => (e.hidden = e.dataset.ekran !== nazwa));
+      // Sekcja o jawności bazy tylko przy wyborze testu — w trakcie testu i w podsumowaniu nie rozprasza.
+      if (kontekst) kontekst.hidden = nazwa !== 'start';
+      root.classList.toggle('tryb-nauka', !!stan && TRYBY[stan.tryb].natychmiast);
+    }
+
+    const tasuj = <T,>(a: T[]) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const zegar = (ms: number) => { const s = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const ss = s % 60; return `${h ? h + ':' : ''}${String(m).padStart(h ? 2 : 1, '0')}:${String(ss).padStart(2, '0')}`; };
+
+    // ——— START ———
+    function ekranStart() {
+      zatrzymajZegar();
+      const wz = $('.lek-wznow');
+      if (stan && !stan.koniec) {
+        const ile = Object.keys(stan.odp).length;
+        $('.lek-wznow-opis').textContent = `${TRYBY[stan.tryb].nazwa} · odpowiedziano na ${ile} z ${stan.klucze.length} pytań` + (stan.limit ? ` · zostało ${zegar(stan.limit - stan.czas)}` : '');
+        wz.hidden = false;
+      } else wz.hidden = true;
+      synchronizujTryb();
+      renderPowtorka();
+      renderHistoria();
+      pokaz('start');
+    }
+
+    function synchronizujTryb() {
+      const tryb = (root.querySelector<HTMLInputElement>('input[name=tryb]:checked')?.value || 'egzamin') as Tryb;
+      const sel = $<HTMLSelectElement>('#lek-sesja');
+      const wszystkie = sel.querySelector<HTMLOptionElement>('option[value="*"]');
+      if (wszystkie) { wszystkie.disabled = tryb === 'egzamin'; if (wszystkie.disabled && sel.value === '*') sel.value = (sesje.find((x) => x.pelna) ?? sesje[0]).sesja; }
+      // Egzamin tylko z kompletnej sesji — niepełne wyszarzamy w tym trybie.
+      sel.querySelectorAll<HTMLOptionElement>('option').forEach((o) => { if (o.value !== '*') o.disabled = tryb === 'egzamin' && !sesje.find((x) => x.sesja === o.value)?.pelna; });
+      if (sel.selectedOptions[0]?.disabled) sel.value = (sesje.find((x) => x.pelna) ?? sesje[0]).sesja;
+      const tas = $<HTMLInputElement>('#lek-tasuj');
+      tas.closest('label')!.hidden = tryb === 'szybki';
+      // Zakres tylko dla nauki i szybkiego testu — egzamin to zawsze cała sesja, jak na LEK.
+      const zak = $('.lek-zakres'); zak.hidden = tryb === 'egzamin';
+      const wybrane = sel.value === '*' ? sesje : sesje.filter((x) => x.sesja === sel.value);
+      const maKat = wybrane.every((x) => x.kategorie);
+      const maPoch = wybrane.some((x) => x.pochodzenie);
+      root.querySelectorAll<HTMLInputElement>('input[name=dziedzina]').forEach((c) => { c.disabled = !maKat; if (!maKat) c.checked = false; });
+      const seg = $('.lek-segment'); seg.classList.toggle('wylaczony', !maPoch);
+      if (!maPoch) root.querySelector<HTMLInputElement>('input[name=pochodzenie][value=""]')!.checked = true;
+      $('.lek-zakres-info').textContent = [
+        maKat ? '' : 'Dla tej sesji nie udało się zweryfikować dziedzin.',
+        maPoch ? 'Pochodzenie ustalone przez porównanie z bazą opublikowaną przed egzaminem.' : 'Podział na pytania z bazy i nowe jest dostępny tylko dla sesji nowszych niż opublikowana baza (dziś: ' + (sesje.filter((x) => x.pochodzenie).map((x) => x.nazwa).join(', ') || 'brak') + ').',
+        tryb === 'szybki' ? 'Szybki test z zawężonym zakresem nie trafia do statystyk użytkowników.' : '',
+      ].filter(Boolean).join(' ');
+    }
+    root.querySelectorAll('input[name=tryb]').forEach((r) => r.addEventListener('change', synchronizujTryb));
+
+    // Przełącznik LEK / LDEK — przebudowuje elementy ekranu startowego i filtry bazy.
+    const formaSesji = (n: number) => (n === 1 ? 'sesja' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'sesje' : 'sesji');
+    const opcja = (value: string, tekst: string) => { const o = document.createElement('option'); o.value = value; o.textContent = tekst; return o; };
+    function renderTyp() {
+      sesje = typy[typ].sesje; dziedziny = typy[typ].dziedziny;
+      root.querySelectorAll<HTMLInputElement>('input[name=typ]').forEach((r) => (r.checked = r.value === typ));
+      const pytan = sesje.reduce((a, x) => a + x.n, 0);
+      const pole = (n: string, v: string) => { const e = root.querySelector(`[data-pole="${n}"]`); if (e) e.textContent = v; };
+      pole('pytan', pytan.toLocaleString('pl-PL'));
+      pole('zodp', (pytan - sesje.reduce((a, x) => a + x.x, 0)).toLocaleString('pl-PL'));
+      pole('sesji', String(sesje.length));
+      pole('sesjeOpis', `${formaSesji(sesje.length)} ${typ} · ${sesje.length > 1 ? `${sesje[sesje.length - 1].nazwa} – ${sesje[0].nazwa}` : sesje[0]?.nazwa ?? ''}`);
+      pole('dziedzin', String(dziedziny.length));
+      const sel = $<HTMLSelectElement>('#lek-sesja');
+      sel.replaceChildren(...sesje.map((x) => opcja(x.sesja, `${typ} ${x.nazwa} · ${x.pelna ? `${x.n} pytań` : `niepełna, ${x.n} pytań`}`)));
+      if (sesje.length > 1) sel.append(opcja('*', `Wszystkie sesje · ${pytan.toLocaleString('pl-PL')} pytań`));
+      sel.value = (sesje.find((x) => x.pelna) ?? sesje[0]).sesja;
+      const chipy = $('.lek-chipy');
+      chipy.replaceChildren(...dziedziny.map((d) => {
+        const l = document.createElement('label'); l.className = 'lek-chip';
+        const i = document.createElement('input'); i.type = 'checkbox'; i.name = 'dziedzina'; i.value = d.id;
+        const sp = document.createElement('span'); sp.textContent = d.nazwa; l.append(i, sp); return l;
+      }));
+      const bs = $<HTMLSelectElement>('#lek-baza-sesja');
+      bs.replaceChildren(opcja('', 'Wszystkie sesje'), ...sesje.map((x) => opcja(x.sesja, `${typ} ${x.nazwa}`)));
+      const bd = $<HTMLSelectElement>('#lek-baza-dziedzina');
+      bd.replaceChildren(opcja('', 'Wszystkie dziedziny'), ...dziedziny.map((d) => opcja(d.id, d.nazwa)));
+      synchronizujTryb();
+    }
+    root.querySelectorAll<HTMLInputElement>('input[name=typ]').forEach((r) => r.addEventListener('change', () => {
+      typ = r.value === 'LDEK' ? 'LDEK' : 'LEK';
+      try { localStorage.setItem(KLUCZ_TYP, typ); } catch { /* tryb prywatny */ }
+      renderTyp();
+      renderPowtorka();
+      renderHistoria();
+    }));
+    renderTyp();
+    $('#lek-sesja').addEventListener('change', synchronizujTryb);
+    const odczytajZakres = (): Zakres | undefined => {
+      const d = [...root.querySelectorAll<HTMLInputElement>('input[name=dziedzina]:checked')].map((c) => c.value);
+      const b = root.querySelector<HTMLInputElement>('input[name=pochodzenie]:checked')?.value;
+      const z: Zakres = {};
+      if (d.length) z.d = d;
+      if (b === '0' || b === '1') z.b = Number(b) as 0 | 1;
+      return z.d || z.b !== undefined ? z : undefined;
+    };
+
+    async function start(tryb: Tryb, ids: string[], tylko?: string[], opcje: { agent?: boolean; tasuj?: boolean; zakres?: Zakres } = {}) {
+      const blad = $('.lek-blad'); blad.hidden = true;
+      try { pyt = await pobierz(ids); } catch { blad.textContent = 'Nie udało się wczytać pytań. Sprawdź połączenie i spróbuj ponownie.'; blad.hidden = false; return false; }
+      let klucze = tylko ? tylko.filter((k) => pyt.has(k)) : [...pyt.keys()];
+      const cfg = TRYBY[tryb];
+      if (tryb === 'egzamin' && ids.some((id) => !wszystkieSesje.find((x) => x.sesja === id)?.pelna)) {
+        blad.textContent = 'Ta sesja nie jest jeszcze kompletna w bazie — do pełnego egzaminu wybierz inną, albo uruchom naukę lub szybki test.'; blad.hidden = false; return false;
+      }
+      const zakres = tryb === 'egzamin' ? undefined : opcje.zakres;
+      if (zakres) {
+        klucze = klucze.filter((k) => { const q = pyt.get(k)!; return (!zakres.d || (q.d !== undefined && zakres.d.includes(q.d))) && (zakres.b === undefined || q.b === zakres.b); });
+        if (!klucze.length) { blad.textContent = 'W wybranym zakresie nie ma pytań. Zmień dziedziny lub pochodzenie.'; blad.hidden = false; return false; }
+      }
+      if (cfg.ile) klucze = tasuj(klucze.filter((k) => pyt.get(k)!.o !== null)).slice(0, cfg.ile);
+      else if ((opcje.tasuj ?? $<HTMLInputElement>('#lek-tasuj').checked) || tylko) tasuj(klucze);
+      stan = { v: 1, tryb, sesje: ids, klucze, odp: {}, flagi: [], idx: 0, czas: 0,
+        limit: cfg.minNaPytanie ? Math.round(klucze.length * cfg.minNaPytanie * 60000) : 0, koniec: false, start: Date.now(),
+        ...(opcje.agent ? { agent: true } : {}), ...(zakres ? { zakres } : {}) };
+      zapisz();
+      ekranPytanie(true);
+      return true;
+    }
+
+    // ——— PYTANIE ———
+    function ekranPytanie(fokus = false) {
+      if (!stan) return;
+      pokaz('pytanie');
+      $('.lek-tryb-chip').textContent = TRYBY[stan.tryb].nazwa;
+      $('.lek-nr-max').textContent = String(stan.klucze.length);
+      $('.lek-zegar').hidden = !stan.limit;
+      $('.lek-pasek-p [data-akcja="pauza"]').hidden = !stan.limit;
+      if (stan.limit) uruchomZegar();
+      renderPytanie(fokus);
+      renderMapa();
+      renderPauza();
+    }
+
+    // Pauza: tylko tryby z limitem czasu. Stan zapisany — po odświeżeniu test zostaje wstrzymany.
+    function renderPauza() {
+      const p = !!stan?.pauza && !stan.koniec;
+      root.classList.toggle('wstrzymany', p);
+      $('.lek-pauza').hidden = !p;
+      const b = $('.lek-pasek-p [data-akcja="pauza"]');
+      b.setAttribute('aria-pressed', String(p));
+      b.dataset.tip = p ? 'Wznów test (P)' : 'Wstrzymaj test (P)';
+      b.innerHTML = p
+        ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"></path></svg><span class="sr-only">Wznów test</span>'
+        : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5v14M15 5v14"></path></svg><span class="sr-only">Wstrzymaj test</span>';
+    }
+    function przelaczPauze() {
+      if (!stan || stan.koniec || !stan.limit) return;
+      stan.pauza = !stan.pauza; zapisz(); renderPauza();
+      if (stan.pauza) $<HTMLElement>('.lek-pauza button').focus(); else $<HTMLElement>('.lek-tresc').focus({ preventScroll: true });
+    }
+
+    function sformatujTresc(el: HTMLElement, t: string) {
+      el.replaceChildren();
+      const czesci = t.split(/\s(?=\d{1,2}\)\s)/);
+      if (czesci.length >= 3) {
+        const p = document.createElement('p'); p.textContent = czesci[0]; el.append(p);
+        const ol = document.createElement('ol');
+        let ogon = '';
+        czesci.slice(1).forEach((c, i, arr) => {
+          const m = c.match(/^(\d{1,2})\)\s([\s\S]*)$/);
+          if (!m) return;
+          let tekst = m[2];
+          if (i === arr.length - 1) { const mm = tekst.match(/^(.*?[.;])\s+(Prawidłowa odpowiedź to:.*)$/); if (mm) { tekst = mm[1]; ogon = mm[2]; } }
+          const li = document.createElement('li'); const b = document.createElement('b'); b.textContent = `${m[1]})`;
+          const s = document.createElement('span'); s.textContent = tekst; li.append(b, s); ol.append(li);
+        });
+        el.append(ol);
+        if (ogon) { const p2 = document.createElement('p'); p2.className = 'lek-pod'; p2.textContent = ogon; el.append(p2); }
+      } else { const p = document.createElement('p'); p.textContent = t; el.append(p); }
+    }
+
+    function metaPytania(el: HTMLElement, q: PytanieZ) {
+      el.replaceChildren();
+      el.classList.add('lek-meta');
+      const t = document.createElement('span'); t.textContent = `Pytanie nr ${q.nr} · ${q.typ} ${q.nazwaSesji}`; el.append(t);
+      const chip = (tekst: string, kl = '', tytul = '') => { const c = document.createElement('span'); c.className = `lek-meta-chip ${kl}`; c.textContent = tekst; if (tytul) c.title = tytul; el.append(c); };
+      if (q.d) chip(nazwaDz(q.d, q.typ)!);
+      if (q.b === 1) chip('z jawnej bazy', 'baza', 'Pytanie było w bazie CEM opublikowanej przed egzaminem');
+      else if (q.b === 0) chip('nowe pytanie', 'nowe', 'Pytania nie było w bazie CEM opublikowanej przed egzaminem');
+    }
+
+    function ostrzezenie(el: HTMLElement, q: Pytanie) {
+      el.hidden = !(q.o === null || q.nz);
+      el.classList.toggle('x', q.o === null);
+      el.textContent = q.o === null
+        ? 'Pytanie unieważnione przez CEM — nie liczy się do wyniku, a maksimum punktów jest o nie niższe.'
+        : 'W bazie CEM to pytanie zgłoszono w komentarzach jako niezgodne z aktualną wiedzą medyczną. Na egzaminie było liczone.';
+    }
+
+    function zbudujOpcje(lista: HTMLElement, q: PytanieZ, wybrana: number | undefined, odkryj: boolean, interaktywne: boolean) {
+      lista.replaceChildren();
+      q.w.forEach((tekst, i) => {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'lek-opcja'; b.dataset.i = String(i);
+        b.setAttribute('aria-pressed', String(wybrana === i));
+        b.disabled = !interaktywne || q.o === null || odkryj;
+        const pasek = document.createElement('span'); pasek.className = 'lek-opcja-pasek';
+        const lit = document.createElement('span'); lit.className = 'lek-litera'; lit.textContent = LITERY[i];
+        const t = document.createElement('span'); t.textContent = tekst;
+        const pct = document.createElement('span'); pct.className = 'lek-opcja-pct';
+        b.append(pasek, lit, t, pct);
+        if (odkryj) {
+          b.classList.add('odkryta');
+          if (i === q.o) b.classList.add('ok');
+          else if (i === wybrana) b.classList.add('zle');
+          if (q.p) { pct.textContent = `${pl(q.p[i])}%`; pct.title = 'Odsetek zdających, którzy wybrali tę odpowiedź'; requestAnimationFrame(() => (pasek.style.width = `${Math.min(100, q.p![i])}%`)); }
+        }
+        li.append(b); lista.append(li);
+      });
+    }
+
+    function etykietaTrudnosci(tr: number) {
+      const poziom = tr >= 0.8 ? 1 : tr >= 0.6 ? 2 : tr >= 0.4 ? 3 : 4;
+      const nazwa = ['łatwe', 'umiarkowane', 'trudne', 'bardzo trudne'][poziom - 1];
+      const w = document.createElement('span'); w.className = 'lek-trudnosc';
+      const sk = document.createElement('span'); sk.className = 'lek-trudnosc-skala'; sk.setAttribute('aria-hidden', 'true');
+      for (let i = 1; i <= 4; i++) { const k = document.createElement('i'); if (i <= poziom) k.className = 'on'; sk.append(k); }
+      const t = document.createElement('span'); t.textContent = `Pytanie ${nazwa} · wskaźnik trudności ${pl(tr, 3)}`;
+      w.append(sk, t); return w;
+    }
+
+    function feedback(el: HTMLElement, q: PytanieZ, wybrana: number | undefined) {
+      el.replaceChildren();
+      if (q.o === null) return;
+      const tyt = document.createElement('p');
+      const dobrze = wybrana === q.o;
+      tyt.className = `fb-tytul ${dobrze ? 'ok' : 'zle'}`;
+      tyt.textContent = wybrana === undefined ? `Prawidłowa odpowiedź: ${LITERY[q.o]}` : dobrze ? 'Dobrze!' : `Niestety. Prawidłowa odpowiedź: ${LITERY[q.o]}`;
+      el.append(tyt);
+      if (q.p && q.tr !== null) {
+        const p = document.createElement('p');
+        const sala = q.p[q.o];
+        let zdanie = `Na egzaminie poprawnie odpowiedziało ${pl(sala)}% zdających.`;
+        if (wybrana !== undefined && !dobrze) zdanie += ` Twoją odpowiedź (${LITERY[wybrana]}) wybrało ${pl(q.p[wybrana])}%.`;
+        else if (dobrze && sala < 50) zdanie += ' To pytanie sprawiło kłopot większości sali.';
+        p.textContent = zdanie; el.append(p, etykietaTrudnosci(q.tr));
+      }
+    }
+
+    function renderPytanie(fokus = false) {
+      if (!stan) return;
+      const q = pyt.get(stan.klucze[stan.idx])!;
+      const cfg = TRYBY[stan.tryb];
+      const wybrana = stan.odp[q.k];
+      const odkryj = cfg.natychmiast && (wybrana !== undefined || q.o === null);
+      $('.lek-nr-biez').textContent = String(stan.idx + 1);
+      $<HTMLElement>('.lek-postep-wypelnienie').style.width = `${(Object.keys(stan.odp).length / stan.klucze.length) * 100}%`;
+      metaPytania($('.lek-zrodlo'), q);
+      const fl = $('[data-akcja="flaga"]'); fl.setAttribute('aria-pressed', String(stan.flagi.includes(q.k)));
+      const notka = notatki[q.k] || '';
+      $<HTMLTextAreaElement>('#lek-notatka-pole').value = notka;
+      $('#lek-notatka').hidden = !notka;
+      const nb = $('.lek-notatka-btn'); nb.classList.toggle('ma', !!notka); nb.setAttribute('aria-expanded', String(!!notka));
+      ostrzezenie($('.lek-ostrzezenie'), q);
+      sformatujTresc($('.lek-tresc'), q.t);
+      zbudujOpcje($('.lek-warianty'), q, wybrana, odkryj, true);
+      if (odkryj) feedback($('.lek-feedback'), q, wybrana); else $('.lek-feedback').replaceChildren();
+      const zywo = $('.lek-wynik-na-zywo');
+      if (cfg.natychmiast) {
+        const odp = stan.klucze.filter((k) => stan!.odp[k] !== undefined && pyt.get(k)!.o !== null);
+        const ok = odp.filter((k) => stan!.odp[k] === pyt.get(k)!.o).length;
+        zywo.textContent = `✓ ${ok} / ${odp.length}`; zywo.hidden = false; zywo.title = 'Poprawne odpowiedzi';
+      } else zywo.hidden = true;
+      ($('.lek-wstecz') as HTMLButtonElement).disabled = stan.idx === 0;
+      const ostatnie = stan.idx === stan.klucze.length - 1;
+      $('.lek-dalej span').textContent = ostatnie ? 'Zakończ' : 'Następne';
+      renderMapa();
+      if (fokus) $<HTMLElement>('.lek-tresc').focus({ preventScroll: true });
+    }
+
+    function wybierz(i: number) {
+      if (!stan) return;
+      const q = pyt.get(stan.klucze[stan.idx])!;
+      const cfg = TRYBY[stan.tryb];
+      if (q.o === null || (cfg.natychmiast && stan.odp[q.k] !== undefined)) return;
+      stan.odp[q.k] = i; zapisz();
+      if (cfg.natychmiast && !stan.agent) zapiszPytanie(q.k, i === q.o);
+      renderPytanie();
+      if (cfg.natychmiast && i !== q.o) root.querySelector(`.lek-opcja[data-i="${i}"]`)?.classList.add('potrzasnij');
+    }
+
+    function idz(d: number) {
+      if (!stan) return;
+      const n = stan.idx + d;
+      if (n < 0) return;
+      if (n >= stan.klucze.length) return zapytajKoniec();
+      stan.idx = n; zapisz(); renderPytanie(true);
+      if (root.getBoundingClientRect().top < 0) root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderMapa() {
+      if (!stan) return;
+      const siatka = $('.lek-mapa-siatka');
+      if ($('#lek-mapa').hidden) return;
+      const nat = TRYBY[stan.tryb].natychmiast;
+      siatka.replaceChildren(...stan.klucze.map((k, i) => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = String(i + 1);
+        const q = pyt.get(k)!; const o = stan!.odp[k];
+        if (q.o === null) b.classList.add('m-x');
+        else if (o !== undefined) b.classList.add(nat ? (o === q.o ? 'm-ok' : 'm-zle') : 'm-odp');
+        if (stan!.flagi.includes(k)) b.classList.add('m-flaga');
+        if (i === stan!.idx) { b.classList.add('m-biez'); b.setAttribute('aria-current', 'true'); }
+        b.setAttribute('aria-label', `Pytanie ${i + 1}${o !== undefined ? ', odpowiedziane' : ''}${stan!.flagi.includes(k) ? ', oznaczone' : ''}`);
+        b.addEventListener('click', () => { stan!.idx = i; zapisz(); renderPytanie(true); });
+        return b;
+      }));
+    }
+
+    function uruchomZegar() {
+      zatrzymajZegar();
+      let ostatni = performance.now();
+      const odswiez = () => {
+        if (!stan) return;
+        const teraz = performance.now();
+        if (!document.hidden && !stan.pauza) stan.czas += teraz - ostatni;
+        ostatni = teraz;
+        const zostalo = stan.limit - stan.czas;
+        const z = $('.lek-zegar'); z.classList.toggle('malo', zostalo < 10 * 60000);
+        $('.lek-zegar-czas').textContent = zegar(zostalo);
+        if (zostalo <= 0) { zakoncz(); return; }
+        if (Math.floor(stan.czas / 5000) !== Math.floor((stan.czas - 1000) / 5000)) zapisz();
+      };
+      odswiez(); tik = window.setInterval(odswiez, 1000);
+    }
+    function zatrzymajZegar() { if (tik) { clearInterval(tik); tik = undefined; } }
+
+    const dialog = $<HTMLDialogElement>('.lek-dialog');
+    function zapytajKoniec() {
+      if (!stan) return;
+      const brak = stan.klucze.filter((k) => stan!.odp[k] === undefined && pyt.get(k)!.o !== null).length;
+      if (TRYBY[stan.tryb].natychmiast && brak === 0) return zakoncz();
+      $('.lek-dialog-tresc').textContent = brak
+        ? `Bez odpowiedzi ${brak === 1 ? 'zostało 1 pytanie' : brak % 10 >= 2 && brak % 10 <= 4 && (brak % 100 < 10 || brak % 100 >= 20) ? `zostały ${brak} pytania` : `zostało ${brak} pytań`}. Pytanie bez odpowiedzi to zero punktów — na egzaminie nie ma punktów ujemnych, więc warto zgadywać.`
+        : 'Odpowiedzi są przy wszystkich pytaniach. Po zakończeniu nie da się ich już zmienić.';
+      if (typeof dialog.showModal === 'function') dialog.showModal(); else if (confirm($('.lek-dialog-tresc').textContent || '')) zakoncz();
+    }
+
+    // ——— WYNIK ———
+    function zakoncz() {
+      if (!stan) return;
+      zatrzymajZegar(); if (dialog.open) dialog.close();
+      if (stan.koniec) return ekranWynik(); // np. zegar i kliknięcie naraz — zapisujemy raz
+      stan.koniec = true; zapisz();
+      if (!stan.agent) zapiszWynikTestu(stan);
+      ekranWynik();
+    }
+
+    function obliczWynik(s: Stan) {
+      const wazne = s.klucze.filter((k) => pyt.get(k)!.o !== null);
+      const max = wazne.length;
+      const pkt = wazne.filter((k) => s.odp[k] === pyt.get(k)!.o).length;
+      const prog = Math.ceil(max * 0.56);
+      return {
+        wazne, max, pkt, prog, zdany: pkt >= prog, proc: max ? (pkt / max) * 100 : 0,
+        sala: wazne.reduce((a, k) => a + (pyt.get(k)!.tr ?? 0), 0),
+        zTr: wazne.filter((k) => pyt.get(k)!.tr !== null).length,
+      };
+    }
+
+    function ekranWynik() {
+      if (!stan) return;
+      pokaz('wynik');
+      const { wazne, max, pkt, prog, zdany, proc, sala, zTr } = obliczWynik(stan);
+      const czyEgz = stan.tryb === 'egzamin' || stan.tryb === 'szybki';
+      root.classList.toggle('zdany', zdany); root.classList.toggle('niezdany', !zdany);
+
+      const obw = 2 * Math.PI * 52;
+      const kolo = $<SVGCircleElement>('.lek-pierscien-wynik');
+      kolo.style.strokeDasharray = `0 ${obw}`;
+      requestAnimationFrame(() => requestAnimationFrame(() => (kolo.style.strokeDasharray = `${(proc / 100) * obw} ${obw}`)));
+      const progEl = $<SVGCircleElement>('.lek-pierscien-prog');
+      progEl.style.strokeDashoffset = String(-0.56 * obw + 0.75);
+      progEl.style.strokeDasharray = `1.5 ${obw}`;
+      animujLiczbe($('.lek-wynik-proc'), proc);
+      $('.lek-wynik-pkt').textContent = `${pkt} / ${max} pkt`;
+
+      $('.lek-werdykt').textContent = zdany ? (czyEgz ? 'Zdany' : 'Powyżej progu') : (czyEgz ? 'Niezdany' : 'Poniżej progu');
+      $('.lek-wynik-tytul').textContent = zdany
+        ? (proc >= 85 ? 'Znakomity wynik.' : 'Próg przekroczony.')
+        : `Do progu zabrakło ${prog - pkt} pkt.`;
+      const staty: [string, string][] = [
+        ['Twój wynik', `${pkt} pkt`],
+        [`Próg zdania (56%)`, `${prog} pkt`],
+      ];
+      if (zTr === max && max) staty.push(['Przeciętny zdający', `≈ ${pl(sala, 0)} pkt`]);
+      staty.push(['Bez odpowiedzi', String(wazne.filter((k) => stan!.odp[k] === undefined).length)]);
+      if (stan.limit) staty.push(['Czas', zegar(Math.min(stan.czas, stan.limit))]);
+      const poprz = wczytajWyniki().filter((w) => w.typ === typStanu(stan!) && w.tryb === stan!.tryb && w.t < (stan!.start || 0));
+      if (czyEgz && poprz.length) { const p = poprz[poprz.length - 1]; const roz = proc - (p.pkt / p.max) * 100; staty.push(['Poprzednio', `${pl((p.pkt / p.max) * 100, 0)}% (${roz >= 0 ? '+' : '−'}${pl(Math.abs(roz), 0)} pp)`]); }
+      $('.lek-statystyki').replaceChildren(...staty.map(([dt, dd]) => { const d = document.createElement('div'); const a = document.createElement('dt'); a.textContent = dt; const b = document.createElement('dd'); b.textContent = dd; d.append(a, b); return d; }));
+      const uniew = stan.klucze.length - max;
+      $('.lek-wynik-uwaga').textContent = [
+        uniew ? `${uniew} ${uniew === 1 ? 'pytanie unieważnione przez CEM nie liczy się' : 'pytania unieważnione przez CEM nie liczą się'} do wyniku.` : '',
+        stan.tryb === 'szybki' ? 'Szybki test to próbka 20 pytań — wynik orientacyjny.' : '',
+        zTr === max && max ? '„Przeciętny zdający” = suma wskaźników trudności CEM dla tych pytań.' : '',
+      ].filter(Boolean).join(' ');
+      const bledne = wazne.filter((k) => stan!.odp[k] !== pyt.get(k)!.o);
+      ($('[data-akcja="bledne"]') as HTMLButtonElement).hidden = bledne.length === 0;
+      filtr = 'wszystkie';
+      renderPrzeglad();
+      wynikDziedzin(wazne);
+      podgladUdostepnienia();
+      spolecznosc(pkt, max);
+      $<HTMLElement>('.lek-wynik-tytul').focus({ preventScroll: true });
+      root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function wynikDziedzin(wazne: string[]) {
+      const s = stan!; const box = $('.lek-dz'); const lista = $('.lek-dz-lista');
+      type Wiersz = { nazwa: string; klucze: string[]; oddziel?: boolean };
+      const wiersze: Wiersz[] = dzTypu(typStanu(s)).map((d) => ({ nazwa: d.nazwa, klucze: wazne.filter((k) => pyt.get(k)!.d === d.id) })).filter((w) => w.klucze.length);
+      const zB = wazne.filter((k) => pyt.get(k)!.b === 1), nw = wazne.filter((k) => pyt.get(k)!.b === 0);
+      if (zB.length && nw.length) wiersze.push({ nazwa: 'Pytania z jawnej bazy', klucze: zB, oddziel: true }, { nazwa: 'Pytania nowe', klucze: nw });
+      if (!wiersze.length || (wiersze.length === 1 && !wiersze[0].oddziel)) { box.hidden = true; return; }
+      lista.replaceChildren(...wiersze.map((w) => {
+        const ok = w.klucze.filter((k) => s.odp[k] === pyt.get(k)!.o).length;
+        const ty = ok / w.klucze.length;
+        const zTr = w.klucze.filter((k) => pyt.get(k)!.tr !== null);
+        const sala = zTr.length === w.klucze.length ? zTr.reduce((a, k) => a + pyt.get(k)!.tr!, 0) / zTr.length : null;
+        const r = document.createElement('div'); r.className = `lek-dz-wiersz${w.oddziel ? ' oddziel' : ''}${sala !== null && ty < sala - 0.1 ? ' slabo' : ''}`;
+        const n = document.createElement('span'); n.className = 'lek-dz-nazwa'; n.textContent = w.nazwa; n.title = w.nazwa;
+        const tor = document.createElement('span'); tor.className = 'lek-dz-tor';
+        const pasek = document.createElement('span'); pasek.className = 'lek-dz-ty'; tor.append(pasek);
+        requestAnimationFrame(() => requestAnimationFrame(() => (pasek.style.width = `${ty * 100}%`)));
+        if (sala !== null) { const m = document.createElement('span'); m.className = 'lek-dz-sala'; m.style.left = `calc(${sala * 100}% - 1px)`; m.title = `Przeciętny zdający: ${pl(sala * 100, 0)}%`; tor.append(m); }
+        tor.setAttribute('role', 'img');
+        tor.setAttribute('aria-label', `${w.nazwa}: ${pl(ty * 100, 0)}%` + (sala !== null ? `, przeciętny zdający ${pl(sala * 100, 0)}%` : ''));
+        const l = document.createElement('span'); l.className = 'lek-dz-liczby';
+        const st = document.createElement('strong'); st.textContent = `${pl(ty * 100, 0)}%`;
+        l.append(st, ` · ${ok}/${w.klucze.length}`);
+        r.append(n, tor, l); return r;
+      }));
+      box.hidden = false;
+    }
+
+    function animujLiczbe(el: HTMLElement, cel: number) {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = `${Math.round(cel)}%`; return; }
+      const t0 = performance.now();
+      const krok = (t: number) => { const f = Math.min(1, (t - t0) / 1100); const e = 1 - Math.pow(1 - f, 3); el.textContent = `${Math.round(cel * e)}%`; if (f < 1) requestAnimationFrame(krok); };
+      requestAnimationFrame(krok);
+    }
+
+    // ——— WYSZUKIWANIE (bez rozróżniania wielkości liter i polskich znaków) ———
+    // Każdy znak mapujemy na jeden znak bazowy, więc indeksy w tekście znormalizowanym
+    // odpowiadają indeksom w oryginale — dzięki temu da się podświetlić trafienia.
+    const normZnak = (c: string) => (c === 'ł' || c === 'Ł' ? 'l' : c.normalize('NFD')[0].toLowerCase());
+    const normuj = (t: string) => Array.from(t, normZnak).join('');
+    const frazy = (q: string) => normuj(q.trim()).split(/\s+/).filter((x) => x.length > 1);
+    const pasuje = (q: Pytanie, fr: string[]) => {
+      if (!fr.length) return true;
+      const stog = normuj(`${q.t} ${q.w.join(' ')}`);
+      return fr.every((f) => stog.includes(f));
+    };
+    function podswietl(el: HTMLElement, tekst: string, fr: string[]) {
+      el.replaceChildren();
+      const znaki = Array.from(tekst); const n = normuj(tekst);
+      const znacz = new Array(znaki.length).fill(false);
+      for (const f of fr) { let i = n.indexOf(f); while (i >= 0) { for (let j = i; j < i + Array.from(f).length; j++) znacz[j] = true; i = n.indexOf(f, i + 1); } }
+      let buf = ''; let w = false;
+      const zrzut = () => { if (!buf) return; if (w) { const m = document.createElement('mark'); m.textContent = buf; el.append(m); } else el.append(buf); buf = ''; };
+      znaki.forEach((c, i) => { if (znacz[i] !== w) { zrzut(); w = znacz[i]; } buf += c; });
+      zrzut();
+    }
+
+    /** Element listy pytań (przegląd po teście i baza pytań) — szczegóły budowane leniwie. */
+    function elementPytania(q: PytanieZ, o: { etykieta: string; prawa: string; klasa: string; odp?: number; fr: string[]; otworz?: boolean; sesjaPod?: boolean }) {
+      const li = document.createElement('li'); li.className = o.klasa;
+      const d = document.createElement('details'); const sm = document.createElement('summary');
+      const nr = document.createElement('span'); nr.className = 'lek-p-nr'; nr.textContent = o.etykieta;
+      const tx = document.createElement('span'); tx.className = 'lek-p-tekst'; podswietl(tx, q.t, o.fr);
+      if (notatki[q.k]) { const ik = document.createElement('span'); ik.className = 'lek-p-ikona'; ik.title = 'Masz notatkę'; ik.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"></path></svg>'; tx.prepend(ik); }
+      const od = document.createElement('span'); od.className = 'lek-p-odp'; od.textContent = o.prawa;
+      if (o.sesjaPod) { const ss = document.createElement('span'); ss.className = 'lek-p-sesja'; ss.textContent = `${q.nazwaSesji}${q.d ? ' · ' + nazwaDz(q.d, q.typ) : ''}`; od.append(ss); }
+      sm.append(nr, tx, od); d.append(sm);
+      const zbuduj = () => {
+        if (d.querySelector('.lek-p-szczegoly')) return;
+        const box = document.createElement('div'); box.className = 'lek-p-szczegoly';
+        const src = document.createElement('p'); src.className = 'lek-zrodlo'; metaPytania(src, q);
+        const ost = document.createElement('div'); ost.className = 'lek-ostrzezenie'; ostrzezenie(ost, q);
+        const tr = document.createElement('div'); tr.className = 'lek-tresc'; sformatujTresc(tr, q.t);
+        const ol = document.createElement('ol'); ol.className = 'lek-warianty'; zbudujOpcje(ol, q, o.odp, true, false);
+        if (o.fr.length) { tr.querySelectorAll('p, li span').forEach((e) => podswietl(e as HTMLElement, e.textContent || '', o.fr)); ol.querySelectorAll('.lek-opcja > span:nth-child(3)').forEach((e) => podswietl(e as HTMLElement, e.textContent || '', o.fr)); }
+        const fb = document.createElement('div'); fb.className = 'lek-feedback'; feedback(fb, q, o.odp);
+        box.append(src, ost, tr, ol, fb);
+        if (notatki[q.k]) { const n = document.createElement('p'); n.className = 'lek-p-notatka'; n.textContent = notatki[q.k]; box.append(n); }
+        d.append(box);
+      };
+      d.addEventListener('toggle', () => { if (d.open) zbuduj(); });
+      if (o.otworz) d.open = true;
+      li.append(d); return li;
+    }
+
+    function renderPrzeglad() {
+      if (!stan) return;
+      const lista = $('[data-ekran="wynik"] .lek-przeglad-lista');
+      const s = stan;
+      const kat = (k: string) => { const q = pyt.get(k)!; const o = s.odp[k]; return q.o === null ? 'x' : o === undefined ? 'puste' : o === q.o ? 'ok' : 'zle'; };
+      const liczby: Record<string, number> = { wszystkie: s.klucze.length, zle: 0, puste: 0, flagi: s.flagi.length, notatki: s.klucze.filter((k) => notatki[k]).length };
+      s.klucze.forEach((k) => { const c = kat(k); if (c === 'zle') liczby.zle++; if (c === 'puste') liczby.puste++; });
+      root.querySelectorAll<HTMLButtonElement>('.lek-filtr').forEach((b) => {
+        const f = b.dataset.filtr!; b.setAttribute('aria-pressed', String(f === filtr));
+        b.replaceChildren(b.textContent!.replace(/\s*\d+$/, '').trim()); const n = document.createElement('span'); n.className = 'n'; n.textContent = String(liczby[f]); b.append(n);
+      });
+      const fr = frazy($<HTMLInputElement>('#lek-przeglad-szukaj').value);
+      const widoczne = s.klucze.map((k, i) => ({ k, i }))
+        .filter(({ k }) => filtr === 'wszystkie' || (filtr === 'flagi' ? s.flagi.includes(k) : filtr === 'notatki' ? !!notatki[k] : kat(k) === filtr))
+        .filter(({ k }) => pasuje(pyt.get(k)!, fr));
+      if (!widoczne.length) { const li = document.createElement('li'); li.className = 'lek-pusto'; li.textContent = fr.length ? 'Żadne pytanie nie pasuje do wyszukiwania.' : 'Brak pytań w tym widoku.'; lista.replaceChildren(li); return; }
+      lista.replaceChildren(...widoczne.map(({ k, i }) => {
+        const q = pyt.get(k)!; const o = s.odp[k]; const c = kat(k);
+        return elementPytania(q, {
+          etykieta: String(i + 1), klasa: `p-${c}`, odp: o, fr,
+          prawa: c === 'x' ? 'unieważnione' : `${o === undefined ? '—' : LITERY[o]} → ${LITERY[q.o!]}`,
+          otworz: !!notatki[k] && filtr === 'notatki',
+        });
+      }));
+    }
+
+    // ——— BAZA PYTAŃ ———
+    const NA_STRONE = 40;
+    let baza: PytanieZ[] | null = null;
+    let bazaTyp: Typ | null = null;
+    let bazaStrona = 1;
+    async function ekranBaza() {
+      zatrzymajZegar();
+      pokaz('baza');
+      if (location.hash !== '#baza') history.replaceState(null, '', '#baza');
+      const licz = $('.lek-baza-licznik');
+      if (!baza || bazaTyp !== typ) {
+        licz.textContent = 'Wczytuję pytania…';
+        $<HTMLElement>('.lek-baza-glowa h2').textContent = `Baza pytań ${typ}`;
+        try { baza = [...(await pobierz(sesje.map((x) => x.sesja))).values()]; bazaTyp = typ; }
+        catch { licz.textContent = 'Nie udało się wczytać pytań. Sprawdź połączenie i spróbuj ponownie.'; return; }
+      }
+      bazaStrona = 1;
+      renderBaza();
+      $<HTMLElement>('.lek-baza-glowa h2').focus({ preventScroll: true });
+      root.scrollIntoView({ block: 'start' });
+    }
+    function renderBaza() {
+      if (!baza) return;
+      const fr = frazy($<HTMLInputElement>('#lek-baza-szukaj').value);
+      const ses = $<HTMLSelectElement>('#lek-baza-sesja').value;
+      const dz = $<HTMLSelectElement>('#lek-baza-dziedzina').value;
+      const sort = $<HTMLSelectElement>('#lek-baza-sort').value;
+      const tylkoN = $<HTMLInputElement>('#lek-baza-notatki').checked;
+      let lista = baza.filter((q) => (!ses || q.sesja === ses) && (!dz || q.d === dz) && (!tylkoN || !!notatki[q.k]) && pasuje(q, fr));
+      if (sort) lista = [...lista].sort((a, b) => ((a.tr ?? 2) - (b.tr ?? 2)) * (sort === 'trudne' ? 1 : -1));
+      const ile = lista.length;
+      const stron = Math.max(1, Math.ceil(ile / NA_STRONE));
+      bazaStrona = Math.min(Math.max(1, bazaStrona), stron);
+      const od = (bazaStrona - 1) * NA_STRONE;
+      const zakresTxt = ile > NA_STRONE ? ` Pokazuję ${od + 1}–${Math.min(od + NA_STRONE, ile)}.` : '';
+      $('.lek-baza-licznik').textContent = (ile === baza.length
+        ? `${baza.length.toLocaleString('pl-PL')} pytań z prawidłowymi odpowiedziami i statystyką zdających. Kliknij pytanie, żeby je rozwinąć.`
+        : `Znaleziono ${ile.toLocaleString('pl-PL')} z ${baza.length.toLocaleString('pl-PL')} pytań.`) + zakresTxt;
+      const ul = $('.lek-baza-lista');
+      if (!ile) { const li = document.createElement('li'); li.className = 'lek-pusto'; li.textContent = 'Żadne pytanie nie pasuje do wyszukiwania i filtrów.'; ul.replaceChildren(li); }
+      else ul.replaceChildren(...lista.slice(od, od + NA_STRONE).map((q) => elementPytania(q, {
+        etykieta: String(q.nr), klasa: 'p-baza', fr, sesjaPod: true,
+        prawa: q.o === null ? 'unieważnione' : `odp. ${LITERY[q.o]}${q.tr !== null ? ' · ' + pl(q.tr * 100, 0) + '%' : ''}`,
+      })));
+      renderPaginacja(stron);
+    }
+    /** Numery stron z wielokropkami: 1 … 4 5 [6] 7 8 … 20 */
+    function renderPaginacja(stron: number) {
+      const nav = $('.lek-paginacja');
+      nav.hidden = stron <= 1;
+      if (stron <= 1) { nav.replaceChildren(); return; }
+      const b = (etykieta: string, strona: number, opcje: { biezaca?: boolean; wyl?: boolean; aria?: string; tekst?: boolean } = {}) => {
+        const x = document.createElement('button'); x.type = 'button'; x.textContent = etykieta; x.dataset.strona = String(strona);
+        if (opcje.tekst) x.classList.add('tekst');
+        if (opcje.biezaca) x.setAttribute('aria-current', 'page');
+        if (opcje.wyl) x.disabled = true;
+        x.setAttribute('aria-label', opcje.aria ?? `Strona ${strona}`);
+        return x;
+      };
+      const numery = new Set([1, stron, bazaStrona - 2, bazaStrona - 1, bazaStrona, bazaStrona + 1, bazaStrona + 2].filter((n) => n >= 1 && n <= stron));
+      const posort = [...numery].sort((a, c) => a - c);
+      const el: Node[] = [b('← Poprzednia', bazaStrona - 1, { wyl: bazaStrona === 1, aria: 'Poprzednia strona', tekst: true })];
+      posort.forEach((n, i) => {
+        if (i && n - posort[i - 1] > 1) { const k = document.createElement('span'); k.className = 'kropki'; k.textContent = '…'; k.setAttribute('aria-hidden', 'true'); el.push(k); }
+        el.push(b(String(n), n, { biezaca: n === bazaStrona }));
+      });
+      el.push(b('Następna →', bazaStrona + 1, { wyl: bazaStrona === stron, aria: 'Następna strona', tekst: true }));
+      nav.replaceChildren(...el);
+    }
+    $('.lek-paginacja').addEventListener('click', (e) => {
+      const x = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-strona]');
+      if (!x || x.disabled) return;
+      bazaStrona = Number(x.dataset.strona); renderBaza();
+      $('.lek-baza-licznik').scrollIntoView({ block: 'start' }); window.scrollBy(0, -90);
+      root.querySelector<HTMLElement>('.lek-baza-lista summary')?.focus({ preventScroll: true });
+    });
+    const zwloka = (fn: () => void, ms = 150) => { let t: number | undefined; return () => { clearTimeout(t); t = window.setTimeout(fn, ms); }; };
+    $('#lek-baza-szukaj').addEventListener('input', zwloka(() => { bazaStrona = 1; renderBaza(); }));
+    ['#lek-baza-sesja', '#lek-baza-dziedzina', '#lek-baza-sort', '#lek-baza-notatki'].forEach((sel) => $(sel).addEventListener('change', () => { bazaStrona = 1; renderBaza(); }));
+    $('#lek-przeglad-szukaj').addEventListener('input', zwloka(renderPrzeglad));
+
+    // ——— STATYSTYKI UŻYTKOWNIKÓW (anonimowe, /api/egzamin) ———
+    const API = '/api/egzamin';
+    const KLUCZ_ZAPIS = 'egzamin-lek:ostatni-zapis';
+    const MIN_N = 10; // poniżej tej liczby wyników nie pokazujemy rozkładu
+    // Publiczny klucz niewidocznego widżetu (tofu: output turnstile_egzamin_sitekey). Jest jawny
+    // z założenia — wpisany tu, żeby zapis wyniku nie wymagał osobnego GET po klucz (1 wywołanie
+    // Funkcji na test zamiast 2). Widżet działa tylko na zarobkilekarzy.pl; lokalnie token się nie
+    // wygeneruje, a serwer bez sekretu przyjmie zapis bez weryfikacji.
+    const TURNSTILE_SITE_KEY = '0x4AAAAAAFRvAWnOihYqV1jZ';
+    let apiCache: Promise<{ grupy: Grupa[] }> | null = null;
+    const pobierzStat = () => (apiCache ??= fetch(API).then((r) => (r.ok ? r.json() : { grupy: [] })).catch(() => ({ grupy: [] })));
+
+    const ladujSkrypt = (src: string) => new Promise<void>((res, rej) => {
+      if (window.turnstile) return res();
+      const el = document.createElement('script'); el.src = src; el.async = true; el.onload = () => res(); el.onerror = rej; document.head.append(el);
+    });
+    const tokenTurnstile = (siteKey: string) => new Promise<string | null>((res) => {
+      ladujSkrypt('https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit').then(() => {
+        const box = $('.lek-ts'); box.replaceChildren();
+        const el = document.createElement('div'); box.append(el);
+        const stop = setTimeout(() => res(null), 15000);
+        window.turnstile!.render(el, {
+          sitekey: siteKey,
+          callback: (t) => { clearTimeout(stop); res(t); },
+          'error-callback': () => { clearTimeout(stop); res(null); },
+          'timeout-callback': () => { clearTimeout(stop); res(null); },
+        });
+      }).catch(() => res(null));
+    });
+
+    /** Zapisuje wynik i zwraca agregaty swojej grupy (już z tym wynikiem) albo null. */
+    async function wyslijWynik(s: Stan, pkt: number, max: number): Promise<Omit<Grupa, 'tryb' | 'sesja'>[] | null> {
+      s.wyslano = true; zapisz(); // przed wysyłką: odświeżenie strony nie wyśle drugi raz
+      let ostatni = 0; try { ostatni = Number(localStorage.getItem(KLUCZ_ZAPIS)) || 0; } catch { /* brak */ }
+      if (Date.now() - ostatni < 5 * 60000) return null; // najwyżej jeden zapis na 5 min z tej przeglądarki
+      const token = await tokenTurnstile(TURNSTILE_SITE_KEY);
+      try {
+        const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+          body: JSON.stringify({ sesja: s.sesje.length > 1 ? prefiksTypu(typStanu(s)) + 'wszystkie' : s.sesje[0], tryb: s.tryb, pkt, max, czas: Math.round(Math.min(s.czas, s.limit) / 1000), turnstileToken: token }) });
+        if (r.ok) {
+          try { localStorage.setItem(KLUCZ_ZAPIS, String(Date.now())); } catch { /* brak */ }
+          return ((await r.json()) as { grupa?: Omit<Grupa, 'tryb' | 'sesja'>[] }).grupa ?? [];
+        }
+      } catch { /* sieć */ }
+      return null;
+    }
+
+    async function spolecznosc(pkt: number, max: number) {
+      const s = stan; const box = $('.lek-spol');
+      box.hidden = true;
+      if (!s || (s.tryb !== 'egzamin' && s.tryb !== 'szybki') || !max) return;
+      if (s.agent) {
+        if (!s.wyslano) { s.wyslano = true; zapisz(); }
+        $('.lek-spol-n').textContent = ''; $('.lek-spol-liczby').replaceChildren(); $('.lek-histogram').hidden = true;
+        $('.lek-spol-info').textContent = 'W tym teście odpowiadał asystent AI (przez window.lek lub WebMCP), więc wynik nie trafia do statystyk użytkowników strony.';
+        box.hidden = false; return;
+      }
+      if (s.zakres) return; // zawężony zakres — wynik nieporównywalny z resztą, nie zapisujemy ani nie porównujemy
+      const sesjaKey = s.sesje.length > 1 ? prefiksTypu(typStanu(s)) + 'wszystkie' : s.sesje[0];
+      const kubel = Math.min(9, Math.floor((pkt / max) * 10));
+      // Zapis zwraca od razu statystyki grupy (z tym wynikiem) — GET tylko, gdy nic nie zapisujemy.
+      const zapisana = !s.wyslano ? await wyslijWynik(s, pkt, max) : null;
+      const dodano = zapisana !== null;
+      const grupa = zapisana ?? (await pobierzStat()).grupy.filter((g: Grupa) => g.tryb === s.tryb && g.sesja === sesjaKey);
+      if (stan !== s) return; // użytkownik zdążył zacząć nowy test
+      const rozklad = Array.from({ length: 10 }, () => 0);
+      let n = 0, zdane = 0, suma = 0;
+      for (const g of grupa) { rozklad[g.kubel] += g.n; n += g.n; zdane += g.zdane; suma += g.sumaProc; }
+      if (n < MIN_N) {
+        box.hidden = false;
+        $('.lek-spol-n').textContent = '';
+        $('.lek-spol-liczby').replaceChildren();
+        $('.lek-histogram').replaceChildren(); $('.lek-histogram').hidden = true;
+        $('.lek-spol-info').textContent = `Zbieramy wyniki — rozkład pokażemy, gdy w tym trybie i sesji będzie ich co najmniej ${MIN_N}. ` + (dodano ? 'Twój wynik został dodany anonimowo.' : '');
+        return;
+      }
+      const nizej = rozklad.slice(0, kubel).reduce((a, b) => a + b, 0) + rozklad[kubel] / 2;
+      const liczby: [string, string][] = [
+        ['Zdało (≥ 56%)', `${pl((zdane / n) * 100, 0)}%`],
+        ['Średni wynik', `${pl((suma / n) * 100, 0)}%`],
+        ['Twój wynik jest wyższy niż', `≈ ${pl((nizej / n) * 100, 0)}% wyników`],
+      ];
+      $('.lek-spol-liczby').replaceChildren(...liczby.map(([dt, dd]) => { const d = document.createElement('div'); const a = document.createElement('dt'); a.textContent = dt; const b = document.createElement('dd'); b.textContent = dd; d.append(a, b); return d; }));
+      const hist = $('.lek-histogram'); hist.hidden = false;
+      const maxN = Math.max(...rozklad, 1);
+      const prog = document.createElement('span'); prog.className = 'prog'; const pt = document.createElement('span'); pt.textContent = 'próg'; prog.append(pt);
+      hist.replaceChildren(prog, ...rozklad.map((v, i) => {
+        const b = document.createElement('span');
+        b.className = `slupek${i >= 6 ? ' zdany' : ''}${i === kubel ? ' ty' : ''}`;
+        b.title = `${i * 10}–${i === 9 ? 100 : i * 10 + 9}%: ${v} ${v === 1 ? 'wynik' : 'wyników'}`;
+        requestAnimationFrame(() => b.style.setProperty('--h', `${(v / maxN) * 100}%`));
+        return b;
+      }), ...[0, 50, 100].map((v) => { const o = document.createElement('span'); o.className = 'os'; o.style.left = v === 100 ? 'auto' : `${v}%`; if (v === 100) o.style.right = '0'; o.textContent = `${v}%`; return o; }));
+      hist.setAttribute('aria-label', `Rozkład wyników ${n} testów: twój wynik w przedziale ${kubel * 10}–${kubel === 9 ? 100 : kubel * 10 + 9}%.`);
+      $('.lek-spol-n').textContent = `${s.tryb === 'egzamin' ? 'pełny egzamin' : 'szybki test'} · ${typStanu(s)} ${sesjaKey.endsWith('wszystkie') ? 'wszystkie sesje' : (wszystkieSesje.find((x) => x.sesja === sesjaKey)?.nazwa ?? sesjaKey)} · ${n.toLocaleString('pl-PL')} wyników`;
+      $('.lek-spol-info').textContent = 'Statystyka zbiorcza z ukończonych testów na tej stronie — nie z prawdziwego egzaminu. Wynik każdego testu trafia tu anonimowo: bez adresu IP i bez identyfikatorów.';
+      box.hidden = false;
+    }
+
+    // ——— POWTÓRKI: słabe pytania (lokalnie) ———
+    // Pytanie z błędną odpowiedzią trafia na listę i schodzi z niej po dwóch poprawnych
+    // odpowiedziach z rzędu (w nauce, powtórce albo w zakończonym teście).
+    const KLUCZ_PYT = 'egzamin-lek:pytania:v1';
+    type HistPyt = { z: number; s: number; t: number };
+    const wczytajHistPyt = (): Record<string, HistPyt> => { try { return JSON.parse(localStorage.getItem(KLUCZ_PYT) || '{}') || {}; } catch { return {}; } };
+    function zapiszPytanie(k: string, ok: boolean) {
+      const h = wczytajHistPyt(); const e = h[k] ?? { z: 0, s: 0, t: 0 };
+      if (ok) e.s += 1; else { e.z += 1; e.s = 0; }
+      e.t = Date.now();
+      if (ok && !e.z) delete h[k]; else h[k] = e; // poprawne od początku — nie zaśmiecamy pamięci
+      try { localStorage.setItem(KLUCZ_PYT, JSON.stringify(h)); } catch { /* pełny storage / tryb prywatny */ }
+    }
+    const slabeKlucze = (t: Typ) => Object.entries(wczytajHistPyt())
+      .filter(([k, e]) => e.z > 0 && e.s < 2 && typSesji(k.split(':')[0]) === t)
+      .map(([k]) => k);
+    function renderPowtorka() {
+      const n = slabeKlucze(typ).length;
+      const box = $('.lek-powtorka'); box.hidden = n === 0;
+      const e = root.querySelector('[data-pole="slabe"]'); if (e) e.textContent = String(n);
+    }
+
+    // ——— HISTORIA WYNIKÓW (lokalnie) ———
+    const KLUCZ_WYN = 'egzamin-lek:wyniki:v1';
+    type Wynik = { t: number; typ: Typ; tryb: Tryb; sesja: string; pkt: number; max: number; czas: number; dz: [string, number, number][] };
+    const wczytajWyniki = (): Wynik[] => { try { const w = JSON.parse(localStorage.getItem(KLUCZ_WYN) || '[]'); return Array.isArray(w) ? w : []; } catch { return []; } };
+    function zapiszWynikTestu(s: Stan) {
+      const w = obliczWynik(s);
+      // Odpowiedzi z testu (egzamin / szybki) zasilają też listę słabych pytań.
+      if (!TRYBY[s.tryb].natychmiast) for (const k of w.wazne) if (s.odp[k] !== undefined) zapiszPytanie(k, s.odp[k] === pyt.get(k)!.o);
+      if (s.tryb !== 'egzamin' && s.tryb !== 'szybki') return;
+      if (!w.max) return;
+      const dz = dzTypu(typStanu(s)).flatMap((d): [string, number, number][] => {
+        const kl = w.wazne.filter((k) => pyt.get(k)!.d === d.id);
+        return kl.length ? [[d.id, kl.filter((k) => s.odp[k] === pyt.get(k)!.o).length, kl.length]] : [];
+      });
+      const lista = wczytajWyniki();
+      lista.push({ t: Date.now(), typ: typStanu(s), tryb: s.tryb, sesja: s.sesje.length > 1 ? 'wszystkie sesje' : (wszystkieSesje.find((x) => x.sesja === s.sesje[0])?.nazwa ?? s.sesje[0]), pkt: w.pkt, max: w.max, czas: Math.round(Math.min(s.czas, s.limit || s.czas)), dz });
+      try { localStorage.setItem(KLUCZ_WYN, JSON.stringify(lista.slice(-100))); } catch { /* brak miejsca */ }
+    }
+    const dataKrotka = (t: number) => new Date(t).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+    function renderHistoria() {
+      const box = $('.lek-historia');
+      const lista = wczytajWyniki().filter((w) => w.typ === typ);
+      box.hidden = lista.length === 0;
+      if (!lista.length) return;
+      // Wykres: jedna seria (% w kolejnych podejściach), linia progu 56%. Ostatnie 20 podejść.
+      const ost = lista.slice(-20);
+      const W = 520, H = 200, L = 34, P = 14, T = 16, B = 26;
+      const x = (i: number) => L + (ost.length === 1 ? (W - L - P) / 2 : (i * (W - L - P)) / (ost.length - 1));
+      const y = (v: number) => T + (1 - v / 100) * (H - T - B);
+      const ns = 'http://www.w3.org/2000/svg';
+      const el = (n: string, a: Record<string, string | number>) => { const e = document.createElementNS(ns, n); for (const [k, v] of Object.entries(a)) e.setAttribute(k, String(v)); return e; };
+      const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `Twoje wyniki ${typ} w kolejnych podejściach; ostatni: ${pl((ost[ost.length - 1].pkt / ost[ost.length - 1].max) * 100, 0)}%` });
+      for (const v of [0, 25, 50, 75, 100]) {
+        svg.append(el('line', { x1: L, x2: W - P, y1: y(v), y2: y(v), class: 'siatka' }));
+        const t = el('text', { x: L - 6, y: y(v) + 4, 'text-anchor': 'end' }); t.textContent = `${v}%`; svg.append(t);
+      }
+      svg.append(el('line', { x1: L, x2: W - P, y1: y(56), y2: y(56), class: 'prog' }));
+      const tp = el('text', { x: W - P, y: y(56) - 5, 'text-anchor': 'end' }); tp.textContent = 'próg 56%'; svg.append(tp);
+      const pkt = ost.map((w, i) => [x(i), y((w.pkt / w.max) * 100)] as const);
+      if (pkt.length > 1) svg.append(el('polyline', { points: pkt.map(([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`).join(' '), class: 'linia' }));
+      const dymek = $('.lek-hist-dymek');
+      ost.forEach((w, i) => {
+        const [cx, cy] = pkt[i];
+        svg.append(el('circle', { cx, cy, r: 4.5, class: 'punkt' }));
+        const cel = el('circle', { cx, cy, r: 14, class: 'cel', tabindex: 0, 'aria-label': `${dataKrotka(w.t)}: ${pl((w.pkt / w.max) * 100, 0)}%` });
+        const pokazD = () => { dymek.textContent = `${dataKrotka(w.t)} · ${TRYBY[w.tryb].nazwa} · ${w.sesja}\n${w.pkt}/${w.max} pkt — ${pl((w.pkt / w.max) * 100, 1)}%`; dymek.style.whiteSpace = 'pre'; dymek.style.left = `${(cx / W) * 100}%`; dymek.style.top = `${(cy / H) * 100}%`; dymek.hidden = false; };
+        cel.addEventListener('mouseenter', pokazD); cel.addEventListener('focus', pokazD);
+        cel.addEventListener('mouseleave', () => (dymek.hidden = true)); cel.addEventListener('blur', () => (dymek.hidden = true));
+        svg.append(cel);
+      });
+      const [lx, ly] = pkt[pkt.length - 1];
+      const tw = el('text', { x: lx, y: ly - 10, 'text-anchor': 'middle', class: 'wartosc' }); tw.textContent = `${pl((ost[ost.length - 1].pkt / ost[ost.length - 1].max) * 100, 0)}%`; svg.append(tw);
+      $('.lek-hist-svg').replaceChildren(svg);
+      const egz = lista.filter((w) => w.tryb === 'egzamin');
+      $('.lek-hist-podpis').textContent = `${lista.length} ${lista.length === 1 ? 'test' : lista.length % 10 >= 2 && lista.length % 10 <= 4 && (lista.length % 100 < 10 || lista.length % 100 >= 20) ? 'testy' : 'testów'} ${typ}` + (egz.length ? ` · pełnych egzaminów: ${egz.length}, zdanych: ${egz.filter((w) => w.pkt >= Math.ceil(w.max * 0.56)).length}` : '') + (lista.length > 20 ? ' · wykres: ostatnie 20' : '');
+      // Najsłabsze dziedziny: suma poprawnych / suma pytań ze wszystkich podejść.
+      const sumy = new Map<string, [number, number]>();
+      for (const w of lista) for (const [id, ok, n] of w.dz) { const a = sumy.get(id) ?? [0, 0]; sumy.set(id, [a[0] + ok, a[1] + n]); }
+      const naj = [...sumy.entries()].filter(([, [, n]]) => n >= 3).map(([id, [ok, n]]) => ({ id, p: ok / n })).sort((a, b) => a.p - b.p).slice(0, 3);
+      const ol = $('.lek-hist-dz ol'); $('.lek-hist-dz').hidden = !naj.length;
+      ol.replaceChildren(...naj.map((d) => {
+        const li = document.createElement('li'); const n = document.createElement('span'); n.textContent = nazwaDz(d.id, typ) ?? d.id;
+        const b = document.createElement('b'); b.textContent = `${pl(d.p * 100, 0)}%`;
+        const tor = document.createElement('span'); tor.className = 'tor'; const i = document.createElement('i'); i.style.width = `${d.p * 100}%`; tor.append(i);
+        li.append(n, b, tor); return li;
+      }));
+      $('.lek-hist-tabela tbody').replaceChildren(...[...lista].reverse().map((w) => {
+        const tr = document.createElement('tr');
+        const c = (t: string, th = false) => { const e = document.createElement(th ? 'th' : 'td'); if (th) e.setAttribute('scope', 'row'); e.textContent = t; return e; };
+        tr.append(c(new Date(w.t).toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' }), true), c(`${TRYBY[w.tryb].nazwa} · ${w.sesja}`), c(`${w.pkt}/${w.max} · ${pl((w.pkt / w.max) * 100, 1)}%`), c(w.czas ? zegar(w.czas) : '—'));
+        return tr;
+      }));
+    }
+
+    // ——— UDOSTĘPNIANIE WYNIKU (obrazek z canvas, w przeglądarce) ———
+    // url (data:) — podgląd i pobranie; plik — udostępnianie. Bez fetch(data:): CSP connect-src 'self'.
+    let obrazek: { url: string; plik: File | null; tekst: string } | null = null;
+    function tekstWyniku(s: Stan, zLinkiem = true) {
+      const w = obliczWynik(s); const ses = s.sesje.length > 1 ? 'wszystkie sesje' : wszystkieSesje.find((x) => x.sesja === s.sesje[0])?.nazwa;
+      return `Mój wynik ${typStanu(s)} (${ses}, ${TRYBY[s.tryb].nazwa.toLowerCase()}): ${w.pkt}/${w.max} pkt — ${pl(w.proc, 1)}%, próg 56% ${w.zdany ? 'przekroczony' : 'nieprzekroczony'}${s.agent ? ' (z asystentem AI)' : ''}. Sprawdź się na prawdziwych pytaniach z jawnej bazy CEM${zLinkiem ? `: ${location.origin}/lek/` : ':'}`;
+    }
+    async function rysujObrazek(s: Stan): Promise<HTMLCanvasElement> {
+      const w = obliczWynik(s); const t = typStanu(s);
+      try { await Promise.all(['600 40px "IBM Plex Serif"', '500 140px "IBM Plex Mono"', '400 24px "IBM Plex Sans"', '600 24px "IBM Plex Sans"'].map((f) => document.fonts.load(f))); } catch { /* czcionki systemowe */ }
+      const c = document.createElement('canvas'); c.width = 1200; c.height = 630;
+      const g = c.getContext('2d')!;
+      const SANS = '"IBM Plex Sans", system-ui, sans-serif', MONO = '"IBM Plex Mono", ui-monospace, monospace', SERIF = '"IBM Plex Serif", Georgia, serif';
+      const grad = g.createLinearGradient(0, 0, 1200, 630); grad.addColorStop(0, '#16263f'); grad.addColorStop(1, '#0c1626');
+      g.fillStyle = grad; g.fillRect(0, 0, 1200, 630);
+      g.fillStyle = '#2f6fb1'; g.fillRect(0, 0, 1200, 8);
+      const tekst = (str: string, x: number, y: number, font: string, kolor: string, align: CanvasTextAlign = 'left') => { g.font = font; g.fillStyle = kolor; g.textAlign = align; g.fillText(str, x, y); };
+      const skroc = (str: string, max: number) => { if (g.measureText(str).width <= max) return str; while (str.length > 1 && g.measureText(str + '…').width > max) str = str.slice(0, -1); return str + '…'; };
+      tekst('zarobkilekarzy.pl', 72, 72, `500 24px ${MONO}`, '#9fb0cc');
+      const ses = s.sesje.length > 1 ? 'wszystkie sesje' : (wszystkieSesje.find((x) => x.sesja === s.sesje[0])?.nazwa ?? '');
+      tekst(`${t} · ${ses} · ${TRYBY[s.tryb].nazwa}`.toUpperCase(), 72, 128, `600 22px ${SANS}`, '#6ea8e6');
+      tekst('Mój wynik', 72, 182, `600 40px ${SERIF}`, '#ffffff');
+      tekst(`${pl(w.proc, 1)}%`, 66, 330, `500 140px ${MONO}`, '#ffffff');
+      tekst(`${w.pkt} / ${w.max} pkt`, 72, 380, `400 30px ${SANS}`, '#c8d3e3');
+      const pigulka = w.zdany ? (s.tryb === 'egzamin' ? 'ZDANY · próg 56%' : 'POWYŻEJ PROGU 56%') : 'PONIŻEJ PROGU 56%';
+      g.font = `600 22px ${SANS}`; const pw = g.measureText(pigulka).width + 44;
+      g.fillStyle = w.zdany ? '#2f7a34' : '#b3261e'; g.beginPath(); g.roundRect(72, 410, pw, 48, 24); g.fill();
+      tekst(pigulka, 72 + pw / 2, 442, `600 22px ${SANS}`, '#ffffff', 'center');
+      if (w.zTr === w.max && w.max) tekst(`przeciętny zdający ≈ ${pl((w.sala / w.max) * 100, 0)}%`, 72, 500, `400 22px ${SANS}`, '#9fb0cc');
+      if (s.agent) tekst('rozwiązane z asystentem AI', 72, 532, `400 20px ${SANS}`, '#e2a94f');
+      // Prawa kolumna: wynik według dziedzin (gdy są), z kreską przeciętnego zdającego.
+      const dz = dzTypu(t).flatMap((d) => { const kl = w.wazne.filter((k) => pyt.get(k)!.d === d.id); if (!kl.length) return []; const ok = kl.filter((k) => s.odp[k] === pyt.get(k)!.o).length; const sala = kl.every((k) => pyt.get(k)!.tr !== null) ? kl.reduce((a, k) => a + pyt.get(k)!.tr!, 0) / kl.length : null; return [{ nazwa: d.nazwa, p: ok / kl.length, sala }]; });
+      if (dz.length > 1) {
+        const X = 640, SZ = 488, wiersz = Math.min(44, 380 / dz.length); let Y = 150;
+        tekst('WEDŁUG DZIEDZIN', X, 128, `600 18px ${SANS}`, '#9fb0cc');
+        for (const d of dz) {
+          g.font = `400 18px ${SANS}`; tekst(skroc(d.nazwa, SZ - 70), X, Y + 4, `400 18px ${SANS}`, '#c8d3e3');
+          tekst(`${pl(d.p * 100, 0)}%`, X + SZ, Y + 4, `500 18px ${MONO}`, '#ffffff', 'right');
+          g.fillStyle = '#24344d'; g.beginPath(); g.roundRect(X, Y + 12, SZ, 8, 4); g.fill();
+          g.fillStyle = d.sala !== null && d.p < d.sala - 0.1 ? '#f26d63' : '#6ea8e6'; g.beginPath(); g.roundRect(X, Y + 12, Math.max(4, SZ * d.p), 8, 4); g.fill();
+          if (d.sala !== null) { g.fillStyle = '#ffffff'; g.fillRect(X + SZ * d.sala - 1, Y + 8, 2, 16); }
+          Y += wiersz;
+        }
+      }
+      g.fillStyle = '#24344d'; g.fillRect(72, 556, 1056, 1);
+      tekst('Sprawdź się na prawdziwych pytaniach z jawnej bazy CEM', 72, 596, `400 22px ${SANS}`, '#c8d3e3');
+      tekst(`${location.host}/lek`, 1128, 596, `500 22px ${MONO}`, '#6ea8e6', 'right');
+      return c;
+    }
+    async function podgladUdostepnienia() {
+      const s = stan; if (!s) return;
+      const img = $<HTMLImageElement>('.lek-udost-podglad'); img.hidden = true; obrazek = null;
+      const c = await rysujObrazek(s);
+      const plik = await new Promise<File | null>((ok) => c.toBlob((b) => ok(b ? new File([b], `wynik-${typStanu(s).toLowerCase()}.png`, { type: 'image/png' }) : null), 'image/png'));
+      if (stan !== s) return;
+      obrazek = { url: c.toDataURL('image/png'), plik, tekst: tekstWyniku(s) };
+      const adres = `${location.origin}/lek/`;
+      $<HTMLAnchorElement>('.lek-udost-x').href = `https://x.com/intent/post?text=${encodeURIComponent(tekstWyniku(s, false))}&url=${encodeURIComponent(adres)}`;
+      $<HTMLAnchorElement>('.lek-udost-fb').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(adres)}`;
+      img.src = obrazek.url; img.hidden = false;
+      $<HTMLButtonElement>('[data-akcja="udostepnij"]').hidden = !(plik && navigator.canShare?.({ files: [plik] }));
+    }
+    const potwierdz = (btn: HTMLElement, tekst: string) => { const stary = btn.textContent; btn.textContent = tekst; btn.classList.add('ok'); setTimeout(() => { btn.textContent = stary; btn.classList.remove('ok'); }, 1800); };
+
+    // ——— INTERFEJS DLA AGENTÓW: window.lek + WebMCP ———
+    // Jeden rdzeń, dwie drogi: `window.lek` (dowolna przeglądarka, np. agent sterujący nią
+    // przez JS) i narzędzia WebMCP (`document.modelContext`, Chrome w origin trial).
+    // Funkcje sterują TYM SAMYM stanem co interfejs — ekran podąża za agentem. Każdy test
+    // ruszony z tej drogi dostaje `agent: true` i nie trafia do statystyk ludzi. W trybie
+    // egzaminu odpowiedzi nie są ujawniane przed zakończeniem (jak w interfejsie) — choć
+    // klucz i tak jest w publicznym JSON-ie, więc to wygoda, nie zabezpieczenie.
+    const naIdx = (nr?: number) => {
+      if (!stan) throw new Error('Brak aktywnego testu — wywołaj najpierw rozpocznij().');
+      if (nr === undefined) return stan.idx;
+      if (!Number.isInteger(nr) || nr < 1 || nr > stan.klucze.length) throw new Error(`Numer pytania poza zakresem 1–${stan.klucze.length}.`);
+      return nr - 1;
+    };
+    const oznaczAgenta = () => { if (stan && !stan.agent) { stan.agent = true; zapisz(); } };
+    const ujawnij = (s: Stan, k: string) => s.koniec || (TRYBY[s.tryb].natychmiast && s.odp[k] !== undefined);
+
+    function opisPytania(i = stan ? stan.idx : 0) {
+      const s = stan!; const k = s.klucze[i]; const q = pyt.get(k)!;
+      const o = s.odp[k];
+      const wynik: Record<string, unknown> = {
+        nr: i + 1, z: s.klucze.length, tryb: s.tryb,
+        zrodlo: `Pytanie nr ${q.nr} · ${q.typ} ${q.nazwaSesji}`,
+        egzamin: q.typ,
+        dziedzina: nazwaDz(q.d, q.typ) ?? null,
+        pochodzenie: q.b === 1 ? 'z jawnej bazy' : q.b === 0 ? 'nowe' : null,
+        tresc: q.t,
+        warianty: Object.fromEntries(q.w.map((w, j) => [LITERY[j], w])),
+        twojaOdpowiedz: o === undefined ? null : LITERY[o],
+        oznaczone: s.flagi.includes(k),
+        notatka: notatki[k] ?? null,
+      };
+      if (q.o === null) wynik.uniewaznione = 'Pytanie unieważnione przez CEM — nie liczy się do wyniku, odpowiedź nie jest przyjmowana.';
+      if (q.nz) wynik.uwaga = 'Pytanie zgłoszone w komentarzach bazy CEM jako niezgodne z aktualną wiedzą (na egzaminie liczone).';
+      if (q.o !== null && ujawnij(s, k)) {
+        wynik.poprawna = LITERY[q.o];
+        wynik.dobrze = o === q.o;
+        if (q.p) wynik.procentZdajacych = Object.fromEntries(q.p.map((p, j) => [LITERY[j], p]));
+        if (q.tr !== null) wynik.wskaznikTrudnosci = q.tr;
+      }
+      return wynik;
+    }
+
+    function opisWyniku() {
+      const s = stan!; const w = obliczWynik(s);
+      return {
+        zakonczony: s.koniec, tryb: s.tryb, punkty: w.pkt, maksimum: w.max, progZdania: w.prog,
+        zdany: w.zdany, procent: Math.round(w.proc * 10) / 10,
+        przecietnyZdajacy: w.zTr === w.max && w.max ? Math.round(w.sala) : null,
+        bezOdpowiedzi: w.wazne.filter((k) => s.odp[k] === undefined).length,
+        uniewaznione: s.klucze.length - w.max,
+        wgDziedzin: dzTypu(typStanu(s)).map((d) => {
+          const kl = w.wazne.filter((k) => pyt.get(k)!.d === d.id);
+          if (!kl.length) return null;
+          const ok = kl.filter((k) => s.odp[k] === pyt.get(k)!.o).length;
+          const tr = kl.every((k) => pyt.get(k)!.tr !== null) ? kl.reduce((a, k) => a + pyt.get(k)!.tr!, 0) / kl.length : null;
+          return { dziedzina: d.nazwa, poprawne: ok, pytan: kl.length, procent: Math.round((ok / kl.length) * 1000) / 10, przecietnyZdajacyProcent: tr === null ? null : Math.round(tr * 1000) / 10 };
+        }).filter(Boolean),
+        uwaga: 'Test z udziałem agenta nie trafia do statystyk użytkowników strony.',
+      };
+    }
+
+    const api = {
+      opis: 'Moduł egzaminacyjny LEK (zarobkilekarzy.pl). Zacznij od await rozpocznij(tryb, sesja), pobieraj pytania partiami: pytania(od, do), odpowiadaj partiami: odpowiedzi({ nr: litera }), na końcu zakoncz(). Pojedynczo: pytanie(nr), odpowiedz(litera, nr). Numery pytań 1–N w kolejności testu. Odpowiadaj z własnej wiedzy — nie pobieraj plików z danymi strony.',
+      sesje: () => wszystkieSesje.map((x) => ({ sesja: x.sesja, egzamin: x.typ, nazwa: `${x.typ} ${x.nazwa}`, pytan: x.n, kompletna: x.pelna, uniewaznionych: x.x, dziedziny: !!x.kategorie, pochodzenie: !!x.pochodzenie })),
+      dziedziny: (egzamin: Typ = 'LEK') => dzTypu(egzamin === 'LDEK' ? 'LDEK' : 'LEK').map((d) => ({ id: d.id, nazwa: d.nazwa, pytanNaEgzaminie: d.n })),
+      async rozpocznij(tryb: Tryb = 'egzamin', sesja?: string, opcje: { tasuj?: boolean; dziedziny?: string[]; pochodzenie?: 'baza' | 'nowe' } = {}) {
+        if (!TRYBY[tryb]) throw new Error('Tryb: egzamin | nauka | szybki.');
+        // „wszystkie” = LEK, „ldek-wszystkie” = LDEK; bez sesji — najnowsza kompletna LEK.
+        const t: Typ = sesja ? typSesji(sesja) : 'LEK';
+        const ids = sesja?.endsWith('wszystkie') && tryb !== 'egzamin' ? typy[t].sesje.map((x) => x.sesja) : [sesja ?? (typy.LEK.sesje.find((x) => x.pelna) ?? typy.LEK.sesje[0]).sesja];
+        if (!ids.every((id) => wszystkieSesje.some((x) => x.sesja === id))) throw new Error(`Nieznana sesja. Dostępne: ${wszystkieSesje.map((x) => x.sesja).join(', ')}.`);
+        const zakres: Zakres = {};
+        if (opcje.dziedziny?.length) {
+          const zle = opcje.dziedziny.filter((d) => !dzTypu(t).some((x) => x.id === d));
+          if (zle.length) throw new Error(`Nieznane dziedziny ${t}: ${zle.join(', ')}. Dostępne: ${dzTypu(t).map((d) => d.id).join(', ')}.`);
+          zakres.d = opcje.dziedziny;
+        }
+        if (opcje.pochodzenie) zakres.b = opcje.pochodzenie === 'baza' ? 1 : 0;
+        if (!(await start(tryb, ids, undefined, { agent: true, tasuj: opcje.tasuj ?? false, zakres: zakres.d || zakres.b !== undefined ? zakres : undefined })))
+          throw new Error($('.lek-blad').textContent || 'Nie udało się wczytać pytań.');
+        return opisPytania();
+      },
+      stan: () => stan ? {
+        aktywny: !stan.koniec, tryb: stan.tryb, nr: stan.idx + 1, z: stan.klucze.length,
+        odpowiedziane: Object.keys(stan.odp).length, oznaczone: stan.flagi.length,
+        pozostalyCzasSek: stan.limit ? Math.max(0, Math.round((stan.limit - stan.czas) / 1000)) : null,
+      } : { aktywny: false },
+      pytanie(nr?: number) {
+        const i = naIdx(nr);
+        if (nr !== undefined && !stan!.koniec) { stan!.idx = i; zapisz(); renderPytanie(); }
+        return opisPytania(i);
+      },
+      odpowiedz(litera: string, nr?: number) {
+        const i = naIdx(nr); const s = stan!;
+        if (s.koniec) throw new Error('Test jest zakończony.');
+        const j = LITERY.indexOf(String(litera).trim().toUpperCase());
+        if (j < 0) throw new Error('Litera odpowiedzi: A–E.');
+        const k = s.klucze[i]; const q = pyt.get(k)!;
+        if (q.o === null) return { przyjeto: false, powod: 'pytanie unieważnione' };
+        if (TRYBY[s.tryb].natychmiast && s.odp[k] !== undefined) return { przyjeto: false, powod: 'w trybie nauki odpowiedzi nie można zmienić', ...opisPytania(i) };
+        oznaczAgenta();
+        s.idx = i; zapisz(); wybierz(j);
+        return { przyjeto: true, ...opisPytania(i) };
+      },
+      dalej() { naIdx(); if (stan!.idx < stan!.klucze.length - 1) { stan!.idx++; zapisz(); renderPytanie(); } return opisPytania(); },
+      wstecz() { naIdx(); if (stan!.idx > 0) { stan!.idx--; zapisz(); renderPytanie(); } return opisPytania(); },
+      oznacz(nr?: number) {
+        const i = naIdx(nr); const k = stan!.klucze[i]; oznaczAgenta();
+        stan!.flagi = stan!.flagi.includes(k) ? stan!.flagi.filter((x) => x !== k) : [...stan!.flagi, k];
+        zapisz(); renderPytanie(); return { nr: i + 1, oznaczone: stan!.flagi.includes(k) };
+      },
+      notatka(tekst: string, nr?: number) {
+        const i = naIdx(nr); zapiszNotatke(stan!.klucze[i], String(tekst ?? '')); renderPytanie();
+        return { nr: i + 1, notatka: notatki[stan!.klucze[i]] ?? null };
+      },
+      pytania(od = 1, doNr?: number) {
+        naIdx(); const z = stan!.klucze.length; const k = Math.min(doNr ?? z, z);
+        if (!Number.isInteger(od) || od < 1 || od > k) throw new Error(`Zakres pytań: 1–${z}.`);
+        return Array.from({ length: k - od + 1 }, (_, i) => opisPytania(od - 1 + i));
+      },
+      odpowiedzi(mapa: Record<string, string>) {
+        naIdx(); const s = stan!;
+        if (s.koniec) throw new Error('Test jest zakończony.');
+        const wynik: { nr: number; przyjeto: boolean; powod?: string }[] = [];
+        for (const [nrS, lit] of Object.entries(mapa || {})) {
+          const nr = Number(nrS);
+          try { const r = api.odpowiedz(lit, nr) as { przyjeto: boolean; powod?: string }; wynik.push({ nr, przyjeto: r.przyjeto, ...(r.powod ? { powod: r.powod } : {}) }); }
+          catch (e) { wynik.push({ nr, przyjeto: false, powod: (e as Error).message }); }
+        }
+        return { przyjeto: wynik.filter((x) => x.przyjeto).length, odrzucono: wynik.filter((x) => !x.przyjeto), bezOdpowiedzi: api.bezOdpowiedzi().length };
+      },
+      bezOdpowiedzi: () => { naIdx(); return stan!.klucze.map((k, i) => ({ k, i })).filter(({ k }) => stan!.odp[k] === undefined && pyt.get(k)!.o !== null).map(({ i }) => i + 1); },
+      zakoncz() { naIdx(); oznaczAgenta(); if (!stan!.koniec) zakoncz(); return opisWyniku(); },
+      wynik() { naIdx(); return opisWyniku(); },
+    };
+    window.lek = api;
+
+    // WebMCP — tylko tam, gdzie przeglądarka udostępnia document.modelContext (dziś: Chrome
+    // w origin trial). Token wpisz do ORIGIN_TRIAL; pusty = narzędzia rejestrują się tylko
+    // w przeglądarkach z funkcją włączoną flagą. Brak API → nic się nie dzieje.
+    const ORIGIN_TRIAL = '';
+    (async () => {
+      if (ORIGIN_TRIAL && !document.querySelector('meta[http-equiv="origin-trial"]')) {
+        const m = document.createElement('meta'); m.httpEquiv = 'origin-trial'; m.content = ORIGIN_TRIAL; document.head.append(m);
+      }
+      const mc = (document as unknown as { modelContext?: WebMcpContext }).modelContext;
+      if (!mc?.registerTool) return;
+      const wynik = (v: unknown) => JSON.stringify(v);
+      const nr = { type: 'integer', minimum: 1, description: 'Numer pytania w teście (1–N). Pominięty = bieżące.' };
+      const narzedzia: WebMcpTool[] = [
+        { name: 'lek_sesje', description: 'Lista dostępnych sesji Lekarskiego Egzaminu Końcowego (LEK) z jawnej bazy CEM.',
+          inputSchema: { type: 'object', properties: {} }, annotations: { readOnlyHint: true },
+          execute: async () => wynik(api.sesje()) },
+        { name: 'lek_rozpocznij', description: 'Rozpoczyna nowy test LEK i zwraca pierwsze pytanie. Tryby: egzamin (cała sesja, 4 h, odpowiedzi ujawniane dopiero po zakończeniu), nauka (po każdej odpowiedzi poprawna i % zdających), szybki (20 losowych pytań). Zastępuje trwający test.',
+          inputSchema: { type: 'object', properties: {
+            tryb: { type: 'string', enum: ['egzamin', 'nauka', 'szybki'] },
+            sesja: { type: 'string', description: 'Id sesji z lek_sesje: LEK np. 20262 = jesień 2026, LDEK z prefiksem, np. ldek-20262; „wszystkie” / „ldek-wszystkie” dla nauki i szybkiego testu. Egzamin tylko z sesji kompletnej.' },
+            dziedziny: { type: 'array', items: { type: 'string', enum: [...new Set([...dzTypu('LEK'), ...dzTypu('LDEK')].map((d) => d.id))] }, description: `Tylko nauka i szybki test: zawęża do dziedzin. LEK: ${dzTypu('LEK').map((d) => `${d.id} = ${d.nazwa}`).join('; ')}. LDEK: ${dzTypu('LDEK').map((d) => `${d.id} = ${d.nazwa}`).join('; ')}.` },
+            pochodzenie: { type: 'string', enum: ['baza', 'nowe'], description: 'Tylko nauka i szybki test, sesje z ustalonym pochodzeniem: pytania z jawnej bazy CEM albo nowe.' } }, required: ['tryb'] },
+          annotations: { consequentialHint: true },
+          execute: async (a) => wynik(await api.rozpocznij(a.tryb as Tryb, a.sesja as string | undefined, { dziedziny: a.dziedziny as string[] | undefined, pochodzenie: a.pochodzenie as 'baza' | 'nowe' | undefined })) },
+        { name: 'lek_pytanie', description: 'Zwraca treść i warianty A–E pytania (bieżącego lub o podanym numerze) oraz zaznaczoną odpowiedź. Z numerem przechodzi do tego pytania.',
+          inputSchema: { type: 'object', properties: { nr } },
+          execute: async (a) => wynik(api.pytanie(a.nr as number | undefined)) },
+        { name: 'lek_odpowiedz', description: 'Zaznacza odpowiedź A–E w pytaniu (bieżącym lub o podanym numerze). W trybie egzaminu odpowiedź można zmieniać do zakończenia.',
+          inputSchema: { type: 'object', properties: { litera: { type: 'string', enum: [...LITERY] }, nr }, required: ['litera'] },
+          execute: async (a) => wynik(api.odpowiedz(a.litera as string, a.nr as number | undefined)) },
+        { name: 'lek_pytania', description: 'Zwraca partię pytań (treść, warianty A–E, dziedzina, zaznaczona odpowiedź) w zakresie numerów od–do. Wygodniejsze niż pobieranie pojedynczo.',
+          inputSchema: { type: 'object', properties: { od: { type: 'integer', minimum: 1 }, do: { type: 'integer', minimum: 1 } }, required: ['od'] }, annotations: { readOnlyHint: true },
+          execute: async (a) => wynik(api.pytania(a.od as number, a.do as number | undefined)) },
+        { name: 'lek_odpowiedzi', description: 'Zaznacza wiele odpowiedzi naraz: obiekt numer pytania → litera A–E, np. {"1":"C","2":"A"}. Zwraca liczbę przyjętych i listę odrzuconych.',
+          inputSchema: { type: 'object', properties: { odpowiedzi: { type: 'object', additionalProperties: { type: 'string', enum: [...LITERY] } } }, required: ['odpowiedzi'] },
+          execute: async (a) => wynik(api.odpowiedzi(a.odpowiedzi as Record<string, string>)) },
+        { name: 'lek_dalej', description: 'Przechodzi do następnego pytania i je zwraca.',
+          inputSchema: { type: 'object', properties: {} }, execute: async () => wynik(api.dalej()) },
+        { name: 'lek_bez_odpowiedzi', description: 'Numery pytań, na które nie ma jeszcze odpowiedzi.',
+          inputSchema: { type: 'object', properties: {} }, annotations: { readOnlyHint: true },
+          execute: async () => wynik(api.bezOdpowiedzi()) },
+        { name: 'lek_zakoncz', description: 'Kończy test i zwraca wynik (punkty, próg 56%, zdany/niezdany). Po zakończeniu odpowiedzi nie można zmieniać.',
+          inputSchema: { type: 'object', properties: {} }, annotations: { consequentialHint: true },
+          execute: async () => wynik(api.zakoncz()) },
+      ];
+      for (const t of narzedzia) {
+        const owiniete: WebMcpTool = { ...t, execute: async (a, o) => { try { return await t.execute(a ?? {}, o); } catch (e) { return wynik({ blad: (e as Error).message }); } } };
+        try { await mc.registerTool(owiniete); } catch { /* API w trialu bywa niestabilne — moduł działa dalej bez niego */ }
+      }
+    })();
+
+    // ——— zdarzenia ———
+    root.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const opcja = t.closest<HTMLButtonElement>('.lek-warianty .lek-opcja');
+      if (opcja && !opcja.disabled && opcja.closest('[data-ekran="pytanie"]')) return wybierz(Number(opcja.dataset.i));
+      const f = t.closest<HTMLButtonElement>('.lek-filtr');
+      if (f) { filtr = f.dataset.filtr!; return renderPrzeglad(); }
+      const a = t.closest<HTMLElement>('[data-akcja]')?.dataset.akcja;
+      if (!a) return;
+      if (a === 'start') {
+        const tryb = (root.querySelector<HTMLInputElement>('input[name=tryb]:checked')?.value || 'egzamin') as Tryb;
+        const v = $<HTMLSelectElement>('#lek-sesja').value;
+        start(tryb, v === '*' ? sesje.map((s) => s.sesja) : [v], undefined, { zakres: odczytajZakres() });
+      } else if (a === 'wznow' && stan) {
+        pobierz(stan.sesje).then((m) => { pyt = m; if (stan && stan.klucze.every((k) => pyt.has(k))) ekranPytanie(true); else { stan = null; zapisz(); ekranStart(); } })
+          .catch(() => { const b = $('.lek-blad'); b.textContent = 'Nie udało się wczytać pytań.'; b.hidden = false; });
+      } else if (a === 'porzuc') { stan = null; zapisz(); ekranStart(); }
+      else if (a === 'dalej') idz(1);
+      else if (a === 'wstecz') idz(-1);
+      else if (a === 'zakoncz') zapytajKoniec();
+      else if (a === 'flaga' && stan) {
+        const k = stan.klucze[stan.idx];
+        stan.flagi = stan.flagi.includes(k) ? stan.flagi.filter((x) => x !== k) : [...stan.flagi, k];
+        zapisz(); $('[data-akcja="flaga"]').setAttribute('aria-pressed', String(stan.flagi.includes(k))); renderMapa();
+      } else if (a === 'notatka' && stan) {
+        const box = $('#lek-notatka'); box.hidden = !box.hidden;
+        t.closest('button')!.setAttribute('aria-expanded', String(!box.hidden));
+        if (!box.hidden) $<HTMLTextAreaElement>('#lek-notatka-pole').focus();
+      } else if (a === 'mapa') {
+        const m = $('#lek-mapa'); m.hidden = !m.hidden;
+        t.closest('button')!.setAttribute('aria-expanded', String(!m.hidden)); renderMapa();
+      } else if (a === 'kopiuj-prompt') {
+        const btn = t.closest('button')!; const tekst = $('#lek-prompt').textContent || '';
+        const ok = () => { btn.textContent = 'Skopiowano'; btn.classList.add('ok'); setTimeout(() => { btn.textContent = 'Kopiuj prompt'; btn.classList.remove('ok'); }, 2000); };
+        navigator.clipboard?.writeText(tekst).then(ok, () => { getSelection()?.selectAllChildren($('#lek-prompt')); });
+      } else if (a === 'dialog-anuluj') dialog.close();
+      else if (a === 'dialog-ok') zakoncz();
+      else if (a === 'bledne' && stan) {
+        const s = stan;
+        const bledne = s.klucze.filter((k) => pyt.get(k)!.o !== null && s.odp[k] !== pyt.get(k)!.o);
+        start('nauka', s.sesje, bledne);
+      } else if (a === 'powtorka') {
+        const kl = slabeKlucze(typ);
+        if (kl.length) start('powtorka', [...new Set(kl.map((k) => k.split(':')[0]))], kl);
+      } else if (a === 'wyczysc-historie') {
+        if (confirm('Usunąć historię wyników i listę słabych pytań z tej przeglądarki?')) {
+          try { localStorage.removeItem(KLUCZ_WYN); localStorage.removeItem(KLUCZ_PYT); } catch { /* brak */ }
+          renderHistoria(); renderPowtorka();
+        }
+      } else if (a === 'pobierz-obrazek' && obrazek) {
+        const l = document.createElement('a'); l.href = obrazek.url; l.download = `wynik-${stan ? typStanu(stan).toLowerCase() : 'lek'}.png`; document.body.append(l); l.click(); l.remove();
+      } else if (a === 'kopiuj-wynik' && obrazek) {
+        const btn = t.closest<HTMLElement>('button')!;
+        navigator.clipboard?.writeText(obrazek.tekst).then(() => potwierdz(btn, 'Skopiowano'), () => {});
+      } else if (a === 'udostepnij' && obrazek) {
+        if (obrazek.plik) navigator.share({ files: [obrazek.plik], text: obrazek.tekst }).catch(() => {});
+      } else if (a === 'pauza') { przelaczPauze();
+      } else if (a === 'pelny-ekran') {
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        else root.requestFullscreen().catch(() => {});
+      } else if (a === 'baza') { ekranBaza(); }
+      else if (a === 'wroc') { history.replaceState(null, '', location.pathname + location.search); if (stan?.koniec) ekranWynik(); else ekranStart(); root.scrollIntoView({ block: 'start' }); }
+      else if (a === 'nowy') { stan = null; zapisz(); ekranStart(); root.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+
+    $<HTMLTextAreaElement>('#lek-notatka-pole').addEventListener('input', (e) => {
+      if (!stan) return;
+      const k = stan.klucze[stan.idx];
+      zapiszNotatke(k, (e.target as HTMLTextAreaElement).value);
+      $('.lek-notatka-btn').classList.toggle('ma', !!notatki[k]);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!stan || stan.koniec || $('[data-ekran="pytanie"]').hidden || dialog.open) return;
+      if (e.key.toLowerCase() === 'p' && !e.metaKey && !e.ctrlKey && !e.altKey && !(e.target as HTMLElement).matches('input, select, textarea, [contenteditable]')) { e.preventDefault(); return przelaczPauze(); }
+      if (stan.pauza) return; // wstrzymany test nie przyjmuje odpowiedzi z klawiatury
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const cel = e.target as HTMLElement;
+      if (cel.matches('input, select, textarea, [contenteditable]')) return;
+      const k = e.key.toLowerCase();
+      const i = '12345'.indexOf(k) >= 0 ? '12345'.indexOf(k) : 'abcde'.indexOf(k);
+      if (i >= 0 && k.length === 1) { e.preventDefault(); wybierz(i); }
+      else if (e.key === 'ArrowRight' || (e.key === 'Enter' && !cel.matches('button, a, summary'))) { e.preventDefault(); idz(1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); idz(-1); }
+      else if (k === 'f') { e.preventDefault(); ($('[data-akcja="flaga"]') as HTMLButtonElement).click(); }
+      else if (k === 'n') { e.preventDefault(); ($('[data-akcja="notatka"]') as HTMLButtonElement).click(); }
+    });
+
+    // Wejście: zakończony test z poprzedniej wizyty → od razu wynik; trwający → baner „wróć”.
+    if (stan?.koniec) {
+      pobierz(stan.sesje).then((m) => { pyt = m; if (stan && stan.klucze.every((k) => pyt.has(k))) ekranWynik(); else { stan = null; zapisz(); ekranStart(); } }).catch(() => ekranStart());
+    } else if (location.hash === '#baza') ekranBaza();
+    else ekranStart();
+  }
+</script>

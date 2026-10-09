@@ -144,6 +144,11 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Jak działa tajwańska ochrona zdrowia',
     subtitle: 'Rachunek z kwotą dla ubezpieczyciela po każdej wizycie, jawne sprawozdania szpitali i rejestr miejsc pracy lekarzy. Płace lekarzy — niejawne.',
   },
+  'lek': {
+    tag: 'Dane · Egzamin',
+    title: 'Egzamin LEK — sprawdź się',
+    subtitle: '200 prawdziwych pytań z jawnej bazy CEM, 4 godziny, próg 56%. Po każdej odpowiedzi widzisz, jak odpowiadali zdający.',
+  },
   'analizy/symulator-podazy-lekarzy': {
     tag: 'Analiza · Symulator',
     title: 'Symulator podaży lekarzy',

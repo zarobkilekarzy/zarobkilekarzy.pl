@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { ogPages, type OgPage } from '../../lib/ogPages';
-import { fonts, el, logo, ecgBackground, type Node } from '../../lib/ogCard';
+import { fonts, el, logo, ecgBackground, topBand, OG, sierotki, type Node } from '../../lib/ogCard';
 import { arcadeTemplate } from '../../lib/ogCardGra';
 import { egzaminTemplate } from '../../lib/ogCardEgzamin';
 
@@ -14,11 +14,12 @@ import { egzaminTemplate } from '../../lib/ogCardEgzamin';
 // krecha w poprzek tekstu, i zostawia akapity czyste: przez tekst przechodzą tylko pionowe
 // załamki R. Wartość ZMIERZONA na wyrenderowanej karcie, nie wyliczona — zależy od metryk
 // fontu stopki. Zmiana paddingu/rozmiaru stopki wymaga ponownego pomiaru, inaczej linia
-// oderwie się od stopki.
+// oderwie się od stopki. Stopka ma jawne lineHeight 29 px, więc góra stopki = 630 − 70
+// (padding) − 29 − 25 (paddingTop) = 506 niezależnie od metryk kroju.
 const ECG_BASELINE = 506;
 
 const ecgBg = ecgBackground({
-  width: 1184, // 1200 minus 16 px czerwonego bordera: absolute pozycjonuje się od padding boxa
+  width: 1200,
   height: 630,
   baseline: ECG_BASELINE,
   amplitude: 190,
@@ -31,23 +32,26 @@ const ecgBg = ecgBackground({
 
 function template(p: OgPage): Node {
   const len = p.title.length;
-  const titleSize = len > 46 ? 58 : len > 30 ? 68 : 78;
+  // Archivo Wide jest szersze niż dawny szeryf — stopnie o ~7% mniejsze, żeby długie
+  // tytuły mieściły się w dwóch–trzech wierszach, a podtytuł nie spychał stopki.
+  const titleSize = len > 60 ? 46 : len > 46 ? 52 : len > 30 ? 62 : 72;
   return el(
-    { height: '100%', width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', background: '#14233a', color: '#ffffff', padding: '70px 72px', fontFamily: 'Plex Sans', borderLeft: '16px solid #b3261e' },
+    { height: '100%', width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', background: OG.bg, color: OG.ink, padding: '70px 72px', fontFamily: 'Archivo' },
     [
       ecgBg,
+      topBand(1200, 10),
       el({ display: 'flex', alignItems: 'center' }, [
         logo(30, { marginRight: '16px' }),
-        el({ fontFamily: 'Plex Mono', fontSize: '27px', color: '#cdd6e0', letterSpacing: '1px' }, 'zarobkilekarzy.pl'),
+        el({ fontSize: '27px', fontWeight: 600, color: OG.soft }, 'zarobkilekarzy.pl'),
       ]),
       el({ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'center' }, [
-        el({ display: 'flex', fontSize: '22px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#6aa9e0', marginBottom: '20px' }, p.tag),
-        el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: `${titleSize}px`, lineHeight: 1.08, color: '#ffffff' }, p.title),
-        el({ display: 'flex', fontSize: '31px', lineHeight: 1.42, color: '#aebccb', marginTop: '26px', maxWidth: '1010px' }, p.subtitle),
+        el({ display: 'flex', fontSize: '27px', fontWeight: 600, color: OG.link, marginBottom: '18px' }, p.tag),
+        el({ display: 'flex', fontFamily: 'Archivo Wide', fontWeight: 800, fontSize: `${titleSize}px`, lineHeight: 1.04, letterSpacing: '-0.5px', color: OG.ink }, sierotki(p.title)),
+        el({ display: 'flex', fontSize: '31px', lineHeight: 1.42, color: OG.soft, marginTop: '26px', maxWidth: '1010px' }, sierotki(p.subtitle)),
       ]),
       // paddingTop 25 (a nie 24) kompensuje usunięty 1 px bordera — wysokość bloku stopki
       // musi zostać ta sama, bo od niej zależy zmierzone ECG_BASELINE.
-      el({ display: 'flex', alignItems: 'center', paddingTop: '25px', color: '#8aa0b6', fontSize: '22px' }, [
+      el({ display: 'flex', alignItems: 'center', paddingTop: '25px', color: OG.faint, fontSize: '22px', lineHeight: '29px' }, [
         el({ display: 'flex' }, 'Jawność wynagrodzeń w ochronie zdrowia ze środków publicznych'),
       ]),
     ],

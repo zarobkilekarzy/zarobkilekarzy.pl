@@ -1,16 +1,16 @@
 // Wariant karty OG dla /gra — jedyna strona, która wyłamuje się ze wspólnego szablonu.
 // Powód: to satyryczny idle clicker, nie analiza. Karta gra estetyką automatu z lat 80.
 // (neon, aberracja chromatyczna, siatka perspektywiczna, scanlines) — zamiast granatu
-// i EKG. Marka trzyma się na stałych: czerwony border z lewej, logo + domena u góry.
+// i EKG. Marka trzyma się na stałych: czerwony pas u góry, logo + domena.
 //
 // GRANICA SATYRY: forma jest arcade'owa, ale LICZBA na karcie jest prawdziwa —
 // 316 tys. zł miesięcznie to udokumentowany rekord rozliczenia ze środków publicznych
 // (patrz /dane/rekordy), nie wynik z gry. Podpis mówi to wprost, żeby nikt nie odczytał
 // „HIGH SCORE" jako zmyślonego licznika.
-import { el, logo, type Node } from './ogCard';
+import { el, logo, topBand, type Node } from './ogCard';
 import type { OgPage } from './ogPages';
 
-const W = 1184; // 1200 minus 16 px czerwonego bordera — absolute liczy się od padding boxa
+const W = 1200;
 const H = 630;
 
 // Tło jako JEDEN obrazek (satori nie rysuje ścieżek SVG, a gradienty CSS w resvg bywają
@@ -84,10 +84,11 @@ export function arcadeTemplate(p: OgPage): Node {
     {
       height: '100%', width: '100%', position: 'relative', display: 'flex', flexDirection: 'column',
       background: '#05070f', color: '#ffffff', padding: '56px 64px',
-      fontFamily: 'Plex Sans', borderLeft: '16px solid #b3261e',
+      fontFamily: 'Archivo',
     },
     [
       arcadeBg(),
+      topBand(W, 10),
       el({ display: 'flex', alignItems: 'center' }, [
         logo(28, { marginRight: '15px' }),
         el({ fontFamily: 'Plex Mono', fontSize: '25px', color: '#7f93ad', letterSpacing: '1px' }, 'zarobkilekarzy.pl'),

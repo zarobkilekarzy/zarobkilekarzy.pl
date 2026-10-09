@@ -4,20 +4,12 @@
 // Serwowane pod /petycja/udostepnij/<karta>.png — pokazywane i pobieralne na
 // /petycja/jak-to-dziala. Fonty scalone (src/assets/fonts) — pełne polskie znaki bez fallbacku.
 import type { APIRoute } from 'astro';
-import { readFileSync } from 'node:fs';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
+import { fonts, OG, sierotki } from '../../../lib/ogCard';
 
-// Fonty: latin + latin-ext SCALONE w jeden plik na krój (src/assets/fonts, wygenerowane
-// raz przez fonttools) → pełne pokrycie polskich znaków BEZ fallbacku satori. Serif
-// zostaje serifem, sans sansem — bez zależności od (kruchego) doboru fallbacku.
-const ff = (p: string) => readFileSync(`src/assets/fonts/${p}`);
-const fonts = [
-  { name: 'Plex Sans', data: ff('ibm-plex-sans-latin-full-400.woff'), weight: 400 as const, style: 'normal' as const },
-  { name: 'Plex Sans', data: ff('ibm-plex-sans-latin-full-600.woff'), weight: 600 as const, style: 'normal' as const },
-  { name: 'Plex Serif', data: ff('ibm-plex-serif-latin-full-700.woff'), weight: 700 as const, style: 'normal' as const },
-  { name: 'Plex Mono', data: ff('ibm-plex-mono-latin-full-500.woff'), weight: 500 as const, style: 'normal' as const },
-];
+// Fonty i paleta wspólne z kartami OG (src/lib/ogCard.ts): Archivo scalone z latin-ext,
+// „Archivo Wide” 800 do tytułów i liczb — pełne polskie znaki bez fallbacku satori.
 
 type Node = { type: string; props: { style: Record<string, unknown>; children?: Node[] | string } };
 const el = (style: Record<string, unknown>, children?: Node[] | string): Node => ({
@@ -27,11 +19,11 @@ const el = (style: Record<string, unknown>, children?: Node[] | string): Node =>
 const img = (src: string, style: Record<string, unknown>): Node =>
   ({ type: 'img', props: { src, style } } as unknown as Node);
 
-// Logo marki na ciemne tło: biały rounded-square + brandowy „puls" EKG (wariant
+// Logo marki na ciemne tło: biały kwadrat + granatowy „puls" EKG (wariant
 // odwrócony, czytelny na obu kartach). Rasteryzujemy do PNG data URI, żeby resvg
 // pewnie osadził go w karcie (bez ryzyka zagnieżdżonego SVG w obrazie).
 const LOGO_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#ffffff"/><path d="M4 17h6l2-7 3.5 13L18 17h10" fill="none" stroke="#0f4c81" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="3" fill="#ffffff"/><path d="M4 17h6l2-7 3.5 13L18 17h10" fill="none" stroke="#0b2a5b" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg>';
 const LOGO_URI =
   'data:image/png;base64,' +
   Buffer.from(new Resvg(LOGO_SVG, { fitTo: { mode: 'width', value: 120 } }).render().asPng()).toString('base64');
@@ -43,26 +35,32 @@ const H = 1350;
 const brandRow = (mono: string) =>
   el({ display: 'flex', alignItems: 'center' }, [
     img(LOGO_URI, { width: '40px', height: '40px', marginRight: '18px' }),
-    el({ fontFamily: 'Plex Mono', fontWeight: 500, fontSize: '32px', color: mono, letterSpacing: '1px' }, 'zarobkilekarzy.pl'),
+    el({ fontWeight: 600, fontSize: '32px', color: mono }, 'zarobkilekarzy.pl'),
   ]);
 
 function cardZero(): Node {
   return el(
     {
-      height: '100%', width: '100%', display: 'flex', flexDirection: 'column',
-      background: '#14233a', color: '#ffffff', padding: '90px 80px',
-      fontFamily: 'Plex Sans', borderLeft: '22px solid #b3261e',
+      height: '100%', width: '100%', position: 'relative', display: 'flex', flexDirection: 'column',
+      background: OG.night, color: OG.ink, padding: '90px 80px',
+      fontFamily: 'Archivo',
     },
     [
-      brandRow('#cdd6e0'),
+      // Czerwony pas przez całą górną krawędź, jak na kartach OG (src/lib/ogCard.ts, topBand) —
+      // zamiast grubego paska z lewej. Absolute, więc nie przesuwa układu.
+      el({ position: 'absolute', top: 0, left: 0, width: `${W}px`, height: '16px', background: OG.signal }),
+      brandRow(OG.soft),
       el({ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'center' }, [
-        el({ display: 'flex', fontSize: '46px', color: '#aebccb', lineHeight: 1.3, marginBottom: '4px', maxWidth: '880px' },
+        el({ display: 'flex', fontSize: '46px', color: OG.soft, lineHeight: 1.3, marginBottom: '4px', maxWidth: '880px' },
           'Ile łącznie z NFZ trafia do jednego lekarza?'),
-        el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: '440px', lineHeight: 1, color: '#ffffff' }, '0'),
-        el({ display: 'flex', fontSize: '48px', color: '#dfe6ee', lineHeight: 1.35, marginTop: '20px', maxWidth: '900px' },
+        // „0” w czerwieni, jak „0 rejestrów” i „?” na stronie głównej — brakująca suma
+        // Na nocnym granacie, nie na granacie marki:
+        // tam czerwień traciła kontrast.
+        el({ display: 'flex', fontFamily: 'Archivo Wide', fontWeight: 800, fontSize: '440px', lineHeight: 1, color: OG.signal }, '0'),
+        el({ display: 'flex', fontSize: '48px', color: OG.ink, lineHeight: 1.35, marginTop: '20px', maxWidth: '900px' },
           'Tyle jest dziś ogólnodostępnych rejestrów, które to pokazują.'),
       ]),
-      el({ display: 'flex', flexDirection: 'column', borderTop: '2px solid #2f4a66', paddingTop: '26px', fontFamily: 'Plex Mono', fontWeight: 500, fontSize: '36px', lineHeight: 1.3, color: '#9fb3c8' }, [
+      el({ display: 'flex', flexDirection: 'column', borderTop: `2px solid ${OG.rule}`, paddingTop: '26px', fontWeight: 600, fontSize: '36px', lineHeight: 1.3, color: OG.faint }, [
         el({ display: 'flex' }, 'Petycja to zmienia —'),
         el({ display: 'flex' }, 'zarobkilekarzy.pl/petycja/'),
       ]),
@@ -74,20 +72,20 @@ function cardPodpisz(): Node {
   return el(
     {
       height: '100%', width: '100%', display: 'flex', flexDirection: 'column',
-      background: '#0f4c81', color: '#ffffff', padding: '90px 80px', fontFamily: 'Plex Sans',
+      background: OG.bg, color: OG.ink, padding: '90px 80px', fontFamily: 'Archivo',
     },
     [
-      brandRow('#dbe7f2'),
+      brandRow(OG.soft),
       el({ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'center' }, [
         // Znacznik „✓" złożony z obróconego prostokąta z dwoma krawędziami (bez zależności od glifu w foncie).
         el({ display: 'flex', width: '118px', height: '118px', borderRadius: '999px', background: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center', marginBottom: '46px' }, [
-          el({ width: '38px', height: '66px', borderRight: '16px solid #bfe0ff', borderBottom: '16px solid #bfe0ff', transform: 'rotate(45deg) translateY(-8px)' }),
+          el({ width: '38px', height: '66px', borderRight: `16px solid ${OG.link}`, borderBottom: `16px solid ${OG.link}`, transform: 'rotate(45deg) translateY(-8px)' }),
         ]),
-        el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: '58px', lineHeight: 1.22, color: '#ffffff', maxWidth: '900px' },
-          'Podpisałem/-am petycję o jawność zarobków lekarzy ze środków publicznych.'),
-        el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: '92px', lineHeight: 1.1, color: '#bfe0ff', marginTop: '40px' }, 'Podpisz i Ty.'),
+        el({ display: 'flex', fontFamily: 'Archivo Wide', fontWeight: 800, fontSize: '54px', lineHeight: 1.18, letterSpacing: '-0.5px', color: OG.ink, maxWidth: '900px' },
+          sierotki('Podpisałem/-am petycję o jawność zarobków lekarzy ze środków publicznych.')),
+        el({ display: 'flex', fontFamily: 'Archivo Wide', fontWeight: 800, fontSize: '92px', lineHeight: 1.05, letterSpacing: '-1px', color: OG.link, marginTop: '40px' }, 'Podpisz i Ty.'),
       ]),
-      el({ display: 'flex', alignItems: 'center', borderTop: '2px solid rgba(255,255,255,0.28)', paddingTop: '30px', fontFamily: 'Plex Mono', fontWeight: 500, fontSize: '38px', color: '#d7e6f4' },
+      el({ display: 'flex', alignItems: 'center', borderTop: `2px solid ${OG.rule}`, paddingTop: '30px', fontWeight: 600, fontSize: '38px', color: OG.soft },
         'zarobkilekarzy.pl/petycja/'),
     ],
   );

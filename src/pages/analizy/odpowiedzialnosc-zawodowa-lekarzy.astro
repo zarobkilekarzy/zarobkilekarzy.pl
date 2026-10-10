@@ -90,8 +90,9 @@ type SeriaKlucz = 'no' | 'se' | 'pl';
 const cx = (i: number) => CHART.l + (i / (cN - 1)) * (CHART.w - CHART.l - CHART.r);
 const cy = (v: number) => CHART.t + (1 - v / CHART.ymax) * (CHART.h - CHART.t - CHART.b);
 const linePts = (key: SeriaKlucz) => seriaCzasowa.map((d, i) => `${cx(i).toFixed(1)},${cy(d[key]).toFixed(1)}`).join(' ');
+// txt — kolor podpisu przy końcu linii, gdy kolor linii jest za ciemny na tekst w dark.
 const chartSeries = [
-  { key: 'no' as SeriaKlucz, label: 'Norwegia', color: 'var(--brand)', w: 2 },
+  { key: 'no' as SeriaKlucz, label: 'Norwegia', color: 'var(--brand)', txt: 'var(--brand-link)', w: 2 },
   { key: 'se' as SeriaKlucz, label: 'Szwecja', color: 'var(--ok)', w: 2 },
   { key: 'pl' as SeriaKlucz, label: 'Polska', color: 'var(--alert)', w: 2.6 },
 ];
@@ -118,7 +119,7 @@ const chartLast = seriaCzasowa[cN - 1];
         zawodowej, która sądzi samą siebie i po swoje najsurowsze narzędzie prawie nie sięga.
       </p>
 
-      <div class="callout" style="border-left-color: var(--brand)">
+      <div class="callout">
         <p>
           Najcięższe przestępstwa odbiera lekarzowi prawo do zawodu zwykle <strong>sąd karny</strong>,
           a nie samorząd. Ale tam, gdzie decyzja należy do <strong>własnego sądu lekarskiego</strong>,
@@ -312,7 +313,7 @@ const chartLast = seriaCzasowa[cN - 1];
                 <circle cx={cx(i)} cy={cy(d[s.key])} r="2.6" fill={s.color} />
               )))}
               {chartSeries.map((s) => (
-                <text class="endlab" x={cx(cN - 1) + 6} y={cy(chartLast[s.key])} fill={s.color}>{s.label}</text>
+                <text class="endlab" x={cx(cN - 1) + 6} y={cy(chartLast[s.key])} fill={s.txt ?? s.color}>{s.label}</text>
               ))}
             </svg>
           </div>
@@ -474,7 +475,7 @@ const chartLast = seriaCzasowa[cN - 1];
         </p>
 
         <h2>8. Pointa</h2>
-        <div class="callout" style="border-left-color: var(--brand)">
+        <div class="callout">
           <p>
             Punktem nie jest żadne nazwisko ani żaden wyrok. Punktem jest <strong>model</strong>:
             zamknięty samorząd zawodowy, finansowany z obowiązkowych składek, który jednocześnie ustala
@@ -508,8 +509,8 @@ const chartLast = seriaCzasowa[cN - 1];
 <style>
   .fact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1.25rem 0 0.75rem; }
   .fact { display: flex; flex-direction: column; gap: 0.4rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
-  .fact-num { font-family: var(--font-mono); font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; color: var(--brand); line-height: 1.05; }
-  .fact-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.5; }
+  .fact-num { font-family: var(--font-mono); font-size: var(--fs-h2); font-weight: 700; color: var(--brand-link); line-height: 1.05; }
+  .fact-cap { font-size: var(--fs-meta); color: var(--ink-soft); line-height: 1.5; }
 
   .kary-lista { padding-left: 1.4rem; }
   .kary-lista li { margin: 0.35rem 0; line-height: 1.55; }
@@ -517,19 +518,19 @@ const chartLast = seriaCzasowa[cN - 1];
   /* Poziomy wykres struktury kar */
   .kbars { margin: 1.25rem 0 0.5rem; display: flex; flex-direction: column; gap: 0.55rem; }
   .kbar-row { display: grid; grid-template-columns: minmax(9rem, 14rem) 1fr auto; align-items: center; gap: 0.6rem; }
-  .kbar-label { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.25; }
-  .kbar-track { background: var(--neutral-fill, rgba(0,0,0,0.05)); border-radius: 999px; height: 0.85rem; overflow: hidden; }
-  .kbar-fill { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
+  .kbar-label { font-size: var(--fs-label); color: var(--ink-soft); line-height: 1.25; }
+  .kbar-track { background: var(--neutral-fill, rgba(0,0,0,0.05)); border-radius: 0; height: 0.85rem; overflow: hidden; }
+  .kbar-fill { display: block; height: 100%; background: var(--brand); border-radius: 0; }
   .kbar-fill-hot { background: var(--alert); }
-  .kbar-num { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--ink); min-width: 2.5ch; text-align: right; }
+  .kbar-num { font-family: var(--font-mono); font-size: var(--fs-meta); font-weight: 700; color: var(--ink); min-width: 2.5ch; text-align: right; }
 
   /* Roczne słupki pozbawień (wzorzec z .hours) */
   .hours { margin: 1rem 0 0.4rem; display: flex; flex-direction: column; gap: 0.5rem; }
   .h-row { display: grid; grid-template-columns: 3rem 1fr auto; align-items: center; gap: 0.6rem; }
-  .h-label { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-soft); }
-  .h-bar { display: block; height: 0.85rem; background: var(--alert); border-radius: 999px; min-width: 2px; }
-  .h-val { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--ink); min-width: 2ch; text-align: right; }
-  .viz-cap { font-size: 0.8rem; color: var(--ink-soft); margin: 0.2rem 0 0.75rem; }
+  .h-label { font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--ink-soft); }
+  .h-bar { display: block; height: 0.85rem; background: var(--alert); border-radius: 0; min-width: 2px; }
+  .h-val { font-family: var(--font-mono); font-size: var(--fs-meta); font-weight: 700; color: var(--ink); min-width: 2ch; text-align: right; }
+  .viz-cap { font-size: var(--fs-label); color: var(--ink-soft); margin: 0.2rem 0 0.75rem; }
 
   /* Wykres liniowy 2010–2024 (SVG, kolory z tokenów = theme-aware) */
   .chart-fig { margin: 1.25rem 0 0.5rem; }
@@ -539,28 +540,28 @@ const chartLast = seriaCzasowa[cN - 1];
   .chart .ylab { fill: var(--ink-soft); font-family: var(--font-mono); font-size: 12px; text-anchor: end; dominant-baseline: middle; }
   .chart .xlab { fill: var(--ink-soft); font-family: var(--font-mono); font-size: 12px; text-anchor: middle; }
   .chart .endlab { font-family: var(--font-sans); font-size: 13px; font-weight: 700; text-anchor: start; dominant-baseline: middle; }
-  .chart-fig figcaption { font-size: 0.8rem; color: var(--ink-soft); margin-top: 0.5rem; line-height: 1.5; }
+  .chart-fig figcaption { font-size: var(--fs-label); color: var(--ink-soft); margin-top: 0.5rem; line-height: 1.5; }
 
   /* Porównanie roczne — tabela (wspólny okres 2019–2024) */
   .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
-  .cmp { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 0.94rem; }
-  .cmp thead th { padding: 0.6rem 0.9rem; background: var(--paper-2); color: var(--ink); font-weight: 700; font-size: 0.9rem; border-bottom: 2px solid var(--line); vertical-align: bottom; text-align: center; }
+  .cmp { border-collapse: collapse; width: 100%; min-width: 460px; font-size: var(--fs-small); }
+  .cmp thead th { padding: 0.6rem 0.9rem; background: var(--paper-2); color: var(--ink); font-weight: 700; font-size: var(--fs-meta); border-bottom: 2px solid var(--line); vertical-align: bottom; text-align: center; }
   .cmp thead th:first-child { text-align: left; }
   .cmp tbody th[scope="row"] { text-align: left; padding: 0.55rem 0.9rem; font-weight: 600; font-family: var(--font-mono); color: var(--ink-soft); white-space: nowrap; }
   .cmp td { padding: 0.55rem 0.9rem; }
   .cmp td.num { font-family: var(--font-mono); font-weight: 600; text-align: center; white-space: nowrap; }
   .cmp tbody tr { border-bottom: 1px solid var(--line); }
-  .cmp .th-sub { display: block; font-weight: 700; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.2rem; }
-  .cmp .th-state .th-sub { color: var(--brand); }
+  .cmp .th-sub { display: block; font-weight: 700; font-size: var(--fs-micro); margin-top: 0.2rem; font-stretch: 85%; }
+  .cmp .th-state .th-sub { color: var(--brand-link); }
   .cmp .th-self .th-sub { color: var(--amber); }
   .cmp .pl-col { background: var(--brand-50); }
   .cmp thead th.pl-col { background: var(--brand-50); }
   .cmp tfoot th[scope="row"] { text-align: left; padding: 0.6rem 0.9rem; font-family: var(--font-sans); }
   .cmp tfoot td { padding: 0.6rem 0.9rem; border-top: 2px solid var(--line); }
   .cmp tfoot .tf-sum th[scope="row"] { font-weight: 700; color: var(--ink); }
-  .cmp tfoot .tf-sum td.num { font-size: 1.05rem; font-weight: 700; border-top: 2px solid var(--line); }
-  .cmp tfoot .tf-rate th[scope="row"] { font-size: 0.8rem; font-weight: 600; color: var(--ink-soft); white-space: normal; }
+  .cmp tfoot .tf-sum td.num { font-size: var(--fs-body); font-weight: 700; border-top: 2px solid var(--line); }
+  .cmp tfoot .tf-rate th[scope="row"] { font-size: var(--fs-label); font-weight: 600; color: var(--ink-soft); white-space: normal; }
   .cmp tfoot .tf-rate td.num { color: var(--ink-soft); }
 
-  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+  .pager { margin-top: 2.5rem; font-size: var(--fs-meta); color: var(--ink-soft); }
 </style>

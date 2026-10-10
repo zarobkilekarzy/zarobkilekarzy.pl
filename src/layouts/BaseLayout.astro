@@ -1,24 +1,21 @@
 ---
-// Pliki-indeksy fontsource: każdy niesie @font-face z unicode-range dla subsetów
-// `latin` ORAZ `latin-ext`, więc przeglądarka złoży pełną polszczyznę (m.in. „ó",
-// która jest w zakresie podstawowym `latin`, nie w `latin-ext`). Nieużywane subsety
-// (cyrylica/greka/wietnamski) mają rozłączny unicode-range i nie są pobierane.
-import '@fontsource/ibm-plex-sans/400.css';
-import '@fontsource/ibm-plex-sans/500.css';
-import '@fontsource/ibm-plex-sans/600.css';
-import '@fontsource/ibm-plex-serif/500.css';
-import '@fontsource/ibm-plex-serif/600.css';
-import '@fontsource/ibm-plex-mono/400.css';
-import '@fontsource/ibm-plex-mono/500.css';
-// Główny font tekstowy — preload obu subsetów wagi 400 (ASCII/„ó" + diakryty),
-// by ograniczyć FOUT i opóźnienie LCP.
-import bodyFontUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2?url';
-import bodyFontExtUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2?url';
+// Jeden krój: Archivo Variable z osią szerokości (wdth 62–125) i wagi (100–900) —
+// wąski w główkach tablic, normalny w tekście, szeroki w tytułach.
+// Pliki fontsource niosą @font-face z unicode-range dla subsetów `latin` ORAZ
+// `latin-ext` (pełna polszczyzna); nieużywane subsety się nie pobierają. Kursywa
+// ładuje się tylko tam, gdzie na stronie jest tekst pochylony.
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource-variable/archivo/wdth-italic.css';
+// Preload obu subsetów — ten sam plik niesie tekst i tytuły (LCP), więc bez
+// preloadu cała strona podmieniała krój już po wyrenderowaniu.
+import fontUrl from '@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2?url';
+import fontExtUrl from '@fontsource-variable/archivo/files/archivo-latin-ext-wdth-normal.woff2?url';
 import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import CytatLink from '../components/CytatLink.astro';
 import { ogPages } from '../lib/ogPages';
+import { zWersja } from '../lib/wersjaGrafik';
 import { lastmodFor, normalizePath } from '../lib/pageDates.mjs';
 
 interface Props {
@@ -54,7 +51,8 @@ const ogKey = (() => {
   }
   return 'home';
 })();
-const resolvedImage = image ?? `/og/${ogKey}.png`;
+// `?v=` z hashem źródeł karty — patrz src/lib/wersjaGrafik.ts.
+const resolvedImage = image ?? zWersja(`/og/${ogKey}.png`);
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(resolvedImage, Astro.site);
@@ -118,8 +116,13 @@ const isDataset = wantSchema && segs[0] === 'dane';
 // rankingi). Dzięki wyprowadzeniu z URL żadna z ~50 podstron nie wymaga własnego
 // propsa — nowa strona w tych działach dostaje układ z automatu. /preview/ (podglądy
 // tekstów przed publikacją) dostaje ten sam układ, żeby wyglądał jak docelowa strona.
+// Poza działami: długie, czytane liniowo strony serwisu dostają ten sam układ
+// (szersza kolumna, spis treści w szynie) — wcześniej stały w 730 px z ~470 px
+// pustego pola po prawej.
+const STRONY_TEKSTOWE = ['postulat', 'o-projekcie', 'prywatnosc', 'petycja/jak-to-dziala'];
 const kind =
-  nested && (segs[0] === 'analizy' || segs[0] === 'mechanizmy' || segs[0] === 'preview')
+  (nested && (segs[0] === 'analizy' || segs[0] === 'mechanizmy' || segs[0] === 'preview')) ||
+  STRONY_TEKSTOWE.includes(segs.join('/'))
     ? 'tekst'
     : null;
 
@@ -198,13 +201,13 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="preload" href={bodyFontUrl} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={bodyFontExtUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={fontExtUrl} as="font" type="font/woff2" crossorigin />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" id="theme-color-meta" content="#0f4c81" />
+    <meta name="theme-color" id="theme-color-meta" content="#ffffff" />
     {/* Motyw jasny/ciemny ustawiany PRZED pierwszym malowaniem, żeby nie było
         mignięcia białym (FOUC) przy odświeżeniu w trybie ciemnym. Kolejność:
         wybór użytkownika z localStorage > preferencja systemu. `is:inline` —
@@ -221,7 +224,7 @@ const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetS
             ? stored === 'dark'
             : window.matchMedia('(prefers-color-scheme: dark)').matches;
           var m = document.getElementById('theme-color-meta');
-          if (m) m.setAttribute('content', dark ? '#0e1622' : '#0f4c81');
+          if (m) m.setAttribute('content', dark ? '#0a1222' : '#ffffff');
         } catch (e) {}
       })();
     </script>

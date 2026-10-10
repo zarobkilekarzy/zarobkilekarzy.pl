@@ -29,7 +29,7 @@ import Aktualizacja from '../../components/Aktualizacja.astro';
         <a href="/slownik/#pwz">PWZ</a>. Ślad urywa się, zanim dojdziesz do końca.
       </p>
 
-      <div class="callout" style="border-left-color: var(--brand)">
+      <div class="callout">
         <p>
           To nie jest apel „dajcie więcej pieniędzy”. Pieniądze są. Rzecz w tym, że <strong>im dalej
           za złotówką idziesz, tym mniej widać</strong> — aż w ostatnim ogniwie ślad znika zupełnie.
@@ -210,7 +210,7 @@ import Aktualizacja from '../../components/Aktualizacja.astro';
         </p>
 
         <h2>Koniec trasy</h2>
-        <div class="callout" style="border-left-color: var(--brand)">
+        <div class="callout">
           <p>
             Prześledziliśmy złotówkę przez cztery przystanki. Na każdym system pokazał
             <strong>zbiorczą kwotę</strong>: składkę, plan NFZ, ryczałt szpitala, wartość kontraktu.
@@ -245,37 +245,34 @@ import Aktualizacja from '../../components/Aktualizacja.astro';
 <style>
   /* Obieg złotówki — wizualna mapa z zanikającą jawnością (accent koloru + miernik kropek) */
   .obieg { margin: 2rem 0 0.5rem; padding: 0; }
-  .obieg-cap { font-family: var(--font-sans); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-faint); margin: 0 0 0.9rem; }
+  .obieg-cap { font-family: var(--font-sans); font-size: var(--fs-micro); color: var(--ink-faint); margin: 0 0 0.9rem; font-stretch: 85%; }
   .obieg-flow { display: flex; align-items: stretch; gap: 0; }
-  .stop { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; background: var(--bg); border: 1px solid var(--line); border-top-width: 3px; border-top-color: var(--brand); border-radius: var(--radius-lg); padding: 0.85rem 0.8rem 0.95rem; }
+  /* Proste narożniki i 2px linia u góry, także w układzie pionowym (bez paska z boku).
+     Kolor i przerywana linia niosą stopień jawności, powtórzony słownie w .stop-vis. */
+  .stop { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; background: var(--bg); border: 1px solid var(--line); border-top-width: 2px; border-top-color: var(--brand); padding: 0.85rem 0.8rem 0.95rem; }
   .stop[data-vis="dim"]  { border-top-color: var(--teal); }
   .stop[data-vis="dim2"] { border-top-color: var(--ink-soft); border-top-style: dashed; }
   .stop[data-vis="off"]  { border-top-color: var(--ink-faint); border-top-style: dashed; }
-  .stop-vis { display: inline-flex; align-items: baseline; gap: 0.35rem; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--brand); }
+  .stop-vis { display: inline-flex; align-items: baseline; gap: 0.35rem; font-size: var(--fs-micro); font-weight: 700; color: var(--brand-link); font-stretch: 85%; }
   .stop[data-vis="dim"]  .stop-vis { color: var(--teal); }
   .stop[data-vis="dim2"] .stop-vis { color: var(--ink-soft); }
   .stop[data-vis="off"]  .stop-vis { color: var(--ink-faint); }
-  .dots { font-size: 0.6rem; letter-spacing: 1px; }
-  .stop-idx { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.03em; }
-  .stop-name { font-family: var(--font-serif); font-weight: 600; font-size: 1.02rem; color: var(--ink); line-height: 1.1; }
-  .stop-what { font-size: 0.78rem; color: var(--ink-soft); line-height: 1.4; }
-  .arrow { flex: 0 0 auto; align-self: center; color: var(--ink-faint); font-size: 1.05rem; padding: 0 0.3rem; }
+  .dots { font-size: var(--fs-micro); letter-spacing: 1px; }
+  .stop-idx { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--ink-faint); font-stretch: 85%; }
+  .stop-name { font-family: var(--font-serif); font-weight: 600; font-size: var(--fs-body); color: var(--ink); line-height: 1.1; }
+  .stop-what { font-size: var(--fs-label); color: var(--ink-soft); line-height: 1.4; }
+  .arrow { flex: 0 0 auto; align-self: center; color: var(--ink-faint); font-size: var(--fs-body); padding: 0 0.3rem; }
   .stop.end { flex: 1 1 0; background: var(--paper); border: 1px dashed var(--ink-faint); align-items: center; justify-content: center; text-align: center; gap: 0.2rem; }
-  .stop.end .end-q { font-size: 0.85rem; color: var(--ink-soft); font-weight: 600; }
-  .stop.end .end-a { font-family: var(--font-mono); font-size: 1.05rem; font-weight: 700; color: var(--alert); }
+  .stop.end .end-q { font-size: var(--fs-meta); color: var(--ink-soft); font-weight: 600; }
+  .stop.end .end-a { font-family: var(--font-mono); font-size: var(--fs-body); font-weight: 700; color: var(--alert); }
   @media (max-width: 760px) {
     .obieg-flow { flex-direction: column; }
     .arrow { transform: rotate(90deg); padding: 0.1rem 0; }
-    .stop { border-top-width: 1px; border-top-style: solid; border-top-color: var(--line); border-left-width: 3px; border-left-color: var(--brand); }
-    .stop[data-vis="dim"]  { border-left-color: var(--teal); }
-    .stop[data-vis="dim2"] { border-left-color: var(--ink-soft); border-left-style: dashed; }
-    .stop[data-vis="off"]  { border-left-color: var(--ink-faint); border-left-style: dashed; }
-    .stop.end { border: 1px dashed var(--ink-faint); }
   }
 
   .fact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1.25rem 0 0.75rem; }
   .fact { display: flex; flex-direction: column; gap: 0.4rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
-  .fact-num { font-family: var(--font-mono); font-size: clamp(1.2rem, 3vw, 1.55rem); font-weight: 700; color: var(--brand); line-height: 1.05; }
-  .fact-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.5; }
-  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+  .fact-num { font-family: var(--font-mono); font-size: var(--fs-title); font-weight: 700; color: var(--brand-link); line-height: 1.05; }
+  .fact-cap { font-size: var(--fs-meta); color: var(--ink-soft); line-height: 1.5; }
+  .pager { margin-top: 2.5rem; font-size: var(--fs-meta); color: var(--ink-soft); }
 </style>

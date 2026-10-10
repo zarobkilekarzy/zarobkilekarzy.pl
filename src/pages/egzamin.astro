@@ -1278,11 +1278,20 @@ Raport końcowy:
       const teksty = [
         q.o === null ? 'Pytanie unieważnione przez CEM — nie liczy się do wyniku, a maksimum punktów jest o nie niższe.'
           : q.nz ? 'W bazie CEM to pytanie zgłoszono w komentarzach jako niezgodne z aktualną wiedzą medyczną. Na egzaminie było liczone.' : '',
-        q.uc ? 'Fragment treści mógł zostać utracony przy pobieraniu z bazy CEM (np. wartość po znaku „<”). Pełną treść znajdziesz na stronie CEM.' : '',
+        q.uc ? 'Treść może być niepełna: przy pobieraniu z bazy CEM mógł wypaść fragment zaczynający się od znaku „<” (np. „CRP <5 mg/l”). Pełne brzmienie sprawdzisz w' : '',
       ].filter(Boolean);
       el.hidden = !teksty.length;
       el.classList.toggle('x', q.o === null);
-      el.textContent = teksty.join(' ');
+      // Jeden <span>: .lek-ostrzezenie jest flexem, a tekst z linkiem ma płynąć jak zdanie.
+      const s = document.createElement('span');
+      s.textContent = teksty.join(' ');
+      if (q.uc) {
+        const a = document.createElement('a');
+        a.href = 'https://cem.edu.pl/pytcem/eula_lek_p.php'; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        a.textContent = 'przeglądarce pytań CEM';
+        s.append(' ', a, ' — ta sama sesja i numer pytania.');
+      }
+      el.replaceChildren(s);
     }
 
     function zbudujOpcje(lista: HTMLElement, q: PytanieZ, wybrana: number | undefined, odkryj: boolean, interaktywne: boolean) {
@@ -1995,7 +2004,7 @@ Raport końcowy:
         notatka: notatki[k] ?? null,
       };
       if (q.o === null) wynik.uniewaznione = 'Pytanie unieważnione przez CEM — nie liczy się do wyniku, odpowiedź nie jest przyjmowana.';
-      if (q.uc) wynik.mozeBycUciete = 'Fragment treści mógł zostać utracony przy pobieraniu (np. wartość po znaku „<”) — odpowiedz najlepiej, jak potrafisz.';
+      if (q.uc) wynik.mozeBycUciete = 'Treść może być niepełna: przy pobieraniu z bazy CEM mógł wypaść fragment zaczynający się od znaku „<” (np. wartość normy) — odpowiedz najlepiej, jak potrafisz.';
       if (q.nz && q.o !== null) wynik.uwaga = 'Pytanie zgłoszone w komentarzach bazy CEM jako niezgodne z aktualną wiedzą (na egzaminie liczone).';
       if (q.o !== null && ujawnij(s, k)) {
         wynik.poprawna = LITERY[q.o];

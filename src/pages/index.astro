@@ -1,6 +1,6 @@
 ---
 // Strona główna. Hero = wielkie ciemne pasmo, które ROTUJE jako karuzela 3 tematów
-// (Petycja / Postulat / Poradnik pacjenta); trzy kafle pod hero są NAWIGACJĄ karuzeli
+// (Projekt ustawy / Postulat / Poradnik pacjenta); trzy kafle pod hero są NAWIGACJĄ karuzeli
 // (klik → zmiana slajdu, aktywny kafel podniesiony). Autoprzewijanie z pauzą, sterowanie
 // klawiaturą, `inert` na nieaktywnych slajdach.
 //
@@ -9,6 +9,29 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AktualizacjaUstawa from '../components/AktualizacjaUstawa.astro';
 import ShareRow from '../components/ShareRow.astro';
+import { strony } from '../lib/pages';
+import { pageDates } from '../lib/pageDates.mjs';
+
+// „Nowe i zaktualizowane" — liczone z rejestru stron (pages.ts) × daty (pageDates.mjs),
+// więc lista odświeża się sama przy bumpie daty. Daty to „ostatnia merytoryczna zmiana",
+// nie data publikacji — stąd nagłówek „nowe i zaktualizowane", nie „nowe".
+const DZIAL_ETYKIETA = { analizy: 'Analiza', mechanizmy: 'Mechanizm', dane: 'Dane' } as const;
+// Strony spoza prefiksu działu, którym etykieta działu by kłamała.
+// Akcent karty per dział (górna krawędź + etykieta). Bez czerwieni — ta jest zarezerwowana
+// dla „Rekordów” niżej (max 1 czerwony akcent na stronę).
+const AKCENT = { analizy: 'var(--brand-link)', dane: 'var(--teal)', mechanizmy: 'var(--ink-soft)' } as const;
+const ETYKIETA_WLASNA: Record<string, string> = { '/projekt-nowelizacji': 'Projekt ustawy', '/prawa-pacjenta': 'Poradnik' };
+const fmtData = new Intl.DateTimeFormat('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const nowosci = Object.entries(strony)
+  .map(([sciezka, s]) => ({
+    ...s,
+    href: `${sciezka}/`,
+    data: (pageDates as Record<string, string>)[sciezka],
+    etykieta: ETYKIETA_WLASNA[sciezka] ?? DZIAL_ETYKIETA[s.dzial],
+  }))
+  .filter((w) => w.data)
+  .sort((a, b) => b.data.localeCompare(a.data))
+  .slice(0, 6);
 ---
 
 <BaseLayout>
@@ -26,28 +49,28 @@ import ShareRow from '../components/ShareRow.astro';
       <button class="mh-play" type="button" aria-label="Zatrzymaj automatyczne przewijanie" aria-pressed="true"></button>
 
       <div class="container">
-        <div class="mh-carousel" role="group" aria-roledescription="karuzela" aria-label="Najważniejsze: petycja, postulat, prawa pacjenta">
+        <div class="mh-carousel" role="group" aria-roledescription="karuzela" aria-label="Najważniejsze: projekt ustawy, postulat, prawa pacjenta">
           <div class="mh-track">
-            <!-- SLAJD 1 · PETYCJA -->
-            <div class="mh-slide is-active" role="group" aria-roledescription="slajd" aria-label="1 z 3: Petycja" data-title="Petycja">
+            <!-- SLAJD 1 · PROJEKT USTAWY -->
+            <div class="mh-slide is-active" role="group" aria-roledescription="slajd" aria-label="1 z 3: Projekt ustawy" data-title="Projekt ustawy">
               <div class="mh-grid">
                 <div class="mh-copy">
-                  <p class="mh-eyebrow">Inicjatywa obywatelska na rzecz jawności</p>
-                  <h1 class="mh-title">Publiczne pieniądze,<br /><span class="mh-hl">niejawne zarobki</span></h1>
+                  <p class="mh-eyebrow">Obywatelski projekt ustawy · do weryfikacji prawnej</p>
+                  <h1 class="mh-title">Publiczne pieniądze,<br /><span class="mh-hl">jawne zarobki</span></h1>
                   <p class="mh-lead">
-                    Część lekarzy rozlicza miliony złotych ze środków publicznych, łącząc
-                    kontrakty w wielu placówkach — a pacjenci miesiącami czekają w kolejce.
-                    Zbieramy dane, linkujemy źródła i postulujemy jawny rejestr.
+                    Dwa punkty dopisane do art. 27a ustawy o działalności leczniczej: placówki
+                    z umową z NFZ co kwartał przekazują dane o wynagrodzeniach, a państwo
+                    publikuje je w postaci spseudonimizowanej — bez nazwisk.
                   </p>
                   <div class="mh-cta">
-                    <a class="btn btn-on-brand" href="/petycja/">Wyślij petycję</a>
-                    <a class="btn btn-ghost" href="/dane/">Zobacz dane</a>
+                    <a class="btn btn-on-brand" href="/projekt-nowelizacji/">Przeczytaj projekt</a>
+                    <a class="btn btn-ghost" href="/projekt-nowelizacji/#jak-wniesc">Jak trafi do Sejmu</a>
                   </div>
                 </div>
                 <div class="mh-anchor">
-                  <p class="mh-big">0</p>
-                  <p class="mh-big-label">ogólnodostępnych rejestrów łącznego wynagrodzenia jednego lekarza ze środków publicznych</p>
-                  <span class="pill pill-alert">brak jawności</span>
+                  <p class="mh-big">2</p>
+                  <p class="mh-big-label">punkty dopisane do art. 27a — żaden obowiązujący przepis się nie zmienia</p>
+                  <span class="pill pill-brand">projekt roboczy</span>
                 </div>
               </div>
             </div>
@@ -65,7 +88,7 @@ import ShareRow from '../components/ShareRow.astro';
                   </p>
                   <div class="mh-cta">
                     <a class="btn btn-on-brand" href="/postulat/">Poznaj postulat</a>
-                    <a class="btn btn-ghost" href="/petycja/">Wyślij petycję</a>
+                    <a class="btn btn-ghost" href="/projekt-nowelizacji/">Zobacz projekt ustawy</a>
                   </div>
                 </div>
                 <div class="mh-anchor">
@@ -111,9 +134,9 @@ import ShareRow from '../components/ShareRow.astro';
         <div class="trio" role="group" aria-label="Wybór tematu w karuzeli">
           <button class="tcard" type="button" style="--accent: var(--brand-link)" aria-current="true">
             <span class="tc-prog" aria-hidden="true"></span>
-            <span class="tc-tag">Działaj</span>
-            <span class="tc-title">Wyślij petycję</span>
-            <span class="tc-desc">Gotowa, formalna petycja o jawny rejestr. Urząd ma obowiązek odpowiedzieć.</span>
+            <span class="tc-tag">Zmień prawo</span>
+            <span class="tc-title">Projekt ustawy</span>
+            <span class="tc-desc">Dwa punkty dopisane do art. 27a: dane o wynagrodzeniach co kwartał i ich publikacja bez nazwisk.</span>
           </button>
           <button class="tcard" type="button" style="--accent: var(--brand-link)" aria-current="false">
             <span class="tc-prog" aria-hidden="true"></span>
@@ -131,6 +154,37 @@ import ShareRow from '../components/ShareRow.astro';
       </div>
     </section>
   </div>
+
+  <!-- NOWE I ZAKTUALIZOWANE (automatycznie z pages.ts × pageDates.mjs) -->
+  <section class="section nowosci-sec">
+    <div class="container">
+      <p class="eyebrow">Na bieżąco</p>
+      <h2>Nowe i zaktualizowane</h2>
+      <ol class="nowosci">
+        {nowosci.map((w, k) => (
+          <li class={k === 0 ? 'nw-hero' : undefined} style={`--accent: ${AKCENT[w.dzial]}`}>
+            <a class="nw" href={w.href}>
+              {k === 0 && (
+                <svg class="nw-pulse" viewBox="0 0 600 80" preserveAspectRatio="none" aria-hidden="true">
+                  <polyline points="0,50 380,50 400,50 412,18 426,72 440,36 454,50 600,50"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+                </svg>
+              )}
+              <span class="nw-meta">
+                {k === 0 && <span class="nw-badge">Najnowsze</span>}
+                <span class="nw-tag">{w.etykieta}</span>
+                <time class="nw-data" datetime={w.data}>{fmtData.format(new Date(w.data))}</time>
+              </span>
+              <span class="nw-t">{w.tytul}</span>
+              <span class="nw-d">{w.opis}</span>
+              <span class="nw-more">{k === 0 ? 'Czytaj' : 'Otwórz'} <span aria-hidden="true">→</span></span>
+            </a>
+          </li>
+        ))}
+      </ol>
+      <p class="nowosci-wiecej">Wszystkie teksty: <a href="/analizy/">analizy</a> · <a href="/mechanizmy/">mechanizmy</a> · <a href="/dane/">dane</a></p>
+    </div>
+  </section>
 
   <!-- NAJWAŻNIEJSZE — NAWIGATOR -->
   <section class="section">
@@ -598,6 +652,55 @@ import ShareRow from '../components/ShareRow.astro';
   .hc-arrow { position: absolute; left: 1.35rem; bottom: 1rem; color: var(--brand); font-weight: 700; }
   @media (max-width: 600px) {
     .bar-val, .bar-flag { font-size: 0.85rem; }
+  }
+  /* ===== NOWE I ZAKTUALIZOWANE ===================================== */
+  /* Układ „magazynowy": pierwsza (najnowsza) karta = ciemny panel 2×2, obok i pod nią
+     pięć kart z akcentem działu. Panel jest ciemny w OBU motywach → tekst na nim
+     jasnymi literałami (jak w hero), nie tokenami --ink. */
+  .nowosci-sec { padding-top: 2.25rem; }
+  .nowosci { list-style: none; padding: 0; margin: 1.1rem 0 1rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .nowosci li { display: flex; }
+  .nw-hero { grid-column: span 2; grid-row: span 2; }
+  .nw {
+    position: relative; overflow: hidden; flex: 1; display: flex; flex-direction: column; gap: 0.5rem;
+    background: var(--bg); border: 1px solid var(--line); border-top: 4px solid var(--accent);
+    border-radius: var(--radius-lg); padding: 1.1rem 1.25rem 1.15rem; text-decoration: none; color: var(--ink);
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  }
+  .nw:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(15,76,129,0.12); }
+  .nw-meta { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .nw-tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; color: var(--accent); }
+  .nw-data { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-faint); }
+  .nw-t { font-family: var(--font-serif); font-weight: 600; font-size: 1.12rem; line-height: 1.25; }
+  .nw-d { font-size: 0.88rem; line-height: 1.5; color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .nw-more { margin-top: auto; padding-top: 0.25rem; font-size: 0.85rem; font-weight: 600; color: var(--brand-link); }
+  .nw:hover .nw-more span { display: inline-block; transform: translateX(3px); }
+
+  .nw-hero .nw {
+    background: var(--panel); border: 0; color: #fff; padding: 2rem 2.1rem 1.8rem; gap: 0.8rem;
+    background-image:
+      radial-gradient(70% 90% at 90% 15%, rgba(69,184,194,0.18), transparent 70%),
+      radial-gradient(60% 80% at 5% 100%, rgba(47,111,177,0.22), transparent 70%);
+  }
+  .nw-hero .nw:hover { box-shadow: 0 16px 40px rgba(10,17,25,0.3); }
+  .nw-pulse { position: absolute; left: 0; right: 0; bottom: 0.4rem; width: 100%; height: 64px; color: #5fc7d1; opacity: 0.22; pointer-events: none; }
+  .nw-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; background: #5fc7d1; color: #0a1119; padding: 0.2rem 0.55rem; border-radius: 999px; }
+  .nw-hero .nw-tag { color: #8fc7ff; }
+  .nw-hero .nw-data { color: rgba(255,255,255,0.6); }
+  .nw-hero .nw-t { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.12; color: #fff; margin-top: auto; }
+  .nw-hero .nw-d { color: rgba(255,255,255,0.8); font-size: 1rem; -webkit-line-clamp: 4; max-width: 56ch; position: relative; }
+  .nw-hero .nw-more { margin-top: 0.4rem; align-self: flex-start; background: #fff; color: #0a1119; padding: 0.5rem 1rem; border-radius: var(--radius); font-size: 0.92rem; position: relative; }
+
+  .nowosci-wiecej { font-size: 0.92rem; color: var(--ink-soft); margin: 0; }
+  @media (max-width: 900px) {
+    .nowosci { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .nw-hero { grid-row: auto; }
+    .nw-hero .nw { min-height: 280px; }
+  }
+  @media (max-width: 560px) {
+    .nowosci { grid-template-columns: 1fr; }
+    .nw-hero { grid-column: auto; }
+    .nw-hero .nw { padding: 1.5rem 1.35rem 1.4rem; }
   }
   .tldr { counter-reset: step; list-style: none; padding: 0; margin: 1.25rem 0 1rem; display: flex; flex-direction: column; gap: 0.85rem; max-width: 760px; }
   .tldr li { position: relative; padding: 0.9rem 1.15rem 0.9rem 3.2rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); line-height: 1.55; color: var(--ink-soft); }

@@ -1,0 +1,276 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import OsCzasu from '../../components/OsCzasu.astro';
+import type { Zdarzenie } from '../../lib/osCzasu';
+import { compiledContent } from './_kanada-lekarze-ustawa-specjalna.md';
+
+// PODGLĄD (noindex, poza sitemapą — astro.config.mjs wycina /preview/). Analiza: kanadyjskie
+// prowincje narzucające lekarzom warunki ustawą lub decyzją jednostronną (Quebec 2025 i 2002,
+// Ontario 2012–2019, Alberta 2020–2022, Saskatchewan 1962, Quebec 1970, Ontario 1986) i rola
+// jawności płatności w tych sporach. Treść w _kanada-lekarze-ustawa-specjalna.md (Markdown
+// z przypisami); osie czasu niżej, wstawiane w miejsca <div data-slot="…"></div> (wzorzec jak
+// w analizy/tajwan-ochrona-zdrowia). Kwoty CAD→PLN: średni roczny kurs NBP (przypis [^nbp]).
+// Research i weryfikacja: research/reports/ i research/research_notes/ (poza gitem).
+// Przed publikacją: przeniesienie do /analizy/, wpisy w pages.ts, ogPages.ts, pageDates.mjs.
+
+const HISTORIA: Zdarzenie[] = [
+  { data: '1962-07-01', tytul: 'Saskatchewan: strajk przeciw powszechnemu ubezpieczeniu', rodzaj: 'lekarze',
+    opis: 'W dniu wejścia w życie pierwszego w Kanadzie ubezpieczenia na usługi lekarskie ok. <strong>90%</strong> lekarzy prowincji zamyka gabinety. Strajk trwa <strong>23 dni</strong>.',
+    zrodlo: { nazwa: 'Parks Canada', url: 'https://www.parks.canada.ca/culture/designation/evenement-event/greve-medecins-doctors-strike' } },
+  { data: '1962-07-23', tytul: 'Porozumienie z Saskatoon', rodzaj: 'porozumienie',
+    opis: 'Ubezpieczenie zostaje powszechne i publiczne; lekarze zachowują opłatę za usługę i prawo do praktyki poza planem.',
+    zrodlo: { nazwa: 'Encyclopedia of Saskatchewan', url: 'https://www.esask.uregina.ca/entry/doctors_strike.html' } },
+  { data: '1970-10', tytul: 'Quebec: ustawa nr 41 nakazuje specjalistom powrót do pracy', rodzaj: 'rzad',
+    opis: 'Specjaliści protestują przeciw planowi bez prawa do wyjścia z niego i bez dopłat. Po ustawie wracają do pracy po kilku dniach.',
+    zrodlo: { nazwa: 'BAnQ, prasa z 19.10.1970', url: 'https://collections.banq.qc.ca/document/s/t/IxpusdaghpaNj4nMQvoVEg' } },
+  { data: '1984-04', tytul: 'Federalna ustawa o zdrowiu (Canada Health Act)', rodzaj: 'rzad',
+    opis: 'Pięć warunków dla planów prowincji i potrącenie z transferu każdego dolara dopłat pobranych od pacjentów.',
+    zrodlo: { nazwa: 'Canada Health Act', url: 'https://laws-lois.justice.gc.ca/eng/acts/c-6/FullText.html' } },
+  { data: '1986-06-12', tytul: 'Ontario: strajk przeciw zakazowi dopłat', rodzaj: 'lekarze',
+    opis: 'Strajk trwa <strong>23 dni</strong>. Zakaz dopłat zostaje utrzymany.',
+    zrodlo: { nazwa: 'CMAJ (PMC)', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC5828892' } },
+  { data: '2002-07-25', tytul: 'Quebec: ustawa nr 114 o dyżurach', rodzaj: 'rzad',
+    opis: 'Uchwalona w jeden dzień: minister może narzucić grafiki dyżurów, działania zbiorowe zakazane, kary dzienne do <strong>125 000 CAD</strong> dla federacji.',
+    zrodlo: { nazwa: 'LQ 2002, c. 39', url: 'https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2002/2002C39F.PDF' } },
+  { data: '2012-05', tytul: 'Ontario: jednostronne cięcie 37 pozycji taryfy', rodzaj: 'rzad',
+    opis: 'Planowane oszczędności: <strong>338 mln CAD</strong> (ok. 1,10 mld zł) w 2012–13.',
+    zrodlo: { nazwa: 'The Commonwealth Fund', url: 'https://commonwealthfund.org/publications/newsletter-article/ontario-government-announces-cuts-physician-fees' } },
+  { data: '2018-08-03', tytul: 'Ontario: sąd apelacyjny za ujawnieniem płatności', rodzaj: 'sad',
+    opis: 'Nazwiska i kwoty 100 lekarzy z najwyższymi rozliczeniami w OHIP mogą zostać ujawnione; kwota brutto nie jest informacją o prywatnych finansach.',
+    zrodlo: { nazwa: '2018 ONCA 673', url: 'https://www.ontariocourts.ca/decisions/2018/2018ONCA0673.pdf' } },
+  { data: '2019-02-19', tytul: 'Ontario: wyrok arbitra', rodzaj: 'sad',
+    opis: 'Podwyżki na lata 2017–2021, cofnięcie większości cięć, brak twardego limitu budżetu.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://www.cbc.ca/1.5025350' } },
+  { data: '2020-02-20', tytul: 'Alberta: rząd wypowiada umowę z lekarzami', rodzaj: 'rzad',
+    opis: 'Nowe zasady wynagradzania od 1.04.2020 narzucone bez porozumienia.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://amp.cbc.ca/news/canada/calgary/alberta-government-doctors-pay-ama-agreement-1.5470352' } },
+  { data: '2022-09-29', tytul: 'Alberta: nowa umowa z lekarzami', rodzaj: 'porozumienie',
+    opis: 'Ratyfikowana <strong>70,2%</strong> głosów; w grudniu parlament uchyla uprawnienie ministra do wypowiadania umów.',
+    zrodlo: { nazwa: 'Alberta Medical Association', url: 'https://albertadoctors.org/news/publications/presidents-letter/members-have-ratified-agreement' } },
+  { data: '2025-10-25', tytul: 'Quebec: ustawa nr 2', rodzaj: 'rzad',
+    opis: 'Uchwalona w jedną noc: taryfy niższe o <strong>13,04%</strong>, kary do <strong>500 000 CAD</strong> (ok. 1,34 mln zł) dziennie dla federacji.',
+    zrodlo: { nazwa: 'LQ 2025, c. 25', url: 'https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2025/2025C25F.PDF' } },
+  { data: '2025-12-11', tytul: 'Quebec: porozumienie z lekarzami rodzinnymi', rodzaj: 'porozumienie',
+    opis: 'Usunięcie kar i zakazu działań skoordynowanych; budżet lekarzy rodzinnych wyższy o <strong>14,5%</strong>.',
+    zrodlo: { nazwa: 'Radio-Canada', url: 'https://ici.radio-canada.ca/nouvelle/2213419/entente-principe-medecins-details-quebec' } },
+];
+
+const QUEBEC: Zdarzenie[] = [
+  { data: '2025-05-08', tytul: 'Projekt ustawy nr 106', rodzaj: 'rzad',
+    opis: 'W trakcie negocjacji minister zdrowia składa projekt uzależniający część wynagrodzenia od wskaźników dostępu do opieki.',
+    zrodlo: { nazwa: 'Le Soleil', url: 'https://www.lesoleil.com/actualites/politique/2025/05/08/remuneration-des-medecins-dube-presente-le-projet-de-loi-106-MSOSZWM7FZFOJEDHIR3V3RF3A4/' } },
+  { data: '2025-10-25', dataTekst: '24–25.10.2025', tytul: 'Ustawa nr 2 uchwalona w trybie bâillon', rodzaj: 'rzad',
+    opis: 'Wniesiona 24.10, uchwalona tuż przed 4:00 rano 25.10 głosami <strong>63 do 27</strong>. Taryfy niższe o <strong>13,04%</strong>, zakaz działań skoordynowanych, kary dzienne do <strong>500 000 CAD</strong> (ok. 1,34 mln zł).',
+    zrodlo: { nazwa: 'Radio-Canada', url: 'https://ici.radio-canada.ca/nouvelle/2202166/loi-speciale-adoption-remuneration-medecins' } },
+  { data: '2025-11-07', tytul: 'Samorząd lekarzy apeluje o wstrzymanie ustawy', rodzaj: 'lekarze',
+    opis: 'Collège des médecins wzywa do wstrzymania stosowania ustawy i powrotu do rozmów.',
+    zrodlo: { nazwa: 'Collège des médecins du Québec', url: 'https://www.cmq.org/fr/mot-du-president/20251107-infocmq' } },
+  { data: '2025-11-10', dataTekst: '23.10–10.11.2025', tytul: '263 wnioski o licencję w Ontario', rodzaj: 'lekarze',
+    opis: 'Kolegium lekarzy Ontario: <strong>263</strong> wnioski lekarzy z Quebecu w niecałe trzy tygodnie, wobec <strong>19</strong> od czerwca do października; <strong>35</strong> wydanych certyfikatów.',
+    zrodlo: { nazwa: 'Radio-Canada International', url: 'https://ici.radio-canada.ca/rci/en/news/2206894/over-260-quebec-doctors-apply-for-ontario-licences-in-weeks-following-bill-2' } },
+  { data: '2025-11-13', tytul: 'Sąd nie zawiesza ustawy', rodzaj: 'sad',
+    opis: 'Sąd Wyższy odmawia zawieszenia przepisów na wniosek studentów medycyny; sprawa ma być rozpoznana co do istoty.',
+    zrodlo: { nazwa: 'Le Devoir', url: 'https://www.ledevoir.com/actualites/justice/933591/pas-suspension-loi-2-medecins-tranche-tribunal' } },
+  { data: '2025-12-11', tytul: 'Porozumienie z lekarzami rodzinnymi', rodzaj: 'porozumienie',
+    opis: 'Bez kar i zakazu działań skoordynowanych; od 1.06.2026 model <strong>50%</strong> kapitacja / <strong>30%</strong> opłata za usługę / <strong>20%</strong> stawka godzinowa.',
+    zrodlo: { nazwa: 'Radio-Canada', url: 'https://ici.radio-canada.ca/nouvelle/2213419/entente-principe-medecins-details-quebec' } },
+  { data: '2025-12-12', tytul: 'Ustawa nr 16 uchyla rozdział karny', rodzaj: 'rzad',
+    opis: 'Uchwalona w jeden dzień: wejście w życie przesunięte na 28.02.2026, rozdział o działaniach skoordynowanych i karach uchylony.',
+    zrodlo: { nazwa: 'LQ 2025, c. 39', url: 'https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2025/2025C39F.PDF' } },
+  { data: '2025-12-18', tytul: 'Minister zdrowia odchodzi z rządu', rodzaj: 'rzad',
+    opis: 'Autor ustawy nr 2 rezygnuje z funkcji.',
+    zrodlo: { nazwa: 'Global News', url: 'https://globalnews.ca/news/11583871/quebec-health-minister-christian-dube-resigns' } },
+  { data: '2025-12-19', tytul: 'Lekarze rodzinni zatwierdzają umowę', rodzaj: 'porozumienie',
+    opis: 'Pięcioletnia umowa przyjęta <strong>97%</strong> głosów; budżet wyższy o <strong>435 mln CAD</strong> (ok. 1,17 mld zł).',
+    zrodlo: { nazwa: 'Noovo Info', url: 'https://www.noovo.info/nouvelles/sante/article/les-medecins-de-famille-approuvent-a-97-lentente-avec-quebec/' } },
+  { data: '2026-02-26', tytul: 'Ustawa nr 19 przepisuje ustawę nr 2', rodzaj: 'rzad',
+    opis: 'Rząd traci prawo ustalania sposobu wynagradzania rozporządzeniem; cel: <strong>500 tys.</strong> dobrowolnych zapisów pacjentów do 30.06.2026.',
+    zrodlo: { nazwa: 'LQ 2026, c. 2', url: 'https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2026/2026C2F.PDF' } },
+  { data: '2026-04-23', dataTekst: '20–23.04.2026', tytul: 'Porozumienie ze specjalistami', rodzaj: 'porozumienie',
+    opis: 'Zatwierdzone przez delegatów <strong>86%</strong> głosów; cele dostępu po raz pierwszy w wynagrodzeniu specjalistów. Kwot nie opublikowano.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://www.cbc.ca/news/canada/montreal/quebec-specialists-contract-agreement-9.7170899' } },
+  { data: '2026-05-27', tytul: 'Cel zapisów pacjentów osiągnięty', rodzaj: 'rzad',
+    opis: 'Rząd podaje <strong>556 473</strong> nowych zapisów przed terminem; opozycja wskazuje, że to głównie zapisy grupowe.',
+    zrodlo: { nazwa: 'Gouvernement du Québec', url: 'https://www.quebec.ca/nouvelles/actualites/details/entente-avec-les-medecins-de-famille-des-objectifs-atteints-plus-rapidement-que-prevu-pour-ameliorer-lacces-aux-soins-70643' } },
+];
+
+const ONTARIO: Zdarzenie[] = [
+  { data: '2012-05', tytul: 'Jednostronne cięcie 37 pozycji taryfy', rodzaj: 'rzad',
+    opis: 'Planowane oszczędności: <strong>338 mln CAD</strong> (ok. 1,10 mld zł) w 2012–13 i <strong>440 mln CAD</strong> (ok. 1,43 mld zł) w 2013–14.',
+    zrodlo: { nazwa: 'The Commonwealth Fund', url: 'https://commonwealthfund.org/publications/newsletter-article/ontario-government-announces-cuts-physician-fees' } },
+  { data: '2012-11', tytul: 'Tymczasowe porozumienie', rodzaj: 'porozumienie',
+    opis: 'Zmiana <strong>6</strong> z 37 cięć; przyjęte przez członków OMA <strong>81%</strong> głosów.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://www.cbc.ca/1.3722791' } },
+  { data: '2015-01', tytul: 'Liniowe obniżenie opłat', rodzaj: 'rzad',
+    opis: 'Według CBC o <strong>2,65%</strong>, po załamaniu rozmów.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://www.cbc.ca/1.3722791' } },
+  { data: '2015-10', tytul: 'Druga runda cięć', rodzaj: 'rzad',
+    opis: 'Łącznie w opłatach za usługę — „prawie 4%” według relacji z arbitrażu.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://www.cbc.ca/1.5025350' } },
+  { data: '2016-08', tytul: 'Lekarze odrzucają umowę', rodzaj: 'lekarze',
+    opis: '<strong>63,1%</strong> przeciw umowie bez wiążącego arbitrażu.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://www.cbc.ca/1.3722791' } },
+  { data: '2016-09-13', tytul: 'Arbitraż w zamian za jawność', rodzaj: 'rzad',
+    opis: 'Minister zdrowia uzależnia zgodę na arbitraż m.in. od pełnej jawności wynagrodzeń lekarzy.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://amp.cbc.ca/news/canada/toronto/oma-province-talks-1.3760579' } },
+  { data: '2017-06', tytul: 'Ramy wiążącego arbitrażu', rodzaj: 'porozumienie',
+    opis: 'Przyjęte przez lekarzy <strong>65%</strong> głosów.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://www.cbc.ca/1.4165918' } },
+  { data: '2018-08-03', tytul: 'Wyrok w sprawie jawności rozliczeń', rodzaj: 'sad',
+    opis: 'Sąd apelacyjny Ontario: nazwiska i kwoty 100 lekarzy z najwyższymi rozliczeniami w OHIP mogą zostać ujawnione.',
+    zrodlo: { nazwa: '2018 ONCA 673', url: 'https://www.ontariocourts.ca/decisions/2018/2018ONCA0673.pdf' } },
+  { data: '2018-12', tytul: 'Nowy rząd wycofuje się z arbitrażu', rodzaj: 'rzad',
+    opis: 'Rząd ogłasza wyjście z ram arbitrażu; postępowanie i tak się kończy wyrokiem.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://amp.cbc.ca/news/canada/toronto/ontario-leaves-oma-arbitration-1.4942105' } },
+  { data: '2019-02-19', tytul: 'Wyrok arbitra', rodzaj: 'sad',
+    opis: 'Podwyżki <strong>0,75% / 1,25% / 1% / 1%</strong>, cofnięcie większości cięć, bez twardego limitu; <strong>460 mln CAD</strong> (ok. 1,33 mld zł) oszczędności na usługach niewłaściwych.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://www.cbc.ca/1.5025350' } },
+  { data: '2019-04', tytul: 'Sąd Najwyższy nie przyjmuje sprawy jawności', rodzaj: 'sad',
+    opis: 'Wyrok sądu apelacyjnego w sprawie ujawnienia rozliczeń staje się ostateczny.',
+    zrodlo: { nazwa: 'Sąd Najwyższy Kanady, sprawa 38343', url: 'https://www.scc-csc.ca/cases-dossiers/search-recherche/38343/' } },
+];
+
+const ALBERTA: Zdarzenie[] = [
+  { data: '2019-12', tytul: 'Art. 40.2: minister może wypowiedzieć umowę', rodzaj: 'rzad',
+    opis: 'Nowy przepis w ustawie o ubezpieczeniu zdrowotnym.',
+    zrodlo: { nazwa: 'Alberta Worker', url: 'https://albertaworker.ca/news/ama-suing-tyler-shandro-for-over-255m/' } },
+  { data: '2020-02-20', tytul: 'Wypowiedzenie umowy z lekarzami', rodzaj: 'rzad',
+    opis: 'Nowe zasady od 1.04.2020; dopłata za dłuższą wizytę z <strong>18 do 9 CAD</strong> (z ok. 52 do 26 zł).',
+    zrodlo: { nazwa: 'CBC News', url: 'https://amp.cbc.ca/news/canada/calgary/alberta-government-doctors-pay-ama-agreement-1.5470352' } },
+  { data: '2020-03-17', tytul: 'Wstrzymanie zmiany dopłat', rodzaj: 'rzad',
+    opis: 'Na początku pandemii rząd zawiesza najgłośniejszą zmianę.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://www.cbc.ca/1.5500748' } },
+  { data: '2020-04-24', tytul: 'Pakiet dla lekarzy wiejskich', rodzaj: 'rzad',
+    opis: '<strong>81 mln CAD</strong> (ok. 235 mln zł), w tym <strong>57 mln CAD</strong> (ok. 166 mln zł) dla lekarzy wiejskich.',
+    zrodlo: { nazwa: 'Global News', url: 'https://globalnews.ca/news/6879473/alberta-rural-doctors-fee-rules-tyler-shandro/amp' } },
+  { data: '2020-07', tytul: 'Ankieta: 42% zapowiada wyjazd', rodzaj: 'lekarze',
+    opis: '<strong>42%</strong> z <strong>1740</strong> respondentów ankiety AMA zapowiada wyjazd z prowincji; to deklaracje, nie odejścia.',
+    zrodlo: { nazwa: 'CBC News', url: 'https://amp.cbc.ca/news/canada/calgary/alberta-health-minister-talks-doctors-1.5698107' } },
+  { data: '2020-09', tytul: 'Rozporządzenie o jawności płatności', rodzaj: 'rzad',
+    opis: 'Podstawa do ujawniania płatności za usługi dla poszczególnych lekarzy.',
+    zrodlo: { nazwa: 'Bennett Jones', url: 'https://www.bennettjones.com/Blogs-Section/Alberta-Sunshine-List-Expanded-to-Include-Physicians' } },
+  { data: '2021-03', tytul: 'Lekarze odrzucają propozycję umowy', rodzaj: 'lekarze',
+    opis: '<strong>53%</strong> przeciw.',
+    zrodlo: { nazwa: 'Global News', url: 'https://globalnews.ca/news/7752861/alberta-doctors-trust-new-labour-deal-rejected-ucp' } },
+  { data: '2022-09-29', tytul: 'Ratyfikacja umowy na lata 2022–26', rodzaj: 'porozumienie',
+    opis: '<strong>70,2%</strong> za; <strong>252 mln CAD</strong> (ok. 864 mln zł) nowych wydatków, podwyżki o 1% rocznie.',
+    zrodlo: { nazwa: 'Alberta Medical Association', url: 'https://albertadoctors.org/news/publications/presidents-letter/members-have-ratified-agreement' } },
+  { data: '2022-12', tytul: 'Uchylenie art. 40.2, pozew wycofany', rodzaj: 'porozumienie',
+    opis: 'Minister traci prawo do wypowiadania umów; AMA wycofuje pozew o <strong>255 mln CAD</strong> (ok. 741 mln zł).',
+    zrodlo: { nazwa: 'CBC News', url: 'https://amp.cbc.ca/news/canada/edmonton/alberta-government-surrendering-power-to-impose-pay-deals-on-doctors-1.6674828' } },
+];
+
+// Markdown nie przyjmuje komponentów — dzielimy skompilowany HTML w miejscach znaczników
+// <div data-slot="…"></div>. Każdy znacznik musi wystąpić dokładnie raz.
+const SLOTY = ['os-historia', 'os-quebec', 'os-ontario', 'os-alberta'] as const;
+type Slot = (typeof SLOTY)[number];
+const czesci = (await compiledContent()).split(/<div data-slot="([a-z-]+)"><\/div>/);
+const znalezione = czesci.filter((_, i) => i % 2 === 1);
+for (const slot of SLOTY) {
+  const ile = znalezione.filter((z) => z === slot).length;
+  if (ile !== 1) throw new Error(`Znacznik „${slot}” w treści: ${ile} (oczekiwano 1)`);
+}
+if (znalezione.length !== SLOTY.length) throw new Error(`Nieznane znaczniki w treści: ${znalezione.join(', ')}`);
+---
+
+<BaseLayout
+  title="Kanada: gdy rząd narzuca lekarzom warunki ustawą — zarobkilekarzy.pl"
+  description="Quebec w 2025 r. w jedną noc uchwalił ustawę tnącą taryfy lekarzy o 13,04% i grożącą karami do 500 000 CAD dziennie. Po 48 dniach uchylono jej rozdział karny. Opisujemy ten spór, wcześniejsze przypadki z Ontario, Alberty i Saskatchewan oraz rolę jawności płatności."
+  noindex={true}
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow"><a href="/analizy/">Analizy</a> · Świat · <span class="klon-eyebrow"><span class="klon-lisc" aria-hidden="true"></span>Kanada</span></p>
+      <h1>Kanada: gdy rząd narzuca lekarzom warunki ustawą</h1>
+      <p class="lead">Ustawa specjalna w Quebecu z 2025 r., cięcia taryf w Ontario, wypowiedziana umowa w Albercie i strajk w Saskatchewan w 1962 r. — jak kanadyjskie prowincje narzucały lekarzom warunki, jak lekarze odpowiadali i czym te spory się kończyły. Na tle tych sporów: jawność płatności ze środków publicznych.</p>
+      <div class="prose">
+        {czesci.map((czesc, i) =>
+          i % 2 === 0 ? <Fragment set:html={czesc} />
+          : (czesc as Slot) === 'os-historia' ? <OsCzasu id="os-historia" tytul="Sześć dekad sporów rządów z lekarzami w Kanadzie" poczatek="1960-01-01" koniec="2027-01-01" zdarzenia={HISTORIA} />
+          : (czesc as Slot) === 'os-quebec' ? <OsCzasu id="os-quebec" tytul="Quebec: od projektu ustawy do porozumień (2025–2026)" poczatek="2025-04-15" koniec="2026-06-30" zdarzenia={QUEBEC} pasmo={{ poczatek: '2025-10-25', koniec: '2025-12-12', etykieta: 'rozdział karny: 48 dni' }} />
+          : (czesc as Slot) === 'os-ontario' ? <OsCzasu id="os-ontario" tytul="Ontario: od cięć do wyroku arbitra (2012–2019)" poczatek="2012-01-01" koniec="2019-07-01" zdarzenia={ONTARIO} />
+          : <OsCzasu id="os-alberta" tytul="Alberta: od wypowiedzenia umowy do jej przywrócenia (2019–2022)" poczatek="2019-10-01" koniec="2023-03-01" zdarzenia={ALBERTA} podzialka="lata" />
+        )}
+      </div>
+      <p class="pager"><a href="/analizy/">← Wszystkie analizy</a> · <a href="/postulat/">Postulat →</a></p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Czerwień liścia klonowego — lokalny token, jaśniejszy w ciemnym motywie (kontrast ≥3:1 na tle). */
+  :global(:root) { --klon: #c8102e; }
+  :global(:root[data-theme='dark']) { --klon: #ff6b6b; }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) { --klon: #ff6b6b; }
+  }
+
+  /* Liść klonowy (flaga Kanady) jako maska CSS. */
+  .klon-lisc,
+  .prose :global(.klon-przerywnik)::before {
+    background: var(--klon);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2015 -2000 4030 4030'%3E%3Cpath d='m-90 2030 45-863a95 95 0 0 0-111-98l-859 151 116-320a65 65 0 0 0-20-73l-941-762 212-99a65 65 0 0 0 34-79l-186-572 542 115a65 65 0 0 0 73-38l105-247 423 454a65 65 0 0 0 111-57l-204-1052 327 189a65 65 0 0 0 91-27l332-652 332 652a65 65 0 0 0 91 27l327-189-204 1052a65 65 0 0 0 111 57l423-454 105 247a65 65 0 0 0 73 38l542-115-186 572a65 65 0 0 0 34 79l212 99-941 762a65 65 0 0 0-20 73l116 320-859-151a95 95 0 0 0-111 98l45 863z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2015 -2000 4030 4030'%3E%3Cpath d='m-90 2030 45-863a95 95 0 0 0-111-98l-859 151 116-320a65 65 0 0 0-20-73l-941-762 212-99a65 65 0 0 0 34-79l-186-572 542 115a65 65 0 0 0 73-38l105-247 423 454a65 65 0 0 0 111-57l-204-1052 327 189a65 65 0 0 0 91-27l332-652 332 652a65 65 0 0 0 91 27l327-189-204 1052a65 65 0 0 0 111 57l423-454 105 247a65 65 0 0 0 73 38l542-115-186 572a65 65 0 0 0 34 79l212 99-941 762a65 65 0 0 0-20 73l116 320-859-151a95 95 0 0 0-111 98l45 863z'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  .klon-eyebrow { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .klon-lisc { display: inline-block; width: 0.85em; height: 0.85em; }
+
+  /* Przerywnik przed podsumowaniem: linia z liściem pośrodku (łata w kolorze tła pod liściem). */
+  .prose :global(.klon-przerywnik) {
+    position: relative; height: 1.6rem; margin: 3rem 0 1rem;
+    background: linear-gradient(var(--line-2), var(--line-2)) center / 100% 1px no-repeat;
+  }
+  .prose :global(.klon-przerywnik)::after {
+    content: ''; position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+    width: 3.6rem; height: 1.6rem; background: var(--bg);
+  }
+  .prose :global(.klon-przerywnik)::before {
+    content: ''; position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+    width: 1.6rem; height: 1.6rem; z-index: 1;
+  }
+
+  /* Tabele: karta z nagłówkiem na tle, kwoty CAD z przeliczeniem na PLN w drugiej linii. */
+  .prose :global(.kt-wrap) {
+    margin: 1.6rem 0 0.5rem;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+  .prose :global(.kt) { width: 100%; border-collapse: collapse; font-size: 0.92rem; margin: 0; }
+  .prose :global(.kt caption) {
+    caption-side: top; text-align: left;
+    padding: 0.85rem 1rem 0.6rem;
+    font-weight: 600; color: var(--ink); font-size: 0.95rem;
+  }
+  .prose :global(.kt thead th) {
+    background: var(--paper-2);
+    color: var(--ink-soft);
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    text-align: left; padding: 0.55rem 1rem;
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line-2);
+  }
+  .prose :global(.kt tbody th),
+  .prose :global(.kt td) {
+    padding: 0.7rem 1rem; text-align: left; vertical-align: top;
+    border-bottom: 1px solid var(--line); color: var(--prose-ink);
+  }
+  .prose :global(.kt tbody th) { font-weight: 600; color: var(--ink); }
+  .prose :global(.kt tbody tr:last-child > *) { border-bottom: 0; }
+  .prose :global(.kt tbody tr:hover > *) { background: var(--paper); }
+  .prose :global(.kt .kt-suma > *) { background: var(--brand-50); }
+  .prose :global(.kt .kt-num) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .prose :global(.kt .kt-cad) { display: block; font-weight: 600; color: var(--ink); }
+  .prose :global(.kt .kt-pln) { display: block; font-size: 0.8rem; color: var(--ink-faint); margin-top: 0.1rem; }
+  .prose :global(.kt .kt-art) { min-width: 6.5rem; font-size: 0.8rem; color: var(--ink-faint); }
+  .prose :global(.kt-opis td:nth-child(2)) { min-width: 18rem; }
+  .prose :global(.kt-wrap + p) { font-size: 0.8rem; color: var(--ink-faint); margin-top: 0.4rem; }
+
+  @media (max-width: 639px) {
+    .prose :global(.kt) { font-size: 0.82rem; }
+    .prose :global(.kt thead th),
+    .prose :global(.kt tbody th),
+    .prose :global(.kt td) { padding: 0.55rem 0.6rem; }
+    .prose :global(.kt-opis td:nth-child(2)) { min-width: 13rem; }
+  }
+</style>

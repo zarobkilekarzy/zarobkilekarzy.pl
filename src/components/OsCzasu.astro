@@ -1,0 +1,364 @@
+---
+// Oś czasu z punktami w skali czasu i dymkami (popover) z opisem zdarzenia.
+// Znacznik punktu to liść klonowy (maska CSS), kolor = rodzaj zdarzenia. Punkty leżące blisko
+// siebie trafiają na kolejne „piętra” nad osią, żeby się nie nakładały. Pod wykresem idzie
+// skrócona lista (numer · data · tytuł) — te same dymki otwiera też klik w pozycję listy,
+// więc wykres działa bez hovera (telefon) i z klawiatury.
+// Pierwsze użycie: /preview/kanada-lekarze-ustawa-specjalna/.
+import type { RodzajZdarzenia, Zdarzenie } from '../lib/osCzasu';
+
+interface Props {
+  id: string;
+  tytul: string;
+  poczatek: string;
+  koniec: string;
+  zdarzenia: Zdarzenie[];
+  /** Zacieniony przedział na osi (np. czas obowiązywania przepisu). */
+  pasmo?: { poczatek: string; koniec: string; etykieta: string };
+  /** Podziałka: lata (domyślnie przy rozpiętości > 3 lat), miesiące albo dekady. */
+  podzialka?: 'miesiace' | 'lata' | 'dekady';
+}
+const { id, tytul, poczatek, koniec, zdarzenia, pasmo, podzialka: podzialkaProp } = Astro.props;
+
+const MIESIACE = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
+// Data bez dnia stoi w połowie miesiąca, sam rok — w połowie roku.
+const czas = (d: string) => {
+  const [r, m, dz] = d.split('-').map(Number);
+  if (m === undefined) return Date.UTC(r, 6, 1);
+  return Date.UTC(r, m - 1, dz ?? 15);
+};
+const t0 = czas(poczatek);
+const t1 = czas(koniec);
+const x = (d: string) => ((czas(d) - t0) / (t1 - t0)) * 100;
+const fmt = (d: string) => {
+  const p = d.split('-');
+  if (p.length === 3) return `${Number(p[2])}.${p[1]}.${p[0]}`;
+  if (p.length === 2) return `${MIESIACE[Number(p[1]) - 1]} ${p[0]}`;
+  return p[0];
+};
+
+const lata = (t1 - t0) / (365.25 * 864e5);
+const podzialka = podzialkaProp ?? (lata > 25 ? 'dekady' : lata > 3 ? 'lata' : 'miesiace');
+const wyznaczTicki = () => {
+  const ticks: { x: number; label: string; pomocniczy?: boolean }[] = [];
+  const d0 = new Date(t0);
+  const d1 = new Date(t1);
+  if (podzialka === 'miesiace') {
+    for (let r = d0.getUTCFullYear(), m = d0.getUTCMonth(); Date.UTC(r, m, 1) <= t1; m++) {
+      if (m > 11) { m = 0; r++; }
+      const t = Date.UTC(r, m, 1);
+      if (t >= t0) ticks.push({ x: ((t - t0) / (t1 - t0)) * 100, label: m === 0 ? `${r}` : MIESIACE[m], pomocniczy: m % 3 !== 0 });
+    }
+  } else {
+    const krok = podzialka === 'dekady' ? 10 : 1;
+    const start = Math.ceil(d0.getUTCFullYear() / krok) * krok;
+    for (let r = start; r <= d1.getUTCFullYear(); r += krok) {
+      const t = Date.UTC(r, 0, 1);
+      if (t >= t0) ticks.push({ x: ((t - t0) / (t1 - t0)) * 100, label: `${r}` });
+    }
+  }
+  return ticks;
+};
+const ticks = wyznaczTicki();
+
+// Piętra: punkt idzie na najniższe piętro, na którym poprzedni punkt jest dalej niż MIN_ODST %.
+const MIN_ODST = 3.2;
+const ostatnie: number[] = [];
+const punkty = zdarzenia
+  .map((z, i) => ({ ...z, nr: i + 1, x: x(z.data) }))
+  .map((p) => {
+    let pietro = ostatnie.findIndex((ox) => p.x - ox >= MIN_ODST);
+    if (pietro === -1) pietro = ostatnie.length;
+    ostatnie[pietro] = p.x;
+    return { ...p, pietro };
+  });
+const pieter = Math.max(1, ostatnie.length);
+
+const ETYKIETY: Record<RodzajZdarzenia, string> = {
+  rzad: 'Działanie rządu',
+  lekarze: 'Reakcja lekarzy i samorządu',
+  sad: 'Sąd lub arbiter',
+  porozumienie: 'Porozumienie',
+};
+const KOLEJNOSC: RodzajZdarzenia[] = ['rzad', 'lekarze', 'sad', 'porozumienie'];
+const rodzaje = KOLEJNOSC.filter((r) => zdarzenia.some((z) => z.rodzaj === r));
+---
+
+<figure class="oc" aria-labelledby={`${id}-tytul`}>
+  <figcaption id={`${id}-tytul`} class="oc-tytul">{tytul}</figcaption>
+  <ul class="oc-legenda" aria-label="Legenda">
+    {rodzaje.map((r) => <li><span class={`oc-lisc oc-${r}`} aria-hidden="true"></span>{ETYKIETY[r]}</li>)}
+  </ul>
+
+  <div class="oc-wykres" style={`--pieter:${pieter}`} aria-hidden="true">
+    {pasmo && (
+      <div class="oc-pasmo" style={`left:${x(pasmo.poczatek)}%;width:${x(pasmo.koniec) - x(pasmo.poczatek)}%`}>
+        <span>{pasmo.etykieta}</span>
+      </div>
+    )}
+    <div class="oc-os"></div>
+    {ticks.map((t) => <span class:list={['oc-tick', { 'oc-tick-pom': t.pomocniczy }]} style={`left:${t.x}%`}>{t.label}</span>)}
+    {punkty.map((p) => (
+      <button
+        type="button"
+        class={`oc-pkt oc-${p.rodzaj}`}
+        style={`left:${p.x}%;--pietro:${p.pietro}`}
+        tabindex="-1"
+        data-oc-cel={`${id}-d${p.nr}`}
+      >
+        <span class="oc-lisc"></span>
+        <span class="oc-nr">{p.nr}</span>
+      </button>
+    ))}
+  </div>
+
+  <ol class="oc-lista">
+    {punkty.map((p) => (
+      <li>
+        <button type="button" class="oc-poz" data-oc-cel={`${id}-d${p.nr}`} aria-haspopup="dialog">
+          <span class={`oc-nr-lista oc-${p.rodzaj}`}>{p.nr}</span>
+          <span class="oc-data">{p.dataTekst ?? fmt(p.data)}</span>
+          <span class="oc-poz-tytul">{p.tytul}</span>
+        </button>
+      </li>
+    ))}
+  </ol>
+
+  {punkty.map((p) => (
+    <div class="oc-dymek" id={`${id}-d${p.nr}`} popover="auto" role="dialog" aria-label={p.tytul}>
+      <p class="oc-dymek-meta"><span class={`oc-lisc oc-${p.rodzaj}`} aria-hidden="true"></span>{p.dataTekst ?? fmt(p.data)} · {ETYKIETY[p.rodzaj]}</p>
+      <p class="oc-dymek-tytul">{p.tytul}</p>
+      <p class="oc-dymek-opis" set:html={p.opis} />
+      {p.zrodlo && <p class="oc-dymek-zrodlo">Źródło: <a href={p.zrodlo.url} rel="noopener">{p.zrodlo.nazwa}</a></p>}
+    </div>
+  ))}
+</figure>
+
+<style>
+  .oc {
+    /* Liść klonowy (flaga Kanady) jako maska — kolor nadaje background. */
+    --oc-lisc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-2015 -2000 4030 4030'%3E%3Cpath d='m-90 2030 45-863a95 95 0 0 0-111-98l-859 151 116-320a65 65 0 0 0-20-73l-941-762 212-99a65 65 0 0 0 34-79l-186-572 542 115a65 65 0 0 0 73-38l105-247 423 454a65 65 0 0 0 111-57l-204-1052 327 189a65 65 0 0 0 91-27l332-652 332 652a65 65 0 0 0 91 27l327-189-204 1052a65 65 0 0 0 111 57l423-454 105 247a65 65 0 0 0 73 38l542-115-186 572a65 65 0 0 0 34 79l212 99-941 762a65 65 0 0 0-20 73l116 320-859-151a95 95 0 0 0-111 98l45 863z'/%3E%3C/svg%3E");
+    --oc-rzad: var(--klon, #c8102e);
+    --oc-lekarze: var(--brand);
+    --oc-sad: var(--amber);
+    --oc-porozumienie: var(--ok);
+    margin: 2rem 0;
+    padding: 1.1rem 1.2rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+  }
+  .oc-tytul { font-weight: 600; color: var(--ink); font-size: 1rem; margin: 0 0 0.5rem; }
+  .oc-legenda {
+    list-style: none; margin: 0 0 0.6rem; padding: 0;
+    display: flex; flex-wrap: wrap; gap: 0.3rem 1rem;
+    font-size: 0.78rem; color: var(--ink-faint);
+  }
+  .oc-legenda li { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0; font-size: 0.78rem; line-height: 1.4; }
+
+  .oc-lisc {
+    display: inline-block; width: 0.95rem; height: 0.95rem; flex: none;
+    -webkit-mask: var(--oc-lisc) center / contain no-repeat;
+    mask: var(--oc-lisc) center / contain no-repeat;
+  }
+  .oc-rzad { --c: var(--oc-rzad); }
+  .oc-lekarze { --c: var(--oc-lekarze); }
+  .oc-sad { --c: var(--oc-sad); }
+  .oc-porozumienie { --c: var(--oc-porozumienie); }
+  .oc-lisc { background: var(--c, currentColor); }
+
+  .oc-wykres {
+    position: relative;
+    height: calc(2.6rem + var(--pieter) * 1.9rem);
+    margin: 0 0.9rem 0.4rem;
+  }
+  .oc-os {
+    position: absolute; left: 0; right: 0; bottom: 1.6rem;
+    border-top: 2px solid var(--line-2);
+  }
+  .oc-tick {
+    position: absolute; bottom: 0; transform: translateX(-50%);
+    font-size: 0.7rem; color: var(--ink-faint); font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .oc-tick::before {
+    content: ''; position: absolute; left: 50%; bottom: 1.1rem; height: 0.45rem;
+    border-left: 1px solid var(--line-2);
+  }
+  .oc-pasmo {
+    position: absolute; top: 0; bottom: 1.6rem;
+    background: var(--alert-50);
+    border-left: 1px dashed var(--oc-rzad);
+    border-right: 1px dashed var(--oc-rzad);
+  }
+  .oc-pasmo span {
+    position: absolute; top: 0.15rem; left: 50%; transform: translateX(-50%);
+    font-size: 0.68rem; font-weight: 600; color: var(--ink-soft); white-space: nowrap;
+  }
+  .oc-pkt {
+    all: unset;
+    position: absolute;
+    bottom: calc(1.6rem - 0.7rem + var(--pietro) * 1.9rem);
+    transform: translateX(-50%);
+    width: 1.4rem; height: 1.4rem;
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  /* Nóżka od liścia do osi dla punktów na wyższych piętrach. */
+  .oc-pkt::after {
+    content: ''; position: absolute; left: 50%; top: 100%;
+    height: calc(var(--pietro) * 1.9rem - 0.7rem);
+    border-left: 1px solid var(--line-2);
+  }
+  .oc-pkt .oc-lisc { width: 1.4rem; height: 1.4rem; grid-area: 1 / 1; transition: transform 0.15s; }
+  .oc-pkt:hover .oc-lisc, .oc-pkt.oc-aktywny .oc-lisc { transform: scale(1.25); }
+  .oc-nr {
+    grid-area: 1 / 1; z-index: 1; margin-top: 0.1rem;
+    font-size: 0.58rem; font-weight: 700; color: var(--surface); font-variant-numeric: tabular-nums;
+  }
+
+  .oc-lista {
+    list-style: none; margin: 0.4rem 0 0; padding: 0.6rem 0 0;
+    border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 0.1rem 1rem;
+    counter-reset: none;
+  }
+  .oc-lista li { margin: 0; padding: 0; }
+  .oc-lista li::before { content: none; }
+  .oc-poz {
+    all: unset; box-sizing: border-box; width: 100%;
+    display: grid; grid-template-columns: 1.3rem 5.6rem 1fr; gap: 0.4rem; align-items: baseline;
+    padding: 0.3rem 0.35rem; border-radius: 6px; cursor: pointer;
+    font-size: 0.82rem; line-height: 1.35; color: var(--ink-soft);
+  }
+  .oc-poz:hover, .oc-poz.oc-aktywny { background: var(--paper-2); color: var(--ink); }
+  .oc-poz:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 1px; }
+  .oc-nr-lista {
+    display: inline-grid; place-items: center; width: 1.2rem; height: 1.2rem; border-radius: 50%;
+    background: var(--c); color: var(--surface);
+    font-size: 0.62rem; font-weight: 700; align-self: center;
+  }
+  .oc-data { font-variant-numeric: tabular-nums; color: var(--ink-faint); font-size: 0.76rem; }
+
+  .oc-dymek:popover-open {
+    position: fixed; margin: 0; inset: auto;
+    width: min(22rem, calc(100vw - 1.5rem));
+    padding: 0.75rem 0.9rem 0.8rem;
+    border: 1px solid var(--line-2); border-radius: 10px;
+    background: var(--surface); color: var(--ink-soft);
+    box-shadow: 0 10px 28px rgb(0 0 0 / 0.18);
+    font-size: 0.85rem; line-height: 1.5;
+  }
+  .oc-dymek p { margin: 0; }
+  .oc-dymek-meta {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint);
+  }
+  .oc-dymek-tytul { font-weight: 600; color: var(--ink); margin: 0.3rem 0 0.25rem !important; font-size: 0.95rem; }
+  .oc-dymek-opis :global(strong) { color: var(--ink); }
+  .oc-dymek-zrodlo { margin-top: 0.45rem !important; font-size: 0.75rem; color: var(--ink-faint); }
+  .oc-dymek-zrodlo a { color: var(--brand-link); }
+
+  @media (max-width: 639px) {
+    .oc { padding: 0.9rem 0.8rem; }
+    .oc-wykres { margin: 0 0.6rem 0.3rem; }
+    .oc-poz { grid-template-columns: 1.3rem 4.9rem 1fr; }
+    /* Na wąskim ekranie tylko co trzeci miesiąc ma etykietę (kreska zostaje). */
+    .oc-tick-pom { color: transparent; }
+  }
+</style>
+
+<script>
+  // Jeden zestaw nasłuchów dla wszystkich osi na stronie. Dymki są w top layer (popover="auto":
+  // Escape i klik poza dymkiem zamykają je same), pozycję liczymy ręcznie względem klikniętego
+  // elementu — punktu na wykresie albo pozycji listy.
+  (() => {
+    let aktywne: HTMLElement[] = [];
+    const odznacz = () => {
+      aktywne.forEach((el) => el.classList.remove('oc-aktywny'));
+      aktywne = [];
+    };
+    const ustaw = (kotwica: HTMLElement, dymek: HTMLElement) => {
+      const k = kotwica.getBoundingClientRect();
+      const r = dymek.getBoundingClientRect();
+      const M = 8;
+      let left = k.left + k.width / 2 - r.width / 2;
+      left = Math.max(M, Math.min(left, window.innerWidth - r.width - M));
+      let top = k.bottom + 6;
+      if (top + r.height > window.innerHeight - M) top = Math.max(M, k.top - r.height - 6);
+      dymek.style.left = `${Math.round(left)}px`;
+      dymek.style.top = `${Math.round(top)}px`;
+    };
+    const pokaz = (kotwica: HTMLElement) => {
+      const id = kotwica.dataset.ocCel;
+      const dymek = id ? document.getElementById(id) : null;
+      if (!dymek) return;
+      if (dymek.matches(':popover-open')) {
+        if (aktywne.includes(kotwica)) return;
+      } else {
+        dymek.showPopover();
+      }
+      odznacz();
+      aktywne = [...document.querySelectorAll<HTMLElement>(`[data-oc-cel="${id}"]`)];
+      aktywne.forEach((el) => el.classList.add('oc-aktywny'));
+      ustaw(kotwica, dymek);
+    };
+    const kotwicaZ = (t: EventTarget | null) =>
+      t instanceof Element ? t.closest<HTMLElement>('[data-oc-cel]') : null;
+
+    let zHovera = false;
+    let timerZamkniecia = 0;
+    const zamknijWszystkie = () =>
+      document.querySelectorAll<HTMLElement>('.oc-dymek:popover-open').forEach((d) => d.hidePopover());
+
+    document.addEventListener('click', (e) => {
+      const k = kotwicaZ(e.target);
+      if (!k) return;
+      const id = k.dataset.ocCel;
+      const dymek = id ? document.getElementById(id) : null;
+      // Klik w punkt otwarty hoverem „przypina” dymek; drugi klik go zamyka.
+      if (dymek?.matches(':popover-open') && aktywne.includes(k) && !zHovera) {
+        dymek.hidePopover();
+        return;
+      }
+      zHovera = false;
+      pokaz(k);
+    });
+    // Hover tylko na punktach wykresu i tylko przy myszy (na dotyku zostaje klik). Dymek
+    // z hovera znika, gdy kursor opuści punkt i dymek.
+    document.addEventListener('pointerover', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const t = e.target instanceof Element ? e.target : null;
+      const k = kotwicaZ(t);
+      if (k?.classList.contains('oc-pkt')) {
+        window.clearTimeout(timerZamkniecia);
+        const otwarty = document.querySelector('.oc-dymek:popover-open');
+        if (!otwarty || zHovera) {
+          zHovera = true;
+          pokaz(k);
+        }
+        return;
+      }
+      if (t?.closest('.oc-dymek')) {
+        window.clearTimeout(timerZamkniecia);
+        return;
+      }
+      if (zHovera) {
+        window.clearTimeout(timerZamkniecia);
+        timerZamkniecia = window.setTimeout(() => {
+          if (zHovera) zamknijWszystkie();
+        }, 200);
+      }
+    });
+    document.addEventListener('toggle', (e) => {
+      const t = e.target;
+      if (t instanceof HTMLElement && t.classList.contains('oc-dymek') && !t.matches(':popover-open')) {
+        odznacz();
+        zHovera = false;
+      }
+    }, true);
+    // Dymek ma position: fixed — przy przewijaniu i zmianie rozmiaru odkleiłby się od punktu.
+    window.addEventListener('scroll', zamknijWszystkie, { capture: true, passive: true });
+    window.addEventListener('resize', zamknijWszystkie);
+  })();
+</script>

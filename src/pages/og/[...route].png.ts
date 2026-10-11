@@ -6,6 +6,7 @@ import { fonts, el, logo, ecgBackground, type Node } from '../../lib/ogCard';
 import { arcadeTemplate } from '../../lib/ogCardGra';
 import { egzaminTemplate } from '../../lib/ogCardEgzamin';
 import { ustawaTemplate } from '../../lib/ogCardUstawa';
+import { kanadaTemplate } from '../../lib/ogCardKanada';
 
 // Karta 1200×630 = og:image dla X / Facebooka / LinkedIna. Miniatura wykop.pl ma inne
 // proporcje i powstaje osobno — patrz src/pages/og-wykop/[...route].png.ts.
@@ -65,6 +66,7 @@ export const GET: APIRoute = async ({ props }) => {
     page.variant === 'arcade' ? arcadeTemplate(page)
     : page.variant === 'egzamin' ? egzaminTemplate(page)
     : page.variant === 'ustawa' ? ustawaTemplate(page)
+    : page.variant === 'kanada' ? kanadaTemplate(page)
     : template(page);
   const svg = await satori(node as never, { width: 1200, height: 630, fonts });
   const png = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } }).render().asPng();

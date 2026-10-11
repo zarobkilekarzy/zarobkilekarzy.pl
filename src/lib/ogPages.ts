@@ -13,7 +13,8 @@ export interface OgPage {
   // wyłom działa dopóki jest jeden.
   // 'egzamin' = arkusz z prawdziwym pytaniem — dla /egzamin (src/lib/ogCardEgzamin.ts).
   // 'ustawa' = kartka z art. 27a i dwiema wstawkami — dla projektu nowelizacji (src/lib/ogCardUstawa.ts).
-  variant?: 'arcade' | 'egzamin' | 'ustawa';
+  // 'kanada' = flaga Kanady obok tytułu — dla analizy o sporach prowincji z lekarzami (src/lib/ogCardKanada.ts).
+  variant?: 'arcade' | 'egzamin' | 'ustawa' | 'kanada';
   short?: string;     // krótka stopka wariantu arcade (długi `subtitle` nie mieści się w neonie)
 }
 
@@ -145,6 +146,13 @@ export const ogPages: Record<string, OgPage> = {
     tag: 'Analiza · Świat',
     title: 'Jak działa tajwańska ochrona zdrowia',
     subtitle: 'Rachunek z kwotą dla ubezpieczyciela po każdej wizycie, jawne sprawozdania szpitali i rejestr miejsc pracy lekarzy. Płace lekarzy — niejawne.',
+  },
+  'analizy/kanada-lekarze-ustawa-specjalna': {
+    variant: 'kanada',
+    // Twarde spacje ( ) po jednoliterowych słowach — bez sierotek na końcu wiersza.
+    tag: 'Analiza · Kanada',
+    title: 'Gdy rząd narzuca lekarzom warunki ustawą',
+    subtitle: 'Ustawa specjalna, kary dzienne i cięcia taryf — a na końcu porozumienia z lekarzami. I co z jawnością płatności.',
   },
   'egzamin': {
     variant: 'egzamin',

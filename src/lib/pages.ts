@@ -259,6 +259,12 @@ export const strony: Record<string, Strona> = {
     opis: 'Jeden płatnik, budżet globalny z punktową wyceną i rachunek z kwotą dla ubezpieczyciela po każdej wizycie. Tajwan publikuje sprawozdania szpitali i wie, gdzie pracuje każdy lekarz — ale zarobków poszczególnych lekarzy nie ujawnia.',
     tematy: ['jawnosc', 'pieniadz-nfz'],
   },
+  '/analizy/kanada-lekarze-ustawa-specjalna': {
+    dzial: 'analizy',
+    tytul: 'Kanada: gdy rząd narzuca lekarzom warunki ustawą',
+    opis: 'Quebec w jedną noc uchwalił ustawę tnącą taryfy lekarzy o 13,04% i grożącą karami do 500 000 CAD dziennie — po 48 dniach uchylono jej rozdział karny. Do tego Ontario, Alberta, spory historyczne i rola jawności płatności.',
+    tematy: ['pieniadz-nfz', 'jawnosc'],
+  },
   '/egzamin': {
     dzial: 'dane',
     tytul: 'Egzamin LEK — sprawdź się',

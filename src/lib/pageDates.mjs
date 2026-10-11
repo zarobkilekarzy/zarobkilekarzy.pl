@@ -15,6 +15,7 @@ export const pageDates = {
   '/analizy/odsiew-na-medycynie': '2026-10-05',
   '/analizy/symulator-podazy-lekarzy': '2026-10-05',
   '/analizy/tajwan-ochrona-zdrowia': '2026-10-05',
+  '/analizy/kanada-lekarze-ustawa-specjalna': '2026-10-11',
   '/analizy/lejek-ksztalcenia': '2026-07-08',
   '/analizy/english-division': '2026-08-02',
   '/analizy/lekarze-ze-wschodu': '2026-07-08',

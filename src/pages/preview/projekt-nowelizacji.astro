@@ -1,0 +1,364 @@
+---
+// PODGLĄD (noindex, poza sitemapą — astro.config.mjs wycina /preview/). Obywatelski projekt
+// nowelizacji art. 27a ustawy o działalności leczniczej (wersja — stała WERSJA niżej).
+//
+// Źródło prawdy treści: research/projekt-nowelizacji/projekt-nowelizacji-art27a.md (poza gitem).
+// Ta strona jest jego ręcznym odwzorowaniem — research/ nie trafia do repo, więc build w CI
+// nie może go importować. Zmiana brzmienia przepisów = edycja .md, PDF (build-pdf.mjs)
+// ORAZ tej strony. PDF leży w public/preview/ (kopia z research/projekt-nowelizacji/dist/).
+//
+// Cytaty z ust. 1a, 5 i 6 są na grafikach social/x-nowela-{A,B,C} — zmiana brzmienia = poprawka grafik.
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// Miniatury stron PDF (pdftoppm -r 120 z public/preview/…pdf → src/assets/projekt-nowelizacji/strona-N.png).
+// Po regeneracji PDF-a wyrenderuj je ponownie.
+const strony = Object.entries(
+  import.meta.glob<{ default: ImageMetadata }>('../../assets/projekt-nowelizacji/strona-*.png', { eager: true }),
+)
+  .map(([path, mod]) => ({ n: Number(path.match(/strona-(\d+)\.png$/)?.[1]), img: mod.default }))
+  .sort((a, b) => a.n - b.n);
+
+const WERSJA = '0.3';
+const DATA = '2026-10-11';
+const PDF = `/preview/projekt-nowelizacji-art27a-v${WERSJA}.pdf`;
+
+const toc = [
+  ['nota', 'Nota o statusie dokumentu'],
+  ['projekt', 'Projekt'],
+  ['uzasadnienie', 'Uzasadnienie'],
+  ['zalacznik-a', 'Załącznik A. Tekst ujednolicony'],
+  ['zalacznik-b', 'Załącznik B. Pytania do weryfikacji prawnej'],
+  ['zalacznik-c', 'Załącznik C. Źródła'],
+];
+---
+
+<BaseLayout
+  title={`Projekt nowelizacji art. 27a ustawy o działalności leczniczej — wersja ${WERSJA}`}
+  description="Obywatelski projekt roboczy: dwa punkty zmian w art. 27a ustawy o działalności leczniczej — kwartalne przekazywanie danych o wynagrodzeniach i ich publikacja w postaci spseudonimizowanej."
+  noindex={true}
+>
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Obywatelski projekt roboczy · do weryfikacji prawnej</p>
+      <h1>Projekt ustawy o zmianie ustawy o działalności leczniczej</h1>
+      <p class="lead">
+        Jawność wynagrodzeń w ochronie zdrowia finansowanych ze środków publicznych — nowelizacja art. 27a w dwóch punktach.
+      </p>
+
+      <div class="meta">
+        <div class="meta-item">
+          <span class="meta-k">Wersja</span>
+          <span class="meta-v"><span class="badge">{WERSJA} · wstępna</span></span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-k">Data</span>
+          <span class="meta-v">{DATA}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-k">Zakres</span>
+          <span class="meta-v">art. 27a ust. 1a oraz ust. 5–7</span>
+        </div>
+        <div class="meta-item meta-dl">
+          <a class="btn btn-primary" href={PDF} download>Pobierz PDF (8 stron)</a>
+        </div>
+      </div>
+
+      <div class="callout quiet">
+        <p>
+          Dokument <strong>nie jest projektem ustawy</strong> w rozumieniu Regulaminu Sejmu. Wersja {WERSJA} służy weryfikacji prawnej przed publikacją; miejsca oznaczone <span class="q">[?]</span> wymagają sprawdzenia. Treść może się zmienić w całości.
+        </p>
+      </div>
+
+      <nav class="spis" aria-label="Spis treści">
+        <p class="spis-h">Spis treści</p>
+        <ol>
+          {toc.map(([id, label]) => <li><a href={`#${id}`}>{label}</a></li>)}
+        </ol>
+      </nav>
+
+      <!-- ============ PODGLĄD PDF ============ -->
+      <section class="pdf-prev" aria-labelledby="pdf-h">
+        <div class="pdf-head">
+          <p id="pdf-h" class="pdf-k">Dokument PDF · {strony.length} stron A4</p>
+          <a class="pdf-all" href={PDF} target="_blank" rel="noopener">Otwórz w przeglądarce ↗</a>
+        </div>
+        <ol class="pdf-strip">
+          {strony.map(({ n, img }) => (
+            <li>
+              <a href={`${PDF}#page=${n}`} target="_blank" rel="noopener" aria-label={`Strona ${n} z ${strony.length} — otwórz PDF`}>
+                <Image src={img} alt="" widths={[240, 480]} sizes="240px" loading={n <= 3 ? 'eager' : 'lazy'} />
+              </a>
+              <span class="pdf-n">{n}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <!-- ============ NOTA ============ -->
+      <div class="prose">
+        <h2 id="nota">Nota o statusie dokumentu</h2>
+        <p>
+          Niniejszy dokument jest <strong>obywatelskim projektem roboczym</strong> inicjatywy zarobkilekarzy.pl. Nie jest projektem ustawy w rozumieniu Regulaminu Sejmu; staje się nim dopiero po wniesieniu przez uprawniony podmiot.
+        </p>
+        <p>
+          Wersja {WERSJA} służy <strong>weryfikacji prawnej</strong> przed jakąkolwiek publiczną promocją. Pytania do osoby weryfikującej zawiera <a href="#zalacznik-b">Załącznik B</a>.
+        </p>
+        <p>
+          Projekt <strong>nie zmienia żadnego z obowiązujących przepisów</strong> art. 27a ustawy o działalności leczniczej w brzmieniu nadanym ustawą z dnia 19 czerwca 2026 r. (Dz. U. poz. 972). Dodaje do niego <strong>dwa punkty</strong>: stały kwartalny obowiązek przekazywania tych samych danych (ust. 1a) oraz ich publikację w postaci spseudonimizowanej wraz z sankcją za niewykonanie obowiązku (ust. 5–7).
+        </p>
+      </div>
+
+      <!-- ============ PROJEKT (tekst normatywny) ============ -->
+      <h2 id="projekt" class="blk">Projekt</h2>
+      <article class="ustawa" aria-label="Tekst projektu ustawy">
+        <p class="l-ustawa">Ustawa</p>
+        <p class="l-data">z dnia …………………… 2026 r.</p>
+        <p class="l-tytul">o zmianie ustawy o działalności leczniczej</p>
+
+        <p class="l-art"><span class="art">Art. 1.</span> W ustawie z dnia 15 kwietnia 2011 r. o działalności leczniczej (Dz. U. z 2026 r. poz. 156 i 972) w art. 27a wprowadza się następujące zmiany:</p>
+
+        <p class="l-pkt">1) po ust. 1 dodaje się ust. 1a w brzmieniu:</p>
+        <p class="l-cyt">„1a. Niezależnie od obowiązku, o którym mowa w ust. 1, podmiot wykonujący działalność leczniczą, który realizuje umowę o udzielanie świadczeń opieki zdrowotnej zawartą z Narodowym Funduszem Zdrowia, gromadzi oraz przekazuje jednostce podległej ministrowi właściwemu do spraw zdrowia właściwej w zakresie systemów informacyjnych w ochronie zdrowia, zwanej dalej „jednostką”, za każdy kwartał kalendarzowy, w terminie 45 dni od jego zakończenia, dane, o których mowa w ust. 1, dotyczące również osób świadczących na rzecz tego podmiotu usługi na podstawie umowy cywilnoprawnej lub w ramach podwykonawstwa. Dane przekazuje się w postaci elektronicznej, w formacie określonym przez jednostkę i ogłoszonym na jej stronie podmiotowej Biuletynu Informacji Publicznej.”;</p>
+
+        <p class="l-pkt">2) dodaje się ust. 5–7 w brzmieniu:</p>
+        <p class="l-cyt">„5. Jednostka zastępuje numer PESEL, a w przypadku jego braku – numer prawa wykonywania zawodu lub dane dokumentu potwierdzającego tożsamość, identyfikatorem wygenerowanym przy użyciu funkcji kryptograficznej z kluczem tajnym, tak aby tej samej osobie odpowiadał zawsze ten sam identyfikator. Klucz przechowuje wyłącznie ta jednostka.</p>
+        <p class="l-cyt l-in">6. Jednostka, w terminie 90 dni od dnia zakończenia kwartału, udostępnia publicznie jako dane otwarte w rozumieniu przepisów o otwartych danych i ponownym wykorzystywaniu informacji sektora publicznego, w odniesieniu do każdego identyfikatora: łączną kwotę wynagrodzeń, o których mowa w ust. 1 pkt 2 lit. c, oraz liczbę podmiotów, które wypłaciły wynagrodzenie. Dane, o których mowa w ust. 1 pkt 2 lit. c, d, g i h, udostępnia się także w podziale na te podmioty.</p>
+        <p class="l-cyt l-in">7. Podmiot, który nie przekazuje danych, o których mowa w ust. 1a, w terminie albo przekazuje dane niepełne lub niezgodne ze stanem faktycznym, podlega administracyjnej karze pieniężnej w wysokości do 0,5% wartości umów o udzielanie świadczeń opieki zdrowotnej zawartych z Narodowym Funduszem Zdrowia w poprzednim roku kalendarzowym, nakładanej w drodze decyzji przez Prezesa Narodowego Funduszu Zdrowia.”.</p>
+
+        <p class="l-art"><span class="art">Art. 2.</span> Ustawa wchodzi w życie z pierwszym dniem kwartału kalendarzowego następującego po upływie 12 miesięcy od dnia ogłoszenia.</p>
+      </article>
+
+      <!-- ============ UZASADNIENIE ============ -->
+      <div class="prose">
+        <h2 id="uzasadnienie">Uzasadnienie</h2>
+
+        <h3>1. Potrzeba i cel</h3>
+        <p>
+          Ustawa z dnia 19 czerwca 2026 r. (Dz. U. poz. 972) nadała art. 27a ustawy o działalności leczniczej brzmienie, na podstawie którego minister właściwy do spraw zdrowia może żądać od podmiotów leczniczych danych o wynagrodzeniach powiązanych z numerem PESEL i numerem prawa wykonywania zawodu. W uzasadnieniu rządowego projektu (druk sejmowy nr 2685) wskazano, że „istotne znaczenie ma możliwość określania i sumowania wysokości wynagrodzeń uzyskiwanych przez poszczególne osoby niezależnie od podstawy prawnej świadczenia pracy”.
+        </p>
+        <p>
+          Obowiązujący przepis ma trzy ograniczenia. Obowiązek powstaje wyłącznie „na wniosek ministra”, bez cyklu i bez kryterium doboru podmiotów. Przepis nie przewiduje publikacji żadnych wyników; według oceny skutków dla ochrony danych dołączonej do projektu dane „mogą być udostępnione wyłącznie ministrowi właściwemu do spraw zdrowia, na jego wniosek”. Za niewykonanie obowiązku nie grozi żadna sankcja.
+        </p>
+        <p>
+          Projekt usuwa te trzy ograniczenia, nie zmieniając żadnego z obowiązujących ustępów art. 27a. Realizuje prawo do uzyskiwania informacji o działalności osób i jednostek gospodarujących majątkiem publicznym (art. 61 ust. 1 Konstytucji RP), nie ujawniając tożsamości osób, których dane dotyczą.
+        </p>
+
+        <h3>2. Różnica między stanem obecnym a projektowanym</h3>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl tbl-3">
+          <thead>
+            <tr><th scope="col"><span class="sr-only">Kwestia</span></th><th scope="col">Stan obecny (Dz. U. 2026 poz. 972)</th><th scope="col">Stan projektowany</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Kiedy dane są przekazywane</th><td data-k="Stan obecny">na wniosek ministra, w terminie i w sposób przez niego wskazany</td><td data-k="Stan projektowany">dodatkowo co kwartał, z mocy ustawy, przez podmioty realizujące umowy z NFZ</td></tr>
+            <tr><th scope="row">Kto widzi dane</th><td data-k="Stan obecny">minister; NFZ, jednostka lub AOTMiT, jeżeli minister je wskaże</td><td data-k="Stan projektowany">dodatkowo każdy, w postaci spseudonimizowanej, jako dane otwarte</td></tr>
+            <tr><th scope="row">Sankcja</th><td data-k="Stan obecny">brak</td><td data-k="Stan projektowany">administracyjna kara pieniężna nakładana przez Prezesa NFZ</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>Uprawnienia ministra wynikające z ust. 1–4 pozostają bez zmian. Zestawienie brzmień zawiera <a href="#zalacznik-a">Załącznik A</a>.</p>
+
+        <h3>3. Skutki regulacji</h3>
+        <p>
+          <strong>Dla podmiotów leczniczych.</strong> Zakres danych jest ten sam, który podmiot musi przygotować na wniosek ministra; nowością jest regularność. Ocena skutków regulacji do druku nr 2685 uznała obowiązek zbierania tych danych za bezkosztowy (pkt 6).
+        </p>
+        <p>
+          <strong>Dla finansów publicznych.</strong> Koszt ponosi jednostka, czyli Centrum e-Zdrowia: przyjmowanie danych, nadawanie identyfikatorów i publikacja. Szacunek własny, wymagający weryfikacji <span class="q">[?]</span>: jednorazowo kilka milionów złotych, rocznie 2–4 mln zł. Wpływy z kar są niekwantyfikowalne.
+        </p>
+        <p>
+          <strong>Dla ochrony danych osobowych.</strong> Podstawą przetwarzania jest art. 6 ust. 1 lit. c i e RODO. Dane o wynagrodzeniu nie należą do szczególnych kategorii danych z art. 9 RODO, co potwierdza ocena skutków regulacji do druku nr 2685. Publikowane dane nie zawierają imienia, nazwiska, numeru PESEL ani numeru prawa wykonywania zawodu, a klucz pozwalający powiązać identyfikator z osobą przechowuje wyłącznie jednostka.
+        </p>
+        <p>
+          <strong>Skutki prawne.</strong> Projekt zmienia jeden artykuł jednej ustawy. Nie wymaga aktów wykonawczych; format danych określa i ogłasza jednostka, na wzór art. 31lc ust. 4c ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych.
+        </p>
+
+        <h3>4. Zgodność z prawem Unii Europejskiej</h3>
+        <p>
+          Projekt jest zgodny z prawem Unii Europejskiej, w szczególności z rozporządzeniem (UE) 2016/679 oraz dyrektywą (UE) 2019/1024 w sprawie otwartych danych. Nie podlega notyfikacji.
+        </p>
+
+        <h3>5. Konsultacje</h3>
+        <p>
+          Wersja {WERSJA} nie była konsultowana. Przed wniesieniem projekt powinien zostać zaopiniowany co najmniej przez Prezesa Urzędu Ochrony Danych Osobowych, Naczelną Radę Lekarską, Prezesa Narodowego Funduszu Zdrowia i Centrum e-Zdrowia.
+        </p>
+      </div>
+
+      <!-- ============ ZAŁĄCZNIK A ============ -->
+      <div class="prose">
+        <h2 id="zalacznik-a">Załącznik A. Art. 27a ustawy o działalności leczniczej po nowelizacji</h2>
+        <p class="note"><em>Tekst ujednolicony. Obowiązujące ustępy pozostają bez zmian; nowe ustępy wyróżniono.</em></p>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl tbl-cmp">
+          <thead>
+            <tr><th scope="col">Brzmienie obowiązujące (Dz. U. 2026 poz. 972)</th><th scope="col">Po nowelizacji</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-k="Obowiązujące"><strong>1.</strong> Podmiot wykonujący działalność leczniczą, na wniosek ministra właściwego do spraw zdrowia, gromadzi oraz przekazuje, w terminie i w sposób przez niego wskazany, dane dotyczące osób zatrudnionych w tym podmiocie obejmujące: 1) liczbę tych osób; 2) dane osoby zatrudnionej: a) numer PESEL […], b) numer prawa wykonywania zawodu […], c) informację o wysokości wynagrodzenia, w tym wynagrodzenia zasadniczego, stawek godzinowych, jeżeli dotyczy, oraz dodatków, d) wymiar czasu pracy, e) tytuły zawodowe, jeżeli posiada, f) zajmowane stanowisko, g) formę zatrudnienia, h) posiadane specjalizacje, jeżeli dotyczy, i) wymagane na zajmowanym stanowisku wykształcenie.</td>
+              <td data-k="Po nowelizacji" class="same">bez zmian</td>
+            </tr>
+            <tr>
+              <td data-k="Obowiązujące" class="none">—</td>
+              <td data-k="Po nowelizacji" class="new"><strong>1a.</strong> Niezależnie od obowiązku, o którym mowa w ust. 1, podmiot wykonujący działalność leczniczą, który realizuje umowę o udzielanie świadczeń opieki zdrowotnej zawartą z Narodowym Funduszem Zdrowia, gromadzi oraz przekazuje jednostce […], za każdy kwartał kalendarzowy, w terminie 45 dni od jego zakończenia, dane, o których mowa w ust. 1, dotyczące również osób świadczących na rzecz tego podmiotu usługi na podstawie umowy cywilnoprawnej lub w ramach podwykonawstwa. […]</td>
+            </tr>
+            <tr>
+              <td data-k="Obowiązujące"><strong>2.–4.</strong> Cele przetwarzania danych przez ministra; możliwość wskazania we wniosku NFZ, jednostki lub AOTMiT jako podmiotu, do którego przekazuje się dane.</td>
+              <td data-k="Po nowelizacji" class="same">bez zmian</td>
+            </tr>
+            <tr>
+              <td data-k="Obowiązujące" class="none">—</td>
+              <td data-k="Po nowelizacji" class="new"><strong>5.</strong> Pseudonimizacja: identyfikator z numeru PESEL, a w jego braku z numeru prawa wykonywania zawodu lub danych dokumentu, wygenerowany funkcją kryptograficzną z kluczem tajnym; ta sama osoba zawsze ma ten sam identyfikator; klucz wyłącznie w jednostce.</td>
+            </tr>
+            <tr>
+              <td data-k="Obowiązujące" class="none">—</td>
+              <td data-k="Po nowelizacji" class="new"><strong>6.</strong> Publikacja jako dane otwarte w 90 dni po kwartale: dla każdego identyfikatora łączna kwota i liczba podmiotów; dane z lit. c, d, g i h w podziale na podmioty. Bez PESEL, numeru prawa wykonywania zawodu, tytułów, stanowiska i wykształcenia.</td>
+            </tr>
+            <tr>
+              <td data-k="Obowiązujące" class="none">—</td>
+              <td data-k="Po nowelizacji" class="new"><strong>7.</strong> Administracyjna kara pieniężna do 0,5% wartości umów z NFZ z poprzedniego roku, nakładana przez Prezesa NFZ.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ============ ZAŁĄCZNIK B ============ -->
+      <div class="prose">
+        <h2 id="zalacznik-b">Załącznik B. Pytania do weryfikacji prawnej</h2>
+        <ol class="qs">
+          <li><strong>Technika dodania ust. 1a.</strong> Czy odesłanie „dane, o których mowa w ust. 1” poprawnie przenosi katalog danych, skoro ust. 1 mówi o „osobach zatrudnionych”, a ust. 1a obejmuje też umowy cywilnoprawne i podwykonawstwo? Czy skrót „jednostka” wprowadzony w ust. 1a nie koliduje z pełną nazwą użytą w obowiązującym ust. 3?</li>
+          <li><strong>Podwykonawstwo przez spółkę.</strong> Czy obowiązek obejmuje lekarzy udzielających świadczeń za pośrednictwem spółki niewpisanej do rejestru podmiotów wykonujących działalność leczniczą? Jeżeli nie, czy wystarczy dopisać obowiązek wskazania osoby fizycznej przez taką spółkę?</li>
+          <li><strong>Wymiar czasu pracy.</strong> Pojęcie z lit. d dotyczy pracowników. Czy publikacja lit. d ma sens dla osób na umowach cywilnoprawnych bez dodatkowego pojęcia „wymiaru zatrudnienia”?</li>
+          <li><strong>Identyfikator a RODO.</strong> Czy dane opublikowane na podstawie ust. 6 pozostają danymi osobowymi w świetle motywu 26 RODO? Jakie ma to konsekwencje dla podstawy publikacji?</li>
+          <li><strong>Ryzyko rozpoznania osoby.</strong> Specjalizacja w podziale na podmioty może pozwolić rozpoznać osobę w małym szpitalu. Czy potrzebny jest próg, na przykład niepublikowanie specjalizacji posiadanej przez mniej niż 5 osób w podmiocie?</li>
+          <li><strong>Wynagrodzenia z mieszanych źródeł.</strong> Ust. 6 publikuje całe wynagrodzenie wypłacone przez podmiot realizujący umowę z NFZ, także część finansowaną ze źródeł prywatnych. Czy trzeba to ograniczyć do części ze środków publicznych?</li>
+          <li><strong>Kara.</strong> Czy podstawa wymiaru „wartość umów z NFZ z poprzedniego roku” i właściwość Prezesa NFZ są prawidłowe? Czy przesłanki wymiaru kary trzeba określić w ustawie, czy wystarczy art. 189d k.p.a.?</li>
+          <li><strong>Wejście w życie.</strong> Czy formuła z art. 2 daje jednostce dość czasu na ogłoszenie formatu danych? Czy termin ogłoszenia formatu trzeba zapisać w ustawie?</li>
+          <li><strong>Relacja do art. 31lc ustawy o świadczeniach.</strong> Świadczeniodawca może przekazywać te same dane dwoma torami: do AOTMiT i do jednostki. Czy zostawić to dla prostoty, czy dodać odesłanie?</li>
+          <li><strong>Ścieżka wniesienia.</strong> Projekt poselski czy petycja do Komisji do Spraw Petycji z wnioskiem o inicjatywę komisyjną? Jakie są wymagania formalne każdej ze ścieżek?</li>
+        </ol>
+      </div>
+
+      <!-- ============ ZAŁĄCZNIK C ============ -->
+      <div class="prose">
+        <h2 id="zalacznik-c">Załącznik C. Źródła</h2>
+        <ol class="src">
+          <li>Ustawa z dnia 19 czerwca 2026 r. o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych oraz ustawy o działalności leczniczej (Dz. U. poz. 972). <a href="https://api.sejm.gov.pl/sejm/term10/processes/2685/attachment/2685_u3.pdf" target="_blank" rel="noopener noreferrer">Tekst po III czytaniu</a>.</li>
+          <li>Rządowy projekt ustawy, druk sejmowy nr 2685, z uzasadnieniem, oceną skutków regulacji i oceną skutków dla ochrony danych: <a href="https://api.sejm.gov.pl/sejm/term10/prints/2685/2685.pdf" target="_blank" rel="noopener noreferrer">druk nr 2685 (PDF)</a>.</li>
+          <li>Ustawa z dnia 15 kwietnia 2011 r. o działalności leczniczej (Dz. U. z 2026 r. poz. 156 i 972), art. 27a.</li>
+          <li>Ustawa z dnia 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych, art. 31lc.</li>
+          <li>Rozporządzenie Parlamentu Europejskiego i Rady (UE) 2016/679 (RODO), art. 6 ust. 1 lit. c i e, art. 9, motyw 26.</li>
+        </ol>
+      </div>
+
+      <div class="cta-row">
+        <a class="btn btn-primary" href={PDF} download>Pobierz PDF</a>
+        <a class="btn" href="/postulat/">Postulat jawnego rejestru</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Szerokość daje układ „tekst” (global.css): od 1100 px tekst w kolumnie o stałej mierze,
+     tabele na całą szerokość obok szyny ze spisem. Kartę ustawy i metryczkę trzymamy w mierze tekstu. */
+  .ustawa, .meta, .spis { max-width: var(--maxw-tekst); }
+  /* Od 1100 px spis treści daje globalna szyna — własny tylko na węższych ekranach. */
+  @media (min-width: 1100px) { .spis { display: none; } }
+  .blk { margin: 2.4rem 0 0.9rem; }
+  .q { color: var(--alert); font-family: var(--font-mono); font-weight: 600; font-size: 0.9em; white-space: nowrap; }
+  .note { color: var(--ink-soft); }
+
+  /* Metryczka */
+  .meta {
+    display: grid; grid-template-columns: repeat(3, auto) 1fr; gap: 0.75rem 2rem; align-items: end;
+    margin: 1.75rem 0 1.25rem; padding: 1rem 0; border-top: 2px solid var(--brand); border-bottom: 1px solid var(--line);
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 0.25rem; }
+  .meta-k { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); }
+  .meta-v { font-weight: 500; }
+  .meta-dl { justify-self: end; }
+  .meta-dl .btn { white-space: nowrap; }
+  .badge { display: inline-block; white-space: nowrap; padding: 0.05rem 0.5rem; border: 1px solid var(--alert); border-radius: 999px; color: var(--alert); font-size: 0.85rem; }
+  @media (max-width: 680px) {
+    .meta { grid-template-columns: 1fr 1fr; }
+    .meta-dl { grid-column: 1 / -1; justify-self: stretch; }
+    .meta-dl .btn { width: 100%; justify-content: center; }
+  }
+
+  /* Spis treści */
+  .spis { margin: 1.75rem 0 0.5rem; padding: 1rem 1.25rem; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
+  .spis-h { margin: 0 0 0.4rem; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); }
+  .spis ol { margin: 0; padding-left: 1.3rem; columns: 2; column-gap: 2rem; }
+  .spis li { margin: 0.2rem 0; break-inside: avoid; }
+  .spis a { color: var(--brand-link); }
+  @media (max-width: 620px) { .spis ol { columns: 1; } }
+
+  /* Podgląd PDF — pasek kartek (przewijany poziomo, ze snapem) */
+  .pdf-prev { margin: 2rem 0 0.5rem; }
+  .pdf-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 0.75rem; }
+  .pdf-k { margin: 0; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); }
+  .pdf-all { font-size: 0.9rem; font-weight: 500; color: var(--brand-link); white-space: nowrap; }
+  .pdf-strip {
+    list-style: none; margin: 0; padding: 0.5rem 0.25rem 1.1rem;
+    display: grid; grid-auto-flow: column; grid-auto-columns: 168px; gap: 1rem;
+    overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+    /* wygaszona prawa krawędź = sygnał, że pasek się przewija */
+    mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+  }
+  .pdf-strip li { position: relative; scroll-snap-align: start; }
+  .pdf-strip a { display: block; border-radius: 3px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.12), 0 6px 18px -6px rgb(0 0 0 / 0.28); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .pdf-strip a:hover, .pdf-strip a:focus-visible { transform: translateY(-3px); box-shadow: 0 2px 4px rgb(0 0 0 / 0.14), 0 12px 26px -8px rgb(0 0 0 / 0.35); }
+  .pdf-strip img { display: block; width: 100%; height: auto; aspect-ratio: 210 / 297; border-radius: 3px; background: #fff; }
+  .pdf-n { display: block; margin-top: 0.45rem; text-align: center; font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-faint); }
+  @media (prefers-reduced-motion: reduce) { .pdf-strip a { transition: none; } .pdf-strip a:hover { transform: none; } }
+
+  /* Tekst normatywny — „kartka” w stylu Dziennika Ustaw */
+  .ustawa {
+    font-family: var(--font-serif); font-size: 1.02rem; line-height: 1.7; color: var(--prose-ink);
+    background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--brand);
+    border-radius: var(--radius-lg); padding: 2.25rem 2.5rem 2rem;
+    hyphens: auto; text-align: justify;
+  }
+  .ustawa p { margin: 0 0 0.85rem; }
+  .ustawa .l-ustawa { text-align: center; font-family: var(--font-sans); font-weight: 600; letter-spacing: 0.4em; text-transform: uppercase; font-size: 1.1rem; margin-bottom: 0.4rem; }
+  .ustawa .l-data { text-align: center; margin-bottom: 0.25rem; }
+  .ustawa .l-tytul { text-align: center; font-weight: 600; margin-bottom: 2rem; }
+  .ustawa .l-art { text-indent: 2em; }
+  .ustawa .art { font-weight: 600; }
+  .ustawa .l-pkt { padding-left: 2em; }
+  .ustawa .l-cyt { padding-left: 4em; }
+  @media (max-width: 620px) {
+    .ustawa { padding: 1.4rem 1.15rem; text-align: left; font-size: 0.98rem; }
+    .ustawa .l-pkt { padding-left: 0.75em; }
+    .ustawa .l-cyt { padding-left: 1.5em; }
+  }
+
+  /* Tabele */
+  .tbl-wrap { margin: 1rem 0 1.5rem; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 0.95rem; line-height: 1.55; }
+  .tbl th, .tbl td { text-align: left; vertical-align: top; padding: 0.7rem 0.85rem; border-bottom: 1px solid var(--line); }
+  .tbl thead th { font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); border-bottom: 2px solid var(--line-2); }
+  .tbl tbody th { font-weight: 600; width: 26%; }
+  .tbl-cmp td { width: 50%; }
+  .tbl .same { color: var(--ink-faint); font-style: italic; }
+  .tbl .none { color: var(--ink-faint); text-align: center; }
+  .tbl .new { background: var(--brand-50); border-left: 3px solid var(--brand); }
+  @media (max-width: 620px) {
+    .tbl thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .tbl tr { display: block; padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
+    .tbl th, .tbl td { display: block; width: auto !important; border: 0; padding: 0.3rem 0; }
+    .tbl td[data-k]::before { content: attr(data-k); display: block; font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); }
+    .tbl .none { display: none; }
+    .tbl .new { padding: 0.5rem 0.7rem; }
+  }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .qs li, .src li { padding-left: 0.2rem; }
+  .src a { color: var(--brand-link); }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2.5rem; }
+</style>

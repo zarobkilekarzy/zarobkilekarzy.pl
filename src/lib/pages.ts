@@ -340,6 +340,14 @@ export const strony: Record<string, Strona> = {
     opis: 'Poinformowany pacjent to jedyny codzienny audyt systemu. Co gwarantuje Ci ustawa, ile masz czasu i pod jaki numer zadzwonić — prawa, terminy i kanały zgłoszeń, każda pozycja z artykułem ustawy.',
     tematy: ['jawnosc'],
   },
+  // Projekt nowelizacji pod adresem /projekt-nowelizacji (poza prefiksem /analizy/) — jak
+  // /prawa-pacjenta: wystawiony na hubie analiz. Oś „jawność": przedmiotem jest sam rejestr.
+  '/projekt-nowelizacji': {
+    dzial: 'analizy',
+    tytul: 'Projekt nowelizacji art. 27a',
+    opis: 'Dwa punkty dopisane do obowiązującej ustawy: kwartalne dane o wynagrodzeniach w placówkach z umową z NFZ i ich publikacja bez nazwisk. Tekst, uzasadnienie i pytania do weryfikacji prawnej.',
+    tematy: ['jawnosc'],
+  },
 };
 
 // — Odczyt —

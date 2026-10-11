@@ -154,7 +154,7 @@ export const ogPages: Record<string, OgPage> = {
   },
   // BEZ wersji, dat i statusu wniesienia: X trzyma kartę w cache, a projekt będzie się zmieniał.
   // „Obywatelski projekt ustawy" to termin z art. 118 ust. 2 Konstytucji (100 000 podpisów) — nie używać.
-  'preview/projekt-nowelizacji': {
+  'projekt-nowelizacji': {
     variant: 'ustawa',
     // Twarde spacje ( ) po jednoliterowych słowach — bez sierotek na końcu wiersza.
     tag: 'Projekt nowelizacji',

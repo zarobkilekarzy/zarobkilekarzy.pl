@@ -1,28 +1,31 @@
 ---
-// PODGLĄD (noindex, poza sitemapą — astro.config.mjs wycina /preview/). Obywatelski projekt
-// nowelizacji art. 27a ustawy o działalności leczniczej (wersja — stała WERSJA niżej).
+// Obywatelski projekt nowelizacji art. 27a ustawy o działalności leczniczej (wersja — stała WERSJA
+// niżej). Strona publiczna; do 2026-10-11 była podglądem pod /preview/ (301 w public/_redirects).
+// Układ „tekst" (spis treści w szynie) mimo adresu poza /analizy/ — patrz TEKST_POZA_DZIALAMI
+// w BaseLayout. Karta na hubie analiz: wpis w src/lib/pages.ts.
 //
 // Źródło prawdy treści: research/projekt-nowelizacji/projekt-nowelizacji-art27a.md (poza gitem).
 // Ta strona jest jego ręcznym odwzorowaniem — research/ nie trafia do repo, więc build w CI
 // nie może go importować. Zmiana brzmienia przepisów = edycja .md, PDF (build-pdf.mjs)
-// ORAZ tej strony. PDF leży w public/preview/ (kopia z research/projekt-nowelizacji/dist/).
+// ORAZ tej strony. PDF leży w public/projekt-nowelizacji/ (kopia z research/projekt-nowelizacji/dist/).
+// Wersji NIE ma w <title> — trafia do og:title, a X trzyma kartę w cache.
 //
 // Cytaty z ust. 1a, 5 i 6 są na grafikach social/x-nowela-{A,B,C} — zmiana brzmienia = poprawka grafik.
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 
-// Miniatury stron PDF (pdftoppm -r 120 z public/preview/…pdf → src/assets/projekt-nowelizacji/strona-N.png).
+// Miniatury stron PDF (pdftoppm -r 120 z public/projekt-nowelizacji/…pdf → src/assets/projekt-nowelizacji/strona-N.png).
 // Po regeneracji PDF-a wyrenderuj je ponownie.
 const strony = Object.entries(
-  import.meta.glob<{ default: ImageMetadata }>('../../assets/projekt-nowelizacji/strona-*.png', { eager: true }),
+  import.meta.glob<{ default: ImageMetadata }>('../assets/projekt-nowelizacji/strona-*.png', { eager: true }),
 )
   .map(([path, mod]) => ({ n: Number(path.match(/strona-(\d+)\.png$/)?.[1]), img: mod.default }))
   .sort((a, b) => a.n - b.n);
 
 const WERSJA = '0.3';
 const DATA = '2026-10-11';
-const PDF = `/preview/projekt-nowelizacji-art27a-v${WERSJA}.pdf`;
+const PDF = `/projekt-nowelizacji/projekt-nowelizacji-art27a-v${WERSJA}.pdf`;
 
 const toc = [
   ['nota', 'Nota o statusie dokumentu'],
@@ -36,9 +39,8 @@ const toc = [
 ---
 
 <BaseLayout
-  title={`Projekt nowelizacji art. 27a ustawy o działalności leczniczej — wersja ${WERSJA}`}
+  title="Projekt nowelizacji art. 27a ustawy o działalności leczniczej"
   description="Obywatelski projekt roboczy: dwa punkty zmian w art. 27a ustawy o działalności leczniczej — kwartalne przekazywanie danych o wynagrodzeniach i ich publikacja w postaci spseudonimizowanej."
-  noindex={true}
 >
   <section class="section">
     <div class="container">

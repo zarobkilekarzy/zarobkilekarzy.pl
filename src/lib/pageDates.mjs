@@ -65,6 +65,8 @@ export const pageDates = {
   '/petycja': '2026-07-13',
   '/petycja/tresc': '2026-07-13',
   '/petycja/jak-to-dziala': '2026-07-13',
+  // Projekt nowelizacji art. 27a — bump przy nowej wersji projektu (stała WERSJA na stronie).
+  '/projekt-nowelizacji': '2026-10-11',
 };
 
 // Normalizacja ścieżki: bez końcowego „/", z wiodącym „/". '/dane/x/' → '/dane/x'.

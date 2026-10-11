@@ -1,4 +1,4 @@
-// Wariant karty OG dla podglądu projektu nowelizacji art. 27a (/preview/projekt-nowelizacji).
+// Wariant karty OG dla projektu nowelizacji art. 27a (/projekt-nowelizacji).
 // Trzeci — po /gra i /egzamin — wyłom ze wspólnego szablonu: karta pokazuje „kartkę" z art. 27a,
 // na której dwa nowe punkty projektu (ust. 1a oraz ust. 5–7) są wyróżnione jak wstawki w tekście,
 // który już obowiązuje. To jest sedno przekazu: nie nowa ustawa, tylko dopisek do istniejącej.

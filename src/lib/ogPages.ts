@@ -12,7 +12,8 @@ export interface OgPage {
   // zarezerwowany dla /gra — patrz src/lib/ogCardGra.ts. Nie rozsiewać po innych trasach:
   // wyłom działa dopóki jest jeden.
   // 'egzamin' = arkusz z prawdziwym pytaniem — dla /egzamin (src/lib/ogCardEgzamin.ts).
-  variant?: 'arcade' | 'egzamin';
+  // 'ustawa' = kartka z art. 27a i dwiema wstawkami — dla projektu nowelizacji (src/lib/ogCardUstawa.ts).
+  variant?: 'arcade' | 'egzamin' | 'ustawa';
   short?: string;     // krótka stopka wariantu arcade (długi `subtitle` nie mieści się w neonie)
 }
 
@@ -150,6 +151,15 @@ export const ogPages: Record<string, OgPage> = {
     tag: 'Egzamin online · za darmo',
     title: 'Zdaj LEK lub LDEK',
     subtitle: 'Na prawdziwych pytaniach z jawnej bazy CEM — z odpowiedziami i statystyką zdających.',
+  },
+  // BEZ wersji, dat i statusu wniesienia: X trzyma kartę w cache, a projekt będzie się zmieniał.
+  // „Obywatelski projekt ustawy" to termin z art. 118 ust. 2 Konstytucji (100 000 podpisów) — nie używać.
+  'preview/projekt-nowelizacji': {
+    variant: 'ustawa',
+    // Twarde spacje ( ) po jednoliterowych słowach — bez sierotek na końcu wiersza.
+    tag: 'Projekt nowelizacji',
+    title: 'Dwa punkty w art. 27a',
+    subtitle: 'Kwartalne dane o wynagrodzeniach w placówkach z umową z NFZ i ich publikacja bez nazwisk.',
   },
   'analizy/symulator-podazy-lekarzy': {
     tag: 'Analiza · Symulator',

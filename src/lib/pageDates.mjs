@@ -56,7 +56,7 @@ export const pageDates = {
   '/dane/rekordy': '2026-08-14',
   '/dane/rozklad-wynagrodzen': '2026-07-07',
   '/dane/zarobki-ujawnione-listy': '2026-07-18',
-  '/dane/monitoring-watchdog': '2026-08-14',
+  '/dane/monitoring-watchdog': '2026-10-12',
   '/dane/stawki': '2026-07-06',
   '/dane/wedlug-specjalizacji': '2026-07-07',
   '/dane/zadluzenie-szpitali': '2026-07-08',

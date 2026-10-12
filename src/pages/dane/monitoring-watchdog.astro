@@ -158,33 +158,35 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
       <p class="wm-count" id="wm-count" aria-live="polite">Placówek: {fmt(N)}</p>
 
       <!-- ————————————————— TABELA ————————————————— -->
+      <div class="wm-legend" role="group" aria-label="Legenda: kolor paska przy placówce">
+        <span class="wm-legend-lab">
+          Pasek przy placówce = odpowiedź
+          <InfoTip termin="Odpowiedź">
+            Jak placówka zareagowała na wniosek o informację publiczną: ujawniła dane,
+            odmówiła, odpisała inaczej albo milczy. Kategorię nadaje
+            <strong> automat</strong> platformy fedrowanie po treści maila — bywa omylny.
+          </InfoTip>
+        </span>
+        <span class="wm-legend-item is-ok">dane</span>
+        <span class="wm-legend-item is-alert">odmowa</span>
+        <span class="wm-legend-item is-mid">inna odpowiedź</span>
+        <span class="wm-legend-item is-mute">potwierdzenie lub cisza</span>
+        <span class="wm-legend-lab">
+          Mieszkańcy
+          <InfoTip termin="Mieszkańcy">
+            Ludność miejscowości, w której zarejestrowana jest placówka (GUS, Bank Danych
+            Lokalnych, koniec {ludnoscRok} r.). Dla gmin wiejskich — ludność
+            <strong> całej gminy</strong>. Liczba <strong>nie mówi o wielkości szpitala</strong>,
+            tylko o skali ośrodka.
+          </InfoTip>
+        </span>
+      </div>
+
       <div class="wm-scroll" tabindex="0" role="region" aria-label="Tabela placówek monitoringu">
         <table class="wm-table" id="wm-table">
           <thead>
             <tr>
               <th scope="col"><button type="button" data-sort="nazwa" data-type="text">Placówka</button></th>
-              <th scope="col"><button type="button" data-sort="woj" data-type="text">Woj.</button></th>
-              <th scope="col" class="num">
-                <div class="wm-th">
-                  <button type="button" data-sort="ludnosc" data-type="num">Mieszkańcy</button>
-                  <InfoTip termin="Mieszkańcy">
-                    Ludność miejscowości, w której zarejestrowana jest placówka (GUS, Bank Danych
-                    Lokalnych, koniec {ludnoscRok} r.). Dla gmin wiejskich — ludność
-                    <strong> całej gminy</strong>. Kolumna <strong>nie mówi o wielkości szpitala</strong>,
-                    tylko o skali ośrodka.
-                  </InfoTip>
-                </div>
-              </th>
-              <th scope="col">
-                <div class="wm-th">
-                  <button type="button" data-sort="kat" data-type="text">Odpowiedź</button>
-                  <InfoTip termin="Odpowiedź">
-                    Jak placówka zareagowała na wniosek o informację publiczną: ujawniła dane,
-                    odmówiła, odpisała inaczej albo milczy. Kategorię nadaje
-                    <strong> automat</strong> platformy fedrowanie po treści maila — bywa omylny.
-                  </InfoTip>
-                </div>
-              </th>
               <th scope="col" class="num">
                 <div class="wm-th">
                   <button type="button" data-sort="n" data-type="num">Lekarzy</button>
@@ -243,8 +245,8 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
               </th>
               <th scope="col" class="num">
                 <div class="wm-th">
-                  <button type="button" data-sort="top10" data-type="num">Top&nbsp;10 = %&nbsp;funduszu</button>
-                  <InfoTip termin="Top 10 = % funduszu">
+                  <button type="button" data-sort="top10" data-type="num">Udział top&nbsp;10</button>
+                  <InfoTip termin="Udział top 10">
                     Jaki procent funduszu płac trafia do dziesięciu najlepiej opłacanych lekarzy —
                     miara <strong>koncentracji</strong>. W małej placówce dziesięć osób to z natury
                     większa część zespołu, więc wartości porównuj w obrębie podobnej wielkości.
@@ -274,7 +276,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                   data-n1m={p.n ? p.n1m : -1}
                   data-top10={p.top10 ?? -1}
                 >
-                  <td class="wm-name">
+                  <td class={`wm-name wm-kat is-${k.cls}`}>
                     {(p.hist || p.komentarz) && (
                       <button
                         type="button"
@@ -289,19 +291,15 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                       </button>
                     )}
                     <a href={`https://fedrowanie.siecobywatelska.pl/sprawy/${p.slug}`} target="_blank" rel="noopener noreferrer">{p.nazwa}</a>
-                    {p.miasto && <span class="wm-city">{p.miasto}</span>}
                     {p.psz && <span class="wm-psz" title={`Sieć szpitali (PSZ)${p.pszPoziom ? ' — ' + p.pszPoziom : ''}`}>sieć</span>}
+                    <span class="wm-city">
+                      {p.miasto}{p.ludnosc ? (
+                        <span class="wm-pop" title={`${fmt(p.ludnosc)} mieszkańców — ${p.ludnoscTyp === 'gmina' ? 'cała gmina' : 'miasto'} (GUS, ${ludnoscRok})`}> — {pop(p.ludnosc)} mieszk.{p.ludnoscTyp === 'gmina' && <span class="wm-pop-typ">gmina</span>}</span>
+                      ) : ''}
+                    </span>
+                    {p.woj && <span class="wm-woj">{p.woj}</span>}
+                    <span class="sr-only">Odpowiedź: {k.label}</span>
                   </td>
-                  <td class="wm-woj">{p.woj}</td>
-                  <td class="num wm-pop">
-                    {p.ludnosc ? (
-                      <span title={`${fmt(p.ludnosc)} mieszkańców — ${p.ludnoscTyp === 'gmina' ? 'cała gmina' : 'miasto'} (GUS, ${ludnoscRok})`}>
-                        {pop(p.ludnosc)}
-                        {p.ludnoscTyp === 'gmina' && <span class="wm-pop-typ">gmina</span>}
-                      </span>
-                    ) : ''}
-                  </td>
-                  <td><span class={`wm-badge is-${k.cls}`} title={k.desc}>{k.label}</span></td>
                   <td class="num">{p.n ?? ''}</td>
                   <td class="num">{p.fundusz ? short(p.fundusz) : ''}</td>
                   <td class="num">{p.mediana ? short(p.mediana) : ''}</td>
@@ -312,7 +310,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
                 </tr>
                 {(p.hist || p.komentarz) && (
                   <tr class="wm-detail" id={`d-${p.nr}`} hidden>
-                    <td colspan="11">
+                    <td colspan="8">
                       <div class="wm-dist">
                         {p.komentarz && (
                           <p class="wm-uwaga">
@@ -489,7 +487,7 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
   /* — tabela — */
   .wm-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
   .wm-scroll:focus-visible { outline: 2px solid var(--brand-link); }
-  .wm-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 69rem; }
+  .wm-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 60rem; }
   .wm-table th, .wm-table td { padding: 0.5rem 0.65rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
   .wm-table thead th { position: sticky; top: 0; background: var(--paper); z-index: 1; border-bottom: 1px solid var(--line-2); padding: 0; }
   .wm-table thead button {
@@ -511,11 +509,25 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
   .wm-name a:hover { color: var(--brand-link); }
   .wm-city { display: block; font-size: 0.78rem; color: var(--ink-faint); }
   .wm-psz {
-    display: inline-block; margin-top: 0.2rem; font-size: 0.66rem; font-weight: 700;
+    display: inline-block; margin: 0.2rem 0 0 0.4rem; font-size: 0.66rem; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.06em; color: var(--brand-link);
     border: 1px solid var(--line-2); border-radius: 999px; padding: 0.02rem 0.4rem;
   }
-  .wm-woj { white-space: nowrap; color: var(--ink-soft); }
+  .wm-woj { display: block; font-size: 0.78rem; color: var(--ink-faint); }
+  /* Odpowiedź placówki = kolor paska z lewej (legenda nad tabelą; tekst dla czytników w .sr-only). */
+  .wm-table td.wm-kat { border-left: 4px solid transparent; min-width: 19rem; }
+  .wm-table td.wm-kat.is-ok { border-left-color: var(--ok); }
+  .wm-table td.wm-kat.is-alert { border-left-color: var(--alert); }
+  .wm-table td.wm-kat.is-mid { border-left-color: var(--ink-faint); }
+  .wm-table td.wm-kat.is-mute { border-left: 4px dashed var(--line-2); }
+  .wm-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; margin: 0 0 0.6rem; font-size: 0.82rem; color: var(--ink-soft); }
+  .wm-legend-lab { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--ink); font-weight: 500; }
+  .wm-legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .wm-legend-item::before { content: ''; width: 4px; height: 1.1em; background: var(--line-2); }
+  .wm-legend-item.is-ok::before { background: var(--ok); }
+  .wm-legend-item.is-alert::before { background: var(--alert); }
+  .wm-legend-item.is-mid::before { background: var(--ink-faint); }
+  .wm-legend-item.is-mute::before { background: none; border-left: 4px dashed var(--line-2); width: 0; }
 
   /* — rozwijanie wiersza — */
   .wm-toggle {
@@ -558,19 +570,11 @@ const MONITORING = 'https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabi
   .wm-bar-pct { font-size: 0.78rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; text-align: right; }
   .wm-dist-foot { margin: 0.7rem 0 0; font-size: 0.78rem; color: var(--ink-faint); max-width: 46rem; line-height: 1.5; }
   .wm-dist-foot strong { color: var(--ink-soft); }
-  .wm-pop { color: var(--ink-soft); }
-  .wm-pop-typ {
-    display: block; font-size: 0.68rem; color: var(--ink-faint); letter-spacing: 0.04em;
-  }
+  .wm-pop { white-space: nowrap; }
+  .wm-pop-typ { margin-left: 0.3em; font-size: 0.68rem; letter-spacing: 0.04em; }
+  .wm-pop-typ::before { content: '('; }
+  .wm-pop-typ::after { content: ')'; }
 
-  .wm-badge {
-    display: inline-block; font-size: 0.72rem; font-weight: 600; border-radius: 999px;
-    padding: 0.1rem 0.55rem; white-space: nowrap; border: 1px solid transparent;
-  }
-  .wm-badge.is-ok { color: var(--ok); background: var(--ok-50); border-color: var(--ok); }
-  .wm-badge.is-alert { color: var(--alert); background: var(--alert-50); border-color: var(--alert); }
-  .wm-badge.is-mid { color: var(--ink-soft); background: var(--paper); border-color: var(--line-2); }
-  .wm-badge.is-mute { color: var(--ink-faint); background: transparent; border-color: var(--line-2); border-style: dashed; }
 
   /* — pusty wynik — */
   .wm-empty {

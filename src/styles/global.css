@@ -1,126 +1,175 @@
 /* =========================================================================
    zarobkilekarzy.pl — system projektowy
-   Styl: pogranicze portalu finansowego i gabinetu lekarskiego.
-   Biel + granat zaufania + oszczędny akcent alarmowy.
+   Język tablic statystycznych: biel / nocny granat, granat zaufania (także na
+   całe pola — pasmo petycji) i oszczędny akcent alarmowy. Jeden krój zmiennej
+   szerokości (Archivo: wąski w etykietach, szeroki w tytułach i kwotach),
+   liczby tabelaryczne, zero zaokrągleń, płasko (cień tylko dla warstw nad
+   treścią: --shadow-pop).
+
+   Zasady:
+   • czerwień (--signal) oznacza brakującą sumę / brak danych i działania
+     petycji (.btn-signal); nie służy do zwykłego wyróżniania;
+   • linie strukturalne biorą --rule (lub --line), nigdy --ink — w ciemnym
+     motywie linia w kolorze tekstu robi się jaskrawą białą kreską;
+   • każdy rozmiar tekstu to rola ze skali --fs-*;
+   • etykiety wąskim krojem, zwykłą wielkością liter, bez rozstrzelenia;
+   • treść równa do lewej krawędzi kontenera, równo z nagłówkiem strony.
    ========================================================================= */
 
 :root {
   /* powierzchnie */
   --bg: #ffffff;
-  --paper: #f6f9fb;
-  --paper-2: #eef3f7;
+  --paper: #f2f5fa;      /* szara wkładka — sekcje naprzemienne */
+  --paper-2: #e6ecf4;
 
   /* tekst */
-  --ink: #14233a;
-  --ink-soft: #51637a;
-  /* --ink-faint: przyciemniony do ≥4,5:1 (WCAG 1.4.3) także na tłach --paper/--paper-2;
-     poprzednio #8493a2 dawało ~3,1:1 dla drobnych podpisów, źródeł i etykiet. */
-  --ink-faint: #616d7a;
+  --ink: #0b1526;        /* granatowa czerń — tekst i linie tablic */
+  --ink-soft: #3b4a60;
+  /* ≥4,5:1 także na --paper/--paper-2 (drobne podpisy, źródła, etykiety). */
+  --ink-faint: #586579;
 
-  /* linie */
-  --line: #e4eaf0;
-  --line-2: #cfdae3;
+  /* linie włosowe (między wierszami, obrysy); linie tablic są czarne (--ink) */
+  --line: #dde3eb;
+  /* Linie strukturalne (pod nawigacją, w tablicach, na listach): w jasnym motywie
+     ciemne, w ciemnym przygaszony granat — NIE --ink, bo ten w ciemnym jest prawie
+     biały i każda linia robiła się jaskrawą białą kreską. */
+  --rule: #0b1526;
+  --line-2: #aeb9c7;
 
-  /* marka — granat/błękit (portal finansowy) */
-  --brand: #0f4c81;
-  --brand-700: #0c3a64;
-  --brand-50: #eaf1f8;
+  /* granat zaufania — pola (pasmo petycji, stopka), linki, słupki danych, przycisk główny */
+  --brand: #0b2a5b;
+  --brand-700: #071d40;
+  --brand-50: #e7eef9;
+  /* akcent TEKSTOWY — w dark jaśniejszy niż --brand (ten zostaje kolorem WYPEŁNIEŃ) */
+  --brand-link: #1446a0;
 
-  /* akcent alarmowy — używać oszczędnie */
-  --alert: #b3261e;
-  --alert-50: #fbeceb;
+  /* Sygnał luki = czerwień alarmowa jako WYPEŁNIENIE z białym tekstem (7:1):
+     wiersz „Łącznie" z brakującą sumą i przyciskiem petycji. */
+  --signal: #d42a24;
+  --signal-ink: #ffffff;
+  --signal-50: #fdeceb;
 
-  /* akcent medyczny — używać oszczędnie */
-  --teal: #0e7c86;
+  /* akcent alarmowy w treści (callout alert, tekst) — używać oszczędnie */
+  --alert: #c8241c;
+  --alert-50: #fdeceb;
+  --alert-100: #f6d3d1;  /* jaśniejszy pas ostrzegawczy (pasy hazard) */
+
+  /* akcent medyczny — poradnik pacjenta, chipy „zlecenie" */
+  --teal: #0b6f78;
+  --teal-50: #e6f2f3;
 
   /* Semantyczne tinty (akcent + tło ...-50) — MUSZĄ być theme-aware, inaczej
      jasna karta zostaje jasna w dark, a tekst na zmiennych (--ink) flipuje na
      jasny → jasny-na-jasnym. Para: akcent (tekst/obwódka) + tło pastelowe. */
-  --ok: #2f7a34;        /* „tak / jawność zadziałała" — zielony medyczny */
+  --ok: #2f7a34;         /* „tak / jawność zadziałała" */
   --ok-50: #eef7f1;
-  --amber: #8a5a00;     /* „warunek / szacunek — jeżeli dotyczy" */
+  --amber: #8a5a00;      /* „warunek / szacunek — jeżeli dotyczy" */
   --amber-50: #fdf0e0;
   /* podświetlenie cytatu, do którego prowadzi link `#:~:text=` (::target-text) */
   --mark: #fce7a1;
-  --teal-50: #e6f2f3;   /* tło pod --teal (chipy „zlecenie") */
-  --alert-100: #f6d3d1; /* jaśniejszy pas ostrzegawczy (pasy hazard) */
-  /* Neutralny wypełniacz segmentów słupków, które NIOSĄ biały tekst
-     (np. „245 kontrakty"). NIE --ink-soft: ten w dark flipuje na jasny i biały
-     tekst by zniknął. Stały mid-slate — biały tekst ≥4,5:1 w OBU motywach. */
-  --neutral-fill: #51637a;
+  /* Neutralny wypełniacz segmentów słupków, które NIOSĄ biały tekst. Stały
+     grafit — biały tekst ≥4,5:1 w OBU motywach. */
+  --neutral-fill: #3b4a60;
 
-  /* powierzchnie kart / kontrolek — w dark mode odwracają się na ciemne
-     (poprzednio wpisywane wprost jako `#fff`; jeden token = spójny flip). */
+  /* powierzchnie kart / kontrolek — w dark odwracają się na ciemne */
   --surface: #ffffff;
-  --surface-2: #f6f9fb;
-  /* panel CELOWO ciemny (feature box: „skala się urywa", pasek X) — pozostaje
-     ciemny w OBU motywach, więc NIE używać tu --ink (ten się odwraca). */
-  --panel: #14233a;
+  --surface-2: #f6f8fb;
+  /* panel CELOWO ciemny w OBU motywach („skala się urywa" itp.) */
+  --panel: #0b1526;
   --on-panel: #ffffff;
-  /* akcent TEKSTOWY (linki, eyebrow) — w dark jaśniejszy niż --brand, żeby
-     utrzymać kontrast na ciemnym tle; --brand zostaje kolorem WYPEŁNIEŃ. */
-  --brand-link: #0f4c81;
-  /* półprzezroczyste tło przyklejonego paska nawigacji */
-  --nav-bg: rgba(255, 255, 255, 0.92);
-  /* tekst treści artykułowej (nieco miększy od --ink) */
-  --prose-ink: #29384b;
+  /* pasek nawigacji — pełne tło, bez rozmycia pod spodem */
+  --nav-bg: #ffffff;
+  /* tekst treści artykułowej (o ton miększy od --ink) */
+  --prose-ink: #18233a;
 
   color-scheme: light;
 
-  --radius: 8px;
-  --radius-lg: 12px;
-  /* Szerokość STRONY. 1080 px zostawiało na monitorze 1440/1920 px pas pustki
-     szerszy od samej treści — serwis wyglądał na wciśnięty w środek ekranu. */
+  /* Cień warstwy nad treścią (dymki, rozwijane okienka): wyraźny spad w dół
+     i krótkie rozmycie. Poza dymkami system jest płaski. */
+  --shadow-pop: 0 1px 2px rgba(11, 14, 20, 0.1), 0 8px 14px -6px rgba(11, 14, 20, 0.28);
+
+  /* Skala ról tekstu (nie wartości) — każdy rozmiar w serwisie to jedna z tych
+     ról. Zamiast 0.92/0.93/0.95 rem co kilka linijek. */
+  --fs-micro: 0.75rem;      /* numery kolumn, plakietki */
+  --fs-label: 0.8125rem;    /* główki tablic, etykiety działów */
+  --fs-meta: 0.875rem;      /* źródła, podpisy, małe przyciski */
+  --fs-small: 0.9375rem;    /* opisy, przyciski, nawigacja */
+  --fs-body: 1.0625rem;
+  --fs-lead: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  --fs-title-s: 1.25rem;    /* h3, tytuły pozycji */
+  --fs-title: 1.5rem;       /* podtytuły sekcji */
+  --fs-stat: 1.875rem;      /* liczba w kafelku danych */
+  --fs-h2: clamp(1.6rem, 3.2vw, 2.4rem);
+  --fs-h1: clamp(2.2rem, 5vw, 3.5rem);
+  --fs-display: clamp(2.25rem, 5.6vw, 5rem);
+  --fs-figure: clamp(3rem, 9vw, 4.5rem);  /* duża liczba / znak umowny jako bohater */
+  /* równanie na stronie głównej: kwoty, operatory, brakująca suma */
+  --fs-eq: clamp(2rem, 3.6vw, 3.25rem);
+  --fs-eq-op: clamp(1.6rem, 2.8vw, 2.5rem);
+  --fs-eq-q: clamp(4.5rem, 9vw, 8rem);
+
+  /* Druk nie ma zaokrągleń — przyciski, pola, karty i dymki mają proste rogi.
+     Tokeny zostają (używa ich kilkadziesiąt szablonów), ale mają wartość 0. */
+  --radius: 0px;
+  --radius-lg: 0px;
+  /* Szerokość STRONY. */
   --maxw: 1240px;
   /* Miara CZYTANIA — osobna od szerokości strony i celowo stała: wiersz dłuższy
-     niż ~80 znaków gubi się przy powrocie do lewej krawędzi, więc rozciąganie
-     akapitu razem z ekranem pogarsza czytelność zamiast ją poprawiać. Dobrana
-     tak, żeby akapit zachował dotychczasową długość wiersza `.prose` (~730 px
-     treści). Na podstronach tekstowych dostają ją WSZYSTKIE bloki tekstu —
-     wcześniej lead, akapit i wyróżnienie miały trzy różne szerokości. */
+     niż ~80 znaków gubi się przy powrocie do lewej krawędzi. */
   --maxw-tekst: 780px;
   /* Szerokość szyny bocznej (spis treści) w układzie szerokim. */
   --szyna: 15rem;
 
-  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* Jeden krój zmiennej szerokości (Archivo, oś wdth 62–125): wąski w główkach
+     tablic i etykietach, normalny w tekście, szeroki w tytułach. --font-serif
+     i --font-mono zostają jako nazwy ról, bo używa ich ~50 szablonów: tytuły
+     i liczby idą tym samym krojem, liczby zawsze tabelaryczne (tnum). Kod i
+     <pre> dostają systemowy monospace (--font-code). */
+  --font-sans: "Archivo Variable", "Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-serif: var(--font-sans);
+  --font-mono: var(--font-sans);
+  --font-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 /* =========================================================================
-   Dark mode — „gabinet nocą": granat gov/finansowy jako baza, medyczny teal
-   jako akcent. Ten sam system tokenów, odwrócone powierzchnie i tekst.
-   Aktywny gdy:
+   Ciemny motyw — „gabinet nocą": ta sama tablica na granatowym tle, jasna
+   farba, granat rozjaśniony do tekstu. Aktywny gdy:
      • użytkownik wybrał ciemny w przełączniku  → :root[data-theme="dark"], LUB
      • system woli ciemny, a użytkownik nie wymusił jasnego → media + :not([light]).
-   Wartości utrzymane pod WCAG AA (tekst ≥4,5:1, elementy UI ≥3:1). Blok
-   deklaracji jest świadomie zduplikowany (selektor atrybutu vs media) — CSS bez
-   preprocesora nie pozwala współdzielić go inaczej; trzymamy oba obok siebie.
+   Wartości pod WCAG AA (tekst ≥4,5:1, elementy UI ≥3:1). Blok deklaracji jest
+   świadomie zduplikowany (selektor atrybutu vs media) — CSS bez preprocesora
+   nie pozwala współdzielić go inaczej; trzymamy oba obok siebie.
    ========================================================================= */
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #0e1622;
-  --paper: #141f2e;
-  --paper-2: #1c2838;
+  --bg: #0a1222;
+  --paper: #0f1a2e;
+  --paper-2: #16233b;
 
-  --ink: #eaf0f7;
-  --ink-soft: #b2c0d0;
-  --ink-faint: #93a1b3;
+  --ink: #eaf0f8;
+  --ink-soft: #b3c0d3;
+  --ink-faint: #94a2b8;
 
-  --line: #2c3d57;
-  --line-2: #5d76a0;
+  --line: #1f2e48;
+  --rule: #2c3f60;
+  --line-2: #3a4f74;
 
-  --brand: #2f6fb1;
-  --brand-700: #5a9bd6;
-  --brand-50: #17293e;
-  --brand-link: #6ea8e6;
+  /* Granat: wypełnienie ciemniejsze (biały tekst 5,2:1), tekst/linki jaśniejsze. */
+  --brand: #1c3f80;
+  --brand-700: #8fb3ff;
+  --brand-50: #15223c;
+  --brand-link: #8fb3ff;
 
-  --alert: #f26d63;
-  --alert-50: #3a1e1c;
+  --signal: #d42a24;
+  --signal-ink: #ffffff;
+  --signal-50: #3a1c1a;
+
+  --alert: #ff7a70;
+  --alert-50: #3a1c1a;
   --alert-100: #5a2a27;
 
-  --teal: #45b8c2;
+  --teal: #78b4b8;
   --teal-50: #10282b;
 
   --ok: #5cbf74;
@@ -128,42 +177,49 @@
   --amber: #e2a94f;
   --amber-50: #2c2211;
   --mark: #56431a;
-  --neutral-fill: #5c6d84;
+  --neutral-fill: #4c6188;
 
-  --surface: #1b2739;
-  --surface-2: #223047;
-  --panel: #0a1119;
+  --surface: #111d33;
+  --surface-2: #18263f;
+  --panel: #050a14;
   --on-panel: #eef4fa;
 
-  --nav-bg: rgba(14, 22, 34, 0.9);
-  --prose-ink: #c4d0dd;
+  --nav-bg: #0a1222;
+  --prose-ink: #ccd6e4;
+  --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.45), 0 8px 14px -6px rgba(0, 0, 0, 0.7);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 
-    --bg: #0e1622;
-    --paper: #141f2e;
-    --paper-2: #1c2838;
+    --bg: #0a1222;
+    --paper: #0f1a2e;
+    --paper-2: #16233b;
 
-    --ink: #eaf0f7;
-    --ink-soft: #b2c0d0;
-    --ink-faint: #93a1b3;
+    --ink: #eaf0f8;
+    --ink-soft: #b3c0d3;
+    --ink-faint: #94a2b8;
 
-    --line: #2c3d57;
-    --line-2: #5d76a0;
+    --line: #1f2e48;
+    --rule: #2c3f60;
+    --line-2: #3a4f74;
 
-    --brand: #2f6fb1;
-    --brand-700: #5a9bd6;
-    --brand-50: #17293e;
-    --brand-link: #6ea8e6;
+    /* Granat: wypełnienie ciemniejsze (biały tekst 5,2:1), tekst/linki jaśniejsze. */
+    --brand: #1c3f80;
+    --brand-700: #8fb3ff;
+    --brand-50: #15223c;
+    --brand-link: #8fb3ff;
 
-    --alert: #f26d63;
-    --alert-50: #3a1e1c;
+    --signal: #d42a24;
+    --signal-ink: #ffffff;
+    --signal-50: #3a1c1a;
+
+    --alert: #ff7a70;
+    --alert-50: #3a1c1a;
     --alert-100: #5a2a27;
 
-    --teal: #45b8c2;
+    --teal: #78b4b8;
     --teal-50: #10282b;
 
     --ok: #5cbf74;
@@ -171,15 +227,16 @@
     --amber: #e2a94f;
     --amber-50: #2c2211;
     --mark: #56431a;
-    --neutral-fill: #5c6d84;
+    --neutral-fill: #4c6188;
 
-    --surface: #1b2739;
-    --surface-2: #223047;
-    --panel: #0a1119;
+    --surface: #111d33;
+    --surface-2: #18263f;
+    --panel: #050a14;
     --on-panel: #eef4fa;
 
-    --nav-bg: rgba(14, 22, 34, 0.9);
-    --prose-ink: #c4d0dd;
+    --nav-bg: #0a1222;
+    --prose-ink: #ccd6e4;
+    --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.45), 0 8px 14px -6px rgba(0, 0, 0, 0.7);
   }
 }
 
@@ -192,24 +249,32 @@
    nieaktualnego miejsca — cytat lądował pod dolną krawędzią ekranu. Czekanie na
    `load` nie wystarcza: Chrome przewija do cytatu dopiero PO `load`. */
 html[data-smooth] { scroll-behavior: smooth; }
+/* Przyklejona nawigacja (~60 px) nie może zasłaniać elementu, do którego
+   przewija focus klawiatury (WCAG 2.4.11). */
+html { scroll-padding-top: 5rem; }
+
 
 body {
   margin: 0;
   font-family: var(--font-sans);
   /* rem, nie px — reaguje na ustawienie domyślnego rozmiaru fontu w przeglądarce
      (dostępność „większy tekst" bez własnego widżetu). 1.0625rem = 17px przy 16px root. */
-  font-size: 1.0625rem;
+  font-size: var(--fs-body);
   line-height: 1.65;
   color: var(--ink);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Liczby tabelaryczne wszędzie — kolumny kwot się wyrównują, także w tekście. */
+  font-variant-numeric: tabular-nums lining-nums;
 }
+code, pre, kbd, samp { font-family: var(--font-code); }
 
-h1, h2, h3 { font-family: var(--font-serif); color: var(--ink); line-height: 1.15; font-weight: 600; }
-h1 { font-size: clamp(2.1rem, 5.5vw, 3.1rem); margin: 0 0 1rem; letter-spacing: -0.01em; }
-h2 { font-size: clamp(1.55rem, 3.2vw, 2.1rem); margin: 0 0 0.75rem; letter-spacing: -0.01em; }
-h3 { font-family: var(--font-sans); font-size: 1.1rem; font-weight: 600; margin: 0 0 0.4rem; }
+/* Tytuły szerokie i ciężkie jak okładka rocznika (oś wdth 110), h3 już zwykłej szerokości. */
+h1, h2, h3 { font-family: var(--font-serif); color: var(--ink); line-height: 1.06; font-weight: 760; font-stretch: 110%; letter-spacing: -0.015em; text-wrap: balance; }
+h1 { font-size: var(--fs-h1); margin: 0 0 1rem; }
+h2 { font-size: var(--fs-h2); margin: 0 0 0.75rem; }
+h3 { font-family: var(--font-sans); font-size: var(--fs-title-s); font-weight: 650; font-stretch: 100%; letter-spacing: 0; line-height: 1.25; margin: 0 0 0.4rem; }
 
 /* Anchory sekcji — `id` i „#" dokleja `src/middleware.ts` do każdego h2/h3
    w <main>. Domyślnie niewidoczne: to narzędzie do linkowania, nie ozdoba.
@@ -222,7 +287,7 @@ h3 { font-family: var(--font-sans); font-size: 1.1rem; font-weight: 600; margin:
   margin-left: 0.35em;
   font-family: var(--font-mono);
   font-size: 0.8em;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1;
   color: var(--ink-faint);
   text-decoration: none;
@@ -231,10 +296,10 @@ h3 { font-family: var(--font-sans); font-size: 1.1rem; font-weight: 600; margin:
 }
 :is(h2, h3):hover > .hanchor,
 .hanchor:focus-visible { opacity: 1; }
-.hanchor:hover, .hanchor:focus-visible { color: var(--brand); text-decoration: underline; }
+.hanchor:hover, .hanchor:focus-visible { color: var(--brand-link); text-decoration: underline; }
 /* Bez kursora (dotyk) nie ma stanu :hover — inaczej anchor byłby nieosiągalny. */
 @media (hover: none) { .hanchor { opacity: 0.45; } }
-/* Pasmo CTA: granatowe tło — szary `--ink-faint` nie miałby na nim kontrastu. */
+/* Pasmo CTA i stopka (granat): szary `--ink-faint` nie miałby tam kontrastu. */
 .cta-band .hanchor, .cta-band .hanchor:hover { color: #fff; }
 
 /* Cytat z linku `#:~:text=…` (Text Fragments) — przeglądarka sama przewija do
@@ -243,7 +308,11 @@ h3 { font-family: var(--font-sans); font-size: 1.1rem; font-weight: 600; margin:
 ::target-text { background: var(--mark); color: inherit; }
 
 p { margin: 0 0 1rem; }
-a { color: var(--brand-link); }
+/* Ładowane są tylko wagi 400/500/600 — 700 (domyślne dla <strong>) i tak
+   renderowało się jako 600; deklarujemy to, co faktycznie widać. */
+strong, b { font-weight: 650; }
+a { color: var(--brand-link); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
 
 img { max-width: 100%; height: auto; }
 
@@ -257,16 +326,22 @@ main { display: block; }
 /* Serwis urósł z pięciu podstron do kilkudziesięciu — przy tej objętości 4 rem
    na każdą sekcję dokładało po kilka ekranów pustki na stronę. 3.25 rem nadal
    czytelnie oddziela sekcje, a skraca typową analizę o ok. 10%. */
-.section { padding: 3.25rem 0; }
-.section-alt { background: var(--paper); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.section { padding: 3.5rem 0; }
+/* Szara wkładka — jak przekładka w roczniku; bez linii, granicą jest sam ton. */
+.section-alt { background: var(--paper); }
 .section-head { margin-bottom: 1.5rem; }
 .row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 
+/* Etykieta działu nad tytułem strony (zwykle okruszek „Analizy · Jedno PWZ").
+   Zwykła wielkość liter, bez rozstrzelenia — jak etykieta działu w serwisie
+   prasowym. Wersaliki z trackingiem nad każdym nagłówkiem przy kilkudziesięciu
+   podstronach zlewały się w szum. */
 .eyebrow {
-  font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.09em; color: var(--brand-link); margin: 0 0 0.7rem;
+  font-size: var(--fs-label); font-weight: 650; font-stretch: 78%; line-height: 1.4;
+  color: var(--brand-link); margin: 0 0 0.6rem;
 }
-.lead { font-size: 1.15rem; line-height: 1.6; color: var(--ink-soft); max-width: 60ch; }
+.eyebrow a { color: inherit; text-underline-offset: 0.18em; }
+.lead { font-size: var(--fs-lead); line-height: 1.6; color: var(--ink-soft); max-width: 60ch; text-wrap: pretty; }
 .muted { color: var(--ink-soft); }
 .center { text-align: center; }
 
@@ -278,8 +353,8 @@ main { display: block; }
 
 /* Spójny, widoczny wskaźnik focusu klawiatury (WCAG 2.4.7 / 2.4.11).
    Na ciemnych pasmach obwódka na biało, by zachować kontrast. */
-:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 2px; }
-.cta-band :focus-visible, .x-band :focus-visible { outline-color: #fff; }
+:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 2px; }
+.cta-band :focus-visible { outline-color: #fff; }
 
 /* Treść tylko dla czytników ekranu (nagłówki pomocnicze, etykiety). */
 .sr-only {
@@ -288,48 +363,61 @@ main { display: block; }
 }
 
 /* --- przyciski ---------------------------------------------------------- */
+/* Przyciski: proste rogi; wtórny = cienki obrys, główny = granatowe wypełnienie,
+   petycja = czerwień alarmowa. Hover rozjaśnia/przyciemnia tło — bez grubych
+   obrysów w kolorze tekstu (w ciemnym motywie robiły się białe ramki). */
 .btn {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  padding: 0.72rem 1.2rem; border-radius: var(--radius);
-  border: 1px solid var(--line-2); background: var(--surface); color: var(--ink);
-  font-family: var(--font-sans); font-weight: 500; font-size: 0.95rem;
-  text-decoration: none; cursor: pointer; transition: all 0.15s ease;
+  padding: 0.75rem 1.2rem; border-radius: 0;
+  border: 1px solid var(--line-2); background: transparent; color: var(--ink);
+  font-family: var(--font-sans); font-weight: 650; font-size: var(--fs-small); line-height: 1.2;
+  text-decoration: none; cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.btn:hover { border-color: var(--brand); color: var(--brand); }
+.btn:hover { background: var(--paper-2); border-color: var(--ink-faint); color: var(--ink); }
 .btn-primary { background: var(--brand); border-color: var(--brand); color: #fff; }
-.btn-primary:hover { background: var(--brand-700); border-color: var(--brand-700); color: #fff; }
-.btn-on-brand { background: #fff; border-color: #fff; color: var(--brand); }
-.btn-on-brand:hover { background: var(--brand-50); color: var(--brand-700); }
-.btn-sm { padding: 0.5rem 0.85rem; font-size: 0.85rem; }
+.btn-primary:hover { background: color-mix(in srgb, var(--brand) 82%, #fff); border-color: color-mix(in srgb, var(--brand) 82%, #fff); color: #fff; }
+/* Czerwień alarmowa — tylko działania petycji. */
+.btn-signal { background: var(--signal); border-color: var(--signal); color: var(--signal-ink); }
+.btn-signal:hover { background: color-mix(in srgb, var(--signal) 85%, #0b1526); border-color: color-mix(in srgb, var(--signal) 85%, #0b1526); color: var(--signal-ink); }
+/* Przyciski na polach koloru (granat) — stałe barwy, bo pole jest kolorowe w obu motywach. */
+.btn-ink { background: #0b1526; border-color: #0b1526; color: #fff; }
+.btn-ink:hover { background: #fff; border-color: #fff; color: #0b1526; }
+.btn-on-brand { background: #fff; border-color: #fff; color: #0b1526; }
+.btn-on-brand:hover { background: color-mix(in srgb, #fff 85%, var(--brand)); border-color: transparent; color: #0b1526; }
+.btn-sm { padding: 0.45rem 0.8rem; font-size: var(--fs-meta); }
 .cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.5rem; }
 
 /* --- pigułki / tagi ----------------------------------------------------- */
 .pill {
-  display: inline-block; font-size: 0.74rem; font-weight: 500;
-  padding: 0.2rem 0.6rem; border-radius: 999px; letter-spacing: 0.02em;
+  display: inline-block; font-size: var(--fs-label); font-weight: 650; font-stretch: 85%;
+  padding: 0.18rem 0.5rem; border-radius: 0;
 }
 .pill-alert { background: var(--alert-50); color: var(--alert); }
 .pill-brand { background: var(--brand-50); color: var(--brand-700); }
 .tag {
-  display: inline-block; font-size: 0.72rem; font-weight: 500; color: var(--ink-soft);
-  background: var(--paper-2); padding: 0.18rem 0.55rem; border-radius: 999px;
-  text-transform: uppercase; letter-spacing: 0.04em;
+  display: inline-block; font-size: var(--fs-label); font-weight: 600; font-stretch: 85%; color: var(--ink-soft);
+  background: var(--paper-2); padding: 0.15rem 0.45rem; border-radius: 0;
 }
 
 /* --- nawigacja ---------------------------------------------------------- */
+/* Nawigacja: pełne tło i włosowa linia pod spodem (gruba linia w kolorze tekstu
+   była w ciemnym motywie jaskrawą białą kreską przez cały ekran). */
 .site-nav {
   position: sticky; top: 0; z-index: 50;
-  background: var(--nav-bg); backdrop-filter: blur(8px);
+  background: var(--nav-bg);
   border-bottom: 1px solid var(--line);
 }
 .nav-inner { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.85rem 1.25rem; max-width: var(--maxw); margin: 0 auto; }
 .brand { display: flex; align-items: center; gap: 0.55rem; text-decoration: none; color: var(--ink); }
 .brand-mark { display: inline-flex; }
-.brand-name { font-family: var(--font-mono); font-size: 1rem; font-weight: 500; letter-spacing: -0.01em; }
+.brand-name { font-family: var(--font-sans); font-size: 1.05rem; font-weight: 800; font-stretch: 112%; letter-spacing: -0.015em; }
 .nav-cluster { display: flex; align-items: center; gap: 1.4rem; }
 .nav-links { display: flex; align-items: center; gap: 1.4rem; }
-.nav-links a:not(.btn) { text-decoration: none; color: var(--ink-soft); font-size: 0.92rem; font-weight: 500; white-space: nowrap; }
-.nav-links a:not(.btn):hover, .nav-links a:not(.btn).active { color: var(--brand-link); }
+.nav-links a:not(.btn) { text-decoration: none; color: var(--ink-soft); font-size: var(--fs-small); font-weight: 600; white-space: nowrap; }
+.nav-links a:not(.btn):hover { color: var(--ink); }
+/* Aktywny dział: jasny tekst i belka w kolorze linku pod nim. */
+.nav-links a:not(.btn).active { color: var(--ink); text-decoration: underline; text-decoration-color: var(--brand-link); text-decoration-thickness: 2px; text-underline-offset: 0.6em; }
 /* Wejście do wyszukiwarki — ikona lupy widoczna zawsze (desktop i mobile). */
 .nav-search { display: inline-flex; align-items: center; justify-content: center; color: var(--ink-soft); border-radius: var(--radius); }
 .nav-search:hover, .nav-search.active { color: var(--brand-link); }
@@ -356,23 +444,24 @@ main { display: block; }
 .hero-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 2.5rem; align-items: center; }
 .hero h1 .hl { color: var(--brand-link); }
 .stat-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.6rem; }
-.stat-label { font-size: 0.82rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 0.3rem; }
-.stat-num { font-family: var(--font-mono); font-size: clamp(3rem, 9vw, 4.5rem); font-weight: 500; line-height: 1; margin: 0; color: var(--ink); }
-.stat-desc { font-size: 0.92rem; color: var(--ink-soft); margin: 0.75rem 0 1rem; }
+.stat-label { font-size: var(--fs-label); font-weight: 600; font-stretch: 85%; color: var(--ink-soft); margin: 0 0 0.3rem; }
+.stat-num { font-family: var(--font-mono); font-size: var(--fs-figure); font-weight: 500; line-height: 1; margin: 0; color: var(--ink); }
+.stat-desc { font-size: var(--fs-meta); color: var(--ink-soft); margin: 0.75rem 0 1rem; }
 
 /* --- filary ------------------------------------------------------------- */
 .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.25rem; }
 .pillar { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.4rem; }
-.pillar .ico { color: var(--brand); margin-bottom: 0.6rem; display: block; }
-.pillar p { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
+.pillar .ico { color: var(--brand-link); margin-bottom: 0.6rem; display: block; }
+.pillar p { margin: 0; color: var(--ink-soft); font-size: var(--fs-small); }
 
 /* --- lista artykułów ---------------------------------------------------- */
 /* Dwie kolumny od 900 px: przy ~110 pozycjach jedna kolumna na szerokiej stronie
    dawała wiersz nienaturalnie długi dla samego tytułu, a paginacja uciekała
-   daleko w dół. `align-items: start` — karty mają zostać przy swojej wysokości,
-   bez rozciągania krótkich do najwyższej w rzędzie. Poniżej 900 px jedna
-   kolumna, tak jak dotąd. */
-.article-list { display: grid; grid-template-columns: 1fr; align-items: start; gap: 0.75rem; }
+   daleko w dół. Karty w rzędzie mają wspólną wysokość (`stretch`) — przy
+   `start` krótsza karta wyglądała obok sąsiadki na urwaną. Stopka karty
+   siedzi na dole, więc kategorie w rzędzie stoją na jednej linii. Poniżej
+   900 px jedna kolumna. */
+.article-list { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 0.75rem; }
 @media (min-width: 900px) {
   .article-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -383,43 +472,46 @@ main { display: block; }
 }
 .article:hover { border-color: var(--line-2); }
 .article-body { min-width: 0; }
-.article-meta { font-size: 0.78rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.35rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.article-meta { font-size: var(--fs-label); font-weight: 600; font-stretch: 85%; color: var(--ink-soft); margin: 0 0 0.35rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .article-meta .dot { color: var(--line-2); }
-.article h3 { font-size: 1.15rem; margin: 0 0 0.35rem; max-width: 62ch; }
+.article h3 { font-size: var(--fs-title-s); margin: 0 0 0.35rem; max-width: 62ch; }
 /* Baza urosła do ~110 pozycji na 13 stronach, a każdy opis (często z komentarzem
    redakcji) szedł pełną szerokością — ekran listy był ścianą tekstu, w której
    nie dało się skanować samych tytułów. Zwijamy opis do trzech wierszy i dajemy
    mu miarę przypisu; pełną treść otwiera przycisk „Więcej" (patrz ArticleCard).
    Bez JS klasa `is-clamped` nie zostaje nadana i widać całość jak dotąd. */
-.article-excerpt { color: var(--ink-soft); font-size: 0.93rem; margin: 0; max-width: 74ch; }
+.article-excerpt { color: var(--ink-soft); font-size: var(--fs-small); margin: 0; max-width: 74ch; }
 .article-excerpt.is-clamped {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
 }
 .article-ext { color: var(--ink-faint); flex-shrink: 0; margin-top: 0.2rem; }
-.badge-example { font-size: 0.68rem; color: var(--alert); border: 1px solid var(--alert-50); background: var(--alert-50); padding: 0.05rem 0.4rem; border-radius: 999px; text-transform: none; letter-spacing: 0; }
+.badge-example { font-size: var(--fs-micro); color: var(--alert); border: 1px solid var(--alert-50); background: var(--alert-50); padding: 0.05rem 0.4rem; border-radius: 0; text-transform: none; letter-spacing: 0; }
 
 /* --- filtry ------------------------------------------------------------- */
 .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1.5rem 0; }
 .filter-btn {
   border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-soft);
-  padding: 0.4rem 0.85rem; border-radius: 999px; font-family: var(--font-sans);
-  font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
+  padding: 0.4rem 0.85rem; border-radius: 0; font-family: var(--font-sans);
+  font-size: var(--fs-meta); font-weight: 500; cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.filter-btn:hover { border-color: var(--brand); color: var(--brand); }
+.filter-btn:hover { border-color: var(--brand); color: var(--brand-link); }
 .filter-btn.active { background: var(--brand); border-color: var(--brand); color: #fff; }
 .is-hidden { display: none !important; }
 
 /* --- pasmo CTA ---------------------------------------------------------- */
+/* Pasmo petycji = granatowe pole na całą szerokość (jak dotąd). */
 .cta-band { background: var(--brand); color: #fff; padding: 3rem 0; }
 .cta-band-inner { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
 .cta-band h2 { color: #fff; margin: 0 0 0.3rem; }
-.cta-band p { color: rgba(255, 255, 255, 0.85); margin: 0; max-width: 52ch; }
+/* 0.92 — w ciemnym motywie granat jest jaśniejszy (4,6:1 zamiast 4,26:1 przy 0.85). */
+.cta-band p { color: rgba(255, 255, 255, 0.92); margin: 0; max-width: 52ch; text-wrap: pretty; }
 
 /* --- treść artykułowa (prose) ------------------------------------------ */
 .prose { max-width: 730px; }
 .prose p, .prose li { font-size: 1.05rem; line-height: 1.7; color: var(--prose-ink); }
 .prose h2 { margin: 2.4rem 0 0.8rem; }
-.prose h3 { margin: 1.7rem 0 0.5rem; font-size: 1.15rem; }
+.prose h3 { margin: 1.7rem 0 0.5rem; font-size: var(--fs-title-s); }
 .prose ul, .prose ol { padding-left: 1.3rem; margin: 0 0 1.2rem; }
 .prose li { margin: 0.4rem 0; }
 .prose strong { font-weight: 600; }
@@ -450,25 +542,29 @@ main { display: block; }
 }
 .przypisy[open] > .przypisy-pasek::before { transform: rotate(45deg); }
 .prose .przypisy-naglowek { margin: 0; font-size: 1.05rem; }
-.przypisy-licznik { color: var(--ink-faint); font-size: 0.9rem; }
+.przypisy-licznik { color: var(--ink-faint); font-size: var(--fs-meta); }
 .przypisy-pasek:hover .przypisy-naglowek { color: var(--brand-link); }
-.przypisy-pasek:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+.przypisy-pasek:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 2px; }
 .przypisy > ol { margin: 0.4rem 0 1.2rem; }
 @media (prefers-reduced-motion: reduce) { .przypisy-pasek::before { transition: none; } }
 /* Trzy poziomy wyróżnienia — hierarchia ważności (używać świadomie):
    .callout.alert  = alarm/pointa (czerwony) — maks. jeden na stronę;
    .callout        = kluczowa myśl (granat);
-   .callout.quiet  = poboczna uwaga / zastrzeżenie metody (neutralny, cichy). */
-.callout { background: var(--brand-50); border-left: 4px solid var(--brand); padding: 1rem 1.25rem; margin: 1.5rem 0; border-radius: 0 var(--radius) var(--radius) 0; }
+   .callout.quiet  = poboczna uwaga / zastrzeżenie metody (neutralny, cichy).
+   Forma ramki z raportu finansowego: tło w odcieniu akcentu, kolorowa linia
+   u góry, proste narożniki (zamiast grubego paska z boku zaokrąglonej karty).
+   Cicha uwaga
+   nie ma ramki — stoi między dwiema liniami włosowymi, w kolumnie tekstu. */
+.callout { background: var(--brand-50); border-top: 2px solid var(--brand); padding: 1rem 1.25rem; margin: 1.5rem 0; }
 .callout p:last-child { margin-bottom: 0; }
-.callout.alert { background: var(--alert-50); border-left-color: var(--alert); }
-.callout.quiet { background: var(--paper); border-left-color: var(--line-2); border-left-width: 3px; }
-.callout.quiet p { color: var(--ink-soft); font-size: 0.95rem; }
+.callout.alert { background: var(--alert-50); border-top-color: var(--alert); }
+.callout.quiet { background: none; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); padding: 0.85rem 0; }
+.callout.quiet p { color: var(--ink-soft); font-size: var(--fs-small); }
 .todo { color: var(--alert); font-style: italic; }
 /* Podpis źródła to przypis, nie tekst główny — przy 0.85 rem rozciągniętym na
    szerokość kontenera wiersz miał ~130 znaków i czytało się go najgorzej na
    stronie. Własna, węższa miara odsuwa go też wizualnie od akapitu. */
-.source-note { font-size: 0.85rem; color: var(--ink-faint); max-width: 62ch; }
+.source-note { font-size: var(--fs-meta); color: var(--ink-faint); max-width: 62ch; }
 
 /* =========================================================================
    Strony tekstowe (/analizy/*, /mechanizmy/*) — JEDNA miara czytania.
@@ -497,10 +593,15 @@ body[data-kind='tekst'] :is(.prose, .lead) { max-width: none; }
      i sam z siebie niczego nie odsuwa). Rezerwujemy go zawsze, także na krótkich
      podstronach bez spisu — inaczej ta sama treść skakałaby na szerokości
      zależnie od liczby sekcji. */
-  body[data-kind='tekst'] main .container > * { max-width: calc(100% - var(--szyna) - 2rem); }
-  body[data-kind='tekst'] main .container > :is(p, h2, h3, ul, ol, .prose, .lead, .callout) {
-    max-width: var(--maxw-tekst);
+  /* Kolumna sięga do szyny (zostaje 3,5rem odstępu) zamiast 780 px — przy
+     780 px między tekstem a szyną wisiał ~180 px pusty pas i strona wyglądała
+     na ściśniętą. Żeby wiersz nie wydłużył się ponad dotychczasowe ~85–90
+     znaków, akapity rosną razem z kolumną do 20 px. */
+  body[data-kind='tekst'] main .container > * { max-width: calc(100% - var(--szyna) - 3.5rem); }
+  body[data-kind='tekst'] main :is(.prose p:not([class]), .prose li, .container > p:not([class]), .container > :is(ul, ol) > li) {
+    font-size: 1.25rem; line-height: 1.62;
   }
+  body[data-kind='tekst'] main .lead { font-size: 1.5rem; line-height: 1.45; }
 }
 
 /* Siatka „kilku liczb" pod leadem powtarza się w dziesięciu szablonach z progiem
@@ -544,8 +645,8 @@ body[data-kind='tekst'] :is(.prose, .lead) { max-width: none; }
   .toc[hidden] { display: none; }
 }
 .toc-head {
-  font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.09em; color: var(--ink-faint); margin: 0 0 0.6rem;
+  font-size: var(--fs-label); font-weight: 650; font-stretch: 78%;
+  color: var(--ink-faint); margin: 0 0 0.6rem;
 }
 .toc-list { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); }
 .toc-list li { margin: 0; }
@@ -561,31 +662,54 @@ body[data-kind='tekst'] :is(.prose, .lead) { max-width: none; }
 .data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
 .data-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.3rem; }
 .data-card .k { font-size: 0.82rem; color: var(--ink-soft); margin: 0 0 0.4rem; }
-.data-card .v { font-family: var(--font-mono); font-size: 1.9rem; font-weight: 500; color: var(--ink); margin: 0; }
-.data-card .src { font-size: 0.78rem; color: var(--ink-faint); margin: 0.5rem 0 0; }
+.data-card .v { font-family: var(--font-mono); font-size: var(--fs-stat); font-weight: 500; color: var(--ink); margin: 0; }
+.data-card .src { font-size: var(--fs-label); color: var(--ink-faint); margin: 0.5rem 0 0; }
+
+/* --- tablica („Tabl. N.") ---------------------------------------------- */
+/* Podstawowy komponent „Rocznika jawności": podwójna linia na górze, czarna
+   linia pod główką, wiersz numerów kolumn, włosowe linie między wierszami,
+   2 px na dole, przypisy literowe łączone z „Źródło:". Komórka bez danych
+   zawsze ze znakiem umownym („.", „—", „x"), nigdy pusta. */
+.tabl { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums lining-nums; }
+.tabl caption { caption-side: top; text-align: left; padding: 0 0 0.6rem; font-size: var(--fs-small); line-height: 1.35; color: var(--ink); }
+.tabl-nr { font-weight: 750; font-stretch: 85%; margin-right: 0.35em; }
+.tabl thead { border-top: 2px solid var(--rule); }
+.tabl thead th { font-size: var(--fs-label); font-weight: 650; font-stretch: 78%; text-align: left; vertical-align: bottom; padding: 0.55rem 0.75rem 0.45rem; border-bottom: 1px solid var(--rule); }
+.tabl thead th.num, .tabl td.num { text-align: right; }
+.tabl .kol td { font-size: var(--fs-micro); font-stretch: 78%; color: var(--ink-faint); text-align: center; padding: 0.15rem 0.75rem; border-bottom: 1px solid var(--rule); }
+.tabl tbody td, .tabl tbody th { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; vertical-align: baseline; }
+.tabl tbody th { font-weight: 600; }
+.tabl tbody tr:last-child > * { border-bottom: 2px solid var(--rule); }
+.tabl sup a, .tabl-przypis sup { text-decoration: none; font-weight: 700; color: var(--brand-link); }
+.tabl-przypis { font-size: 0.84rem; color: var(--ink-faint); margin: 0.6rem 0 0; max-width: 72ch; }
 
 /* --- stopka ------------------------------------------------------------- */
-.site-footer { background: var(--paper); border-top: 1px solid var(--line); padding: 2.75rem 0 2rem; font-size: 0.9rem; color: var(--ink-soft); }
+/* Stopka: spokojne pole o ton ciemniejsze od strony, przyciszony tekst. Jaskrawy
+   granatowy blok na dole strony zamykał ją głośniej niż jakakolwiek treść. */
+.site-footer { background: var(--paper); color: var(--ink-soft); border-top: 1px solid var(--line); padding: 3.5rem 0 2.25rem; font-size: var(--fs-meta); }
 .footer-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 2rem; }
 .footer-note { display: flex; gap: 0.6rem; align-items: flex-start; max-width: 42ch; }
-.site-footer h2 { font-family: var(--font-sans); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin: 0 0 0.7rem; line-height: 1.3; }
+.footer-note svg { color: var(--ink-faint); }
+.site-footer h2 { font-family: var(--font-sans); font-size: var(--fs-label); font-weight: 650; font-stretch: 85%; letter-spacing: 0.01em; color: var(--ink); margin: 0 0 0.85rem; line-height: 1.3; }
 .site-footer ul { list-style: none; padding: 0; margin: 0; }
-.site-footer li { margin: 0.35rem 0; }
+.site-footer li { margin: 0.45rem 0; }
 .site-footer a { color: var(--ink-soft); text-decoration: none; }
-.site-footer a:hover { color: var(--brand-link); }
-.footer-bottom { border-top: 1px solid var(--line); margin-top: 2rem; padding-top: 1.25rem; font-size: 0.82rem; color: var(--ink-faint); display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.site-footer a:hover { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; }
+.footer-bottom { border-top: 1px solid var(--line); margin-top: 2.5rem; padding-top: 1.25rem; font-size: var(--fs-meta); color: var(--ink-faint); display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.footer-disclaimer { margin: 1rem 0 0; font-size: var(--fs-meta); color: var(--ink-faint); line-height: 1.55; max-width: 68ch; }
+.footer-disclaimer a { color: var(--ink-soft); text-decoration: underline; }
 
 /* --- formularz ---------------------------------------------------------- */
 .form-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.75rem; max-width: 540px; }
 .field { margin-bottom: 1.1rem; }
-.field label { display: block; font-size: 0.88rem; font-weight: 500; margin-bottom: 0.35rem; }
+.field label { display: block; font-size: var(--fs-meta); font-weight: 500; margin-bottom: 0.35rem; }
 .field input[type="text"], .field input[type="email"] {
   width: 100%; padding: 0.65rem 0.8rem; border: 1px solid var(--line-2);
-  border-radius: var(--radius); font-family: var(--font-sans); font-size: 0.95rem;
+  border-radius: var(--radius); font-family: var(--font-sans); font-size: var(--fs-small);
   color: var(--ink); background: var(--surface);
 }
 .field input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-50); }
-.check { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.85rem; color: var(--ink-soft); }
+.check { display: flex; gap: 0.6rem; align-items: flex-start; font-size: var(--fs-meta); color: var(--ink-soft); }
 .check input { margin-top: 0.25rem; }
 
 /* --- responsywność ------------------------------------------------------ */
@@ -602,7 +726,10 @@ body[data-kind='tekst'] :is(.prose, .lead) { max-width: none; }
 /* Nawigacja zwija się do burgera wcześniej niż reszta layoutu (860 px, nie 760):
    7 pozycji + przycisk Petycja nie mieści się już w jednej linii ok. 780–820 px
    (etykieta „Prawa pacjenta" zawijała się, a Petycja wychodziła poza ekran). */
-@media (max-width: 860px) {
+/* Próg w em, nie w px: przy powiększonym tekście (ustawienie przeglądarki 200%)
+   menu i tak się nie mieści — em-owy próg przełącza je wtedy na burgera,
+   zamiast wypychać lupę i przełącznik motywu poza ekran (WCAG 1.4.4). */
+@media (max-width: 53.75em) {
   /* Lupa tuż obok burgera — bez szerokiego odstępu menu desktopowego. */
   .nav-cluster { gap: 0.5rem; }
   .nav-search { width: 40px; height: 40px; border: 1px solid var(--line-2); background: var(--surface); }
@@ -611,11 +738,23 @@ body[data-kind='tekst'] :is(.prose, .lead) { max-width: none; }
   .nav-links {
     display: none; position: absolute; top: calc(100% + 1px); left: 0; right: 0;
     flex-direction: column; align-items: flex-start; gap: 0.25rem;
-    background: var(--surface); border-bottom: 1px solid var(--line); padding: 0.75rem 1.25rem 1.1rem;
+    background: var(--surface); border-bottom: 1px solid var(--line-2); padding: 0.75rem 1.25rem 1.1rem;
+    /* Warstwa nad treścią (jak dymki): krótki cień odcina ją od strony pod spodem —
+       sama włosowa linia ginęła i tekst strony zaczynał się tuż pod menu. */
+    box-shadow: var(--shadow-pop);
   }
   .nav-links a:not(.btn) { padding: 0.5rem 0; width: 100%; }
   .nav-links .btn { margin-top: 0.5rem; }
   .nav-links.open { display: flex; }
+}
+/* Najwęższe telefony (320–380 px): logo + trzy przyciski potrzebowały 387 px,
+   więc cała strona wylewała się w bok i renderowała pomniejszona (WCAG 1.4.10).
+   Ciaśniejsze odstępy, a nazwa serwisu skaluje się z szerokością ekranu. */
+@media (max-width: 380px) {
+  .nav-inner { gap: 0.5rem; padding-left: 0.75rem; padding-right: 0.75rem; }
+  .nav-cluster { gap: 0.25rem; }
+  .brand { gap: 0.4rem; }
+  .brand-name { font-size: min(1rem, calc((100vw - 194px) / 10)); }
 }
 
 /* =========================================================================
@@ -649,7 +788,7 @@ body[data-kind='tekst'] :is(.prose, .lead) { max-width: none; }
     --ink-soft: #d3dde8;
     --ink-faint: #b9c6d4;
     --line: #3a4c66;
-    --line-2: #55688a;
+    --line-2: #7f95b8;
   }
 }
 @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
@@ -657,7 +796,7 @@ body[data-kind='tekst'] :is(.prose, .lead) { max-width: none; }
     --ink-soft: #d3dde8;
     --ink-faint: #b9c6d4;
     --line: #3a4c66;
-    --line-2: #55688a;
+    --line-2: #7f95b8;
   }
 }
 
@@ -668,5 +807,5 @@ body[data-kind='tekst'] :is(.prose, .lead) { max-width: none; }
   .btn, .filter-btn, .page-btn, .sonda-btn, .nav-burger, .form-card input, .zglos input, .zglos textarea {
     border: 1px solid;
   }
-  .callout { border-left: 4px solid; }
+  .callout { border-top: 2px solid; }
 }

@@ -1,7 +1,9 @@
 /* Baner „reklamowy" symulatora podaży lekarzy — wstawiany jako surowy HTML w treści
    analiz (Markdown nie przyjmuje komponentów Astro, więc style są w osobnym pliku,
    importowanym przez stronę). Kolory wyłącznie z tokenów → działa w obu motywach.
-   Cała karta jest jednym linkiem; wnętrze to spany, bo .prose stylizuje p/li. */
+   Cała karta jest jednym linkiem; wnętrze to spany, bo .prose stylizuje p/li.
+   Płaskie tło i obwódka, bez gradientu, cienia w kolorze marki i unoszenia
+   przy najechaniu — reakcją na kursor jest kolor obwódki i podkreślenie tytułu. */
 
 .sym-baner {
   display: grid;
@@ -12,16 +14,16 @@
   padding: 1rem 1.25rem;
   border: 1px solid color-mix(in srgb, var(--brand) 45%, transparent);
   border-radius: var(--radius-lg);
-  background: linear-gradient(115deg, var(--brand-50) 0%, var(--surface) 78%);
-  box-shadow: 0 8px 22px -14px color-mix(in srgb, var(--brand) 70%, transparent);
+  background: var(--brand-50);
   color: var(--ink);
   text-decoration: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  transition: border-color 0.15s ease;
 }
-.sym-baner:hover {
-  border-color: var(--brand);
-  transform: translateY(-1px);
-  box-shadow: 0 12px 28px -14px color-mix(in srgb, var(--brand) 85%, transparent);
+.sym-baner:hover { border-color: var(--brand); }
+.sym-baner:hover .sym-baner-tytul {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
 }
 .sym-baner:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 3px; }
 
@@ -57,12 +59,11 @@
   70%, 100% { transform: scale(2.6); opacity: 0; }
 }
 
+/* Nadtytuł zwykłą wielkością liter, jak globalne .eyebrow — nie wersalikami z trackingiem. */
 .sym-baner-tag {
   display: block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--brand-link);
 }
 .sym-baner-tytul {
@@ -109,6 +110,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sym-baner, .sym-baner-graf .sb-zm, .sym-baner-strzalka { transition: none; }
-  .sym-baner:hover { transform: none; }
   .sym-baner-graf .sb-puls { animation: none; opacity: 0; }
 }

@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { ogPages, type OgPage } from '../../lib/ogPages';
-import { fonts, el, logo, ecgBackground, type Node } from '../../lib/ogCard';
+import { fonts, el, logo, ecgBackground, topBand, OG, sierotki, type Node } from '../../lib/ogCard';
 
 // Miniatura pod wykop.pl. Osobna karta, bo Wykop ma własny, sztywny format i NIE czyta
 // żadnego dedykowanego tagu meta (nie ma odpowiednika `twitter:image`) — obrazek wybiera
@@ -22,10 +22,10 @@ const H = 568;
 // PROJEKT PODPORZĄDKOWANY CZYTELNOŚCI PRZY 220 px SZEROKOŚCI (skala 1:4):
 //   • podtytuł WYPADA — 31 px karty og:image zeszłoby do ~6 px, czyli plamy,
 //   • tytuł dostaje resztę miejsca i rośnie (72 px → 18 px na ekranie),
-//   • tag zostaje, ale większy i rozstrzelony — przy tej skali czyta się jako etykieta.
+//   • tag zostaje, ale większy — przy tej skali czyta się jako etykieta.
 // Nie dokładać tu treści: przy 220×142 każdy dodatkowy element odbiera miejsce tytułowi.
 const ecgBg = ecgBackground({
-  width: W - 12, // minus czerwony border: absolute pozycjonuje się od padding boxa
+  width: W,
   height: H,
   baseline: 498,
   amplitude: 150,
@@ -38,18 +38,19 @@ const ecgBg = ecgBackground({
 
 function template(p: OgPage): Node {
   const len = p.title.length;
-  const titleSize = len > 46 ? 58 : len > 30 ? 70 : 82;
+  const titleSize = len > 46 ? 54 : len > 30 ? 65 : 76;
   return el(
-    { height: '100%', width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', background: '#14233a', color: '#ffffff', padding: '44px 48px', fontFamily: 'Plex Sans', borderLeft: '12px solid #b3261e' },
+    { height: '100%', width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', background: OG.bg, color: OG.ink, padding: '44px 48px', fontFamily: 'Archivo' },
     [
       ecgBg,
+      topBand(W, 12),
       el({ display: 'flex', alignItems: 'center' }, [
         logo(28, { marginRight: '14px' }),
-        el({ fontFamily: 'Plex Mono', fontSize: '25px', color: '#cdd6e0', letterSpacing: '1px' }, 'zarobkilekarzy.pl'),
+        el({ fontSize: '25px', fontWeight: 600, color: OG.soft }, 'zarobkilekarzy.pl'),
       ]),
       el({ display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'center' }, [
-        el({ display: 'flex', fontSize: '26px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '3px', color: '#6aa9e0', marginBottom: '18px' }, p.tag),
-        el({ display: 'flex', fontFamily: 'Plex Serif', fontWeight: 700, fontSize: `${titleSize}px`, lineHeight: 1.06, color: '#ffffff' }, p.title),
+        el({ display: 'flex', fontSize: '28px', fontWeight: 600, color: OG.link, marginBottom: '18px' }, p.tag),
+        el({ display: 'flex', fontFamily: 'Archivo Wide', fontWeight: 800, fontSize: `${titleSize}px`, lineHeight: 1.04, letterSpacing: '-0.5px', color: OG.ink }, sierotki(p.title)),
       ]),
     ],
   );

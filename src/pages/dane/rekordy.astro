@@ -480,50 +480,53 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
 </BaseLayout>
 
 <style>
-  .chip { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 999px; background: var(--paper-2); font-size: 0.72rem; margin-right: 0.4rem; }
+  .chip { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 0; background: var(--paper-2); font-size: var(--fs-micro); margin-right: 0.4rem; }
   .chip-alert { background: var(--alert-50); color: var(--alert); font-weight: 600; }
-  .rec-src { font-size: 0.8rem; margin: 0; }
-  .pager { margin-top: 2.5rem; font-size: 0.9rem; color: var(--ink-soft); }
+  .rec-src { font-size: var(--fs-label); margin: 0; }
+  .pager { margin-top: 2.5rem; font-size: var(--fs-meta); color: var(--ink-soft); }
 
   /* ── Akty: etykieta + tytuł + wprowadzenie ─────────────────────────── */
-  .act-label { display: flex; align-items: center; gap: 0.6rem; margin: 3.5rem 0 0.5rem; font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: var(--brand); }
-  .act-nr { display: inline-flex; align-items: center; justify-content: center; width: 1.7rem; height: 1.7rem; border-radius: 999px; border: 1.5px solid var(--brand); font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 0; }
+  /* Zwykła wielkość liter jak .eyebrow; numer aktu to cyfra szeryfowa za kreską,
+     nie cyfra w kółku nad rozstrzelonymi wersalikami. */
+  .act-label { display: flex; align-items: baseline; gap: 0.6rem; margin: 3.5rem 0 0.5rem; font-size: var(--fs-meta); font-weight: 600; line-height: 1.4; color: var(--brand-link); }
+  .act-nr { font-family: var(--font-serif); font-size: var(--fs-body); padding-right: 0.6rem; border-right: 1px solid var(--line-2); flex-shrink: 0; }
   .act-h { margin-top: 0.15rem; }
-  .act-intro { max-width: 68ch; font-size: 1rem; color: var(--ink-soft); line-height: 1.65; margin: 0.5rem 0 0; }
+  .act-intro { max-width: 68ch; font-size: var(--fs-body); color: var(--ink-soft); line-height: 1.65; margin: 0.5rem 0 0; }
 
   /* ── Kafle „skala" (powiększone) ───────────────────────────────────── */
   .skala { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.9rem; margin: 1.5rem 0 0.8rem; }
-  .skala-tile { background: var(--paper); border: 1px solid var(--line); border-top: 3px solid var(--brand); border-radius: var(--radius-lg); padding: 1.1rem 1.2rem 1rem; }
+  /* Proste narożniki i 2px linia akcentu u góry — jak rubryka raportu finansowego. */
+  .skala-tile { background: var(--paper); border: 1px solid var(--line); border-top: 2px solid var(--brand); padding: 1.1rem 1.2rem 1rem; }
   .skala-tile.is-zarzut { border-top-color: var(--alert); }
-  .skala-eb { font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
-  .skala-num { font-family: var(--font-mono); font-size: clamp(1.7rem, 4.2vw, 2.35rem); font-weight: 700; color: var(--ink); line-height: 1.02; margin: 0.35rem 0 0.2rem; white-space: nowrap; }
-  .skala-zl { font-family: var(--font-sans); font-size: 0.85rem; font-weight: 400; color: var(--ink-soft); }
-  .skala-who { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.45; margin: 0 0 0.6rem; }
-  .skala-foot { font-size: 0.78rem; color: var(--ink-faint); margin: 0; }
-  .skala-ctx { max-width: 64ch; font-size: 0.95rem; color: var(--ink-soft); line-height: 1.55; margin: 0.25rem 0 0; }
+  .skala-eb { font-size: var(--fs-micro); color: var(--ink-faint); font-weight: 700; font-stretch: 85%; }
+  .skala-num { font-family: var(--font-mono); font-size: var(--fs-h2); font-weight: 700; color: var(--ink); line-height: 1.02; margin: 0.35rem 0 0.2rem; white-space: nowrap; }
+  .skala-zl { font-family: var(--font-sans); font-size: var(--fs-meta); font-weight: 400; color: var(--ink-soft); }
+  .skala-who { font-size: var(--fs-meta); color: var(--ink-soft); line-height: 1.45; margin: 0 0 0.6rem; }
+  .skala-foot { font-size: var(--fs-label); color: var(--ink-faint); margin: 0; }
+  .skala-ctx { max-width: 64ch; font-size: var(--fs-small); color: var(--ink-soft); line-height: 1.55; margin: 0.25rem 0 0; }
 
   /* ── Rankingi-paski ────────────────────────────────────────────────── */
   .rank-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 1.75rem 2.5rem; margin: 2rem 0 0.5rem; }
   .rank-col { min-width: 0; }
-  .rank-h { font-size: 1.15rem; margin: 0 0 0.15rem; color: var(--ink); }
-  .rank-sub { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.5; margin: 0 0 1rem; }
+  .rank-h { font-size: var(--fs-title-s); margin: 0 0 0.15rem; color: var(--ink); }
+  .rank-sub { font-size: var(--fs-meta); color: var(--ink-soft); line-height: 1.5; margin: 0 0 1rem; }
   .rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.7rem; }
   .rank-row { padding-bottom: 0.7rem; border-bottom: 1px solid var(--line); }
   .rank-row:last-child { border-bottom: none; padding-bottom: 0; }
   .rank-head { display: grid; grid-template-columns: 1.5rem 1fr auto; align-items: baseline; gap: 0.55rem; }
-  .rank-nr { font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink-faint); text-align: right; }
-  .rank-role { font-weight: 600; color: var(--ink); line-height: 1.3; font-size: 0.95rem; }
-  .rank-amt { font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .rank-amt i { font-style: normal; font-size: 0.72rem; font-weight: 400; color: var(--ink-soft); }
-  .rank-track { margin: 0.45rem 0 0.4rem; margin-left: 2.05rem; height: 9px; background: var(--paper-2); border-radius: 999px; overflow: hidden; }
-  .rank-bar { height: 100%; background: var(--neutral-fill); border-radius: 999px; }
-  .rank-meta { margin-left: 2.05rem; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.1rem 0.15rem; font-size: 0.8rem; color: var(--ink-soft); line-height: 1.5; }
+  .rank-nr { font-family: var(--font-mono); font-size: var(--fs-label); color: var(--ink-faint); text-align: right; }
+  .rank-role { font-weight: 600; color: var(--ink); line-height: 1.3; font-size: var(--fs-small); }
+  .rank-amt { font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-body); color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rank-amt i { font-style: normal; font-size: var(--fs-micro); font-weight: 400; color: var(--ink-soft); }
+  .rank-track { margin: 0.45rem 0 0.4rem; margin-left: 2.05rem; height: 9px; background: var(--paper-2); border-radius: 0; overflow: hidden; }
+  .rank-bar { height: 100%; background: var(--neutral-fill); border-radius: 0; }
+  .rank-meta { margin-left: 2.05rem; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.1rem 0.15rem; font-size: var(--fs-label); color: var(--ink-soft); line-height: 1.5; }
   .rank-reg { margin-right: 0.4rem; }
-  .rank-mult { font-family: var(--font-mono); font-size: 0.74rem; color: var(--ink-faint); margin-right: 0.5rem; }
+  .rank-mult { font-family: var(--font-mono); font-size: var(--fs-micro); color: var(--ink-faint); margin-right: 0.5rem; }
   /* Podium: top-3 mocniej — większa liczba i pasek w kolorze marki */
-  .rank-row.is-top .rank-amt { font-size: 1.35rem; color: var(--brand); }
+  .rank-row.is-top .rank-amt { font-size: var(--fs-title-s); color: var(--brand-link); }
   .rank-row.is-top .rank-bar { background: var(--brand); }
-  .rank-row.is-top .rank-nr { color: var(--brand); font-weight: 700; }
+  .rank-row.is-top .rank-nr { color: var(--brand-link); font-weight: 700; }
 
   /* Źródło inline (rozwijane) — współdzielone przez rankingi */
   .rk-src { display: inline; }
@@ -537,83 +540,87 @@ const nilWykonujacy = 164892; // rejestr NIL, 16 I 2026 (lekarze wykonujący zaw
   .rk-src-body a { font-weight: 400; }
 
   /* ── Rekord czasu ──────────────────────────────────────────────────── */
-  .czas { background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.1rem 1.35rem; margin: 2rem 0 0.5rem; }
+  /* Pointa aktu w formie globalnego .callout: tło, 2px linia u góry, proste narożniki. */
+  .czas { background: var(--brand-50); border-top: 2px solid var(--brand); padding: 1.1rem 1.35rem; margin: 2rem 0 0.5rem; }
   .czas-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
-  .czas-eb { font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700; }
+  .czas-eb { font-size: var(--fs-label); color: var(--ink-soft); font-weight: 700; font-stretch: 85%; }
   .czas-clock { font-style: normal; }
   .czas-line { display: flex; align-items: baseline; gap: 0.5rem; margin: 0.2rem 0 0.5rem; }
-  .czas-num { font-family: var(--font-mono); font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 700; color: var(--ink); line-height: 1; }
-  .czas-per { font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.95rem; }
-  .czas-sub { font-size: 0.95rem; color: var(--ink); line-height: 1.55; margin: 0 0 0.5rem; }
-  .czas-note { font-size: 0.84rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
+  .czas-num { font-family: var(--font-mono); font-size: var(--fs-h2); font-weight: 700; color: var(--ink); line-height: 1; }
+  .czas-per { font-weight: 700; color: var(--ink-soft); font-size: var(--fs-small); font-stretch: 85%; }
+  .czas-sub { font-size: var(--fs-small); color: var(--ink); line-height: 1.55; margin: 0 0 0.5rem; }
+  .czas-note { font-size: var(--fs-label); color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
 
   /* ── Tabela wojewódzka ─────────────────────────────────────────────── */
   .table-wrap { overflow-x: auto; margin: 1.25rem 0 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-lg); }
-  .woj { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.9rem; }
-  .woj thead th { padding: 0.5rem 0.7rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: 0.8rem; border-bottom: 2px solid var(--line); text-align: right; }
+  .woj { border-collapse: collapse; width: 100%; min-width: 640px; font-size: var(--fs-meta); }
+  .woj thead th { padding: 0.5rem 0.7rem; background: var(--paper-2); color: var(--ink-soft); font-weight: 600; font-size: var(--fs-label); border-bottom: 2px solid var(--line); text-align: right; }
   .woj thead th[colspan] { text-align: center; border-bottom: 1px solid var(--line); }
-  .woj-sub, .woj-sub2 { font-weight: 400; color: var(--ink-faint); font-size: 0.72rem; }
-  .woj-kh { border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: var(--alert-50); color: var(--alert); }
+  .woj-sub, .woj-sub2 { font-weight: 400; color: var(--ink-faint); font-size: var(--fs-micro); }
+  /* Kolumna kontraktu wyróżniona granatem, nie czerwienią — to wyróżnienie, nie
+     alarm (czerwień zostaje dla braku danych i zarzutów). */
+  .woj-kh { border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: var(--brand-50); color: var(--brand-link); }
   .woj td { padding: 0.5rem 0.7rem; font-family: var(--font-mono); text-align: right; white-space: nowrap; }
   .woj-lp { color: var(--ink-faint); text-align: center; }
   .woj-netto { color: var(--ink-soft); }
-  .woj-k { font-weight: 700; color: var(--alert); background: var(--alert-50); border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+  .woj-k { font-weight: 700; color: var(--brand-link); background: var(--brand-50); border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
   .woj tbody tr { border-bottom: 1px solid var(--line); }
   .woj tbody tr:last-child { border-bottom: none; }
 
   /* ── „Jawne, a niewidoczne" — okno + rozkład radnych ───────────────── */
-  .okno-q { font-size: 1.05rem; font-weight: 600; color: var(--ink); margin: 1.25rem 0 0.75rem; }
+  .okno-q { font-size: var(--fs-body); font-weight: 600; color: var(--ink); margin: 1.25rem 0 0.75rem; }
   .okno { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.75rem; }
   .okno-card { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
-  .okno-card.is-yes { border-left: 4px solid var(--ok); background: var(--ok-50); }
-  .okno-card.is-no { border-left: 4px solid var(--alert); background: var(--alert-50); }
-  .okno-head { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem; }
+  /* Stan niesie tło, pełna ramka w odcieniu stanu i nagłówek z ✓/✗ — bez paska z boku. */
+  .okno-card.is-yes { background: var(--ok-50); border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+  .okno-card.is-no { background: var(--alert-50); border-color: color-mix(in srgb, var(--alert) 45%, var(--line)); }
+  .okno-head { font-weight: 700; font-size: var(--fs-label); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem; font-stretch: 85%; }
   .okno-card.is-yes .okno-head { color: var(--ok); }
   .okno-card.is-no .okno-head { color: var(--alert); }
-  .okno-mark { font-size: 1.05rem; }
-  .okno-who { font-size: 1.05rem; font-weight: 600; color: var(--ink); margin: 0 0 0.1rem; }
-  .okno-count { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 0.5rem; }
-  .okno-desc { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; margin: 0; }
-  .okno-cap { max-width: 68ch; font-size: 0.92rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
+  .okno-mark { font-size: var(--fs-body); }
+  .okno-who { font-size: var(--fs-body); font-weight: 600; color: var(--ink); margin: 0 0 0.1rem; }
+  .okno-count { font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--ink-soft); margin: 0 0 0.5rem; }
+  .okno-desc { font-size: var(--fs-meta); color: var(--ink-soft); line-height: 1.5; margin: 0; }
+  .okno-cap { max-width: 68ch; font-size: var(--fs-small); color: var(--ink-soft); line-height: 1.55; margin: 0 0 0.5rem; }
   @media (max-width: 560px) { .okno { grid-template-columns: 1fr; } }
-  .jawnosc-case { border: 1px solid var(--line); border-left: 4px solid var(--ok); background: var(--ok-50); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin: 1.25rem 0 0.75rem; }
+  .jawnosc-case { border: 1px solid color-mix(in srgb, var(--ok) 45%, var(--line)); background: var(--ok-50); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin: 1.25rem 0 0.75rem; }
   /* Wariant „jawność przez przypadek": kwoty ujawnił audyt właściciela, nie sam szpital. */
-  .jawnosc-case.is-audit { border-left-color: var(--amber); background: var(--amber-50); }
+  .jawnosc-case.is-audit { border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); background: var(--amber-50); }
   .jawnosc-case.is-audit .jc-head { color: var(--amber); }
-  .jc-head { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ok); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.6rem; }
-  .jc-mark { font-size: 1.05rem; }
-  .jc-lead { font-size: 0.98rem; color: var(--ink); line-height: 1.6; margin: 0 0 1rem; }
+  .jc-head { font-weight: 700; font-size: var(--fs-label); color: var(--ok); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.6rem; font-stretch: 85%; }
+  .jc-mark { font-size: var(--fs-body); }
+  .jc-lead { font-size: var(--fs-body); color: var(--ink); line-height: 1.6; margin: 0 0 1rem; }
   .realne { display: flex; align-items: stretch; gap: 0.6rem; margin: 0 0 0.75rem; }
   .realne-stat { flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.65rem 0.9rem; text-align: center; }
-  .realne-num { display: block; font-family: var(--font-mono); font-size: clamp(1.3rem, 5vw, 1.7rem); font-weight: 700; color: var(--ink); line-height: 1.1; }
-  .realne-stat.is-rec .realne-num { color: var(--brand); }
-  .realne-lab { display: block; font-size: 0.76rem; color: var(--ink-soft); margin-top: 0.2rem; line-height: 1.3; }
-  .realne-x { align-self: center; font-family: var(--font-mono); font-weight: 700; color: var(--ink-soft); white-space: nowrap; font-size: 0.9rem; }
-  .realne-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.55; margin: 0 0 1rem; }
+  .realne-num { display: block; font-family: var(--font-mono); font-size: var(--fs-title); font-weight: 700; color: var(--ink); line-height: 1.1; }
+  .realne-stat.is-rec .realne-num { color: var(--brand-link); }
+  .realne-lab { display: block; font-size: var(--fs-micro); color: var(--ink-soft); margin-top: 0.2rem; line-height: 1.3; }
+  .realne-x { align-self: center; font-family: var(--font-mono); font-weight: 700; color: var(--ink-soft); white-space: nowrap; font-size: var(--fs-meta); }
+  .realne-cap { font-size: var(--fs-meta); color: var(--ink-soft); line-height: 1.55; margin: 0 0 1rem; }
   @media (max-width: 480px) { .realne { flex-direction: column; } .realne-x { transform: rotate(90deg); align-self: center; } }
   .jc-split { display: flex; height: 30px; border-radius: var(--radius); overflow: hidden; background: var(--paper-2); }
   .jc-seg { display: flex; align-items: center; justify-content: center; min-width: 0; }
-  .jc-seg span { font-size: 0.74rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 0.3rem; }
+  .jc-seg span { font-size: var(--fs-micro); font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 0.3rem; }
   .jc-seg-k { background: var(--neutral-fill); }
   .jc-seg-e { background: #2f7a34; }
   .jc-seg-i { background: var(--ink-faint); }
-  .jc-legend { font-size: 0.78rem; color: var(--ink-soft); margin: 0.4rem 0 0.9rem; }
-  .jc-key { display: inline-block; width: 0.7em; height: 0.7em; border-radius: 2px; vertical-align: baseline; margin-right: 0.15rem; }
+  .jc-legend { font-size: var(--fs-label); color: var(--ink-soft); margin: 0.4rem 0 0.9rem; }
+  .jc-key { display: inline-block; width: 0.7em; height: 0.7em; border-radius: 0; vertical-align: baseline; margin-right: 0.15rem; }
   .jc-key-k { background: var(--neutral-fill); }
   .jc-key-e { background: #2f7a34; }
   .jc-key-i { background: var(--ink-faint); }
-  .jc-note { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.6; margin: 0 0 0.5rem; max-width: 68ch; }
-  .dist-label { font-size: 0.82rem; font-weight: 600; color: var(--ink-soft); margin: 1.25rem 0 0.5rem; }
+  .jc-note { font-size: var(--fs-meta); color: var(--ink-soft); line-height: 1.6; margin: 0 0 0.5rem; max-width: 68ch; }
+  .dist-label { font-size: var(--fs-label); font-weight: 600; color: var(--ink-soft); margin: 1.25rem 0 0.5rem; }
   .fact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 0.5rem 0 0.75rem; }
   .fact { display: flex; flex-direction: column; gap: 0.4rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; }
-  .fact-num { font-family: var(--font-mono); font-size: clamp(1.3rem, 3.4vw, 1.7rem); font-weight: 700; color: var(--brand); line-height: 1.05; }
-  .fact-cap { font-size: 0.86rem; color: var(--ink-soft); line-height: 1.5; }
+  .fact-num { font-family: var(--font-mono); font-size: var(--fs-title); font-weight: 700; color: var(--brand-link); line-height: 1.05; }
+  .fact-cap { font-size: var(--fs-meta); color: var(--ink-soft); line-height: 1.5; }
   .dist { display: flex; flex-direction: column; gap: 4px; margin: 1rem 0 0.75rem; max-width: 620px; }
   .dist-row { display: grid; grid-template-columns: 1fr 13ch; align-items: center; gap: 0.75rem; }
-  .dist-track { position: relative; background: var(--paper-2); border-radius: 3px; height: 15px; }
-  .dist-bar { height: 100%; background: var(--neutral-fill); border-radius: 3px; min-width: 3px; }
+  .dist-track { position: relative; background: var(--paper-2); border-radius: 0; height: 15px; }
+  .dist-bar { height: 100%; background: var(--neutral-fill); border-radius: 0; min-width: 3px; }
   .dist-row.is-med .dist-bar { background: var(--brand); }
-  .dist-tag { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.72rem; font-weight: 600; color: var(--brand); background: var(--bg); padding: 0 4px; border-radius: 3px; line-height: 1; }
-  .dist-val { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); white-space: nowrap; text-align: right; }
-  .dist-row.is-med .dist-val { color: var(--brand); font-weight: 600; }
+  .dist-tag { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: var(--fs-micro); font-weight: 600; color: var(--brand-link); background: var(--bg); padding: 0 4px; border-radius: 0; line-height: 1; }
+  .dist-val { font-family: var(--font-mono); font-size: var(--fs-label); color: var(--ink-soft); white-space: nowrap; text-align: right; }
+  .dist-row.is-med .dist-val { color: var(--brand-link); font-weight: 600; }
 </style>

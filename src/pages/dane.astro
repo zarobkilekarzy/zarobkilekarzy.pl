@@ -68,19 +68,31 @@ const podstrony = [
 </BaseLayout>
 
 <style>
-  /* Osiem kafli — `auto-fill` na szerszej stronie układał je 5 + 3, czyli z
-     urwanym rzędem. Sztywne cztery kolumny trzymają 4 + 4 (i 2 + 2 + 2 + 2 na
-     tablecie), więc blok czyta się jako komplet, a nie jako reszta po podziale. */
-  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0 2rem; }
-  @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } }
-  .dstat { position: relative; display: flex; flex-direction: column; gap: 0.55rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.3rem 1.35rem 2.5rem; text-decoration: none; transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s; }
-  .dstat:hover { border-color: var(--brand); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,76,129,0.1); }
-  .dstat.is-hot { border-left: 5px solid var(--alert); }
-  .dstat.is-core { border-left: 5px solid var(--brand); }
-  .dstat-num { font-family: var(--font-mono); font-size: clamp(1.9rem, 5.5vw, 2.6rem); font-weight: 700; color: var(--brand); line-height: 1; }
-  .dstat.is-hot .dstat-num { color: var(--alert); }
-  .dstat-unit { display: block; font-family: var(--font-sans); font-size: 0.8rem; font-weight: 500; color: var(--ink-faint); margin-top: 0.3rem; }
-  .dstat-cap { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; }
-  .dstat-go { position: absolute; left: 1.35rem; bottom: 1rem; color: var(--brand); font-weight: 700; }
+  /* Osiem liczb jako rząd tablicy: liczby rozdzielone liniami, bez kafli.
+     Sztywne cztery kolumny trzymają 4 + 4 (2 × 4 na tablecie), więc blok
+     czyta się jako komplet. Czerwień tylko przy „0 rejestrów” — to brakująca
+     suma, jak „?” w równaniu na stronie głównej. */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 1.5rem 0 2rem; border-top: 2px solid var(--rule); border-bottom: 1px solid var(--line); }
+  .dstat { display: flex; flex-direction: column; gap: 0.6rem; padding: 1.5rem 1.5rem 1.25rem; text-decoration: none; color: inherit; border-left: 1px solid var(--line); }
+  .dstat:nth-child(4n + 1) { border-left: 0; padding-left: 0; }
+  .dstat:nth-child(n + 5) { border-top: 1px solid var(--line); }
+  .dstat-num { font-size: var(--fs-h1); font-weight: 800; font-stretch: 104%; line-height: 0.95; letter-spacing: -0.025em; color: var(--ink); white-space: nowrap; }
+  .dstat.is-core .dstat-num { color: var(--signal); }
+  .dstat-unit { display: block; margin-top: 0.45rem; font-size: var(--fs-label); font-weight: 600; font-stretch: 85%; letter-spacing: 0; color: var(--ink-faint); }
+  .dstat-cap { font-size: var(--fs-small); color: var(--ink-soft); line-height: 1.5; text-wrap: pretty; }
+  .dstat-go { margin-top: auto; font-weight: 700; color: var(--ink-faint); }
+  .dstat:hover .dstat-cap { color: var(--ink); }
+  .dstat:hover .dstat-go { color: var(--brand-link); }
+  .dstat:focus-visible { outline-offset: -2px; }
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dstat, .dstat:nth-child(4n + 1) { border-left: 1px solid var(--line); padding-left: 1.5rem; }
+    .dstat:nth-child(2n + 1) { border-left: 0; padding-left: 0; }
+    .dstat:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  }
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .dstat, .dstat:nth-child(4n + 1), .dstat:nth-child(2n + 1) { border-left: 0; padding: 1.25rem 0; }
+    .dstat:nth-child(n + 2) { border-top: 1px solid var(--line); }
+  }
 </style>

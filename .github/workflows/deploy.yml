@@ -1,6 +1,8 @@
 name: Deploy to Cloudflare Pages
 
 # Deploy: automatycznie po pushu na `main` oraz ręcznie (Actions → Run workflow).
+# Ręczny run na innej gałęzi = wdrożenie podglądowe Pages (<gałąź>.zarobkilekarzy.pages.dev),
+# nie produkcja — gałąź Pages bierzemy z gałęzi, na której leci run.
 on:
   push:
     branches: [main]
@@ -94,4 +96,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=zarobkilekarzy --branch=main --commit-dirty=true
+          command: pages deploy dist --project-name=zarobkilekarzy --branch=${{ github.ref_name }} --commit-dirty=true

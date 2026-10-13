@@ -307,10 +307,19 @@ i ponownie porównuje je z feedem przed deployem. Zmiana lub wycofanie po buildz
 zatrzymuje taki deploy. Przy pilnym wycofaniu operator zatrzymuje również aktywny
 workflow i blokuje rollback; pojedyncza kontrola nie jest transakcją obejmującą D1 i Pages.
 
-Opcjonalny test przeglądarkowy po syntetycznym buildzie: `node tests/historie-browser.mjs`.
+Regresje importu X są częścią `npm test`: główny paragraf bez komentarzy i stopki,
+odrzucenie kilku wpisów (także cytatu zagnieżdżonego) oraz zachowanie własnej treści,
+pozostałych danych formularza i prywatnego materiału przy zapisie. Fikstury
+`tests/fixtures/x-oembed.mjs` są syntetyczne; testy nie zależą od dostępności X.
+
+Opcjonalny test przeglądarkowy po syntetycznym buildzie: `npm run test:browser`.
+`HISTORIE_TEST_DIST` wskazuje katalog builda (domyślnie `dist`); dla lokalnego podglądu:
+`HISTORIE_TEST_DIST=.wrangler/historie-preview/dist npm run test:browser`.
 Wymaga Playwright/Chromium; `PLAYWRIGHT_MODULE` i `BROWSER_EXECUTABLE` mogą wskazać
 istniejące instalacje. Sieć jest zablokowana, Turnstile zastąpiony lokalną fiksturą,
-a formularz komunikuje się z rzeczywistym API w emulatorze. Nie używamy sekretów.
+a formularz komunikuje się z rzeczywistym API w emulatorze. Test obejmuje import X,
+wstawienie do prywatnego pola, odrzucenie niejednoznacznego źródła i zapis relacji
+bez nadpisania własnej treści. Nie używamy sekretów.
 
 | Zadanie | Zależności | Implementacja |
 |---|---|---|

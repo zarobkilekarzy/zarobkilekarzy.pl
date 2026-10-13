@@ -8,8 +8,9 @@ import { build } from 'esbuild';
 import { Miniflare } from 'miniflare';
 import { migrate } from '../tools/historie/database.mjs';
 import { record } from '../lib/historie/store.mjs';
+import { xFixtures } from './fixtures/x-oembed.mjs';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const root = resolve('dist');
+const root = resolve(process.env.HISTORIE_TEST_DIST || 'dist');
 const bundle = await build({ entryPoints: ['tests/historie-worker.mjs'], bundle: true, format: 'esm', platform: 'browser', write: false });
 const mf = new Miniflare({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-07-30',
   d1Databases: { HISTORIE_MODERACJA_DB: 'browser-mod', HISTORIE_PRYWATNE_DB: 'browser-private' },
@@ -54,7 +55,8 @@ try {
   assert.equal(await page.locator('#history-publication-consent').isChecked(), false);
   assert.equal(await page.locator('#history-health-consent').isChecked(), false);
   await page.locator('#history-title').fill('Historia testu przeglądarki');
-  await page.locator('#history-body').fill('Moja własna relacja pozostaje tutaj.');
+  const ownBody = 'Moja własna relacja pozostaje tutaj.\nDrugi akapit — również mój.';
+  await page.locator('#history-body').fill(ownBody);
   await page.locator('#history-email').fill('browser@example.test');
   await page.locator('#history-add-doctor').click();
   await page.locator('[data-doctor-name]').fill('Lekarz Syntetyczny');
@@ -65,8 +67,37 @@ try {
   await page.locator('#history-insert-source').waitFor({ state: 'visible' });
   await page.waitForFunction(() => !document.querySelector('#history-fields').disabled);
   await page.locator('#history-insert-source').click();
-  assert.equal(await page.locator('#history-body').inputValue(), 'Moja własna relacja pozostaje tutaj.');
+  assert.equal(await page.locator('#history-body').inputValue(), ownBody);
   assert.equal(await page.locator('#history-excerpt').inputValue(), 'Syntetyczny materiał źródłowy.');
+  // X przechodzi przez rzeczywisty endpoint importu i native HTMLRewriter, z lokalnym oEmbed.
+  const formValues = () => page.evaluate(() => Object.fromEntries(
+    ['title', 'body', 'city', 'facility', 'email', 'health-consent', 'publication-consent'].map((name) => {
+      const field = document.getElementById('history-' + name);
+      return [name, field.type === 'checkbox' ? field.checked : field.value];
+    })));
+  const beforeX = await formValues();
+  await page.locator('#history-import-url').fill(xFixtures.single.url);
+  const xImport = page.waitForResponse((response) => response.url().endsWith('/api/historie/import'));
+  await page.locator('#history-import-button').click();
+  assert.equal((await xImport).status(), 200);
+  await page.waitForFunction(() => !document.querySelector('#history-fields').disabled);
+  assert.equal(await page.locator('#history-preview-text').inputValue(), xFixtures.single.excerpt);
+  assert.deepEqual(await formValues(), beforeX);
+  await page.locator('#history-insert-source').click();
+  assert.equal(await page.locator('#history-excerpt').inputValue(), xFixtures.single.excerpt);
+  assert.equal(await page.locator('#history-source-url').inputValue(), xFixtures.single.url);
+  assert.deepEqual(await formValues(), beforeX);
+  // Błąd niejednoznacznego źródła zachowuje zarówno własną relację, jak i poprzedni materiał.
+  await page.locator('#history-import-url').fill(xFixtures.multiple.url);
+  const rejectedX = page.waitForResponse((response) => response.url().endsWith('/api/historie/import'));
+  await page.locator('#history-import-button').click();
+  const rejectedResponse = await rejectedX;
+  assert.equal(rejectedResponse.status(), 400);
+  assert.equal((await rejectedResponse.json()).error, 'post-content-not-found');
+  await page.waitForFunction(() => !document.querySelector('#history-fields').disabled);
+  assert.deepEqual(await formValues(), beforeX);
+  assert.equal(await page.locator('#history-excerpt').inputValue(), xFixtures.single.excerpt);
+  assert.equal(await page.locator('#history-source-url').inputValue(), xFixtures.single.url);
   await page.locator('#history-health-consent').check();
   // Niepewny zapis: formularz zachowuje dane i klucz, powtórka idzie do prawdziwego lokalnego D1.
   let firstKey;
@@ -75,7 +106,7 @@ try {
   await page.route('**/api/historie', failOnce);
   await page.locator('#history-submit').click();
   await page.waitForFunction(() => !document.querySelector('#history-fields').disabled);
-  assert.equal(await page.locator('#history-body').inputValue(), 'Moja własna relacja pozostaje tutaj.');
+  assert.equal(await page.locator('#history-body').inputValue(), ownBody);
   await page.unroute('**/api/historie', failOnce);
   const savedResponse = page.waitForResponse((response) => response.url().endsWith('/api/historie') && response.status() === 201);
   await page.locator('#history-submit').click();
@@ -83,7 +114,9 @@ try {
   assert.equal(response.request().postDataJSON().idempotencyKey, firstKey);
   const { id } = await response.json();
   const saved = await record(privateDb, id, true);
-  assert.equal(saved.payload.source.excerpt, 'Syntetyczny materiał źródłowy.');
+  assert.equal(saved.payload.body, ownBody);
+  assert.equal(saved.payload.source.excerpt, xFixtures.single.excerpt);
+  assert.equal(saved.payload.source.url, xFixtures.single.url);
   assert.equal(saved.contact.email, 'browser@example.test');
   assert.equal(saved.payload.publicationRequested, false);
   assert.equal(await mod.prepare('SELECT id FROM zgloszenia WHERE id=?').bind(id).first(), null);
@@ -103,7 +136,7 @@ try {
   await page.locator('#history-health-consent').scrollIntoViewIfNeeded();
   await page.screenshot({ path: '/private/tmp/historie-consent.png' });
   assert.deepEqual(errors, []);
-  process.stdout.write('Browser: import zachowuje body, zgody kierują do dwóch baz, ponowienie zachowuje klucz, PWZ ostrzega, mobile bez overflow.\n');
+  process.stdout.write('Browser: X pomija komentarze, odrzuca kilka wpisów i zachowuje body; zgody kierują do dwóch baz, ponowienie zachowuje klucz, PWZ ostrzega, mobile bez overflow.\n');
 } finally {
   await browser?.close();
   if (server) await new Promise((done) => server.close(done));

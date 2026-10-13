@@ -6,9 +6,16 @@ import { onRequestGet as configuration } from '../functions/api/historie/konfigu
 import { onRequestPost as issuing } from '../functions/api/historie/wydanie.js';
 import { importSource } from '../lib/historie/import.mjs';
 import { errorResponse, json } from '../lib/historie/http.mjs';
+import { xFixtures } from './fixtures/x-oembed.mjs';
 
 globalThis.fetch = async (url, options) => {
   if (String(url) === 'https://www.medonet.pl/historie-fixture') return new Response('<article itemprop="articleBody"><p>Syntetyczny materiał źródłowy.</p><div id="comments">Komentarz innej osoby</div></article>', { headers: { 'Content-Type': 'text/html' } });
+  const endpoint = new URL(String(url));
+  if (endpoint.origin === 'https://publish.x.com' && endpoint.pathname === '/oembed') {
+    const fixture = Object.values(xFixtures).find(({ url }) => url === endpoint.searchParams.get('url'));
+    if (!fixture) throw new Error('network-forbidden-in-test');
+    return json({ html: fixture.html });
+  }
   if (String(url) !== 'https://challenges.cloudflare.com/turnstile/v0/siteverify') throw new Error('network-forbidden-in-test');
   const { response } = JSON.parse(options.body);
   if (response === 'unavailable') return new Response('', { status: 503 });

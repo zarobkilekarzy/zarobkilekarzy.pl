@@ -11,6 +11,7 @@ import { migrate, remoteDatabase } from '../tools/historie/database.mjs';
 import { loadPublications } from '../lib/historie/build.mjs';
 import { insertSource } from '../lib/historie/client.mjs';
 import { importUrl } from '../lib/historie/import.mjs';
+import { xFixtures } from './fixtures/x-oembed.mjs';
 
 let mf, mod, privateDb;
 const RELEASE_KEY = 'test-only-release-key-0123456789abcdef';
@@ -193,15 +194,64 @@ test('native HTMLRewriter: JSON-LD głównego artykułu i fallback, bez komentar
   assert.equal(fallback.body.source.extractor, 'html-rewriter');
 });
 
-test('import ogranicza 14000 znaków; X bierze tylko główny wpis, bez autora i odpowiedzi', async () => {
+test('import ogranicza 14000 znaków i odrzuca nieoznaczoną treść', async () => {
   const long = await request('/test/extract', { url: 'https://www.medonet.pl/story', responses: [{ body: '<article itemprop="articleBody">' + 'ą'.repeat(14010) + '</article>' }] });
   assert.equal([...long.body.source.excerpt].length, 14000); assert.equal(long.body.source.truncated, true);
-  const x = await request('/test/extract', { url: 'https://x.com/test/status/123', responses: [{ headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html: '<blockquote class="twitter-tweet"><p>Główny wpis</p>Autor i data</blockquote><section id="comments">Odpowiedzi</section>' }) }] });
-  assert.equal(x.body.source.excerpt, 'Główny wpis'); assert.match(x.body.visited[0].target, /^https:\/\/publish\.x\.com\/oembed\?/);
-  const current = { body: 'Moja relacja', source: { description: 'stare' } };
-  assert.equal(insertSource(current, x.body.source).body, current.body);
-  assert.equal(insertSource(current, x.body.source).source.excerpt, 'Główny wpis');
   assert.equal((await request('/test/extract', { url: 'https://www.medonet.pl/story', responses: [{ body: '<article>Nieoznaczona treść</article>' }] })).body.error, 'main-content-not-found');
+});
+
+test('X: główny wpis bez komentarzy, stopki autora i daty; rozmowa i skrypty wyłączone', async () => {
+  const fixture = xFixtures.single;
+  const extracted = await request('/test/extract', { url: fixture.url, responses: [{
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html: fixture.html }),
+  }] });
+  assert.equal(extracted.status, 200);
+  assert.equal(extracted.body.source.extractor, 'x-oembed');
+  assert.equal(extracted.body.source.excerpt, fixture.excerpt);
+  assert.equal(extracted.body.source.url, fixture.url);
+  const endpoint = new URL(extracted.body.visited[0].target);
+  assert.equal(endpoint.origin, 'https://publish.x.com');
+  assert.equal(endpoint.pathname, '/oembed');
+  assert.equal(endpoint.searchParams.get('url'), fixture.url);
+  assert.equal(endpoint.searchParams.get('hide_thread'), 'true');
+  assert.equal(endpoint.searchParams.get('omit_script'), '1');
+  assert.equal(extracted.body.visited[0].redirect, 'manual');
+});
+
+test('X: API odrzuca kilka wpisów zamiast mieszać cudzą treść', async (t) => {
+  for (const [name, fixture] of [['dwa osobne wpisy', xFixtures.multiple], ['zagnieżdżony cytowany wpis', xFixtures.quoted]]) {
+    await t.test(name, async () => {
+      const result = await request('/api/historie/import', { url: fixture.url, turnstileToken: 'good' });
+      assert.equal(result.status, 400);
+      assert.deepEqual(result.body, { error: 'post-content-not-found', field: 'url', retryable: false });
+      assert.equal(Object.hasOwn(result.body, 'source'), false);
+    });
+  }
+});
+
+test('X: wstawienie i zapis zachowują własną treść oraz pozostałe dane formularza', async () => {
+  const imported = await request('/api/historie/import', { url: xFixtures.single.url, turnstileToken: 'good' });
+  assert.equal(imported.status, 200);
+  const current = input({ body: 'Moja własna relacja.\nDrugi akapit pozostaje mój.', publicationRequested: false,
+    city: 'Miejscowość testowa', facility: 'Placówka testowa', contactEmail: 'x-regresja@example.test',
+    doctors: [{ name: 'Lekarz Syntetyczny' }], source: { description: 'Poprzednie źródło', excerpt: 'Poprzedni materiał' } });
+  const original = structuredClone(current);
+  const inserted = insertSource(current, imported.body.source);
+  const { source: beforeSource, ...beforeFields } = original;
+  const { source: afterSource, ...afterFields } = inserted;
+  assert.deepEqual(afterFields, beforeFields);
+  assert.deepEqual(current, original);
+  assert.equal(afterSource.excerpt, xFixtures.single.excerpt);
+  assert.equal(afterSource.url, xFixtures.single.url);
+  assert.equal(afterSource.extractor, 'x-oembed');
+  assert.equal(beforeSource.excerpt, 'Poprzedni materiał');
+  const result = await request('/api/historie', inserted);
+  assert.equal(result.status, 201);
+  const saved = await record(privateDb, result.body.id, true);
+  assert.equal(saved.payload.body, original.body);
+  assert.equal(saved.payload.source.excerpt, xFixtures.single.excerpt);
+  assert.equal(saved.payload.source.url, xFixtures.single.url);
+  assert.equal(saved.contact.email, original.contactEmail);
 });
 
 test('build bez sekretów: głośna porażka, brak fikstur produkcyjnych, ścisła projekcja', async () => {

@@ -2,12 +2,16 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { Miniflare } from 'miniflare';
-import { submission, publication, validPwz, HistoryError, LIMITS, CONSENT_VERSION } from '../lib/historie/contract.mjs';
+import { submission, publication, validPwz, httpsUrl, HistoryError, LIMITS, PUBLIC_FEED, CONSENT_VERSION } from '../lib/historie/contract.mjs';
 import { receive, record, eventBatch, expiry } from '../lib/historie/store.mjs';
 import { draft, verifyPwz, approve, reject, classify } from '../lib/historie/moderation.mjs';
 import { release, publicPage, withdraw } from '../lib/historie/publication.mjs';
 import { purge, remove, analysisPreview, approveAnalysis } from '../lib/historie/retention.mjs';
-import { migrate, remoteDatabase } from '../tools/historie/database.mjs';
+import { migrate, privateD1Directory, remoteDatabase } from '../tools/historie/database.mjs';
+import { turnstile } from '../lib/historie/http.mjs';
+import { mkdtemp, mkdir, chmod, lstat, rm, symlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { loadPublications } from '../lib/historie/build.mjs';
 import { insertSource } from '../lib/historie/client.mjs';
 import { importUrl } from '../lib/historie/import.mjs';
@@ -312,7 +316,7 @@ test('paginacja publiczna jest spójna i loader odrzuca zmianę wydania między 
     .bind(row.slug, row.title, row.body, '[]', row.date, edition)));
   await mod.prepare('UPDATE publikacje SET release_id=?').bind(edition).run();
   const first = await publicPage(mod);
-  assert.equal(first.items.length, 25); assert.ok(first.nextCursor);
+  assert.equal(first.items.length, PUBLIC_FEED.pageSize); assert.ok(first.nextCursor);
   const env = { HISTORIE_AKTYWNE: 'true', HISTORIE_PUBLIKACJE_URL: 'https://zarobkilekarzy.pl/api/historie/publikacje' };
   const loaded = await loadPublications({ env, fetcher: async (url) => {
     const parsed = new URL(url);
@@ -321,4 +325,139 @@ test('paginacja publiczna jest spójna i loader odrzuca zmianę wydania między 
   assert.equal(loaded.length, (await mod.prepare('SELECT COUNT(*) AS count FROM publikacje').first()).count);
   let call = 0;
   await assert.rejects(loadPublications({ env, fetcher: async () => Response.json(call++ ? { ...first, releaseId: crypto.randomUUID() } : first) }));
+});
+
+test('przegląd: dane prywatne nie przechodzą do szkicu przez zakodowany URL', async (t) => {
+  const { id } = await receive(mod, submission(input({ contactEmail: 'pacjent@example.test',
+    doctors: [{ name: 'Lekarz Testowy', pwz: PWZ }], city: 'Miasto Testowe', facility: 'Placówka Testowa' })).data);
+  for (const value of ['pacjent%40example.test', 'pacjent%2540example.test', 'Lekarz%20Testowy',
+    '%33%31%32%33%34%35%36', 'Miasto+Testowe', 'Plac%C3%B3wka%20Testowa']) {
+    await t.test(value, async () => {
+      await assert.rejects(draft(mod, id, 'review', { ...cleanDraft,
+        source: { url: 'https://www.medonet.pl/story?value=' + value } }), code('private-data-in-draft'));
+    });
+  }
+});
+
+test('przegląd: wycofanie i usunięcie czyszczą dowody PWZ, a retencja usuwa niewydany szkic', async (t) => {
+  const approved = async () => {
+    const { id } = await receive(mod, submission(input({ doctors: [{ name: 'Lekarz Testowy', pwz: PWZ }] })).data);
+    await draft(mod, id, 'review', cleanDraft); await verifyPwz(mod, id, 'review', PWZ, true);
+    await approve(mod, id, 'review', [PWZ]);
+    return { id, slug: (await record(mod, id)).events.find((event) => event.kind === 'draft').data.slug };
+  };
+  await t.test('wycofanie po publikacji', async () => {
+    const { id, slug } = await approved(); await release(mod, crypto.randomUUID());
+    await withdraw(mod, slug, 'review');
+    const events = (await mod.prepare('SELECT kind,data FROM zdarzenia_publikacji WHERE slug=?').bind(slug).all()).results;
+    assert.deepEqual(events, [{ kind: 'withdrawn', data: '{}' }]);
+    assert.equal(await mod.prepare('SELECT slug FROM zgody_publikacji WHERE slug=?').bind(slug).first(), null);
+    await assert.rejects(approve(mod, id, 'review', [PWZ]), code('submission-withdrawn'));
+  });
+  await t.test('usunięcie surowego zgłoszenia', async () => {
+    const { id, slug } = await approved(); await remove(mod, id, { moderation: true });
+    const events = (await mod.prepare('SELECT kind,data FROM zdarzenia_publikacji WHERE slug=?').bind(slug).all()).results;
+    assert.deepEqual(events, [{ kind: 'removed', data: '{}' }]);
+  });
+  await t.test('retencja kandydata, który nie był publikowany', async () => {
+    const { id, slug } = await approved();
+    await mod.prepare('UPDATE zgloszenia SET expires_at=? WHERE id=?').bind('2000-01-01T00:00:00.000Z', id).run();
+    await purge(mod, { moderation: true });
+    assert.equal((await mod.prepare('SELECT COUNT(*) AS count FROM zdarzenia_publikacji WHERE slug=?').bind(slug).first()).count, 0);
+  });
+});
+
+test('przegląd: JSON-LD w komentarzach nie może podszyć się pod główny artykuł', async () => {
+  const url = 'https://www.medonet.pl/story';
+  const metadata = (body) => `<script type="application/ld+json">${JSON.stringify({ '@type': 'NewsArticle', url, articleBody: body })}</script>`;
+  const comments = `<section id="comments">${metadata('CUDZY_KOMENTARZ')}</section>`;
+  const onlyComments = await request('/test/extract', { url, responses: [{ body: comments }] });
+  assert.equal(onlyComments.status, 400); assert.equal(onlyComments.body.error, 'main-content-not-found');
+  const genuine = await request('/test/extract', { url, responses: [{ body: comments + metadata('GŁÓWNY_ARTYKUŁ') }] });
+  assert.equal(genuine.status, 200); assert.equal(genuine.body.source.excerpt, 'GŁÓWNY_ARTYKUŁ');
+});
+
+test('przegląd: limit URL obowiązuje także po serializacji, a poprawny URL jest stabilny', () => {
+  const short = httpsUrl('https://www.medonet.pl/' + 'ą'.repeat(100));
+  assert.equal(httpsUrl(short), short);
+  assert.throws(() => httpsUrl('https://www.medonet.pl/' + 'ą'.repeat(2000)), code('field-too-long'));
+});
+
+test('przegląd: feed poprawnych długich relacji mieści się w limicie loadera', async () => {
+  const edition = crypto.randomUUID();
+  const items = Array.from({ length: PUBLIC_FEED.pageSize + 2 }, (_,i) => publication({ ...cleanDraft,
+    body: '\u0000'.repeat(LIMITS.body), slug: 'h-' + i.toString(16).padStart(32, '0'),
+    verifiedPwz: [], date: new Date().toISOString() }));
+  await mod.batch(items.map((row) => mod.prepare('INSERT INTO publikacje(slug,title,body,verified_pwz,date,release_id) VALUES (?,?,?,?,?,?)')
+    .bind(row.slug, row.title, row.body, '[]', row.date, edition)));
+  await mod.prepare('UPDATE publikacje SET release_id=?').bind(edition).run();
+  const loaded = await loadPublications({ env: { HISTORIE_AKTYWNE: 'true', HISTORIE_PUBLIKACJE_URL: 'https://zarobkilekarzy.pl/api/historie/publikacje' },
+    fetcher: async (url) => {
+      const parsed = new URL(url);
+      return Response.json(await publicPage(mod, { cursor: parsed.searchParams.get('cursor') ?? '', releaseId: parsed.searchParams.get('wydanie') ?? undefined }));
+    } });
+  for (const item of items) assert.deepEqual(loaded.find((entry) => entry.slug === item.slug), item);
+  const first = await publicPage(mod);
+  assert.equal(first.items.length, PUBLIC_FEED.pageSize);
+  assert.ok(Buffer.byteLength(JSON.stringify(first)) <= PUBLIC_FEED.pageBytes);
+});
+
+test('przegląd: minimalne ślady wycofania znikają po 31 dniach', async () => {
+  const old = 'h-' + 'a'.repeat(32); const fresh = 'h-' + 'b'.repeat(32);
+  await mod.batch([
+    mod.prepare("INSERT INTO zdarzenia_publikacji(slug,kind,actor,at,data) VALUES (?,'withdrawn','review',?,'{}')").bind(old, '2000-01-01T00:00:00.000Z'),
+    mod.prepare("INSERT INTO zdarzenia_publikacji(slug,kind,actor,at,data) VALUES (?,'removed','review',?,'{}')").bind(fresh, new Date().toISOString()),
+  ]);
+  await purge(mod, { moderation: true });
+  assert.equal(await mod.prepare('SELECT slug FROM zdarzenia_publikacji WHERE slug=?').bind(old).first(), null);
+  assert.ok(await mod.prepare('SELECT slug FROM zdarzenia_publikacji WHERE slug=?').bind(fresh).first());
+});
+
+test('przegląd: lokalny D1 ma prywatny katalog i odrzuca dowiązanie', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'historie-permissions-'));
+  try {
+    const path = join(root, 'state/v3/d1');
+    await mkdir(path, { recursive: true }); await chmod(path, 0o755);
+    await privateD1Directory(join(root, 'state'));
+    assert.equal((await lstat(path)).mode & 0o777, 0o700);
+    await mkdir(join(root, 'alias/v3'), { recursive: true });
+    await symlink(path, join(root, 'alias/v3/d1'));
+    await assert.rejects(privateD1Directory(join(root, 'alias')), code('unsafe-local-storage'));
+    await mkdir(join(root, 'shared')); await chmod(join(root, 'shared'), 0o777);
+    await assert.rejects(privateD1Directory(join(root, 'shared')), code('unsafe-local-storage'));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('przegląd: zatwierdzenie ponownie sprawdza prywatne dane w starszym szkicu', async () => {
+  const { id } = await receive(mod, submission(input({ contactEmail: 'legacy@example.test' })).data);
+  const current = await record(mod, id);
+  const value = publication({ ...cleanDraft, slug: 'h-' + crypto.randomUUID().replaceAll('-', ''),
+    verifiedPwz: [], date: new Date().toISOString(), source: { url: 'https://www.medonet.pl/story?email=legacy%40example.test' } });
+  // Symuluje zdarzenie szkicu zapisane przez wersję sprzed poprawki, bez ręcznej edycji SQL.
+  await eventBatch(mod, current, 'draft', 'review', { slug: value.slug, value });
+  await assert.rejects(approve(mod, id, 'review'), code('private-data-in-draft'));
+  assert.equal(await mod.prepare('SELECT slug FROM kandydaci_publikacji WHERE slug=?').bind(value.slug).first(), null);
+});
+
+test('przegląd: weryfikacja Turnstile nie przekazuje sekretu przez redirect', async () => {
+  await assert.rejects(turnstile('good', { TURNSTILE_HISTORIE_SITE_KEY: 'test', TURNSTILE_HISTORIE_SECRET_KEY: 'test-secret' },
+    async (_url, options) => {
+      assert.equal(options.redirect, 'error');
+      assert.equal(Object.hasOwn(JSON.parse(options.body), 'remoteip'), false);
+      return new Response('', { status: 302, headers: { Location: 'https://evil.example/collect' } });
+    }), code('challenge-unavailable'));
+});
+
+test('przegląd: wewnętrzny listener podglądu nie omija kontroli pochodzenia', async () => {
+  const bundle = await build({ entryPoints: ['tools/historie/preview-worker.mjs'], bundle: true, format: 'esm', platform: 'browser', write: false });
+  const preview = new Miniflare({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-07-30',
+    bindings: { HISTORIE_PREVIEW_ORIGINS: 'http://127.0.0.1:8791,http://localhost:8791' } });
+  try {
+    const path = '/api/historie/konfiguracja';
+    assert.equal((await preview.dispatchFetch('http://127.0.0.1:8791' + path)).status, 200);
+    assert.equal((await preview.dispatchFetch('http://evil.example:8791' + path)).status, 403);
+    assert.equal((await preview.dispatchFetch('http://127.0.0.1:8791' + path, { headers: { Origin: 'https://evil.example' } })).status, 403);
+    // Bezpośrednie wejście na dodatkowy port workerd również podlega tej samej regule.
+    assert.equal((await fetch(new URL(path, await preview.ready))).status, 403);
+  } finally { await preview.dispose(); }
 });

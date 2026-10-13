@@ -94,6 +94,9 @@ Ręczna allowlista w `import-profiles.mjs` zawiera początkowo siedem dokładnyc
 JSON-LD musi wskazywać bieżący artykuł; nie przeszukujemy pól komentarzy. Fallback
 HTMLRewriter wymaga jednego oznaczonego `articleBody`, usuwa nawigację, komentarze,
 reklamy i kod oraz dekoduje encje przez `entities`. Brak jednoznacznej treści jest błędem.
+JSON-LD osadzone w sekcjach komentarzy lub nawigacji jest ignorowane, nawet jeśli
+podszywa się pod artykuł z tym samym URL. Limit URL obowiązuje również po jego
+serializacji; kodowanie znaków nie może zwiększyć adresu ponad 2048 znaków.
 X używa publicznego oEmbed, wyłącznie głównego paragrafu wpisu; długi wpis może być
 skrócony przez dostawcę. Nie logujemy się i nie obchodzimy ograniczeń dostępu.
 
@@ -125,6 +128,11 @@ Adres: `http://127.0.0.1:8791/dzialaj/opowiedz/` (port można zmienić przez
 Każda kolejka otrzymuje jedno syntetyczne zgłoszenie. Zapisy użytkownika pozostają
 w `.wrangler/historie-preview/v3/d1`; CLI odczytuje je przez
 `--persist .wrangler/historie-preview`. Serwer słucha tylko na interfejsie loopback.
+Sprawdza także Host i Origin, aby strona z innej domeny nie użyła podglądu przez
+DNS rebinding. CLI i podgląd wymagają prywatnego katalogu `v3/d1` (uprawnienia 0700);
+odrzucają dowiązanie, katalog należący do innego użytkownika oraz rodzica zapisywalnego
+dla grupy lub innych użytkowników. Jeżeli system nie
+potrafi zapewnić tych uprawnień, lokalny zapis jest blokowany.
 Osobny katalog builda chroni podgląd przed nadpisaniem przez zwykły build.
 
 Publiczny widget Turnstile działa z kluczem testowym. Lokalny `preview-worker.mjs`
@@ -164,7 +172,9 @@ npm run historie -- preview-public
 
 Plik szkicu zawiera wyłącznie `title`, `body`, opcjonalne `cytat` i `source: {description?,url?}`.
 Nie kopiuje automatycznie surowego tekstu ani excerpt. Znane nazwiska, e-mail i numery
-PWZ z pól prywatnych są blokowane w tekście szkicu; nadal potrzebna jest ręczna ocena
+PWZ, miejscowość i placówka z pól prywatnych są blokowane w tekście szkicu i przy
+zatwierdzaniu; sprawdzamy też parametry query i URL po maksymalnie czterech rundach
+dekodowania procentowego. Nadal potrzebna jest ręczna ocena
 wszystkich identyfikatorów, danych zdrowotnych, zarzutów, praw cytatu i źródeł.
 
 `verify-pwz` to ręczne sprawdzenie nazwy w CRL i jawne `--match`, z datą i moderatorem.
@@ -190,8 +200,10 @@ Job wydania otrzymuje tylko `HISTORIE_RELEASE_KEY`. Build otrzymuje zero sekret�
 Cloudflare i zwykłym HTTP pobiera `GET /api/historie/publikacje`; oczekuje wydania
 potwierdzonego przez workflow. Asynchroniczny loader Content Layer tworzy kolekcję
 bez plików historii. Paginacja sprawdza spójność wydania; błąd, niepoprawne pole,
-zmiana wydania lub brak źródła przerywają build. Job deployu dostaje token Pages
-bez D1:Edit. Istniejące provisioning D1/KV usunięto z workflow; zasoby już zadeklarowane
+zmiana wydania lub brak źródła przerywają build. Jedna strona feedu ma do pięciu relacji,
+aby także maksymalne treści Unicode i znaki wymagające escape'ów JSON mieściły się
+w limicie loadera 2 MiB. Job deployu dostaje token Pages bez D1:Edit.
+Istniejące provisioning D1/KV usunięto z workflow; zasoby już zadeklarowane
 pozostają w `wrangler.toml`.
 
 Odrębny token moderatora `HISTORIE_D1_TOKEN` służy tylko jawnej opcji `--remote`.
@@ -227,11 +239,15 @@ Nie budujemy statystyk konkretnych lekarzy.
 12 miesiącach kalendarzowych UTC, kontakt, excerpt, robocze cechy i zdarzenia.
 Cron wykonuje porcję dla obu baz, raportuje tylko liczby; kolejne uruchomienia
 kontynuują zaległości. Przy zaległościach powtarzamy CLI ręcznie. Niepublikowane
-kandydaty z wygasłych zgłoszeń nie trafiają do wydania. Publikacje i minimalny dowód
+kandydaty z wygasłych zgłoszeń nie trafiają do wydania. Usuwane są również dowody PWZ
+kandydatów, które nigdy nie były publikowane. Publikacje i minimalny dowód
 zgody / publicznych decyzji zostają do wycofania, agregaty poza retencją surowych danych.
 
 Obie bazy mają minimalny dziennik usunięć: id, data i przyczyna, bez treści i kontaktu.
 `purge` czyści wpisy starsze niż 31 dni (maksymalne Time Travel + jedna doba).
+Wycofanie i usunięcie publikacji kasują jej dowody PWZ oraz dowód zgody. Zostaje tylko
+zdarzenie `withdrawn` lub `removed`: slug, oznaczenie aktora i czas, bez PWZ i treści;
+ten ślad również podlega retencji 31 dni. Uwzględniamy slugi przy odtwarzaniu publikacji.
 Jedna porcja używa stałej liczby zapytań, także przy 20 zgłoszeniach.
 
 Wycofanie wymaga więcej niż usunięcia wiersza:
@@ -340,3 +356,10 @@ whitelistę, retencję, wycofanie po retencji, analizę oraz natywny importer i 
 Loader sprawdza awarię źródła i zakaz fikstur w produkcji. Buildy sprawdzamy osobno
 z flagą wyłączoną i na syntetycznej kolekcji w trybie testowym. To dowód lokalnego
 zachowania, bez kwalifikacji planu Cloudflare i bez publikacji.
+
+Przegląd trzech commitów z 2026-10-13 rozszerzył regresje o zakodowane identyfikatory
+w źródłowym URL (również w starszym szkicu), usunięcie dowodów PWZ po wycofaniu,
+usunięciu i retencji niewydanych kandydatów, ignorowanie JSON-LD w komentarzach oraz
+budżet feedu przy maksymalnych treściach. Kontrola pochodzenia obejmuje oba listenery
+lokalnego podglądu. Nieudany import unieważnia jego podgląd, zachowując już wpisaną
+relację i materiał. Bramki prawne, redakcyjne i pomiar CPU pozostają otwarte.

@@ -95,6 +95,7 @@ try {
   assert.equal(rejectedResponse.status(), 400);
   assert.equal((await rejectedResponse.json()).error, 'post-content-not-found');
   await page.waitForFunction(() => !document.querySelector('#history-fields').disabled);
+  assert.equal(await page.locator('#history-import-preview').isVisible(), false);
   assert.deepEqual(await formValues(), beforeX);
   assert.equal(await page.locator('#history-excerpt').inputValue(), xFixtures.single.excerpt);
   assert.equal(await page.locator('#history-source-url').inputValue(), xFixtures.single.url);

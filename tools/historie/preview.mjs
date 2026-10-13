@@ -4,13 +4,14 @@ import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 import { build } from 'esbuild';
 import { Miniflare } from 'miniflare';
-import { migrate } from './database.mjs';
+import { migrate, privateD1Directory } from './database.mjs';
 import { receive, QUEUES } from '../../lib/historie/store.mjs';
 import { submission, CONSENT_VERSION, LIMITS } from '../../lib/historie/contract.mjs';
 
 const persistence = resolve('.wrangler/historie-preview');
 const root = resolve(persistence, 'dist');
 const port = Number(process.env.HISTORIE_PREVIEW_PORT ?? 8791);
+const hosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Nieprawidłowy port podglądu.');
 // Podgląd wymaga jawnego builda z fiksturami. Nie uruchamia builda ani deployu.
 await stat(resolve(root, 'historie/h-00000000000000000000000000000001/index.html')).catch(() => {
@@ -19,9 +20,10 @@ await stat(resolve(root, 'historie/h-00000000000000000000000000000001/index.html
 const bundle = await build({ entryPoints: ['tools/historie/preview-worker.mjs'], bundle: true,
   format: 'esm', platform: 'browser', write: false });
 const mf = new Miniflare({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-07-30',
-  d1Persist: resolve(persistence, 'v3/d1'),
+  d1Persist: await privateD1Directory(persistence),
   d1Databases: Object.fromEntries(Object.values(QUEUES).map((name) => [name, name])),
   bindings: { HISTORIE_API_AKTYWNE: 'true', HISTORIE_IMPORT_AKTYWNY: 'true',
+    HISTORIE_PREVIEW_ORIGINS: [...hosts].map((host) => `http://${host}`).join(','),
     TURNSTILE_HISTORIE_SITE_KEY: '1x00000000000000000000AA',
     TURNSTILE_HISTORIE_SECRET_KEY: '1x0000000000000000000000000000000AA',
     TURNSTILE_HISTORIE_HOSTNAMES: 'localhost' } });
@@ -60,8 +62,13 @@ try {
     '.avif': 'image/avif', '.png': 'image/png', '.jpg': 'image/jpeg', '.xml': 'application/xml', '.wasm': 'application/wasm' };
   server = createServer(async (req, res) => {
     try {
-      const origin = `http://127.0.0.1:${port}`;
+      const host = String(req.headers.host ?? '').toLowerCase();
+      if (!hosts.has(host)) { res.writeHead(403); res.end('Forbidden'); return; }
+      const origin = `http://${host}`;
       const url = new URL(req.url, origin);
+      if (url.origin !== origin || (req.headers.origin && req.headers.origin !== origin)) {
+        res.writeHead(403); res.end('Forbidden'); return;
+      }
       if (url.pathname.startsWith('/api/')) {
         const chunks = []; let size = 0;
         for await (const chunk of req) {

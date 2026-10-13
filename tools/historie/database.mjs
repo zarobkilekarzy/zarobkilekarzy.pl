@@ -1,16 +1,35 @@
 import { Miniflare } from 'miniflare';
-import { readFile } from 'node:fs/promises';
+import { chmod, lstat, mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { HistoryError, UUID } from '../../lib/historie/contract.mjs';
 import { QUEUES } from '../../lib/historie/store.mjs';
 
+/** Prywatny katalog D1; nie zmieniamy uprawnień katalogu podanego przez użytkownika ani builda. */
+export async function privateD1Directory(persistence) {
+  const root = resolve(persistence);
+  const path = resolve(root, 'v3/d1');
+  // Rodzic zapisywalny dla innych pozwoliłby podmienić prywatny katalog po sprawdzeniu.
+  for (const directory of [root, resolve(root, 'v3'), path]) {
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    const info = await lstat(directory);
+    if (!info.isDirectory() || info.isSymbolicLink() || (info.mode & 0o022) ||
+        (process.getuid && info.uid !== process.getuid())) throw new HistoryError(403, 'unsafe-local-storage');
+  }
+  await chmod(path, 0o700);
+  if ((await lstat(path)).mode & 0o077) throw new HistoryError(403, 'local-storage-permissions-required');
+  return path;
+}
+
 /** Lokalny D1, zgodny z nazwami bindingów przekazanych do `wrangler pages dev --d1`. */
 export async function localDatabases(persistence = '.wrangler/state') {
+  const d1Persist = await privateD1Directory(persistence);
   const mf = new Miniflare({ modules: true, script: 'export default {}',
-    compatibilityDate: '2026-07-30', d1Persist: resolve(persistence, 'v3/d1'),
+    compatibilityDate: '2026-07-30', d1Persist,
     d1Databases: Object.fromEntries(Object.values(QUEUES).map((name) => [name, name])) });
-  const entries = await Promise.all(Object.entries(QUEUES).map(async ([queue, name]) => [queue, await mf.getD1Database(name)]));
-  return { databases: Object.fromEntries(entries), dispose: () => mf.dispose() };
+  try {
+    const entries = await Promise.all(Object.entries(QUEUES).map(async ([queue, name]) => [queue, await mf.getD1Database(name)]));
+    return { databases: Object.fromEntries(entries), dispose: () => mf.dispose() };
+  } catch (error) { await mf.dispose(); throw error; }
 }
 
 /** Wąski adapter D1 HTTP API; SQL jest stały, wartości trafiają tylko do `params`. */

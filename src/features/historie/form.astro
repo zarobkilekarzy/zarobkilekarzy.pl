@@ -101,6 +101,7 @@ import { CONSENT_VERSION, LIMITS } from '../../../lib/historie/contract.mjs';
   const errors: Record<string, string> = {
     'host-not-allowed': 'Ten serwis nie jest obecnie obsługiwany przez importer.',
     'main-content-not-found': 'Nie udało się jednoznacznie znaleźć głównej treści. Możesz wkleić materiał samodzielnie.',
+    'post-content-not-found': 'Nie udało się jednoznacznie znaleźć głównego wpisu z X. Możesz wkleić materiał samodzielnie.',
     'challenge-rejected': 'Zabezpieczenie antyspamowe wygasło lub odrzuciło próbę. Spróbuj ponownie.',
     'challenge-unavailable': 'Zabezpieczenie antyspamowe jest chwilowo niedostępne. Treść pozostaje w formularzu.',
     'field-too-long': 'Jedno z pól przekracza dopuszczalną liczbę znaków.',
@@ -189,6 +190,10 @@ import { CONSENT_VERSION, LIMITS } from '../../../lib/historie/contract.mjs';
     if (busy || complete) return;
     if (!token) { output.textContent = 'Poczekaj na sprawdzenie zabezpieczenia antyspamowego.'; return; }
     busy = true; fields.disabled = true; output.textContent = 'Pobieramy materiał źródłowy…';
+    // Nowy URL unieważnia podgląd; błąd nie może umożliwić wstawienia materiału z innego linku.
+    imported = null;
+    input('preview-text').value = '';
+    document.querySelector<HTMLElement>('#history-import-preview')!.hidden = true;
     try {
       const result = await request('/api/historie/import', { url: input('import-url').value, turnstileToken: token });
       imported = result.source;

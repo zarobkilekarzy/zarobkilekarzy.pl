@@ -15,8 +15,7 @@ globalThis.fetch = async (url, options) => {
       action: 'historie', hostname: 'localhost',
     });
   }
-  try { return await networkFetch(url, options); }
-  catch (error) { console.error('Local preview fetch:', error.name, error.message); throw error; }
+  return networkFetch(url, options);
 };
 
 const routes = {
@@ -26,6 +25,12 @@ const routes = {
   'GET /api/historie/konfiguracja': configuration,
 };
 export default { fetch(request, env) {
-  const handler = routes[`${request.method} ${new URL(request.url).pathname}`];
+  const url = new URL(request.url);
+  const allowed = String(env.HISTORIE_PREVIEW_ORIGINS ?? '').split(',');
+  // Chronimy także wewnętrzny listener emulatora, nie tylko serwer statycznych plików.
+  if (!allowed.includes(url.origin) || (request.headers.get('origin') && request.headers.get('origin') !== url.origin)) {
+    return new Response('Forbidden', { status: 403 });
+  }
+  const handler = routes[`${request.method} ${url.pathname}`];
   return handler ? handler({ request, env }) : new Response('Not found', { status: 404 });
 } };

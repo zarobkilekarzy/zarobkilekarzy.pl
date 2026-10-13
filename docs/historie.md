@@ -112,16 +112,34 @@ npm run historie -- init
 HISTORIE_AKTYWNE=true HISTORIE_FIKSTURY=true npm run dev
 ```
 
-Dev z fiksturami pokazuje strony, ale nie uruchamia Functions. Pełny podgląd API lokalnie:
+Dev z fiksturami pokazuje strony, ale nie uruchamia Functions. Podgląd formularza,
+importu URL i zapisu do dwóch lokalnych baz:
 
 ```bash
-HISTORIE_AKTYWNE=true HISTORIE_FIKSTURY=true npm run build -- --mode test
-npx wrangler pages dev dist --d1 HISTORIE_MODERACJA_DB --d1 HISTORIE_PRYWATNE_DB --persist-to .wrangler/state --binding BASIC_AUTH_ENABLED=false
+ASTRO_TELEMETRY_DISABLED=1 HISTORIE_AKTYWNE=true HISTORIE_FIKSTURY=true npm run build -- --mode test --outDir .wrangler/historie-preview/dist
+npm run historie:preview
 ```
 
-Konfiguracja `.dev.vars` jest ignorowana przez Git i zawiera lokalne flagi oraz osobne
-klucze Turnstile historii. Walidacja dostawcy pozostaje rzeczywista; odpowiedź musi
-zawierać zgodne action/hostname. Emulator nie pomija zabezpieczenia przy błędzie.
+Adres: `http://127.0.0.1:8791/dzialaj/opowiedz/` (port można zmienić przez
+`HISTORIE_PREVIEW_PORT`). Formularz ma fikcyjne dane; zgody pozostają niezaznaczone.
+Każda kolejka otrzymuje jedno syntetyczne zgłoszenie. Zapisy użytkownika pozostają
+w `.wrangler/historie-preview/v3/d1`; CLI odczytuje je przez
+`--persist .wrangler/historie-preview`. Serwer słucha tylko na interfejsie loopback.
+Osobny katalog builda chroni podgląd przed nadpisaniem przez zwykły build.
+
+Publiczny widget Turnstile działa z kluczem testowym. Lokalny `preview-worker.mjs`
+symuluje weryfikację wyłącznie jego stałego tokenu; odpowiedź testowa dostawcy nie
+zawiera wymaganych produkcyjnie pól action/hostname. Import korzysta z rzeczywistej
+sieci, tego samego API, allowlisty i HTMLRewriter. Symulacja nie jest dowodem
+weryfikacji antyspamowej produkcji, a pliki podglądu nie są entrypointami Functions.
+Nie są odczytywane tokeny Cloudflare ani zdalne bazy.
+
+Do sprawdzenia samego routera Pages można nadal używać `wrangler pages dev dist`
+z lokalnymi flagami `--d1 HISTORIE_MODERACJA_DB --d1 HISTORIE_PRYWATNE_DB`
+i `--persist-to .wrangler/state`, po migracji CLI oraz buildzie z aktywną funkcją.
+Konfiguracja `.dev.vars` jest ignorowana przez Git; walidacja dostawcy w tym trybie
+pozostaje rzeczywista i wymaga zgodnych action/hostname.
+
 Fikstury służą wyłącznie dev i testom; takiego artefaktu nie deployujemy.
 Zwykły produkcyjny build z `HISTORIE_FIKSTURY=true` kończy się błędem.
 Przed produkcyjnym buildem testowym usuwamy flagę fikstur. Produkcja nie ma fallbacku.

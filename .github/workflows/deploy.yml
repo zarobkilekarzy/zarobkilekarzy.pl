@@ -1,94 +1,111 @@
 name: Deploy to Cloudflare Pages
 
-# Deploy: automatycznie po pushu na `main` oraz ręcznie (Actions → Run workflow).
+# Po aktywacji historii push tylko waliduje. Publikacja i deploy wymagają ręcznego uruchomienia.
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      wydaj_historie:
+        description: 'Wydać kandydatów zatwierdzonych przez moderatorów?'
+        type: boolean
+        default: false
+      wydanie_id:
+        description: 'UUID wcześniejszego wydania (przy ręcznej powtórce); puste = nowe wydanie'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+concurrency:
+  group: pages-production
+  cancel-in-progress: false
+env:
+  ASTRO_TELEMETRY_DISABLED: '1'
 
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+
+  issue:
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && vars.HISTORIE_AKTYWNE == 'true' && inputs.wydaj_historie
+    runs-on: ubuntu-latest
+    environment: historie-wydanie
+    outputs:
+      release_id: ${{ steps.issue.outputs.release_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Ręczne wydanie projekcji (bez tokenu D1)
+        id: issue
+        env:
+          HISTORIE_RELEASE_KEY: ${{ secrets.HISTORIE_RELEASE_KEY }}
+          HISTORIE_RELEASE_ID: ${{ inputs.wydanie_id }}
+        run: node tools/historie/release-workflow.mjs
+
+  build:
+    needs: [validate, issue]
+    if: always() && needs.validate.result == 'success' && (needs.issue.result == 'success' || needs.issue.result == 'skipped')
+    runs-on: ubuntu-latest
+    # Żadnych sekretów ani uprawnień do D1 w tym jobie.
+    env:
+      HISTORIE_AKTYWNE: ${{ vars.HISTORIE_AKTYWNE }}
+      HISTORIE_PUBLIKACJE_URL: ${{ vars.HISTORIE_PUBLIKACJE_URL }}
+      HISTORIE_OCZEKIWANE_WYDANIE: ${{ needs.issue.outputs.release_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Potwierdź publiczne wydanie przed buildem
+        run: node tools/historie/check-feed.mjs capture
+      - run: npm run build
+      - run: node tools/historie/check-feed.mjs stamp
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: pages-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    needs: build
+    if: always() && needs.build.result == 'success' && github.ref == 'refs/heads/main' && (vars.HISTORIE_AKTYWNE != 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      HISTORIE_AKTYWNE: ${{ vars.HISTORIE_AKTYWNE }}
     permissions:
       contents: read
       deployments: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Typecheck
-        # `tsconfig.json` dziedziczy po `astro/tsconfigs/strict`, ale typecheck nigdy nie
-        # był uruchamiany — narosło 234 błędów. Wyzerowane 30.08.2026, więc trzymamy
-        # TWARDĄ bramkę: każdy nowy błąd typu wywraca deploy. Świadomie bez
-        # `continue-on-error` — krok, który zawsze jest zielony, nie jest zabezpieczeniem.
-        run: npm run check
-
-      - name: Build
-        run: npm run build
-
-      - name: Ensure Cloudflare Pages project exists
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          npx --yes wrangler@4 pages project list | grep -qw zarobkilekarzy \
-            || npx --yes wrangler@4 pages project create zarobkilekarzy --production-branch=main
-
-      - name: Ensure SONDA_KV (KV namespace + binding)
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set +e
-          WR="npx --yes wrangler@4"
-          LIST=$($WR kv namespace list 2>/dev/null)
-          ID=$(node -e "try{const a=JSON.parse(process.argv[1]||'[]');const m=a.find(n=>n.title&&n.title.includes('SONDA_KV'));process.stdout.write(m?m.id:'')}catch(e){}" "$LIST")
-          if [ -z "$ID" ]; then
-            echo "Namespace nie istnieje — tworzę SONDA_KV…"
-            OUT=$($WR kv namespace create SONDA_KV 2>&1); echo "$OUT"
-            ID=$(printf '%s' "$OUT" | grep -oiE '[0-9a-f]{32}' | head -1)
-          fi
-          if [ -z "$ID" ]; then
-            echo "::warning::Nie udało się utworzyć/znaleźć KV SONDA_KV — token API prawdopodobnie nie ma uprawnienia 'Workers KV Storage:Edit'. Deploy przejdzie; sonda działa bez wyników do czasu naprawy."
-            exit 0
-          fi
-          grep -q 'binding = "SONDA_KV"' wrangler.toml \
-            || printf '\n[[kv_namespaces]]\nbinding = "SONDA_KV"\nid = "%s"\n' "$ID" >> wrangler.toml
-          echo "SONDA_KV gotowe (id=$ID) — binding dopisany do wrangler.toml na czas deployu."
-
-      - name: Ensure CLICKS_DB (D1 database + binding)
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set +e
-          WR="npx --yes wrangler@4"
-          LIST=$($WR d1 list --json 2>/dev/null)
-          ID=$(node -e "try{const a=JSON.parse(process.argv[1]||'[]');const m=a.find(d=>d.name==='zarobki-clicks');process.stdout.write(m?(m.uuid||m.database_id||''):'')}catch(e){}" "$LIST")
-          if [ -z "$ID" ]; then
-            echo "D1 nie istnieje — tworzę zarobki-clicks…"
-            OUT=$($WR d1 create zarobki-clicks 2>&1); echo "$OUT"
-            ID=$(printf '%s' "$OUT" | grep -oiE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
-          fi
-          if [ -z "$ID" ]; then
-            echo "::warning::Nie udało się utworzyć/znaleźć D1 zarobki-clicks — token API zapewne bez uprawnienia 'D1:Edit'. Deploy przejdzie; liczniki nieaktywne do czasu naprawy."
-            exit 0
-          fi
-          grep -q 'binding = "CLICKS_DB"' wrangler.toml \
-            || printf '\n[[d1_databases]]\nbinding = "CLICKS_DB"\ndatabase_name = "zarobki-clicks"\ndatabase_id = "%s"\n' "$ID" >> wrangler.toml
-          echo "CLICKS_DB gotowe (id=$ID) — binding dopisany do wrangler.toml na czas deployu. Tabelę utworzy Function leniwie."
-
+      - run: npm ci
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: pages-dist
+          path: dist/
+      # Projekt, KV i D1 provisionujemy poza CI. Token deployu nie potrzebuje D1:Edit.
+      - name: Zatrzymaj deploy po zmianie lub wycofaniu historii
+        run: node tools/historie/check-feed.mjs check
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         with:

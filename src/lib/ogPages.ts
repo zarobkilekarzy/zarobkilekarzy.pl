@@ -4,6 +4,8 @@
 // Trasy spoza tej mapy dziedziczą OG najbliższego rodzica, a przy jego braku
 // kartę strony głównej /og/home.png (fallback w BaseLayout) — nigdy statycznego pliku.
 
+import { historiesEnabled } from '../../lib/historie/build.mjs';
+
 export interface OgPage {
   title: string;      // duży nagłówek (serif)
   subtitle: string;   // jednozdaniowy opis (sans)
@@ -19,6 +21,11 @@ export interface OgPage {
 }
 
 export const ogPages: Record<string, OgPage> = {
+  ...(historiesEnabled() ? { historie: {
+    tag: 'Doświadczenia pacjentów',
+    title: 'Historie kontaktu z ochroną zdrowia',
+    subtitle: 'Osobiste relacje pacjentów, publikowane po moderacji. Sprawdzenie tożsamości nie potwierdza faktów relacji.',
+  } } : {}),
   home: {
     tag: 'Inicjatywa obywatelska',
     title: 'Publiczne pieniądze, niejawne zarobki',

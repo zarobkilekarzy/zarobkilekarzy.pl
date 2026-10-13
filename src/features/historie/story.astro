@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+export async function getStaticPaths() {
+  return (await getCollection('historie')).map(({ data }) => ({ params: { slug: data.slug }, props: { story: data } }));
+}
+const { story } = Astro.props;
+const correction = `mailto:zglos@zarobkilekarzy.pl?subject=${encodeURIComponent(`Sprostowanie lub sprzeciw — historia ${story.slug}`)}`;
+---
+<BaseLayout title={`${story.title} — zarobkilekarzy.pl`} description="Osobista relacja pacjenta. Treść przeszła moderację redakcyjną; fakty relacji pozostają niezweryfikowane.">
+  <section class="section"><div class="container">
+    <p class="eyebrow"><a href="/historie/">Historie pacjentów</a></p>
+    <h1>{story.title}</h1>
+    <p class="notice"><strong>Relacja niezweryfikowana.</strong> To doświadczenie opisane przez zgłaszającego. Moderacja i sprawdzenie tożsamości lekarza nie potwierdzają prawdziwości opisanych zdarzeń.</p>
+    <time datetime={story.date}>Opublikowano: {new Date(story.date).toLocaleDateString('pl-PL', { timeZone: 'UTC' })}</time>
+    <div class="prose">{story.body.split(/\n\s*\n/).map((paragraph: string) => <p class="history-paragraph">{paragraph}</p>)}</div>
+    {story.cytat && <blockquote>{story.cytat}</blockquote>}
+    {story.source && <p>Źródło: {story.source.url
+      ? <a href={story.source.url} rel="noopener noreferrer" target="_blank">{story.source.description ?? story.source.url}</a>
+      : story.source.description}</p>}
+    {story.verifiedPwz.length > 0 && <div class="notice">
+      <p>PWZ, których zgodność z prywatnie podaną nazwą osoby sprawdziła redakcja: {story.verifiedPwz.join(', ')}.</p>
+      <p>Numer PWZ pozwala ustalić tożsamość lekarza. Ta weryfikacja dotyczy tożsamości, nie faktów relacji.</p>
+    </div>}
+    <p><a href={correction}>Zgłoś sprostowanie, sprzeciw lub wniosek o usunięcie</a>. Sprawę obsługujemy prywatnie. <a href="/prywatnosc/#historie">Zasady przetwarzania i prawa osób</a>.</p>
+  </div></section>
+</BaseLayout>
+<style>.notice{padding:1rem 1.2rem;border-left:3px solid var(--brand);background:var(--surface);margin:1.3rem 0}.history-paragraph{white-space:pre-line;overflow-wrap:anywhere}blockquote{white-space:pre-line;overflow-wrap:anywhere}</style>

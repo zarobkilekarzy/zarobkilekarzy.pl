@@ -25,7 +25,7 @@ npm run build    # produkcyjny build do ./dist
 npm run preview  # podgląd builda
 ```
 
-Wymaga Node 18+ (testowane na Node 22).
+Wersję Node określa `.nvmrc` (24). `npm test` uruchamia lokalne testy kontraktu, API i D1.
 
 ## Struktura
 
@@ -79,13 +79,14 @@ Statyczny output (`./dist`) działa na dowolnym hostingu statycznym. Zalecane:
 - build command: `npm run build`, katalog: `dist`
 
 Dołączony workflow `.github/workflows/deploy.yml` i `wrangler.toml` celują w
-konto Cloudflare maintainera (sekrety w GitHub Actions, deploy uruchamiany
-ręcznie). **Fork nie potrzebuje ich do niczego.** Sonda i basic-auth to funkcje
+konto Cloudflare maintainera. Przy wyłączonych historiach push na `main` uruchamia deploy;
+po aktywacji historii deploy wymaga ręcznego uruchomienia workflow.
+Zasoby Cloudflare utrzymujemy poza CI. **Fork nie potrzebuje ich do niczego.** Sonda i basic-auth to funkcje
 Cloudflare — lokalny `npm run dev` działa bez nich i bez żadnych sekretów.
 
 ### Zmienne środowiskowe (opcjonalne, Cloudflare Pages)
 
-Wszystkie są opcjonalne — bez nich strona i sonda działają (fail-open / fallback):
+Poniższe zmienne dotyczą istniejących modułów — bez nich strona i sonda działają (fail-open / fallback):
 
 | Zmienna | Rola |
 |---|---|
@@ -95,6 +96,20 @@ Wszystkie są opcjonalne — bez nich strona i sonda działają (fail-open / fal
 
 Ochrona sondy i licznika petycji włącza się tylko gdy ustawiono **oba** klucze
 Turnstile. Turnstile nie zapisuje adresów IP — spójnie z polityką prywatności.
+
+### Historie pacjentów — domyślnie wyłączone
+
+Formularz `/dzialaj/opowiedz/`, dwie osobne bazy D1, importer URL i moderacja przez
+`npm run historie -- --help` są zaimplementowane. Publikacja wymaga moderacji oraz
+ręcznego wydania w workflow. Nazwiska, kontakt i pobrany fragment pozostają prywatne.
+PWZ wymaga sprawdzenia w CRL i osobnej decyzji; agregaty nie zawierają PWZ.
+
+Bez `HISTORIE_AKTYWNE=true` build nie tworzy stron ani linków historii. API i importer
+mają osobne, domyślnie wyłączone flagi. Nie dodano produkcyjnych bindingów historii
+do `wrangler.toml`. Nowa funkcja stosuje **fail-closed**, w tym przy awarii Turnstile
+lub źródła publikacji; produkcja nie korzysta z fikstur.
+
+[Kontrakt, lokalny podgląd, moderacja, retencja i warunki aktywacji](docs/historie.md).
 
 ## Zasady redakcyjne (ważne)
 

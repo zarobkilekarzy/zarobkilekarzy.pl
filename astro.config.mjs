@@ -3,11 +3,13 @@ import sitemap from '@astrojs/sitemap';
 import { lastmodFor } from './src/lib/pageDates.mjs';
 import stripHtmlComments from './integrations/strip-html-comments.mjs';
 import pagefindSearch from './integrations/pagefind.mjs';
+import historie from './integrations/historie.mjs';
 
 // Adres produkcyjny — używany do generowania kanonicznych URL i mapy strony.
 export default defineConfig({
   site: 'https://zarobkilekarzy.pl',
   integrations: [
+    historie(),
     sitemap({
       // /admin/* to strony wewnętrzne (noindex) — poza mapą strony.
       // /druk/ to wyciągi do wydruku — powielają treść strony źródłowej, więc do
@@ -19,6 +21,7 @@ export default defineConfig({
         !page.includes('/admin/') &&
         !page.includes('/druk/') &&
         !page.includes('/dzialaj/napisz') &&
+        !page.includes('/dzialaj/opowiedz') &&
         !page.includes('/preview/'),
       // <lastmod> z centralnej mapy dat (te same daty co widoczna „Ostatnia
       // aktualizacja") — sygnał świeżości przyspieszający rekrawl po zmianie.

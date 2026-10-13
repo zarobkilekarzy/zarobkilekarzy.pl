@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+const stories = (await getCollection('historie')).sort((a, b) => b.data.date.localeCompare(a.data.date));
+---
+<BaseLayout title="Historie pacjentów — zarobkilekarzy.pl" description="Osobiste relacje kontaktu z ochroną zdrowia, publikowane po moderacji redakcyjnej.">
+  <section class="section"><div class="container">
+    <p class="eyebrow">Doświadczenia pacjentów</p>
+    <h1>Historie kontaktu z ochroną zdrowia</h1>
+    <p class="lead">Osobiste relacje pacjentów pomagają dostrzec problemy systemu. Moderacja redakcyjna nie oznacza potwierdzenia wszystkich opisanych faktów.</p>
+    <a class="btn btn-primary" href="/dzialaj/opowiedz/">Opowiedz swoją historię</a>
+    {stories.length === 0 && <p class="muted">Nie opublikowaliśmy jeszcze historii.</p>}
+    <ul class="history-list">{stories.map(({ data }) => <li>
+      <p class="eyebrow">Relacja niezweryfikowana</p>
+      <h2><a href={`/historie/${data.slug}/`}>{data.title}</a></h2>
+      <time datetime={data.date}>{new Date(data.date).toLocaleDateString('pl-PL', { timeZone: 'UTC' })}</time>
+    </li>)}</ul>
+  </div></section>
+</BaseLayout>
+<style>.history-list{list-style:none;padding:0;display:grid;gap:1.2rem;margin-top:2rem}.history-list li{border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem}.history-list h2{margin:.35rem 0}.history-list time{color:var(--ink-soft);font-size:.9rem}</style>

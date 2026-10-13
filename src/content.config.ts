@@ -1,5 +1,17 @@
 import { defineCollection, z } from 'astro:content';
 import { glob, file } from 'astro/loaders';
+import { loadPublications } from '../lib/historie/build.mjs';
+import { publication } from '../lib/historie/contract.mjs';
+
+const historie = defineCollection({
+  loader: async () => (await loadPublications({ development: import.meta.env.DEV || import.meta.env.MODE === 'test' }))
+    .reduce<Record<string, ReturnType<typeof publication>>>((entries, value) => {
+      entries[value.slug] = value; return entries;
+    }, {}),
+  schema: z.custom<ReturnType<typeof publication>>((value) => {
+    try { publication(value); return true; } catch { return false; }
+  }, 'Niepoprawna projekcja publiczna historii'),
+});
 
 // Baza artykułów = rdzeń serwisu. Każdy wpis to odnośnik do
 // OGÓLNODOSTĘPNEGO materiału źródłowego (prasa, raport, dane publiczne).
@@ -107,4 +119,4 @@ const specjalizacje = defineCollection({
   }),
 });
 
-export const collections = { articles, zarobki, specjalizacje };
+export const collections = { articles, zarobki, specjalizacje, historie };

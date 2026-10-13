@@ -9,6 +9,8 @@
 /** Cloudflare Turnstile — ładowany z https://challenges.cloudflare.com (patrz CSP w `public/_headers`). */
 interface TurnstileRenderOptions {
   sitekey: string;
+  action?: string;
+  theme?: 'auto' | 'light' | 'dark';
   /** `'execute'` = wyzwanie rozwiązywane na żądanie (przy kliknięciu), nie na starcie. */
   execution?: 'render' | 'execute';
   /** `'interaction-only'` = widżet niewidoczny, dopóki nie wymaga interakcji. */

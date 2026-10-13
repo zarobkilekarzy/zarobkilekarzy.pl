@@ -1,0 +1,249 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { CONSENT_VERSION, LIMITS } from '../../../lib/historie/contract.mjs';
+---
+<BaseLayout title="Opowiedz swoją historię — zarobkilekarzy.pl" description="Przekaż relację kontaktu z ochroną zdrowia do prywatnej analizy lub rozpatrzenia publikacji po moderacji." noindex>
+  <section class="section"><div class="container history-form-wrap">
+    <p class="eyebrow">Twoje doświadczenie</p>
+    <h1>Opowiedz swoją historię</h1>
+    <p class="lead">Pobyt w szpitalu, SOR, wizyta u lekarza czy kontakt z NFZ — opisz własnymi słowami, co się wydarzyło. Relacja pomoże nam analizować problemy ochrony zdrowia.</p>
+    <aside class="notice" aria-label="Pomoc w pilnej sytuacji">
+      <strong>To nie jest kanał alarmowy.</strong> W zagrożeniu życia lub zdrowia zadzwoń pod <a href="tel:112">112</a>.
+      W sprawach praw pacjenta: <a href="tel:800190590">800 190 590</a>, infolinia Rzecznika Praw Pacjenta.
+      <a href="/prawa-pacjenta/">Sprawdź dostępne drogi pomocy</a>.
+    </aside>
+    <p>Nie wpisuj PESEL, adresu ani danych medycznych innych osób. Nazwiska lekarzy i e-mail pozostaną prywatne.
+      Jeżeli poprosisz o publikację, redakcja przygotuje osobną wersję tekstu. PWZ może zostać opublikowany po sprawdzeniu tożsamości i osobnej decyzji redakcji; pozwala ustalić imię i nazwisko lekarza.</p>
+    <p id="history-availability" role="status">Sprawdzamy dostępność formularza…</p>
+    <noscript>Formularz wymaga JavaScript i zabezpieczenia antyspamowego. Możesz skontaktować się przez <a href="mailto:zglos@zarobkilekarzy.pl">zglos@zarobkilekarzy.pl</a>.</noscript>
+
+    <form id="history-form" data-consent-version={CONSENT_VERSION} autocomplete="off">
+      <fieldset id="history-fields" disabled>
+        <legend>Twoja relacja</legend>
+        <label for="history-title">Tytuł <span aria-hidden="true">*</span></label>
+        <input id="history-title" name="title" required data-limit={LIMITS.title} />
+        <div class="two-fields">
+          <div><label for="history-city">Miejscowość (opcjonalnie, prywatna)</label><input id="history-city" name="city" data-limit={LIMITS.city} /></div>
+          <div><label for="history-facility">Placówka (opcjonalnie, prywatna)</label><input id="history-facility" name="facility" data-limit={LIMITS.facility} /></div>
+        </div>
+        <fieldset class="doctors">
+          <legend>Lekarze (opcjonalnie, dane prywatne)</legend>
+          <p class="muted">Osobny wiersz dla każdej osoby. Nazwa i PWZ służą redakcji do sprawdzenia, czy numer wskazuje właściwego lekarza.</p>
+          <div id="history-doctors"></div>
+          <button id="history-add-doctor" type="button" class="btn">Dodaj lekarza</button>
+        </fieldset>
+        <label for="history-body">Twoja własna treść <span aria-hidden="true">*</span></label>
+        <textarea id="history-body" name="body" rows="14" required data-limit={LIMITS.body} aria-describedby="history-body-count"></textarea>
+        <p id="history-body-count" class="muted counter" aria-live="polite">0 / {LIMITS.body} znaków</p>
+
+        <fieldset id="history-import" hidden>
+          <legend>Materiał z linku (opcjonalnie)</legend>
+          <p class="muted">Pobrany fragment pozostanie prywatnym materiałem pomocniczym. Twoja własna treść pozostaje osobnym polem.</p>
+          <p class="muted">Serwis X może udostępnić tylko skrócony fragment długiego wpisu. Sprawdź podgląd przed wstawieniem.</p>
+          <label for="history-import-url">URL głównego artykułu lub wpisu</label>
+          <input id="history-import-url" type="url" inputmode="url" data-limit={LIMITS.url} />
+          <p id="history-import-hosts" class="muted"></p>
+          <button id="history-import-button" type="button" class="btn">Pobierz podgląd</button>
+          <div id="history-import-preview" hidden>
+            <label for="history-preview-text">Podgląd materiału</label>
+            <textarea id="history-preview-text" rows="7" readonly></textarea>
+            <p id="history-preview-notice" class="muted"></p>
+            <button id="history-insert-source" type="button" class="btn">Wstaw materiał źródłowy</button>
+          </div>
+        </fieldset>
+        <div class="two-fields">
+          <div><label for="history-source-description">Opis źródła (opcjonalnie)</label><input id="history-source-description" data-limit={LIMITS.description} /></div>
+          <div><label for="history-source-url">URL źródła (opcjonalnie)</label><input id="history-source-url" type="url" data-limit={LIMITS.url} /></div>
+        </div>
+        <label for="history-excerpt">Materiał źródłowy — prywatny (opcjonalnie)</label>
+        <textarea id="history-excerpt" rows="7" data-limit={LIMITS.excerpt} aria-describedby="history-excerpt-help"></textarea>
+        <p id="history-excerpt-help" class="muted">Do {LIMITS.excerpt} znaków. Ten fragment nie będzie publikowany. Ewentualny cytat wybiera redakcja i podaje jego źródło.</p>
+        <label for="history-email">E-mail kontaktowy (opcjonalnie, prywatny)</label>
+        <input id="history-email" type="email" inputmode="email" data-limit={LIMITS.email} />
+        <p class="muted">Tylko do komunikacji zwrotnej dotyczącej zgłoszenia. Nie publikujemy adresu i nie używamy go do marketingu.</p>
+        <label class="check"><input id="history-health-consent" type="checkbox" required /><span>Wyrażam wyraźną zgodę na przetwarzanie mojej relacji, w tym podanych przeze mnie danych o zdrowiu, w celu analizy problemów ochrony zdrowia i obsługi zgłoszenia zgodnie z <a href="/prywatnosc/#historie">zasadami prywatności</a>. Wiem, że mogę wycofać zgodę.</span></label>
+        <label class="check"><input id="history-publication-consent" type="checkbox" /><span>Opublikuj moją historię. Zgadzam się na rozpatrzenie publikacji zredagowanej relacji po moderacji. Wiem, że publiczne materiały mogą zostać skopiowane do archiwów i cache poza kontrolą projektu.</span></label>
+        <p class="muted">Bez zaznaczenia publikacji relacja trafia wyłącznie do osobnej, prywatnej kolejki analizy. Dane robocze przechowujemy przez 12 miesięcy. Kopie odzyskiwania dostawcy mogą istnieć dodatkowo przez 7 lub 30 dni.</p>
+        <div id="history-turnstile"></div>
+        <button id="history-submit" type="submit" class="btn btn-primary">Wyślij historię</button>
+      </fieldset>
+      <p id="history-result" role="status" aria-live="polite"></p>
+    </form>
+    <template id="history-doctor-template"><div class="doctor-row">
+      <div><label data-doctor-name-label>Nazwa osoby <input data-doctor-name data-limit={LIMITS.name} required /></label></div>
+      <div><label>PWZ (opcjonalnie) <input data-doctor-pwz inputmode="numeric" pattern="[0-9]{7}" /></label></div>
+      <button type="button" class="btn doctor-remove" aria-label="Usuń wiersz lekarza">Usuń</button>
+      <p class="doctor-warning" role="status"></p>
+    </div></template>
+  </div></section>
+</BaseLayout>
+
+<script>
+  import { CONSENT_VERSION, LIMITS, normalize, length, submission, validPwz, HistoryError } from '../../../lib/historie/contract.mjs';
+  import { insertSource } from '../../../lib/historie/client.mjs';
+  import type { Source } from '../../../lib/historie/contract.mjs';
+  const form = document.querySelector<HTMLFormElement>('#history-form')!;
+  const fields = document.querySelector<HTMLFieldSetElement>('#history-fields')!;
+  const output = document.querySelector<HTMLElement>('#history-result')!;
+  const availability = document.querySelector<HTMLElement>('#history-availability')!;
+  const input = (id: string) => document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`#history-${id}`)!;
+  const health = document.querySelector<HTMLInputElement>('#history-health-consent')!;
+  const publish = document.querySelector<HTMLInputElement>('#history-publication-consent')!;
+  let widgetId: string | undefined;
+  let token = '';
+  let busy = false;
+  let complete = false;
+  let idempotencyKey = crypto.randomUUID();
+  let pendingPayload: Record<string, unknown> | null = null;
+  let imported: Source | null = null;
+  let sourceMeta: Pick<Source, 'extractor' | 'truncated'> = {};
+
+  const errors: Record<string, string> = {
+    'host-not-allowed': 'Ten serwis nie jest obecnie obsługiwany przez importer.',
+    'main-content-not-found': 'Nie udało się jednoznacznie znaleźć głównej treści. Możesz wkleić materiał samodzielnie.',
+    'challenge-rejected': 'Zabezpieczenie antyspamowe wygasło lub odrzuciło próbę. Spróbuj ponownie.',
+    'challenge-unavailable': 'Zabezpieczenie antyspamowe jest chwilowo niedostępne. Treść pozostaje w formularzu.',
+    'field-too-long': 'Jedno z pól przekracza dopuszczalną liczbę znaków.',
+    'idempotency-conflict': 'Dla tej próby zapisano inną wersję zgłoszenia. Zachowaj treść i skontaktuj się z redakcją.',
+    'source-too-large': 'Materiał źródłowy jest zbyt duży do bezpiecznego importu.',
+    'consent-version-changed': 'Zasady zgody zmieniły się. Zachowaj treść formularza i odśwież stronę przed wysłaniem.',
+  };
+  function message(error: unknown) {
+    if (error instanceof HistoryError) {
+      const labels: Record<string, string> = { title: 'tytuł', body: 'własna treść', city: 'miejscowość',
+        facility: 'placówka', contactEmail: 'e-mail', 'source.url': 'URL źródła', 'source.excerpt': 'materiał źródłowy',
+        'source.description': 'opis źródła', healthDataConsent: 'zgoda dotycząca danych o zdrowiu' };
+      const doctor = /^doctors\.(\d+)\.(name|pwz)$/.exec(error.field);
+      const label = labels[error.field] ?? (doctor ? `lekarz ${Number(doctor[1]) + 1}: ${doctor[2] === 'name' ? 'nazwa' : 'PWZ'}` : '');
+      const fallback = error.status === 503 ? 'Usługa jest chwilowo niedostępna. Treść pozostaje w formularzu.' : 'Sprawdź wymagane pola i spróbuj ponownie.';
+      return `${errors[error.code] ?? fallback}${label ? ` Pole: ${label}.` : ''}`;
+    }
+    return error instanceof Error ? error.message : 'Operacja nie powiodła się. Treść pozostaje w formularzu.';
+  }
+  function resetChallenge() {
+    token = '';
+    if (widgetId != null && window.turnstile) window.turnstile.reset(widgetId);
+  }
+  async function request(path: string, value: unknown) {
+    const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(value), cache: 'no-store', signal: AbortSignal.timeout(15_000) });
+    const result = await response.json();
+    if (!response.ok) throw new HistoryError(response.status, result.error, result.field, result.retryable);
+    return result;
+  }
+  function getSource(): Source {
+    return { description: input('source-description').value, url: input('source-url').value,
+      excerpt: input('excerpt').value, ...sourceMeta };
+  }
+  function payload() {
+    return { version: 1, idempotencyKey, turnstileToken: token, title: input('title').value,
+      body: input('body').value, city: input('city').value, facility: input('facility').value,
+      doctors: [...document.querySelectorAll<HTMLElement>('.doctor-row')].map((row) => ({
+        name: row.querySelector<HTMLInputElement>('[data-doctor-name]')!.value,
+        pwz: row.querySelector<HTMLInputElement>('[data-doctor-pwz]')!.value,
+      })), source: getSource(), contactEmail: input('email').value,
+      consentVersion: CONSENT_VERSION, healthDataConsent: health.checked, publicationRequested: publish.checked };
+  }
+  form.addEventListener('input', (event) => {
+    // Powtórka zamrożonego żądania ma ten sam klucz. Zmiana formularza jest nową próbą.
+    if (!busy && pendingPayload) { pendingPayload = null; idempotencyKey = crypto.randomUUID(); }
+    const field = event.target;
+    if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {
+      const max = Number(field.dataset.limit);
+      if (max) field.setCustomValidity(length(normalize(field.value)) > max ? `Maksymalnie ${max} znaków.` : '');
+    }
+    document.querySelector('#history-body-count')!.textContent = `${length(normalize(input('body').value))} / ${LIMITS.body} znaków`;
+    if (field === input('excerpt') || field === input('source-url')) sourceMeta = { extractor: 'manual', truncated: false };
+  });
+  document.querySelector('#history-add-doctor')!.addEventListener('click', () => {
+    const list = document.querySelector('#history-doctors')!;
+    if (list.children.length >= LIMITS.doctors) { output.textContent = `Maksymalnie ${LIMITS.doctors} lekarzy.`; return; }
+    const fragment = document.querySelector<HTMLTemplateElement>('#history-doctor-template')!.content.cloneNode(true) as DocumentFragment;
+    const row = fragment.querySelector<HTMLElement>('.doctor-row')!;
+    row.querySelector('.doctor-remove')!.addEventListener('click', () => {
+      row.remove(); pendingPayload = null; idempotencyKey = crypto.randomUUID();
+    });
+    const pwz = row.querySelector<HTMLInputElement>('[data-doctor-pwz]')!;
+    pwz.addEventListener('input', () => {
+      row.querySelector('.doctor-warning')!.textContent = /^\d{7}$/.test(pwz.value) && !validPwz(pwz.value)
+        ? 'Cyfra kontrolna PWZ nie pasuje. Sprawdź numer; możesz przekazać go redakcji do weryfikacji.' : '';
+    });
+    list.append(fragment);
+    row.querySelector<HTMLInputElement>('[data-doctor-name]')!.focus();
+  });
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (busy || complete) return;
+    if (!token) { output.textContent = 'Poczekaj na sprawdzenie zabezpieczenia antyspamowego.'; return; }
+    try {
+      const value = pendingPayload ? { ...pendingPayload, turnstileToken: token } : payload();
+      submission(value); pendingPayload = value;
+      busy = true; fields.disabled = true; output.textContent = 'Zapisujemy zgłoszenie…';
+      const result = await request('/api/historie', value);
+      complete = true;
+      output.textContent = `Historia została zapisana. Zachowaj identyfikator zgłoszenia: ${result.id}. ${publish.checked ? 'Relacja oczekuje na moderację; nie została jeszcze opublikowana.' : 'Relacja pozostaje w prywatnej kolejce analizy.'}`;
+    } catch (error) { output.textContent = message(error); }
+    finally { busy = false; fields.disabled = complete; resetChallenge(); }
+  });
+  document.querySelector('#history-import-button')!.addEventListener('click', async () => {
+    if (busy || complete) return;
+    if (!token) { output.textContent = 'Poczekaj na sprawdzenie zabezpieczenia antyspamowego.'; return; }
+    busy = true; fields.disabled = true; output.textContent = 'Pobieramy materiał źródłowy…';
+    try {
+      const result = await request('/api/historie/import', { url: input('import-url').value, turnstileToken: token });
+      imported = result.source;
+      input('preview-text').value = imported!.excerpt ?? '';
+      document.querySelector<HTMLElement>('#history-import-preview')!.hidden = false;
+      document.querySelector('#history-preview-notice')!.textContent = result.source.truncated
+        ? 'Materiał został skrócony lub dostawca udostępnia tylko fragment wpisu.' : 'Podgląd nie został jeszcze wstawiony do zgłoszenia.';
+      output.textContent = 'Podgląd gotowy. Sprawdź go przed wstawieniem.';
+    } catch (error) { output.textContent = message(error); }
+    finally { busy = false; fields.disabled = complete; resetChallenge(); }
+  });
+  document.querySelector('#history-insert-source')!.addEventListener('click', () => {
+    if (!imported) return;
+    const result = insertSource(payload(), imported);
+    input('source-description').value = result.source.description ?? '';
+    input('source-url').value = result.source.url ?? '';
+    input('excerpt').value = result.source.excerpt ?? '';
+    sourceMeta = { extractor: result.source.extractor, truncated: result.source.truncated };
+    pendingPayload = null; idempotencyKey = crypto.randomUUID();
+    output.textContent = 'Materiał źródłowy został wstawiony do prywatnego pola. Twoja własna treść jest zachowana.';
+  });
+
+  async function initialize() {
+    try {
+      const response = await fetch('/api/historie/konfiguracja', { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+      if (!response.ok) throw new Error('Formularz jest chwilowo niedostępny.');
+      const config = await response.json();
+      if (!config.available || !config.turnstileSiteKey) throw new Error('Formularz jest obecnie wyłączony.');
+      if (!window.turnstile) await new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        const timer = setTimeout(() => reject(new Error('Nie udało się uruchomić zabezpieczenia antyspamowego.')), 8000);
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.onload = () => { clearTimeout(timer); resolve(); };
+        script.onerror = () => { clearTimeout(timer); reject(new Error('Zabezpieczenie antyspamowe jest niedostępne.')); };
+        document.head.append(script);
+      });
+      if (!window.turnstile) throw new Error('Zabezpieczenie antyspamowe jest niedostępne.');
+      widgetId = window.turnstile.render(document.querySelector<HTMLElement>('#history-turnstile')!, {
+        sitekey: config.turnstileSiteKey, action: 'historie', theme: 'auto',
+        callback: (value: string) => { token = value; },
+        'expired-callback': () => { token = ''; }, 'error-callback': () => { token = ''; },
+      });
+      if (!widgetId) throw new Error('Nie udało się uruchomić zabezpieczenia antyspamowego.');
+      fields.disabled = false; availability.textContent = 'Formularz jest dostępny. Dane wyślesz dopiero po naciśnięciu przycisku.';
+      document.querySelector<HTMLFieldSetElement>('#history-import')!.hidden = !config.importAvailable;
+      document.querySelector('#history-import-hosts')!.textContent = `Obsługiwane serwisy: ${(config.importHosts ?? []).join(', ')}.`;
+    } catch (error) { fields.disabled = true; availability.textContent = message(error); }
+  }
+  void initialize();
+</script>
+<style>
+  .history-form-wrap{max-width:850px}.notice{padding:1rem 1.2rem;border-left:3px solid var(--brand);background:var(--surface);margin:1.5rem 0}
+  form fieldset{border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem;margin:1.3rem 0}legend{font-weight:600;padding:0 .3rem}
+  form label{display:block;font-weight:500;margin:1rem 0 .4rem}form input:not([type=checkbox]),form textarea{width:100%;padding:.65rem .8rem;border:1px solid var(--line-2);border-radius:var(--radius);background:var(--surface);color:var(--ink);font:inherit}
+  form input:focus,form textarea:focus{outline:2px solid var(--brand);outline-offset:2px}form textarea{resize:vertical}.two-fields{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  form label.check{display:flex;align-items:flex-start;gap:.7rem;font-weight:400}.check input{margin-top:.3rem;flex-shrink:0}.muted,.counter{font-size:.9rem}.doctor-row{display:grid;grid-template-columns:1fr .6fr auto;align-items:end;gap:.7rem}.doctor-warning{grid-column:1/-1;font-size:.9rem;color:var(--ink-soft);margin:.2rem 0}
+  #history-result{white-space:pre-line;overflow-wrap:anywhere;padding:.8rem 0}fieldset:disabled{opacity:.7}button:disabled{cursor:wait}@media(max-width:650px){.two-fields,.doctor-row{grid-template-columns:1fr}.doctor-remove{justify-self:start}}
+</style>

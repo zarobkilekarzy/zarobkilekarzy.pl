@@ -1,19 +1,21 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { historiesEnabled } from '../../lib/historie/build.mjs';
+const historieAktywne = historiesEnabled();
 ---
 
 <BaseLayout
   title="Polityka prywatności — zarobkilekarzy.pl"
-  description="Jakie dane zbieramy (tylko adresy e-mail osób, które do nas piszą, oraz anonimowa analityka Cloudflare) i jak je przetwarzamy."
+  description={historieAktywne ? 'Jak przetwarzamy kontakt, historie pacjentów i zbiorcze statystyki oraz jakie prawa mają osoby.' : 'Jakie dane zbieramy w kontakcie oraz w anonimowej analityce Cloudflare.'}
 >
   <section class="section">
     <div class="container">
       <p class="eyebrow">Prywatność</p>
       <h1>Polityka prywatności</h1>
       <p class="lead">
-        Krótko i uczciwie: <strong>nie zbieramy żadnych danych osobowych poza adresami
+        {historieAktywne ? <>Przetwarzamy wiadomości kontaktowe oraz dobrowolnie przekazane historie pacjentów. Dane zgłoszeń pozostają prywatne; publikacja wymaga osobnej zgody i moderacji. Korzystamy też ze zbiorczej analityki Cloudflare.</> : <>Krótko i uczciwie: <strong>nie zbieramy żadnych danych osobowych poza adresami
         e-mail osób, które do nas piszą</strong>, oraz korzystamy z anonimowej, zbiorczej
-        analityki Cloudflare.
+        analityki Cloudflare.</>}
       </p>
 
       <div class="prose">
@@ -21,11 +23,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <ul>
           <li><strong>Adresy e-mail i treść wiadomości</strong> osób, które się z nami kontaktują — przez <a href="mailto:kontakt@zarobkilekarzy.pl">kontakt@</a> (kontakt ogólny), <a href="mailto:sprostowania@zarobkilekarzy.pl">sprostowania@</a> (sprostowania) lub <a href="mailto:zglos@zarobkilekarzy.pl">zglos@</a> (zgłoszenia artykułów). Używamy ich wyłącznie po to, by odpowiedzieć i obsłużyć sprawę.</li>
           <li><strong>Anonimowa analityka Cloudflare</strong> — zbiorcze statystyki ruchu, bez śledzących ciasteczek i bez profilowania.</li>
+          {historieAktywne && <li><strong>Historie pacjentów</strong> — treść, podane opcjonalnie dane kontekstowe i lekarzy oraz oddzielnie przechowywany, opcjonalny e-mail. Szczegóły poniżej.</li>}
         </ul>
 
         <h2>Czego nie robimy</h2>
         <ul>
-          <li>Nie zbieramy innych danych osobowych niż powyższe.</li>
+          <li>Nie zbieramy innych danych osobowych niż opisane w tej polityce.</li>
           <li>Nie używamy ciasteczek śledzących ani reklamowych.</li>
           <li>Nie profilujemy, nie sprzedajemy ani nie udostępniamy danych w celach marketingowych.</li>
         </ul>
@@ -37,6 +40,38 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           wybór zapisujemy dodatkowo lokalnie w Twojej przeglądarce (localStorage), aby
           uniknąć podwójnego głosu; te dane nie są nam przesyłane.
         </p>
+
+        {historieAktywne && <>
+          <h2 id="historie">Historie pacjentów</h2>
+          <p>Dobrowolnie przekazane relacje służą obsłudze zgłoszeń i analizie problemów ochrony zdrowia.
+            Przetwarzamy je na podstawie zgody, w tym odrębnej wyraźnej zgody dotyczącej danych o zdrowiu
+            (art. 6 ust. 1 lit. a i art. 9 ust. 2 lit. a RODO). Zgodę można wycofać bez wpływu na zgodność z prawem wcześniejszego przetwarzania.</p>
+          <p>Bez wyboru „opublikuj moją historię” zapisujemy zgłoszenie w osobnej bazie prywatnej analizy.
+            Zgoda na rozpatrzenie publikacji kieruje je do bazy moderacji. Dostęp do surowych zgłoszeń mają upoważnione osoby redakcji.
+            Publikujemy dopiero osobną, zredagowaną wersję po moderacji i ręcznym wydaniu.</p>
+          <p>E-mail jest opcjonalny, przechowywany w osobnej tabeli i używany wyłącznie do kontaktu w sprawie zgłoszenia.
+            Nazwy lekarzy służą prywatnemu sprawdzeniu zgodności z PWZ. Miejscowość, placówka i materiał źródłowy
+            <code>excerpt</code> pozostają prywatne. PWZ może zostać opublikowany po indywidualnej decyzji redakcji;
+            pozwala ustalić tożsamość lekarza. Potwierdzenie tożsamości nie potwierdza faktów relacji.</p>
+          <p>Surowy tekst, kontakt, materiał źródłowy, robocze cechy i zdarzenia moderacji usuwamy po 12 miesiącach.
+            Opublikowana wersja może pozostać do wycofania, z minimalnym dowodem zgody i decyzji dotyczącymi publicznych PWZ.
+            Po osobnej ocenie anonimizacji zachowujemy zbiorcze liczby według kategorii zdarzenia, województwa, roku i typu placówki;
+            nie tworzymy zestawień według PWZ.</p>
+          <p>Minimalny dziennik usunięć (identyfikator, data i przyczyna, bez treści i kontaktu) zachowujemy przez 31 dni,
+            aby zapobiec przywróceniu usuniętych zgłoszeń z kopii odzyskiwania.</p>
+          <p>Bazy przechowuje Cloudflare D1. Mechanizm odzyskiwania Time Travel może zachowywać usunięte dane
+            jeszcze przez 7 dni w planie Free lub 30 dni w planie Paid. Redakcja uwzględnia wcześniejsze usunięcia przy odtwarzaniu bazy.</p>
+          <p>Import URL jest dobrowolny. Pobieramy główną treść z obsługiwanego serwisu do prywatnego podglądu,
+            bez logowania i dostępu do niepublicznych materiałów. Formularz nie wysyła nam adresu IP w żądaniu weryfikacji Turnstile;
+            Cloudflare nadal przetwarza dane techniczne potrzebne do dostarczenia i ochrony usługi.</p>
+          <p>Masz prawo dostępu, sprostowania, usunięcia, ograniczenia przetwarzania i wycofania zgody oraz wniesienia skargi do Prezesa UODO;
+            prawo sprzeciwu stosuje się w przypadkach przewidzianych przez RODO.
+            Napisz na <a href="mailto:zglos@zarobkilekarzy.pl">zglos@zarobkilekarzy.pl</a>, podając identyfikator zgłoszenia lub adres historii.
+            Lekarz może tą samą drogą zgłosić sprostowanie lub sprzeciw.</p>
+          <p>Po wycofaniu usuwamy publikację z feedu i strony, przebudowujemy indeks wyszukiwania i mapę strony
+            oraz usuwamy wcześniejsze deploymenty zawierające historię. Kopie w zewnętrznych archiwach, cache wyszukiwarek
+            lub wykonane przez inne osoby mogą pozostawać poza naszą kontrolą.</p>
+        </>}
         <p>
           Aby ograniczyć nadużycia (np. automatyczne „dosypywanie" głosów), sonda oraz
           licznik zgłoszeń petycji oraz zapis wyniku w module Egzamin LEK mogą korzystać z <strong>Cloudflare Turnstile</strong> —

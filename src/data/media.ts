@@ -7,6 +7,8 @@ export const mediaPage = {
   href: '/media/',
   title: 'Materiały medialne',
   docTitle: 'Materiały medialne: infografiki, dane i logo do pobrania',
+  /** <title> — docTitle jest za długi dla wyszukiwarki; docTitle zostaje w udostępnianiu */
+  seoTitle: 'Materiały medialne: infografiki i dane',
   lead: 'Infografiki, dane i logo do artykułu, posta albo prezentacji. Liczby pochodzą z tych samych danych co teksty w serwisie, a źródła, adres strony i kod QR do niej są na każdej grafice.',
   description: 'Infografiki zarobkilekarzy.pl w formatach pionowym i poziomym, dane w plikach CSV i logo do pobrania, ze źródłami. Licencja CC BY 4.0.',
   updated: '16.10.2026',

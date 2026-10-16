@@ -2,7 +2,7 @@
  * Przypisy na stronach spoza MDX (narzędzia .astro, teksty z src/data) — te same znaczniki co przypisy GFM
  * w artykułach (lib/markdown/footnotes.ts), więc wyglądają i działają tak samo (styles/footnotes.css).
  *
- *   const notes = defineNotes({ nil: 'NIL, [Informacje statystyczne](https://…), stan na 16.01.2026.' });
+ *   const notes = defineNotes({ nil: 'NIL, [Informacje statystyczne](https://…), stan na 31.12.2025.' });
  *   …zawód<NoteRef notes={notes} id="nil" />…   albo w tekście lib/inline: '…zawód[^nil].'
  *   <NoteList notes={notes} />
  *

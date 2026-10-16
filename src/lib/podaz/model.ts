@@ -31,13 +31,15 @@ export const SPEC_YEARS = 6;
 /** Wiek rozpoczęcia studiów — tylko do przypisania rocznika rejestru do roku naboru. */
 const START_AGE = 19;
 
-export const REGISTER_DATE = '16 stycznia 2026';
-/** Lekarze wykonujący zawód wg rejestru NIL (bez dentystów), 16.01.2026. */
+/** Stan rejestru NIL na starcie modelu — wydruk „zestawienie nr 3” (lekarze wg wieku i płci):
+ *  https://nil.org.pl/uploaded_files/1768208069_31122025-zestawienie-nr-3.pdf */
+export const REGISTER_DATE = '31.12.2025';
+/** Lekarze wykonujący zawód wg rejestru NIL (bez dentystów), stan na 31.12.2025. */
 export const REGISTER_TOTAL = 164892;
 /** Lekarze pracujący bezpośrednio z pacjentem — GUS 2024. */
 export const GUS_WITH_PATIENTS = 141193;
 
-/** Piramida wieku lekarzy wykonujących zawód — rejestr NIL, 16.01.2026. Suma = REGISTER_TOTAL. */
+/** Piramida wieku lekarzy wykonujących zawód — rejestr NIL, stan na 31.12.2025 (wiek rocznikowo na 2026 r.). Suma = REGISTER_TOTAL. */
 const AGE_GROUPS: ReadonlyArray<{ from: number; to: number; n: number }> = [
   { from: 25, to: 25, n: 176 },
   { from: 26, to: 30, n: 20346 },

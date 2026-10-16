@@ -26,7 +26,7 @@ export const LINKS = {
   fa2022: 'https://miesiecznik.forumakademickie.pl/czasopisma/fa-9-2022/lekarskie-limity%E2%80%A9/',
   mnisw9177: 'https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDG7JC7/i09177-o1.pdf',
   lim2026: 'https://api.sejm.gov.pl/eli/acts/DU/2026/1167/text.pdf',
-  crl: 'https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne',
+  crl: 'https://nil.org.pl/uploaded_files/1768208069_31122025-zestawienie-nr-3.pdf',
   nil2024: 'https://nil.org.pl/aktualnosci/8502-polska-na-drodze-do-marnowania-miliarda-zlotych-rocznie-na-ksztalcenie-nadmiarowych-lekarzy',
   edulog: 'https://www.edulog.pt/storage/app/uploads/public/5ee/948/5ad/5ee9485ad5289214937284.pdf',
   oecd2016: 'https://www.oecd.org/content/dam/oecd/en/publications/reports/2016/03/health-workforce-policies-in-oecd-countries_g1g57f0f/9789264239517-en.pdf',
@@ -86,7 +86,7 @@ export const RECOVERY = {
 /* ---------- Wyrwa pokoleniowa: lekarze wykonujący zawód według wieku ---------- */
 
 /**
- * NIL, Centralny Rejestr Lekarzy, informacje statystyczne, stan na 16.01.2026 — lekarze (bez dentystów)
+ * NIL, Centralny Rejestr Lekarzy, zestawienie nr 3, stan na 31.12.2025 — lekarze (bez dentystów)
  * wykonujący zawód, mężczyźni + kobiety (research.db: lekarze_wykonujacy, nil-finn-2026-01).
  * „Start studiów” to przybliżenie: rok urodzenia (2026 − wiek, rocznikowo) + 19 lat.
  */

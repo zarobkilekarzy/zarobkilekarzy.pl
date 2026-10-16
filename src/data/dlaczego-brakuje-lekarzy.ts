@@ -16,8 +16,8 @@ export const LINKS = {
   cmkp2025: 'https://www.cmkp.edu.pl/aktualnosci/opublikowano-ostateczne-wyniki-rekrutacji-na-specjalizacje-w-sesji-jesiennej-2025',
   /** Barometr Fundacji Watch Health Care (IX–X 2025) za: Rynek Zdrowia / PAP */
   whc: 'https://www.rynekzdrowia.pl/Polityka-zdrowotna/Barometr-Watch-Health-Care-sredni-czas-oczekiwania-na-leczenie-w-2025-r-to-ponad-4-miesiace,279890,14.html',
-  /** NIL, Centralny Rejestr Lekarzy — informacje statystyczne (stan 16.01.2026, start symulatora podaży) */
-  nilRegister: 'https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne',
+  /** NIL, Centralny Rejestr Lekarzy — zestawienie nr 3 (wiek, płeć), stan na 31.12.2025, start symulatora podaży */
+  nilRegister: 'https://nil.org.pl/uploaded_files/1768208069_31122025-zestawienie-nr-3.pdf',
   /** GUS, „Zasoby kadrowe w wybranych zawodach medycznych… w 2024 r.” — tablice */
   gus2024: 'https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/zasoby-kadrowe-w-wybranych-zawodach-medycznych-na-podstawie-zrodel-administracyjnych-w-2024-r-,28,4.html',
 };

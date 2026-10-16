@@ -28,8 +28,8 @@ export const LINKS = {
   nsl2025: 'https://nil.org.pl/uploaded_files/1788883794_nsl-sprawozdanie-2025specjalizacje.doc',
   /** roczne zestawienia okręgowych rzeczników odpowiedzialności zawodowej */
   nilOroz: 'https://nil.org.pl/izba/naczelny-rzecznik-odpowiedzialnosci-zawodowej/sprawozdania/roczne-oroz',
-  /** Centralny Rejestr Lekarzy — liczba lekarzy wykonujących zawód */
-  nilRegister: 'https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne',
+  /** Centralny Rejestr Lekarzy — liczba lekarzy wykonujących zawód, stan na 31.12.2025 (zestawienie nr 3) */
+  nilRegister: 'https://nil.org.pl/uploaded_files/1768208069_31122025-zestawienie-nr-3.pdf',
   /** ustawa o izbach lekarskich, tekst jednolity Dz.U. 2021 poz. 1342 */
   act: 'https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20210001342',
   helsetilsynet: 'https://www.helsetilsynet.no/tilsyn/om-tilsynssaker/statistikk-reaksjoner-mot-helsepersonell/',
@@ -195,7 +195,7 @@ export const plIn = (year: number) => REVOCATIONS.find((r) => r.year === year)!.
 
 /* ---------- Mianowniki: liczba lekarzy ---------- */
 
-/** Polska: lekarze wykonujący zawód wg rejestru NIL, 16.01.2026, bez lekarzy dentystów (= REGISTER_TOTAL w lib/podaz/model.ts). */
+/** Polska: lekarze wykonujący zawód wg rejestru NIL, stan na 31.12.2025, bez lekarzy dentystów (= REGISTER_TOTAL w lib/podaz/model.ts). */
 export const PL_DOCTORS = 164892;
 
 /**
@@ -259,7 +259,7 @@ export const COUNTRIES: Country[] = [
   {
     key: 'pl', name: 'Polska', body: 'sądy lekarskie',
     doctors: PL_DOCTORS, doctorsLabel: '164 892',
-    doctorsNote: 'wykonujących zawód w styczniu 2026 r., bez lekarzy dentystów',
+    doctorsNote: 'wykonujących zawód na koniec 2025 r., bez lekarzy dentystów',
   },
   {
     key: 'no', name: 'Norwegia', body: 'urząd państwowy',

@@ -400,7 +400,7 @@ PDF obywatelskiego projektu nowelizacji art. 27a składa build z tego samego źr
 - **Wykresy** rysują czyste funkcje `lib/podaz/charts.ts` (stan → treść `<svg>`) w rozmiarze kontenera (`viewBox` = piksele), więc podpisy osi mają zawsze 11 px. Ten sam kod daje pierwszy render na serwerze i każdą klatkę w przeglądarce; style `c-*` przez `:global()`.
 - **Nabór rok po roku:** mysz rysuje (szybkie przeciągnięcie interpoluje lata pomiędzy), kliknięcie i stuknięcie otwierają dymek z dokładną liczbą, klawiatura: strzałki/Shift/Home/End/Enter. Palec na wykresie przewija stronę.
 
-Rachunek to `lib/podaz/model.ts` — port 1:1 z poprzedniej wersji serwisu (`symulatorPodazy.ts`), sprawdzony porównaniem obu modeli na wszystkich scenariuszach i siatce ustawień. Przy ustawieniach domyślnych rok 2026 równa się rejestrowi NIL co do osoby; komentarz słowny liczy `lib/podaz/summary.ts`. Dane z datą: rejestr NIL (16.01.2026), limit 2025/26, GUS 2024 — przy nowym wydruku rejestru podmień `AGE_GROUPS`, `OVER_70` i `REGISTER_*`.
+Rachunek to `lib/podaz/model.ts` — port 1:1 z poprzedniej wersji serwisu (`symulatorPodazy.ts`), sprawdzony porównaniem obu modeli na wszystkich scenariuszach i siatce ustawień. Przy ustawieniach domyślnych rok 2026 równa się rejestrowi NIL co do osoby; komentarz słowny liczy `lib/podaz/summary.ts`. Dane z datą: rejestr NIL (stan na 31.12.2025), limit 2025/26, GUS 2024 — przy nowym wydruku rejestru podmień `AGE_GROUPS`, `OVER_70` i `REGISTER_*`.
 
 ## Działaj
 

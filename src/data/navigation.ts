@@ -62,6 +62,7 @@ export const footerNav: NavGroup[] = [
     links: [
       { label: 'O projekcie', href: '/o-projekcie/' },
       { label: 'Postulat', href: '/postulat/' },
+      { label: 'Barometr polityczny', href: '/barometr-polityczny/' },
       { label: 'Najczęstsze zarzuty', href: '/faq/' },
       { label: 'Materiały medialne', href: '/media/' },
       { label: 'Metodologia', href: '/o-projekcie/#zasady' },

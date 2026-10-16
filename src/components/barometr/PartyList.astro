@@ -1,0 +1,86 @@
+---
+/**
+ * /barometr-polityczny/ — karty partii: logo, nazwa, klub albo koło w Sejmie, stan opisu.
+ * Za partiami (barometrOthers) — uczestnicy sporu, którzy nie są partiami, z etykietą „Nie partia”.
+ * Na karcie stan kontaktu (statusLabel): pytania niewysłane → wysłane → odpowiedź albo „Bez odpowiedzi”;
+ * nad listą legenda stanów i link do wzoru podstrony partii.
+ * Logo każdej partii ma tę samą powierzchnię (szerokie są niższe, wysokie węższe), żeby żadne
+ * nie wyglądało na ważniejsze. Źródło nazw klubów pod listą, w osobnej linii.
+ */
+import { Image } from 'astro:assets';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { NOT_SENT, barometrExample, barometrOthers, barometrParties, barometrSejm, statusLabel, statusLegend } from '@/data/barometr-polityczny';
+import { raw } from '@/lib/images';
+import { formatDate, typo } from '@/lib/format';
+
+/** powierzchnia logo w px² i granice ramki */
+const AREA = 11000;
+const MAX_W = 230;
+const MAX_H = 92;
+
+const parties = [...barometrParties, ...barometrOthers].map((party) => {
+  const { width, height } = raw(party.logo);
+  const ratio = width / height;
+  let w = Math.sqrt(AREA * ratio);
+  let h = w / ratio;
+  const fit = Math.min(1, MAX_W / w, MAX_H / h);
+  w = Math.round(w * fit);
+  h = Math.round(h * fit);
+  return { ...party, w, h, status: party.status ?? NOT_SENT };
+});
+---
+<div class="legend">
+  <ul class="legend__list" aria-label="Stany kontaktu z partią">
+    {statusLegend.map((st) => (
+      <li><span class:list={['dot', `dot--${st.stage}`]} aria-hidden="true"></span>{statusLabel(st)}</li>
+    ))}
+  </ul>
+  <LinkArrow href={barometrExample.href}>Wzór podstrony partii</LinkArrow>
+</div>
+
+<ul class="parties">
+  {parties.map((p) => (
+    <li id={`partia-${p.id}`} class:list={['party', { 'party--other': p.notParty }]}>
+      <div class="party__logo">
+        <Image src={p.logo} width={p.w} height={p.h} densities={[1, 2]} alt={`Logo: ${p.name}`} />
+      </div>
+      {p.notParty && <p class="party__tag">Nie partia</p>}
+      <h3 class="party__name">{typo(p.name)}</h3>
+      <p class="party__club">{typo(p.club)}</p>
+      <p class="party__status"><span class:list={['dot', `dot--${p.status.stage}`]} aria-hidden="true"></span>{statusLabel(p.status)}</p>
+    </li>
+  ))}
+</ul>
+
+<p class="parties__note">Logotypy należą do ich właścicieli; pokazujemy je tylko po to, żeby było jasne, kogo dotyczy opis.</p>
+<p class="parties__note">Źródło: <a href={barometrSejm.source}>{barometrSejm.label}</a>, stan na {formatDate(barometrSejm.asOf)}.</p>
+
+<style>
+  .parties { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 232px), 1fr)); gap: 16px; }
+  .party { display: flex; flex-direction: column; border: 1px solid var(--line-2); background: var(--surface); }
+
+  .party__logo { display: grid; place-items: center; height: 136px; padding: 16px; background: #fff; border-bottom: 1px solid var(--line-2); } /* kolor-stały: logotypy partii mają własne, często ciemne kolory — zawsze na białym, w obu motywach */
+  .party__logo img { display: block; max-width: 100%; height: auto; }
+
+  .party--other { border-style: dashed; }
+  .party__tag { align-self: flex-start; margin: 16px 20px -6px; padding: 3px 8px; border: 1px solid var(--line-2); font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+  .party__name { margin: 18px 20px 6px; font: 500 1.0625rem/1.3 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .party__club { margin: 0 20px; font-size: 0.84375rem; line-height: 1.5; color: var(--muted); }
+  .party__status { display: flex; align-items: center; gap: 8px; margin: auto 20px 0; padding: 16px 0 18px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+
+  /* znacznik stanu: pusty = pytania niewysłane, bursztyn = czekamy na odpowiedź, zieleń = odpowiedź, szary = bez odpowiedzi */
+  .dot { flex: none; width: 8px; height: 8px; border: 1px solid var(--muted); }
+  .dot--wyslane { background: var(--amber); border-color: var(--amber); }
+  .dot--odpowiedz { background: var(--ok); border-color: var(--ok); }
+  .dot--brak { background: var(--muted); }
+
+  .legend { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px; margin-bottom: 24px; padding: 14px 0; border-block: 1px solid var(--line-2); }
+  .legend__list { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+  .legend__list li { display: flex; align-items: center; gap: 8px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--ink-2); }
+
+  .parties__note { margin-top: 12px; font-size: 0.84375rem; line-height: 1.5; color: var(--muted); max-width: 72ch; }
+  /* jak link w przypisie: podkreślenie odróżnia go od tekstu */
+  .parties__note a { color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--muted); }
+  .parties__note a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .parties { margin-bottom: 12px; }
+</style>

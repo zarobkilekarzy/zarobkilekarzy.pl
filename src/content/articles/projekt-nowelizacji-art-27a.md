@@ -6,4 +6,7 @@ order: 7
 date: "2026-10-11"
 summary: Kwartalne, spseudonimizowane dane o wynagrodzeniach w placówkach z umową z NFZ. Dwa nowe punkty, bez zmian w istniejących przepisach.
 href: "/postulat/projekt-ustawy/"
+featured: true
+cover: ../../assets/img/projekt-ustawy-dwa-punkty.jpg
+coverAlt: Kilka zszytych kartek projektu z dwiema zakładkami, za nimi gruby tom ustaw
 ---

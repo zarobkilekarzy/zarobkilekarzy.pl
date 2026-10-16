@@ -213,7 +213,7 @@ Teraz tylko mechanizm: trasa, `BaseLayout` z `robots: { index: false }` i bez gr
 | `rss.xml` | `@astrojs/rss` z `lib/content` (opublikowane artykuły z datą, od najświeższych) | `<link rel="alternate">` w `SeoHead`; na live ten adres to „baza źródeł” (decyzja §12) |
 | `llms.txt` | endpoint z kolekcji + huby z `data/navigation` | format llmstxt.org jak na live: H1, cytat-streszczenie, sekcje Dane / Analizy / Mechanizmy / Postulat. Cloudflare tego pliku nie generuje. Pełna treść stron dla agentów pochodzi z Markdown for Agents (niżej), więc `llms-full.txt` nie robimy |
 | ikony + `site.webmanifest` | `public/`, wygenerowane raz z `favicon.svg` (sharp) | `favicon.ico` 32 px, `apple-touch-icon` 180 px, 192/512 + maskable; linki w `SeoHead` |
-| `_headers` | `public/_headers` (statyczny) | długi cache dla `/_astro/*` (pliki z hashem), `X-Robots-Tag: noindex` dla `/szukaj.json` i JSON-ów danych; nagłówki bezpieczeństwa i CSP przenosimy z live w osobnym kroku |
+| `_headers` | `integrations/seo/headers.ts` (generowany z listy plików buildu) | długi cache dla `/_astro/*` (pliki z hashem), `X-Robots-Tag: noindex` dla `/szukaj.json` i JSON-ów danych, nagłówki bezpieczeństwa i CSP (`contentSecurityPolicy()`; endpoint newslettera dochodzi do `connect-src` sam). CSP sprawdza tylko `npm run preview:cf` — `astro preview` nie nakłada `_headers` |
 
 ### Co robi Cloudflare, a co repozytorium
 
@@ -313,7 +313,7 @@ Etapy 1–2 są niezależne od migracji treści. Etap 3 jest „mechanizmem 404�
 - **Dział Dane = Article + Dataset** automatycznie (jak na dotychczasowej stronie); pole `dataset` we frontmatterze uzupełnia zasięg i licencję.
 - **`/rss.xml`** = nowe i zaktualizowane materiały serwisu (na dotychczasowej stronie: baza źródeł). Decyzja 1 (`/artykuly/`) dalej otwarta.
 - **Artykuł bez `date`** nie dostaje zmyślonej daty publikacji — audyt ostrzega (`datePublished`), redakcja uzupełnia frontmatter.
-- **Tryb strict** tylko w `npm run build:release` (v2 nie ma jeszcze CI).
+- **Tryb strict** w `npm run build:release` — tak buduje CI (`.github/workflows/deploy.yml`).
 
 ### Stan audytu po wdrożeniu (build 15.10.2026, 40 stron)
 
@@ -325,4 +325,4 @@ Etapy 1–2 są niezależne od migracji treści. Etap 3 jest „mechanizmem 404�
 - **373 linki `href="#"`** na 24 stronach (zapowiedzi i puste pozycje stopki).
 - **Tytuły > 60 i opisy > 160 znaków** na większości stron — etap 6 (`seoTitle` / `description`).
 
-Zostaje poza repo (panel Cloudflare): managed robots.txt i Content Signals (decyzja 6), Markdown for Agents przy planie Pro (decyzja 7), CSP w `_headers` (osobny krok).
+Zostaje poza repo (panel Cloudflare): managed robots.txt i Content Signals (decyzja 6), Markdown for Agents przy planie Pro (decyzja 7).

@@ -1,6 +1,8 @@
 name: Deploy to Cloudflare Pages
 
 # Deploy: automatycznie po pushu na `main` oraz ręcznie (Actions → Run workflow).
+# Ręczny run na innej gałęzi = wdrożenie podglądowe Pages (<gałąź>.zarobkilekarzy.pages.dev),
+# nie produkcja — gałąź Pages bierzemy z gałęzi, na której leci run.
 on:
   push:
     branches: [main]
@@ -33,7 +35,13 @@ jobs:
         run: npm run check
 
       - name: Build
-        run: npm run build
+        # Tryb wydania (SEO_STRICT=1): błędy audytu SEO i stare adresy bez przekierowania
+        # przerywają build — zob. docs/seo-system.md § 9.
+        # Token Cloudflare Web Analytics jest publiczny (trafia do HTML jako data-cf-beacon);
+        # bez niego Analytics.astro nie renderuje beaconu i pomiar znika.
+        env:
+          CF_WEB_ANALYTICS_TOKEN: 41998160098a4fd3965151cf1b67f440
+        run: npm run build:release
 
       - name: Ensure Cloudflare Pages project exists
         env:
@@ -94,4 +102,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=zarobkilekarzy --branch=main --commit-dirty=true
+          command: pages deploy dist --project-name=zarobkilekarzy --branch=${{ github.ref_name }} --commit-dirty=true

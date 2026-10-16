@@ -14,7 +14,7 @@ import type { AstroIntegration } from 'astro';
 import { legacyUrls, removedUrls } from '../../src/data/seo/legacy-urls';
 import { clearFactsCache } from './facts';
 import { headersFile } from './headers';
-import { redirects, redirectsFile } from './redirects';
+import { expiredRedirects, redirects, redirectsFile } from './redirects';
 import { createSitemapSerializer } from './sitemap';
 import { formatReport, listFiles, runAudit } from './audit';
 
@@ -38,6 +38,10 @@ export default function seo() {
         await writeFile(new URL('_redirects', dir), redirectsFile());
         await writeFile(new URL('_headers', dir), headersFile(await listFiles(fileURLToPath(dir))));
         logger.info(`dist/_redirects (${redirects.length} przekierowań) i dist/_headers zapisane`);
+        if (expiredRedirects.length) {
+          logger.warn(`${expiredRedirects.length} przekierowań wygasło i nie trafiło do _redirects — usuń je z src/data/seo/redirects.ts:`);
+          expiredRedirects.forEach((r) => logger.warn(`  ${r.from} → ${r.to} (wygasło ${r.expires})`));
+        }
 
         if (!site) {
           logger.warn('brak `site` w astro.config — audyt SEO pominięty');

@@ -3,10 +3,10 @@
  * - `redirects` dla astro.config — dev i zapasowe przekierowania HTML w buildzie (tylko strony),
  * - plik `_redirects` dla Cloudflare — prawdziwe 301 na krawędzi, także dla plików.
  */
-import { redirects, type Redirect } from '../../src/data/seo/redirects';
+import { expiredRedirects, redirects, type Redirect } from '../../src/data/seo/redirects';
 import { isFilePath } from '../../src/lib/seo/urls';
 
-export { redirects, type Redirect };
+export { expiredRedirects, redirects, type Redirect };
 
 /** Przekierowania stron dla `redirects` w astro.config (Astro nie obsługuje tu plików). */
 export const astroRedirects = (): Record<string, string> =>

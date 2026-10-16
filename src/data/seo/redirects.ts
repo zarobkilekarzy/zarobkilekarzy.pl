@@ -15,14 +15,21 @@ export interface Redirect {
   status?: 301 | 302;
   /** dlaczego — żeby za rok było wiadomo, czy przekierowanie jest jeszcze potrzebne */
   note: string;
+  /**
+   * Data (RRRR-MM-DD), od której build pomija przekierowanie — dla reguł potrzebnych tylko przez
+   * okres przejściowy. Wygasłe wpisy build wypisuje w logu, żeby usunąć je też z rejestru.
+   */
+  expires?: string;
 }
 
 const PETYCJA = 'petycja to dziś archiwum pod /postulat/ (redesign v2)';
 const LIVE = 'historia z public/_redirects dotychczasowej strony';
 const MERGE = 'scalone po audycie treści';
+const OG = 'stare obrazki podglądu linków (do ponownego pobrania przez X, Facebooka, Wykop) — po 3 miesiącach serwisy mają już nowe';
+const OG_EXPIRES = '2027-01-16';
 const ARTYKULY = 'baza linków prasowych nie przeszła do v2 (decyzja redakcji z 16.10.2026); źródła są przypisami w analizach';
 
-export const redirects: Redirect[] = [
+const allRedirects: Redirect[] = [
   // Misja: /postulat/ z podstronami (redesign v2)
   { from: '/projekt-nowelizacji/', to: '/postulat/projekt-ustawy/', note: 'projekt ustawy ma adres bez wersji pod /postulat/' },
   { from: '/petycja/', to: '/postulat/petycja/', note: PETYCJA },
@@ -61,4 +68,33 @@ export const redirects: Redirect[] = [
   ...legacyUrls
     .filter((url) => url.startsWith('/artykuly/'))
     .map((url): Redirect => ({ from: url, to: '/analizy/', note: ARTYKULY })),
+
+  // Obrazki OG dotychczasowej strony (redesign v2 zmienił ich adresy) → karta strony, która dziś stoi pod tym adresem
+  ...(
+    [
+      ['/og/home.png', '/og/index.png'],
+      ['/og/artykuly.png', '/og/analizy.png'],
+      ['/og/analizy/jedno-pwz.png', '/og/dane/rozklad-wynagrodzen.png'],
+      ['/og/analizy/lejek-ksztalcenia.png', '/og/analizy/dlaczego-brakuje-lekarzy.png'],
+      ['/og/analizy/monitor-reformy-zdrowia.png', '/og/mechanizmy/wieloetatowosc.png'],
+      ['/og/analizy/symulator-podazy-lekarzy.png', '/og/index.png'],
+      ['/og/dane/patologia-w-liczbach.png', '/og/dane.png'],
+      ['/og/dane/pensje-rezydentow.png', '/og/dane/wedlug-specjalizacji.png'],
+      ['/og/dane/stawki.png', '/og/dane/rozklad-wynagrodzen.png'],
+      ['/og/mechanizmy/dyzury-i-gotowosc.png', '/og/mechanizmy/wieloetatowosc.png'],
+      ['/og/mechanizmy/samorzad-nil.png', '/og/analizy/odpowiedzialnosc-zawodowa-lekarzy.png'],
+      ['/og/petycja.png', '/og/postulat/petycja.png'],
+      ['/og/petycja/jak-to-dziala.png', '/og/postulat/petycja.png'],
+      ['/og/petycja/tresc.png', '/og/postulat/petycja.png'],
+      ['/og/projekt-nowelizacji.png', '/og/postulat/projekt-ustawy.png'],
+    ] as const
+  ).map(([from, to]): Redirect => ({ from, to, note: OG, expires: OG_EXPIRES })),
 ];
+
+/** Data buildu (UTC) w formacie RRRR-MM-DD — porównanie leksykalne z `expires` wystarcza. */
+const today = new Date().toISOString().slice(0, 10);
+const isExpired = (r: Redirect) => r.expires !== undefined && r.expires <= today;
+
+export const redirects: Redirect[] = allRedirects.filter((r) => !isExpired(r));
+/** Wygasłe w dniu buildu — do usunięcia z rejestru (build je pomija i wypisuje w logu). */
+export const expiredRedirects: Redirect[] = allRedirects.filter(isExpired);

@@ -26,8 +26,10 @@ export const SPECJALIZACJA = 6;
  *  do roku naboru (wiek 46–50 w 2026 r. ↔ studia zaczęte ok. 1995–1999). */
 export const WIEK_STARTU = 19;
 
-export const REJESTR_DATA = '16 stycznia 2026';
-/** Lekarze wykonujący zawód wg rejestru NIL (bez dentystów), 16.01.2026. */
+/** Stan rejestru NIL na starcie modelu — wydruk „zestawienie nr 3” (lekarze wg wieku i płci):
+ *  https://nil.org.pl/uploaded_files/1768208069_31122025-zestawienie-nr-3.pdf */
+export const REJESTR_DATA = '31 grudnia 2025';
+/** Lekarze wykonujący zawód wg rejestru NIL (bez dentystów), stan na 31.12.2025. */
 export const REJESTR_SUMA = 164892;
 /** Lekarze pracujący bezpośrednio z pacjentem — GUS, 2024. Linia odniesienia:
  *  rejestr jest o ~24 tys. szerszy niż realna praca przy pacjencie. */
@@ -35,7 +37,7 @@ export const GUS_PRZY_PACJENCIE = 141193;
 /** Lekarze specjaliści pracujący z pacjentem — GUS 2024 (64,5% z 141 193). */
 export const GUS_SPECJALISCI = 91100;
 
-/** Piramida wieku lekarzy WYKONUJĄCYCH ZAWÓD — rejestr NIL, 16.01.2026.
+/** Piramida wieku lekarzy WYKONUJĄCYCH ZAWÓD — rejestr NIL, stan na 31.12.2025 (wiek rocznikowo na 2026 r.).
  *  Suma kontrolna = REJESTR_SUMA. */
 export const grupyWieku: ReadonlyArray<{ grupa: string; od: number; do: number; v: number }> = [
   { grupa: '≤25', od: 25, do: 25, v: 176 },

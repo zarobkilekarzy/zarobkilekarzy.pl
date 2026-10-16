@@ -13,7 +13,7 @@ keyPoints:
   - O odpowiedzialności zawodowej lekarzy orzekają sądy samorządu lekarskiego. Oskarża rzecznik, orzekają lekarze wybrani przez zjazdy lekarzy, a poza samorząd sprawa wychodzi dopiero z kasacją do Sądu Najwyższego.
   - Upomnienie, nagana i kara pieniężna to 86% z 2516 kar orzeczonych w pierwszej instancji w latach 2020–2025. Pozbawienie prawa wykonywania zawodu sądy orzekły 27 razy.
   - W latach 2010–2025 prawomocnie straciło prawo do zawodu 20 lekarzy, nieco ponad jeden rocznie, a w 6 z tych 16 lat — nikt. Za lata 2000–2009 sprawozdania nie oddzielają orzeczeń prawomocnych.
-  - W przeliczeniu na liczbę lekarzy urzędy w Norwegii i Szwecji odbierały w latach 2020–2025 prawo do zawodu ok. 90 razy częściej. Systemy różnią się jednak zakresem spraw, a przestępstwa lekarzy w Polsce osądzają osobno sądy karne.
+  - W przeliczeniu na liczbę lekarzy urzędy w Norwegii i Szwecji odbierały w latach 2020–2025 prawo do zawodu ok. 90 razy częściej, a brytyjski trybunał, który skreśla lekarzy z rejestru wyłącznie za przewinienia — ok. 16 razy częściej. Systemy różnią się jednak zakresem spraw, a przestępstwa lekarzy w Polsce osądzają osobno sądy karne.
 editorial:
   - >-
     Nie uważamy, że najwyższa kara powinna zapadać często. Uważamy, że każdy powinien móc bez
@@ -36,6 +36,7 @@ import Comparison from '@/components/blocks/Comparison.astro';
 import Steps from '@/components/blocks/Steps.astro';
 import TwoLists from '@/components/blocks/TwoLists.astro';
 import RevocationTable from '@/components/odpowiedzialnosc-zawodowa-lekarzy/RevocationTable.astro';
+import Infographics from '@/components/blocks/Infographics.astro';
 import {
   FIRST_INSTANCE,
   FIRST_INSTANCE_2000_2009,
@@ -53,7 +54,10 @@ import {
   PL_ONE_YEARS,
   PL_ZERO_YEARS,
   RATIO_ROUNDED,
+  RATIO_UK,
   SE_DOCTORS_2025,
+  UK_DOCTORS_2020,
+  UK_DOCTORS_2024,
   WINDOW,
   YEARS_COUNT,
   firstInstance,
@@ -79,11 +83,12 @@ export const plWindow = total('pl', WINDOW.from, WINDOW.to);
 export const lastFirstInstance = firstInstance(LAST_YEAR, LAST_YEAR);
 export const plIfFinal = rate(plWindow + lastFirstInstance, PL_DOCTORS);
 export const scandiMin = Math.min(ratePer100k('no'), ratePer100k('se'));
-export const rates = { pl: ratePer100k('pl'), no: ratePer100k('no'), se: ratePer100k('se') };
+export const rates = { pl: ratePer100k('pl'), no: ratePer100k('no'), se: ratePer100k('se'), uk: ratePer100k('uk') };
+export const ratioUk = Math.round(RATIO_UK);
 
 Najsurowsza kara, jaką samorząd lekarski może wymierzyć lekarzowi, to pozbawienie prawa wykonywania zawodu. Według rocznych sprawozdań sądów lekarskich w latach {allYears} prawomocnie orzeczono ją wobec {plTotal} lekarzy, czyli średnio nieco ponad raz w roku.[^nil-sady] Najczęściej sądy lekarskie kończą sprawy upomnieniem, naganą albo karą pieniężną.
 
-Opisujemy, kto w Polsce orzeka o odpowiedzialności zawodowej lekarzy, jakie kary stosuje i jak te liczby wyglądają na tle Norwegii i Szwecji, gdzie o prawie do zawodu decydują urzędy państwowe. Nie piszemy o żadnej konkretnej sprawie ani osobie, tylko o tym, jak działa system.
+Opisujemy, kto w Polsce orzeka o odpowiedzialności zawodowej lekarzy, jakie kary stosuje i jak te liczby wyglądają na tle Norwegii i Szwecji, gdzie o prawie do zawodu decydują urzędy państwowe, oraz Wielkiej Brytanii, gdzie orzeka trybunał oddzielony od regulatora zawodu. Nie piszemy o żadnej konkretnej sprawie ani osobie, tylko o tym, jak działa system.
 
 <StatRow
   label="Sądy lekarskie w liczbach"
@@ -195,11 +200,13 @@ Postępowanie przed sądem lekarskim toczy się niezależnie od postępowania ka
 
 Niska liczba pozbawień w samorządzie nie mówi więc wszystkiego o lekarzach skazanych za przestępstwa, bo w ich sprawach zakaz wykonywania zawodu może orzec sąd karny. Ilu lekarzom go orzeczono, w źródłach, z których korzystamy, nie znaleźliśmy. Liczby w tym tekście dotyczą wyłącznie sądów lekarskich.
 
-## Polska na tle Norwegii, Szwecji i Czech
+## Polska na tle Norwegii, Szwecji, Wielkiej Brytanii i Czech
 
 W Norwegii autoryzację, czyli prawo do zawodu, odbiera lekarzowi państwowy urząd nadzoru Helsetilsynet.[^helse] W Szwecji wnioski składa m.in. państwowy inspektorat IVO, a decyzję podejmuje państwowa komisja HSAN.[^hsan] Oba kraje co roku publikują liczbę takich decyzji osobno dla każdego zawodu.
 
-Polska ma ok. {formatPL(PL_DOCTORS / NO_DOCTORS[LAST_YEAR], 1)} raza więcej lekarzy niż Norwegia i ok. {formatPL(PL_DOCTORS / SE_DOCTORS_2025, 1)} raza więcej niż Szwecja,[^lekarze] dlatego porównujemy liczby przeliczone na 100 tys. lekarzy.
+W Wielkiej Brytanii skargi na lekarzy bada General Medical Council, ustawowy regulator, który prowadzi rejestr lekarzy. O tym, czy lekarza z rejestru skreślić, rozstrzyga trybunał Medical Practitioners Tribunal Service, który według GMC jest od niego operacyjnie oddzielony i orzeka niezależnie. Liczbę skreśleń GMC podaje co roku w statystykach postępowań, a informacje o rozprawach trybunału i ich wynikach są publikowane.[^gmc]
+
+Polska ma ok. {formatPL(PL_DOCTORS / NO_DOCTORS[LAST_YEAR], 1)} raza więcej lekarzy niż Norwegia i ok. {formatPL(PL_DOCTORS / SE_DOCTORS_2025, 1)} raza więcej niż Szwecja, a Wielka Brytania ok. {formatPL(UK_DOCTORS_2024 / PL_DOCTORS, 1)} raza więcej niż Polska,[^lekarze][^gmc-kadry] dlatego porównujemy liczby przeliczone na 100 tys. lekarzy.
 
 <Figure
   title={`W przeliczeniu na liczbę lekarzy urzędy w Norwegii i Szwecji odbierały prawo do zawodu ok. ${RATIO_ROUNDED} razy częściej, niż robiły to polskie sądy lekarskie.`}
@@ -210,21 +217,24 @@ Polska ma ok. {formatPL(PL_DOCTORS / NO_DOCTORS[LAST_YEAR], 1)} raza więcej lek
     rows={[
       { label: 'Norwegia', note: 'urząd państwowy', value: rates.no, display: `≈${formatPL(rates.no, 1)}` },
       { label: 'Szwecja', note: 'urząd państwowy', value: rates.se, display: `≈${formatPL(rates.se, 1)}` },
+      { label: 'Wielka Brytania', note: 'trybunał', value: rates.uk, display: `≈${formatPL(rates.uk, 1)}` },
       { label: 'Polska', note: 'sądy lekarskie', value: rates.pl, display: `≈${formatPL(rates.pl, 1)}`, highlight: true },
     ]}
     max={Math.max(rates.no, rates.se)}
     unit="na 100 tys. lekarzy"
-    caption={`Odebrania prawa wykonywania zawodu lekarzom średnio rocznie na 100 tys. lekarzy, ${span}: Norwegia ok. ${formatPL(rates.no, 1)}, Szwecja ok. ${formatPL(rates.se, 1)}, Polska ok. ${formatPL(rates.pl, 1)}.`}
+    caption={`Odebrania prawa wykonywania zawodu lekarzom średnio rocznie na 100 tys. lekarzy, ${span}: Norwegia ok. ${formatPL(rates.no, 1)}, Szwecja ok. ${formatPL(rates.se, 1)}, Wielka Brytania ok. ${formatPL(rates.uk, 1)}, Polska ok. ${formatPL(rates.pl, 1)}.`}
   />
 </Figure>
 
 <RevocationTable />
 
-W latach {span} urzędy w Norwegii i Szwecji odebrały prawo do zawodu odpowiednio {total('no', WINDOW.from, WINDOW.to)} i {total('se', WINDOW.from, WINDOW.to)} lekarzom, a polskie sądy lekarskie — {plWindow}. Okno obejmuje rok 2024 z {plIn(2024)} pozbawieniami, najwięcej w całej serii, ale też rok {LAST_YEAR}, za który sprawozdania nie wykazują żadnego prawomocnego pozbawienia, a w danych okręgowych sądów brakuje izby w Koszalinie. Nawet gdyby doliczyć do tego roku wszystkie {lastFirstInstance} pozbawień orzeczonych w {LAST_YEAR} r. w pierwszej instancji, polski wskaźnik wyniósłby ok. {formatPL(plIfFinal, 1)}, a urzędy w Norwegii i Szwecji i tak odbierałyby prawo do zawodu ok. {Math.round(scandiMin / plIfFinal)} razy częściej.
+W latach {span} urzędy w Norwegii i Szwecji odebrały prawo do zawodu odpowiednio {total('no', WINDOW.from, WINDOW.to)} i {total('se', WINDOW.from, WINDOW.to)} lekarzom, brytyjski trybunał skreślił z rejestru {total('uk', WINDOW.from, WINDOW.to)} lekarzy, a polskie sądy lekarskie prawomocnie pozbawiły prawa do zawodu {plWindow}. Okno obejmuje rok 2024 z {plIn(2024)} pozbawieniami, najwięcej w całej serii, ale też rok {LAST_YEAR}, za który sprawozdania nie wykazują żadnego prawomocnego pozbawienia, a w danych okręgowych sądów brakuje izby w Koszalinie. Nawet gdyby doliczyć do tego roku wszystkie {lastFirstInstance} pozbawień orzeczonych w {LAST_YEAR} r. w pierwszej instancji, polski wskaźnik wyniósłby ok. {formatPL(plIfFinal, 1)}, a urzędy w Norwegii i Szwecji i tak odbierałyby prawo do zawodu ok. {Math.round(scandiMin / plIfFinal)} razy częściej.
 
-Lata {span} to ostatnie, za które mamy dane wszystkich trzech krajów. W {LAST_YEAR} r. oba urzędy odebrały prawo do zawodu większej liczbie lekarzy niż w którymkolwiek roku od 2010 r.: w Norwegii 58,[^helse-2025] w Szwecji 64.[^hsan]
+Lata {span} to ostatnie, za które mamy dane wszystkich czterech krajów. W {LAST_YEAR} r. oba urzędy odebrały prawo do zawodu większej liczbie lekarzy niż w którymkolwiek roku od 2010 r.: w Norwegii 58,[^helse-2025] w Szwecji 64.[^hsan]
 
-Te liczby nie są wprost porównywalne. W Polsce pozbawienie prawa wykonywania zawodu jest karą za przewinienie zawodowe. Przestępstwa osądza osobno sąd karny, a niezdolnością do pracy z powodu stanu zdrowia samorząd zajmuje się w innym trybie. Urzędy w Norwegii i Szwecji odbierają uprawnienia z różnych powodów w jednym trybie, a w Szwecji odebranie legitymacji może nastąpić także na wniosek samego lekarza.[^hsan] Norweski urząd dobrowolne zrzeczenia się autoryzacji podaje osobno.[^helse-2025] Mianowniki pochodzą z różnych rejestrów. Dlatego porównujemy rząd wielkości, a nie wynik co do jednego przypadku.
+Te liczby nie są wprost porównywalne. W Polsce pozbawienie prawa wykonywania zawodu jest karą za przewinienie zawodowe. Przestępstwa osądza osobno sąd karny, a niezdolnością do pracy z powodu stanu zdrowia samorząd zajmuje się w innym trybie. Urzędy w Norwegii i Szwecji odbierają uprawnienia z różnych powodów w jednym trybie, a w Szwecji odebranie legitymacji może nastąpić także na wniosek samego lekarza.[^hsan] Norweski urząd dobrowolne zrzeczenia się autoryzacji podaje osobno.[^helse-2025] Brytyjskie dane to orzeczenia trybunału w roku decyzji, od których przysługuje odwołanie do sądu, a nie orzeczenia prawomocne; nie obejmują skreśleń orzeczonych przy ponownym rozpatrzeniu wcześniejszych sankcji ani skreśleń na wniosek samego lekarza.[^gmc] Mianowniki pochodzą z różnych rejestrów. Dlatego porównujemy rząd wielkości, a nie wynik co do jednego przypadku.
+
+Najbliżej polskiego pozbawienia jest brytyjskie skreślenie z rejestru. W Wielkiej Brytanii to również sankcja za przewinienie: sprawy dotyczące wyłącznie stanu zdrowia lekarza, jak pisze GMC, nigdy nie kończą się skreśleniem.[^gmc] Trybunał skreślał lekarzy rzadziej niż urzędy skandynawskie, ok. {formatPL(rates.uk, 0)} skreśleń rocznie na 100 tys. lekarzy, ale wciąż ok. {ratioUk} razy częściej niż polskie sądy lekarskie. Lata 2020–2021 były tam nietypowe: w czasie pandemii trybunał przeprowadził mniej rozpraw.[^gmc]
 
 Czeska izba lekarska (ČLK), podobnie jak polski samorząd, jest korporacją zawodową. Rocznej statystyki nie publikuje, ale według jej prezesa przez 20 lat wykluczyła 10 lekarzy, a wykluczenie jest możliwe najwyżej na pięć lat.[^tempus] Dla Niemiec i Austrii porównywalnej liczby nie ma. Niemiecki rząd federalny odpowiedział w 2026 r. Bundestagowi, że krajową statystyką nie dysponuje.[^de] Austriacka ustawa o zawodzie lekarza zakazuje informowania opinii publicznej o przebiegu i wynikach niejawnych postępowań dyscyplinarnych.[^at]
 
@@ -240,7 +250,7 @@ Orzeczenia samorządu podlegają też kontroli z zewnątrz: kasację do Sądu Na
 
 Kary konkretnych lekarzy trafiają do Rejestru Ukaranych Lekarzy, który prowadzi Naczelna Rada Lekarska. Informację z rejestru dostaje tylko osoba lub instytucja, która wykaże interes prawny.[^rejestr]
 
-Dane zbiorcze są publiczne, ale rozproszone. NIL publikuje sprawozdania sądów lekarskich jako osobne pliki arkuszy i dokumentów, rok po roku.[^nil-sady] Żeby policzyć, ilu lekarzy prawomocnie straciło prawo do zawodu, trzeba zsumować dwie sekcje sprawozdań — okręgowych sądów lekarskich i Naczelnego Sądu Lekarskiego — dla wszystkich 24 izb. W dwóch plikach trzeba przy tym pominąć błędną komórkę sumy.[^suma-nil] Norwegia i Szwecja podają tę liczbę gotową, co roku i z podziałem na zawody.[^helse][^hsan]
+Dane zbiorcze są publiczne, ale rozproszone. NIL publikuje sprawozdania sądów lekarskich jako osobne pliki arkuszy i dokumentów, rok po roku.[^nil-sady] Żeby policzyć, ilu lekarzy prawomocnie straciło prawo do zawodu, trzeba zsumować dwie sekcje sprawozdań — okręgowych sądów lekarskich i Naczelnego Sądu Lekarskiego — dla wszystkich 24 izb. W dwóch plikach trzeba przy tym pominąć błędną komórkę sumy.[^suma-nil] Norwegia i Szwecja podają tę liczbę gotową, co roku i z podziałem na zawody, a brytyjski regulator — co roku w tabeli wyników trybunału.[^helse][^hsan][^gmc]
 
 Tę samą zasadę, czyli jawne dane bez nazwisk, proponujemy dla pieniędzy publicznych: [łączne wypłaty z publicznych pieniędzy dla każdej osoby, pod stałym identyfikatorem, bez nazwisk](/postulat/).
 
@@ -265,11 +275,15 @@ Tę samą zasadę, czyli jawne dane bez nazwisk, proponujemy dla pieniędzy publ
   }}
 />
 
+## Infografika do pobrania
+
+<Infographics set="odpowiedzialnosc-zawodowa-lekarzy" />
+
 ## Metoda
 
 Polskie liczby policzyliśmy sami z plików NIL: rocznych sprawozdań okręgowych sądów lekarskich i Naczelnego Sądu Lekarskiego za lata {allYears} oraz zestawienia orzeczeń z lat 2000–2014.[^nil-sady] Sumujemy wszystkie 24 izby, zawsze z kolumn poszczególnych izb, a nie z komórki sumy w pliku, bo w dwóch sprawozdaniach jest ona błędna.[^suma-nil] Prawomocne pozbawienie to orzeczenie okręgowego sądu, od którego nikt się nie odwołał (sekcja 8.9 sprawozdania), albo pozbawienie utrzymane lub orzeczone przez Naczelny Sąd Lekarski w drugiej instancji (sekcja 8.11). Te dwa zbiory się nie pokrywają. Strukturę kar liczymy z orzeczeń pierwszej instancji z lat {PENALTIES.period}. W sprawozdaniu okręgowych sądów za {LAST_YEAR} r. kolumna izby w Koszalinie jest pusta, choć w latach 2019–2024 ten sąd miał kilkanaście spraw rocznie, więc sumy za {LAST_YEAR} r. są niepełne.[^nil-2025]
 
-Wskaźnik na 100 tys. lekarzy to średnia roczna z lat {span} podzielona przez liczbę lekarzy. Dla Norwegii mianownikiem jest średnia liczba zatrudnionych lekarzy z tych lat. Dla Szwecji to szacunek takiej średniej, bo raport Socialstyrelsen podaje stan z maja {LAST_YEAR} r. i zmianę od 2020 r., a nie serię roczną. Szwedzka liczba obejmuje tylko lekarzy zatrudnionych w ochronie zdrowia, norweska — wszystkich zatrudnionych lekarzy.[^lekarze] Dla Polski bierzemy {formatPL(PL_DOCTORS)} lekarzy wykonujących zawód według rejestru NIL w styczniu 2026 r., bo serii rocznej z tego rejestru nie mamy.[^lekarze] Gdyby w latach {span} lekarzy było średnio o jedną piątą mniej, polski wskaźnik wyniósłby ok. {formatPL(rate(plWindow, PL_DOCTORS * 0.8), 1)}, więc rząd wielkości się nie zmienia.
+Wskaźnik na 100 tys. lekarzy to średnia roczna z lat {span} podzielona przez liczbę lekarzy. Dla Norwegii mianownikiem jest średnia liczba zatrudnionych lekarzy z tych lat. Dla Szwecji to szacunek takiej średniej, bo raport Socialstyrelsen podaje stan z maja {LAST_YEAR} r. i zmianę od 2020 r., a nie serię roczną. Szwedzka liczba obejmuje tylko lekarzy zatrudnionych w ochronie zdrowia, norweska — wszystkich zatrudnionych lekarzy.[^lekarze] Dla Wielkiej Brytanii bierzemy lekarzy z licencją do wykonywania zawodu i szacujemy średnią z okna jako średnią stanów z 2020 r. ({formatPL(UK_DOCTORS_2020)}) i 2024 r. ({formatPL(UK_DOCTORS_2024)}), bo liczby za {LAST_YEAR} r. GMC jeszcze nie podał.[^gmc-kadry] Dla Polski bierzemy {formatPL(PL_DOCTORS)} lekarzy wykonujących zawód według rejestru NIL w styczniu 2026 r., bo serii rocznej z tego rejestru nie mamy.[^lekarze] Gdyby w latach {span} lekarzy było średnio o jedną piątą mniej, polski wskaźnik wyniósłby ok. {formatPL(rate(plWindow, PL_DOCTORS * 0.8), 1)}, więc rząd wielkości się nie zmienia.
 
 Polski mianownik nie obejmuje lekarzy dentystów, a sprawozdania sądów lekarskich ich obejmują i nie wyodrębniają w wierszach kar. Specjalności stomatologiczne to w latach 2020–2025 od 14 do 20% wniosków o ukaranie, przy których sprawozdania podają specjalizację.[^nil-sady] Gdyby doliczyć dentystów do mianownika, polski wskaźnik byłby jeszcze niższy. Szwedzka i norweska statystyka podaje dentystów osobno, więc tam ich w porównaniu nie ma.[^hsan][^helse-2025] W szwedzkiej serii za 2013 r. przyjmujemy liczbę ze sprawozdania HSAN (25), choć Läkartidningen podaje 17.[^hsan]
 
@@ -291,6 +305,8 @@ Polski mianownik nie obejmuje lekarzy dentystów, a sprawozdania sądów lekarsk
 [^helse]: Helsetilsynet, [statystyka reakcji wobec personelu ochrony zdrowia](https://www.helsetilsynet.no/tilsyn/om-tilsynssaker/statistikk-reaksjoner-mot-helsepersonell/): roczne komunikaty o odebraniu autoryzacji lub licencji lekarzom; lata 2010–2018 z archiwum komunikatów i raportów „Tilsynsmelding”, lata 2019–2024 z bieżących komunikatów.
 [^helse-2025]: Helsetilsynet, [Tilsyn med virksomheter og helsepersonell – administrative reaksjoner i 2025](https://www.helsetilsynet.no/presse/nyhetsarkiv/2026/tilsyn-virksomheter-helsepersonell-administrative-reaksjoner-2025/), 9.02.2026: autoryzację odebrano 58 lekarzom; dobrowolne zrzeczenia się autoryzacji urząd podaje osobno.
 [^hsan]: Hälso- och sjukvårdens ansvarsnämnd (HSAN), [sprawozdanie z działalności za 2025 r.](https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/dokument-webb/ovrigt/hsan-verksamhetsredogorelse-2025.pdf) (PDF), tab. 6: odebrania legitymacji lekarzom — 2023: 55, 2024: 48, 2025: 64 (w tym 4 tymczasowe); dentyści w osobnym wierszu; lata 2010–2017 z wcześniejszych sprawozdań. Wnioski o odebranie legitymacji składa m.in. inspektorat IVO, a HSAN rozpatruje też wnioski samych lekarzy.
+[^gmc]: General Medical Council, roczne statystyki postępowań w sprawie zdolności do wykonywania zawodu: [raport za 2025 r.](https://www.gmc-uk.org/cdn/documents/concerns-about-fitness-to-practise-annual-statistical-report-2025-english_pdf-115384449.pdf) (PDF), tab. 3b (wyniki trybunałów 2020–2025, wiersz „Impairment – erasure”; rola MPTS; sprawy wyłącznie zdrowotne nie kończą się skreśleniem; publikacja informacji o rozprawach), [raport za 2024 r.](https://www.gmc-uk.org/cdn/documents/fitness-to-practise-statistics-report-2024_pdf-112202260.pdf) (PDF), tab. 6, oraz wcześniejsze raporty roczne (lata 2010–2019; spadek liczby rozpraw w 2020 r. z powodu pandemii — raport za 2020 r.). Rok kalendarzowy decyzji; bez skreśleń po ponownym rozpatrzeniu sankcji i bez skreśleń na wniosek lekarza.
+[^gmc-kadry]: General Medical Council, [The state of medical education and practice in the UK: workforce report 2025](https://www.gmc-uk.org/cdn/documents/wfr25-report-251117_pdf-112967442.pdf) (PDF), cz. 2: 328 149 lekarzy z licencją w 2024 r. wobec 272 255 w 2020 r.
 [^tempus]: Česká lékařská komora, [Tempus Medicorum 12/2024](https://www.lkcr.cz/doc/tempus_file/tempus_medicorum_12_2024_web-218.pdf) (PDF): wypowiedź prezesa izby o 10 wykluczeniach w ciągu 20 lat; wykluczenie jest możliwe najwyżej na 5 lat.
 [^de]: Deutscher Bundestag, [druk 21/4787](https://dserver.bundestag.de/btd/21/047/2104787.pdf) (PDF), 2026: rząd federalny nie dysponuje krajową statystyką.
 [^at]: [§ 194 ÄrzteG](https://www.jusline.at/gesetz/aerzteg/paragraf/194), austriacka ustawa o zawodzie lekarza: zakaz informowania opinii publicznej o przebiegu i wynikach niejawnych postępowań dyscyplinarnych.

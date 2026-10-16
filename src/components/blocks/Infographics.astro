@@ -1,0 +1,75 @@
+---
+/**
+ * Infografiki do pobrania: podgląd pionowej wersji i linki do obu formatów (pion 1080×1350,
+ * poziom 1200×675). PNG-i generuje build (pages/infografiki/, szablon lib/infografiki/render.ts),
+ * a treść i liczby — zestaw z lib/infografiki/zestawy.ts, liczony z modułu danych strony.
+ *
+ *   <Infographics set="odpowiedzialnosc-zawodowa-lekarzy" />
+ *
+ * Grafiki są zawsze jasne (jak obrazki OG), więc w trybie nocnym podgląd dostaje ramkę 1 px,
+ * żeby biała karta nie zlewała się z tłem bez granicy.
+ */
+import { FORMATS, infographicUrl, type FormatKey } from '@/lib/infografiki/render';
+import { infographicSets } from '@/lib/infografiki/zestawy';
+import { typo } from '@/lib/format';
+import Icon from '@/components/ui/Icon.astro';
+import type { IconName } from '@/icons';
+
+interface Props {
+  /** klucz zestawu = ostatni człon trasy strony */
+  set: string;
+}
+
+const set = infographicSets[Astro.props.set];
+if (!set) throw new Error(`[infografiki] nieznany zestaw „${Astro.props.set}”`);
+const formats = Object.keys(FORMATS) as FormatKey[];
+const formatIcon: Record<FormatKey, IconName> = { pion: 'format-pion', poziom: 'format-poziom' };
+const fileName = (id: string, f: FormatKey) => `${set.filePrefix}-${id}-${FORMATS[f].width}x${FORMATS[f].height}.png`;
+---
+<div class="ig">
+  <p class="ig__lead">
+    {typo(`${set.items.length > 1 ? 'Grafiki' : 'Grafika'} do udostępnienia w dwóch formatach: pionowym ${FORMATS.pion.width}×${FORMATS.pion.height} (${FORMATS.pion.use}) i poziomym ${FORMATS.poziom.width}×${FORMATS.poziom.height} (${FORMATS.poziom.use}). Źródła, adres strony i kod QR do niej są na grafice.`)}
+  </p>
+  <ul class="ig__grid">
+    {set.items.map((item) => (
+      <li class="ig__item">
+        <a class="ig__thumb" href={infographicUrl(set, item.id, 'pion')} target="_blank" rel="noopener">
+          <img src={infographicUrl(set, item.id, 'pion')} width={FORMATS.pion.width} height={FORMATS.pion.height} alt={item.alt} loading="lazy" decoding="async" />
+        </a>
+        <p class="ig__title">{typo(item.title.replace(/\n/g, ' '))}</p>
+        <p class="ig__dl">
+          <span class="ig__dl-label">Pobierz PNG</span>
+          {formats.map((f) => (
+            <a class="ig__fmt" href={infographicUrl(set, item.id, f)} download={fileName(item.id, f)} aria-label={`Pobierz PNG, ${FORMATS[f].label === 'pion' ? 'pionowo' : 'poziomo'}, ${FORMATS[f].width}×${FORMATS[f].height}`} title={`${FORMATS[f].label === 'pion' ? 'Pionowo' : 'Poziomo'} — ${FORMATS[f].use}`}>
+              <Icon name={formatIcon[f]} size={18} />
+              <span>{FORMATS[f].width}×{FORMATS[f].height}</span>
+            </a>
+          ))}
+        </p>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  .ig__lead { max-width: 46rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text); }
+  .ig__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 32px 24px; margin-top: 24px; padding: 0; list-style: none; }
+  .ig__item { display: flex; flex-direction: column; }
+  .ig__thumb { display: block; line-height: 0; border: 1px solid var(--line); transition: border-color .2s; }
+  .ig__thumb:hover { border-color: var(--blue); }
+  .ig__thumb:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .ig__thumb img { display: block; width: 100%; height: auto; }
+  .ig__title {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ink);
+    font: 500 1rem/1.35 var(--f-display); letter-spacing: -0.015em; color: var(--ink);
+  }
+  .ig__dl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; font: 400 0.75rem/1.55 var(--f-mono); }
+  .ig__dl-label { color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  /* Format pliku pokazuje ikona kadru (pion / poziom); wymiary obok, pełny opis w aria-label */
+  .ig__dl-label { flex-basis: 100%; }
+  /* .ig__dl a.ig__fmt: mocniej niż reguła linków w treści artykułu, która dokleja podkreślenie */
+  .ig__dl a.ig__fmt { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px 4px 6px; border: 1px solid var(--line-2); color: var(--text-strong); transition: color .2s, border-color .2s; }
+  .ig__dl a.ig__fmt :global(.icon) { color: var(--blue); }
+  .ig__dl a.ig__fmt:hover { color: var(--blue); border-color: var(--blue); }
+  .ig__dl a.ig__fmt:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+</style>

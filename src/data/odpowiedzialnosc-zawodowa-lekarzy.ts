@@ -1,6 +1,6 @@
 /**
  * Analiza /analizy/odpowiedzialnosc-zawodowa-lekarzy/: kary sądów lekarskich i odebrania prawa
- * wykonywania zawodu w Polsce, Norwegii i Szwecji. Tekst i przypisy są w
+ * wykonywania zawodu w Polsce, Norwegii, Szwecji i Wielkiej Brytanii. Tekst i przypisy są w
  * content/articles/odpowiedzialnosc-zawodowa-lekarzy.mdx, tabela lat w
  * components/odpowiedzialnosc-zawodowa-lekarzy/RevocationTable.
  *
@@ -15,7 +15,8 @@
  *
  * Aktualizacja o kolejny rok: dopisz rok do PENALTY_YEARS, FIRST_INSTANCE_YEARS (przez
  * PENALTY_YEARS), REVOCATIONS, NO_DOCTORS i OROZ_CASES, przesuń WINDOW i PENALTY_WINDOW,
- * a mianownik Szwecji (SE_*) weź z nowego raportu Socialstyrelsen dla nowego okna.
+ * a mianowniki Szwecji (SE_*) i Wielkiej Brytanii (UK_*) weź z nowych raportów Socialstyrelsen i GMC
+ * dla nowego okna.
  */
 
 export const LINKS = {
@@ -35,6 +36,12 @@ export const LINKS = {
   ssb: 'https://www.ssb.no/statbank/table/07938/',
   hsan: 'https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/dokument-webb/ovrigt/hsan-verksamhetsredogorelse-2025.pdf',
   socialstyrelsen: 'https://www.socialstyrelsen.se/contentassets/8f0d27a18c394508bb609d03d5153dc2/2026-2-10048.pdf',
+  /** GMC, roczne statystyki postępowań (2025: tab. 3b wyników trybunałów, lata 2020–2025) */
+  gmc2025: 'https://www.gmc-uk.org/cdn/documents/concerns-about-fitness-to-practise-annual-statistical-report-2025-english_pdf-115384449.pdf',
+  /** GMC, statystyki za 2024 r. (tab. 6, lata 2020–2024) */
+  gmc2024: 'https://www.gmc-uk.org/cdn/documents/fitness-to-practise-statistics-report-2024_pdf-112202260.pdf',
+  /** GMC, raport o kadrach 2025 — lekarze z licencją */
+  gmcWorkforce: 'https://www.gmc-uk.org/cdn/documents/wfr25-report-251117_pdf-112967442.pdf',
 } as const;
 
 /* ---------- Kary orzeczone przez okręgowe sądy lekarskie, I instancja ---------- */
@@ -127,9 +134,9 @@ export const FIRST_INSTANCE = [
 ] as const;
 export const FIRST_INSTANCE_TOTAL = FIRST_INSTANCE.reduce((sum, p) => sum + p.n, 0);
 
-/* ---------- Odebrania prawa wykonywania zawodu lekarzom: Polska, Norwegia, Szwecja ---------- */
+/* ---------- Odebrania prawa wykonywania zawodu lekarzom: Polska, Norwegia, Szwecja, Wielka Brytania ---------- */
 
-export type CountryKey = 'pl' | 'no' | 'se';
+export type CountryKey = 'pl' | 'no' | 'se' | 'uk';
 
 export type RevocationYear = { year: number } & Record<CountryKey, number>;
 
@@ -143,27 +150,32 @@ export type RevocationYear = { year: number } & Record<CountryKey, number>;
  *     2025 wg komunikatu z 9.02.2026).
  * SE: återkallelse av legitimation, läkare (HSAN, tab. 6; 2013 = 25 wg sprawozdania, Läkartidningen podaje 17;
  *     2025 = 64, w tym 4 tymczasowo).
+ * UK: erasure orzeczone przez trybunał MPT (Medical Practitioners Tribunal Service), lekarze, rok kalendarzowy
+ *     decyzji — GMC, roczne statystyki fitness to practise, tabele wyników trybunałów (kolejne raporty nie
+ *     korygowały wcześniejszych lat). To orzeczenia trybunału, od których przysługuje odwołanie do sądu, w roku
+ *     decyzji. Bez skreśleń po review tribunals (podawane tylko w części lat, 9–19 rocznie) i bez dobrowolnych
+ *     (voluntary erasure). 2020–2021 zaburzone pandemią (mniej rozpraw).
  */
 export const REVOCATIONS: RevocationYear[] = [
-  { year: 2010, pl: 0, no: 27, se: 10 },
-  { year: 2011, pl: 0, no: 24, se: 7 },
-  { year: 2012, pl: 0, no: 29, se: 20 },
-  { year: 2013, pl: 0, no: 25, se: 25 },
-  { year: 2014, pl: 1, no: 32, se: 16 },
-  { year: 2015, pl: 1, no: 37, se: 14 },
-  { year: 2016, pl: 4, no: 28, se: 15 },
-  { year: 2017, pl: 1, no: 47, se: 10 },
-  { year: 2018, pl: 0, no: 45, se: 24 },
-  { year: 2019, pl: 1, no: 40, se: 31 },
-  { year: 2020, pl: 2, no: 30, se: 36 },
-  { year: 2021, pl: 1, no: 44, se: 41 },
-  { year: 2022, pl: 1, no: 37, se: 43 },
-  { year: 2023, pl: 1, no: 29, se: 55 },
-  { year: 2024, pl: 7, no: 27, se: 48 },
-  { year: 2025, pl: 0, no: 58, se: 64 },
+  { year: 2010, pl: 0, no: 27, se: 10, uk: 73 },
+  { year: 2011, pl: 0, no: 24, se: 7, uk: 65 },
+  { year: 2012, pl: 0, no: 29, se: 20, uk: 55 },
+  { year: 2013, pl: 0, no: 25, se: 25, uk: 55 },
+  { year: 2014, pl: 1, no: 32, se: 16, uk: 71 },
+  { year: 2015, pl: 1, no: 37, se: 14, uk: 72 },
+  { year: 2016, pl: 4, no: 28, se: 15, uk: 70 },
+  { year: 2017, pl: 1, no: 47, se: 10, uk: 62 },
+  { year: 2018, pl: 0, no: 45, se: 24, uk: 65 },
+  { year: 2019, pl: 1, no: 40, se: 31, uk: 55 },
+  { year: 2020, pl: 2, no: 30, se: 36, uk: 43 },
+  { year: 2021, pl: 1, no: 44, se: 41, uk: 58 },
+  { year: 2022, pl: 1, no: 37, se: 43, uk: 68 },
+  { year: 2023, pl: 1, no: 29, se: 55, uk: 60 },
+  { year: 2024, pl: 7, no: 27, se: 48, uk: 67 },
+  { year: 2025, pl: 0, no: 58, se: 64, uk: 48 },
 ];
 
-/** Okno porównania: ostatnie lata, za które mamy dane wszystkich trzech krajów. */
+/** Okno porównania: ostatnie lata, za które mamy dane wszystkich czterech krajów. */
 export const WINDOW = { from: 2020, to: 2025 } as const;
 const WINDOW_YEARS = WINDOW.to - WINDOW.from + 1;
 
@@ -218,6 +230,17 @@ const NO_DOCTORS_AVG = avg(windowYears.map((y) => NO_DOCTORS[y]));
 /** ≈ 43 373 (szacunek) */
 const SE_DOCTORS_AVG = (SE_DOCTORS_2020 + SE_DOCTORS_2025) / 2;
 
+/**
+ * Wielka Brytania: lekarze z licencją do wykonywania zawodu (licensed doctors; NIE „on register”,
+ * który obejmuje też osoby bez licencji) — GMC, raport o kadrach 2025: 272 255 w 2020 r. i 328 149
+ * w 2024 r. Za 2025 r. liczby jeszcze nie ma, więc średnią z okna szacujemy jak dla Szwecji: jako
+ * średnią stanów z 2020 i 2024 r. Działa tylko dla WINDOW 2020–2025.
+ */
+export const UK_DOCTORS_2020 = 272255;
+export const UK_DOCTORS_2024 = 328149;
+/** ≈ 300 202 (szacunek) */
+const UK_DOCTORS_AVG = (UK_DOCTORS_2020 + UK_DOCTORS_2024) / 2;
+
 const thousands = (n: number) => `ok. ${Math.round(n / 1000)} tys.`;
 
 export interface Country {
@@ -248,6 +271,11 @@ export const COUNTRIES: Country[] = [
     doctors: SE_DOCTORS_AVG, doctorsLabel: thousands(SE_DOCTORS_AVG),
     doctorsNote: `zatrudnionych w ochronie zdrowia, szacunek średniej z lat ${WINDOW.from}–${WINDOW.to}`,
   },
+  {
+    key: 'uk', name: 'Wielka Brytania', body: 'trybunał',
+    doctors: UK_DOCTORS_AVG, doctorsLabel: thousands(UK_DOCTORS_AVG),
+    doctorsNote: `z licencją, szacunek średniej z lat ${WINDOW.from}–${WINDOW.to}`,
+  },
 ];
 
 /** Średnio rocznie na 100 tys. lekarzy przy danej sumie z okna i mianowniku. */
@@ -255,7 +283,7 @@ export const rate = (sum: number, doctors: number) => (sum / WINDOW_YEARS / doct
 
 /**
  * Średnio rocznie na 100 tys. lekarzy w oknie porównania:
- * (suma z okna ÷ liczba lat) ÷ liczba lekarzy × 100 000. 2020–2025: NO ≈ 110,4, SE ≈ 110,3, PL ≈ 1,2.
+ * (suma z okna ÷ liczba lat) ÷ liczba lekarzy × 100 000. 2020–2025: NO ≈ 110,4, SE ≈ 110,3, UK ≈ 19,1, PL ≈ 1,2.
  * Mianowniki z różnych rejestrów krajowych — wynik przybliżony.
  */
 export const ratePer100k = (key: CountryKey) => {
@@ -267,6 +295,9 @@ export const ratePer100k = (key: CountryKey) => {
 export const RATIO = Math.min(ratePer100k('no'), ratePer100k('se')) / ratePer100k('pl');
 /** RATIO zaokrąglone do dziesiątek — do tekstu („ok. 90 razy”). */
 export const RATIO_ROUNDED = Math.round(RATIO / 10) * 10;
+
+/** Ile razy częściej trybunał w Wielkiej Brytanii niż polskie sądy lekarskie: ≈ 16. */
+export const RATIO_UK = ratePer100k('uk') / ratePer100k('pl');
 
 /* ---------- Sprawy u rzeczników i w sądach ---------- */
 

@@ -23,6 +23,9 @@ export const icons = {
   grid: `<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" ${stroke}/>`,
   pause: `<path d="M8.5 5v14M15.5 5v14" ${stroke}/>`,
   play: `<path d="M7 4.5v15L19 12z" ${stroke} stroke-linejoin="round"/>`,
+  // orientacja pliku do pobrania (blocks/Infographics): kadr 4:5 / 16:9 ze strzałką w dół
+  'format-pion': `<path d="M6.5 2.75h11v18.5h-11z" ${stroke}/><path d="M12 8v7.5M9 12.5l3 3 3-3" ${stroke}/>`,
+  'format-poziom': `<path d="M2.75 6.5h18.5v11H2.75z" ${stroke}/><path d="M12 8.5v6M9 11.5l3 3 3-3" ${stroke}/>`,
   expand: `<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" ${stroke}/>`,
   clock: `<circle cx="12" cy="12" r="8.5" ${stroke}/><path d="M12 7.5V12l3 2" ${stroke}/>`,
   alert: `<path d="M12 3.5 21.5 20h-19z" ${stroke} stroke-linejoin="round"/><path d="M12 10v4.5M12 16.25v1.5" ${stroke}/>`,

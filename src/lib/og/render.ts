@@ -28,6 +28,7 @@ const TEXT_W = OG_WIDTH - 2 * PAD_X - MEDIA_W - GAP; // kolumna tekstu obok medi
 const WIDE_W = OG_WIDTH - 2 * PAD_X; // tytuł bez mediów: cała szerokość
 
 /* ---------- Tokeny: jedno źródło prawdy z src/styles/tokens.css ---------- */
+// Klocki oznaczone `export` dzieli z tym szablonem szablon infografik (lib/infografiki/render.ts).
 // Obrazki OG są zawsze jasne: z light-dark(dzień, noc) bierzemy wartość dzienną (Satori nie zna light-dark)
 const lightOf = (value: string) =>
   value.replace(/light-dark\(((?:[^(),]|\([^()]*\))+),(?:[^()]|\([^()]*\))+\)/g, '$1').trim();
@@ -36,7 +37,7 @@ const token = (name: string) => {
   if (!value) throw new Error(`[og] brak tokenu --${name} w tokens.css`);
   return lightOf(value);
 };
-const C = {
+export const C = {
   blue: token('blue'),
   blue50: token('blue-50'),
   blue700: token('blue-700'),
@@ -47,9 +48,9 @@ const C = {
   amber: token('amber'),
   amberBg: token('amber-bg'),
 };
-const DISPLAY = 'Inter Tight, Inter Tight Ext';
-const BODY = 'Plex Sans, Plex Sans Ext';
-const MONO = 'Plex Mono, Plex Mono Ext';
+export const DISPLAY = 'Inter Tight, Inter Tight Ext';
+export const BODY = 'Plex Sans, Plex Sans Ext';
+export const MONO = 'Plex Mono, Plex Mono Ext';
 const SHADOW = token('shadow-photo').split(/,(?![^(]*\))/)[0]; // Satori: jeden cień
 
 /* ---------- Fonty (ładowane raz) ---------- */
@@ -66,7 +67,7 @@ const family = (name: string, pkg: string, weights: Font['weight'][]) =>
   );
 
 let fonts: Promise<Font[]> | undefined;
-const loadFonts = () =>
+export const loadFonts = () =>
   (fonts ??= Promise.all([
     ...family('Inter Tight', 'inter-tight', [300, 400, 500]),
     ...family('Plex Sans', 'ibm-plex-sans', [400, 600]),
@@ -110,10 +111,10 @@ function photoUri(img: ImageMetadata, position: string): Promise<string> {
 
 /* ---------- Mini-JSX dla Satori ---------- */
 type Child = Node | string | false | null | undefined;
-interface Node { type: string; props: Record<string, unknown> }
+export interface Node { type: string; props: Record<string, unknown> }
 type Style = Record<string, string | number>;
 
-function h(type: string, props: { style?: Style; [k: string]: unknown } = {}, ...children: (Child | Child[])[]): Node {
+export function h(type: string, props: { style?: Style; [k: string]: unknown } = {}, ...children: (Child | Child[])[]): Node {
   const { style = {}, ...rest } = props;
   return {
     type,
@@ -175,7 +176,7 @@ const splitBadge = (text: string): [string | undefined, string] => {
 };
 
 /* ---------- Atomy ---------- */
-const logo = () =>
+export const logo = () =>
   h('div', { style: { alignItems: 'center', fontFamily: DISPLAY, fontWeight: 500, fontSize: 26, letterSpacing: '-0.03em', color: C.ink } },
     h('img', { src: iconUri('logo', C.blue), width: 30, height: 30, style: { marginRight: 14 } }),
     'zarobkilekarzy',

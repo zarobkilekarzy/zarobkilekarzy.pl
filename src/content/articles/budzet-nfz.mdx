@@ -6,14 +6,14 @@ order: 1
 format: Wykresy
 stat: { value: "×2", unit: realnie od 2015 r. }
 date: 2026-07-06
-updated: 2026-10-15
+updated: 2026-10-16
 summary: "Koszty w planie finansowym NFZ wzrosły od 2015 r. ponad trzykrotnie, a po odliczeniu inflacji mniej więcej dwukrotnie. Na 2026 r. Fundusz planuje 227,4 mld zł kosztów i 33,6 mld zł dotacji z budżetu państwa. Ile z tego idzie na ustawowe podwyżki płac, plan nie pokazuje — znamy tylko szacunki."
 description: "Koszty w planie NFZ 2015–2026 w jednej definicji: ponad trzy razy więcej nominalnie, dwa razy realnie. Plan na 2026 r., dotacja z budżetu i koszt podwyżek."
 keyPoints:
-  - "Każdy rok liczymy tak samo: koszty ogółem w ostatecznym planie finansowym NFZ. Od 2015 do 2025 r. wzrosły z 71,5 do 220,2 mld zł, czyli ponad trzykrotnie, a w cenach z 2015 r. mniej więcej dwukrotnie."
-  - "Plan na 2026 r. zmieniał się w ciągu roku. Projekt z lipca 2025 r. zakładał 217,4 mld zł, a po zmianie z 5 października 2026 r. koszty wynoszą 227,4 mld zł, o 3,3% więcej niż w planie ostatecznym na 2025 r."
-  - "Dotacja z budżetu państwa wzrosła z 0,2 mld zł w planie na 2023 r. do 33,6 mld zł na 2026 r., czyli ok. 15% przychodów Funduszu. W projekcie planu na 2027 r. to ok. 35 mld zł."
-  - "Plan NFZ nie ma pozycji „płace personelu”. Koszt ustawy o najniższych wynagrodzeniach znamy tylko z szacunków: 58 mld zł w 2025 r. i 71–72 mld zł w 2026 r., czyli w 2026 r. mniej więcej jedną trzecią planowanych kosztów."
+  - "Od 2015 do 2025 r. koszty w planie NFZ wzrosły z 71,5 do 220,2 mld zł: nominalnie ponad trzykrotnie, realnie mniej więcej dwukrotnie."
+  - "Plan zmienia się w ciągu roku. Na 2026 r. projekt zakładał 217,4 mld zł kosztów, a plan po październikowej zmianie — 227,4 mld zł."
+  - "Projekt planu na 2027 r. nie ma deficytu, ale według szacunku Rady Fiskalnej Funduszowi zabraknie ok. 16 mld zł, nawet przy dotacji 41,5 mld zł z projektu budżetu."
+  - "Plan nie pokazuje, ile kosztują płace. Koszt ustawy o najniższych wynagrodzeniach znamy z szacunków: 71–72 mld zł w 2026 r., ok. jednej trzeciej kosztów."
 related:
   - kolejki
   - sladem-zlotowki
@@ -26,7 +26,7 @@ import Figure from '@/components/blocks/Figure.astro';
 import BarChart from '@/components/blocks/BarChart.astro';
 import Comparison from '@/components/blocks/Comparison.astro';
 import Aside from '@/components/blocks/Aside.astro';
-import { BUDGET_TABLE, CURRENT, CURRENT_PLAN, DRAFT_2026, LAST_FINAL, LINKS, budget, change, costRows, formatMld } from '@/data/budzet-nfz';
+import { BUDGET_TABLE, CURRENT, CURRENT_PLAN, DRAFT_2026, DRAFT_2027, GAP_2027, LAST_FINAL, LINKS, OVERRUN_2021_2025, budget, change, costRows, formatMld } from '@/data/budzet-nfz';
 import { GROWTH, LINKS as Q, priceLevel } from '@/data/kolejki';
 import { formatPL } from '@/lib/format';
 
@@ -90,7 +90,9 @@ W 2026 r. plan zmieniano kilka razy. Do końca lipca zwiększono przychody, w ty
 
 W tekstach o NFZ pojawiają się też inne kwoty z tego samego planu, na przykład koszty świadczeń opieki zdrowotnej. W aktualnym planie na 2026 r. to {f1(CURRENT.benefits)} mld zł.[^z107] To część kosztów ogółem, a nie konkurencyjna wersja budżetu. O tym, jak plan zmienia się w ciągu roku, piszemy też w analizie [Śladem publicznej złotówki](/analizy/sladem-zlotowki/).
 
-Media piszą też o luce w finansach Funduszu. W czerwcu 2026 r. Rynek Zdrowia oceniał „dziurę” w budżecie NFZ na ok. 16 mld zł,[^rz] a Rzeczpospolita podała, że w 2027 r. koszty Funduszu mają przewyższyć przychody o ok. 21 mld zł.[^rp] Te kwoty to szacunki, a nie pozycje planu. W aktualnym planie na 2026 r. koszty przewyższają przychody o {f1(CURRENT.costs - CURRENT.revenue)} mld zł.[^z107]
+Media piszą też o luce w finansach Funduszu. W czerwcu 2026 r. Rynek Zdrowia oceniał „dziurę” w budżecie NFZ na ok. 16 mld zł.[^rz] To szacunek, a nie pozycja planu. W aktualnym planie na 2026 r. koszty przewyższają przychody o {f1(CURRENT.costs - CURRENT.revenue)} mld zł.[^z107]
+
+Projekt planu na 2027 r., przedstawiony sejmowej Komisji Zdrowia w lipcu 2026 r., jest zrównoważony, czyli bez deficytu: przychody i koszty wynoszą w nim po {f1(DRAFT_2027.total)} mld zł, w tym {DRAFT_2027.subsidy} mld zł dotacji z budżetu państwa.[^kz152] Projekt ustawy budżetowej na 2027 r. przewiduje jednak dotację dla NFZ w wysokości {f1(GAP_2027.subsidy)} mld zł, więc — jak zauważa Rada Fiskalna — plan Funduszu jest w tej części niespójny z projektem budżetu.[^rf] Według Rady Fiskalnej, która powołuje się na szacunek swojego biura, niedobór finansowania NFZ w 2027 r. wyniesie ok. {GAP_2027.value} mld zł, i to już po uwzględnieniu tej wyższej dotacji. To szacunek, a nie pozycja planu. Rada przypomina też, że w latach 2021–2025 koszty wykonane przez NFZ przewyższały plan pierwotny o ok. {OVERRUN_2021_2025.min}–{OVERRUN_2021_2025.max} mld zł rocznie.[^rf]
 
 ## Dotacja z budżetu państwa
 
@@ -101,7 +103,7 @@ Do 2019 r. plan NFZ nie miał dotacji podmiotowej z budżetu państwa. Były w n
   items={[
     { value: LAST_FINAL.subsidy, decimals: 1, unit: 'mld zł', desc: `w planie ostatecznym na ${LAST_FINAL.year} r.`, accuracy: 'exact', source: `NFZ, plan ostateczny ${LAST_FINAL.year}`, href: LAST_FINAL.href },
     { value: CURRENT.subsidy, decimals: 1, unit: 'mld zł', desc: `w aktualnym planie na ${CURRENT.year} r. — o ${formatPL(change(LAST_FINAL.subsidy, CURRENT.subsidy))}% więcej`, accuracy: 'exact', source: `NFZ, zarządzenie ${CURRENT_PLAN.ordinance}`, href: LINKS.z107 },
-    { value: 35, prefix: '~', unit: 'mld zł', desc: 'w projekcie planu na 2027 r.', accuracy: 'est', source: 'Rzeczpospolita', href: LINKS.rpLuka },
+    { value: DRAFT_2027.subsidy, unit: 'mld zł', desc: `w projekcie planu na 2027 r.; w projekcie budżetu państwa ${f1(GAP_2027.subsidy)} mld zł`, accuracy: 'exact', source: 'Sejm, Komisja Zdrowia nr 152', href: DRAFT_2027.href },
   ]}
 />
 
@@ -150,7 +152,9 @@ Ile wynoszą długi publicznych szpitali, pokazujemy w zestawieniu [Zadłużenie
 
 [^rz]: Rynek Zdrowia, [9 mld zł na podwyżki dla medyków. Zapłaci Narodowy Fundusz Zdrowia](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/9-mld-zl-na-podwyzki-dla-medykow-Zaplaci-Narodowy-Fundusz-Zdrowia,285313,1.html), 11.06.2026.
 
-[^rp]: Rzeczpospolita, [tekst o projekcie planu NFZ na 2027 r.](https://www.rp.pl/rynek-zdrowia/art44627201-budzet-nfz-sie-nie-spina-w-przyszlym-roku-bedzie-jeszcze-gorzej), 15.06.2026, aktualizacja 15.10.2026 — dotacja ok. 35 mld zł, koszty wyższe od przychodów o ok. 21 mld zł.
+[^kz152]: Sejm RP, [Pełny zapis przebiegu posiedzenia Komisji Zdrowia (nr 152)](https://api.sejm.gov.pl/sejm/term10/committees/ZDR/sittings/152/pdf), 2.07.2026 — projekt planu finansowego NFZ na 2027 r.: przychody 237 342 389 tys. zł, koszty 237 342 389 tys. zł, dotacja z budżetu państwa 35 000 000 tys. zł.
+
+[^rf]: Rada Fiskalna, [Opinia Rady Fiskalnej o projekcie ustawy budżetowej na rok 2027 z dnia 27 sierpnia 2026 roku](https://www.radafiskalna.gov.pl/wp-content/uploads/2026/09/2026-09-11_opinia-RF-o-wPUB27.pdf), 11.09.2026 — s. 29: niedobór finansowania NFZ w 2027 r. szacowany przez Biuro Rady Fiskalnej na ok. 16 mld zł „już po uwzględnieniu dotacji podmiotowej w wysokości 41,5 mld zł”; wykonanie kosztów NFZ w latach 2021–2025 wyższe od planu pierwotnego o ok. 19–22 mld zł rocznie; plan NFZ w zakresie dotacji niespójny z projektem budżetu. S. 35–36: dotacja podmiotowa dla NFZ w projekcie ustawy budżetowej na 2027 r. — 41,5 mld zł.
 
 [^tvn]: TVN24, [„Grzech pierworodny” ustawy. Kulisy finansowania płac minimalnych w ochronie zdrowia](https://tvn24.pl/zdrowie/podwyzki-plac-minimalnych-w-ochronie-zdrowia-ile-beda-kosztowaly-st9013918), 23.04.2026 — koszt w 2025 r. za analizami Federacji Przedsiębiorców Polskich, w 2026 r. według wiceprezesa NFZ podczas Europejskiego Kongresu Gospodarczego.
 

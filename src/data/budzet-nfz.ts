@@ -56,8 +56,6 @@ export const LINKS = {
   kz152: 'https://api.sejm.gov.pl/sejm/term10/committees/ZDR/sittings/152/pdf',
   /** Rada Fiskalna, opinia o wstępnym projekcie ustawy budżetowej na 2027 r. (11.09.2026), s. 28–29 */
   rf2027: 'https://www.radafiskalna.gov.pl/wp-content/uploads/2026/09/2026-09-11_opinia-RF-o-wPUB27.pdf',
-  /** projekt planu na 2027 r.: dotacja ok. 35 mld zł, koszty wyższe od przychodów o ok. 21 mld zł */
-  rpLuka: 'https://www.rp.pl/rynek-zdrowia/art44627201-budzet-nfz-sie-nie-spina-w-przyszlym-roku-bedzie-jeszcze-gorzej',
   /** podwyżki od lipca 2026 r.: ok. 4,5 mld zł do końca roku, ok. 9 mld zł w 2027 r.; „dziura” ok. 16 mld zł */
   rz285313: 'https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/9-mld-zl-na-podwyzki-dla-medykow-Zaplaci-Narodowy-Fundusz-Zdrowia,285313,1.html',
   /** rekomendacja AOTMiT 84/2026: wydatki NFZ wzrosną o 9,25 mld zł */
@@ -145,6 +143,12 @@ export const DRAFT_2027 = { total: 237.342389, subsidy: 35, benefits: 219.969929
  * SZACUNEK, nie pozycja planu.
  */
 export const GAP_2027 = { value: 16, subsidy: 41.5, href: LINKS.rf2027 } as const;
+
+/**
+ * Ta sama opinia Rady Fiskalnej (s. 29): w latach 2021–2025 wykonanie kosztów NFZ przewyższało plan
+ * PIERWOTNY o ok. 19–22 mld zł rocznie. Rachunek Rady; nie porównywać z serią BUDGET (plany ostateczne).
+ */
+export const OVERRUN_2021_2025 = { min: 19, max: 22, href: LINKS.rf2027 } as const;
 
 /** Dotacja w planie pierwotnym na 2025 r. (zarządzenie 16/2025) — punkt odniesienia dawnego „+42%”. */
 export const SUBSIDY_2025_INITIAL = 18.3;

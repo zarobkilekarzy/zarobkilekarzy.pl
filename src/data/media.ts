@@ -10,5 +10,5 @@ export const mediaPage = {
   description: 'Infografiki zarobkilekarzy.pl do pobrania w formatach pionowym i poziomym, ze źródłami na grafice. Licencja CC BY 4.0.',
   updated: '16.10.2026',
   /** klucze zestawów infografik, od najnowszego */
-  sets: ['egzamin', 'odpowiedzialnosc-zawodowa-lekarzy'],
+  sets: ['kolejki', 'english-division', 'symulator-podazy-lekarzy', 'egzamin', 'odpowiedzialnosc-zawodowa-lekarzy'],
 };

@@ -10,6 +10,10 @@
  * i ciemnym (nocne wartości tych samych tokenów, jak strona w trybie nocnym).
  * Do 4 wierszy układ luźny; przy 5–8 wiersze gęstnieją (zob. G i GD). Liczby wyłącznie z modułów
  * danych stron (zob. ./zestawy.ts).
+ *
+ * Drugi styl, „wykres” (pole `chart`): gdy liczy się kierunek zmian kilku wielkości w różnych
+ * jednostkach — indeksy na jednej osi, nad wykresem duże liczby zmiany (zob. chartLayout). Rama
+ * (nagłówek i stopka) wspólna dla obu stylów.
  */
 import sharp from 'sharp';
 import satori from 'satori';
@@ -39,12 +43,12 @@ const tokenPair = (name: string): [string, string] => {
   return pair ? [pair[1].trim(), pair[2].trim()] : [value, value];
 };
 
-interface Palette { bg: string; ink: string; muted: string; line: string; blue: string; bar: string }
+interface Palette { bg: string; ink: string; muted: string; line: string; blue: string; bar: string; bad: string; amber: string }
 
 const palette = (night: boolean): Palette => {
   const t = (name: string) => tokenPair(name)[night ? 1 : 0];
   // jasna: białe tło jak obrazki OG; ciemna: tło strony w trybie nocnym (--bg)
-  return { bg: night ? t('bg') : '#fff', ink: t('ink'), muted: t('muted'), line: t('line'), blue: t('blue'), bar: t('chart') };
+  return { bg: night ? t('bg') : '#fff', ink: t('ink'), muted: t('muted'), line: t('line'), blue: t('blue'), bar: t('chart'), bad: t('bad'), amber: t('amber') };
 };
 
 export const THEMES: Record<ThemeKey, { label: string; colors: Palette }> = {
@@ -62,15 +66,54 @@ export interface ComparisonRow {
   highlight?: boolean;
 }
 
+/** Punkt wykresu indeksowego: położenie na osi lat (rok + ułamek) i wartość indeksu. */
+export interface ChartPoint {
+  x: number;
+  v: number;
+  /** przerwa w pomiarach przed tym punktem: odcinek kropkowany */
+  gapBefore?: boolean;
+}
+
+export interface ChartSeries {
+  label: string;
+  /** kolor linii; red — to, co powinno spadać (rysowane na wierzchu) */
+  tone: 'blue' | 'amber' | 'slate' | 'red';
+  points: ChartPoint[];
+  /** punkty od tego x to plan w toku albo projekt: linia przerywana, puste kropki */
+  dashedFrom?: number;
+  /** duża liczba nad wykresem, np. „+59%” */
+  value: string;
+  /** dopisek pod liczbą, np. „z 138,7 do 220,2 mld zł (2025)” — bez strzałek: Plex Mono ich nie ma */
+  detail: string;
+}
+
+/** Wykres indeksowy (rok bazowy = 100): linie zamiast pasków, gdy liczy się kierunek zmian. */
+export interface IndexChart {
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+  yTicks: number[];
+  xTicks: { x: number; label: string }[];
+  series: ChartSeries[];
+  /** dopisek przy punkcie (np. ostatnim punkcie projektu), kolejne linie w kolejnych wierszach */
+  note?: { x: number; v: number; lines: string[] };
+}
+
 export interface Infographic {
   /** slug pliku */
   id: string;
   title: string;
+  /** dalszy ciąg tytułu w kolorze alarmu (wykres): „Kolejka nie maleje.” */
+  titleAccent?: string;
+  /** zamiast wierszy: wykres indeksowy */
+  chart?: IndexChart;
   /** miara i okres, np. „na 100 tys. lekarzy rocznie · 2020–2025” */
   measure: string;
   /** jednostka za każdą liczbą, mniejszym stopniem (np. „%”) */
   unit?: string;
-  rows: ComparisonRow[];
+  /** wiersze porównania (styl podstawowy); grafika z `chart` ich nie ma */
+  rows?: ComparisonRow[];
   /** jedna linia stopki: źródła + najważniejsze zastrzeżenie */
   sources: string;
   /** tekst alternatywny podglądu — pełne liczby */
@@ -130,22 +173,19 @@ const GLYPH_EM: Record<string, number> = { '1': 0.36, ',': 0.24, '.': 0.24, ' ':
 const textWidth = (text: string, size: number) => [...text].reduce((w, ch) => w + (GLYPH_EM[ch] ?? 0.58) - 0.05, 0) * size;
 const UNIT_SCALE = 0.42;
 
-function layout(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey): Node {
-  const { width, height } = FORMATS[f];
+function layout(set: InfographicSet, i: Infographic, rows: ComparisonRow[], f: FormatKey, theme: ThemeKey): Node {
+  const { width } = FORMATS[f];
   const C = THEMES[theme].colors;
-  const night = theme === 'ciemny';
-  const dense = i.rows.length > LOOSE_ROWS;
-  const g = dense ? { ...GD[f], rowH: Math.floor(GD[f].rowsH / i.rows.length) } : G[f];
+  const dense = rows.length > LOOSE_ROWS;
+  const g = dense ? { ...GD[f], rowH: Math.floor(GD[f].rowsH / rows.length) } : G[f];
   const pion = f === 'pion';
   // luźny pion: nazwa nad liczbą; poza tym nazwa | liczba | pasek w jednej linii
   const stacked = pion && !dense;
   const inner = width - 2 * g.padX;
-  const max = Math.max(...i.rows.map((r) => r.value));
+  const max = Math.max(...rows.map((r) => r.value));
   // kolumna liczb: domyślna szerokość albo szersza, gdy liczby z jednostką się w niej nie mieszczą
   const unitW = i.unit ? textWidth(i.unit, g.num * UNIT_SCALE) + 8 : 0;
-  const numW = Math.max(g.numW, Math.ceil(Math.max(...i.rows.map((r) => textWidth(r.display, g.num))) + unitW + g.num * 0.3));
-  // adres z `site` w astro.config — ten sam, z którego Astro buduje adresy kanoniczne
-  const pageUrl = new URL(set.route, import.meta.env.SITE).href;
+  const numW = Math.max(g.numW, Math.ceil(Math.max(...rows.map((r) => textWidth(r.display, g.num))) + unitW + g.num * 0.3));
 
   const subLine = (r: ComparisonRow) =>
     r.sub ? h('span', { style: { fontFamily: MONO, fontSize: g.sub, letterSpacing: '0.06em', textTransform: 'uppercase', color: r.highlight ? C.blue : C.muted } }, typo(r.sub)) : null;
@@ -168,12 +208,28 @@ function layout(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeK
           number(r),
           bar(r, inner - g.labelW - numW));
 
+  return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column' } }, ...rows.map(row)));
+}
+
+/** Rama wspólna dla wszystkich stylów: logo, tytuł i miara — treść — adres strony, źródła i kod QR. */
+function frame(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey, body: Node): Node {
+  const { width, height } = FORMATS[f];
+  const C = THEMES[theme].colors;
+  const night = theme === 'ciemny';
+  const g = G[f];
+  const pion = f === 'pion';
+  // adres z `site` w astro.config — ten sam, z którego Astro buduje adresy kanoniczne
+  const pageUrl = new URL(set.route, import.meta.env.SITE).href;
+  const titleStyle = { marginTop: pion ? 52 : 22, fontFamily: DISPLAY, fontWeight: 400, fontSize: g.title, lineHeight: 1.04, letterSpacing: '-0.04em', color: C.ink };
+
   return h('div', { style: { width, height, padding: `${g.padY}px ${g.padX}px`, background: C.bg, flexDirection: 'column', justifyContent: 'space-between', fontFamily: BODY } },
     h('div', { style: { flexDirection: 'column' } },
       logo(C),
-      h('div', { style: { marginTop: pion ? 52 : 22, fontFamily: DISPLAY, fontWeight: 400, fontSize: g.title, lineHeight: 1.04, letterSpacing: '-0.04em', color: C.ink } }, typo(i.title)),
+      i.titleAccent
+        ? h('div', { style: { ...titleStyle, flexWrap: 'wrap' } }, h('span', { style: { marginRight: '0.25em' } }, typo(i.title)), h('span', { style: { color: C.bad } }, typo(i.titleAccent)))
+        : h('div', { style: titleStyle }, typo(i.title)),
       h('div', { style: { marginTop: pion ? 18 : 10, fontFamily: MONO, fontSize: g.measure, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.blue } }, typo(i.measure))),
-    h('div', { style: { flexDirection: 'column' } }, ...i.rows.map(row)),
+    body,
     h('div', { style: { alignItems: 'center', justifyContent: 'space-between', paddingTop: pion ? 20 : 12, borderTop: `1px solid ${C.ink}`, fontFamily: MONO } },
       h('div', { style: { flexDirection: 'column', paddingRight: 24 } },
         h('span', { style: { fontSize: g.url, color: C.ink } }, pageUrl.replace(/^https:\/\/|\/$/g, '')),
@@ -181,9 +237,102 @@ function layout(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeK
       qr(pageUrl, night ? g.qr - 2 * Math.round(g.qr / 12) : g.qr, night)));
 }
 
+/* ---------- Styl „wykres”: indeksy na jednej osi, duże liczby nad wykresem ---------- */
+
+/**
+ * Geometria wykresu. Pion: trzy liczby w rzędzie nad wykresem na całą szerokość; poziom: liczby
+ * w kolumnie po lewej, wykres po prawej. `chartH` obejmuje podpisy lat pod osią.
+ */
+const CG = {
+  pion: { legendW: 0, gap: 40, chartH: 600, gutter: 56, xLab: 40, label: 14, value: 80, valueDense: 64, detail: 15, tick: 15, stroke: 5, dot: 6, note: 20, noteSub: 17 },
+  poziom: { legendW: 280, gap: 32, chartH: 360, gutter: 44, xLab: 28, label: 11, value: 50, valueDense: 36, detail: 12, tick: 12, stroke: 3.5, dot: 4.5, note: 15, noteSub: 13 },
+};
+
+function chartLayout(set: InfographicSet, i: Infographic, c: IndexChart, f: FormatKey, theme: ThemeKey): Node {
+  const C = THEMES[theme].colors;
+  const g = G[f];
+  const cg = CG[f];
+  const pion = f === 'pion';
+  const inner = FORMATS[f].width - 2 * g.padX;
+  const W = pion ? inner : inner - cg.legendW - cg.gap;
+  const H = cg.chartH;
+  const color = (s: ChartSeries) => ({ blue: C.blue, amber: C.amber, slate: C.bar, red: C.bad })[s.tone];
+  // przy czterech seriach liczby nad wykresem mniejsze, żeby zmieściły się w rzędzie (pion) i kolumnie (poziom)
+  const valueSize = c.series.length > 3 ? cg.valueDense : cg.value;
+
+  // pole wykresu: od lewej podpisy osi, u góry zapas na obwódkę kropki, na dole podpisy lat
+  const top = 14;
+  const left = cg.gutter;
+  const plotW = W - left - 14;
+  const plotH = H - top - cg.xLab;
+  const sx = (x: number) => left + ((x - c.xMin) / (c.xMax - c.xMin)) * plotW;
+  const sy = (v: number) => top + ((c.yMax - v) / (c.yMax - c.yMin)) * plotH;
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+
+  const svg: string[] = [];
+  for (const t of c.yTicks) {
+    // linia 100 = rok bazowy: przerywana i mocniejsza od siatki
+    const base = t === 100;
+    svg.push(`<line x1="${left}" x2="${left + plotW}" y1="${r1(sy(t))}" y2="${r1(sy(t))}" stroke="${base ? C.bar : C.line}" stroke-width="${base ? 1.5 : 1}"${base ? ' stroke-dasharray="3 6"' : ''}/>`);
+  }
+  // czerwień na wierzchu
+  const order = [...c.series].sort((a, b) => Number(a.tone === 'red') - Number(b.tone === 'red'));
+  for (const s of order) {
+    const col = color(s);
+    const w = cg.stroke;
+    const planned = (p: ChartPoint) => s.dashedFrom !== undefined && p.x >= s.dashedFrom;
+    s.points.slice(1).forEach((b, k) => {
+      const a = s.points[k];
+      const dash = b.gapBefore ? ` stroke-dasharray="0.1 ${r1(w * 2.4)}"` : planned(b) ? ` stroke-dasharray="${r1(w * 2.4)} ${r1(w * 1.8)}"` : '';
+      svg.push(`<line x1="${r1(sx(a.x))}" y1="${r1(sy(a.v))}" x2="${r1(sx(b.x))}" y2="${r1(sy(b.v))}" stroke="${col}" stroke-width="${b.gapBefore ? r1(w * 0.8) : w}" stroke-linecap="round"${dash}/>`);
+    });
+    const last = s.points.at(-1)!;
+    svg.push(`<circle cx="${r1(sx(last.x))}" cy="${r1(sy(last.v))}" r="${r1(cg.dot * 2.2)}" fill="${col}" fill-opacity="0.22"/>`);
+    for (const p of s.points) {
+      const r = cg.dot;
+      svg.push(planned(p)
+        ? `<circle cx="${r1(sx(p.x))}" cy="${r1(sy(p.v))}" r="${r1(r)}" fill="${C.bg}" stroke="${col}" stroke-width="${r1(w * 0.6)}"/>`
+        : `<circle cx="${r1(sx(p.x))}" cy="${r1(sy(p.v))}" r="${r1(r)}" fill="${col}"/>`);
+    }
+  }
+  const lines = `data:image/svg+xml;base64,${Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${svg.join('')}</svg>`).toString('base64')}`;
+
+  // podpisy jako elementy Satori (krój Plex Mono), linie i kropki jako obrazek SVG pod nimi
+  const tick = (text: string, style: Record<string, string | number>) =>
+    h('div', { style: { position: 'absolute', fontFamily: MONO, fontSize: cg.tick, lineHeight: 1, color: C.muted, ...style } }, text);
+  const note = c.note && (() => {
+    const lh = 1.3;
+    const height = Math.round(cg.note * lh + (c.note.lines.length - 1) * cg.noteSub * lh);
+    return h('div', { style: { position: 'absolute', right: Math.round(W - sx(c.note.x) - cg.dot), top: Math.round(sy(c.note.v) - cg.dot * 3 - height), flexDirection: 'column', alignItems: 'flex-end', lineHeight: lh } },
+      ...c.note.lines.map((text, k) =>
+        h('span', { style: k === 0 ? { fontFamily: BODY, fontSize: cg.note, color: C.ink } : { fontFamily: BODY, fontSize: cg.noteSub, color: C.bad } }, typo(text))));
+  })();
+  const chart = h('div', { style: { position: 'relative', width: W, height: H, flexShrink: 0 } },
+    h('img', { src: lines, width: W, height: H, style: { position: 'absolute', left: 0, top: 0 } }),
+    ...c.yTicks.map((t) => tick(String(t), { left: 0, width: left - 12, top: Math.round(sy(t) - cg.tick / 2), justifyContent: 'flex-end' })),
+    ...c.xTicks.map((t) => tick(t.label, { left: Math.round(sx(t.x) - 40), width: 80, top: top + plotH + Math.round((cg.xLab - cg.tick) / 2), justifyContent: 'center' })),
+    note);
+
+  const legendItem = (s: ChartSeries) =>
+    h('div', { style: { flexDirection: 'column', flexGrow: 1, flexBasis: 0, paddingTop: pion ? 18 : 12, paddingRight: 16, borderTop: `1px solid ${C.line}` } },
+      h('div', { style: { alignItems: 'center', fontFamily: MONO, fontSize: cg.label, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.ink } },
+        h('div', { style: { width: pion ? 28 : 20, height: cg.stroke, marginRight: 10, background: color(s), flexShrink: 0 } }),
+        typo(s.label)),
+      h('div', { style: { marginTop: pion ? 12 : 6, fontFamily: DISPLAY, fontWeight: 300, fontSize: valueSize, lineHeight: 1, letterSpacing: '-0.05em', color: s.tone === 'slate' ? C.ink : color(s) } }, s.value),
+      h('div', { style: { marginTop: pion ? 10 : 6, fontFamily: MONO, fontSize: cg.detail, lineHeight: 1.35, color: C.muted } }, typo(s.detail)));
+  const legend = h('div', { style: pion ? { width: W } : { flexDirection: 'column', width: cg.legendW, flexShrink: 0, justifyContent: 'space-between', marginRight: cg.gap } },
+    ...c.series.map(legendItem));
+
+  return frame(set, i, f, theme,
+    pion
+      ? h('div', { style: { flexDirection: 'column' } }, legend, h('div', { style: { marginTop: cg.gap } }, chart))
+      : h('div', { style: { alignItems: 'stretch' } }, legend, chart));
+}
+
 /** PNG z paletą 8-bit, jak obrazki OG. */
 export async function renderInfographic(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey = 'jasny'): Promise<Buffer> {
   const { width, height } = FORMATS[f];
-  const svg = await satori(layout(set, i, f, theme) as unknown as Parameters<typeof satori>[0], { width, height, fonts: await loadFonts() });
+  const tree = i.chart ? chartLayout(set, i, i.chart, f, theme) : layout(set, i, i.rows ?? [], f, theme);
+  const svg = await satori(tree as unknown as Parameters<typeof satori>[0], { width, height, fonts: await loadFonts() });
   return sharp(Buffer.from(svg)).png({ palette: true, quality: 90, compressionLevel: 9 }).toBuffer();
 }

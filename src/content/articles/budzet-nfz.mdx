@@ -23,16 +23,18 @@ related:
 ---
 import StatRow from '@/components/blocks/StatRow.astro';
 import Figure from '@/components/blocks/Figure.astro';
-import BarChart from '@/components/blocks/BarChart.astro';
 import Comparison from '@/components/blocks/Comparison.astro';
 import Aside from '@/components/blocks/Aside.astro';
-import { BUDGET_TABLE, CURRENT, CURRENT_PLAN, DRAFT_2026, DRAFT_2027, GAP_2027, LAST_FINAL, LINKS, OVERRUN_2021_2025, budget, change, costRows, formatMld } from '@/data/budzet-nfz';
+import IndexChart from '@/components/budzet/IndexChart.astro';
+import { BUDGET_TABLE, COST_CHART, COVID_IN_NFZ, CURRENT, CURRENT_PLAN, DRAFT_2026, DRAFT_2027, GAP_2027, LAST_FINAL, LINKS, OVERRUN_2021_2025, budget, change, formatMld } from '@/data/budzet-nfz';
 import { GROWTH, LINKS as Q, priceLevel } from '@/data/kolejki';
 import { formatPL } from '@/lib/format';
 
 export const f1 = (n) => formatMld(n);
 export const first = budget(2015);
 export const y2020 = budget(2020);
+export const y2021 = budget(2021);
+export const y2022 = budget(2022);
 export const y2023 = budget(2023);
 export const y2024 = budget(2024);
 
@@ -44,16 +46,13 @@ Główna liczba to koszty ogółem w ostatecznym planie finansowym NFZ, czyli kw
 
 <Figure
   title={`Od 2015 do ${LAST_FINAL.year} r. koszty w planie NFZ wzrosły ponad trzykrotnie: z ${f1(first.costs)} do ${f1(LAST_FINAL.costs)} mld zł.`}
-  note={`Koszty ogółem w ostatecznym planie finansowym NFZ. ${CURRENT.year} — plan po zmianie z ${CURRENT_PLAN.dateShort}, rok w toku.`}
+  note={`Koszty ogółem w ostatecznym planie finansowym NFZ; kropka to jeden rok. Linia przerywana: ${CURRENT.year} — plan w toku po zmianie z ${CURRENT_PLAN.dateShort} (${f1(CURRENT.costs)} mld zł); ${DRAFT_2027.year} — projekt planu przedstawiony sejmowej Komisji Zdrowia 2.07.2026 (${f1(DRAFT_2027.total)} mld zł), a nie prognoza wykonania.`}
   source={{ label: 'NFZ, plany finansowe (BIP)', href: LINKS.bip }}
 >
-  <BarChart
-    rows={costRows()}
-    max={240}
-    unit="mld zł"
-    caption={`Koszty ogółem w ostatecznym planie finansowym NFZ, mld zł: ${costRows().map((r) => `${r.label} — ${r.display}`).join('; ')}. Rok ${CURRENT.year} to plan w toku.`}
-  />
+  <IndexChart {...COST_CHART} />
 </Figure>
+
+Do skoku w {y2021.year} r., o {f1(change(y2020.costs, y2021.costs))}%, przyczyniły się pieniądze z Funduszu Przeciwdziałania COVID-19, który działał poza budżetem państwa. Według NIK od 2020 r. do połowy 2022 r. Minister Zdrowia wydał z niego {f1(COVID_IN_NFZ.nik)} mld zł na zadania NFZ i refundację składek zdrowotnych.[^nik-covid] Plan NFZ nie ma na te pieniądze osobnej pozycji. Z jego układu wynika, że mieszczą się w pozostałych przychodach, które wzrosły z {f1(COVID_IN_NFZ.otherRevenue[2020])} mld zł w 2020 r. do {f1(COVID_IN_NFZ.otherRevenue[2021])} mld zł w 2021 r., a w 2022 r. spadły do {f1(COVID_IN_NFZ.otherRevenue[2022])} mld zł. Koszty w planie urosły wtedy już tylko o {f1(change(y2021.costs, y2022.costs))}%.[^plany][^sprawozdania] Więcej o Funduszu piszemy w analizie [COVID-19: miliardy bez jawnego rozliczenia](/analizy/covid-pieniadz-publiczny/).
 
 Obok kosztów podajemy przychody z tego samego planu i wykonanie, czyli koszty działalności operacyjnej z łącznego sprawozdania finansowego Funduszu.[^sprawozdania] Wykonanie to punkt kontrolny, a nie ta sama seria: sprawozdanie ma inny układ pozycji niż plan. W {LAST_FINAL.year} r. plan pozwalał wydać {f1(LAST_FINAL.costs)} mld zł, a koszty działalności operacyjnej wyniosły {f1(LAST_FINAL.executed)} mld zł.
 
@@ -142,7 +141,9 @@ Ile wynoszą długi publicznych szpitali, pokazujemy w zestawieniu [Zadłużenie
 
 [^z107]: NFZ, [Zarządzenie Prezesa NFZ nr 107/2026/DEF w sprawie zmiany planu finansowego Narodowego Funduszu Zdrowia na 2026 rok](https://baw.nfz.gov.pl/NFZ/document/44057/Zarzadzenie-107_2026_DEF), 5.10.2026 (Baza Aktów Własnych NFZ) — plan po zmianie: koszty ogółem 227,35 mld zł, przychody ogółem 225,17 mld zł, koszty świadczeń 212,72 mld zł, w tym podstawowa opieka zdrowotna 24,41 mld zł; dotacja podmiotowa 33,6 mld zł; wynagrodzenia pracowników NFZ 0,81 mld zł.
 
-[^sprawozdania]: NFZ, łączne sprawozdania finansowe Funduszu za [2020](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2021/laczne_sprawozdanie_finansowe_nfz_2020.pdf), [2021](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2022/laczne_sprawozdanie_finansowe_nfz_2021.pdf), [2022](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/majatek_nfz/2022/laczne_sprawozdanie_finansowe_nfz_2022.pdf), [2023](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2024/laczne_sprawozdanie_finansowe_nfz_2023.pdf), [2024](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2025/laczne_sprawozdanie_finansowe_nfz_2024.pdf) i [2025](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2026/laczne_sprawozdanie_finansowe_nfz_2025.pdf) — koszty działalności operacyjnej w rachunku zysków i strat.
+[^sprawozdania]: NFZ, łączne sprawozdania finansowe Funduszu za [2020](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2021/laczne_sprawozdanie_finansowe_nfz_2020.pdf), [2021](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2022/laczne_sprawozdanie_finansowe_nfz_2021.pdf), [2022](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/majatek_nfz/2022/laczne_sprawozdanie_finansowe_nfz_2022.pdf), [2023](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2024/laczne_sprawozdanie_finansowe_nfz_2023.pdf), [2024](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2025/laczne_sprawozdanie_finansowe_nfz_2024.pdf) i [2025](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2026/laczne_sprawozdanie_finansowe_nfz_2025.pdf) — koszty działalności operacyjnej w rachunku zysków i strat; w sprawozdaniu za 2021 r. także przychody wykazane jako „środki z funduszu przeciwdziałania COVID-19” (nota 10.2).
+
+[^nik-covid]: NIK, [Realizacja zadań finansowanych z Funduszu Przeciwdziałania COVID-19](https://www.nik.gov.pl/plik/id,28245,vp,31071.pdf), informacja o wynikach kontroli, 2023, s. 23 — wydatki Ministra Zdrowia z Funduszu od 2020 r. do końca pierwszej połowy 2022 r.: 52 222,4 mln zł, w tym 40 776,9 mln zł na zadania NFZ i refundację skutków zwolnienia ze składek zdrowotnych.
 
 [^gus-cpi]: GUS, [Roczne wskaźniki cen towarów i usług konsumpcyjnych](https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/) — średnioroczne wskaźniki za lata 2016–2025; poziom cen w 2025 r. wobec 2015 r. to ich iloczyn (nasz rachunek).
 

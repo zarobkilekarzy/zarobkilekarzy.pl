@@ -56,6 +56,8 @@ export const LINKS = {
   kz152: 'https://api.sejm.gov.pl/sejm/term10/committees/ZDR/sittings/152/pdf',
   /** Rada Fiskalna, opinia o wstępnym projekcie ustawy budżetowej na 2027 r. (11.09.2026), s. 28–29 */
   rf2027: 'https://www.radafiskalna.gov.pl/wp-content/uploads/2026/09/2026-09-11_opinia-RF-o-wPUB27.pdf',
+  /** NIK, „Realizacja zadań finansowanych z Funduszu Przeciwdziałania COVID-19” (2023), s. 23 */
+  nikCovid: 'https://www.nik.gov.pl/plik/id,28245,vp,31071.pdf',
   /** podwyżki od lipca 2026 r.: ok. 4,5 mld zł do końca roku, ok. 9 mld zł w 2027 r.; „dziura” ok. 16 mld zł */
   rz285313: 'https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/9-mld-zl-na-podwyzki-dla-medykow-Zaplaci-Narodowy-Fundusz-Zdrowia,285313,1.html',
   /** rekomendacja AOTMiT 84/2026: wydatki NFZ wzrosną o 9,25 mld zł */
@@ -135,7 +137,7 @@ export const DRAFT_2026 = { total: 217.39, subsidy: 26, benefits: 201.2 } as con
  * Plan jest zrównoważony — deficytu w nim nie ma. Do 16.10.2026 nie został zatwierdzony; według MZ
  * zostanie skorygowany po uchwaleniu ustawy budżetowej (w projekcie budżetu dotacja to 41,5 mld zł).
  */
-export const DRAFT_2027 = { total: 237.342389, subsidy: 35, benefits: 219.969929, href: LINKS.kz152 } as const;
+export const DRAFT_2027 = { year: 2027, total: 237.342389, subsidy: 35, benefits: 219.969929, href: LINKS.kz152 } as const;
 
 /**
  * Niedobór finansowania NFZ w 2027 r. według szacunku Biura Rady Fiskalnej: ok. 16 mld zł „już po
@@ -149,6 +151,20 @@ export const GAP_2027 = { value: 16, subsidy: 41.5, href: LINKS.rf2027 } as cons
  * PIERWOTNY o ok. 19–22 mld zł rocznie. Rachunek Rady; nie porównywać z serią BUDGET (plany ostateczne).
  */
 export const OVERRUN_2021_2025 = { min: 19, max: 22, href: LINKS.rf2027 } as const;
+
+/**
+ * Pieniądze z Funduszu Przeciwdziałania COVID-19 w NFZ. Plan nie ma na nie osobnej pozycji: przychody
+ * nazwane (składka, poz. A1–A7) ich nie obejmują, więc mieszczą się w „pozostałych przychodach” (poz. E),
+ * stąd ich skok w 2021 r. Sprawozdanie finansowe za 2021 r. wymienia je osobno (nota 10.2, „środki
+ * z funduszu przeciwdziałania COVID-19”). NIK (LINKS.nikCovid, s. 23): od 2020 r. do połowy 2022 r.
+ * Minister Zdrowia wydał z Funduszu 40 776,9 mln zł na zadania NFZ i refundację składek zdrowotnych.
+ * Pozostałe przychody w mld zł, z ostatecznych planów (poz. E, kwoty w tys. zł).
+ */
+export const COVID_IN_NFZ = {
+  nik: 40.7769,
+  otherRevenue: { 2020: 12.384827, 2021: 28.20097, 2022: 7.816285 },
+  href: LINKS.nikCovid,
+} as const;
 
 /** Dotacja w planie pierwotnym na 2025 r. (zarządzenie 16/2025) — punkt odniesienia dawnego „+42%”. */
 export const SUBSIDY_2025_INITIAL = 18.3;
@@ -166,15 +182,53 @@ export const formatMld = (n: number, decimals = 1) => {
 };
 const mld = (n: number | null) => (n === null ? '—' : formatMld(n));
 
-/** Wiersze do wykresu słupkowego (BarChart): koszty w planie, rok w toku z dopiskiem. */
-export const costRows = (highlightYear = LAST_FINAL.year) =>
-  BUDGET.map((r) => ({
-    label: String(r.year),
-    note: r.status === 'current' ? `plan w toku, stan na ${CURRENT_PLAN.dateShort}` : undefined,
-    value: r.costs,
-    display: `${mld(r.costs)} mld zł`,
-    highlight: r.year === highlightYear,
-  }));
+/**
+ * Wykres liniowy (components/budzet/IndexChart bez roku bazowego): koszty w planie, mld zł.
+ * Plany ostateczne to linia ciągła z kropką na każdy rok. Dalej linia przerywana: rok w toku (plan jeszcze
+ * się zmienia) i projekt planu na następny rok — projekt, nie prognoza wykonania; szacunku luki (GAP_2027)
+ * do niego nie doliczamy, bo ma inną podstawę.
+ * Seria przerywana idzie pierwsza, żeby kropka 2025 r. z serii ciągłej leżała na wierzchu.
+ */
+const mid = (year: number) => year + 0.5;
+const FINALS = BUDGET.filter((r) => r.status === 'final');
+
+export const COST_CHART = {
+  xMin: BUDGET[0].year,
+  xMax: DRAFT_2027.year + 1,
+  yMin: 0,
+  yMax: 300,
+  ticks: [0, 50, 100, 150, 200, 250, 300],
+  unit: 'mld zł',
+  years: [...BUDGET.map((r) => r.year), DRAFT_2027.year],
+  series: [
+    {
+      id: 'draft',
+      label: `${DRAFT_2027.year}, projekt planu`,
+      tone: 'ref' as const,
+      end: mld(DRAFT_2027.total),
+      labelShift: -1,
+      markers: true,
+      points: [
+        { x: mid(LAST_FINAL.year), v: LAST_FINAL.costs },
+        { x: mid(CURRENT.year), v: CURRENT.costs },
+        { x: mid(DRAFT_2027.year), v: DRAFT_2027.total },
+      ],
+    },
+    {
+      id: 'final',
+      label: `Plan ostateczny, ${LAST_FINAL.year}`,
+      tone: 'accent' as const,
+      end: mld(LAST_FINAL.costs),
+      labelShift: 1,
+      markers: true,
+      points: FINALS.map((r) => ({ x: mid(r.year), v: r.costs })),
+    },
+  ],
+  caption:
+    `Wykres liniowy. Koszty ogółem w ostatecznym planie finansowym NFZ, mld zł: ${FINALS.map((r) => `${r.year} — ${mld(r.costs)}`).join('; ')}. ` +
+    `Linia przerywana: ${CURRENT.year} — plan w toku po zmianie z ${CURRENT_PLAN.dateShort}, ${mld(CURRENT.costs)} mld zł; ` +
+    `${DRAFT_2027.year} — projekt planu z lipca 2026 r., ${mld(DRAFT_2027.total)} mld zł.`,
+};
 
 /** Tabela (Comparison): wszystkie kolumny serii; zmiana r/r tylko w obrębie kolumny kosztów. */
 export const BUDGET_TABLE = {

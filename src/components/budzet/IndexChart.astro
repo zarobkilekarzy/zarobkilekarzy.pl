@@ -10,6 +10,8 @@
  * łączy się z poprzednim kreską przerywaną (brak pomiaru pomiędzy).
  * Podpisy stoją na końcach linii zamiast legendy; `labelShift` -1 / 1 przesuwa podpis nad / pod
  * punkt, gdy dwie linie kończą się blisko siebie.
+ * Bez `base` to zwykły wykres liniowy wartości (np. mld zł): linia 100 nie jest wtedy wyróżniona,
+ * a `unit` stoi przy najwyższej wartości siatki (README → Wykresy).
  */
 import type { HTMLAttributes } from 'astro/types';
 import { typo } from '@/lib/format';
@@ -17,7 +19,7 @@ import { typo } from '@/lib/format';
 interface Point {
   /** położenie na osi czasu: rok + ułamek */
   x: number;
-  /** wartość indeksu */
+  /** wartość: indeks albo kwota w jednostce wykresu */
   v: number;
   gapBefore?: boolean;
 }
@@ -42,13 +44,19 @@ interface Props extends HTMLAttributes<'div'> {
   /** lata podpisane pod osią (podpis na środku roku) */
   years: number[];
   series: Series[];
-  /** rok bazowy — podpis przy linii 100 */
-  base: number;
+  /** rok bazowy — podpis przy linii 100; bez niego wykres wartości bezwzględnych */
+  base?: number;
+  /** jednostka przy najwyższej wartości siatki, np. „mld zł” */
+  unit?: string;
   /** pełny opis danych dla czytników ekranu */
   caption: string;
 }
 
-const { xMin, xMax, yMin, yMax, ticks, years, series, base, caption, class: className, ...rest } = Astro.props;
+const { xMin, xMax, yMin, yMax, ticks, years, series, base, unit, caption, class: className, ...rest } = Astro.props;
+
+const top = Math.max(...ticks);
+const isBase = (t: number) => base !== undefined && t === 100;
+const tickLabel = (t: number) => (isBase(t) ? `100 = ${base}` : unit && t === top ? `${t} ${unit}` : String(t));
 
 const X = (x: number) => ((x - xMin) / (xMax - xMin)) * 1000;
 const Y = (v: number) => 1000 - ((v - yMin) / (yMax - yMin)) * 1000;
@@ -74,8 +82,8 @@ function paths(points: Point[]) {
 <div class:list={['ix', className]} {...rest}>
   <div class="ix__plot" aria-hidden="true">
     {ticks.map((t) => (
-      <span class:list={['ix__tick', { 'is-base': t === 100 }]} style={`--t: ${pct(t, yMin, yMax)}%`}>
-        <span>{t === 100 ? `100 = ${base}` : t}</span>
+      <span class:list={['ix__tick', { 'is-base': isBase(t) }]} style={`--t: ${pct(t, yMin, yMax)}%`}>
+        <span>{tickLabel(t)}</span>
       </span>
     ))}
     <div class="ix__area">
@@ -137,6 +145,7 @@ function paths(points: Point[]) {
   .ix__dot { position: absolute; width: 9px; height: 9px; translate: -50% 50%; border-radius: 50%; border: 2px solid var(--under); }
   .ix__dot--accent { background: var(--blue); }
   .ix__dot--data { background: var(--chart); }
+  .ix__dot--ref { background: var(--muted); }
 
   /* Podpis na końcu linii, w marginesie po prawej: kreska w kolorze serii, nazwa, wartość */
   .ix__end {

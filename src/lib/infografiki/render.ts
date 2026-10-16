@@ -14,13 +14,15 @@
  * Drugi styl, „wykres” (pole `chart`): gdy liczy się kierunek zmian w czasie — linie na jednej osi
  * (indeksy albo liczby), nad wykresem duże liczby (zob. chartLayout). Trzeci, „proporcje” (pole
  * `split`): części całości — gruby pasek podzielony na segmenty albo kolumny 100% obok siebie
- * (zob. splitLayout). Rama (nagłówek i stopka) wspólna dla wszystkich stylów.
+ * (zob. splitLayout). Czwarty, „tabela” (pole `table`): liczby rok po roku dla kilku podmiotów,
+ * przy każdej liczbie mały pasek we wspólnej skali (zob. tableLayout). Rama (nagłówek i stopka)
+ * wspólna dla wszystkich stylów.
  */
 import sharp from 'sharp';
 import satori from 'satori';
 import { renderSVG } from 'uqr';
 import tokensCss from '@/styles/tokens.css?raw';
-import { typo } from '@/lib/format';
+import { formatPL, typo } from '@/lib/format';
 import { BODY, DISPLAY, MONO, h, loadFonts, logo, type Node } from '@/lib/og/render';
 
 export type FormatKey = 'pion' | 'poziom';
@@ -44,12 +46,12 @@ const tokenPair = (name: string): [string, string] => {
   return pair ? [pair[1].trim(), pair[2].trim()] : [value, value];
 };
 
-interface Palette { bg: string; ink: string; muted: string; line: string; blue: string; bar: string; soft: string; bad: string; amber: string }
+interface Palette { bg: string; ink: string; muted: string; line: string; blue: string; tint: string; bar: string; soft: string; bad: string; amber: string }
 
 const palette = (night: boolean): Palette => {
   const t = (name: string) => tokenPair(name)[night ? 1 : 0];
   // jasna: białe tło jak obrazki OG; ciemna: tło strony w trybie nocnym (--bg)
-  return { bg: night ? t('bg') : '#fff', ink: t('ink'), muted: t('muted'), line: t('line'), blue: t('blue'), bar: t('chart'), soft: t('chart-soft'), bad: t('bad'), amber: t('amber') };
+  return { bg: night ? t('bg') : '#fff', ink: t('ink'), muted: t('muted'), line: t('line'), blue: t('blue'), tint: t('blue-50'), bar: t('chart'), soft: t('chart-soft'), bad: t('bad'), amber: t('amber') };
 };
 
 export const THEMES: Record<ThemeKey, { label: string; colors: Palette }> = {
@@ -138,6 +140,28 @@ export interface Split {
   unit?: string;
 }
 
+/** Podmiot tabeli (kraj): kolumna w pionie, wiersz w poziomie. */
+export interface TableSeries {
+  label: string;
+  /** dopisek pod nazwą (wersaliki, mono), np. kto decyduje */
+  sub?: string;
+  /** liczby w kolejności `periods` */
+  values: number[];
+  highlight?: boolean;
+}
+
+/** Styl „tabela”: liczby rok po roku dla kilku podmiotów, z sumą na końcu. */
+export interface DataTable {
+  /** etykiety okresów (lat): wiersze w pionie, kolumny w poziomie */
+  periods: string[];
+  series: TableSeries[];
+  /**
+   * Podsumowania pod latami (pion) albo za nimi (poziom), np. suma i wskaźnik na 100 tys.:
+   * wartości do druku w kolejności `series`, `sub` — okres, gdy inny niż w tabeli.
+   */
+  summary: { label: string; sub?: string; values: string[] }[];
+}
+
 export interface Infographic {
   /** slug pliku */
   id: string;
@@ -148,11 +172,13 @@ export interface Infographic {
   chart?: LineChart;
   /** zamiast wierszy: części całości */
   split?: Split;
+  /** zamiast wierszy: tabela rok po roku */
+  table?: DataTable;
   /** miara i okres, np. „na 100 tys. lekarzy rocznie · 2020–2025” */
   measure: string;
   /** jednostka za każdą liczbą, mniejszym stopniem (np. „%”) */
   unit?: string;
-  /** wiersze porównania (styl podstawowy); grafika z `chart` albo `split` ich nie ma */
+  /** wiersze porównania (styl podstawowy); grafika z `chart`, `split` albo `table` ich nie ma */
   rows?: ComparisonRow[];
   /** jedna linia stopki: źródła + najważniejsze zastrzeżenie */
   sources: string;
@@ -449,6 +475,87 @@ function splitLayout(set: InfographicSet, i: Infographic, sp: Split, f: FormatKe
   return frame(set, i, f, theme, h('div', { style: { width: inner } }, ...sp.bars.map(column)));
 }
 
+/* ---------- Styl „tabela”: liczby rok po roku, przy każdej mały pasek ---------- */
+
+/**
+ * Geometria tabeli. Pion: lata w wierszach, podmioty w kolumnach, pasek poziomy obok liczby.
+ * Poziom: podmioty w wierszach, lata w kolumnach (16 lat nie zmieści się w wysokości 675),
+ * pasek pionowy nad liczbą — w obu układach paski rosną w poprzek osi czasu.
+ */
+const TG = {
+  pion: { headH: 84, rowH: 39, sumH: 60, periodW: 150, num: 24, numW: 42, barH: 10, barMax: 104, label: 22, sub: 13, period: 16, sumSub: 12, total: 30 },
+  poziom: { headH: 46, rowH: 76, labelW: 190, sumW: 92, num: 16, barW: 12, barMax: 38, label: 17, sub: 10, period: 11, sumSub: 10, total: 24 },
+};
+
+function tableLayout(set: InfographicSet, i: Infographic, t: DataTable, f: FormatKey, theme: ThemeKey): Node {
+  const C = THEMES[theme].colors;
+  const inner = FORMATS[f].width - 2 * G[f].padX;
+  const max = Math.max(...t.series.flatMap((s) => s.values));
+  // zera wyciszone (jak tabela w artykule), żeby było widać lata z decyzjami; zero nie ma paska
+  const numColor = (s: TableSeries, v: number) => (v === 0 ? C.muted : s.highlight ? C.blue : C.ink);
+  const fill = (s: TableSeries) => (s.highlight ? C.blue : C.bar);
+  const tint = (s: TableSeries) => (s.highlight ? C.tint : 'transparent');
+  const numStyle = (s: TableSeries, v: number, size: number) => ({ fontFamily: DISPLAY, fontWeight: 300, fontSize: size, lineHeight: 1, letterSpacing: '-0.03em', color: numColor(s, v) });
+  const sumStyle = (s: TableSeries, size: number) => ({ fontFamily: DISPLAY, fontWeight: 400, fontSize: size, lineHeight: 1, letterSpacing: '-0.04em', color: s.highlight ? C.blue : C.ink });
+  const mono = (size: number, color: string) => ({ fontFamily: MONO, fontSize: size, lineHeight: 1.3, letterSpacing: '0.05em', textTransform: 'uppercase', color });
+  const head = (s: TableSeries, g: { label: number; sub: number }) => [
+    h('span', { style: { fontFamily: BODY, fontSize: g.label, lineHeight: 1.2, color: C.ink } }, typo(s.label)),
+    s.sub && h('span', { style: { marginTop: 4, ...mono(g.sub, s.highlight ? C.blue : C.muted) } }, typo(s.sub)),
+  ];
+  const sumHead = (row: DataTable['summary'][number], g: { period: number; sumSub: number }) => [
+    h('span', { style: mono(g.period, C.ink) }, typo(row.label)),
+    row.sub && h('span', { style: { marginTop: 2, ...mono(g.sumSub, C.muted) } }, typo(row.sub)),
+  ];
+
+  // Wiersz bez alignItems: komórki rozciągają się na wnętrze wiersza (bez jego linii), więc tło
+  // kolumny wyróżnionej nie zasłania linii; treść komórki centruje sama komórka.
+  if (f === 'pion') {
+    const g = TG.pion;
+    const colW = Math.floor((inner - g.periodW) / t.series.length);
+    const cell = (s: TableSeries, ...children: (Node | false | undefined)[]) =>
+      h('div', { style: { width: colW, flexShrink: 0, alignItems: 'center', paddingLeft: 12, background: tint(s) } }, ...children);
+    const line = (color: string) => `1px solid ${color}`;
+    const header = h('div', { style: { height: g.headH, borderBottom: line(C.line) } },
+      h('div', { style: { width: g.periodW, flexShrink: 0 } }),
+      ...t.series.map((s) =>
+        h('div', { style: { width: colW, flexShrink: 0, flexDirection: 'column', justifyContent: 'flex-end', paddingLeft: 12, paddingBottom: 12, background: tint(s) } }, ...head(s, g))));
+    const row = (period: string, k: number) =>
+      h('div', { style: { height: g.rowH, borderBottom: line(C.line) } },
+        h('div', { style: { width: g.periodW, flexShrink: 0, alignItems: 'center', ...mono(g.period, C.muted), textTransform: 'none' } }, period),
+        ...t.series.map((s) => {
+          const v = s.values[k];
+          return cell(s,
+            h('div', { style: { width: g.numW, flexShrink: 0, justifyContent: 'flex-end', ...numStyle(s, v, g.num) } }, formatPL(v)),
+            v > 0 && h('div', { style: { width: Math.max(3, (v / max) * g.barMax), height: g.barH, marginLeft: 12, background: fill(s) } }));
+        }));
+    // pierwsze podsumowanie oddziela od lat linia w kolorze tekstu, kolejne — zwykła
+    const summary = t.summary.map((sum, k) =>
+      h('div', { style: { height: g.sumH, borderTop: line(k ? C.line : C.ink) } },
+        h('div', { style: { width: g.periodW, flexShrink: 0, flexDirection: 'column', justifyContent: 'center' } }, ...sumHead(sum, g)),
+        ...t.series.map((s, j) => cell(s, h('div', { style: sumStyle(s, g.total) }, sum.values[j])))));
+    return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', width: inner } }, header, ...t.periods.map(row), ...summary));
+  }
+
+  const g = TG.poziom;
+  const cellW = Math.floor((inner - g.labelW - t.summary.length * g.sumW) / t.periods.length);
+  const header = h('div', { style: { height: g.headH, borderBottom: `1px solid ${C.line}` } },
+    h('div', { style: { width: g.labelW, flexShrink: 0 } }),
+    ...t.periods.map((p) => h('div', { style: { width: cellW, flexShrink: 0, justifyContent: 'center', alignItems: 'flex-end', paddingBottom: 6, ...mono(g.period, C.muted), textTransform: 'none' } }, p)),
+    ...t.summary.map((sum) =>
+      h('div', { style: { width: g.sumW, flexShrink: 0, flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-end', paddingBottom: 6, paddingRight: 8, textAlign: 'right' } }, ...sumHead(sum, g))));
+  const row = (s: TableSeries, j: number) =>
+    h('div', { style: { height: g.rowH, alignItems: 'center', borderBottom: `1px solid ${C.line}`, background: tint(s) } },
+      h('div', { style: { width: g.labelW, flexShrink: 0, flexDirection: 'column', paddingLeft: 8 } }, ...head(s, g)),
+      ...s.values.map((v) =>
+        h('div', { style: { width: cellW, flexShrink: 0, flexDirection: 'column', alignItems: 'center' } },
+          h('div', { style: { height: g.barMax, alignItems: 'flex-end' } },
+            v > 0 && h('div', { style: { width: g.barW, height: Math.max(2, (v / max) * g.barMax), background: fill(s) } })),
+          h('div', { style: { marginTop: 6, ...numStyle(s, v, g.num) } }, formatPL(v)))),
+      ...t.summary.map((sum) =>
+        h('div', { style: { width: g.sumW, flexShrink: 0, justifyContent: 'flex-end', paddingRight: 8, ...sumStyle(s, g.total) } }, sum.values[j])));
+  return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', width: inner } }, header, ...t.series.map(row)));
+}
+
 /** PNG z paletą 8-bit, jak obrazki OG. */
 export async function renderInfographic(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey = 'jasny'): Promise<Buffer> {
   const { width, height } = FORMATS[f];
@@ -456,7 +563,9 @@ export async function renderInfographic(set: InfographicSet, i: Infographic, f: 
     ? chartLayout(set, i, i.chart, f, theme)
     : i.split
       ? splitLayout(set, i, i.split, f, theme)
-      : layout(set, i, i.rows ?? [], f, theme);
+      : i.table
+        ? tableLayout(set, i, i.table, f, theme)
+        : layout(set, i, i.rows ?? [], f, theme);
   const svg = await satori(tree as unknown as Parameters<typeof satori>[0], { width, height, fonts: await loadFonts() });
   return sharp(Buffer.from(svg)).png({ palette: true, quality: 90, compressionLevel: 9 }).toBuffer();
 }

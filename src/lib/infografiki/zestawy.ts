@@ -5,7 +5,7 @@
  * Liczby wyłącznie z modułów danych stron — te same funkcje, z których liczy tekst artykułu,
  * więc aktualizacja danych zmienia grafiki w następnym buildzie.
  */
-import { COUNTRIES, WINDOW, ratePer100k, type CountryKey } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
+import { COUNTRIES, FIRST_YEAR, LAST_YEAR, REVOCATIONS, WINDOW, ratePer100k, total, type CountryKey } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
 import { EXAMS_2025, passRate } from '@/data/zdawalnosc-egzaminow';
 import { LATEST } from '@/data/english-division';
 import { dayRows } from '@/data/ciecie-limitow-na-medycyne';
@@ -13,7 +13,7 @@ import { BUDGET, CURRENT, DRAFT_2027, GAP_2027, budget, formatMld } from '@/data
 import { MEDIAN_WAGES, OUT_OF_POCKET, TO, WHC_EDITIONS, WHC_LATEST, contribution } from '@/data/kolejki';
 import { DEFAULTS, LIMIT_TODAY, PRESETS, REGISTER_TOTAL, YEAR0, YEAR_MIN, seats, simulate } from '@/lib/podaz/model';
 import { formatPL } from '@/lib/format';
-import type { ComparisonRow, InfographicSet, SplitBar, SplitSegment } from './render';
+import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment } from './render';
 
 const span = `${WINDOW.from}–${WINDOW.to}`;
 // na grafice liczby całkowite: to porównanie rzędu wielkości, nie co do przecinka
@@ -23,6 +23,18 @@ const country = (key: CountryKey): ComparisonRow => {
   return { label: c.name, sub: c.body, value, display: formatPL(value), highlight: key === 'pl' };
 };
 const rows = [country('no'), country('se'), country('uk'), country('pl')];
+
+// tabela rok po roku: Polska pierwsza, jak w tabeli w artykule (RevocationTable); pod latami suma
+// i wskaźnik na 100 tys. z okna porównania — liczby całkowite, jak na grafice z porównaniem krajów
+const years = `${FIRST_YEAR}–${LAST_YEAR}`;
+const revocationTable: DataTable = {
+  periods: REVOCATIONS.map((r) => String(r.year)),
+  series: COUNTRIES.map((c) => ({ label: c.name, sub: c.body, values: REVOCATIONS.map((r) => r[c.key]), highlight: c.key === 'pl' })),
+  summary: [
+    { label: 'Razem', sub: years, values: COUNTRIES.map((c) => formatPL(total(c.key))) },
+    { label: 'Na 100 tys.', sub: `rocznie ${span}`, values: COUNTRIES.map((c) => formatPL(ratePer100k(c.key))) },
+  ],
+};
 
 const odpowiedzialnosc: InfographicSet = {
   route: '/analizy/odpowiedzialnosc-zawodowa-lekarzy/',
@@ -36,6 +48,14 @@ const odpowiedzialnosc: InfographicSet = {
       rows,
       sources: 'Źródła: Helsetilsynet, HSAN, GMC, NIL · definicje różnią się między krajami',
       alt: `Infografika: odebrania prawa do zawodu lekarzom na 100 tys. lekarzy, średnio rocznie w latach ${span}: ${rows.map((r) => `${r.label} ${r.display}`).join(', ')}. Definicje różnią się między krajami. Źródła: Helsetilsynet, HSAN, GMC, NIL.`,
+    },
+    {
+      id: 'rok-po-roku',
+      title: 'Ilu lekarzom odebrano prawo do zawodu',
+      measure: `liczba odebrań rok po roku · ${years}`,
+      table: revocationTable,
+      sources: 'Źródła: Helsetilsynet, HSAN, GMC, NIL · definicje różnią się między krajami',
+      alt: `Infografika: liczba odebrań prawa do zawodu lekarzom rok po roku w latach ${years}. Razem: ${COUNTRIES.map((c) => `${c.name} ${total(c.key)}`).join(', ')}. Średnio rocznie na 100 tys. lekarzy w latach ${span}: ${COUNTRIES.map((c) => `${c.name} ${formatPL(ratePer100k(c.key))}`).join(', ')}. ${REVOCATIONS.map((r) => `${r.year}: ${COUNTRIES.map((c) => `${c.name} ${r[c.key]}`).join(', ')}`).join('; ')}. Definicje różnią się między krajami. Źródła: Helsetilsynet, HSAN, GMC, NIL.`,
     },
   ],
 };

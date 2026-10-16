@@ -15,14 +15,19 @@
  * (indeksy albo liczby), nad wykresem duże liczby (zob. chartLayout). Trzeci, „proporcje” (pole
  * `split`): części całości — gruby pasek podzielony na segmenty albo kolumny 100% obok siebie
  * (zob. splitLayout). Czwarty, „tabela” (pole `table`): liczby rok po roku dla kilku podmiotów,
- * przy każdej liczbie mały pasek we wspólnej skali (zob. tableLayout). Rama (nagłówek i stopka)
- * wspólna dla wszystkich stylów.
+ * przy każdej liczbie mały pasek we wspólnej skali (zob. tableLayout). Piąty, „mapa” (pole `map`):
+ * warstwa z zestawu map (lib/mapa) — ten sam renderer co mapa na stronie, obok legenda (zob. mapLayout).
+ * Rama (nagłówek i stopka) wspólna dla wszystkich stylów.
  */
 import sharp from 'sharp';
 import satori from 'satori';
 import { renderSVG } from 'uqr';
-import tokensCss from '@/styles/tokens.css?raw';
 import { formatPL, typo } from '@/lib/format';
+import { tokenPair } from '@/lib/tokens';
+import { geo } from '@/lib/mapa/geo';
+import { radius, R_MISSING } from '@/lib/mapa/layout';
+import { mapSets, type MapSetId } from '@/lib/mapa/sets';
+import { regionTones, renderMapSvg, staticColors } from '@/lib/mapa/svg';
 import { BODY, DISPLAY, MONO, h, loadFonts, logo, type Node } from '@/lib/og/render';
 
 export type FormatKey = 'pion' | 'poziom';
@@ -33,18 +38,6 @@ export const FORMATS: Record<FormatKey, { width: number; height: number; label: 
 };
 
 export type ThemeKey = 'jasny' | 'ciemny';
-
-/**
- * Token z tokens.css jako para [dzień, noc] z light-dark(). Kotwiczymy do deklaracji na początku
- * wiersza (pierwszej, w :root): nazwy tokenów padają też w komentarzach, a wariant „Większy
- * tekst” deklaruje część z nich drugi raz.
- */
-const tokenPair = (name: string): [string, string] => {
-  const value = tokensCss.match(new RegExp(`^\\s*--${name}:\\s*([^;]+);`, 'm'))?.[1].trim();
-  if (!value) throw new Error(`[infografiki] brak tokenu --${name} w tokens.css`);
-  const pair = value.match(/^light-dark\(\s*([^,]+),\s*([^)]+)\)/);
-  return pair ? [pair[1].trim(), pair[2].trim()] : [value, value];
-};
 
 interface Palette { bg: string; ink: string; muted: string; line: string; blue: string; tint: string; bar: string; soft: string; bad: string; amber: string }
 
@@ -174,6 +167,8 @@ export interface Infographic {
   split?: Split;
   /** zamiast wierszy: tabela rok po roku */
   table?: DataTable;
+  /** zamiast wierszy: warstwa mapy z lib/mapa/sets */
+  map?: { set: MapSetId; layer: string };
   /** miara i okres, np. „na 100 tys. lekarzy rocznie · 2020–2025” */
   measure: string;
   /** jednostka za każdą liczbą, mniejszym stopniem (np. „%”) */
@@ -556,16 +551,87 @@ function tableLayout(set: InfographicSet, i: Infographic, t: DataTable, f: Forma
   return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', width: inner } }, header, ...t.series.map(row)));
 }
 
+/* ---------- Styl „mapa”: warstwa z zestawu map, obok duża liczba i legenda ---------- */
+
+/** Geometria: pion — liczba nad mapą, legenda obok mapy; poziom — mapa po lewej, liczba i legenda po prawej. */
+const MG = {
+  pion: { mapW: 600, gap: 40, num: 120, text: 24, head: 14, item: 20, sw: 18, val: 22, sizeLab: 15 },
+  poziom: { mapW: 410, gap: 44, num: 76, text: 17, head: 11, item: 15, sw: 14, val: 15, sizeLab: 12 },
+};
+
+function mapLayout(set: InfographicSet, i: Infographic, m: NonNullable<Infographic['map']>, f: FormatKey, theme: ThemeKey): Node {
+  const C = THEMES[theme].colors;
+  const sc = staticColors(theme === 'ciemny');
+  const mg = MG[f];
+  const pion = f === 'pion';
+  const inner = FORMATS[f].width - 2 * G[f].padX;
+  const layer = mapSets[m.set].layers.find((l) => l.id === m.layer);
+  if (!layer) throw new Error(`[infografiki] zestaw map „${m.set}” nie ma warstwy „${m.layer}”`);
+
+  // mapa jako obrazek SVG z tego samego renderera co strona; wartości województw jako tekst Satori (krój)
+  const W = mg.mapW, H = Math.round((W * geo.height) / geo.width), k = W / geo.width;
+  const src = `data:image/svg+xml;base64,${Buffer.from(renderMapSvg([layer], { theme, active: layer.id, labels: false })).toString('base64')}`;
+  const tones = layer.kind === 'regions' ? regionTones(layer) : null;
+  const values = tones
+    ? geo.voivodeships.map((r) => {
+        const t = tones.get(r.teryt)!;
+        return h('div', { style: { position: 'absolute', left: Math.round(r.label[0] * k - 40), top: Math.round(r.label[1] * k - mg.val * 0.6), width: 80, justifyContent: 'center', fontFamily: MONO, fontWeight: 500, fontSize: mg.val, lineHeight: 1.2, color: sc.onSeq[t.tone] } }, t.display);
+      })
+    : [];
+  const map = h('div', { style: { position: 'relative', width: W, height: H, flexShrink: 0 } }, h('img', { src, width: W, height: H, style: { position: 'absolute', left: 0, top: 0 } }), ...values);
+
+  const head = (text: string) =>
+    h('div', { style: { marginBottom: pion ? 12 : 8, fontFamily: MONO, fontSize: mg.head, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.muted } }, typo(text));
+  const item = (sw: Node, label: string, n?: string) =>
+    h('div', { style: { alignItems: 'center', marginTop: pion ? 10 : 6, fontFamily: BODY, fontSize: mg.item, lineHeight: 1.3, color: C.ink } },
+      h('div', { style: { width: Math.round(mg.sw * 1.6), flexShrink: 0, justifyContent: 'center' } }, sw),
+      h('span', { style: { marginLeft: 10, flexGrow: 1 } }, typo(label)),
+      n && h('span', { style: { marginLeft: 12, fontFamily: MONO, fontSize: Math.round(mg.item * 0.85), color: C.muted } }, n));
+  const swatch = (color: string, square: boolean) =>
+    h('div', { style: square ? { width: Math.round(mg.sw * 1.6), height: Math.round(mg.sw * 0.7), background: color } : { width: mg.sw, height: mg.sw, borderRadius: '50%', background: color } });
+
+  const summary = layer.summary &&
+    h('div', { style: { alignItems: 'baseline', marginBottom: pion ? 32 : 18 } },
+      h('span', { style: { flexShrink: 0, fontFamily: DISPLAY, fontWeight: 300, fontSize: mg.num, lineHeight: 1, letterSpacing: '-0.05em', color: C.ink } }, layer.summary.value),
+      h('span', { style: { marginLeft: 18, maxWidth: pion ? 420 : 300, fontFamily: BODY, fontSize: mg.text, lineHeight: 1.35, color: C.ink } }, layer.summary.text));
+
+  const scale = h('div', { style: { flexDirection: 'column' } },
+    head(layer.scale.title),
+    ...layer.scale.labels.map((label, t) => item(swatch(sc.seq[t], layer.kind === 'regions'), label, layer.scale.counts && formatPL(layer.scale.counts[t]))));
+  const sizes = layer.kind === 'points' && layer.size && (() => {
+    const R = radius(Math.max(...layer.size.samples)) * k * 1.6;
+    return h('div', { style: { flexDirection: 'column', marginTop: pion ? 28 : 16 } },
+      head(layer.size.title),
+      h('div', { style: { alignItems: 'flex-end' } },
+        ...layer.size.samples.map((n) => {
+          const r = radius(n) * k * 1.6;
+          return h('div', { style: { flexDirection: 'column', alignItems: 'center', width: Math.max(2 * R, 48), marginRight: 12 } },
+            h('div', { style: { width: 2 * r, height: 2 * r, borderRadius: '50%', border: `1px solid ${C.muted}` } }),
+            h('span', { style: { marginTop: 6, fontFamily: MONO, fontSize: mg.sizeLab, color: C.muted } }, formatPL(n)));
+        })));
+  })();
+  const missing = layer.kind === 'points' && layer.missing &&
+    h('div', { style: { marginTop: pion ? 18 : 10 } }, item(h('div', { style: { width: Math.round(R_MISSING * k * 4), height: Math.round(R_MISSING * k * 4), borderRadius: '50%', background: sc.missing } }), layer.missing.label, formatPL(layer.missing.count)));
+  const legend = h('div', { style: { flexDirection: 'column', flexGrow: 1 } }, scale, sizes, missing);
+
+  return frame(set, i, f, theme,
+    pion
+      ? h('div', { style: { flexDirection: 'column', width: inner } }, summary, h('div', { style: { alignItems: 'flex-start' } }, map, h('div', { style: { flexDirection: 'column', marginLeft: mg.gap, width: inner - W - mg.gap } }, legend)))
+      : h('div', { style: { alignItems: 'center', width: inner } }, map, h('div', { style: { flexDirection: 'column', marginLeft: mg.gap, width: inner - W - mg.gap } }, summary, legend)));
+}
+
 /** PNG z paletą 8-bit, jak obrazki OG. */
 export async function renderInfographic(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey = 'jasny'): Promise<Buffer> {
   const { width, height } = FORMATS[f];
-  const tree = i.chart
-    ? chartLayout(set, i, i.chart, f, theme)
-    : i.split
-      ? splitLayout(set, i, i.split, f, theme)
-      : i.table
-        ? tableLayout(set, i, i.table, f, theme)
-        : layout(set, i, i.rows ?? [], f, theme);
+  const tree = i.map
+    ? mapLayout(set, i, i.map, f, theme)
+    : i.chart
+      ? chartLayout(set, i, i.chart, f, theme)
+      : i.split
+        ? splitLayout(set, i, i.split, f, theme)
+        : i.table
+          ? tableLayout(set, i, i.table, f, theme)
+          : layout(set, i, i.rows ?? [], f, theme);
   const svg = await satori(tree as unknown as Parameters<typeof satori>[0], { width, height, fonts: await loadFonts() });
   return sharp(Buffer.from(svg)).png({ palette: true, quality: 90, compressionLevel: 9 }).toBuffer();
 }

@@ -46,6 +46,11 @@ const facilitySchema = z.object({
   displayName: z.string().min(1).optional(),
   city: z.string().min(1),
   voivodeship: z.enum(VOIVODESHIPS),
+  /**
+   * kod TERYT gminy siedziby — 7 cyfr z rodzajem jednostki, jak w rejestrze placówek (bywa dzielnicą
+   * albo obszarem wiejskim); stawia placówkę na mapie, bez niego placówki na mapie nie ma
+   */
+  teryt: z.string().regex(/^\d{7}$/).optional(),
   population: z.int().positive().nullable(),
   /** czy ludność dotyczy miasta, czy całej gminy (gminy wiejskie) */
   populationScope: z.enum(['city', 'commune']),
@@ -75,6 +80,15 @@ export const monitoringSchema = z
     doc.facilities.forEach((f, i) => {
       if (seen.has(f.id)) ctx.addIssue({ code: 'custom', path: ['facilities', i, 'id'], message: `powtórzone id ${f.id}` });
       seen.add(f.id);
+      // dwie pierwsze cyfry TERYT to województwo: 02 dolnośląskie … 32 zachodniopomorskie (kolejność VOIVODESHIPS)
+      const prefix = String((VOIVODESHIPS.indexOf(f.voivodeship) + 1) * 2).padStart(2, '0');
+      if (f.teryt && !f.teryt.startsWith(prefix)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['facilities', i, 'teryt'],
+          message: `TERYT ${f.teryt} nie leży w województwie ${f.voivodeship} (oczekiwany prefiks ${prefix})`,
+        });
+      }
       if (f.payroll && f.payroll.histogram.length !== doc.buckets.length + 1) {
         ctx.addIssue({
           code: 'custom',

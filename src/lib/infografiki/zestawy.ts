@@ -16,6 +16,8 @@ import { AGE_BASE, AGE_LADDER } from '@/data/pielegniarstwo-w-polsce';
 import { FIRST_YEAR as STUDENTS_FIRST_YEAR, LINKS as ODSIEW_LINKS, funnelRows } from '@/data/odsiew-na-medycynie';
 import { DEFAULTS, LIMIT_TODAY, PRESETS, REGISTER_TOTAL, YEAR0, YEAR_MIN, seats, simulate } from '@/lib/podaz/model';
 import { formatPL } from '@/lib/format';
+import { monitoring } from '@/lib/monitoring';
+import { monitoringMap, opennessP } from '@/lib/monitoring/map';
 import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment } from './render';
 
 const span = `${WINDOW.from}–${WINDOW.to}`;
@@ -430,6 +432,34 @@ const odsiew: InfographicSet = {
   ],
 };
 
+/* ---------- Monitoring Watchdog: mapy (warstwy z lib/monitoring/map, ten sam renderer co mapa na stronie) ---------- */
+const mapLayer = (id: string) => monitoringMap.layers.find((l) => l.id === id)!;
+const openness = mapLayer('jawnosc');
+const pay = mapLayer('zarobki');
+const monitoringMaps: InfographicSet = {
+  route: '/dane/monitoring-watchdog/',
+  page: 'Przeglądarka monitoringu płac lekarzy',
+  filePrefix: 'zarobkilekarzy-mapa-monitoringu',
+  items: [
+    {
+      id: 'mapa-jawnosc',
+      title: 'Kto ujawnił dane o płacach lekarzy',
+      measure: `monitoring Watchdog Polska · płace lekarzy za ${monitoring.year} r.`,
+      map: { set: 'monitoring', layer: 'jawnosc' },
+      sources: `Źródło: Watchdog Polska (fedrowanie), granice: PRG, GUGiK${opennessP >= 0.05 ? ' · różnice między województwami w granicach przypadku' : ''}`,
+      alt: `Mapa województw: ${openness.summary!.text.replace(/\u00A0/g, ' ')} — ${openness.summary!.value}. ${openness.kind === 'regions' ? [...openness.regions].sort((a, b) => b.value - a.value).map((r) => `${r.tip.title} ${r.exact ?? r.display} (${r.detail})`).join(', ') : ''}. Źródło: Watchdog Polska, monitoring „${monitoring.source.monitoring}”.`,
+    },
+    {
+      id: 'mapa-zarobki',
+      title: 'Ile płacą szpitale, które ujawniły listy płac',
+      measure: `monitoring Watchdog Polska · płace lekarzy za ${monitoring.year} r.`,
+      map: { set: 'monitoring', layer: 'zarobki' },
+      sources: 'Źródło: Watchdog Polska (fedrowanie), granice: PRG, GUGiK · każda kwota to wypłata jednej placówki',
+      alt: `Mapa Polski: ${pay.summary!.value} ${pay.summary!.text.replace(/\u00A0/g, ' ')}. Koło = placówka w gminie siedziby, kolor = mediana rocznych wypłat (${pay.scale.labels.map((l, i) => `${l}: ${pay.scale.counts![i]}`).join(', ')}), wielkość = liczba pozycji na liście. Szare punkty: placówki bez pełnej listy. Źródło: Watchdog Polska, monitoring „${monitoring.source.monitoring}”.`,
+    },
+  ],
+};
+
 export const infographicSets: Record<string, InfographicSet> = {
   egzamin,
   'odpowiedzialnosc-zawodowa-lekarzy': odpowiedzialnosc,
@@ -439,4 +469,5 @@ export const infographicSets: Record<string, InfographicSet> = {
   'zadluzenie-szpitali': zadluzenie,
   'pielegniarstwo-w-polsce': pielegniarstwo,
   'odsiew-na-medycynie': odsiew,
+  'monitoring-watchdog': monitoringMaps,
 };

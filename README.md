@@ -59,7 +59,11 @@ src/
     seo/                   SEO: meta (szablon tytułu, canonical, robots), schema/ (graf JSON-LD), feeds (RSS, llms.txt),
                            icons (favicon.ico i PNG z favicon.svg / icon-maskable.svg) — bez importów `@/` tam, gdzie czyta je integracja
     monitoring/            dane monitoringu Watchdog: kontrakt JSON (zod, walidacja przy buildzie),
-                           codes.ts — słowniki kodów bez zod (do importu w przeglądarce)
+                           codes.ts — słowniki kodów bez zod (do importu w przeglądarce), name.ts — nazwy
+                           placówek do wyświetlania, map.ts — warstwy mapy („Zarobki”, „Jawność”)
+    mapa/                  mapy Polski: kontrakt warstwy (types), geometria z PRG (geo), układ punktów (layout),
+                           renderer SVG dla strony i grafik (svg), test χ² (stat), rejestr zestawów (sets) — zob. „Mapy”
+    tokens.ts              tokeny z tokens.css jako para [dzień, noc] — dla grafik generowanych w buildzie
     zadluzenie/model.ts    licznik długu szpitali: kotwica, tempa, wartość w chwili t, kwartały projekcji (bez DOM)
   components/
     ui/                    atomy: Button, LinkArrow, Icon, Heading, Eyebrow, Num, Flag,
@@ -92,7 +96,8 @@ src/
                            PointValue (wzór i skala wartości punktu), Receipt (rachunek z objaśnieniami), NhiCard
     datagrid/              generyczna tabela danych: wyszukiwanie, filtry z licznikami, sortowanie,
                            rozwijane wiersze, stan w adresie, CSV — zob. „Tabela danych”
-    monitoring/            przeglądarka monitoringu płac: konfiguracja datagridu, nazwy placówek
+    monitoring/            przeglądarka monitoringu płac: konfiguracja datagridu
+    mapa/                  PolandMap (mapa z zestawu: przełącznik warstw, dymki, wersja bez JS), client.ts (<zl-map>)
     zadluzenie/            DebtCounter (licznik na żywo, <zl-debt-counter>), DebtChart (kwartały + projekcja 12 mies.),
                            RegionTable (województwa), LossRanking (straty netto, Kalisz)
   layouts/BaseLayout.astro <head> (SEO z propsa `seo` → components/seo), fonty; przekazuje konfigurację do site/*
@@ -115,6 +120,7 @@ src/
   pages/szukaj.json.ts         indeks wyszukiwarki jako plik statyczny /szukaj.json
   pages/egzamin/index.astro    symulator LEK/LDEK /egzamin/
   pages/egzamin/[exam].json.ts bank pytań jako plik statyczny /egzamin/lek.json, /egzamin/ldek.json
+  pages/mapy/[set].json.ts     treść dymków map jako plik statyczny /mapy/<zestaw>.json
   scripts/reveal.ts        animacje wejścia sterowane atrybutami (data-reveal, data-count)
   scripts/open-target.ts   link do miejsca w zwiniętym <details> (lista przypisów, odpowiedź FAQ) najpierw je rozwija
   styles/                  tokens.css (kolory jako light-dark(dzień, noc)) + base.css (reset, typografia systemowa)
@@ -155,7 +161,7 @@ src/
   - Dział może wskazywać stronę niezależnie od kategorii (np. analiza „Polska na tle sąsiadów” jest w spisie /dane/).
   - Id wpisu = ostatni segment adresu. Nie zmieniaj go po publikacji.
 - **Pojęcie:** dopisz wpis w `src/content/glossary.yaml` (opis pól w nagłówku pliku). Strona `/slownik/` sortuje hasła alfabetycznie i daje każdemu kotwicę `#<id>` — id nie zmieniaj po publikacji. Definicja: 1–3 zdania, bez ocen i bez kwot, które się starzeją (kwota zostaje w tekście z `more`). Każde hasło ma `more` (id artykułu, opcjonalnie `anchor`, albo `{ href, label }`) i `sources` (podstawa prawna albo źródło: `{ label, href }`) — źródło to link pod hasłem, jak podpis `Figure`, a nie przypis. `home: n` wstawia hasło do modułu na stronie głównej (6–8 haseł).
-- **Dane monitoringu płac:** podmień `src/data/monitoring-watchdog.json` (generuje go skrypt; kontrakt: schemat w `src/lib/monitoring`). Build sprawdzi plik i przeliczy stronę, publiczny JSON i obrazek OG.
+- **Dane monitoringu płac:** podmień `src/data/monitoring-watchdog.json` (generuje go skrypt; kontrakt: schemat w `src/lib/monitoring`). Build sprawdzi plik i przeliczy stronę, publiczny JSON, obrazek OG, mapę i jej grafiki. Pole `teryt` (kod gminy siedziby) stawia placówkę na mapie — bez niego placówki na mapie nie ma.
 - **Linki artykułów** wylicza tylko `articleHref()`: opublikowane prowadzą do podstrony, zapowiedzi do `href` z frontmattera.
 
 ### Tabela danych (datagrid)
@@ -272,6 +278,18 @@ Wykresy mówią tym samym językiem co reszta strony: atrament to tekst i linie 
 - **Oś tylko wtedy, gdy wartości nie są podpisane.** `BarChart` podpisuje każdy wiersz (wartość tuż za końcem słupka), więc nie ma osi ani propa `ticks`. Siatka: linia przez całą szerokość, podpis nad nią przy lewej krawędzi, jednostka tylko przy najwyższej wartości (`60 mld zł`, `12 tys.`).
 - **Segmenty w stosie** dzieli szczelina 2 px w kolorze tła (`border`/`box-shadow` w `var(--bg)`), nie obrys.
 - **Symulator podaży:** kobalt znaczy „twoje” — zmieniony nabór, twój scenariusz na wykresie wyniku i ruszony suwak; nieruszony suwak jest neutralny.
+
+## Mapy
+
+Mapa Polski to zestaw warstw (`lib/mapa/sets.ts`) przełączanych na jednej mapie. Warstwa (`MapLayer` w `lib/mapa/types.ts`) to gotowe do wyświetlenia dane jednego trybu: wartości, skala klas, teksty legendy i dymków, źródła. Dwa rodzaje: `regions` (kartogram województw) i `points` (punkty w gminach siedziby, kolor = klasa, pole koła ∝ wielkość, szare = brak danych).
+
+- **Na stronie:** `<PolandMap set="monitoring" heading={{ eyebrow, title, id }} />`. `layers={['jawnosc']}` wybiera warstwy i ich kolejność na przełączniku, `initial` — warstwę na starcie, `interactive={false}` daje mapę bez przełącznika, dymków i skryptu (np. w artykule).
+- **Grafika do pobrania:** pozycja w `lib/infografiki/zestawy.ts` z polem `map: { set, layer }` — szablon infografik (pion i poziom, jasna i ciemna) bierze mapę z tego samego renderera (`lib/mapa/svg.ts`, motyw `jasny`/`ciemny` z wpisanymi kolorami tokenów).
+- **Dymki** nie siedzą w HTML: komponent pobiera `/mapy/<zestaw>.json` przy pierwszym ruchu nad mapą.
+- **Kolory:** skala sekwencyjna `--seq-0…4` i tekst na niej `--on-seq-0…4` w `tokens.css` (w nocy więcej = jaśniej). Skala ma najwyżej 5 klas.
+- **Geometria:** `src/data/geo/polska.json` — województwa i środki gmin z Państwowego Rejestru Granic (GUGiK), uproszczone i przeliczone z PUWG 1992 na płaszczyznę mapy. Plik generuje skrypt spoza repozytorium.
+- **Położenie punktu:** środek gminy z kodu TERYT siedziby (`geo.communePoint` rozumie dzielnice, delegatury i części gmin miejsko-wiejskich); punkty z jednej gminy rozsuwa `layout.placePoints` (deterministycznie, więc strona i grafika wyglądają tak samo).
+- **Nowy temat** (np. czas oczekiwania na SOR): funkcja budująca warstwy w module danych tematu (wzór: `lib/monitoring/map.ts`), wpis w `lib/mapa/sets.ts`, `<PolandMap set="…" />` na stronie. Zastrzeżenia liczone z danych (np. `stat.homogeneityP` — czy różnice między województwami są większe niż przypadkowe) zamiast wpisanych na sztywno.
 
 ## Obrazki OG
 

@@ -13,8 +13,10 @@ import Heading from '@/components/ui/Heading.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import XProfile from '@/components/blocks/XProfile.astro';
 import MonitoringGrid from '@/components/monitoring/MonitoringGrid.astro';
+import PolandMap from '@/components/mapa/PolandMap.astro';
 import { grid } from '@/components/monitoring/grid';
 import { monitoring } from '@/lib/monitoring';
+import { opennessP } from '@/lib/monitoring/map';
 import { mainNav } from '@/data/navigation';
 import { formatDate, formatPL, isoDate, typo } from '@/lib/format';
 import type { Crumb, SeoInput } from '@/lib/seo';
@@ -100,6 +102,10 @@ const seo: SeoInput = {
     <MonitoringGrid doc={monitoring} src={SRC} class="mon-page__grid" />
   </Section>
 
+  <Section aria-labelledby="mapa" space="bottom">
+    <PolandMap set="monitoring" heading={{ eyebrow: 'Mapa', title: 'Kto ujawnił dane i ile płaci', id: 'mapa' }} />
+  </Section>
+
   <Section aria-labelledby="podziekowania" space="bottom">
     <SectionHead
       eyebrow="Podziękowania"
@@ -152,6 +158,7 @@ const seo: SeoInput = {
         <p>{typo('Każda kwota to wypłata jednej placówki. Lekarz pracujący w kilku miejscach ma tu tylko część dochodu — łącznych zarobków nikt nie zna, bo nikt nie sumuje wypłat jednej osoby z różnych placówek. Traktuj kwoty jako dolne granice.')}</p>
         <p>{typo('Przedziały w rozkładzie są takie same dla wszystkich placówek, więc wykresy da się porównywać. Publikujemy wyłącznie liczebności przedziałów, nigdy pojedynczych kwot.')}</p>
         <p>{typo('Ujawnienie danych to dobra praktyka, a nie zarzut wobec placówki. Odmowa czy milczenie to informacja o stanie jawności, nie o samych lekarzach.')}</p>
+        <p>{typo(`Na mapie koło placówki stoi w środku gminy siedziby (według kodu TERYT), a granice pochodzą z Państwowego Rejestru Granic (GUGiK). Różnice w odsetku ujawnień między województwami ${opennessP >= 0.05 ? 'nie są statystycznie istotne' : 'są statystycznie istotne'} (test χ² jednorodności, p = ${formatPL(opennessP, 2)})${opennessP >= 0.05 ? ', więc mapa nie wskazuje „najbardziej jawnych” województw' : ''}.`)}</p>
         <p class="mon-method__credit">{typo('Ludność miejscowości dołączona po kodzie gminy TERYT. Kto zebrał i wyłuskał dane — zob.')}{' '}<a href="#podziekowania">podziękowania</a>.</p>
       </div>
       <dl class="mon-method__defs">

@@ -1,0 +1,254 @@
+---
+/**
+ * Mapa Polski z zestawu w lib/mapa/sets — na dowolnej stronie, z dowolnym wyborem warstw.
+ *
+ *   <PolandMap set="monitoring" heading={{ eyebrow: 'Mapa', title: '…', id: 'mapa' }} />
+ *   <PolandMap set="monitoring" layers={['jawnosc']} interactive={false} />
+ *
+ * Interaktywna (domyślnie): przełącznik trybów, gdy warstw jest więcej niż jedna, dymki po najechaniu
+ * lub dotknięciu (klik przypina dymek z linkiem), podświetlenie województwa z rankingu. Treść dymków
+ * przychodzi z /mapy/<zestaw>.json (pages/mapy/[set].json.ts) przy pierwszym ruchu nad mapą.
+ * `interactive={false}`: pierwsza wybrana warstwa z legendą, bez przełącznika, dymków i danych
+ * w stronie. Ten sam renderer (lib/mapa/svg) robi grafiki do pobrania.
+ */
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import { formatPL, typo } from '@/lib/format';
+import { radius, R_MISSING, toneOf } from '@/lib/mapa/layout';
+import { mapSets, type MapSetId } from '@/lib/mapa/sets';
+import { activeLayer, regionTones, renderMapSvg, tipsUrl } from '@/lib/mapa/svg';
+import type { MapLayer } from '@/lib/mapa/types';
+import { uid } from '@/lib/uid';
+
+interface Props {
+  set: MapSetId;
+  /** id warstw i ich kolejność na przełączniku; domyślnie wszystkie z zestawu */
+  layers?: string[];
+  /** warstwa na starcie; domyślnie pierwsza */
+  initial?: string;
+  /** nagłówek w jednym wierszu z przełącznikiem; bez niego nad mapą jest sam przełącznik */
+  heading?: { eyebrow: string; title: string; id: string };
+  interactive?: boolean;
+  class?: string;
+}
+
+const { set, layers: pick, initial, heading, interactive = true, class: className } = Astro.props;
+const all = mapSets[set].layers;
+const chosen: MapLayer[] = (pick ?? all.map((l) => l.id)).map((id) => {
+  const layer = all.find((l) => l.id === id);
+  if (!layer) throw new Error(`[PolandMap] zestaw „${set}” nie ma warstwy „${id}”`);
+  return layer;
+});
+const layers = interactive ? chosen : [activeLayer(chosen, initial ?? chosen[0].id)];
+const active = activeLayer(layers, initial ?? layers[0].id);
+const descId = uid('mapa');
+const svg = renderMapSvg(layers, { theme: 'css', active: active.id, descId });
+const toggle = interactive && layers.length > 1;
+
+// dane dla skryptu: barwy i podpisy województw każdej warstwy (do przełączania); dymki w osobnym pliku
+const data = interactive
+  ? JSON.stringify({
+      layers: layers.map((l) => ({
+        id: l.id,
+        kind: l.kind,
+        alt: l.alt,
+        ...(l.kind === 'regions' && { regions: Object.fromEntries([...regionTones(l)].map(([t, v]) => [t, [v.tone, v.display]])) }),
+      })),
+    }).replace(/</g, '\\u003c')
+  : null;
+
+const ranked = (l: MapLayer) => (l.kind === 'regions' ? [...l.regions].sort((a, b) => b.value - a.value) : []);
+const regionName = (teryt: string, l: MapLayer) => (l.kind === 'regions' ? l.regions.find((r) => r.teryt === teryt)!.tip.title : '');
+const sizeMax = (l: MapLayer) => (l.kind === 'points' && l.size ? radius(Math.max(...l.size.samples)) : 0);
+---
+<zl-map class:list={['pm', className]} data-active={active.id} data-kind={active.kind} data-tips={interactive ? tipsUrl(set) : undefined}>
+  {(heading || toggle) && (
+    <div class="pm-head">
+      {heading && (
+        <div>
+          <Eyebrow>{heading.eyebrow}</Eyebrow>
+          <Heading id={heading.id}>{typo(heading.title)}</Heading>
+        </div>
+      )}
+      {toggle && (
+        <div class="pm-seg" role="group" aria-label="Co pokazać na mapie">
+          {layers.map((l) => <button type="button" data-layer={l.id} aria-pressed={l.id === active.id ? 'true' : 'false'}>{l.label}</button>)}
+        </div>
+      )}
+    </div>
+  )}
+
+  <div class="pm-body">
+    <figure class="pm-map">
+      <Fragment set:html={svg} />
+      {interactive && <div class="pm-tip" hidden />}
+    </figure>
+
+    <div class="pm-side">
+      {layers.map((l) => (
+        <div class="pm-panel" data-layer={l.id} hidden={l.id !== active.id}>
+          {l.summary && <p class="pm-big"><b>{l.summary.value}</b><span>{l.summary.text}</span></p>}
+
+          {l.kind === 'regions' && l.ranking && (
+            <ol class="pm-rank" aria-label={l.ranking.title}>
+              {ranked(l).map((r) => (
+                <li data-r={r.teryt}>
+                  <span class="pm-rank__name">{regionName(r.teryt, l)}</span>
+                  <span class="pm-rank__bar" aria-hidden="true"><i data-tone={toneOf(r.value, l.scale)} style={`width:${((r.value / l.ranking!.max) * 100).toFixed(1)}%`} /></span>
+                  <span class="pm-rank__val">{r.exact ?? r.display}</span>
+                  {r.detail && <span class="pm-rank__n">{r.detail}</span>}
+                </li>
+              ))}
+            </ol>
+          )}
+
+          <div>
+            <p class="pm-lg-title">{l.scale.title}</p>
+            <ul class:list={['pm-lg', { 'pm-lg--sq': l.kind === 'regions' }]}>
+              {l.scale.labels.map((label, i) => (
+                <li><span class="pm-sw" data-tone={i} />{label}{l.scale.counts && <span class="pm-lg__n">{formatPL(l.scale.counts[i])}</span>}</li>
+              ))}
+            </ul>
+          </div>
+
+          {l.kind === 'points' && l.size && (
+            <div>
+              <p class="pm-lg-title">{l.size.title}</p>
+              <ul class="pm-lg pm-lg--size">
+                {l.size.samples.map((n) => {
+                  const r = radius(n), R = sizeMax(l);
+                  return (
+                    <li>
+                      <svg width={2 * R + 2} height={2 * r + 2} aria-hidden="true"><circle cx={R + 1} cy={r + 1} r={r} /></svg>
+                      {formatPL(n)}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {l.kind === 'points' && l.missing && (
+            <ul class="pm-lg">
+              <li><span class="pm-sw pm-sw--none" style={`--d:${2 * R_MISSING + 3}px`} />{l.missing.label}<span class="pm-lg__n">{formatPL(l.missing.count)}</span></li>
+            </ul>
+          )}
+
+          {l.note && <p class="pm-note" set:html={l.note} />}
+        </div>
+      ))}
+    </div>
+  </div>
+
+  {layers.map((l) => (
+    <div class="pm-foot" data-layer={l.id} hidden={l.id !== active.id}>
+      {l.caption && <p class="pm-caption">{l.caption}</p>}
+      {l.sources.map((s) => (
+        <p class="pm-src">{s.label}: {s.href ? <a href={s.href} target="_blank" rel="noopener">{s.name}</a> : s.name}{s.detail && `, ${s.detail}`}.</p>
+      ))}
+    </div>
+  ))}
+
+  {data && <script type="application/json" class="pm-data" set:html={data} />}
+</zl-map>
+
+<script>
+  import { definePolandMap } from './client';
+
+  definePolandMap();
+</script>
+
+<style is:global>
+  zl-map { display: block; }
+
+  .pm-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px 40px; margin-bottom: clamp(28px, 3vw, 40px); }
+  .pm-seg { display: inline-flex; border: 1px solid var(--line-2); background: var(--surface); }
+  .pm-seg button { padding: 12px 22px; border: 0; background: none; font: 500 0.9375rem/1 var(--f-body); color: var(--text-strong); cursor: pointer; }
+  .pm-seg button + button { border-left: 1px solid var(--line-2); }
+  .pm-seg button:hover { background: var(--bg-soft); }
+  .pm-seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+  .pm-seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .pm-body { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 32px clamp(32px, 5vw, 72px); align-items: start; padding-top: 28px; border-top: 1px solid var(--line); }
+  .pm-map { position: relative; margin: 0; }
+
+  /* ---------- SVG (lib/mapa/svg, theme 'css') ---------- */
+  .pm-svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: manipulation; }
+  .pm-reg { fill: var(--bg-soft); stroke: var(--line-2); stroke-width: .8; stroke-linejoin: round; }
+  .pm[data-kind="regions"] .pm-reg { stroke: var(--under); stroke-width: 1.2; }
+  .pm[data-kind="regions"] .pm-reg.is-on { stroke: var(--ink); stroke-width: 2; }
+  .pm-pts.is-off { display: none; }
+  .pm-pt { stroke: var(--under); stroke-width: 1; }
+  .pm-pt--none { fill: var(--chart); stroke: none; }
+  .pm-pt.is-on { stroke: var(--ink); stroke-width: 2; }
+  .pm-pt--none.is-on { fill: var(--ink); }
+  .pm-val { font: 500 13px/1 var(--f-mono); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+
+  /* stopnie skali: wypełnienia (województwa, koła, legenda, ranking) i tekst na nich */
+  .pm [data-tone="0"] { --tone: var(--seq-0); --on-tone: var(--on-seq-0); }
+  .pm [data-tone="1"] { --tone: var(--seq-1); --on-tone: var(--on-seq-1); }
+  .pm [data-tone="2"] { --tone: var(--seq-2); --on-tone: var(--on-seq-2); }
+  .pm [data-tone="3"] { --tone: var(--seq-3); --on-tone: var(--on-seq-3); }
+  .pm [data-tone="4"] { --tone: var(--seq-4); --on-tone: var(--on-seq-4); }
+  .pm-reg[data-tone]:not([data-tone=""]), .pm-pt[data-tone] { fill: var(--tone); }
+  .pm-val[data-tone] { fill: var(--on-tone); }
+
+  /* ---------- Dymek — jak ui/Popover ---------- */
+  .pm-tip {
+    position: absolute; z-index: 3; width: max-content; max-width: min(300px, calc(100vw - 32px)); padding: 12px 14px;
+    background: light-dark(var(--surface), var(--inverse-2));
+    color: light-dark(var(--text-strong), rgba(255, 255, 255, .82)); /* kolor-stały: w nocy tekst na granatowym dymku */
+    font: 400 0.8125rem/1.45 var(--f-body); pointer-events: none;
+    box-shadow:
+      inset 0 0 0 1px light-dark(var(--line-2), transparent),
+      0 20px 40px -16px light-dark(rgba(4, 11, 27, .18), rgba(4, 11, 27, .5)),
+      0 2px 6px light-dark(rgba(4, 11, 27, .06), transparent);
+  }
+  .pm-tip.is-pinned { pointer-events: auto; }
+  .pm-tip strong { display: block; margin-bottom: 2px; font: 600 0.9375rem/1.3 var(--f-display); color: light-dark(var(--ink), #fff); } /* kolor-stały: w nocy biały na granacie */
+  .pm-tip__meta, .pm-tip dt { color: light-dark(var(--muted), rgba(255, 255, 255, .62)); } /* kolor-stały: w nocy na granacie */
+  .pm-tip dl { display: grid; grid-template-columns: auto auto; gap: 2px 14px; margin-top: 8px; }
+  .pm-tip dd { font-family: var(--f-mono); text-align: right; color: light-dark(var(--ink), #fff); } /* kolor-stały: w nocy biały na granacie */
+  .pm-tip a { display: inline-block; margin-top: 8px; color: light-dark(var(--blue), #fff); text-decoration: underline; text-underline-offset: 3px; } /* kolor-stały: w nocy biały na granacie */
+
+  /* ---------- Panel ---------- */
+  .pm-panel { display: grid; gap: 28px; }
+  .pm-big { display: flex; align-items: baseline; gap: 14px; }
+  .pm-big b { font: 600 clamp(2.75rem, 5vw, 3.75rem)/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
+  .pm-big span { max-width: 24ch; font-size: 0.9375rem; line-height: 1.45; color: var(--text-strong); }
+  .pm-lg-title { margin-bottom: 10px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .pm-lg { display: grid; gap: 6px; font-size: 0.875rem; color: var(--text-strong); }
+  .pm-lg li { display: flex; align-items: center; gap: 10px; }
+  .pm-lg__n { margin-left: auto; padding-left: 12px; font: 400 0.8125rem/1 var(--f-mono); color: var(--muted); }
+  .pm-sw { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--tone); }
+  .pm-lg--sq .pm-sw { width: 22px; height: 12px; border-radius: 0; }
+  .pm-sw--none { width: var(--d); height: var(--d); margin: 0 calc((14px - var(--d)) / 2); background: var(--chart); }
+  .pm-lg--size { display: flex; align-items: flex-end; gap: 16px; }
+  .pm-lg--size li { flex-direction: column; gap: 4px; font: 400 0.8125rem/1 var(--f-mono); color: var(--muted); }
+  .pm-lg--size circle { fill: none; stroke: var(--text); stroke-width: 1; }
+  .pm-note { padding-top: 16px; border-top: 1px solid var(--line-2); font-size: 0.875rem; line-height: 1.6; color: var(--text); }
+  .pm-note b { font-weight: 600; color: var(--text-strong); }
+
+  .pm-rank li { display: grid; grid-template-columns: 11.6em minmax(0, 1fr) 3.4em 4.6em; align-items: center; gap: 10px; padding: 5px 4px; border-top: 1px solid var(--line); font-size: 0.875rem; color: var(--text-strong); }
+  .pm-rank li.is-on { background: var(--bg-soft); }
+  .pm-rank__bar { height: 8px; background: var(--line); }
+  .pm-rank__bar i { display: block; height: 100%; background: var(--tone); }
+  .pm-rank__val { font: 500 0.875rem/1 var(--f-mono); text-align: right; color: var(--ink); }
+  .pm-rank__n { font: 400 0.8125rem/1 var(--f-mono); text-align: right; white-space: nowrap; color: var(--muted); }
+
+  .pm-foot { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .pm-caption { margin-bottom: 8px; font-size: 0.875rem; color: var(--text); }
+  .pm-src { font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .pm-src a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 1024px) {
+    .pm-body { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .pm-seg { width: 100%; }
+    .pm-seg button { flex: 1; }
+    .pm-val { font-size: 21px; }
+    .pm-rank li { grid-template-columns: 10.2em minmax(0, 1fr) 3.3em 4.8em; gap: 8px; font-size: 0.8125rem; }
+    .pm-rank__val, .pm-rank__n { font-size: 0.75rem; }
+  }
+</style>

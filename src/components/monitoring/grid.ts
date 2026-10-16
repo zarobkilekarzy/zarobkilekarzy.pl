@@ -8,7 +8,7 @@ import { esc } from '@/components/datagrid/render';
 import { formatPL, slug } from '@/lib/format';
 import { VOIVODESHIPS } from '@/lib/monitoring/codes';
 import type { Facility, MonitoringDoc, NetworkLevel, Payroll, Response } from '@/lib/monitoring';
-import { prettyName } from './name';
+import { prettyName } from '@/lib/monitoring/name';
 
 export interface Row extends Facility {
   /** nazwa do wyświetlania */

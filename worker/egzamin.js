@@ -8,27 +8,27 @@
 //        -> 400 | 403
 //   GET  /api/egzamin -> { grupy: [{tryb, sesja, kubel, n, zdane, sumaProc}] }  — tylko gdy front nic nie zapisuje
 //
-// Koszt (darmowy plan): zapis to JEDNO wywołanie Funkcji — POST od razu zwraca
+// Koszt (darmowy plan): zapis to JEDNO wywołanie Workera — POST od razu zwraca
 // statystyki grupy, więc front nie robi osobnego GET. Odczyt nie liczy nic od zera:
 // tabela `agregaty` (tryb × sesja × dziesiątka procent) jest aktualizowana w tej samej
 // transakcji co zapis, a zapytanie czyta ≤10 wierszy niezależnie od liczby testów.
-// GET cache'uje na brzegu reguła cache strefy z repo infrastructure (cloudflare_cache.tf:
-// GET /api/clicks, /api/sonda, /api/egzamin; Edge TTL 300 s) — trafienie nie wywołuje
-// Funkcji ani D1. Sam nagłówek Cache-Control w odpowiedzi Funkcji brzegu NIE włącza.
-// Po zapisie kasujemy wpis z caches.default (przestrzeń wspólna z cache strefy) —
-// best-effort odświeżenie w tej kolokacji; pozostałe dogonią po Edge TTL.
+// GET trzymamy w cache brzegu (caches.default, EDGE_TTL) — odpowiedź Workera nie przechodzi
+// przez reguły cache strefy, więc cache'ujemy sami; trafienie nie dotyka D1.
+// Po zapisie kasujemy ten wpis — best-effort odświeżenie w tej kolokacji; pozostałe
+// dogonią po EDGE_TTL.
 //
-// Antybot: niewidoczny widżet Turnstile (osobny od sondy — tryb „invisible" jest cechą
-// widżetu). Token jest jednorazowy, więc jeden test = jeden zapis, bez trzymania IP czy
-// stanu po naszej stronie. Ochrona aktywna, gdy ustawione są OBA sekrety
-// TURNSTILE_EGZAMIN_SITE_KEY + TURNSTILE_EGZAMIN_SECRET_KEY; bez nich (lokalnie, w forku)
-// zapis działa bez weryfikacji. Bez bindingu D1 wszystko degraduje się łagodnie.
+// Antybot: niewidoczny widżet Turnstile. Token jest jednorazowy, więc jeden test = jeden
+// zapis, bez trzymania IP czy stanu po naszej stronie. Ochrona aktywna, gdy ustawione są
+// OBA: TURNSTILE_EGZAMIN_SITE_KEY (publiczny, w wrangler.jsonc) i sekret
+// TURNSTILE_EGZAMIN_SECRET_KEY; bez sekretu (lokalnie, w forku) zapis działa bez
+// weryfikacji. Bez bindingu D1 wszystko degraduje się łagodnie.
 const TRYBY = new Set(['egzamin', 'szybki']);
 // LEK: „20262” / „wszystkie”; LDEK z prefiksem: „ldek-20262” / „ldek-wszystkie” — osobne grupy statystyk.
 const SESJA_RE = /^(ldek-)?(\d{4}[12]|wszystkie)$/;
 const PROG = 0.56; // art. 14f ustawy o zawodach lekarza — 56% maksymalnej liczby punktów
 const SEK_NA_PYTANIE = 72; // 4 h na 200 pytań (Dz.U. 2021 poz. 828, § 10 ust. 5)
-const BROWSER_TTL = 600; // cache przeglądarki; brzeg nadpisuje to Edge TTL reguły
+const BROWSER_TTL = 600; // cache przeglądarki
+const EDGE_TTL = 300; // cache brzegu dla GET (caches.default)
 
 const json = (obj, status, cache) =>
   new Response(JSON.stringify(obj), {
@@ -67,7 +67,7 @@ const ensureSchema = async (db) => {
   schemaReady = true;
 };
 
-// Jak w /api/clicks: celowo BEZ remoteip (zasada „bez IP" z polityki prywatności).
+// Celowo BEZ remoteip (zasada „bez IP" z polityki prywatności).
 const verifyTurnstile = async (token, secret) => {
   if (!token) return false;
   try {
@@ -96,8 +96,7 @@ const sprawdz = (b) => {
   return { tryb: b.tryb, sesja: String(b.sesja), pkt, max, czas };
 };
 
-export const onRequest = async (context) => {
-  const { request, env } = context;
+export async function handleEgzamin(request, env, ctx) {
   const db = env && env.EGZAMIN_DB;
   const secret = env && env.TURNSTILE_EGZAMIN_SECRET_KEY;
   const turnstileOn = !!(secret && env.TURNSTILE_EGZAMIN_SITE_KEY);
@@ -106,12 +105,20 @@ export const onRequest = async (context) => {
 
   if (request.method === 'GET') {
     if (!db) return json({ grupy: [] }, 200, 'public, max-age=60');
+    const hit = cache && (await cache.match(cacheKey));
+    if (hit) return hit;
     try {
       await ensureSchema(db);
       const { results } = await db
         .prepare('SELECT tryb, sesja, kubel, n, zdane, suma_proc AS sumaProc FROM agregaty')
         .all();
-      return json({ grupy: results || [] }, 200, `public, max-age=${BROWSER_TTL}`);
+      const res = json({ grupy: results || [] }, 200, `public, max-age=${BROWSER_TTL}`);
+      if (cache) {
+        const edge = new Response(res.clone().body, res);
+        edge.headers.set('Cache-Control', `public, max-age=${EDGE_TTL}`);
+        ctx.waitUntil(cache.put(cacheKey, edge));
+      }
+      return res;
     } catch (e) {
       return json({ grupy: [] }, 200, 'public, max-age=30');
     }
@@ -147,7 +154,7 @@ export const onRequest = async (context) => {
           .bind(w.tryb, w.sesja),
       ]);
       // Świeży zapis: best-effort skasowanie wpisu GET z cache tej kolokacji.
-      if (cache) context.waitUntil(cache.delete(cacheKey));
+      if (cache) ctx.waitUntil(cache.delete(cacheKey));
       return json({ grupa: (grupa && grupa.results) || [] }, 200, 'no-store');
     } catch (e) {
       return json({ grupa: [] }, 200, 'no-store');
@@ -155,4 +162,4 @@ export const onRequest = async (context) => {
   }
 
   return json({ error: 'method-not-allowed' }, 405, 'no-store');
-};
+}

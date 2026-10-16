@@ -13,12 +13,12 @@ ujawnienia po naprawie.
 
 ## Zakres
 
-Serwis to statyczna strona (Astro) hostowana na Cloudflare Pages. Powierzchnia
+Serwis to statyczna strona (Astro) hostowana na Cloudflare Workers (static assets). Powierzchnia
 do oceny obejmuje przede wszystkim:
 
-- endpoint sondy `functions/api/sonda.js` (Cloudflare Functions + KV),
-- middleware basic-auth `functions/_middleware.js`,
-- konfigurację wdrożenia (`wrangler.toml`, `.github/workflows/deploy.yml`).
+- Worker `worker/` z endpointem statystyk egzaminu `/api/egzamin` (Cloudflare D1, Turnstile),
+- nagłówki bezpieczeństwa i przekierowania generowane przy buildzie (`integrations/seo/`),
+- konfigurację wdrożenia (`wrangler.jsonc`, `.github/workflows/deploy.yml`).
 
 ## Prywatność i treść
 
@@ -30,7 +30,6 @@ priorytetowe — napisz na **kontakt@zarobkilekarzy.pl** lub otwórz Issue typu
 
 ## Sekrety
 
-Repozytorium nie powinno zawierać żadnych sekretów. Hasło basic-auth
-(`BASIC_AUTH_PASS`) i tokeny Cloudflare żyją wyłącznie w zmiennych środowiskowych
-(Cloudflare Pages / GitHub Secrets). Jeśli zauważysz w repo lub w historii git
+Repozytorium nie powinno zawierać żadnych sekretów. Sekret Turnstile i tokeny
+Cloudflare żyją wyłącznie w sekretach (Cloudflare Workers / GitHub Secrets). Jeśli zauważysz w repo lub w historii git
 przypadkowo zacommitowany sekret — zgłoś to jak podatność.

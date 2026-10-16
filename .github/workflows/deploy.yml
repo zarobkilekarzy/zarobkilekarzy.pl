@@ -1,8 +1,8 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to Cloudflare Workers
 
-# Deploy: automatycznie po pushu na `main` oraz ręcznie (Actions → Run workflow).
-# Ręczny run na innej gałęzi = wdrożenie podglądowe Pages (<gałąź>.zarobkilekarzy.pages.dev),
-# nie produkcja — gałąź Pages bierzemy z gałęzi, na której leci run.
+# Deploy: automatycznie po pushu na `main` oraz ręcznie (Actions → Run workflow) — tylko z `main`.
+# Worker nie ma adresów podglądu (wrangler.jsonc: preview_urls false), więc każdy deploy jest
+# produkcyjny; ręczny run z innej gałęzi kończy się na buildzie, bez wdrożenia.
 on:
   push:
     branches: [main]
@@ -43,63 +43,10 @@ jobs:
           CF_WEB_ANALYTICS_TOKEN: 41998160098a4fd3965151cf1b67f440
         run: npm run build:release
 
-      - name: Ensure Cloudflare Pages project exists
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          npx --yes wrangler@4 pages project list | grep -qw zarobkilekarzy \
-            || npx --yes wrangler@4 pages project create zarobkilekarzy --production-branch=main
-
-      - name: Ensure SONDA_KV (KV namespace + binding)
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set +e
-          WR="npx --yes wrangler@4"
-          LIST=$($WR kv namespace list 2>/dev/null)
-          ID=$(node -e "try{const a=JSON.parse(process.argv[1]||'[]');const m=a.find(n=>n.title&&n.title.includes('SONDA_KV'));process.stdout.write(m?m.id:'')}catch(e){}" "$LIST")
-          if [ -z "$ID" ]; then
-            echo "Namespace nie istnieje — tworzę SONDA_KV…"
-            OUT=$($WR kv namespace create SONDA_KV 2>&1); echo "$OUT"
-            ID=$(printf '%s' "$OUT" | grep -oiE '[0-9a-f]{32}' | head -1)
-          fi
-          if [ -z "$ID" ]; then
-            echo "::warning::Nie udało się utworzyć/znaleźć KV SONDA_KV — token API prawdopodobnie nie ma uprawnienia 'Workers KV Storage:Edit'. Deploy przejdzie; sonda działa bez wyników do czasu naprawy."
-            exit 0
-          fi
-          grep -q 'binding = "SONDA_KV"' wrangler.toml \
-            || printf '\n[[kv_namespaces]]\nbinding = "SONDA_KV"\nid = "%s"\n' "$ID" >> wrangler.toml
-          echo "SONDA_KV gotowe (id=$ID) — binding dopisany do wrangler.toml na czas deployu."
-
-      - name: Ensure CLICKS_DB (D1 database + binding)
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set +e
-          WR="npx --yes wrangler@4"
-          LIST=$($WR d1 list --json 2>/dev/null)
-          ID=$(node -e "try{const a=JSON.parse(process.argv[1]||'[]');const m=a.find(d=>d.name==='zarobki-clicks');process.stdout.write(m?(m.uuid||m.database_id||''):'')}catch(e){}" "$LIST")
-          if [ -z "$ID" ]; then
-            echo "D1 nie istnieje — tworzę zarobki-clicks…"
-            OUT=$($WR d1 create zarobki-clicks 2>&1); echo "$OUT"
-            ID=$(printf '%s' "$OUT" | grep -oiE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
-          fi
-          if [ -z "$ID" ]; then
-            echo "::warning::Nie udało się utworzyć/znaleźć D1 zarobki-clicks — token API zapewne bez uprawnienia 'D1:Edit'. Deploy przejdzie; liczniki nieaktywne do czasu naprawy."
-            exit 0
-          fi
-          grep -q 'binding = "CLICKS_DB"' wrangler.toml \
-            || printf '\n[[d1_databases]]\nbinding = "CLICKS_DB"\ndatabase_name = "zarobki-clicks"\ndatabase_id = "%s"\n' "$ID" >> wrangler.toml
-          echo "CLICKS_DB gotowe (id=$ID) — binding dopisany do wrangler.toml na czas deployu. Tabelę utworzy Function leniwie."
-
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Workers
+        if: github.ref == 'refs/heads/main'
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=zarobkilekarzy --branch=${{ github.ref_name }} --commit-dirty=true
+          command: deploy

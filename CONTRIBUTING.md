@@ -85,8 +85,9 @@ npm run preview  # podgląd builda
 ```
 
 **Do pracy lokalnej nie potrzebujesz żadnych sekretów ani konta Cloudflare.**
-Sonda (`/api/sonda`) i basic-auth działają tylko na Cloudflare Pages; lokalnie
-`npm run dev` renderuje stronę bez nich (sonda działa w trybie fallback).
+Statystyki egzaminu (`/api/egzamin`) działają tylko na Cloudflare Workers; lokalnie
+`npm run dev` renderuje stronę bez nich (moduł egzaminu działa, bez porównania z innymi).
+Stronę razem z Workerem uruchomisz lokalnie przez `npm run preview:cf`.
 
 ---
 
@@ -101,7 +102,7 @@ Sonda (`/api/sonda`) i basic-auth działają tylko na Cloudflare Pages; lokalnie
 5. Otwórz PR i wypełnij szablon. Opisz **źródło** i dlaczego wpis pasuje do
    zasad redakcyjnych.
 
-PR-y nie deployują się automatycznie. Wdrożenie produkcyjne (Cloudflare Pages)
+PR-y nie deployują się automatycznie. Wdrożenie produkcyjne (Cloudflare Workers)
 uruchamia ręcznie maintainer — nie potrzebujesz do tego żadnych uprawnień.
 
 ---

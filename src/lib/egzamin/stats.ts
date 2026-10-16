@@ -1,6 +1,6 @@
 /**
  * Porównanie z innymi użytkownikami strony: anonimowe, zbiorcze wyniki w D1 przez
- * functions/api/egzamin.js. Protokół ten sam co w pierwszej wersji modułu — wyniki zebrane
+ * worker/egzamin.js. Protokół ten sam co w pierwszej wersji modułu — wyniki zebrane
  * wcześniej liczą się dalej.
  *
  * Zapis: jeden POST na ukończony test (sesja, tryb, punkty, czas + token niewidocznego
@@ -42,7 +42,7 @@ export interface GroupStats {
 export const comparable = (s: TestState) =>
   (s.config.mode === 'egzamin' || s.config.mode === 'szybki') && !s.agent && !s.incomparable && !s.config.ids && s.config.field === 'all';
 
-/** Te same granice co walidacja w functions/api/egzamin.js — wynik spoza nich serwer odrzuci. */
+/** Te same granice co walidacja w worker/egzamin.js — wynik spoza nich serwer odrzuci. */
 const acceptable = (mode: TestConfig['mode'], r: TestResult) => {
   const sec = Math.round(r.elapsed / 1000);
   const sizeOk = mode === 'egzamin' ? r.max >= 150 && r.max <= 200 : r.max === 20;

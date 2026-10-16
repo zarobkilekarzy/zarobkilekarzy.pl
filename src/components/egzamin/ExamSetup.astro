@@ -5,6 +5,8 @@
  * Kroki to grupy ARIA (role="radiogroup"/"group" + aria-labelledby), nie <fieldset>/<legend>:
  * Safari rysuje legend w ramce fieldsetu mimo float i psuje układ siatki kroku.
  * Zachowanie (podsumowanie, blokady trybów, start) — client/app.ts.
+ * Nad kreatorem: powtórka słabych pytań, pod nim: historia wyników — obie z pamięci przeglądarki
+ * (lib/egzamin/storage.ts), widoczne dopiero, gdy jest co pokazać; treść historii — client/history.ts.
  */
 import Button from '@/components/ui/Button.astro';
 import Icon from '@/components/ui/Icon.astro';
@@ -27,6 +29,16 @@ const latest = sessions[0].id;
 const SEASONS = [['jesien', 'jesień'], ['wiosna', 'wiosna']] as const;
 ---
 <div class="resume" data-resume hidden></div>
+
+<div class="weak" data-weak hidden>
+  <span class="weak__icon" aria-hidden="true"><Icon name="refresh" size={20} /></span>
+  <div class="weak__text">
+    <p class="mono-label">Powtórka · <span data-weak-exam>LEK</span></p>
+    <p class="weak__title" id="weak-title">Twoje słabe pytania: <b data-weak-n>0</b></p>
+    <p class="weak__desc">Pytania, na które w Twoich testach padła błędna odpowiedź. Pytanie znika z listy po dwóch poprawnych odpowiedziach z rzędu.</p>
+  </div>
+  <Button icon="arrow" class="weak__start" data-weak-start aria-describedby="weak-title">Powtórz</Button>
+</div>
 
 <form class="setup" data-setup novalidate>
   <div class="setup__steps">
@@ -138,6 +150,18 @@ const SEASONS = [['jesien', 'jesień'], ['wiosna', 'wiosna']] as const;
     <p class="summary__privacy">{privacy} <a href="#prywatnosc">Szczegóły</a></p>
   </aside>
 </form>
+
+<section class="hist" data-history hidden aria-labelledby="hist-title">
+  <div class="hist__head">
+    <div>
+      <p class="mono-label">Historia · <span data-history-exam>LEK</span></p>
+      <h2 class="hist__title" id="hist-title">Twoje wyniki</h2>
+    </div>
+    <button type="button" class="hist__clear" data-history-clear>Wyczyść historię</button>
+  </div>
+  <div data-history-body></div>
+  <p class="hist__note">Historia zostaje tylko w tej przeglądarce. Zapisujemy pełne egzaminy i szybkie testy.</p>
+</section>
 
 <style>
   /* ---------- Układ: kroki + przyklejone podsumowanie ---------- */
@@ -259,6 +283,50 @@ const SEASONS = [['jesien', 'jesień'], ['wiosna', 'wiosna']] as const;
   .resume :global(.act-resume--ghost) { background: var(--surface); color: var(--ink); border: 1px solid var(--line-2); }
   .resume :global(.act-resume--ghost:hover) { background: var(--surface); border-color: var(--ink); }
 
+  /* ---------- Słabe pytania ---------- */
+  .weak {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px 24px;
+    margin-bottom: 32px; padding: 20px 24px;
+    border: 1px solid var(--line-2); border-left: 4px solid var(--amber); background: var(--amber-bg);
+  }
+  .weak__icon { display: grid; place-items: center; width: 40px; height: 40px; background: var(--surface); color: var(--amber); }
+  .weak__title { margin-top: 6px; font: 400 1.375rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .weak__title b { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .weak__desc { margin-top: 6px; max-width: 46em; font-size: 0.875rem; line-height: 1.5; color: var(--text); }
+  .weak .mono-label { color: var(--amber); }
+
+  /* ---------- Historia wyników (treść: client/history.ts) ---------- */
+  .hist { margin-top: 56px; padding-top: 28px; border-top: 1px solid var(--ink); }
+  .hist__head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 20px; }
+  .hist__title { margin-top: 8px; font: 400 clamp(1.5rem, 2.4vw, 2rem)/1.1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .hist__clear { padding: 8px 0; font-size: 0.875rem; color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+  .hist__clear:hover { color: var(--bad); }
+  .hist__note { margin-top: 16px; font-size: 0.8125rem; color: var(--muted); }
+
+  .hist :global(.hist__sum) { margin-bottom: 16px; font: 400 0.8125rem/1.4 var(--f-mono); color: var(--text); }
+  .hist :global(.hist__grid) { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px 40px; align-items: start; }
+  .hist :global(.hist__grid--single) { grid-template-columns: minmax(0, 1fr); }
+  .hist :global(.hist__table) { max-height: 22rem; overflow: auto; border: 1px solid var(--line); background: var(--surface); }
+  .hist :global(.hist__table:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .hist :global(.hist__table table) { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .hist :global(.hist__table th), .hist :global(.hist__table td) { padding: 10px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; color: var(--ink); }
+  .hist :global(.hist__table thead th) { position: sticky; top: 0; background: var(--bg-soft); font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .hist :global(.hist__table tbody th) { font-weight: 400; white-space: nowrap; color: var(--text); }
+  .hist :global(.hist__table tbody tr:last-child > *) { border-bottom: 0; }
+  .hist :global(.hist__num) { font-family: var(--f-mono); font-size: 0.8125rem; white-space: nowrap; }
+  .hist :global(.hist__pass) { margin-left: 6px; padding: 2px 6px; font-size: 0.71875rem; }
+  .hist :global(.hist__pass.is-ok) { background: var(--ok-bg); color: var(--ok); }
+  .hist :global(.hist__pass.is-bad) { background: var(--bad-bg); color: var(--bad); }
+
+  .hist :global(.hist__fields .mono-label span) { text-transform: none; letter-spacing: 0; }
+  .hist :global(.hist__bars) { display: grid; gap: 14px; margin-top: 16px; padding: 0; list-style: none; }
+  .hist :global(.hist__bar) { display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 6px 12px; align-items: center; font-size: 0.875rem; }
+  .hist :global(.hist__bar-label) { color: var(--ink); line-height: 1.3; }
+  .hist :global(.hist__bar-track) { grid-column: 1 / -1; grid-row: 2; position: relative; height: 10px; background: var(--bg-soft); border: 1px solid var(--line); }
+  .hist :global(.hist__bar-track span) { position: absolute; inset: -1px auto -1px -1px; width: calc(var(--v) * 100%); background: var(--chart); }
+  .hist :global(.hist__bar-val) { grid-column: 2; grid-row: 1; font: 500 0.875rem/1.2 var(--f-mono); color: var(--ink); text-align: right; }
+  .hist :global(.hist__bar-val small) { margin-left: 6px; font-weight: 400; font-size: 0.71875rem; color: var(--muted); }
+
   @media (max-width: 1180px) {
     .years { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
@@ -291,6 +359,10 @@ const SEASONS = [['jesien', 'jesień'], ['wiosna', 'wiosna']] as const;
     .year { grid-template-columns: 52px 1fr 1fr; }
     .resume :global(.resume__card) { grid-template-columns: minmax(0, 1fr); }
     .resume :global(.resume__actions) { justify-content: space-between; }
+    .weak { grid-template-columns: auto minmax(0, 1fr); padding: 16px; }
+    .weak :global(.weak__start) { grid-column: 1 / -1; justify-self: start; }
+    .hist :global(.hist__grid) { grid-template-columns: minmax(0, 1fr); }
+    .hist :global(.hist__table th), .hist :global(.hist__table td) { padding: 8px 10px; }
     .summary__list div:nth-child(n + 3) { display: none; }
   }
 </style>

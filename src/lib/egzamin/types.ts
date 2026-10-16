@@ -95,6 +95,8 @@ export interface TestConfig {
   shuffle: boolean;
   /** jawna lista pytań (np. „powtórz błędne”) — omija dobór z sesji */
   ids?: string[];
+  /** powtórka słabych pytań z pamięci przeglądarki (lib/egzamin/storage.ts → weak) */
+  weak?: boolean;
 }
 
 /** Stan rozwiązywanego testu — zapisywany w przeglądarce po każdej zmianie. */

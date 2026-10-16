@@ -4,7 +4,7 @@
  * (detail = rodzaj zmiany), więc obie drogi zawsze widzą to samo.
  */
 import { elapsedAt, isCounted, remainingAt, scoreTest } from './engine';
-import { testStore } from './storage';
+import { testStore, weak } from './storage';
 import type { ExamQuestion, ModeInfo, TestResult, TestState } from './types';
 
 export type Change = 'answer' | 'move' | 'flag' | 'time' | 'finish';
@@ -44,6 +44,8 @@ export class ExamSession extends EventTarget {
   answer(choice: number, i = this.state.current) {
     if (this.lockReason(i) !== null || choice < 0 || choice > 4) return false;
     this.state.answers[i] = choice;
+    // Nauka i powtórka zasilają listę słabych pytań od razu (test z wynikiem na końcu — client/app.ts)
+    if (this.mode.instant && !this.state.agent) weak.record(this.questions[i].id, choice === this.questions[i].correct);
     this.commit('answer');
     return true;
   }

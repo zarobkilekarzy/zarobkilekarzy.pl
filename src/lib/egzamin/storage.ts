@@ -5,13 +5,21 @@
  *
  * Klucze z pierwszej wersji modułu (`egzamin-lek:*`) — czytelnicy zachowują notatki i zapisany
  * test. Notatki mają ten sam format (id pytania → tekst); test w starym formacie przechodzi
- * przez `fromV1` przy pierwszym odczycie. Historii wyników i listy słabych pytań
- * (`egzamin-lek:wyniki:v1`, `egzamin-lek:pytania:v1`) ten moduł nie rusza — zostają w pamięci.
+ * przez `fromV1` przy pierwszym odczycie. Słabe pytania (`egzamin-lek:pytania:v1`) i historia
+ * wyników (`egzamin-lek:wyniki:v1`) mają DOKŁADNIE format pierwszej wersji — czytelnicy mają tam
+ * dane z produkcji, więc kształtu rekordów nie zmieniamy (zob. `WeakEntry`, `ResultV1`).
  */
-import { parseSessionCode } from './ids';
+import { codeOfQuestion, parseSessionCode } from './ids';
+import type { ExamId } from './types';
 import type { ModeId, TestState } from './types';
 
-const KEYS = { test: 'egzamin-lek:v1', notes: 'egzamin-lek:notatki:v1', prefs: 'egzamin-lek:widok' } as const;
+const KEYS = {
+  test: 'egzamin-lek:v1',
+  notes: 'egzamin-lek:notatki:v1',
+  prefs: 'egzamin-lek:widok',
+  weak: 'egzamin-lek:pytania:v1',
+  results: 'egzamin-lek:wyniki:v1',
+} as const;
 
 /** Zapisany test z pierwszej wersji modułu (pages/egzamin.astro do października 2026). */
 interface TestV1 {
@@ -40,7 +48,7 @@ export function fromV1(old: TestV1, now = Date.now()): TestState | null {
       session: old.sesje.length > 1 ? 'all' : first.session,
       field,
       shuffle: false,
-      ...(old.tryb === 'powtorka' && { ids: old.klucze }),
+      ...(old.tryb === 'powtorka' && { ids: old.klucze, weak: true }),
     },
     ids: old.klucze,
     answers,
@@ -114,4 +122,95 @@ export interface Prefs {
 export const prefs = {
   get: (): Prefs => ({ size: 0, map: true, ...read<Partial<Prefs>>(KEYS.prefs, {}) }),
   set: (patch: Partial<Prefs>) => write(KEYS.prefs, { ...prefs.get(), ...patch }),
+};
+
+/* ==========================================================================
+   Słabe pytania — `egzamin-lek:pytania:v1`
+   Format pierwszej wersji: { [id pytania]: { z, s, t } }
+     z — liczba błędnych odpowiedzi, s — poprawne z rzędu od ostatniego błędu, t — ms ostatniej odpowiedzi.
+   Pytanie z błędną odpowiedzią trafia na listę i schodzi z niej po dwóch poprawnych z rzędu
+   (wpis zostaje w pamięci, ale `ids` go pomija — jak w pierwszej wersji).
+   ========================================================================== */
+
+export interface WeakEntry { z: number; s: number; t: number }
+
+const isNum = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+const isWeakEntry = (e: unknown): e is WeakEntry =>
+  typeof e === 'object' && e !== null && isNum((e as WeakEntry).z) && isNum((e as WeakEntry).s) && isNum((e as WeakEntry).t);
+
+/** Egzamin z id pytania: „ldek-20262:15” → 'ldek'; null, gdy id jest obce. */
+const examOfQuestion = (id: string): ExamId | null => parseSessionCode(codeOfQuestion(id))?.exam ?? null;
+
+export const weak = {
+  /** Wszystkie poprawne wpisy; uszkodzone (np. ręcznie zmienione) są pomijane. */
+  all(): Record<string, WeakEntry> {
+    const raw = read<unknown>(KEYS.weak, {});
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return {};
+    return Object.fromEntries(Object.entries(raw).filter(([, e]) => isWeakEntry(e))) as Record<string, WeakEntry>;
+  },
+  /** Odpowiedź na pytanie: błąd zeruje serię poprawnych; poprawna od początku nie zaśmieca pamięci. */
+  record(id: string, ok: boolean, now = Date.now()) {
+    const all = weak.all();
+    const e = all[id] ?? { z: 0, s: 0, t: 0 };
+    if (ok) e.s += 1;
+    else { e.z += 1; e.s = 0; }
+    e.t = now;
+    if (ok && !e.z) delete all[id];
+    else all[id] = e;
+    write(KEYS.weak, all);
+  },
+  /** Id słabych pytań jednego egzaminu, w kolejności dodania. */
+  ids: (exam: ExamId) =>
+    Object.entries(weak.all()).filter(([id, e]) => e.z > 0 && e.s < 2 && examOfQuestion(id) === exam).map(([id]) => id),
+};
+
+/* ==========================================================================
+   Historia wyników — `egzamin-lek:wyniki:v1`
+   Format pierwszej wersji: tablica (najwyżej 100 ostatnich) rekordów `ResultV1`.
+   Zapisujemy tylko ukończony egzamin i szybki test (bez testów agenta AI).
+   ========================================================================== */
+
+export interface ResultV1 {
+  /** chwila zakończenia (ms) */
+  t: number;
+  typ: 'LEK' | 'LDEK';
+  /** pierwsza wersja zapisywała tylko 'egzamin' i 'szybki'; pozostałe wartości dopuszczał jej typ */
+  tryb: 'egzamin' | 'szybki' | 'nauka' | 'powtorka';
+  /** nazwa sesji, np. „jesień 2026”, albo „wszystkie sesje” */
+  sesja: string;
+  pkt: number;
+  max: number;
+  /** czas netto w ms (nie dłuższy niż limit) */
+  czas: number;
+  /** dziedziny: [id, poprawne, pytania] — tylko dziedziny obecne w teście */
+  dz: [string, number, number][];
+}
+
+const RESULTS_LIMIT = 100;
+const TRYBY = ['egzamin', 'szybki', 'nauka', 'powtorka'];
+
+const isResult = (r: unknown): r is ResultV1 => {
+  if (typeof r !== 'object' || r === null) return false;
+  const x = r as ResultV1;
+  return isNum(x.t) && (x.typ === 'LEK' || x.typ === 'LDEK') && TRYBY.includes(x.tryb) && typeof x.sesja === 'string'
+    && isNum(x.pkt) && isNum(x.max) && x.max > 0 && isNum(x.czas) && Array.isArray(x.dz);
+};
+const isFieldRow = (d: unknown): d is [string, number, number] =>
+  Array.isArray(d) && typeof d[0] === 'string' && isNum(d[1]) && isNum(d[2]) && d[2] > 0;
+
+export const results = {
+  /** Wyniki od najstarszego; uszkodzone rekordy pomijamy, uszkodzone wiersze dziedzin — też. */
+  all(): ResultV1[] {
+    const raw = read<unknown>(KEYS.results, []);
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(isResult).map((r) => ({ ...r, dz: r.dz.filter(isFieldRow) }));
+  },
+  add(r: ResultV1) {
+    write(KEYS.results, [...results.all(), r].slice(-RESULTS_LIMIT));
+  },
+  /** Czyści historię wyników i listę słabych pytań (jak przycisk w pierwszej wersji). */
+  clear() {
+    write(KEYS.results, null);
+    write(KEYS.weak, null);
+  },
 };

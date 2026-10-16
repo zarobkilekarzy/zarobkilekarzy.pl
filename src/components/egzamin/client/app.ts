@@ -6,13 +6,15 @@
 import { createLekApi } from '@/lib/egzamin/api';
 import { createTest, isCounted, selectQuestions, statusOf, type Status } from '@/lib/egzamin/engine';
 import { ExamSession, type Change } from '@/lib/egzamin/session';
+import { codeOfQuestion, parseSessionCode } from '@/lib/egzamin/ids';
 import { loadByIds, loadSessions } from '@/lib/egzamin/source';
-import { notes, prefs, testStore } from '@/lib/egzamin/storage';
+import { notes, prefs, results, testStore, weak, type ResultV1 } from '@/lib/egzamin/storage';
 import { MIN_RESULTS, comparable, groupStats } from '@/lib/egzamin/stats';
 import type { ExamId, ExamQuestion, FieldInfo, ModeInfo, SessionInfo, TestConfig, TestState } from '@/lib/egzamin/types';
 import { formatPL, plural } from '@/lib/format';
 import * as R from './render';
 import { initBank } from './bank';
+import { historyBody } from './history';
 import * as Res from './result';
 import { canvasFile, drawShareImage } from './share-image';
 
@@ -66,13 +68,14 @@ class ZlExam extends HTMLElement {
       [
         'shell', 'mode', 'session', 'count', 'score', 'ok', 'bad', 'timer-wrap', 'timer', 'bar', 'main', 'question',
         'feedback-slot', 'note-slot', 'pause', 'pause-time', 'map-filters', 'map-pages', 'map-grid', 'next-label',
-        'result', 'res-title', 'res-body', 'res-scroll', 'resume', 'announce',
+        'result', 'res-title', 'res-body', 'res-scroll', 'resume', 'announce', 'weak', 'history',
       ].map((k) => [k, this.q(`[data-${k}]`)]),
     );
 
     this.bindSetup();
     this.bindRunner();
     this.renderResume();
+    this.renderLocal();
     this.syncSetup();
 
     window.lek = createLekApi({
@@ -130,6 +133,7 @@ class ZlExam extends HTMLElement {
           group.hidden = group.dataset.fields !== this.exam;
           if (!group.hidden) group.querySelector<HTMLInputElement>('input[value="all"]')!.checked = true;
         });
+        this.renderLocal();
       }
       this.syncSetup();
     });
@@ -151,6 +155,18 @@ class ZlExam extends HTMLElement {
       const act = (e.target as Element).closest<HTMLElement>('[data-resume-act]')?.dataset.resumeAct;
       if (act === 'resume') void this.resumeStored();
       if (act === 'drop') { testStore.clear(); this.renderResume(); }
+    });
+
+    this.ui.weak.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('[data-weak-start]')) void this.startWeak();
+    });
+    this.ui.history.addEventListener('click', (e) => {
+      if (!(e.target as Element).closest('[data-history-clear]')) return;
+      if (!confirm('Usunąć historię wyników i listę słabych pytań z tej przeglądarki?')) return;
+      results.clear();
+      this.renderLocal();
+      // Sekcja znika — fokus wraca do kreatora, nie przepada na <body>
+      this.form.querySelector<HTMLInputElement>('input[name="exam"]:checked')?.focus();
     });
   }
 
@@ -244,6 +260,84 @@ class ZlExam extends HTMLElement {
     box.hidden = false;
   }
 
+  /** Słabe pytania i historia wyników wybranego egzaminu — z pamięci tej przeglądarki. */
+  private renderLocal() {
+    this.renderWeak();
+    this.renderHistory();
+  }
+
+  /** Słabe pytania, które da się dziś wczytać (sesje obecne w bazie modułu). */
+  private weakIds(exam: ExamId) {
+    const known = new Set(this.cfg.sessions.filter((s) => s.files[exam]).map((s) => s.id));
+    return weak.ids(exam).filter((id) => known.has(parseSessionCode(codeOfQuestion(id))?.session ?? ''));
+  }
+
+  private renderWeak() {
+    const n = this.weakIds(this.exam).length;
+    const box = this.ui.weak;
+    box.hidden = n === 0;
+    if (!n) return;
+    box.querySelector('[data-weak-n]')!.textContent = formatPL(n);
+    box.querySelector('[data-weak-exam]')!.textContent = this.examLabel(this.exam);
+  }
+
+  private renderHistory() {
+    const exam = this.exam;
+    const label = this.examLabel(exam);
+    const list = results.all().filter((r) => r.typ === label);
+    const box = this.ui.history;
+    box.hidden = list.length === 0;
+    if (!list.length) return;
+    box.querySelector('[data-history-exam]')!.textContent = label;
+    box.querySelector('[data-history-body]')!.innerHTML = historyBody(list, {
+      exam,
+      examLabel: label,
+      modeLabel: (tryb) => (tryb === 'powtorka' ? 'Powtórka' : this.modeOf(tryb).label),
+      fieldLabel: (id) => this.fieldLabel(id, exam),
+      threshold: this.cfg.rules.threshold,
+    });
+  }
+
+  private async startWeak() {
+    const ids = this.weakIds(this.exam);
+    if (!ids.length) return this.renderWeak();
+    await this.start({ exam: this.exam, mode: 'nauka', session: 'all', field: 'all', shuffle: false, ids, weak: true });
+  }
+
+  /**
+   * Zakończony test w pamięci przeglądarki (format pierwszej wersji modułu): odpowiedzi testu
+   * z wynikiem na końcu zasilają słabe pytania (nauka robi to po każdej odpowiedzi — session.ts),
+   * a egzamin i szybki test trafiają do historii. Testy agenta AI pomijamy.
+   */
+  private recordFinished(s: ExamSession) {
+    const { state } = s;
+    if (state.agent) return;
+    if (!s.mode.instant) {
+      s.questions.forEach((q, i) => {
+        const a = s.answerOf(i);
+        if (isCounted(q) && a !== undefined) weak.record(q.id, a === q.correct);
+      });
+    }
+    const { exam, mode, session } = state.config;
+    if (mode !== 'egzamin' && mode !== 'szybki') return;
+    const r = s.result();
+    if (!r.max) return;
+    const dz = this.cfg.fields[exam].flatMap((f): ResultV1['dz'] => {
+      const b = r.byField.find((x) => x.field === f.id);
+      return b ? [[f.id, b.points, b.max]] : [];
+    });
+    results.add({
+      t: Date.now(),
+      typ: exam === 'ldek' ? 'LDEK' : 'LEK',
+      tryb: mode,
+      sesja: this.sessionLabel(session),
+      pkt: r.points,
+      max: r.max,
+      czas: Math.round(Math.min(state.elapsed, state.limit ?? state.elapsed)),
+      dz,
+    });
+  }
+
   /* ======================================================================
      Start, wznowienie, otwieranie i zamykanie
      ====================================================================== */
@@ -308,7 +402,8 @@ class ZlExam extends HTMLElement {
 
     const { config } = session.state;
     this.ui.mode.textContent = session.mode.label;
-    this.ui.session.textContent = `${this.examLabel(config.exam)} · ${config.ids ? 'powtórka błędnych' : this.sessionLabel(config.session)}`;
+    const scope = config.weak ? 'powtórka słabych pytań' : config.ids ? 'powtórka błędnych' : this.sessionLabel(config.session);
+    this.ui.session.textContent = `${this.examLabel(config.exam)} · ${scope}`;
     this.dialog.toggleAttribute('data-reveal', session.mode.instant);
     this.ui.score.hidden = !session.mode.instant;
     this.ui['timer-wrap'].hidden = !session.timed;
@@ -348,6 +443,7 @@ class ZlExam extends HTMLElement {
     if (document.fullscreenElement) void document.exitFullscreen();
     this.dialog.close();
     this.renderResume();
+    this.renderLocal();
   }
 
   /* ======================================================================
@@ -475,7 +571,10 @@ class ZlExam extends HTMLElement {
 
   private update(change: Change) {
     const s = this.session!;
-    if (change === 'finish') return this.showResult();
+    if (change === 'finish') {
+      this.recordFinished(s);
+      return this.showResult();
+    }
     if (change === 'time') return this.renderTime();
     if (change === 'move') {
       this.noteOpen = notes.has(s.question.id);
@@ -725,6 +824,7 @@ class ZlExam extends HTMLElement {
     this.ui['res-body'].querySelector<HTMLElement>('.r-score')?.setAttribute('tabindex', '-1');
     this.ui['res-body'].querySelector<HTMLElement>('.r-score')?.focus({ preventScroll: true });
     this.renderResume();
+    this.renderLocal();
     void this.renderShare();
     void this.renderCompare();
   }
@@ -778,7 +878,7 @@ class ZlExam extends HTMLElement {
     const s = this.session!;
     const ids = s.questions.filter((q, i) => statusOf(s.state, q, i, true) === 'wrong').map((q) => q.id);
     if (!ids.length) return;
-    await this.start({ ...s.state.config, mode: 'nauka', shuffle: false, ids });
+    await this.start({ ...s.state.config, mode: 'nauka', shuffle: false, ids, weak: undefined });
   }
 
   /* ======================================================================

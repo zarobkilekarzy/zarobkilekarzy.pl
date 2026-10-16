@@ -11,9 +11,10 @@
  * Do 4 wierszy układ luźny; przy 5–8 wiersze gęstnieją (zob. G i GD). Liczby wyłącznie z modułów
  * danych stron (zob. ./zestawy.ts).
  *
- * Drugi styl, „wykres” (pole `chart`): gdy liczy się kierunek zmian kilku wielkości w różnych
- * jednostkach — indeksy na jednej osi, nad wykresem duże liczby zmiany (zob. chartLayout). Rama
- * (nagłówek i stopka) wspólna dla obu stylów.
+ * Drugi styl, „wykres” (pole `chart`): gdy liczy się kierunek zmian w czasie — linie na jednej osi
+ * (indeksy albo liczby), nad wykresem duże liczby (zob. chartLayout). Trzeci, „proporcje” (pole
+ * `split`): części całości — gruby pasek podzielony na segmenty albo kolumny 100% obok siebie
+ * (zob. splitLayout). Rama (nagłówek i stopka) wspólna dla wszystkich stylów.
  */
 import sharp from 'sharp';
 import satori from 'satori';
@@ -43,12 +44,12 @@ const tokenPair = (name: string): [string, string] => {
   return pair ? [pair[1].trim(), pair[2].trim()] : [value, value];
 };
 
-interface Palette { bg: string; ink: string; muted: string; line: string; blue: string; bar: string; bad: string; amber: string }
+interface Palette { bg: string; ink: string; muted: string; line: string; blue: string; bar: string; soft: string; bad: string; amber: string }
 
 const palette = (night: boolean): Palette => {
   const t = (name: string) => tokenPair(name)[night ? 1 : 0];
   // jasna: białe tło jak obrazki OG; ciemna: tło strony w trybie nocnym (--bg)
-  return { bg: night ? t('bg') : '#fff', ink: t('ink'), muted: t('muted'), line: t('line'), blue: t('blue'), bar: t('chart'), bad: t('bad'), amber: t('amber') };
+  return { bg: night ? t('bg') : '#fff', ink: t('ink'), muted: t('muted'), line: t('line'), blue: t('blue'), bar: t('chart'), soft: t('chart-soft'), bad: t('bad'), amber: t('amber') };
 };
 
 export const THEMES: Record<ThemeKey, { label: string; colors: Palette }> = {
@@ -66,7 +67,7 @@ export interface ComparisonRow {
   highlight?: boolean;
 }
 
-/** Punkt wykresu indeksowego: położenie na osi lat (rok + ułamek) i wartość indeksu. */
+/** Punkt wykresu: położenie na osi lat (rok + ułamek) i wartość (indeks albo liczba). */
 export interface ChartPoint {
   x: number;
   v: number;
@@ -83,12 +84,14 @@ export interface ChartSeries {
   dashedFrom?: number;
   /** duża liczba nad wykresem, np. „+59%” */
   value: string;
+  /** jednostka za liczbą, mniejszym stopniem (np. „tys.”) */
+  unit?: string;
   /** dopisek pod liczbą, np. „z 138,7 do 220,2 mld zł (2025)” — bez strzałek: Plex Mono ich nie ma */
   detail: string;
 }
 
-/** Wykres indeksowy (rok bazowy = 100): linie zamiast pasków, gdy liczy się kierunek zmian. */
-export interface IndexChart {
+/** Wykres liniowy (np. indeks, rok bazowy = 100): linie zamiast pasków, gdy liczy się kierunek zmian w czasie. */
+export interface LineChart {
   xMin: number;
   xMax: number;
   yMin: number;
@@ -98,6 +101,41 @@ export interface IndexChart {
   series: ChartSeries[];
   /** dopisek przy punkcie (np. ostatnim punkcie projektu), kolejne linie w kolejnych wierszach */
   note?: { x: number; v: number; lines: string[] };
+  /** kropki przy każdym punkcie (pomiary) albo tylko na końcu linii (projekcja rok po roku) */
+  markers?: 'all' | 'last';
+  /** poziom odniesienia (np. stan dzisiejszy): przerywana linia przez cały wykres, podpis nad nią po prawej */
+  baseline?: { v: number; label: string; /** dalszy ciąg podpisu w kolorze alarmu */ accent?: string };
+}
+
+/** Część całości: segment paska 100%. */
+export interface SplitSegment {
+  label: string;
+  /** dopisek pod nazwą (wersaliki, mono) */
+  sub?: string;
+  /** wielkość segmentu; skala = suma segmentów paska */
+  value: number;
+  /** duża liczba przy segmencie */
+  display: string;
+  /** napis w segmencie (pasek poziomy), np. „66,7%” */
+  share?: string;
+  /** blue — to, o czym jest grafika; slate i soft — reszta */
+  tone: 'blue' | 'slate' | 'soft';
+}
+
+export interface SplitBar {
+  /** nagłówek kolumny (kolumny pionowe) */
+  label?: string;
+  segments: SplitSegment[];
+}
+
+/**
+ * Styl „proporcje”: jeden pasek → gruby pasek poziomy podzielony na części, liczby pod nim;
+ * kilka pasków → kolumny 100% obok siebie, liczby przy segmentach.
+ */
+export interface Split {
+  bars: SplitBar[];
+  /** jednostka za dużymi liczbami (np. „%”) */
+  unit?: string;
 }
 
 export interface Infographic {
@@ -106,13 +144,15 @@ export interface Infographic {
   title: string;
   /** dalszy ciąg tytułu w kolorze alarmu (wykres): „Kolejka nie maleje.” */
   titleAccent?: string;
-  /** zamiast wierszy: wykres indeksowy */
-  chart?: IndexChart;
+  /** zamiast wierszy: wykres liniowy */
+  chart?: LineChart;
+  /** zamiast wierszy: części całości */
+  split?: Split;
   /** miara i okres, np. „na 100 tys. lekarzy rocznie · 2020–2025” */
   measure: string;
   /** jednostka za każdą liczbą, mniejszym stopniem (np. „%”) */
   unit?: string;
-  /** wiersze porównania (styl podstawowy); grafika z `chart` ich nie ma */
+  /** wiersze porównania (styl podstawowy); grafika z `chart` albo `split` ich nie ma */
   rows?: ComparisonRow[];
   /** jedna linia stopki: źródła + najważniejsze zastrzeżenie */
   sources: string;
@@ -237,7 +277,7 @@ function frame(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKe
       qr(pageUrl, night ? g.qr - 2 * Math.round(g.qr / 12) : g.qr, night)));
 }
 
-/* ---------- Styl „wykres”: indeksy na jednej osi, duże liczby nad wykresem ---------- */
+/* ---------- Styl „wykres”: linie w czasie na jednej osi, duże liczby nad wykresem ---------- */
 
 /**
  * Geometria wykresu. Pion: trzy liczby w rzędzie nad wykresem na całą szerokość; poziom: liczby
@@ -248,7 +288,7 @@ const CG = {
   poziom: { legendW: 280, gap: 32, chartH: 360, gutter: 44, xLab: 28, label: 11, value: 50, valueDense: 36, detail: 12, tick: 12, stroke: 3.5, dot: 4.5, note: 15, noteSub: 13 },
 };
 
-function chartLayout(set: InfographicSet, i: Infographic, c: IndexChart, f: FormatKey, theme: ThemeKey): Node {
+function chartLayout(set: InfographicSet, i: Infographic, c: LineChart, f: FormatKey, theme: ThemeKey): Node {
   const C = THEMES[theme].colors;
   const g = G[f];
   const cg = CG[f];
@@ -275,6 +315,10 @@ function chartLayout(set: InfographicSet, i: Infographic, c: IndexChart, f: Form
     const base = t === 100;
     svg.push(`<line x1="${left}" x2="${left + plotW}" y1="${r1(sy(t))}" y2="${r1(sy(t))}" stroke="${base ? C.bar : C.line}" stroke-width="${base ? 1.5 : 1}"${base ? ' stroke-dasharray="3 6"' : ''}/>`);
   }
+  if (c.baseline) {
+    const y = r1(sy(c.baseline.v));
+    svg.push(`<line x1="${left}" x2="${left + plotW}" y1="${y}" y2="${y}" stroke="${C.ink}" stroke-width="${r1(cg.stroke * 0.4)}" stroke-dasharray="${r1(cg.stroke * 1.6)} ${r1(cg.stroke * 1.2)}"/>`);
+  }
   // czerwień na wierzchu
   const order = [...c.series].sort((a, b) => Number(a.tone === 'red') - Number(b.tone === 'red'));
   for (const s of order) {
@@ -288,7 +332,7 @@ function chartLayout(set: InfographicSet, i: Infographic, c: IndexChart, f: Form
     });
     const last = s.points.at(-1)!;
     svg.push(`<circle cx="${r1(sx(last.x))}" cy="${r1(sy(last.v))}" r="${r1(cg.dot * 2.2)}" fill="${col}" fill-opacity="0.22"/>`);
-    for (const p of s.points) {
+    for (const p of c.markers === 'last' ? [last] : s.points) {
       const r = cg.dot;
       svg.push(planned(p)
         ? `<circle cx="${r1(sx(p.x))}" cy="${r1(sy(p.v))}" r="${r1(r)}" fill="${C.bg}" stroke="${col}" stroke-width="${r1(w * 0.6)}"/>`
@@ -311,6 +355,9 @@ function chartLayout(set: InfographicSet, i: Infographic, c: IndexChart, f: Form
     h('img', { src: lines, width: W, height: H, style: { position: 'absolute', left: 0, top: 0 } }),
     ...c.yTicks.map((t) => tick(String(t), { left: 0, width: left - 12, top: Math.round(sy(t) - cg.tick / 2), justifyContent: 'flex-end' })),
     ...c.xTicks.map((t) => tick(t.label, { left: Math.round(sx(t.x) - 40), width: 80, top: top + plotH + Math.round((cg.xLab - cg.tick) / 2), justifyContent: 'center' })),
+    c.baseline && h('div', { style: { position: 'absolute', right: 14, top: Math.round(sy(c.baseline.v) - cg.note * 1.3 - 8), fontFamily: BODY, fontSize: cg.note, lineHeight: 1.3, color: C.ink } },
+      typo(c.baseline.label),
+      c.baseline.accent && h('span', { style: { marginLeft: '0.3em', color: C.bad } }, typo(c.baseline.accent))),
     note);
 
   const legendItem = (s: ChartSeries) =>
@@ -318,7 +365,9 @@ function chartLayout(set: InfographicSet, i: Infographic, c: IndexChart, f: Form
       h('div', { style: { alignItems: 'center', fontFamily: MONO, fontSize: cg.label, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.ink } },
         h('div', { style: { width: pion ? 28 : 20, height: cg.stroke, marginRight: 10, background: color(s), flexShrink: 0 } }),
         typo(s.label)),
-      h('div', { style: { marginTop: pion ? 12 : 6, fontFamily: DISPLAY, fontWeight: 300, fontSize: valueSize, lineHeight: 1, letterSpacing: '-0.05em', color: s.tone === 'slate' ? C.ink : color(s) } }, s.value),
+      h('div', { style: { marginTop: pion ? 12 : 6, alignItems: 'baseline', fontFamily: DISPLAY, fontWeight: 300, fontSize: valueSize, lineHeight: 1, letterSpacing: '-0.05em', color: s.tone === 'slate' ? C.ink : color(s) } },
+        s.value,
+        s.unit && h('span', { style: { marginLeft: 8, fontSize: Math.round(valueSize * UNIT_SCALE), letterSpacing: '-0.02em' } }, s.unit)),
       h('div', { style: { marginTop: pion ? 10 : 6, fontFamily: MONO, fontSize: cg.detail, lineHeight: 1.35, color: C.muted } }, typo(s.detail)));
   const legend = h('div', { style: pion ? { width: W } : { flexDirection: 'column', width: cg.legendW, flexShrink: 0, justifyContent: 'space-between', marginRight: cg.gap } },
     ...c.series.map(legendItem));
@@ -329,10 +378,85 @@ function chartLayout(set: InfographicSet, i: Infographic, c: IndexChart, f: Form
       : h('div', { style: { alignItems: 'stretch' } }, legend, chart));
 }
 
+/* ---------- Styl „proporcje”: części całości ---------- */
+
+/** Geometria: pasek poziomy (barH, liczby pod nim) albo kolumny 100% (colW × colH, liczby obok segmentów). */
+const SG = {
+  pion: { barH: 220, gap: 56, seam: 4, num: 96, label: 24, sub: 14, share: 28, head: 15, headH: 52, colW: 150, colH: 600, tick: 16 },
+  poziom: { barH: 84, gap: 28, seam: 3, num: 56, label: 18, sub: 11, share: 18, head: 11, headH: 32, colW: 96, colH: 300, tick: 12 },
+};
+
+function splitLayout(set: InfographicSet, i: Infographic, sp: Split, f: FormatKey, theme: ThemeKey): Node {
+  const C = THEMES[theme].colors;
+  const sg = SG[f];
+  const pion = f === 'pion';
+  const inner = FORMATS[f].width - 2 * G[f].padX;
+  const fill = (seg: SplitSegment) => ({ blue: C.blue, slate: C.bar, soft: C.soft })[seg.tone];
+  // napis na kobalcie w kolorze tła (biel w dzień, granat w nocy), na łupku — atrament
+  const onFill = (seg: SplitSegment) => (seg.tone === 'blue' ? C.bg : C.ink);
+  const total = (bar: SplitBar) => bar.segments.reduce((n, seg) => n + seg.value, 0);
+  const number = (seg: SplitSegment) =>
+    h('div', { style: { alignItems: 'baseline', fontFamily: DISPLAY, fontWeight: 300, fontSize: sg.num, lineHeight: 1, letterSpacing: '-0.05em', color: seg.tone === 'blue' ? C.blue : C.ink } },
+      seg.display,
+      sp.unit && h('span', { style: { marginLeft: 8, fontSize: Math.round(sg.num * UNIT_SCALE), letterSpacing: '-0.02em' } }, sp.unit));
+  const labels = (seg: SplitSegment) => [
+    h('span', { style: { marginTop: pion ? 12 : 6, fontFamily: BODY, fontSize: sg.label, lineHeight: 1.25, color: C.ink } }, typo(seg.label)),
+    seg.sub && h('span', { style: { marginTop: pion ? 6 : 3, fontFamily: MONO, fontSize: sg.sub, letterSpacing: '0.06em', textTransform: 'uppercase', color: seg.tone === 'blue' ? C.blue : C.muted } }, typo(seg.sub)),
+  ];
+
+  // jeden pasek: gruba krecha na całą szerokość, udziały w segmentach, liczby w kolumnach pod spodem
+  if (sp.bars.length === 1) {
+    const bar = sp.bars[0];
+    const width = inner - (bar.segments.length - 1) * sg.seam;
+    const strip = h('div', { style: { width: inner, height: sg.barH } },
+      ...bar.segments.map((seg, k) =>
+        h('div', { style: { width: Math.round((seg.value / total(bar)) * width), height: sg.barH, marginLeft: k ? sg.seam : 0, background: fill(seg), alignItems: 'flex-end', padding: pion ? 16 : 10, fontFamily: DISPLAY, fontSize: sg.share, lineHeight: 1, color: onFill(seg) } },
+          seg.share ?? '')));
+    const legend = h('div', { style: { width: inner, marginTop: sg.gap } },
+      ...bar.segments.map((seg) =>
+        h('div', { style: { flexDirection: 'column', flexGrow: 1, flexBasis: 0, paddingRight: 16 } },
+          h('div', { style: { width: pion ? 28 : 20, height: pion ? 10 : 7, marginBottom: pion ? 16 : 10, background: fill(seg) } }),
+          number(seg),
+          ...labels(seg))));
+    return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column' } }, strip, legend));
+  }
+
+  // kilka pasków: kolumny 100% obok siebie, przy każdym segmencie kreska do liczby
+  const blockH = sg.num + sg.label * 1.25 + (pion ? 12 : 6) + sg.sub * 1.4 + (pion ? 6 : 3);
+  const column = (bar: SplitBar) => {
+    const height = sg.colH - (bar.segments.length - 1) * sg.seam;
+    let y = 0;
+    const placed = bar.segments.map((seg, k) => {
+      const hgt = (seg.value / total(bar)) * height;
+      const top = y + (k ? sg.seam : 0);
+      y = top + hgt;
+      return { seg, top, hgt, mid: top + hgt / 2 };
+    });
+    return h('div', { style: { flexDirection: 'column', flexGrow: 1, flexBasis: 0 } },
+      h('div', { style: { height: sg.headH, alignItems: 'flex-end', paddingBottom: pion ? 14 : 8, paddingRight: 24, fontFamily: MONO, fontSize: sg.head, lineHeight: 1.35, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.ink } }, typo(bar.label ?? '')),
+      h('div', {},
+        h('div', { style: { position: 'relative', width: sg.colW, height: sg.colH, flexShrink: 0 } },
+          ...placed.map(({ seg, top, hgt }) =>
+            h('div', { style: { position: 'absolute', left: 0, top: Math.round(top), width: sg.colW, height: Math.max(2, Math.round(hgt)), background: fill(seg) } }))),
+        h('div', { style: { position: 'relative', flexGrow: 1, height: sg.colH } },
+          ...placed.flatMap(({ seg, mid }) => [
+            h('div', { style: { position: 'absolute', left: 0, top: Math.round(mid - 1), width: sg.tick, height: 2, background: fill(seg) } }),
+            h('div', { style: { position: 'absolute', left: sg.tick + 10, top: Math.round(Math.min(Math.max(mid - blockH / 2, 0), sg.colH - blockH)), flexDirection: 'column' } },
+              number(seg),
+              ...labels(seg)),
+          ]))));
+  };
+  return frame(set, i, f, theme, h('div', { style: { width: inner } }, ...sp.bars.map(column)));
+}
+
 /** PNG z paletą 8-bit, jak obrazki OG. */
 export async function renderInfographic(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey = 'jasny'): Promise<Buffer> {
   const { width, height } = FORMATS[f];
-  const tree = i.chart ? chartLayout(set, i, i.chart, f, theme) : layout(set, i, i.rows ?? [], f, theme);
+  const tree = i.chart
+    ? chartLayout(set, i, i.chart, f, theme)
+    : i.split
+      ? splitLayout(set, i, i.split, f, theme)
+      : layout(set, i, i.rows ?? [], f, theme);
   const svg = await satori(tree as unknown as Parameters<typeof satori>[0], { width, height, fonts: await loadFonts() });
   return sharp(Buffer.from(svg)).png({ palette: true, quality: 90, compressionLevel: 9 }).toBuffer();
 }

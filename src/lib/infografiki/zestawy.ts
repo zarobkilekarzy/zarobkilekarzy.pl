@@ -11,9 +11,9 @@ import { LATEST } from '@/data/english-division';
 import { dayRows } from '@/data/ciecie-limitow-na-medycyne';
 import { BUDGET, CURRENT, DRAFT_2027, GAP_2027, budget, formatMld } from '@/data/budzet-nfz';
 import { MEDIAN_WAGES, OUT_OF_POCKET, TO, WHC_EDITIONS, WHC_LATEST, contribution } from '@/data/kolejki';
-import { LIMIT_TODAY, PRESETS, REGISTER_TOTAL, YEAR0, YEAR_MIN, seats, simulate } from '@/lib/podaz/model';
+import { DEFAULTS, LIMIT_TODAY, PRESETS, REGISTER_TOTAL, YEAR0, YEAR_MIN, seats, simulate } from '@/lib/podaz/model';
 import { formatPL } from '@/lib/format';
-import type { ComparisonRow, InfographicSet } from './render';
+import type { ComparisonRow, InfographicSet, SplitBar, SplitSegment } from './render';
 
 const span = `${WINDOW.from}–${WINDOW.to}`;
 // na grafice liczby całkowite: to porównanie rzędu wielkości, nie co do przecinka
@@ -73,17 +73,31 @@ const stationaryRow = dayRows.find((r) => r.label === LATEST.year);
 if (!stationaryRow) throw new Error(`[infografiki] brak miejsc stacjonarnych ${LATEST.year} w ciecie-limitow-na-medycyne`);
 const stationary = stationaryRow.value;
 const extramural = LATEST.total - LATEST.foreign - stationary;
-const seatRows: ComparisonRow[] = [
-  { label: 'Stacjonarne', sub: 'po polsku', value: stationary, display: formatPL(stationary) },
-  { label: 'Niestacjonarne', sub: 'po polsku, płatne', value: extramural, display: formatPL(extramural) },
-  { label: 'W języku obcym', sub: 'English Division, płatne', value: LATEST.foreign, display: formatPL(LATEST.foreign), highlight: true },
+const shareOf = (n: number) => `${formatPL((100 * n) / LATEST.total, 1)}%`;
+const seatSegments: SplitSegment[] = [
+  { label: 'Stacjonarne', sub: 'po polsku', value: stationary, display: formatPL(stationary), share: shareOf(stationary), tone: 'slate' },
+  { label: 'Niestacjonarne', sub: 'po polsku, płatne', value: extramural, display: formatPL(extramural), share: shareOf(extramural), tone: 'soft' },
+  { label: 'W języku obcym', sub: 'English Division, płatne', value: LATEST.foreign, display: formatPL(LATEST.foreign), share: shareOf(LATEST.foreign), tone: 'blue' },
 ];
 
 const foreignShare = (100 * LATEST.foreign) / LATEST.total;
-const edRows: ComparisonRow[] = [
-  { label: 'Miejsca w języku obcym', sub: `udział w limicie, ${LATEST.year}`, value: foreignShare, display: formatPL(foreignShare, 1) },
-  // ELA: < 1% absolwentów-cudzoziemców nauk medycznych pracuje w Polsce rok po dyplomie (dyplomy z 2021 r.)
-  { label: 'Pracuje w Polsce', sub: 'absolwentów-cudzoziemców', value: 1, display: '<1', highlight: true },
+const edBars: SplitBar[] = [
+  {
+    label: `Miejsca na I roku, ${LATEST.year}`,
+    segments: [
+      { label: 'po angielsku', sub: 'English Division', value: foreignShare, display: formatPL(foreignShare, 1), tone: 'blue' },
+      { label: 'po polsku', value: 100 - foreignShare, display: formatPL(100 - foreignShare, 1), tone: 'slate' },
+    ],
+  },
+  {
+    // ELA: < 1% absolwentów-cudzoziemców nauk medycznych pracuje w Polsce rok po dyplomie (dyplomy z 2021 r.);
+    // segment rysowany jako 1% — górna granica
+    label: 'Absolwenci-cudzoziemcy rok po dyplomie',
+    segments: [
+      { label: 'pracuje w Polsce', value: 1, display: '<1', tone: 'blue' },
+      { label: 'nie pracuje w Polsce', value: 99, display: '>99', tone: 'slate' },
+    ],
+  },
 ];
 
 const englishDivision: InfographicSet = {
@@ -95,16 +109,15 @@ const englishDivision: InfographicSet = {
       id: 'miejsca-na-medycynie',
       title: 'Ile miejsc na medycynie i na jakich studiach',
       measure: `limit przyjęć na kierunek lekarski · ${LATEST.year} · razem ${formatPL(LATEST.total)}`,
-      rows: seatRows,
+      split: { bars: [{ segments: seatSegments }] },
       sources: `Źródło: rozporządzenie MZ, Dz.U. ${LATEST.act.label} · miejsca w limicie, nie liczba przyjętych`,
       alt: `Infografika: limit przyjęć na kierunek lekarski w roku ${LATEST.year} — razem ${formatPL(LATEST.total)} miejsc: studia stacjonarne po polsku ${formatPL(stationary)}, niestacjonarne po polsku (płatne) ${formatPL(extramural)}, w języku obcym (English Division, płatne) ${formatPL(LATEST.foreign)}. Źródło: rozporządzenie Ministra Zdrowia, Dz.U. ${LATEST.act.label}.`,
     },
     {
       id: 'english-division',
       title: 'Co szóste miejsce na medycynie jest po angielsku',
-      measure: 'udział w limicie przyjęć · praca w Polsce rok po dyplomie',
-      unit: '%',
-      rows: edRows,
+      measure: `udział w limicie przyjęć ${LATEST.year} · praca w Polsce rok po dyplomie`,
+      split: { unit: '%', bars: edBars },
       sources: `Źródła: Dz.U. ${LATEST.act.label}, ELA (dyplomy z 2021 r.) · osobna rekrutacja, pełne czesne`,
       alt: `Infografika: studia w języku obcym (English Division) to ${formatPL(foreignShare, 1)}% miejsc w limicie przyjęć na kierunek lekarski w roku ${LATEST.year} (${formatPL(LATEST.foreign)} z ${formatPL(LATEST.total)}). Rok po dyplomie w Polsce pracuje mniej niż 1% absolwentów-cudzoziemców nauk medycznych (ELA, dyplomy z 2021 r.). To osobna rekrutacja i płatne studia. Źródła: rozporządzenie Ministra Zdrowia, Dz.U. ${LATEST.act.label}; Ekonomiczne Losy Absolwentów.`,
     },
@@ -114,19 +127,17 @@ const englishDivision: InfographicSet = {
 /* ---------- Symulator podaży: nabór jak dziś i dwa warianty zespołu NIL ---------- */
 
 const HORIZON = 2050;
+// losy rocznika jak w symulatorze (DEFAULTS = wartości zmierzone): odsiew na studiach, wyjazdy, napływ z zagranicy, emerytury
 const scenario = (id: string) => {
   const intake = PRESETS.find((p) => p.id === id)!.intake();
-  return { intake, doctors: simulate(intake)[HORIZON - YEAR0].doctors };
+  const points = simulate(intake, DEFAULTS).filter((p) => p.year <= HORIZON);
+  return { intake, points, doctors: points.at(-1)!.doctors };
 };
 const [base, nilB, nilA] = [scenario('baza'), scenario('nil-b'), scenario('nil-a')];
 const from2027 = (s: { intake: number[] }) => s.intake.slice(2027 - YEAR_MIN);
 // na grafice w tysiącach: to projekcja modelu, nie liczenie co do osoby
 const thousands = (n: number) => formatPL(Math.round(n / 1000));
-const supplyRows: ComparisonRow[] = [
-  { label: 'Nabór jak dziś', sub: `${seats(LIMIT_TODAY)} rocznie`, value: base.doctors, display: thousands(base.doctors), highlight: true },
-  { label: 'Wariant B zespołu NIL', sub: `−9% rocznie, do ${seats(Math.min(...from2027(nilB)))}`, value: nilB.doctors, display: thousands(nilB.doctors) },
-  { label: 'Wariant A zespołu NIL', sub: `od 2027 r. ${seats(from2027(nilA)[0])} rocznie`, value: nilA.doctors, display: thousands(nilA.doctors) },
-];
+const line = (s: { points: { year: number; doctors: number }[] }) => s.points.map((p) => ({ x: p.year, v: p.doctors / 1000 }));
 
 const symulator: InfographicSet = {
   route: '/analizy/symulator-podazy-lekarzy/',
@@ -136,11 +147,25 @@ const symulator: InfographicSet = {
     {
       id: `lekarze-${HORIZON}`,
       title: `Ilu lekarzy będzie w ${HORIZON} roku`,
-      measure: `lekarze wykonujący zawód · w ${YEAR0} r.: ${formatPL(REGISTER_TOTAL)}`,
-      unit: 'tys.',
-      rows: supplyRows,
-      sources: 'Model zarobkilekarzy.pl: rejestr NIL, limity MZ, warianty zespołu NIL z 2024 r.',
-      alt: `Infografika: projekcja liczby lekarzy wykonujących zawód w ${HORIZON} r. (w ${YEAR0} r. ${formatPL(REGISTER_TOTAL)} według rejestru NIL): przy naborze jak dziś (${seats(LIMIT_TODAY)} po polsku rocznie) ok. ${thousands(base.doctors)} tys., w wariancie B zespołu NIL ok. ${thousands(nilB.doctors)} tys., w wariancie A ok. ${thousands(nilA.doctors)} tys. Model: symulator podaży lekarzy zarobkilekarzy.pl.`,
+      measure: `lekarze wykonujący zawód, w tys. · studia kończy ${formatPL(DEFAULTS.graduate * 100)}%, ${formatPL(DEFAULTS.abroad * 100)}% wyjeżdża`,
+      chart: {
+        xMin: YEAR0,
+        xMax: HORIZON,
+        yMin: 150,
+        yMax: 290,
+        yTicks: [160, 200, 240, 280],
+        xTicks: [YEAR0, 2030, 2035, 2040, 2045, HORIZON].map((y) => ({ x: y, label: String(y) })),
+        markers: 'last',
+        baseline: { v: REGISTER_TOTAL / 1000, label: `${formatPL(REGISTER_TOTAL)} — tylu jest dzisiaj.`, accent: 'Za mało.' },
+        series: [
+          { label: 'Nabór jak dziś', tone: 'blue', points: line(base), value: thousands(base.doctors), unit: 'tys.', detail: `${seats(LIMIT_TODAY)} rocznie` },
+          { label: 'Wariant B zespołu NIL', tone: 'amber', points: line(nilB), value: thousands(nilB.doctors), unit: 'tys.', detail: `−9% rocznie, do ${seats(Math.min(...from2027(nilB)))}` },
+          { label: 'Wariant A zespołu NIL', tone: 'red', points: line(nilA), value: thousands(nilA.doctors), unit: 'tys.', detail: `od 2027 r. ${seats(from2027(nilA)[0])} rocznie` },
+        ],
+        note: { x: HORIZON, v: base.doctors / 1000, lines: [`w ${HORIZON} r. wariant A wobec naboru jak dziś:`, `o ${thousands(base.doctors - nilA.doctors)} tys. lekarzy mniej`] },
+      },
+      sources: `Model: rejestr NIL, limity MZ, warianty NIL · napływ ${formatPL(DEFAULTS.inflow)}/rok, odejścia od ${DEFAULTS.retireAge} lat`,
+      alt: `Infografika, wykres: projekcja liczby lekarzy wykonujących zawód do ${HORIZON} r. Dziś ${formatPL(REGISTER_TOTAL)} według rejestru NIL — tylu jest dzisiaj, za mało. W ${HORIZON} r.: przy naborze jak dziś (${seats(LIMIT_TODAY)} po polsku rocznie) ok. ${thousands(base.doctors)} tys., w wariancie B zespołu NIL ok. ${thousands(nilB.doctors)} tys., w wariancie A ok. ${thousands(nilA.doctors)} tys., czyli o ${thousands(base.doctors - nilA.doctors)} tys. mniej niż przy naborze jak dziś. Model zarobkilekarzy.pl uwzględnia odsiew na studiach (kończy ${formatPL(DEFAULTS.graduate * 100)}%), wyjazdy (${formatPL(DEFAULTS.abroad * 100)}%), napływ lekarzy z dyplomem zagranicznym (${formatPL(DEFAULTS.inflow)} rocznie) i odejścia od ${DEFAULTS.retireAge} lat.`,
     },
   ],
 };

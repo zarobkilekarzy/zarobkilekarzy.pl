@@ -22,6 +22,8 @@ export const LINKS = {
   aotmit: 'https://www.rp.pl/ochrona-zdrowia/art44466691-625-lekarzy-w-polsce-zarabia-powyzej-100-tys-zl-dotarlismy-do-wyliczen',
   /** Wywiad z prezesem AOTMiT (Rynek Zdrowia, 17.06.2026) — pierwotne źródło „ok. 560 osób” i „5–10%” */
   wywiad: 'https://www.rynekzdrowia.pl/Polityka-zdrowotna/Szef-rzadowej-agencji-po-aferze-Kacprzyka-wynaturzenia-musimy-sie-zabezpieczyc,285516,14.html',
+  /** Rynek Zdrowia 31.08.2026: szacunek prezesa AOTMiT przeliczony na liczbę osób (7–14 tys.) */
+  milion: 'https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Kontrakty-roczne-na-milion-zlotych-dla-lekarza-Sprawdzilismy-centralny-rejestr,288374,1.html',
   /** Wsparcie dla Szpitala: stawka godzinowa i dyżurowa z minimum, widełki kontraktów, przykład faktury */
   dyzury: 'https://wsparciedlaszpitala.pl/personel-medyczny/dyzur-lekarski-szpital-stawki-opt-out-czas-pracy/',
 } as const;
@@ -90,7 +92,7 @@ export const SHARES = {
 /** Średnia pensja rezydenta, luty 2026 r. — ŚREDNIA, nie mediana (Rzeczpospolita, 20.05.2026). */
 export const RESIDENT_AVERAGE = 9_797.14;
 
-/** Wypłaty powyżej 100 tys. zł miesięcznie w jednym szpitalu. */
+/** Wypłaty powyżej 100 tys. zł miesięcznie w jednym szpitalu — liczba umów, nie lekarzy (AOTMiT nie łączy umów jednej osoby). */
 export const OVER_100K = {
   threshold: 100_000,
   /** kontrakty specjalistów — liczba umów, nie osób */
@@ -102,6 +104,65 @@ export const OVER_100K = {
   /** osoby według prezesa AOTMiT („niewiele ponad 1%”, Rynek Zdrowia 17.06.2026) */
   persons: 560,
 } as const;
+
+/**
+ * Ponad 100 tys. zł po zsumowaniu wszystkich miejsc pracy: szacunek prezesa AOTMiT (5–10% lekarzy,
+ * Rynek Zdrowia 17.06.2026), który Rynek Zdrowia (31.08.2026) przeliczył na osoby przy założeniu
+ * 140 tys. aktywnych zawodowo lekarzy. Szacunek, nie pomiar — metody nie przedstawiono.
+ */
+const SUMMED_SHARE = { from: 5, to: 10 } as const;
+const ACTIVE_DOCTORS = 140_000;
+export const SUMMED = {
+  share: SUMMED_SHARE,
+  activeDoctors: ACTIVE_DOCTORS,
+  persons: { from: (ACTIVE_DOCTORS * SUMMED_SHARE.from) / 100, to: (ACTIVE_DOCTORS * SUMMED_SHARE.to) / 100 },
+} as const;
+
+/**
+ * Centralny Rejestr Umów JSFP (umowy od 1.07.2026) według Rynku Zdrowia, stan na 31.08.2026: umowy na udzielanie
+ * świadczeń zdrowotnych powyżej 1 mln zł. To wartości umów (kwoty maksymalne), nie wypłaty; część umów jest ze spółkami.
+ */
+export const CRU = {
+  over1m: 54,
+  /** z tego trzyletnie powyżej 3 mln zł, czyli ponad 1 mln zł rocznie */
+  threeYearOver3m: 10,
+} as const;
+
+/** Ta sama granica 100 tys. zł, różne jednostki liczenia: umowa, osoba w jednej placówce, osoba po zsumowaniu. */
+export const over100kTable: CompareTable = {
+  columns: ['Co jest liczone', 'Ile', 'Rodzaj liczby'],
+  rows: [
+    {
+      cells: [
+        'Kontrakty specjalistów na ponad 100 tys. zł miesięcznie w jednym szpitalu',
+        `${formatPL(OVER_100K.contracts)}, czyli ${formatPL(OVER_100K.contractsShare, 1)}% kontraktów`,
+        'pomiar AOTMiT, luty 2026 r.; jednostką jest umowa',
+      ],
+    },
+    {
+      cells: [
+        'Specjaliści na etacie z płacą ponad 100 tys. zł w jednym szpitalu',
+        `${formatPL(OVER_100K.etat)}, czyli ${formatPL(OVER_100K.etatShare, 1)}% etatów`,
+        'pomiar AOTMiT, luty 2026 r.; jednostką jest umowa',
+      ],
+    },
+    {
+      cells: [
+        'Lekarze z ponad 100 tys. zł w jednej placówce',
+        `ok. ${formatPL(OVER_100K.persons)}, niewiele ponad 1% lekarzy`,
+        'dane AOTMiT według prezesa agencji',
+      ],
+    },
+    {
+      cells: [
+        'Lekarze z ponad 100 tys. zł po zsumowaniu wszystkich miejsc pracy',
+        `${SUMMED.share.from}–${SUMMED.share.to}% lekarzy, czyli ${formatPL(SUMMED.persons.from / 1000)}–${formatPL(SUMMED.persons.to / 1000)} tys. osób`,
+        'szacunek prezesa AOTMiT; liczbę osób wyliczył Rynek Zdrowia',
+      ],
+      marked: true,
+    },
+  ],
+};
 
 /* ---------- Ustawowe minimum na etacie ---------- */
 

@@ -6,12 +6,12 @@ order: 1
 format: Wykresy
 stat: { value: "25 595", unit: "zł — mediana jednego kontraktu specjalisty" }
 date: 2026-07-06
-updated: 2026-10-15
-summary: Mediany AOTMiT według formy zatrudnienia, ustawowe minimum na etacie i 625 kontraktów ponad 100 tys. zł miesięcznie. Każda z tych kwot to wypłata z jednej placówki, a nie dochód lekarza.
-description: Mediany AOTMiT według formy zatrudnienia, minimum na etacie i 625 kontraktów ponad 100 tys. zł. Każda kwota to wypłata z jednej placówki, nie dochód lekarza.
+updated: 2026-10-16
+summary: Mediany AOTMiT według formy zatrudnienia, ustawowe minimum na etacie i wypłaty ponad 100 tys. zł miesięcznie. Każda z tych kwot to wypłata z jednej placówki — łącznych zarobków jednej osoby nie sumuje nikt.
+description: Mediany AOTMiT według formy zatrudnienia, minimum na etacie i wypłaty ponad 100 tys. zł. Każda kwota to wypłata z jednej placówki, nie dochód lekarza.
 keyPoints:
   - Według danych AOTMiT z lutego 2026 r. mediana miesięcznej wypłaty specjalisty z jednego kontraktu w szpitalu to 25 595 zł brutto, a z etatu 23 666 zł. Najniższe mediany mają umowy zlecenia i o dzieło, ok. 17–18 tys. zł.
-  - Ponad 100 tys. zł miesięcznie w jednym szpitalu dostawało 625 kontraktów (1,2%) i 49 etatów (0,2%) specjalistów. Ilu lekarzy przekracza ten próg po zsumowaniu wszystkich miejsc pracy, nie wiadomo — prezes AOTMiT szacuje, że 5–10%.
+  - Zestawienie AOTMiT liczy umowy, a nie lekarzy, więc nie mówi, ilu lekarzy zarabia ponad 100 tys. zł miesięcznie. Po zsumowaniu wszystkich miejsc pracy mogłoby to być 5–10% lekarzy — to szacunek prezesa AOTMiT, który Rynek Zdrowia przeliczył na 7–14 tys. osób.
   - Ustawowe minimum specjalisty na etacie to od 1 lipca 2026 r. 12 910,16 zł, czyli ok. 77 zł za godzinę i ok. 116–155 zł za godzinę dyżuru. Rynkowe widełki kontraktów w szpitalach to 180–300 zł za godzinę.
   - Każda z tych liczb opisuje wypłatę z jednej placówki. Lekarz pracujący w kilku miejscach jest w danych kilkoma niepowiązanymi wpisami, a jego łącznych zarobków nie sumuje nikt.
 related:
@@ -20,10 +20,9 @@ related:
   - zarobki-ujawnione-listy
   - rekordy
 dataset:
-  temporalCoverage: "2026-02"
+  temporalCoverage: "2025-01/2026-02"
   spatialCoverage: Polska
 ---
-import StatRow from '@/components/blocks/StatRow.astro';
 import Figure from '@/components/blocks/Figure.astro';
 import BarChart from '@/components/blocks/BarChart.astro';
 import Comparison from '@/components/blocks/Comparison.astro';
@@ -41,6 +40,9 @@ import {
   SHARES,
   RESIDENT_AVERAGE,
   OVER_100K,
+  SUMMED,
+  over100kTable,
+  CRU,
   MONTH_HOURS,
   SPECIALIST_FLOOR,
   NON_SPECIALIST_FLOOR,
@@ -53,14 +55,25 @@ import {
 } from '@/data/rozklad-wynagrodzen';
 import { BASE } from '@/data/personel-medyczny';
 import { RATE } from '@/data/poz';
-import { MEDIAN as WATCHDOG_MEDIAN, DATA as WATCHDOG_DATA } from '@/data/zarobki-ujawnione-listy';
+import {
+  MEDIAN as WATCHDOG_MEDIAN,
+  DATA as WATCHDOG_DATA,
+  LISTS as WATCHDOG_LISTS,
+  POSITIONS as WATCHDOG_POSITIONS,
+  OVER_1M as WATCHDOG_OVER_1M,
+  OVER_1M_FACILITIES as WATCHDOG_OVER_1M_FACILITIES,
+} from '@/data/zarobki-ujawnione-listy';
 import { formatPL, plural } from '@/lib/format';
 
 {/* Liczby AOTMiT i minima na etacie liczy src/data/rozklad-wynagrodzen.ts; frontmatter (stat, summary, keyPoints) trzeba poprawić ręcznie */}
 
 Ile zarabiają lekarze w polskich szpitalach, najpełniej pokazuje zestawienie AOTMiT z lutego 2026 r. Agencja zebrała dane o wynagrodzeniach z 538 szpitali, czyli z ok. 96% placówek tzw. sieci szpitali, i w maju przedstawiła je na posiedzeniu Trójstronnego Zespołu do spraw Ochrony Zdrowia.[^rp-etat][^pap] To materiał roboczy agencji; jego liczby znamy z artykułów Rzeczpospolitej i PAP.[^rp-aotmit] Zebraliśmy je tu w jeden rozkład: od ustawowego minimum na etacie po wypłaty ponad 100 tys. zł miesięcznie.
 
-Żadna z tych kwot nie jest łącznym dochodem lekarza. AOTMiT widzi wynagrodzenie w obrębie jednej placówki, więc lekarz pracujący w trzech szpitalach to w jej danych trzy osobne wpisy.[^wywiad] Dla takiej osoby każda liczba poniżej opisuje tylko część zarobków. Dlatego [postulujemy](/postulat/), by łączne wypłaty z publicznych pieniędzy dla każdej osoby były jawne — pod stałym identyfikatorem, bez nazwisk.
+<Aside variant="warn" title="Żadna z tych kwot nie jest łącznym dochodem lekarza">
+
+AOTMiT zbiera dane o pojedynczych umowach w obrębie jednej placówki, więc lekarz pracujący w trzech szpitalach to w jej danych trzy osobne wpisy.[^wywiad][^rz-milion] Dla takiej osoby każda liczba poniżej opisuje tylko część zarobków. Dlatego [postulujemy](/postulat/), by łączne wypłaty z publicznych pieniędzy dla każdej osoby były jawne — pod stałym identyfikatorem, bez nazwisk.
+
+</Aside>
 
 ## Mediany według formy zatrudnienia
 
@@ -110,22 +123,37 @@ Stawek kontraktowych nie wyznacza żadna ustawa ani nie zbiera żaden rejestr. W
 
 Porównanie nie jest jednak równe. Z kwoty na fakturze lekarz sam opłaca składki, a płatnego urlopu ani chorobowego od szpitala nie dostaje. To też widełki z rynku, a nie zmierzone wypłaty.
 
-## Szczyt: ponad 100 tys. zł z jednej umowy
+## Ponad 100 tys. zł miesięcznie: umowy, a nie lekarze
 
-<StatRow
-  label="Wypłaty ponad 100 tys. zł miesięcznie w jednym szpitalu"
-  items={[
-    { value: OVER_100K.contracts, unit: 'kontraktów', desc: `specjalistów przekroczyło 100 tys. zł brutto miesięcznie — ${formatPL(OVER_100K.contractsShare, 1)}% wszystkich kontraktów`, accuracy: 'exact', source: 'AOTMiT, luty 2026 · Rzeczpospolita', href: LINKS.aotmit },
-    { value: OVER_100K.etat, unit: 'specjalistów', desc: `na etacie z płacą ponad 100 tys. zł — ${formatPL(OVER_100K.etatShare, 1)}% specjalistów na umowie o pracę`, accuracy: 'exact', source: 'AOTMiT, luty 2026 · Rzeczpospolita', href: LINKS.aotmit },
-    { prefix: '~', value: OVER_100K.persons, unit: 'osób', desc: 'czyli niewiele ponad 1% lekarzy — tyle według prezesa AOTMiT przekracza próg w jednej placówce', accuracy: 'exact', source: 'Rynek Zdrowia, 17.06.2026', href: LINKS.wywiad },
-  ]}
-/>
+Próg 100 tys. zł brutto miesięcznie to blisko czterokrotność mediany kontraktu specjalisty. Ile wypłat go przekracza, zależy od tego, co się liczy: pojedyncze umowy, osoby w jednej placówce czy osoby po zsumowaniu wszystkich miejsc pracy.
 
-Liczba {formatPL(OVER_100K.contracts)} dotyczy kontraktów, a nie lekarzy: AOTMiT liczy wypłaty w każdym szpitalu osobno.[^rp-aotmit][^pap] Prezes agencji mówił w wywiadzie dla Rynku Zdrowia o ok. {OVER_100K.persons} osobach, czyli niewiele ponad 1% lekarzy.[^wywiad] Próg 100 tys. zł to blisko czterokrotność mediany kontraktu specjalisty. Górnej granicy zestawienie nie podaje; najwyższe znane kwoty z pojedynczych szpitali zbieramy w zestawieniu [Rekordy](/dane/rekordy/).
+<Figure
+  title="Ponad 100 tys. zł miesięcznie: wynik zależy od tego, co się liczy"
+  note="Ten sam próg, cztery jednostki liczenia. Pierwsze trzy wiersze opisują wypłatę z jednej placówki. Ostatni to szacunek: danych łączących wypłaty jednej osoby z wielu placówek nikt nie publikuje."
+  source={{ label: 'AOTMiT za: Rzeczpospolita (27.05.2026) i Rynek Zdrowia (17.06 i 31.08.2026)', href: LINKS.milion }}
+>
+  <Comparison table={over100kTable} />
+</Figure>
+
+Zestawienie AOTMiT liczy umowy. Na ponad 100 tys. zł brutto miesięcznie opiewało w nim {formatPL(OVER_100K.contracts)} kontraktów specjalistów, czyli {formatPL(OVER_100K.contractsShare, 1)}% wszystkich, a na etacie tyle zarabiało {OVER_100K.etat} specjalistów ({formatPL(OVER_100K.etatShare, 1)}%).[^rp-aotmit][^pap] Prezes agencji mówił, że w jednej placówce ten próg przekracza ok. {OVER_100K.persons} osób, czyli niewiele ponad 1% lekarzy; w innej wypowiedzi podał 1,5%.[^wywiad][^rz-milion] Lekarz z dwoma kontraktami po 60 tys. zł w dwóch szpitalach dostaje 120 tys. zł miesięcznie, ale w takim zestawieniu nie przekracza progu ani razu. Górnej granicy zestawienie nie podaje; najwyższe znane kwoty z pojedynczych szpitali zbieramy w zestawieniu [Rekordy](/dane/rekordy/).
+
+Po zsumowaniu wszystkich miejsc pracy liczba osób powyżej progu może tylko wzrosnąć, bo suma kilku wypłat nie jest mniejsza od żadnej z nich. Prezes AOTMiT szacuje, że gdyby dało się połączyć wypłaty tej samej osoby z różnych placówek, ponad 100 tys. zł miesięcznie mogłoby mieć {SUMMED.share.from}–{SUMMED.share.to}% lekarzy.[^wywiad] Rynek Zdrowia przeliczył ten szacunek przy założeniu, że aktywnych zawodowo jest {formatPL(SUMMED.activeDoctors / 1000)} tys. lekarzy: wychodzi od {formatPL(SUMMED.persons.from / 1000)} do {formatPL(SUMMED.persons.to / 1000)} tys. osób.[^rz-milion] To szacunek, a nie wynik obliczeń: metody nie przedstawiono, a danych, którymi dałoby się go sprawdzić, nikt nie publikuje. Pewne jest tylko tyle, że dla każdego, kto pracuje w więcej niż jednym miejscu, kwoty z tej strony są dolną granicą.
+
+### Pełne listy płac: rozliczenia powyżej miliona
+
+Drugi pomiar to roczne listy płac, które placówki przysyłają w monitoringu „Ile zarabiają lekarze?” Sieci Obywatelskiej Watchdog Polska.[^watchdog] Pełne listy za {WATCHDOG_DATA.year} r. nadeszły dotąd z {formatPL(WATCHDOG_LISTS)} spośród {formatPL(WATCHDOG_DATA.requests)} zapytanych placówek. Obejmują {formatPL(WATCHDOG_POSITIONS)} {plural(WATCHDOG_POSITIONS, ['rozliczenie', 'rozliczenia', 'rozliczeń'])}, w tym {formatPL(WATCHDOG_OVER_1M)} powyżej 1 mln zł brutto w roku, czyli średnio ponad 83 tys. zł miesięcznie z jednej placówki. Takie kwoty są na listach {formatPL(WATCHDOG_OVER_1M_FACILITIES)} z {formatPL(WATCHDOG_LISTS)} placówek.
+
+Tych liczb też nie da się przeliczyć na lekarzy. Placówki, które przysłały listy, nie są próbą losową, a rozliczenie to pozycja na liście jednej placówki, nie zawsze jedna osoba. Dla lekarza, który pracuje także gdzie indziej, kwota z jednej listy jest tylko częścią zarobków. Pełny rozkład i metodę opisujemy w zestawieniu [Zarobki z ujawnionych list płac](/dane/zarobki-ujawnione-listy/).
+
+### Umowy w Centralnym Rejestrze Umów
+
+Trzecie źródło to Centralny Rejestr Umów Jednostek Sektora Finansów Publicznych. Od 1 lipca 2026 r. trafiają do niego umowy zawierane m.in. przez samodzielne publiczne zakłady opieki zdrowotnej; szpitale działające jako spółki do sektora nie należą.[^ufp] Pod koniec sierpnia rejestr zawierał {CRU.over1m} {plural(CRU.over1m, ['umowę', 'umowy', 'umów'])} na udzielanie świadczeń zdrowotnych na ponad 1 mln zł, ale część z nich obejmuje kilka lat: na ponad 1 mln zł rocznie, czyli ponad 3 mln zł w trzy lata, opiewało {CRU.threeYearOver3m} umów trzyletnich.[^rz-milion] Niektóre z tych umów szpitale zawarły z indywidualnymi praktykami lekarskimi, czyli z lekarzami prowadzącymi własną działalność. Umowy na najwyższe kwoty podpisano jednak ze spółkami, głównie na badania laboratoryjne i opisywanie badań obrazowych — to zapłata dla firmy, a nie wynagrodzenie jednej osoby.[^rz-milion]
+
+Kwota w umowie nie jest też wypłatą. Dyrektor jednego ze szpitali tłumaczył, że kontrakty podpisuje się „na górkę”, z zapasem na dodatkowe godziny, a lekarz dostaje tyle, ile przepracuje.[^rz-milion] Rejestr pokazuje więc wartość pojedynczej umowy, a nie wypłatę ani zarobki osoby, i tak jak pozostałe źródła nie sumuje umów jednego lekarza. Co rejestr obejmuje, a czego nie, opisujemy w tekście [Brak jawności](/mechanizmy/brak-jawnosci/).
 
 ## Jedna osoba, kilka niepowiązanych rozliczeń
 
-Wszystkie liczby wyżej mają wspólną cechę: opisują wypłatę z jednej placówki. Prezes AOTMiT przyznał, że agencja nie ma danych łączących wynagrodzenia tej samej osoby z różnych podmiotów.[^wywiad] Nie umie też jeszcze przeliczyć kontraktu na etat.[^pap]
+Pomiary opisane wyżej mają wspólną cechę: każdy pokazuje wypłatę z jednej placówki. Prezes AOTMiT przyznał, że agencja nie ma danych łączących wynagrodzenia tej samej osoby z różnych podmiotów.[^wywiad] Nie umie też jeszcze przeliczyć kontraktu na etat.[^pap]
 
 Jak to wygląda z perspektywy jednego lekarza, pokazuje poniższy model. To przykład poglądowy, a nie opis konkretnej osoby, a każde z tych rozliczeń z osobna jest legalne.
 
@@ -133,11 +161,7 @@ Jak to wygląda z perspektywy jednego lekarza, pokazuje poniższy model. To przy
 2. **Dyżury albo gotowość w drugim szpitalu.** Ten sam lekarz może dyżurować gdzie indziej — na etacie albo na kolejnym kontrakcie. Na etacie płatna jest też gotowość „pod telefonem”: za każdą jej godzinę należy się połowa godzinowej stawki zasadniczej, bez obecności w szpitalu.[^udl]
 3. **Poradnia albo praktyka POZ.** Do tego mogą dojść wizyty w poradni specjalistycznej z umową z NFZ, a u lekarza rodzinnego z własną praktyką — stawka kapitacyjna: od lipca 2026 r. {formatPL(RATE.rate, 2)} zł rocznie za każdego pacjenta na liście, mnożona przez współczynnik zależny od wieku.[^poz] To przychód praktyki, z którego opłaca ona m.in. badania, a nie wynagrodzenie lekarza.
 
-Każde z tych rozliczeń trafia do innej placówki albo do NFZ. Żadne z nich nie musi przekroczyć 100 tys. zł, żeby razem przekroczyły ten próg. A jeśli żadne go nie przekracza, tej osoby nie ma wśród {formatPL(OVER_100K.contracts)} kontraktów z zestawienia AOTMiT. Jak sumuje się praca w kilku miejscach, opisujemy w tekście o [wieloetatowości](/mechanizmy/wieloetatowosc/), a stawkę za pacjenta — w analizie [Pieniądz za pacjenta w POZ](/analizy/poz-pieniadz-za-pacjenta/).
-
-### Ilu lekarzy przekracza 100 tys. zł po zsumowaniu
-
-Tego nie wie nikt. Prezes AOTMiT szacuje, że gdyby dało się połączyć wypłaty tej samej osoby z różnych placówek, ponad 100 tys. zł miesięcznie mogłoby mieć 5–10% lekarzy.[^wywiad] To szacunek, a nie wynik obliczeń: metody nie przedstawiono, a agencja nie ma danych, którymi dałoby się go sprawdzić. Pewne jest tylko tyle, że dla każdego, kto pracuje w więcej niż jednym miejscu, kwoty z tej strony są dolną granicą.
+Każde z tych rozliczeń trafia do innej placówki albo do NFZ. Żadne z nich nie musi przekroczyć 100 tys. zł, żeby razem przekroczyły ten próg. A jeśli żadne go nie przekracza, w zestawieniu AOTMiT tej osoby nie ma wśród wypłat powyżej 100 tys. zł. Jak sumuje się praca w kilku miejscach, opisujemy w tekście o [wieloetatowości](/mechanizmy/wieloetatowosc/), a stawkę za pacjenta — w analizie [Pieniądz za pacjenta w POZ](/analizy/poz-pieniadz-za-pacjenta/).
 
 Od 5 sierpnia 2026 r. minister zdrowia może żądać od placówek danych o wynagrodzeniach powiązanych z numerem PESEL i numerem prawa wykonywania zawodu, czyli takich, które da się zsumować dla jednej osoby. Ustawa nie przewiduje jednak publikacji tych danych.[^ustawa-972] Szczegóły opisujemy w analizie [Ustawa o danych płacowych](/analizy/ustawa-o-danych-a-jawny-rejestr/).
 
@@ -146,16 +170,18 @@ Od 5 sierpnia 2026 r. minister zdrowia może żądać od placówek danych o wyna
 <TwoLists
   yes={{
     title: 'Co mówią',
-    note: 'dane AOTMiT z lutego 2026 r.',
+    note: 'AOTMiT (luty 2026 r.), listy płac Watchdog, rejestr umów',
     items: [
       'ile wynosi środkowa wypłata z jednej umowy w szpitalu — osobno dla etatu, kontraktu i zlecenia',
       `że na medianie kontrakt specjalisty daje ok. ${KONTRAKT_PREMIUM}% więcej niż etat`,
-      'jak rzadko wypłata z jednej umowy przekracza 100 tys. zł miesięcznie',
+      'ile umów z jednym szpitalem opiewa na ponad 100 tys. zł miesięcznie',
+      'ile rozliczeń powyżej miliona złotych rocznie jest na listach placówek, które je przysłały',
+      'na jakie maksymalne kwoty publiczne szpitale podpisują nowe umowy',
     ],
   }}
   no={{
     title: 'Czego nie mówią',
-    note: 'tego zestawienie nie obejmuje',
+    note: 'tego żaden z pomiarów nie obejmuje',
     items: [
       'ile łącznie zarabia lekarz, który pracuje w kilku miejscach',
       'ilu lekarzy przekracza 100 tys. zł po zsumowaniu wszystkich wypłat',
@@ -179,6 +205,12 @@ W serwisie pojawia się też druga mediana: ok. {formatPL(WATCHDOG_MEDIAN.rounde
 [^pap]: Puls Medycyny (PAP), [Ilu lekarzy zarabia ponad 100 tys. miesięcznie? Dane AOTMiT](https://pulsmedycyny.pl/system-ochrony-zdrowia/finanse/ilu-lekarzy-zarabia-ponad-100-tys-miesiecznie-dane-aotmit/) — materiał roboczy AOTMiT z lutego 2026 r. przedstawiony na majowym posiedzeniu Trójstronnego Zespołu do spraw Ochrony Zdrowia: 1,2% kontraktów specjalistów, czyli 625, powyżej 100 tys. zł miesięcznie; kontraktów agencja nie umie jeszcze przeliczyć na etaty.
 
 [^wywiad]: Rynek Zdrowia, [wywiad z prezesem AOTMiT Danielem Rutkowskim](https://www.rynekzdrowia.pl/Polityka-zdrowotna/Szef-rzadowej-agencji-po-aferze-Kacprzyka-wynaturzenia-musimy-sie-zabezpieczyc,285516,14.html), 17.06.2026 — niewiele ponad 1%, czyli ok. 560 osób, zarabia ponad 100 tys. zł miesięcznie w jednej placówce; po zsumowaniu wypłat z wielu placówek mogłoby to być 5–10% (szacunek prezesa); agencja nie ma danych łączonych dla jednej osoby między podmiotami. Ten sam szacunek prezes podał wcześniej Rzeczpospolitej (27.05.2026).
+
+[^rz-milion]: Rynek Zdrowia, [Kontrakty roczne na milion złotych dla lekarza. Sprawdziliśmy centralny rejestr](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Kontrakty-roczne-na-milion-zlotych-dla-lekarza-Sprawdzilismy-centralny-rejestr,288374,1.html), 31.08.2026 — AOTMiT miała dane o pojedynczych umowach, a nie o zarobkach lekarzy; prezes AOTMiT: 1,5% lekarzy przekracza 100 tys. zł w jednym miejscu pracy, a po zsumowaniu wypłat z wielu placówek mogłoby to być 5–10%, co przy założeniu 140 tys. aktywnych zawodowo lekarzy daje 7–14 tys. osób; Centralny Rejestr Umów na koniec sierpnia 2026 r.: 54 umowy na udzielanie świadczeń zdrowotnych powyżej 1 mln zł, w tym 10 trzyletnich powyżej 3 mln zł, część z indywidualnymi praktykami lekarskimi, najwyższe ze spółkami (głównie diagnostyka); za Wyborcza.biz wypowiedź dyrektora szpitala, że kwoty w kontraktach to maksima, a nie faktyczne wynagrodzenia.
+
+[^ufp]: [Ustawa z 4 grudnia 2025 r. zmieniająca ustawę o zmianie ustawy – Kodeks karny oraz niektórych innych ustaw oraz o zmianie niektórych innych ustaw](https://api.sejm.gov.pl/eli/acts/DU/2025/1844/text.pdf) (Dz.U. 2025 poz. 1844) — art. 34a i 34b ustawy o finansach publicznych (Centralny Rejestr Umów JSFP), stosowane do umów zawartych od 1.07.2026. Samodzielne publiczne zakłady opieki zdrowotnej w sektorze finansów publicznych: [ustawa o finansach publicznych](https://api.sejm.gov.pl/eli/acts/DU/2025/1483/text.pdf) (t.j. Dz.U. 2025 poz. 1483), art. 9 pkt 10.
+
+[^watchdog]: Sieć Obywatelska Watchdog Polska, [monitoring „Ile zarabiają lekarze?”](https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabiaja-lekarze) — wnioski do placówek ochrony zdrowia i ich odpowiedzi na platformie fedrowanie; zestawienie pełnych list płac i kryterium ich doboru: [Zarobki z ujawnionych list płac](/dane/zarobki-ujawnione-listy/).
 
 [^siatka]: Rynek Zdrowia, [Od dziś 12 910 zł dla lekarzy, 11 485 zł dla pielęgniarek — 1 lipca podwyżki medyków](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Od-dzis-12-910-zl-zl-dla-lekarzy-11-485-zl-dla-pielegniarek-1-lipca-podwyzki-medykow,286085,1.html) — minima płacy zasadniczej od 1.07.2026 r. według ustawy z 8 czerwca 2017 r.: współczynnik grupy razy kwota bazowa.
 

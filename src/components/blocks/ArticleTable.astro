@@ -1,0 +1,67 @@
+---
+/**
+ * Spis materiałów w wierszach: forma (opcjonalnie), tytuł z leadem, liczba z karty i strzałka.
+ * `format={false}` — bez kolumny formy (np. analizy, które jej nie mają).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import Tag from '@/components/ui/Tag.astro';
+import { articleHref, type Article } from '@/lib/content';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'ol'> {
+  articles: Article[];
+  format?: boolean;
+}
+
+const { articles, format = true, class: className, ...rest } = Astro.props;
+---
+<ol class:list={['dtable', { 'dtable--plain': !format }, className]} {...rest}>
+  {articles.map((a) => (
+    <li data-reveal>
+      <a class="drow" href={articleHref(a)}>
+        {format && <span class="drow__format">{a.data.format && <Tag>{a.data.format}</Tag>}</span>}
+        <span class="drow__main">
+          <h3 class="drow__title">{typo(a.data.title)}</h3>
+          <span class="drow__desc">{typo(a.data.summary)}</span>
+        </span>
+        <span class="drow__stat">
+          {a.data.stat && <b>{a.data.stat.value}</b>}
+          {a.data.stat && <small>{typo(a.data.stat.unit)}</small>}
+        </span>
+        <Icon name="arrow-ne" class="drow__arrow" />
+      </a>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .dtable { border-top: 1px solid var(--ink); }
+  .drow {
+    display: grid; grid-template-columns: 116px minmax(0, 1fr) 190px 20px; gap: 8px 28px; align-items: start;
+    padding: 24px 0; border-bottom: 1px solid var(--line);
+  }
+  .dtable--plain .drow { grid-template-columns: minmax(0, 1fr) 190px 20px; }
+  .drow__format { padding-top: 3px; }
+  .drow__title { font: 500 1.3125rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); transition: color .2s; }
+  .drow__desc { display: block; margin-top: 8px; font-size: 0.9375rem; line-height: 1.55; max-width: 58ch; }
+  .drow__stat { display: grid; justify-items: end; gap: 6px; text-align: right; }
+  .drow__stat b { white-space: nowrap; font: 300 1.875rem/1 var(--f-display); letter-spacing: -0.04em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .drow__stat small { font: 400 0.71875rem/1.35 var(--f-mono); color: var(--muted); max-width: 22ch; }
+  .drow__arrow { margin-top: 2px; color: var(--line-2); transition: color .2s, transform .3s var(--ease); }
+  .drow:hover .drow__title { color: var(--blue); }
+  .drow:hover .drow__arrow { color: var(--blue); transform: translate(2px, -2px); }
+
+  @media (max-width: 1180px) {
+    .drow, .dtable--plain .drow { grid-template-columns: minmax(0, 1fr) 150px 20px; }
+    .drow__format { grid-column: 1 / -1; padding-top: 0; }
+  }
+  @media (max-width: 720px) {
+    .drow, .dtable--plain .drow { grid-template-columns: minmax(0, 1fr) 20px; padding: 20px 0; }
+    .drow__format { grid-column: 1; }
+    .drow__arrow { grid-row: 1; grid-column: 2; }
+    .drow__stat { grid-column: 1; justify-items: start; text-align: left; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 4px; }
+    .drow__stat b { font-size: 1.5rem; }
+    .drow__title { font-size: 1.1875rem; }
+  }
+</style>

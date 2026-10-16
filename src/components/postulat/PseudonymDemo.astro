@@ -1,0 +1,215 @@
+---
+/**
+ * Przykład pseudonimizacji: numer PWZ + klucz tajny → HMAC-SHA-256 → identyfikator.
+ * Custom element <zl-pseudonym> przelicza w przeglądarce (Web Crypto) przy każdej zmianie numeru
+ * lub klucza; pierwszy widok (wartości z buildu) działa też bez JS. Nic nie jest wysyłane.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import { diffCount, groups } from '@/components/postulat/pseudonym';
+import { pseudonymDemo as demo } from '@/data/postulat';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'div'> {
+  /** identyfikator przykładowego numeru, policzony przy buildzie */
+  pseudonym: string;
+  nearPwz: string;
+  nearId: string;
+}
+
+const { pseudonym, nearPwz, nearId, class: className, ...rest } = Astro.props;
+---
+<zl-pseudonym class:list={['demo', className]} {...rest}>
+  <header class="demo__head">
+    <p class="demo__label">Przykład w Twojej przeglądarce</p>
+    <h3 class="demo__title">{typo(demo.title)}</h3>
+    <p class="demo__intro">{typo(demo.intro)}</p>
+  </header>
+
+  <div class="demo__flow">
+    <div class="demo__inputs">
+      <label class="field">
+        <span class="field__label">Numer PWZ <em>(fikcyjny)</em></span>
+        <input name="pwz" value={demo.pwz} inputmode="numeric" maxlength="7" autocomplete="off" spellcheck="false" aria-describedby="pwz-hint" />
+        <span class="field__hint" id="pwz-hint" data-hint>7 cyfr</span>
+      </label>
+      <label class="field">
+        <span class="field__label">Klucz tajny <em>(pokazowy)</em></span>
+        <span class="field__row">
+          <input name="key" value={demo.key} autocomplete="off" spellcheck="false" />
+          <button type="button" class="field__btn" data-new-key>Nowy klucz</button>
+        </span>
+        <span class="field__hint">W prawdziwym systemie zna go tylko Centrum e-Zdrowia</span>
+      </label>
+    </div>
+
+    <div class="demo__fn" aria-hidden="true">
+      <span class="demo__arrow demo__arrow--forward"><code>{demo.algorithm}(klucz, numer)</code></span>
+      <span class="demo__arrow demo__arrow--back"><Icon name="close" size={14} />w drugą stronę: nie da się</span>
+    </div>
+
+    <div class="demo__result">
+      <p class="field__label">Identyfikator</p>
+      <output class="hex" data-out aria-live="polite">{groups(pseudonym).map((g) => <span>{g}</span>)}</output>
+      <p class="demo__near-label">
+        Ten sam klucz, numer <strong data-near-pwz>{nearPwz}</strong> — inna tylko ostatnia cyfra:
+      </p>
+      <output class="hex hex--near" data-near>{groups(nearId).map((g) => <span>{g}</span>)}</output>
+      <p class="demo__diff"><strong data-diff>{diffCount(pseudonym, nearId)}</strong> z 64 znaków jest innych</p>
+    </div>
+  </div>
+
+  <ul class="demo__props">
+    {demo.properties.map((p) => (
+      <li class:list={{ 'is-no': !p.ok }}>
+        <Icon name={p.ok ? 'check' : 'close'} size={16} class="demo__icon" />
+        <p><strong>{typo(p.title)}</strong> {typo(p.text)}</p>
+      </li>
+    ))}
+  </ul>
+
+  <aside class="demo__key">
+    <p class="demo__key-title">{typo(demo.whyKey.title)}</p>
+    <p>{typo(demo.whyKey.text)}</p>
+  </aside>
+
+  <p class="demo__note">{typo(demo.algorithmNote)} {typo(demo.basis)}</p>
+</zl-pseudonym>
+
+<script>
+  import { diffCount, groups, isPwz, neighbour, toHex } from '@/components/postulat/pseudonym';
+
+  const encoder = new TextEncoder();
+
+  async function hmac(key: string, message: string): Promise<string> {
+    const cryptoKey = await crypto.subtle.importKey('raw', encoder.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return toHex(await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(message)));
+  }
+
+  const renderHex = (el: Element, hex: string) =>
+    el.replaceChildren(...groups(hex).map((g) => Object.assign(document.createElement('span'), { textContent: g })));
+
+  class ZlPseudonym extends HTMLElement {
+    #run = 0;
+
+    connectedCallback() {
+      const pwz = this.querySelector<HTMLInputElement>('input[name="pwz"]');
+      const key = this.querySelector<HTMLInputElement>('input[name="key"]');
+      const out = this.querySelector('[data-out]');
+      const near = this.querySelector('[data-near]');
+      const nearPwz = this.querySelector('[data-near-pwz]');
+      const diff = this.querySelector('[data-diff]');
+      const hint = this.querySelector('[data-hint]');
+      if (!pwz || !key || !out || !near || !nearPwz || !diff || !hint) return;
+
+      // Web Crypto działa tylko w bezpiecznym kontekście (HTTPS) — wtedy zostaje przykład z buildu
+      if (!globalThis.crypto?.subtle) {
+        pwz.disabled = key.disabled = true;
+        hint.textContent = 'Przeliczanie wymaga połączenia HTTPS';
+        return;
+      }
+
+      const update = async () => {
+        const run = ++this.#run;
+        const number = pwz.value.replace(/\D/g, '').slice(0, 7);
+        if (number !== pwz.value) pwz.value = number;
+
+        const ready = isPwz(number) && key.value.length > 0;
+        this.toggleAttribute('data-incomplete', !ready);
+        hint.textContent = isPwz(number) ? '7 cyfr' : `7 cyfr — brakuje ${7 - number.length}`;
+        if (!ready) return;
+
+        const other = neighbour(number);
+        const [a, b] = await Promise.all([hmac(key.value, number), hmac(key.value, other)]);
+        if (run !== this.#run) return; // nowsze wpisanie wyprzedziło to obliczenie
+
+        renderHex(out, a);
+        renderHex(near, b);
+        nearPwz.textContent = other;
+        diff.textContent = String(diffCount(a, b));
+      };
+
+      pwz.addEventListener('input', update);
+      key.addEventListener('input', update);
+      this.querySelector('[data-new-key]')?.addEventListener('click', () => {
+        key.value = toHex(crypto.getRandomValues(new Uint8Array(12)));
+        update();
+      });
+    }
+  }
+
+  if (!customElements.get('zl-pseudonym')) customElements.define('zl-pseudonym', ZlPseudonym);
+</script>
+
+<style>
+  zl-pseudonym { display: block; }
+  .demo { padding: clamp(24px, 4vw, 48px); border: 1px solid var(--line-2); background: var(--bg-soft); }
+
+  .demo__label { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+  .demo__title { margin-top: 10px; font: 400 clamp(1.5rem, 2.4vw, 2rem)/1.15 var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .demo__intro { margin-top: 12px; max-width: 64ch; font-size: 1rem; line-height: 1.65; color: var(--ink-2); }
+
+  .demo__flow {
+    display: grid; grid-template-columns: minmax(0, 1fr) 190px minmax(0, 1.25fr); gap: 24px; align-items: center;
+    margin-top: 32px; padding: clamp(20px, 3vw, 32px); border: 1px solid var(--line-2); background: var(--surface);
+  }
+
+  .demo__inputs { display: grid; gap: 20px; }
+  .field { display: grid; gap: 6px; }
+  .field__label { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .field__label em { font-style: normal; text-transform: none; letter-spacing: 0; }
+  .field input {
+    width: 100%; min-width: 0; height: 48px; padding: 0 14px;
+    border: 1px solid var(--line-2); background: var(--bg); color: var(--ink);
+    font: 500 1.25rem/1 var(--f-mono); letter-spacing: .08em;
+  }
+  .field input[name="key"] { font-size: 0.875rem; letter-spacing: 0; }
+  .field input:focus-visible { outline: 2px solid var(--blue); outline-offset: 0; border-color: var(--blue); }
+  .field__row { display: flex; gap: 8px; }
+  .field__btn { flex: none; padding: 0 14px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: 500 0.8125rem/1 var(--f-body); transition: border-color .2s, color .2s; }
+  .field__btn:hover { border-color: var(--ink); }
+  .field__hint { font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  zl-pseudonym[data-incomplete] .field__hint[data-hint] { color: var(--amber); }
+
+  .demo__fn { display: grid; gap: 18px; }
+  .demo__arrow { position: relative; display: block; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .demo__arrow code { font: inherit; color: var(--blue); }
+  /* strzałka: kreska + grot rysowane tłem, w przód niebieska, wstecz przekreślona */
+  .demo__arrow--forward { padding-bottom: 12px; background: linear-gradient(var(--blue) 0 0) 0 100% / calc(100% - 8px) 2px no-repeat; }
+  .demo__arrow--forward::after { content: ""; position: absolute; right: 0; bottom: -4px; border: 5px solid transparent; border-left: 8px solid var(--blue); border-right: 0; }
+  .demo__arrow--back { display: flex; align-items: center; gap: 6px; padding-top: 12px; color: var(--bad); background: linear-gradient(var(--line-2) 0 0) 8px 0 / calc(100% - 8px) 2px no-repeat; }
+  .demo__arrow--back::before { content: ""; position: absolute; left: 0; top: -4px; border: 5px solid transparent; border-right: 8px solid var(--line-2); border-left: 0; }
+
+  .demo__result { display: grid; gap: 8px; min-width: 0; }
+  .hex { display: flex; flex-wrap: wrap; gap: 2px 10px; font: 500 1rem/1.5 var(--f-mono); color: var(--ink); transition: opacity .2s; }
+  .hex--near { font-size: 0.8125rem; color: var(--text); }
+  zl-pseudonym[data-incomplete] .hex { opacity: .35; }
+  .demo__near-label { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line-2); font-size: 0.84375rem; line-height: 1.5; color: var(--text); }
+  .demo__near-label strong { font-family: var(--f-mono); color: var(--ink); }
+  .demo__diff { font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .demo__diff strong { color: var(--blue); font-weight: 500; }
+
+  .demo__props { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 32px; }
+  .demo__props li { display: grid; grid-template-columns: 16px 1fr; gap: 12px; padding-top: 16px; border-top: 2px solid var(--blue); }
+  .demo__props li.is-no { border-top-color: var(--ink); }
+  .demo__props p { font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
+  .demo__props strong { color: var(--ink); font-weight: 600; }
+  .demo__icon { margin-top: 3px; color: var(--blue); }
+  .is-no .demo__icon { color: var(--ink); }
+
+  .demo__key { margin-top: 32px; padding: 20px 24px; border-left: 3px solid var(--amber); background: var(--amber-bg); }
+  .demo__key-title { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+  .demo__key p + p { margin-top: 8px; font-size: 0.96875rem; line-height: 1.65; color: var(--ink-2); max-width: 72ch; }
+
+  .demo__note { margin-top: 20px; font: 400 0.875rem/1.6 var(--f-body); color: var(--text); max-width: 80ch; }
+
+  @media (max-width: 1024px) {
+    .demo__flow { grid-template-columns: minmax(0, 1fr); }
+    .demo__fn { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .demo__props { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  }
+  @media (max-width: 560px) {
+    .demo__fn { grid-template-columns: minmax(0, 1fr); }
+    .hex { font-size: 0.875rem; gap: 2px 8px; }
+  }
+</style>

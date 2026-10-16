@@ -1,0 +1,298 @@
+---
+title: Najwyższa kara, której prawie się nie orzeka
+seoTitle: "Sądy lekarskie: kary i prawo do zawodu"
+category: Analiza
+topic: ksztalcenie
+order: 9
+stat: { value: "20", unit: lekarzy prawomocnie pozbawionych prawa do zawodu w latach 2010–2025 }
+date: 2026-07-20
+updated: 2026-10-16
+summary: W latach 2010–2025 sądy lekarskie prawomocnie odebrały prawo wykonywania zawodu 20 lekarzom. Upomnienie, nagana i kara pieniężna to 86% kar orzeczonych w pierwszej instancji w latach 2020–2025.
+description: W latach 2010–2025 sądy lekarskie prawomocnie odebrały prawo do zawodu 20 lekarzom. 86% kar z lat 2020–2025 to upomnienie, nagana lub kara pieniężna.
+keyPoints:
+  - O odpowiedzialności zawodowej lekarzy orzekają sądy samorządu lekarskiego. Oskarża rzecznik, orzekają lekarze wybrani przez zjazdy lekarzy, a poza samorząd sprawa wychodzi dopiero z kasacją do Sądu Najwyższego.
+  - Upomnienie, nagana i kara pieniężna to 86% z 2516 kar orzeczonych w pierwszej instancji w latach 2020–2025. Pozbawienie prawa wykonywania zawodu sądy orzekły 27 razy.
+  - W latach 2010–2025 prawomocnie straciło prawo do zawodu 20 lekarzy, nieco ponad jeden rocznie, a w 6 z tych 16 lat — nikt. Za lata 2000–2009 sprawozdania nie oddzielają orzeczeń prawomocnych.
+  - W przeliczeniu na liczbę lekarzy urzędy w Norwegii i Szwecji odbierały w latach 2020–2025 prawo do zawodu ok. 90 razy częściej. Systemy różnią się jednak zakresem spraw, a przestępstwa lekarzy w Polsce osądzają osobno sądy karne.
+editorial:
+  - >-
+    Nie uważamy, że najwyższa kara powinna zapadać często. Uważamy, że każdy powinien móc bez
+    samodzielnego liczenia sprawdzić, jak samorząd rozlicza zawód: ile skarg wpłynęło, ile spraw
+    trafiło do sądów lekarskich, jakie zapadły kary i ile z nich się uprawomocniło. Co roku,
+    w jednym zestawieniu, tak jak robią to Norwegia i Szwecja.
+  - >-
+    Dopóki zbiorczą liczbę trzeba składać samemu z kilkudziesięciu plików, rozliczenie zawodu jest
+    jawne formalnie, ale w praktyce trudne do sprawdzenia.
+related:
+  - brak-jawnosci
+  - prawa-pacjenta
+  - tajwan-ochrona-zdrowia
+  - nil-a-kontrakty-lekarskie
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Steps from '@/components/blocks/Steps.astro';
+import TwoLists from '@/components/blocks/TwoLists.astro';
+import RevocationTable from '@/components/odpowiedzialnosc-zawodowa-lekarzy/RevocationTable.astro';
+import {
+  FIRST_INSTANCE,
+  FIRST_INSTANCE_2000_2009,
+  FIRST_INSTANCE_TOTAL,
+  FIRST_YEAR,
+  LAST_YEAR,
+  LINKS,
+  NO_DOCTORS,
+  OROZ_CASES,
+  OSL_CASES_2025,
+  PENALTIES,
+  PENALTIES_MILD,
+  PENALTIES_TOTAL,
+  PL_DOCTORS,
+  PL_ONE_YEARS,
+  PL_ZERO_YEARS,
+  RATIO_ROUNDED,
+  SE_DOCTORS_2025,
+  WINDOW,
+  YEARS_COUNT,
+  firstInstance,
+  penalty,
+  plIn,
+  rate,
+  ratePer100k,
+  share,
+  total,
+} from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
+import { formatPL } from '@/lib/format';
+
+export const span = `${WINDOW.from}–${WINDOW.to}`;
+export const allYears = `${FIRST_YEAR}–${LAST_YEAR}`;
+export const mildPct = Math.round((PENALTIES_MILD / PENALTIES_TOTAL) * 100);
+export const suspension = penalty('Zawieszenie prawa wykonywania zawodu');
+export const revocation = penalty('Pozbawienie prawa wykonywania zawodu');
+export const ban = penalty('Zakaz pełnienia funkcji kierowniczych');
+export const restriction = penalty('Ograniczenie zakresu czynności');
+export const plTotal = total('pl');
+export const firstSince2010 = firstInstance(FIRST_YEAR, LAST_YEAR);
+export const plWindow = total('pl', WINDOW.from, WINDOW.to);
+export const lastFirstInstance = firstInstance(LAST_YEAR, LAST_YEAR);
+export const plIfFinal = rate(plWindow + lastFirstInstance, PL_DOCTORS);
+export const scandiMin = Math.min(ratePer100k('no'), ratePer100k('se'));
+export const rates = { pl: ratePer100k('pl'), no: ratePer100k('no'), se: ratePer100k('se') };
+
+Najsurowsza kara, jaką samorząd lekarski może wymierzyć lekarzowi, to pozbawienie prawa wykonywania zawodu. Według rocznych sprawozdań sądów lekarskich w latach {allYears} prawomocnie orzeczono ją wobec {plTotal} lekarzy, czyli średnio nieco ponad raz w roku.[^nil-sady] Najczęściej sądy lekarskie kończą sprawy upomnieniem, naganą albo karą pieniężną.
+
+Opisujemy, kto w Polsce orzeka o odpowiedzialności zawodowej lekarzy, jakie kary stosuje i jak te liczby wyglądają na tle Norwegii i Szwecji, gdzie o prawie do zawodu decydują urzędy państwowe. Nie piszemy o żadnej konkretnej sprawie ani osobie, tylko o tym, jak działa system.
+
+<StatRow
+  label="Sądy lekarskie w liczbach"
+  items={[
+    { value: plTotal, unit: 'lekarzy', desc: `prawomocnie straciło prawo wykonywania zawodu w latach ${allYears}; w ${PL_ZERO_YEARS} z ${YEARS_COUNT} lat nie było ani jednego takiego przypadku`, accuracy: 'exact', source: 'NIL, zestawienie własne', href: LINKS.nilCourts },
+    { value: mildPct, unit: '%', desc: `kar orzeczonych w pierwszej instancji w latach ${PENALTIES.period} to upomnienie, nagana albo kara pieniężna (${formatPL(PENALTIES_MILD)} z ${formatPL(PENALTIES_TOTAL)})`, accuracy: 'exact', source: 'NIL, zestawienie własne', href: LINKS.nilCourts },
+    { value: FIRST_INSTANCE_TOTAL, unit: 'orzeczeń', desc: `pozbawienia prawa wykonywania zawodu wydały w pierwszej instancji okręgowe sądy lekarskie w latach 2000–${LAST_YEAR}; w latach ${allYears} — ${firstSince2010}, a prawomocnych pozbawień było w tym czasie ${plTotal}`, accuracy: 'exact', source: 'NIL, zestawienie własne', href: LINKS.nilCourts },
+  ]}
+/>
+
+## Kto sądzi lekarzy
+
+Samorząd lekarski tworzą Naczelna Izba Lekarska, 23 okręgowe izby lekarskie i Wojskowa Izba Lekarska, która działa na prawach izby okręgowej.[^nil-2024] Należą do niego wszyscy lekarze i lekarze dentyści z prawem wykonywania zawodu. To prawo przyznaje izba, a lekarz z chwilą jego otrzymania zostaje wpisany na listę jej członków.[^uil-ustroj]
+
+Ustawa o izbach lekarskich daje samorządowi dwie role naraz: reprezentuje on osoby wykonujące zawód, a zarazem sprawuje pieczę nad jego należytym wykonywaniem w granicach interesu publicznego.[^uil-ustroj] Drugiej roli służą dwa organy, które ma każda izba: rzecznik odpowiedzialności zawodowej i sąd lekarski.
+
+<Figure
+  title="Każda z 24 izb — 23 okręgowych i Wojskowa — ma własnego rzecznika i sąd pierwszej instancji. Drugą instancją jest Naczelny Sąd Lekarski."
+  source={{ label: 'Ustawa o izbach lekarskich, art. 21, 24, 25, 35, 38 i 80', href: LINKS.act }}
+>
+  <Comparison
+    table={{
+      columns: ['', 'Izba okręgowa (23 i Wojskowa)', 'Naczelna Izba Lekarska'],
+      rows: [
+        { cells: ['Zjazd lekarzy', 'Okręgowy zjazd lekarzy — delegaci wybierają pozostałe organy izby', 'Krajowy Zjazd Lekarzy — delegatów wybierają zjazdy okręgowe'] },
+        { cells: ['Rada lekarska', 'Okręgowa rada lekarska — kieruje izbą między zjazdami i przyznaje prawo wykonywania zawodu', 'Naczelna Rada Lekarska — kieruje samorządem między zjazdami'] },
+        { cells: ['Rzecznik odpowiedzialności zawodowej', 'Okręgowy rzecznik — wyjaśnia skargi i oskarża przed sądem lekarskim', 'Naczelny Rzecznik Odpowiedzialności Zawodowej'] },
+        { cells: ['Sąd lekarski', 'Okręgowy sąd lekarski — pierwsza instancja, orzeka w składzie 3 osób', 'Naczelny Sąd Lekarski — druga instancja, orzeka w składzie 5 osób'] },
+        { cells: ['Komisja rewizyjna', 'Okręgowa komisja rewizyjna — kontrola wewnętrzna', 'Naczelna Komisja Rewizyjna'] },
+      ],
+    }}
+  />
+</Figure>
+
+Rzeczników, ich zastępców i członków sądów lekarskich wybierają na czteroletnią kadencję zjazdy lekarzy: okręgowe w izbach okręgowych, Krajowy Zjazd w Naczelnej Izbie Lekarskiej. Kandydować może lekarz, który wykonuje zawód od co najmniej 10 lat.[^uil-sady] Oskarżają i orzekają więc lekarze wybrani przez lekarzy. W orzekaniu członkowie sądów lekarskich podlegają przepisom prawa powszechnie obowiązującego.[^uil-sady]
+
+Sprawa przechodzi przez kolejne etapy opisane w ustawie:[^uil-postepowanie]
+
+<Steps>
+
+1. **Skarga.** Pacjent składa ją pisemnie do okręgowego rzecznika odpowiedzialności zawodowej w izbie, do której należy lekarz. Postępowania nie wszczyna się, jeśli od zdarzenia minęły 3 lata.
+2. **Postępowanie wyjaśniające.** Prowadzi je rzecznik. Powinno trwać najwyżej 6 miesięcy, ale można je przedłużyć. Pokrzywdzony jest stroną i może zaskarżyć odmowę wszczęcia postępowania do sądu lekarskiego.
+3. **Pierwsza instancja.** Jeśli rzecznik uzna zarzuty za uzasadnione, kieruje do okręgowego sądu lekarskiego wniosek o ukaranie i występuje przed sądem jako oskarżyciel. Sąd orzeka w składzie trzech osób.
+4. **Odwołanie.** W ciągu 14 dni strona może się odwołać do Naczelnego Sądu Lekarskiego. Orzeka on w składzie pięciu osób i może orzeczenie utrzymać, zmienić albo uchylić.
+5. **Kasacja.** Od prawomocnego orzeczenia Naczelnego Sądu Lekarskiego, które kończy sprawę, strony, minister zdrowia i prezes Naczelnej Rady Lekarskiej mogą w ciągu 2 miesięcy wnieść kasację do Sądu Najwyższego. To jedyny etap, na którym sprawę rozpatruje sąd spoza samorządu.
+
+</Steps>
+
+Gdy dowody wskazują na poważne przewinienie, a dalsza praca lekarza zagraża pacjentom, sąd lekarski może na wniosek rzecznika tymczasowo zawiesić prawo wykonywania zawodu albo ograniczyć zakres czynności — na najwyżej rok i ze skutkiem natychmiastowym.[^uil-postepowanie] Sprawy lekarzy, którzy z powodu stanu zdrowia nie mogą wykonywać zawodu, samorząd prowadzi w osobnym trybie, poza sądami lekarskimi.[^nil-2024]
+
+Także Rzecznik Praw Pacjenta kieruje pacjentów w takich sprawach do okręgowego rzecznika odpowiedzialności zawodowej.[^rpp] Jak przygotować skargę i jakie są inne drogi, opisujemy w przewodniku [Prawa pacjenta](/prawa-pacjenta/).
+
+## Siedem kar
+
+Art. 83 ustawy wylicza siedem kar, od najłagodniejszej:[^uil-kary]
+
+1. upomnienie,
+2. nagana,
+3. kara pieniężna — od jednej trzeciej do czterokrotności przeciętnego miesięcznego wynagrodzenia w sektorze przedsiębiorstw,
+4. zakaz pełnienia funkcji kierowniczych w ochronie zdrowia, na 1–5 lat,
+5. ograniczenie zakresu czynności w wykonywaniu zawodu, na 6 miesięcy do 2 lat,
+6. zawieszenie prawa wykonywania zawodu, na 1–5 lat,
+7. pozbawienie prawa wykonywania zawodu.
+
+Zakaz pełnienia funkcji kierowniczych sąd może dołożyć do ograniczenia zakresu czynności albo do zawieszenia. Przy karach od czwartej do siódmej może też zarządzić publikację orzeczenia w biuletynie izby.[^uil-kary]
+
+Najważniejsza granica przebiega między szóstą a siódmą karą. Zawieszenie trwa najwyżej pięć lat, a pięć lat po jego wykonaniu ulega zatarciu. Pozbawienie prawa wykonywania zawodu jako jedyna z siedmiu kar nie ulega zatarciu nigdy.[^uil-kary]
+
+## Jakie kary orzekają sądy lekarskie
+
+W latach {PENALTIES.period} okręgowe sądy lekarskie orzekły w pierwszej instancji {formatPL(PENALTIES_TOTAL)} kar.[^nil-sady] Ponad cztery na pięć z nich to trzy najłagodniejsze.
+
+<Figure
+  title={`Trzy najłagodniejsze kary to ${mildPct}% z ${formatPL(PENALTIES_TOTAL)} kar orzeczonych w latach ${PENALTIES.period}. Pozbawienie prawa wykonywania zawodu sądy orzekły ${revocation} razy.`}
+  note={`Kary orzeczone w pierwszej instancji przez okręgowe sądy lekarskie 24 izb, w kolejności z ustawy — od najłagodniejszej. Kar jest więcej niż ukaranych lekarzy, bo zakaz pełnienia funkcji kierowniczych może dołączyć do ograniczenia albo zawieszenia. Za ${LAST_YEAR} r. bez izby w Koszalinie, której kolumna w sprawozdaniu jest pusta.`}
+  source={{ label: `NIL, sprawozdania okręgowych sądów lekarskich ${PENALTIES.period} (zestawienie własne)`, href: LINKS.nilCourts }}
+>
+  <BarChart
+    rows={PENALTIES.rows.map((p) => ({ label: p.name, note: p.range, value: p.n, display: formatPL(p.n), highlight: p.mild }))}
+    max={Math.max(...PENALTIES.rows.map((p) => p.n))}
+    unit="kar"
+    caption={`Kary orzeczone przez okręgowe sądy lekarskie w latach ${PENALTIES.period}, razem ${PENALTIES_TOTAL}: ${PENALTIES.rows.map((p) => `${p.name.toLowerCase()} ${p.n}`).join(', ')}.`}
+  />
+</Figure>
+
+Upomnienia, nagany i kary pieniężne to razem {formatPL(PENALTIES_MILD)} kar, czyli {mildPct}%. Zawieszenie prawa wykonywania zawodu sądy orzekły {suspension} razy ({formatPL(share(suspension), 1)}%), a pozbawienie — {revocation} razy (ok. {Math.round(share(revocation))}%). Rzadziej niż pozbawienie zapadał tylko zakaz pełnienia funkcji kierowniczych: {ban} razy.
+
+Częstość nie maleje więc równo z surowością. Zawieszenie, szósta kara w ustawowej kolejności, zapadało częściej niż czwarta i piąta razem ({ban} + {restriction} = {ban + restriction}).
+
+Dwa zastrzeżenia. To liczba kar, a nie spraw ani ukaranych lekarzy: jeden lekarz może dostać jednocześnie zawieszenie i zakaz pełnienia funkcji kierowniczych. Są to też orzeczenia pierwszej instancji, a część z nich zmienia się po odwołaniu. Liczby za {LAST_YEAR} r. są ponadto niepełne, bo w sprawozdaniu brakuje danych izby w Koszalinie.[^nil-2025]
+
+## Ile razy odebrano prawo do zawodu
+
+Orzeczenie okręgowego sądu lekarskiego nie zamyka sprawy, bo można się od niego odwołać.[^uil-postepowanie] Dlatego liczymy pozbawienia prawomocne: te, od których nikt się nie odwołał, i te, które utrzymał albo sam orzekł Naczelny Sąd Lekarski.
+
+W latach 2000–{LAST_YEAR} okręgowe sądy lekarskie orzekły pozbawienie prawa wykonywania zawodu {FIRST_INSTANCE_TOTAL} razy: {FIRST_INSTANCE[0].n} razy w latach {FIRST_INSTANCE[0].period}, {FIRST_INSTANCE[1].n} razy w latach {FIRST_INSTANCE[1].period} i {FIRST_INSTANCE[2].n} razy w latach {FIRST_INSTANCE[2].period}.[^nil-sady] Prawomocne pozbawienia da się policzyć co do jednego od {FIRST_YEAR} r.: w latach {allYears} było ich {plTotal}, przy {firstSince2010} orzeczeniach pierwszej instancji w tym samym czasie.[^suma-nil] Starszy formularz sprawozdań, z lat 2000–2009, nie oddziela orzeczeń prawomocnych od pozostałych. Okręgowe sądy orzekły wtedy pozbawienie {FIRST_INSTANCE_2000_2009} razy, więc za całe ćwierćwiecze prawomocnych pozbawień było co najmniej {plTotal}, ale dokładnej liczby sprawozdania nie podają.[^nil-sady] Prawo.pl podało w 2019 r., że od lat 90. prawa wykonywania zawodu pozbawiono 13 lekarzy.[^prawo2019]
+
+Różnicy między {firstSince2010} a {plTotal} sprawozdania nie rozkładają na części. Składają się na nią orzeczenia, które Naczelny Sąd Lekarski zmienił lub uchylił, oraz sprawy, w których odwołanie wciąż czeka na rozpatrzenie, zwłaszcza z ostatnich lat. Lata też się nie pokrywają: pozbawienie liczymy w roku, w którym stało się prawomocne, a nie w roku pierwszego orzeczenia.
+
+Rok po roku pokazuje to tabela w następnej części. W {PL_ZERO_YEARS} z {YEARS_COUNT} lat prawomocnych pozbawień nie było wcale, a w {PL_ONE_YEARS} — po jednym. W latach 2020–2022 były {total('pl', 2020, 2022)}, w 2023 r. {plIn(2023)}, a w 2024 r. {plIn(2024)} — ponad połowę tego, co w latach 2015–2023 razem ({total('pl', 2015, 2023)}).[^nil-sady] Za {LAST_YEAR} r. sprawozdania nie wykazują żadnego, choć okręgowe sądy orzekły w tym roku {lastFirstInstance} pozbawień. Żadne z nich nie uprawomocniło się w tym roku bez odwołania. Jeśli Naczelny Sąd Lekarski utrzyma je w drugiej instancji, trafią do statystyki kolejnych lat.[^nil-2025]
+
+Obraz pojedynczego roku w drugiej instancji daje sprawozdanie Naczelnego Sądu Lekarskiego za 2022 r. Orzeczenia kończące postępowanie, wydane na rozprawie, dotyczyły wtedy 97 lekarzy, a postanowienia wydane na posiedzeniach — 185. Najsurowszymi karami orzeczonymi przez ten sąd w 2022 r. były zawieszenia (6 lekarzy) i ograniczenia zakresu czynności (5). Pozbawienia prawa do zawodu nie było żadnego.[^nsl-2022]
+
+Do sądów trafia tylko część spraw. Do okręgowych rzeczników odpowiedzialności zawodowej wpłynęło w {LAST_YEAR} r. {formatPL(OROZ_CASES[2025])} spraw, wobec {formatPL(OROZ_CASES[2022])} w 2022 r., {formatPL(OROZ_CASES[2023])} w 2023 r. i {formatPL(OROZ_CASES[2024])} w 2024 r.[^oroz] Zestawienia rzeczników liczą wszystkie sprawy, które wpłynęły, a nie tylko skargi pacjentów. Do okręgowych sądów lekarskich wpłynęło w {LAST_YEAR} r. {formatPL(OSL_CASES_2025)} spraw, bez izby w Koszalinie.[^nil-2025] Prawo.pl pisało w 2019 r. o ok. 3 tys. skarg rocznie, z których do sądów trafia mniej więcej jedna trzecia.[^prawo2019]
+
+## Sąd karny to osobna droga
+
+Postępowanie przed sądem lekarskim toczy się niezależnie od postępowania karnego.[^uil-postepowanie] Lekarzowi, który popełnił przestępstwo, sąd karny może zakazać wykonywania zawodu jako środek karny — jeśli nadużył zawodu przy przestępstwie albo jeśli dalsze wykonywanie zawodu zagraża istotnym dobrom chronionym prawem.[^kk]
+
+Niska liczba pozbawień w samorządzie nie mówi więc wszystkiego o lekarzach skazanych za przestępstwa, bo w ich sprawach zakaz wykonywania zawodu może orzec sąd karny. Ilu lekarzom go orzeczono, w źródłach, z których korzystamy, nie znaleźliśmy. Liczby w tym tekście dotyczą wyłącznie sądów lekarskich.
+
+## Polska na tle Norwegii, Szwecji i Czech
+
+W Norwegii autoryzację, czyli prawo do zawodu, odbiera lekarzowi państwowy urząd nadzoru Helsetilsynet.[^helse] W Szwecji wnioski składa m.in. państwowy inspektorat IVO, a decyzję podejmuje państwowa komisja HSAN.[^hsan] Oba kraje co roku publikują liczbę takich decyzji osobno dla każdego zawodu.
+
+Polska ma ok. {formatPL(PL_DOCTORS / NO_DOCTORS[LAST_YEAR], 1)} raza więcej lekarzy niż Norwegia i ok. {formatPL(PL_DOCTORS / SE_DOCTORS_2025, 1)} raza więcej niż Szwecja,[^lekarze] dlatego porównujemy liczby przeliczone na 100 tys. lekarzy.
+
+<Figure
+  title={`W przeliczeniu na liczbę lekarzy urzędy w Norwegii i Szwecji odbierały prawo do zawodu ok. ${RATIO_ROUNDED} razy częściej, niż robiły to polskie sądy lekarskie.`}
+  note={`Średnio rocznie w latach ${span}, na 100 tys. lekarzy. Systemy różnią się zakresem spraw i definicjami, a mianowniki pochodzą z różnych rejestrów — to porównanie rzędu wielkości, nie co do jednego przypadku.`}
+  source={{ label: 'obliczenie własne; dane i ich źródła w tabeli niżej' }}
+>
+  <BarChart
+    rows={[
+      { label: 'Norwegia', note: 'urząd państwowy', value: rates.no, display: `≈${formatPL(rates.no, 1)}` },
+      { label: 'Szwecja', note: 'urząd państwowy', value: rates.se, display: `≈${formatPL(rates.se, 1)}` },
+      { label: 'Polska', note: 'sądy lekarskie', value: rates.pl, display: `≈${formatPL(rates.pl, 1)}`, highlight: true },
+    ]}
+    max={Math.max(rates.no, rates.se)}
+    unit="na 100 tys. lekarzy"
+    caption={`Odebrania prawa wykonywania zawodu lekarzom średnio rocznie na 100 tys. lekarzy, ${span}: Norwegia ok. ${formatPL(rates.no, 1)}, Szwecja ok. ${formatPL(rates.se, 1)}, Polska ok. ${formatPL(rates.pl, 1)}.`}
+  />
+</Figure>
+
+<RevocationTable />
+
+W latach {span} urzędy w Norwegii i Szwecji odebrały prawo do zawodu odpowiednio {total('no', WINDOW.from, WINDOW.to)} i {total('se', WINDOW.from, WINDOW.to)} lekarzom, a polskie sądy lekarskie — {plWindow}. Okno obejmuje rok 2024 z {plIn(2024)} pozbawieniami, najwięcej w całej serii, ale też rok {LAST_YEAR}, za który sprawozdania nie wykazują żadnego prawomocnego pozbawienia, a w danych okręgowych sądów brakuje izby w Koszalinie. Nawet gdyby doliczyć do tego roku wszystkie {lastFirstInstance} pozbawień orzeczonych w {LAST_YEAR} r. w pierwszej instancji, polski wskaźnik wyniósłby ok. {formatPL(plIfFinal, 1)}, a urzędy w Norwegii i Szwecji i tak odbierałyby prawo do zawodu ok. {Math.round(scandiMin / plIfFinal)} razy częściej.
+
+Lata {span} to ostatnie, za które mamy dane wszystkich trzech krajów. W {LAST_YEAR} r. oba urzędy odebrały prawo do zawodu większej liczbie lekarzy niż w którymkolwiek roku od 2010 r.: w Norwegii 58,[^helse-2025] w Szwecji 64.[^hsan]
+
+Te liczby nie są wprost porównywalne. W Polsce pozbawienie prawa wykonywania zawodu jest karą za przewinienie zawodowe. Przestępstwa osądza osobno sąd karny, a niezdolnością do pracy z powodu stanu zdrowia samorząd zajmuje się w innym trybie. Urzędy w Norwegii i Szwecji odbierają uprawnienia z różnych powodów w jednym trybie, a w Szwecji odebranie legitymacji może nastąpić także na wniosek samego lekarza.[^hsan] Norweski urząd dobrowolne zrzeczenia się autoryzacji podaje osobno.[^helse-2025] Mianowniki pochodzą z różnych rejestrów. Dlatego porównujemy rząd wielkości, a nie wynik co do jednego przypadku.
+
+Czeska izba lekarska (ČLK), podobnie jak polski samorząd, jest korporacją zawodową. Rocznej statystyki nie publikuje, ale według jej prezesa przez 20 lat wykluczyła 10 lekarzy, a wykluczenie jest możliwe najwyżej na pięć lat.[^tempus] Dla Niemiec i Austrii porównywalnej liczby nie ma. Niemiecki rząd federalny odpowiedział w 2026 r. Bundestagowi, że krajową statystyką nie dysponuje.[^de] Austriacka ustawa o zawodzie lekarza zakazuje informowania opinii publicznej o przebiegu i wynikach niejawnych postępowań dyscyplinarnych.[^at]
+
+## Argumenty samorządu
+
+Niską liczbę pozbawień tłumaczą argumenty, które trzeba przytoczyć. Kary są stopniowane, a pozbawienie prawa wykonywania zawodu ma być ostatecznością: sąd powinien najpierw rozważyć karę łagodniejszą. Tak tę zasadę opisywała ekspertka prawa medycznego w wypowiedzi dla MedExpress.[^medexpress] Pozbawienie jest też jedyną karą, która nie ulega zatarciu, więc na zawsze zostaje w rejestrze ukaranych.[^uil-kary]
+
+Sprawozdania nie podają, czego dotyczyły sprawy, więc z samych liczb nie da się ocenić, czy kary odpowiadały wadze przewinień. Struktura kar pasuje zarówno do wyjaśnienia, że większość spraw dotyczy przewinień mniejszej wagi, jak i do tezy, że sądy orzekają łagodnie.
+
+Orzeczenia samorządu podlegają też kontroli z zewnątrz: kasację do Sądu Najwyższego może wnieść nie tylko strona, ale też minister zdrowia.[^uil-postepowanie] NIL prowadzi ponadto portal prawomocnych orzeczeń sądów lekarskich, którego regulamin przyjęto w marcu 2024 r. Publikuje na nim zanonimizowane orzeczenia oraz tabele z liczbą ukarań, umorzeń i uniewinnień od 2023 r.[^nil-2024][^portal] Tabeli za drugie półrocze 2025 r. jeszcze nie przygotował — według NIL dlatego, że sądy przekraczają terminy na sporządzenie uzasadnień.[^portal]
+
+## Co da się sprawdzić
+
+Kary konkretnych lekarzy trafiają do Rejestru Ukaranych Lekarzy, który prowadzi Naczelna Rada Lekarska. Informację z rejestru dostaje tylko osoba lub instytucja, która wykaże interes prawny.[^rejestr]
+
+Dane zbiorcze są publiczne, ale rozproszone. NIL publikuje sprawozdania sądów lekarskich jako osobne pliki arkuszy i dokumentów, rok po roku.[^nil-sady] Żeby policzyć, ilu lekarzy prawomocnie straciło prawo do zawodu, trzeba zsumować dwie sekcje sprawozdań — okręgowych sądów lekarskich i Naczelnego Sądu Lekarskiego — dla wszystkich 24 izb. W dwóch plikach trzeba przy tym pominąć błędną komórkę sumy.[^suma-nil] Norwegia i Szwecja podają tę liczbę gotową, co roku i z podziałem na zawody.[^helse][^hsan]
+
+Tę samą zasadę, czyli jawne dane bez nazwisk, proponujemy dla pieniędzy publicznych: [łączne wypłaty z publicznych pieniędzy dla każdej osoby, pod stałym identyfikatorem, bez nazwisk](/postulat/).
+
+<TwoLists
+  yes={{
+    title: 'Liczby pokazują',
+    note: 'co wynika ze sprawozdań',
+    items: [
+      'Sądy lekarskie najczęściej orzekają kary najłagodniejsze: upomnienie, naganę i karę pieniężną.',
+      `Prawomocne pozbawienie prawa wykonywania zawodu zdarza się średnio nieco ponad raz w roku: w ${PL_ZERO_YEARS + PL_ONE_YEARS} z ${YEARS_COUNT} lat było najwyżej jedno.`,
+      `W przeliczeniu na liczbę lekarzy urzędy w Norwegii i Szwecji odbierają prawo do zawodu ok. ${RATIO_ROUNDED} razy częściej.`,
+    ],
+  }}
+  no={{
+    title: 'Nie pokazują',
+    note: 'czego z nich nie wyczytamy',
+    items: [
+      'Czy kary odpowiadały wadze przewinień — sprawozdania nie opisują spraw.',
+      'Ilu lekarzom zakaz wykonywania zawodu orzekły sądy karne.',
+      'Czy w Polsce zdarza się mniej poważnych przewinień niż w Skandynawii — każdy system liczy co innego.',
+    ],
+  }}
+/>
+
+## Metoda
+
+Polskie liczby policzyliśmy sami z plików NIL: rocznych sprawozdań okręgowych sądów lekarskich i Naczelnego Sądu Lekarskiego za lata {allYears} oraz zestawienia orzeczeń z lat 2000–2014.[^nil-sady] Sumujemy wszystkie 24 izby, zawsze z kolumn poszczególnych izb, a nie z komórki sumy w pliku, bo w dwóch sprawozdaniach jest ona błędna.[^suma-nil] Prawomocne pozbawienie to orzeczenie okręgowego sądu, od którego nikt się nie odwołał (sekcja 8.9 sprawozdania), albo pozbawienie utrzymane lub orzeczone przez Naczelny Sąd Lekarski w drugiej instancji (sekcja 8.11). Te dwa zbiory się nie pokrywają. Strukturę kar liczymy z orzeczeń pierwszej instancji z lat {PENALTIES.period}. W sprawozdaniu okręgowych sądów za {LAST_YEAR} r. kolumna izby w Koszalinie jest pusta, choć w latach 2019–2024 ten sąd miał kilkanaście spraw rocznie, więc sumy za {LAST_YEAR} r. są niepełne.[^nil-2025]
+
+Wskaźnik na 100 tys. lekarzy to średnia roczna z lat {span} podzielona przez liczbę lekarzy. Dla Norwegii mianownikiem jest średnia liczba zatrudnionych lekarzy z tych lat. Dla Szwecji to szacunek takiej średniej, bo raport Socialstyrelsen podaje stan z maja {LAST_YEAR} r. i zmianę od 2020 r., a nie serię roczną. Szwedzka liczba obejmuje tylko lekarzy zatrudnionych w ochronie zdrowia, norweska — wszystkich zatrudnionych lekarzy.[^lekarze] Dla Polski bierzemy {formatPL(PL_DOCTORS)} lekarzy wykonujących zawód według rejestru NIL w styczniu 2026 r., bo serii rocznej z tego rejestru nie mamy.[^lekarze] Gdyby w latach {span} lekarzy było średnio o jedną piątą mniej, polski wskaźnik wyniósłby ok. {formatPL(rate(plWindow, PL_DOCTORS * 0.8), 1)}, więc rząd wielkości się nie zmienia.
+
+Polski mianownik nie obejmuje lekarzy dentystów, a sprawozdania sądów lekarskich ich obejmują i nie wyodrębniają w wierszach kar. Specjalności stomatologiczne to w latach 2020–2025 od 14 do 20% wniosków o ukaranie, przy których sprawozdania podają specjalizację.[^nil-sady] Gdyby doliczyć dentystów do mianownika, polski wskaźnik byłby jeszcze niższy. Szwedzka i norweska statystyka podaje dentystów osobno, więc tam ich w porównaniu nie ma.[^hsan][^helse-2025] W szwedzkiej serii za 2013 r. przyjmujemy liczbę ze sprawozdania HSAN (25), choć Läkartidningen podaje 17.[^hsan]
+
+[^nil-sady]: Naczelna Izba Lekarska, [Dane liczbowe dotyczące sądów lekarskich](https://nil.org.pl/izba/naczelny-sad-lekarski/sprawozdania/dane-liczbowe-dotyczace-sadow-lekarskich): roczne sprawozdania okręgowych sądów lekarskich i Naczelnego Sądu Lekarskiego 2010–2025 oraz zestawienie orzeczeń OSL i NSL z lat 2000–2014. Sumy dla 24 izb i podział na lata — zestawienie własne (zob. „Metoda”). Udział specjalności stomatologicznych we wnioskach o ukaranie — arkusze „Specjalizacje” sprawozdań OSL za lata 2020–2025.
+[^nil-2025]: Naczelna Izba Lekarska, sprawozdania za 2025 r., pliki z września 2026 r.: [okręgowe sądy lekarskie](https://nil.org.pl/uploaded_files/1788883847_sprawozdanie-osl-2025.xlsx) (XLSX) — 1269 spraw, które wpłynęły (wiersz 1), 7 orzeczeń pozbawienia prawa wykonywania zawodu w pierwszej instancji (wiersz 7.11), 0 pozbawień prawomocnych bez odwołania (wiersz 8.9), pusta kolumna izby w Koszalinie; [Naczelny Sąd Lekarski](https://nil.org.pl/uploaded_files/1788883794_nsl-sprawozdanie-2025specjalizacje.doc) (DOC) — 0 pozbawień (pkt 8.11).
+[^suma-nil]: W sprawozdaniach okręgowych sądów lekarskich za [2021 r.](https://nil.org.pl/uploaded_files/1699623318_sprawozdanie-roczne-osl-2021-kpl.xls) (XLS) i [2022 r.](https://nil.org.pl/uploaded_files/1699623457_sprawozdanie-osl-2022.xlsx) (XLSX) komórka SUMA w wierszu 8.9 (pozbawienia prawomocne bez odwołania) jest wpisana jako 0, choć w kolumnach izb jest w każdym z tych lat po jednym takim orzeczeniu; tak samo wiersz 8.8 (zawieszenia). Liczymy sumę kolumn izb. Za 2019 r. jedno pozbawienie wykazuje [sprawozdanie Naczelnego Sądu Lekarskiego](https://nil.org.pl/uploaded_files/1591023201_sprawozdanie-roczne-nsl-2019specjalizacje-formularz.doc) (DOC, pkt 8.11). Wcześniejsza wersja tego zestawienia pomijała te trzy przypadki i podawała za lata 2010–2024 17 zamiast 20.
+[^nsl-2022]: Naczelny Sąd Lekarski, [sprawozdanie za 2022 r.](https://nil.org.pl/uploaded_files/1682609596_sprawozdanie-roczne-nsl-2022specjalizacje.doc) (DOC): pkt 8.1 (97 lekarzy, których dotyczyły orzeczenia kończące postępowanie wydane na rozprawie), pkt 8.2 (185 lekarzy, których dotyczyły postanowienia wydane na posiedzeniach), pkt 8.9–8.11 (ograniczenie zakresu czynności 5, zawieszenie 6, pozbawienie 0).
+[^oroz]: Naczelna Izba Lekarska, [roczne zestawienia okręgowych rzeczników odpowiedzialności zawodowej](https://nil.org.pl/izba/naczelny-rzecznik-odpowiedzialnosci-zawodowej/sprawozdania/roczne-oroz), kolumna „Liczba spraw, które wpłynęły”, suma 24 izb: [2022](https://nil.org.pl/uploaded_files/1676378379_oroz-2022-r.docx), [2023](https://nil.org.pl/uploaded_files/1709121502_oroz-2023-r.docx), [2024](https://nil.org.pl/uploaded_files/1741773461_oroz-2024-r.docx), [2025](https://nil.org.pl/uploaded_files/1770880377_oroz-zestawienie-2025-r.docx) (DOCX).
+[^nil-2024]: Naczelna Izba Lekarska, [Informacja o działalności samorządu lekarzy i lekarzy dentystów za 2024 rok](https://nil.org.pl/uploaded_files/documents/doc_1758536379_ru028-25-ix-sprawozdanie-za-rok-2024.pdf) (PDF): pkt 1 (izby i ich organy), pkt 5 (postępowania w sprawie niezdolności do wykonywania zawodu), pkt 9 (portal prawomocnych orzeczeń).
+[^uil-ustroj]: [Ustawa z 2 grudnia 2009 r. o izbach lekarskich](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20210001342), tekst jednolity Dz.U. 2021 poz. 1342: art. 2 ust. 2 (reprezentacja zawodu i piecza nad jego wykonywaniem), art. 3 (izby), art. 5 pkt 3 (przyznawanie prawa wykonywania zawodu), art. 6 ust. 1 (wpis na listę członków izby), art. 21 i 35 (organy izb).
+[^uil-sady]: [Ustawa o izbach lekarskich](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20210001342): art. 14 ust. 1 i 6 (kadencja 4 lata; kandydaci na rzecznika i do sądu — co najmniej 10 lat wykonywania zawodu), art. 24 pkt 7–8 i art. 38 pkt 7–8 (wybór rzeczników i członków sądów przez zjazdy), art. 81 (członkowie sądów podlegają przepisom prawa).
+[^uil-postepowanie]: [Ustawa o izbach lekarskich](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20210001342): art. 31 (rzecznik jako oskarżyciel), art. 54 (niezależność od postępowania karnego), art. 55–57 (etapy postępowania, strony, pokrzywdzony), art. 64 (przedawnienie), art. 68 (zażalenie na odmowę wszczęcia), art. 74 i 76 (wniosek o ukaranie, czas postępowania wyjaśniającego), art. 77 (tymczasowe zawieszenie), art. 80 (składy sądów), art. 90 i 92 (odwołanie do NSL), art. 95–98 (kasacja do Sądu Najwyższego).
+[^uil-kary]: [Ustawa o izbach lekarskich](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20210001342): art. 83 (katalog kar), art. 84 (publikacja orzeczenia), art. 85 (wysokość kary pieniężnej), art. 110 (Rejestr Ukaranych Lekarzy i zatarcie kar).
+[^rpp]: Rzecznik Praw Pacjenta, [Izba lekarska — kiedy i jak może pomóc](https://www.gov.pl/web/rpp/izba-lekarska-kiedy-i-jak-moze-pomoc).
+[^prawo2019]: Prawo.pl, [artykuł o karze pozbawienia prawa wykonywania zawodu w sądach lekarskich](https://www.prawo.pl/zdrowie/sady-lekarskie-kara-pozbawienia-prawa-wykonywania-zawodu-ukaraly,399509.html), 24.04.2019: 13 lekarzy pozbawionych prawa wykonywania zawodu od lat 90.; ok. 3 tys. skarg rocznie, z których do sądów trafia jedna trzecia (bez wskazania roku).
+[^medexpress]: MedExpress, [wypowiedź prof. D. Karkowskiej o pozbawieniu prawa wykonywania zawodu jako ostateczności](https://www.medexpress.pl/zawody-medyczne/pozbawienie-prawa-wykonywania-zawodu-jest-ostatecznoscia-62892/), 2016.
+[^kk]: [Kodeks karny](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU19970880553), art. 41 § 1 — zakaz wykonywania zawodu jako środek karny.
+[^lekarze]: Liczba lekarzy: Polska — 164 892 lekarzy wykonujących zawód, bez lekarzy dentystów, [Centralny Rejestr Lekarzy NIL](https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne), stan na 16.01.2026; Norwegia — [SSB, tabela 07938](https://www.ssb.no/statbank/table/07938/), zatrudnieni lekarze ze specjalizacją i bez, 4. kwartał: 31 753 w 2020 r., 35 997 w 2025 r., średnia z lat 2020–2025 ok. 34 tys.; Szwecja — [Socialstyrelsen, 2026](https://www.socialstyrelsen.se/contentassets/8f0d27a18c394508bb609d03d5153dc2/2026-2-10048.pdf) (PDF), tab. 1: 46 020 lekarzy, łącznie ze specjalistami, zatrudnionych w ochronie zdrowia w maju 2025 r., o 13% więcej niż w maju 2020 r.; średnią z lat 2020–2025 (ok. 43 tys.) szacujemy jako średnią tych dwóch stanów, czyli przy założeniu równomiernego wzrostu.
+[^helse]: Helsetilsynet, [statystyka reakcji wobec personelu ochrony zdrowia](https://www.helsetilsynet.no/tilsyn/om-tilsynssaker/statistikk-reaksjoner-mot-helsepersonell/): roczne komunikaty o odebraniu autoryzacji lub licencji lekarzom; lata 2010–2018 z archiwum komunikatów i raportów „Tilsynsmelding”, lata 2019–2024 z bieżących komunikatów.
+[^helse-2025]: Helsetilsynet, [Tilsyn med virksomheter og helsepersonell – administrative reaksjoner i 2025](https://www.helsetilsynet.no/presse/nyhetsarkiv/2026/tilsyn-virksomheter-helsepersonell-administrative-reaksjoner-2025/), 9.02.2026: autoryzację odebrano 58 lekarzom; dobrowolne zrzeczenia się autoryzacji urząd podaje osobno.
+[^hsan]: Hälso- och sjukvårdens ansvarsnämnd (HSAN), [sprawozdanie z działalności za 2025 r.](https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/dokument-webb/ovrigt/hsan-verksamhetsredogorelse-2025.pdf) (PDF), tab. 6: odebrania legitymacji lekarzom — 2023: 55, 2024: 48, 2025: 64 (w tym 4 tymczasowe); dentyści w osobnym wierszu; lata 2010–2017 z wcześniejszych sprawozdań. Wnioski o odebranie legitymacji składa m.in. inspektorat IVO, a HSAN rozpatruje też wnioski samych lekarzy.
+[^tempus]: Česká lékařská komora, [Tempus Medicorum 12/2024](https://www.lkcr.cz/doc/tempus_file/tempus_medicorum_12_2024_web-218.pdf) (PDF): wypowiedź prezesa izby o 10 wykluczeniach w ciągu 20 lat; wykluczenie jest możliwe najwyżej na 5 lat.
+[^de]: Deutscher Bundestag, [druk 21/4787](https://dserver.bundestag.de/btd/21/047/2104787.pdf) (PDF), 2026: rząd federalny nie dysponuje krajową statystyką.
+[^at]: [§ 194 ÄrzteG](https://www.jusline.at/gesetz/aerzteg/paragraf/194), austriacka ustawa o zawodzie lekarza: zakaz informowania opinii publicznej o przebiegu i wynikach niejawnych postępowań dyscyplinarnych.
+[^rejestr]: Naczelna Izba Lekarska, [Rejestr Ukaranych Lekarzy](https://nil.org.pl/rejestry/rejestr-ukaranych-lekarzy); ustawa o izbach lekarskich, art. 110.
+[^portal]: Naczelna Izba Lekarska, [Prawomocne orzeczenia sądów lekarskich](https://nil.org.pl/rejestry/rejestr-ukaranych-lekarzy/prawomocne-orzeczenia-sadow-lekarskich): tabele za 2023 r. i półrocza 2024–2025, stan na październik 2026.

@@ -1,0 +1,161 @@
+---
+title: Budżet NFZ rok po roku
+category: Dane
+topic: finanse
+order: 1
+format: Wykresy
+stat: { value: "×2", unit: realnie od 2015 r. }
+date: 2026-07-06
+updated: 2026-10-15
+summary: "Koszty w planie finansowym NFZ wzrosły od 2015 r. ponad trzykrotnie, a po odliczeniu inflacji mniej więcej dwukrotnie. Na 2026 r. Fundusz planuje 227,4 mld zł kosztów i 33,6 mld zł dotacji z budżetu państwa. Ile z tego idzie na ustawowe podwyżki płac, plan nie pokazuje — znamy tylko szacunki."
+description: "Koszty w planie NFZ 2015–2026 w jednej definicji: ponad trzy razy więcej nominalnie, dwa razy realnie. Plan na 2026 r., dotacja z budżetu i koszt podwyżek."
+keyPoints:
+  - "Każdy rok liczymy tak samo: koszty ogółem w ostatecznym planie finansowym NFZ. Od 2015 do 2025 r. wzrosły z 71,5 do 220,2 mld zł, czyli ponad trzykrotnie, a w cenach z 2015 r. mniej więcej dwukrotnie."
+  - "Plan na 2026 r. zmieniał się w ciągu roku. Projekt z lipca 2025 r. zakładał 217,4 mld zł, a po zmianie z 5 października 2026 r. koszty wynoszą 227,4 mld zł, o 3,3% więcej niż w planie ostatecznym na 2025 r."
+  - "Dotacja z budżetu państwa wzrosła z 0,2 mld zł w planie na 2023 r. do 33,6 mld zł na 2026 r., czyli ok. 15% przychodów Funduszu. W projekcie planu na 2027 r. to ok. 35 mld zł."
+  - "Plan NFZ nie ma pozycji „płace personelu”. Koszt ustawy o najniższych wynagrodzeniach znamy tylko z szacunków: 58 mld zł w 2025 r. i 71–72 mld zł w 2026 r., czyli w 2026 r. mniej więcej jedną trzecią planowanych kosztów."
+related:
+  - kolejki
+  - sladem-zlotowki
+  - zadluzenie-szpitali
+  - wycena-swiadczen
+  - rozliczenia-nfz
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import { BUDGET_TABLE, CURRENT, CURRENT_PLAN, DRAFT_2026, LAST_FINAL, LINKS, budget, change, costRows, formatMld } from '@/data/budzet-nfz';
+import { GROWTH, LINKS as Q, priceLevel } from '@/data/kolejki';
+import { formatPL } from '@/lib/format';
+
+export const f1 = (n) => formatMld(n);
+export const first = budget(2015);
+export const y2020 = budget(2020);
+export const y2023 = budget(2023);
+export const y2024 = budget(2024);
+
+„Budżet NFZ” to w praktyce plan finansowy Funduszu, a ten ma w ciągu roku kilka wersji: projekt, plan zatwierdzony przed początkiem roku, kolejne zmiany i plan ostateczny. Po roku dochodzi jeszcze sprawozdanie z wykonania. Każda wersja daje inną kwotę, dlatego zestawienia z różnych źródeł łatwo się rozjeżdżają. Tutaj każdy rok liczymy tak samo, a pozostałe wielkości pokazujemy obok, w osobnych kolumnach.
+
+## Jedna seria, jedna definicja
+
+Główna liczba to koszty ogółem w ostatecznym planie finansowym NFZ, czyli kwota, którą Fundusz mógł wydać w danym roku po wszystkich zmianach planu. Plany publikuje Biuletyn Informacji Publicznej NFZ.[^plany] Rok {CURRENT.year} jeszcze trwa, więc pokazujemy plan aktualny, po zmianie z {CURRENT_PLAN.date} (zarządzenie Prezesa NFZ nr {CURRENT_PLAN.ordinance}).[^z107] Ta kwota może się jeszcze zmienić.
+
+<Figure
+  title={`Od 2015 do ${LAST_FINAL.year} r. koszty w planie NFZ wzrosły ponad trzykrotnie: z ${f1(first.costs)} do ${f1(LAST_FINAL.costs)} mld zł.`}
+  note={`Koszty ogółem w ostatecznym planie finansowym NFZ. ${CURRENT.year} — plan po zmianie z ${CURRENT_PLAN.dateShort}, rok w toku.`}
+  source={{ label: 'NFZ, plany finansowe (BIP)', href: LINKS.bip }}
+>
+  <BarChart
+    rows={costRows()}
+    max={240}
+    unit="mld zł"
+    caption={`Koszty ogółem w ostatecznym planie finansowym NFZ, mld zł: ${costRows().map((r) => `${r.label} — ${r.display}`).join('; ')}. Rok ${CURRENT.year} to plan w toku.`}
+  />
+</Figure>
+
+Obok kosztów podajemy przychody z tego samego planu i wykonanie, czyli koszty działalności operacyjnej z łącznego sprawozdania finansowego Funduszu.[^sprawozdania] Wykonanie to punkt kontrolny, a nie ta sama seria: sprawozdanie ma inny układ pozycji niż plan. W {LAST_FINAL.year} r. plan pozwalał wydać {f1(LAST_FINAL.costs)} mld zł, a koszty działalności operacyjnej wyniosły {f1(LAST_FINAL.executed)} mld zł.
+
+<Figure
+  title="Wszystkie kolumny serii rok po roku"
+  note="Przed 2020 r. plan nie miał pozycji dotacji podmiotowej z budżetu państwa, a wykonania za te lata nie zestawiamy. Zmianę r/r liczymy tylko dla kosztów w planie."
+  source={{ label: 'NFZ, plany finansowe i sprawozdania finansowe (BIP)', href: LINKS.bip }}
+>
+  <Comparison table={BUDGET_TABLE} />
+</Figure>
+
+W części lat plan ostateczny zakłada wyższe koszty niż przychody, czyli ujemny wynik finansowy. W {y2023.year} r. różnica wynosiła {f1(y2023.costs - y2023.revenue)} mld zł, w {y2024.year} r. {f1(y2024.costs - y2024.revenue)} mld zł, a w {LAST_FINAL.year} r. {f1(LAST_FINAL.costs - LAST_FINAL.revenue)} mld zł.[^plany] Dlatego przychodów i kosztów nie łączymy w jednej serii.
+
+## Ile to realnie
+
+Złotówka z 2015 r. jest dziś warta mniej. Według GUS ceny towarów i usług konsumpcyjnych wzrosły od 2015 do 2025 r. łącznie o ok. {formatPL(GROWTH.prices)}%.[^gus-cpi] Po odliczeniu inflacji koszty w planie NFZ wzrosły w tym czasie {formatPL(GROWTH.budgetReal, 2)} raza, czyli mniej więcej dwukrotnie. To nasz rachunek: wzrost nominalny ({formatPL(GROWTH.budget, 2)} raza) podzielony przez wzrost cen.
+
+Od 2020 r. podwoiły się zarówno koszty w planie ostatecznym, jak i wykonanie: w obu kolumnach wzrost do {LAST_FINAL.year} r. to {formatPL(LAST_FINAL.costs / y2020.costs, 2)} raza.[^sprawozdania] Ceny wzrosły w tym czasie o ok. {formatPL((priceLevel(LAST_FINAL.year) / priceLevel(2020) - 1) * 100)}%, więc realnie koszty w planie urosły o ok. {formatPL((LAST_FINAL.costs / y2020.costs / (priceLevel(LAST_FINAL.year) / priceLevel(2020)) - 1) * 100)}%.[^gus-cpi]
+
+<StatRow
+  label="Koszty w planie NFZ: 2015 i 2025"
+  items={[
+    { value: GROWTH.budget, decimals: 1, prefix: '~', unit: 'raza', desc: `tyle wzrosły nominalnie koszty w planie ostatecznym: z ${f1(first.costs)} do ${f1(LAST_FINAL.costs)} mld zł`, accuracy: 'exact', source: 'NFZ, plany finansowe', href: LINKS.bip },
+    { value: GROWTH.budgetReal, decimals: 1, prefix: '~', unit: 'raza', desc: 'tyle wzrosły po odliczeniu inflacji, w cenach z 2015 r. — nasz rachunek', accuracy: 'est', source: 'NFZ i GUS', href: Q.gusCpi },
+    { value: change(LAST_FINAL.costs, CURRENT.costs), decimals: 1, unit: '%', desc: `o tyle koszty w aktualnym planie na ${CURRENT.year} r. są wyższe niż w planie ostatecznym na ${LAST_FINAL.year} r.`, accuracy: 'exact', source: `NFZ, zarządzenie ${CURRENT_PLAN.ordinance}`, href: LINKS.z107 },
+  ]}
+/>
+
+## Plan na 2026 r.: z 217 do 227 mld zł
+
+Kwota 217 mld zł, która często pojawia się przy budżecie NFZ na 2026 r., pochodzi z projektu planu przedstawionego sejmowej Komisji Zdrowia w lipcu 2025 r. Przychody i koszty wynosiły w nim po {f1(DRAFT_2026.total)} mld zł, w tym {DRAFT_2026.subsidy} mld zł dotacji z budżetu państwa.[^kz88]
+
+W 2026 r. plan zmieniano kilka razy. Do końca lipca zwiększono przychody, w tym dotację do {f1(CURRENT.subsidy)} mld zł.[^z73] Po zmianie z {CURRENT_PLAN.date} koszty wynoszą {f1(CURRENT.costs)} mld zł, a przychody {f1(CURRENT.revenue)} mld zł.[^z107] To o {f1(change(LAST_FINAL.costs, CURRENT.costs))}% więcej niż koszty w planie ostatecznym na {LAST_FINAL.year} r. Plan na rok w toku porównujemy z planem ostatecznym poprzedniego roku, a nie z jego wykonaniem, bo to dwie różne wielkości.
+
+W tekstach o NFZ pojawiają się też inne kwoty z tego samego planu, na przykład koszty świadczeń opieki zdrowotnej. W aktualnym planie na 2026 r. to {f1(CURRENT.benefits)} mld zł.[^z107] To część kosztów ogółem, a nie konkurencyjna wersja budżetu. O tym, jak plan zmienia się w ciągu roku, piszemy też w analizie [Śladem publicznej złotówki](/analizy/sladem-zlotowki/).
+
+Media piszą też o luce w finansach Funduszu. W czerwcu 2026 r. Rynek Zdrowia oceniał „dziurę” w budżecie NFZ na ok. 16 mld zł,[^rz] a Rzeczpospolita podała, że w 2027 r. koszty Funduszu mają przewyższyć przychody o ok. 21 mld zł.[^rp] Te kwoty to szacunki, a nie pozycje planu. W aktualnym planie na 2026 r. koszty przewyższają przychody o {f1(CURRENT.costs - CURRENT.revenue)} mld zł.[^z107]
+
+## Dotacja z budżetu państwa
+
+Do 2019 r. plan NFZ nie miał dotacji podmiotowej z budżetu państwa. Były w nim tylko dotacje celowe, na przykład na zespoły ratownictwa medycznego. W planach na lata 2020–2023 dotacja podmiotowa nie przekraczała 2,6 mld zł. W 2024 r. wzrosła do {f1(y2024.subsidy)} mld zł, w 2025 r. do {f1(LAST_FINAL.subsidy)} mld zł, a w aktualnym planie na 2026 r. wynosi {f1(CURRENT.subsidy)} mld zł.[^plany][^z107] To ok. {formatPL(CURRENT.subsidy / CURRENT.revenue * 100)}% przychodów Funduszu.
+
+<StatRow
+  label="Dotacja z budżetu państwa dla NFZ"
+  items={[
+    { value: LAST_FINAL.subsidy, decimals: 1, unit: 'mld zł', desc: `w planie ostatecznym na ${LAST_FINAL.year} r.`, accuracy: 'exact', source: `NFZ, plan ostateczny ${LAST_FINAL.year}`, href: LAST_FINAL.href },
+    { value: CURRENT.subsidy, decimals: 1, unit: 'mld zł', desc: `w aktualnym planie na ${CURRENT.year} r. — o ${formatPL(change(LAST_FINAL.subsidy, CURRENT.subsidy))}% więcej`, accuracy: 'exact', source: `NFZ, zarządzenie ${CURRENT_PLAN.ordinance}`, href: LINKS.z107 },
+    { value: 35, prefix: '~', unit: 'mld zł', desc: 'w projekcie planu na 2027 r.', accuracy: 'est', source: 'Rzeczpospolita', href: LINKS.rpLuka },
+  ]}
+/>
+
+Wzrost dotacji liczymy między planami ostatecznymi albo między planem ostatecznym a aktualnym. Porównanie z projektem albo z planem zatwierdzonym przed początkiem roku daje zupełnie inny wynik, bo dotację często podnosi się w trakcie roku — na 2026 r. z {DRAFT_2026.subsidy} mld zł w projekcie do {f1(CURRENT.subsidy)} mld zł.[^kz88][^z73] Dlaczego składka nie wystarcza na koszty świadczeń, opisujemy w analizie [Śladem publicznej złotówki](/analizy/sladem-zlotowki/).
+
+## Ile z tego to płace
+
+Plan finansowy NFZ nie ma pozycji „wynagrodzenia personelu medycznego”. Pieniądze na pensje w szpitalach i przychodniach mieszczą się w kosztach świadczeń, razem z lekami, sprzętem i resztą kosztów placówek. Osobno plan pokazuje tylko wynagrodzenia pracowników samego Funduszu, poniżej 1 mld zł.[^z107] Ile kosztują ustawowe podwyżki płac w ochronie zdrowia, wiemy więc tylko z szacunków.
+
+<StatRow
+  label="Koszt podwyżek płac: szacunki"
+  items={[
+    { value: 58, prefix: '~', unit: 'mld zł', desc: 'skumulowany koszt ustawy o najniższych wynagrodzeniach w 2025 r. — szacunek Federacji Przedsiębiorców Polskich', accuracy: 'est', source: 'TVN24', href: LINKS.tvn },
+    { value: 72, prefix: '~', unit: 'mld zł', desc: 'ten sam koszt w 2026 r. według wiceprezesa NFZ (kwiecień 2026 r.)', accuracy: 'est', source: 'Forsal.pl', href: LINKS.forsal },
+    { value: 9.25, decimals: 2, unit: 'mld zł', desc: 'o tyle wzrosną w 12 miesięcy wydatki NFZ po rekomendacji AOTMiT z 2026 r. — przyrost, nie całość płac', accuracy: 'exact', source: 'Termedia', href: LINKS.termediaAotmit },
+  ]}
+/>
+
+Skumulowany koszt ustawy o najniższych wynagrodzeniach w ochronie zdrowia wyniósł w 2025 r. ok. 58 mld zł. To liczba z analiz Federacji Przedsiębiorców Polskich, organizacji pracodawców, którą przytoczył TVN24.[^tvn] Na 2026 r. wiceprezes NFZ mówił w kwietniu o 72 mld zł z planu „220 mld zł”,[^forsal] a według TVN24 — o co najmniej 71 mld zł.[^tvn] Wobec aktualnego planu ({f1(CURRENT.costs)} mld zł) 72 mld zł to ok. {formatPL(72 / CURRENT.costs * 100)}% kosztów, a wobec kosztów świadczeń ok. {formatPL(72 / CURRENT.benefits * 100)}%. To nasz rachunek. To także mniej więcej trzy razy tyle, ile plan na 2026 r. przeznacza na podstawową opiekę zdrowotną ({f1(CURRENT_PLAN.primaryCare)} mld zł).[^z107]
+
+Inną wielkością jest 9,25 mld zł z rekomendacji AOTMiT z czerwca 2026 r. O tyle według Agencji wzrosną wydatki NFZ, głównie przez lipcowe podwyżki płac minimalnych.[^termedia] To przyrost w ciągu 12 miesięcy, a nie całkowity koszt płac. Według Rynku Zdrowia do końca 2026 r. to ok. 4,5 mld zł, a w całym 2027 r. ok. 9 mld zł.[^rz] Jak podwyżki trafiają do cen świadczeń, opisujemy w tekście [Wycena świadczeń](/mechanizmy/wycena-swiadczen/), a jak NFZ rozlicza się ze szpitalami — w tekście [Rozliczenia NFZ](/mechanizmy/rozliczenia-nfz/).
+
+<Aside title="Skąd „69% wzrostu”">
+
+Często cytowana liczba, że ok. 69% wzrostu nakładów idzie na płace, dotyczy czegoś innego niż plan NFZ. Według analizy Federacji Przedsiębiorców Polskich z grudnia 2023 r. publiczne nakłady na ochronę zdrowia wzrosły w latach 2018–2024 o 100,3 mld zł, z czego 69,4 mld zł pochłonęły podwyżki wynagrodzeń.[^fpp] To wszystkie nakłady publiczne, a nie budżet NFZ, a rok 2024 liczono wtedy jeszcze z planu. Do lat 2025–2026 ta proporcja się nie odnosi.
+
+</Aside>
+
+## Czego plan nie pokazuje
+
+Plan NFZ mówi, ile Fundusz wyda na poszczególne rodzaje świadczeń, ale nie mówi, ile z tego trafi do konkretnych osób. Łącznych wypłat z publicznych pieniędzy dla jednej osoby nie publikuje nikt. Co wiemy o wynagrodzeniach lekarzy, pokazujemy w zestawieniu [Rozkład wynagrodzeń](/dane/rozklad-wynagrodzen/), a [postulujemy](/postulat/), by te łączne wypłaty były jawne: pod stałym identyfikatorem, bez nazwisk.
+
+Ile wynoszą długi publicznych szpitali, pokazujemy w zestawieniu [Zadłużenie szpitali](/dane/zadluzenie-szpitali/). Jak wzrost budżetu wypada na tle inflacji i czasu oczekiwania na świadczenia, pokazujemy w zestawieniu [Pieniądze a kolejka](/dane/kolejki/).
+
+[^plany]: NFZ, Biuletyn Informacji Publicznej, [Finanse NFZ — plany finansowe](https://www.nfz.gov.pl/bip/finanse-nfz/). Ostateczne plany finansowe na lata [2015](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2015/plan_ostateczny_2015_r..xls), [2016](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2016/plan_ostateczny_nfz_na_2016_r..xlsx), [2017](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2018/plan_ostateczny_2017.xlsx), [2018](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2018/plan_ostateczny_2018.xlsx), [2019](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2019/plan_ostateczny_2019_r.xlsx), [2020](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2021/ostateczny_plan_finansowy_za_2020_rok_-_po_stanowisku_mf.xlsx), [2021](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2021/ostateczny_plan_finansowy_nfz_na_rok_2021..xlsx), [2022](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2022/ostateczny_plan_finansowy_nfz_na_rok_2022..xlsx), [2023](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2023/ostateczny_plan_finansowy_nfz_na_rok_2023.xlsx), [2024](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2024/ostateczny_plan_finansowy_nfz_na_rok_2024.xlsx) i [2025](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2025/ostateczny_plan_finansowy_nfz_na_rok_2025.xlsx), arkusz „NFZ”, kwoty w tys. zł: koszty ogółem (poz. K, w planie na 2015 r. poz. O), przychody ogółem (poz. J, w 2015 r. poz. N), dotacja podmiotowa z budżetu państwa (do 2022 r. poz. A5, od 2023 r. poz. A4).
+
+[^z107]: NFZ, [Zarządzenie Prezesa NFZ nr 107/2026/DEF w sprawie zmiany planu finansowego Narodowego Funduszu Zdrowia na 2026 rok](https://baw.nfz.gov.pl/NFZ/document/44057/Zarzadzenie-107_2026_DEF), 5.10.2026 (Baza Aktów Własnych NFZ) — plan po zmianie: koszty ogółem 227,35 mld zł, przychody ogółem 225,17 mld zł, koszty świadczeń 212,72 mld zł, w tym podstawowa opieka zdrowotna 24,41 mld zł; dotacja podmiotowa 33,6 mld zł; wynagrodzenia pracowników NFZ 0,81 mld zł.
+
+[^sprawozdania]: NFZ, łączne sprawozdania finansowe Funduszu za [2020](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2021/laczne_sprawozdanie_finansowe_nfz_2020.pdf), [2021](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2022/laczne_sprawozdanie_finansowe_nfz_2021.pdf), [2022](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/majatek_nfz/2022/laczne_sprawozdanie_finansowe_nfz_2022.pdf), [2023](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2024/laczne_sprawozdanie_finansowe_nfz_2023.pdf), [2024](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2025/laczne_sprawozdanie_finansowe_nfz_2024.pdf) i [2025](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2026/laczne_sprawozdanie_finansowe_nfz_2025.pdf) — koszty działalności operacyjnej w rachunku zysków i strat.
+
+[^gus-cpi]: GUS, [Roczne wskaźniki cen towarów i usług konsumpcyjnych](https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/) — średnioroczne wskaźniki za lata 2016–2025; poziom cen w 2025 r. wobec 2015 r. to ich iloczyn (nasz rachunek).
+
+[^kz88]: Sejm RP, [Pełny zapis przebiegu posiedzenia Komisji Zdrowia (nr 88)](https://api.sejm.gov.pl/sejm/term10/committees/ZDR/sittings/88/pdf), 9.07.2025 — projekt planu finansowego NFZ na 2026 r.: przychody 217 388 948 tys. zł, dotacja z budżetu państwa 26 000 000 tys. zł.
+
+[^z73]: NFZ, [Zarządzenie Prezesa NFZ nr 73/2026/DEF](https://baw.nfz.gov.pl/NFZ/document/43941/Zarzadzenie-73_2026_DEF), 2026 (Baza Aktów Własnych NFZ) — zmiana planu finansowego na 2026 r.; w planie według stanu na 23.07.2026 dotacja podmiotowa wynosi 33,6 mld zł.
+
+[^rz]: Rynek Zdrowia, [9 mld zł na podwyżki dla medyków. Zapłaci Narodowy Fundusz Zdrowia](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/9-mld-zl-na-podwyzki-dla-medykow-Zaplaci-Narodowy-Fundusz-Zdrowia,285313,1.html), 11.06.2026.
+
+[^rp]: Rzeczpospolita, [tekst o projekcie planu NFZ na 2027 r.](https://www.rp.pl/rynek-zdrowia/art44627201-budzet-nfz-sie-nie-spina-w-przyszlym-roku-bedzie-jeszcze-gorzej), 15.06.2026, aktualizacja 15.10.2026 — dotacja ok. 35 mld zł, koszty wyższe od przychodów o ok. 21 mld zł.
+
+[^tvn]: TVN24, [„Grzech pierworodny” ustawy. Kulisy finansowania płac minimalnych w ochronie zdrowia](https://tvn24.pl/zdrowie/podwyzki-plac-minimalnych-w-ochronie-zdrowia-ile-beda-kosztowaly-st9013918), 23.04.2026 — koszt w 2025 r. za analizami Federacji Przedsiębiorców Polskich, w 2026 r. według wiceprezesa NFZ podczas Europejskiego Kongresu Gospodarczego.
+
+[^forsal]: Forsal.pl, [Miliardy złotych na podwyżki w ochronie zdrowia](https://forsal.pl/gospodarka/aktualnosci/artykuly/11237489,miliardy-zlotych-na-podwyzki-w-ochronie-zdrowia-wiceprezes-nfz-jakub.html), 23.04.2026 — wypowiedź wiceprezesa NFZ podczas Europejskiego Kongresu Gospodarczego.
+
+[^termedia]: Termedia, Menedżer Zdrowia, [Na podwyżki NFZ ma wydać ponad 9 mld zł. AOTMiT publikuje rekomendację](https://www.termedia.pl/mz/Na-podwyzki-NFZ-ma-wydac-ponad-9-mld-zl-AOTMiT-publikuje-rekomendacje,68001.html), 2.07.2026 — rekomendacja Prezesa AOTMiT nr 84/2026 z 9.06.2026, wariant zatwierdzony przez ministra zdrowia.
+
+[^fpp]: Prawo.pl, [analiza „Monitor finansowania ochrony zdrowia” Federacji Przedsiębiorców Polskich](https://www.prawo.pl/zdrowie/monitor-finansowy-ochrony-zdrowia-podwyzki-plac,524511.html), 18.12.2023.

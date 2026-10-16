@@ -1,0 +1,102 @@
+---
+/**
+ * Lista kierunków (propozycji) z numeracją „01.”: tytuł, opis, fakt ze źródłem,
+ * kontrargument („Spór”), linki do materiałów i opcjonalnie karta konta X (XProfile, wariant kompaktowy).
+ * `start` — numer pierwszej pozycji, gdy jedna numeracja biegnie przez kilka list na stronie.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Num from '@/components/ui/Num.astro';
+import Icon from '@/components/ui/Icon.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import XProfile from '@/components/blocks/XProfile.astro';
+import type { Proposal } from '@/types';
+import { typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Props extends HTMLAttributes<'ol'> {
+  items: Proposal[];
+  start?: number;
+}
+
+const { items, start = 1, class: className, ...rest } = Astro.props;
+---
+<ol class:list={['props', className]} start={start} {...rest}>
+  {items.map((item, i) => (
+    <li class="prop" id={item.id} data-reveal>
+      <Num n={start + i} size="sm" />
+      <div class="prop__body">
+        <h3 class="prop__title">{typo(item.title)}</h3>
+        <p class="prop__text">{typo(item.text)}</p>
+
+        {(item.fact || item.dispute) && (
+          <dl class="prop__notes">
+            {item.fact && (
+              <div class="prop__note prop__note--fact">
+                <dt>Fakt</dt>
+                <dd>
+                  {typo(item.fact.text)}
+                  {item.fact.source && (
+                    <>{' '}<a class="prop__source" {...linkAttrs(item.fact.source.href)}>{item.fact.source.label}<Icon name="arrow-ne" size={10} /></a></>
+                  )}
+                </dd>
+              </div>
+            )}
+            {item.dispute && (
+              <div class="prop__note prop__note--dispute">
+                <dt>Spór</dt>
+                <dd>{typo(item.dispute)}</dd>
+              </div>
+            )}
+          </dl>
+        )}
+
+        {item.more && item.more.length > 0 && (
+          <div class="prop__more">
+            {item.more.map((link) => <LinkArrow href={link.href}>{typo(link.label)}</LinkArrow>)}
+          </div>
+        )}
+
+        {/* `note` idzie do slotu karty — bez niego karta nie dostaje pustego slotu */}
+        {item.profile && (({ note, ...card }) => note
+          ? <XProfile class="prop__profile" size="compact" {...card}>{typo(note)}</XProfile>
+          : <XProfile class="prop__profile" size="compact" {...card} />)(item.profile)}
+      </div>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .props { border-top: 1px solid var(--ink); }
+  .prop {
+    display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px;
+    padding: 32px 0 36px; border-bottom: 1px solid var(--line-2);
+    scroll-margin-top: calc(var(--header-h) + 24px);
+  }
+  .prop__title { font: 500 1.4375rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); max-width: 30ch; }
+  .prop__text { margin-top: 12px; font-size: 1.03125rem; line-height: 1.7; color: var(--ink-2); max-width: 62ch; }
+
+  .prop__notes { display: grid; gap: 14px; margin-top: 24px; max-width: 62ch; }
+  .prop__note { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+  .prop__note dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .prop__note--fact dt { color: var(--blue); }
+  .prop__note--dispute dt { color: var(--amber); }
+  .prop__note dd { font-size: 0.9375rem; line-height: 1.6; color: var(--text-strong); }
+  .prop__note--dispute dd { color: var(--text); }
+
+  .prop__source {
+    display: inline-flex; align-items: center; gap: 4px;
+    font: 400 0.75rem/1 var(--f-mono); color: var(--text);
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px;
+  }
+  .prop__source:hover { color: var(--blue); }
+
+  .prop__more { display: flex; flex-wrap: wrap; gap: 4px 28px; margin-top: 24px; }
+  .prop__profile { margin-top: 28px; }
+
+  @media (max-width: 720px) {
+    .prop { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 28px 0 32px; }
+    .prop__title { font-size: 1.3125rem; }
+    .prop__text { font-size: 1rem; }
+    .prop__note { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  }
+</style>

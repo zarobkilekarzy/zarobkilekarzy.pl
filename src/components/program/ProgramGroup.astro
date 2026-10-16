@@ -1,0 +1,64 @@
+---
+/**
+ * /program/ — jedna grupa kierunków: wprowadzenie (przyklejone przy przewijaniu) i lista kierunków.
+ * Materiały serwisu wskazane w danych przez id (`refs`) zamieniają się tu w linki — adres wylicza articleHref().
+ */
+import Section from '@/components/layout/Section.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import ProposalList from '@/components/blocks/ProposalList.astro';
+import type { ProgramGroup } from '@/data/program';
+import { articleHref, getArticle } from '@/lib/content';
+import { typo } from '@/lib/format';
+
+interface Props {
+  group: ProgramGroup;
+  /** numer pierwszego kierunku — numeracja biegnie przez całą stronę */
+  start: number;
+  /** liczba wszystkich kierunków na stronie */
+  total: number;
+  tone?: 'default' | 'soft';
+}
+
+const { group, start, total, tone = 'default' } = Astro.props;
+const titleId = `${group.id}-title`;
+
+const items = await Promise.all(
+  group.items.map(async ({ refs, ...item }) => ({
+    ...item,
+    more: await Promise.all(
+      refs.map(async (ref) => {
+        const article = await getArticle(ref);
+        return { label: article.data.title, href: articleHref(article) };
+      }),
+    ),
+  })),
+);
+
+const last = start + items.length - 1;
+const range = items.length === 1 ? `Kierunek ${start} z ${total}` : `Kierunki ${start}–${last} z ${total}`;
+---
+<Section id={group.id} tone={tone} aria-labelledby={titleId}>
+  <div class="group">
+    <div class="group__intro">
+      <Eyebrow>{group.label}</Eyebrow>
+      <Heading id={titleId} class="group__title">{typo(group.title)}</Heading>
+      <p class="group__text">{typo(group.intro)}</p>
+      <p class="mono-label group__count">{range}</p>
+    </div>
+    <ProposalList items={items} start={start} />
+  </div>
+</Section>
+
+<style>
+  .group { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+  .group__intro { position: sticky; top: calc(var(--header-h) + 32px); }
+  .group__title { max-width: 13ch; }
+  .group__text { margin-top: 24px; font-size: 1.0625rem; line-height: 1.7; max-width: 40ch; color: var(--ink-2); }
+  .group__count { margin-top: 24px; }
+
+  @media (max-width: 1024px) {
+    .group { grid-template-columns: minmax(0, 1fr); }
+    .group__intro { position: static; }
+  }
+</style>

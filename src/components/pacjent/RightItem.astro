@@ -1,0 +1,140 @@
+---
+/**
+ * Prawo jako pytanie pacjenta. Widać od razu: pytanie, odpowiedź jednym słowem („Tak”, „0 zł”),
+ * jedno-dwa zdania i artykuł ustawy. Po rozwinięciu: szczegóły i zdanie „Możesz powiedzieć”.
+ * Kotwica (#id) otwiera odpowiedź, a „Wyślij tę odpowiedź” daje link do niej — np. dla rodzica.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import type { RightQA } from '@/lib/pacjent/types';
+import { inline, type Resolve } from '@/lib/inline';
+import { typo } from '@/lib/format';
+
+interface Props {
+  item: RightQA;
+  act: { name: string; url: string };
+  resolve?: Resolve;
+}
+
+const { item, act, resolve } = Astro.props;
+const qid = `${item.id}-q`;
+---
+<article class="qa" id={item.id} aria-labelledby={qid}>
+  <h3 class="qa__q" id={qid}>{typo(item.q)}</h3>
+  <p class="qa__verdict"><span class="sr-only">Odpowiedź: </span>{item.verdict}</p>
+  <p class="qa__short" set:html={inline(item.short, resolve)} />
+
+  <details class="qa__more">
+    <summary>
+      <span class="qa__toggle" aria-hidden="true"></span>
+      {item.say ? 'Szczegóły i co powiedzieć' : 'Szczegóły'}
+    </summary>
+    <div class="qa__body">
+      {item.more.map((p) => <p set:html={inline(p, resolve)} />)}
+
+      {item.table && (
+        <table class="qa__table">
+          <caption>{typo(item.table.caption)}</caption>
+          <tbody>
+            {item.table.rows.map((row) => (
+              <tr><th scope="row">{row.label}</th><td>{row.value}</td></tr>
+            ))}
+          </tbody>
+          <tfoot><tr><td colspan="2">{typo(item.table.note)}</td></tr></tfoot>
+        </table>
+      )}
+
+      {item.say && (
+        <figure class="qa__say">
+          <figcaption>Możesz powiedzieć</figcaption>
+          <blockquote><p>„{typo(item.say)}”</p></blockquote>
+        </figure>
+      )}
+    </div>
+  </details>
+
+  <footer class="qa__foot">
+    <a class="qa__basis" href={act.url} target="_blank" rel="noopener" title={`Tekst ustawy: ${act.name}`}>
+      {item.basis}<span class="sr-only"> ustawy o prawach pacjenta (otwiera się w nowej karcie)</span>
+    </a>
+    <a class="qa__share" href={`#${item.id}`} data-share={item.q}>
+      <Icon name="link" size={16} />
+      <span data-share-label>Wyślij tę odpowiedź</span>
+    </a>
+  </footer>
+</article>
+
+<style>
+  .qa {
+    display: grid; grid-template-columns: 6rem minmax(0, 1fr); column-gap: 1.5rem;
+    padding: 1.75rem 0 1.25rem;
+    border-top: 1px solid var(--line-2);
+    scroll-margin-top: calc(var(--header-h) + 16px);
+    transition: background-color 1.2s;
+  }
+  .qa:target { background: linear-gradient(90deg, var(--blue-50), transparent 70%); transition: none; }
+  .qa > :not(.qa__verdict) { grid-column: 2; }
+
+  .qa__q { font: 500 1.3125rem/1.3 var(--f-display); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance; }
+
+  .qa__verdict {
+    grid-column: 1; grid-row: 1 / span 2;
+    display: flex; align-items: flex-start; gap: 0.5rem;
+    padding-top: 0.125rem;
+    font: 400 1.75rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink);
+    white-space: nowrap;
+  }
+  .qa__verdict::before { content: ""; flex: none; width: 0.5rem; height: 0.5rem; margin-top: 0.5rem; background: var(--blue); }
+
+  .qa__short { margin-top: 0.5rem; max-width: 40em; font-size: 1.0625rem; line-height: 1.6; color: var(--ink-2); }
+  .qa__short :global(a), .qa__body :global(a) { color: var(--blue-700); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* Rozwijanie */
+  .qa__more { margin-top: 0.5rem; }
+  .qa__more summary {
+    display: inline-flex; align-items: center; gap: 0.625rem; min-height: 2.75rem;
+    cursor: pointer; list-style: none;
+    font: 500 0.9375rem/1.2 var(--f-body); color: var(--blue-700);
+  }
+  .qa__more summary::-webkit-details-marker { display: none; }
+  .qa__more summary:hover { color: var(--ink); }
+  .qa__toggle { position: relative; flex: none; width: 1.375rem; height: 1.375rem; border: 1px solid currentColor; }
+  .qa__toggle::before, .qa__toggle::after { content: ""; position: absolute; left: 50%; top: 50%; width: 0.625rem; height: 1.5px; background: currentColor; translate: -50% -50%; transition: rotate .25s var(--ease); }
+  .qa__toggle::after { rotate: 90deg; }
+  .qa__more[open] .qa__toggle::after { rotate: 0deg; }
+
+  .qa__body { display: grid; gap: 0.875rem; max-width: 40em; padding: 0.5rem 0 0.75rem; }
+  .qa__body p { font-size: 1rem; line-height: 1.7; color: var(--ink-2); }
+  .qa__body :global(strong) { color: var(--ink); font-weight: 600; }
+
+  .qa__table { width: 100%; max-width: 30rem; border-collapse: collapse; font-size: 0.9375rem; }
+  .qa__table caption { text-align: left; padding-bottom: 0.5rem; font: 500 0.75rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text); }
+  .qa__table th, .qa__table td { padding: 0.625rem 0; border-top: 1px solid var(--line-2); text-align: left; font-weight: 400; }
+  .qa__table th { color: var(--ink-2); }
+  .qa__table tbody td { text-align: right; font: 500 1rem/1.2 var(--f-body); font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+  .qa__table tfoot td { font-size: 0.8125rem; line-height: 1.5; color: var(--text); border-top: 1px solid var(--ink); }
+
+  .qa__say { margin: 0.25rem 0 0; padding: 1rem 1.25rem; background: var(--blue-50); border-left: 3px solid var(--blue); }
+  .qa__say figcaption { font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue-700); }
+  .qa__say blockquote { margin: 0.5rem 0 0; }
+  .qa__say p { font: 400 1.125rem/1.5 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+
+  /* Stopka: podstawa prawna i link do odpowiedzi */
+  .qa__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.25rem; margin-top: 0.25rem; }
+  .qa__basis {
+    display: inline-flex; align-items: center; min-height: 2.25rem;
+    font: 500 0.8125rem/1 var(--f-mono); color: var(--text);
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px;
+  }
+  .qa__basis::before { content: "§"; margin-right: 0.375rem; color: var(--blue); }
+  .qa__basis:hover { color: var(--blue-700); text-decoration-color: currentColor; }
+  .qa__share { display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2.25rem; font-size: 0.875rem; color: var(--text); }
+  .qa__share:hover { color: var(--blue-700); }
+
+  @media (max-width: 720px) {
+    .qa { grid-template-columns: minmax(0, 1fr); padding-top: 1.5rem; }
+    .qa > :not(.qa__verdict) { grid-column: 1; }
+    .qa__verdict { grid-column: 1; grid-row: auto; order: -1; margin-bottom: 0.625rem; font-size: 1.375rem; }
+    .qa__verdict::before { margin-top: 0.375rem; }
+    .qa__q { font-size: 1.1875rem; }
+  }
+</style>

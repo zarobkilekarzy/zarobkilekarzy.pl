@@ -1,0 +1,34 @@
+---
+/**
+ * Wiersz wyników wyszukiwarki. Ten sam markup renderuje serwer („Popularne”)
+ * i przeglądarka (klon z <template> w SearchDialog), więc wiersz jest zdefiniowany raz.
+ */
+import type { SearchHit } from '@/types';
+
+type Props = SearchHit;
+
+const { title, category, href, section } = Astro.props;
+---
+<li role="none">
+  <a class="hit" href={href} role="option" aria-selected="false">
+    <span class="hit__text">
+      <span data-hit-title>{title}</span>
+      <span class="hit__section" data-hit-section hidden={!section}>{section}</span>
+    </span>
+    <span class="hit__category" data-hit-category>{category}</span>
+  </a>
+</li>
+
+<style>
+  .hit {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    padding: 12px; color: var(--ink); font-size: 0.9375rem;
+  }
+  .hit:hover, .hit[aria-selected='true'] { background: var(--blue-50); color: var(--blue); }
+  .hit__text { display: flex; flex-direction: column; gap: 4px; }
+  .hit__section { font-size: 0.8125rem; color: var(--muted); }
+  .hit__section::before { content: '→ '; }
+  .hit__category { flex-shrink: 0; font: 400 0.6875rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  /* <mark> wstawia skrypt wyszukiwarki, więc nie ma atrybutu zakresu */
+  .hit :global(mark) { background: var(--blue-100); color: inherit; }
+</style>

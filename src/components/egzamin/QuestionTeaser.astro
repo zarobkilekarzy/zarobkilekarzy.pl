@@ -1,0 +1,81 @@
+---
+/**
+ * Jedno pytanie LEK do wstawienia poza modułem (np. strona główna) — ten sam render
+ * (client/render.ts, style `.lq-`) i to samo zachowanie co tryb nauki: po odpowiedzi
+ * klucz, statystyka sali w wierszach i werdykt. Dane wyłącznie przez propsy.
+ */
+import Button from '@/components/ui/Button.astro';
+import type { ExamQuestion, QuestionBody } from '@/lib/egzamin/types';
+import { typo } from '@/lib/format';
+import { question, type QuestionView } from './client/render';
+import './question.css';
+
+interface Props {
+  question: QuestionBody;
+  fieldLabel: string;
+  /** etykieta karty, np. „Zdaj LEK · pytanie przykładowe” */
+  label: string;
+  /** parametry egzaminu obok etykiety: 200 pytań, 4 h, próg 56% */
+  facts?: { value: string; label: string }[];
+  note?: string;
+  cta?: { label: string; href: string };
+  id?: string;
+}
+
+const { question: body, fieldLabel, label, facts = [], note, cta, id = 'lq-teaser' } = Astro.props;
+// Pytanie spoza sesji: bez numeru i bez znacznika pochodzenia
+const q: ExamQuestion = { ...body, id, session: '', nr: 0, inBase: null };
+const view: QuestionView = { q, sessionLabel: '', source: 'pytanie przykładowe', fieldLabel, reveal: false, interactive: true, headingId: `${id}-text` };
+---
+<zl-question-teaser class="teaser" data-view={JSON.stringify(view)}>
+  <header class="teaser__head">
+    <p class="mono-label">{label}</p>
+    {facts.length > 0 && (
+      <ul class="teaser__facts">
+        {facts.map((f) => <li><strong>{f.value}</strong> {f.label}</li>)}
+      </ul>
+    )}
+  </header>
+  <div class="lq" data-teaser-question set:html={question(view)} />
+  <div data-teaser-feedback aria-live="polite"></div>
+  {(note || cta) && (
+    <footer class="teaser__foot">
+      {note && <p class="teaser__note">{typo(note)}</p>}
+      {cta && <Button href={cta.href}>{cta.label}</Button>}
+    </footer>
+  )}
+</zl-question-teaser>
+
+<script>
+  import { feedback, question, type QuestionView } from './client/render';
+
+  class ZlQuestionTeaser extends HTMLElement {
+    connectedCallback() {
+      const view = JSON.parse(this.dataset.view ?? '{}') as QuestionView;
+      const box = this.querySelector<HTMLElement>('[data-teaser-question]')!;
+      const slot = this.querySelector<HTMLElement>('[data-teaser-feedback]')!;
+
+      box.addEventListener('click', (e) => {
+        const choice = (e.target as Element).closest<HTMLElement>('[data-choice]');
+        if (!choice || choice.matches(':disabled')) return;
+        const answer = Number(choice.dataset.choice);
+        // Jak w nauce: odpowiedź jest ostateczna, od razu klucz i statystyka sali
+        box.innerHTML = question({ ...view, answer, reveal: true, locked: true });
+        slot.innerHTML = feedback(view.q, answer);
+      });
+    }
+  }
+
+  if (!customElements.get('zl-question-teaser')) customElements.define('zl-question-teaser', ZlQuestionTeaser);
+</script>
+
+<style>
+  zl-question-teaser { display: flex; flex-direction: column; height: 100%; padding: clamp(24px, 3vw, 40px); border: 1px solid var(--line-2); background: var(--surface); }
+  .teaser__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
+  .teaser__facts { display: flex; border: 1px solid var(--line); }
+  .teaser__facts li { padding: 8px 12px; font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+  .teaser__facts li + li { border-left: 1px solid var(--line); }
+  .teaser__facts strong { color: var(--ink); font-weight: 500; }
+  .teaser__foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; margin-top: auto; padding-top: 28px; }
+  .teaser__note { max-width: 40ch; font-size: 0.84375rem; line-height: 1.5; color: var(--text); }
+</style>

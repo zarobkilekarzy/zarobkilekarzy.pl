@@ -1,0 +1,255 @@
+---
+/**
+ * „Napisz do polityka”: adresat z listy (grupa + wyszukiwanie) po lewej, gotowy list po prawej.
+ * Lista przewija się w swojej ramce, więc obie kolumny mają podobną wysokość i list widać obok wyboru.
+ * Zachowanie: <zl-letter> (client.ts).
+ *
+ * Bez JS to zwykła lista wszystkich grup z linkami mailto (sam temat) i list z „Szanowni Państwo”
+ * do skopiowania; przycisk „Otwórz w poczcie” otwiera ten list bez odbiorcy. Skrypt pokazuje
+ * przełącznik grup, wyszukiwarkę, pole podpisu i przyciski kopiowania.
+ * Nic nie trafia na serwer i nic nie zostaje w przeglądarce (bez localStorage).
+ */
+import Button from '@/components/ui/Button.astro';
+import { affiliation, defaultGroup, greeting, groups, inGroup } from '@/data/adresaci';
+import { letterTemplate, writeTool } from '@/data/dzialaj';
+import { fillLetter, mailto, MAILTO_MAX, SIGNATURE_MAX } from '@/lib/dzialaj/letter';
+import { fold } from '@/lib/format';
+
+const template = letterTemplate(Astro.site ?? 'https://zarobkilekarzy.pl');
+const general = fillLetter(template, { greeting: 'Szanowni Państwo', rodzaj: 'inst' });
+
+const rows = groups.map((g) => ({ ...g, people: inGroup(g.id) }));
+const people = rows.flatMap((g) => g.people);
+
+// Długość linku sprawdzamy przy buildzie: najdłuższy adres i zwrot z listy plus podpis do limitu pola
+// w polskich znakach (każdy zajmuje w adresie 6 znaków). Za długi szablon zatrzymuje build.
+const longest = <T,>(xs: T[], f: (x: T) => string) => xs.map(f).reduce((a, b) => (b.length > a.length ? b : a), '');
+const worst = mailto(
+  longest(people, (a) => a.email),
+  template.subject,
+  fillLetter(template, { greeting: longest(people, greeting), rodzaj: 'inst' }, 'ż'.repeat(SIGNATURE_MAX)),
+);
+if (worst.length > MAILTO_MAX) {
+  throw new Error(`[dzialaj] link mailto ma ${worst.length} znaków (limit ${MAILTO_MAX}) — skróć szablon listu w src/data/dzialaj.ts`);
+}
+
+const chambers = [...new Set(groups.map((g) => g.chamber))];
+---
+<zl-letter
+  class="lt"
+  data-template={JSON.stringify(template)}
+  data-group={defaultGroup}
+  data-max={MAILTO_MAX}
+  data-no-anchor
+  data-no-share
+>
+  <div class="lt__pick">
+    <h3 class="lt__step" id="lt-pick-title"><span class="lt__n">01</span>Adresat</h3>
+
+    <div class="lt__controls" data-el="controls" hidden>
+      <div class="lt__groups" role="group" aria-labelledby="lt-pick-title">
+        {chambers.map((chamber) => (
+          <div class="lt__chamber">
+            <span class="lt__chamber-name" aria-hidden="true">{chamber}</span>
+            <div class="lt__chips">
+              {rows.filter((g) => g.chamber === chamber).map((g) => (
+                <button
+                  type="button" class="chip" data-group={g.id} aria-pressed={g.id === defaultGroup ? 'true' : 'false'}
+                  aria-label={`${g.heading} (${g.people.length})`}
+                >
+                  {g.label}<span class="chip__n">{g.people.length}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div class="lt__search">
+        <label class="lt__label" for="lt-q">Szukaj po nazwisku lub funkcji</label>
+        <input class="lt__input" id="lt-q" type="search" data-el="q" autocomplete="off" spellcheck="false" placeholder="np. Golbik, przewodnicząca, NFZ" />
+      </div>
+      <p class="lt__count" data-el="count" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="lt__list" tabindex="0" role="region" aria-label="Lista adresatów">
+      {rows.map((g) => (
+        <section class="lt__group" data-group={g.id} aria-labelledby={`lt-g-${g.id}`}>
+          <h4 class="lt__ghead" id={`lt-g-${g.id}`}>{g.heading}</h4>
+          <ul class="lt__rows">
+            {g.people.map((a) => {
+              const aff = affiliation(a);
+              return (
+                <li
+                  class="row" data-email={a.email} data-name={a.osoba} data-greet={greeting(a)} data-rodzaj={a.rodzaj}
+                  data-search={fold(`${a.osoba} ${a.funkcja} ${a.grupa} ${a.email}`)}
+                >
+                  <label class="row__main">
+                    <input class="row__radio" type="radio" name="lt-adresat" value={a.id} />
+                    <span class="row__text">
+                      <span class="row__name">{a.osoba}</span>
+                      <span class="row__fn">{a.funkcja}{aff && <span class="row__aff"> · {aff}</span>}</span>
+                    </span>
+                  </label>
+                  <span class="row__meta">
+                    <a class="row__mail" href={mailto(a.email, template.subject)}>{a.email}</a>
+                    <span class="row__addr">{a.email}</span>
+                    <a class="row__src" href={a.zrodlo} target="_blank" rel="noopener">źródło<span class="sr-only"> adresu: {a.osoba} (otwiera się w nowej karcie)</span></a>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
+      <p class="lt__empty" data-el="empty" hidden>Nikogo nie znaleziono. Spróbuj samego nazwiska albo nazwy urzędu.</p>
+    </div>
+  </div>
+
+  <div class="lt__out">
+    <h3 class="lt__step" id="lt-letter-title"><span class="lt__n">02</span>List</h3>
+
+    <dl class="lt__head">
+      <div><dt>Do</dt><dd data-el="to"><span class="lt__placeholder" data-el="to-empty">Wybierz adresata z listy</span></dd></div>
+      <div><dt>Temat</dt><dd>{template.subject}</dd></div>
+    </dl>
+
+    <div class="lt__sign" data-el="sign-wrap" hidden>
+      <label class="lt__label" for="lt-sign">Podpis <span>(opcjonalnie, tylko w treści maila)</span></label>
+      <input class="lt__input" id="lt-sign" type="text" data-el="sign" maxlength={SIGNATURE_MAX} autocomplete="name" placeholder="np. Anna Kowalska, Łódź" />
+    </div>
+
+    <div class="lt__body" data-el="body">{general}</div>
+
+    <div class="lt__actions">
+      <Button href={mailto('', template.subject, general)} icon="mail" data-el="open">Otwórz w poczcie</Button>
+      <div class="lt__copy" data-el="copy" hidden>
+        <button type="button" class="lt__btn" data-copy="body">Kopiuj treść</button>
+        <button type="button" class="lt__btn" data-copy="email" disabled>Kopiuj adres</button>
+      </div>
+    </div>
+    <p class="lt__status" data-el="status" role="status" aria-live="polite"></p>
+    <p class="lt__hint" data-el="nojs">{writeTool.noJs}</p>
+  </div>
+</zl-letter>
+
+<script>
+  import './client';
+</script>
+
+<style>
+  zl-letter { display: block; }
+  .lt { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px clamp(32px, 4vw, 64px); align-items: start; }
+
+  .lt__step { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; font: 500 1.25rem/1.2 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .lt__n { font: 500 0.75rem/1 var(--f-mono); letter-spacing: .06em; color: var(--blue); }
+
+  /* ---------- Wybór adresata ---------- */
+  .lt__groups { display: grid; gap: 10px; }
+  .lt__chamber { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+  .lt__chamber-name { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .lt__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    display: inline-flex; align-items: baseline; gap: 8px; padding: 7px 12px;
+    border: 1px solid var(--line-2); background: var(--surface);
+    font: 400 0.875rem/1.2 var(--f-body); color: var(--ink-2);
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .chip:hover { border-color: var(--ink); color: var(--ink); }
+  .chip[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .chip__n { font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+  .chip[aria-pressed='true'] .chip__n { color: inherit; opacity: .7; }
+
+  .lt__search { margin-top: 20px; }
+  .lt__label { display: block; margin-bottom: 8px; font: 500 0.875rem/1.3 var(--f-body); color: var(--ink); }
+  .lt__label span { font-weight: 400; color: var(--muted); }
+  .lt__input {
+    width: 100%; height: 46px; padding: 0 14px;
+    border: 1px solid var(--line-2); background: var(--surface); color: var(--ink);
+    font: 400 1rem/1.2 var(--f-body);
+    transition: border-color .2s;
+  }
+  .lt__input::placeholder { color: var(--muted); }
+  .lt__input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+  .lt__count { min-height: 1.4em; margin-top: 10px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+
+  .lt__list {
+    margin-top: 8px; max-height: 36rem; overflow-y: auto; overscroll-behavior: contain;
+    border-block: 1px solid var(--line-2);
+  }
+  .lt__list:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .lt__group + .lt__group { margin-top: 8px; }
+  .lt__ghead {
+    position: sticky; top: 0; z-index: 1; padding: 12px 0 8px; background: var(--bg-soft);
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line); }
+  .row__main { display: flex; gap: 12px; align-items: baseline; min-width: 0; }
+  .row__radio { display: none; flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--blue-fill); transform: translateY(2px); }
+  .row__text { display: grid; gap: 2px; min-width: 0; }
+  .row__name { font: 500 0.96875rem/1.3 var(--f-body); color: var(--ink); }
+  .row__fn { font-size: 0.84375rem; line-height: 1.4; color: var(--text); }
+  .row__aff { color: var(--muted); }
+  .row__meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 12px; font-size: 0.8125rem; line-height: 1.4; }
+  .row__mail { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; word-break: break-all; }
+  .row__addr { display: none; color: var(--text); word-break: break-all; }
+  .row__src { color: var(--muted); text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+  .row__src:hover, .row__mail:hover { color: var(--blue); }
+  .lt__empty { padding: 20px 0; font-size: 0.9375rem; color: var(--text); }
+
+  /* Z JS: wiersz to wybór (radio), adres zwykłym tekstem, lista pokazuje jedną grupę */
+  zl-letter[data-ready] .row { cursor: pointer; padding-inline: 10px; margin-inline: -10px; }
+  zl-letter[data-ready] .row:hover { background: var(--surface); }
+  zl-letter[data-ready] .row__main { cursor: pointer; }
+  zl-letter[data-ready] .row__radio { display: block; }
+  zl-letter[data-ready] .row__mail { display: none; }
+  zl-letter[data-ready] .row__addr { display: inline; }
+  zl-letter[data-ready] .row:has(.row__radio:checked) { background: var(--blue-50); box-shadow: inset 2px 0 0 var(--blue); }
+  zl-letter[data-ready] .row:has(.row__radio:focus-visible) { outline: 2px solid var(--blue); outline-offset: -2px; }
+  zl-letter[data-ready] .row__meta { padding-left: 28px; }
+
+  /* ---------- List ---------- */
+  .lt__out {
+    padding: clamp(20px, 2.4vw, 32px); border: 1px solid var(--line-2); background: var(--surface);
+  }
+  .lt__head { display: grid; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .lt__head > div { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+  .lt__head dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .lt__head dd { font-size: 0.9375rem; line-height: 1.45; color: var(--ink); overflow-wrap: anywhere; }
+  .lt__head dd :global(.lt__to-mail) { color: var(--text); }
+  .lt__placeholder { color: var(--muted); }
+
+  .lt__sign { margin-top: 16px; }
+  .lt__body {
+    margin-top: 16px; padding: 16px 18px;
+    background: var(--bg-soft); border: 1px solid var(--line);
+    white-space: pre-wrap; overflow-wrap: anywhere;
+    font: 400 0.9375rem/1.6 var(--f-body); color: var(--text-strong);
+  }
+
+  .lt__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 20px; }
+  .lt__copy { display: flex; flex-wrap: wrap; gap: 8px; }
+  .lt__btn {
+    height: 52px; padding: 0 16px; border: 1px solid var(--line-2); background: transparent;
+    font: 500 0.875rem/1 var(--f-body); color: var(--ink);
+    transition: border-color .2s, color .2s;
+  }
+  .lt__btn:hover:not(:disabled) { border-color: var(--ink); }
+  .lt__btn:disabled { color: var(--muted); cursor: not-allowed; }
+  .lt__status { min-height: 1.4em; margin-top: 12px; font-size: 0.875rem; line-height: 1.4; color: var(--ok); }
+  .lt__status[data-tone='warn'] { color: var(--amber); }
+  .lt__hint { margin-top: 8px; font-size: 0.84375rem; line-height: 1.5; color: var(--muted); }
+
+  @media (max-width: 960px) {
+    .lt { grid-template-columns: minmax(0, 1fr); }
+    .lt__list { max-height: 26rem; }
+  }
+  @media (max-width: 560px) {
+    .lt__chamber { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+    .row { grid-template-columns: minmax(0, 1fr); }
+    .row__meta { justify-content: flex-start; }
+    .lt__head > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+    .lt__actions > :global(.btn) { width: 100%; }
+    .lt__copy { width: 100%; }
+    .lt__btn { flex: 1 1 0; }
+  }
+</style>

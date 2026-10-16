@@ -1,0 +1,146 @@
+---
+/**
+ * Szablon artykułu: nagłówek (slot „aside” — narzędzie obok tytułu zamiast „W skrócie”), spis treści,
+ * treść (slot, z przypisami na końcu), opcjonalna ramka „Dlaczego to nasz temat”,
+ * sprostowania, udostępnianie, powiązane materiały i stanowisko redakcji.
+ * SEO z frontmattera: Article (+ Dataset dla działu Dane), okruszki, daty — graf buduje lib/seo.
+ */
+import type { MarkdownHeading } from 'astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import ArticleHeader from '@/components/article/ArticleHeader.astro';
+import Toc from '@/components/article/Toc.astro';
+import Prose from '@/components/article/Prose.astro';
+import ShareLinks from '@/components/article/ShareLinks.astro';
+import ArticleList from '@/components/blocks/ArticleList.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import PostulatCta from '@/components/site/PostulatCta.astro';
+import { getFootnotes, getRelated, readingMinutes, sectionOf, type Article } from '@/lib/content';
+import { mainNav } from '@/data/navigation';
+import { typo } from '@/lib/format';
+import type { Crumb, Entity, SeoInput } from '@/lib/seo';
+
+interface Props {
+  article: Article;
+  headings: MarkdownHeading[];
+}
+
+const { article, headings } = Astro.props;
+const { title, summary, updated, date, keyPoints, editorial } = article.data;
+
+const section = sectionOf(article);
+// Okruszek sekcji linkuje tam, gdzie prowadzi pozycja menu tej sekcji
+const sectionHref = mainNav.find((link) => link.match === `/${section.path}/`)?.href;
+const related = await getRelated(article);
+// Źródła artykułu to przypisy (`[^id]`): liczba do nagłówka, adresy do JSON-LD
+const footnotes = getFootnotes(article);
+const url = new URL(Astro.url.pathname, Astro.site).href;
+// Narzędzie obok tytułu (slot „aside”). Trasa przekazuje je warunkowo, a taki slot jest zarejestrowany
+// zawsze — o tym, czy jest, decyduje dopiero wyrenderowana treść.
+const aside = Astro.slots.has('aside') ? (await Astro.slots.render('aside')).trim() : '';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: section.label, href: sectionHref }, { label: title }];
+const citations = footnotes.urls;
+
+// Zestawienia działu Dane to zarazem zbiory danych (schema.org/Dataset) — jak na dotychczasowej stronie
+const entities: Entity[] = [{ kind: 'article', citations }];
+if (article.data.category === 'Dane') entities.push({ kind: 'dataset', isBasedOn: citations, ...article.data.dataset });
+
+const seo: SeoInput = {
+  title: article.data.seoTitle ?? title,
+  description: article.data.description ?? summary,
+  social: { title, description: summary },
+  type: 'article',
+  index: !article.data.noindex,
+  dates: { published: date, modified: updated ?? date },
+  section: section.label,
+  breadcrumbs: crumbs,
+  entities,
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="article">
+    <ArticleHeader
+      title={title}
+      summary={summary}
+      section={{ label: section.label, href: sectionHref }}
+      crumbs={crumbs}
+      updated={updated}
+      published={date}
+      minutes={readingMinutes(article)}
+      notesCount={footnotes.count}
+      keyPoints={keyPoints}
+      aside={aside !== ''}
+    >
+      {aside && <Fragment slot="aside" set:html={aside} />}
+    </ArticleHeader>
+
+    <div class="article__body">
+      <aside class="article__toc"><Toc headings={headings} /></aside>
+
+      <div class="article__main">
+        <Prose><slot /></Prose>
+
+        {editorial && (
+          <Aside variant="editorial" title="Dlaczego to nasz temat" class="article__editorial">
+            {editorial.map((paragraph) => <p>{typo(paragraph)}</p>)}
+          </Aside>
+        )}
+
+        <footer class="article__foot">
+          <div class="article__fix">
+            <p><strong>Widzisz błąd?</strong> Poprawki publikujemy w rejestrze sprostowań z datą i opisem zmiany. Opisujemy mechanizmy, a nie konkretne osoby.</p>
+            <LinkArrow href="/#zasady">Zgłoś sprostowanie</LinkArrow>
+          </div>
+          <ShareLinks url={url} title={title} label="Pomóż nagłośnić" />
+        </footer>
+      </div>
+    </div>
+  </Section>
+
+  {related.length > 0 && (
+    <Section tone="soft" aria-labelledby="related-title">
+      <div class="article__related">
+        <SectionHead eyebrow="Czytaj dalej" title="Powiązane mechanizmy" id="related-title" />
+        <ArticleList articles={related} />
+      </div>
+    </Section>
+  )}
+
+  <Section>
+    <PostulatCta />
+  </Section>
+</BaseLayout>
+
+<style>
+  .article { padding-top: clamp(32px, 4vw, 56px); }
+
+  /* Treść sięga do prawej krawędzi siatki, jak nagłówek nad nią: ilustracje i tabele dostają całą
+     kolumnę, a długość wiersza tekstu pilnuje Prose (--measure) */
+  .article__body {
+    display: grid; grid-template-columns: 220px minmax(0, 1fr);
+    gap: clamp(40px, 5vw, 72px); align-items: start;
+    margin-top: clamp(56px, 6vw, 88px); padding-top: 40px; border-top: 1px solid var(--line);
+  }
+  .article__toc { position: sticky; top: calc(var(--header-h) + 32px); }
+
+  .article__editorial { margin-top: 56px; }
+  /* minmax(0, …): szeroka zawartość stopki nie może rozpychać kolumny na wąskim ekranie */
+  .article__foot { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; margin-top: 72px; }
+  .article__fix {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px;
+    padding: 20px 24px; background: var(--bg-soft); border-left: 2px solid var(--ink);
+  }
+  .article__fix p { max-width: 52ch; font-size: 0.9375rem; line-height: 1.6; }
+  .article__fix strong { color: var(--ink); }
+
+  .article__related { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+
+  @media (max-width: 1024px) {
+    .article__body { grid-template-columns: minmax(0, 1fr); padding-top: 24px; gap: 32px; }
+    .article__toc { position: static; }
+    .article__related { grid-template-columns: 1fr; }
+  }
+</style>

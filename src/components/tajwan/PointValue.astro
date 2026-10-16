@@ -1,0 +1,98 @@
+---
+/**
+ * Wartość punktu NHI: wzór (budżet ÷ zgłoszone punkty) i przykładowe wartości na jednej skali.
+ * Kropka to pojedyncza wartość, odcinek — przedział (np. średnie roczne z kilku lat).
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import { LINKS, POINT_VALUES } from '@/data/tajwan';
+import { formatPL, typo } from '@/lib/format';
+
+// Skala od 0,6 do 1 TWD — tu mieszczą się wszystkie opisane wartości
+const MIN = 0.6;
+const MAX = 1;
+const TICKS = [0.6, 0.7, 0.8, 0.9, 1];
+const pos = (v: number) => `${((v - MIN) / (MAX - MIN)) * 100}%`;
+// Przedział — jak w tekście (0,95–0,98), pojedyncza wartość — jak w rozliczeniu (0,813)
+const fmt = (v: number, decimals: number) => formatPL(v, v === 1 ? 2 : decimals);
+---
+<Figure
+  title="Punkt z cennika nie ma stałej ceny. Ile jest wart, wychodzi dopiero po rozliczeniu kwartału."
+  note="Wartości pływających punktów usług ogólnych. Punkty o stałej wartości (leki, zabiegi operacyjne, część świadczeń ratunkowych) płaci się 1:1."
+  source={{ label: 'MOHW/NHIA, zestawienia wartości punktu 2019–2025', href: LINKS.pointValues }}
+>
+  <p class="pv__formula" aria-label="Wartość punktu równa się budżet sektora w regionie podzielony przez sumę punktów zgłoszonych przez wszystkie placówki">
+    <span class="pv__term pv__term--result">wartość punktu</span>
+    <span class="pv__op" aria-hidden="true">=</span>
+    <span class="pv__term">budżet sektora w regionie</span>
+    <span class="pv__op" aria-hidden="true">÷</span>
+    <span class="pv__term">punkty zgłoszone przez wszystkie placówki</span>
+  </p>
+
+  <ul class="pv__rows">
+    {POINT_VALUES.map((p) => {
+      const [from, to] = Array.isArray(p.value) ? p.value : [p.value, p.value];
+      const range = from !== to;
+      return (
+        <li class:list={['pv__row', { 'pv__row--nominal': from === 1 }]}>
+          <span class="pv__label">{typo(p.label)}<em>{typo(p.detail)}</em></span>
+          <span class="pv__track" aria-hidden="true">
+            <span class="pv__mark" style={`--from: ${pos(from)}; --to: ${pos(to)}`}></span>
+          </span>
+          <span class="pv__value">{range ? `${fmt(from, 2)}–${fmt(to, 2)}` : fmt(from, 3)}<small> TWD</small></span>
+        </li>
+      );
+    })}
+  </ul>
+  <div class="pv__axis" aria-hidden="true">
+    {TICKS.map((t) => <span style={`--at: ${pos(t)}`}>{formatPL(t, 1)}</span>)}
+  </div>
+</Figure>
+
+<style>
+  .pv__formula {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+    padding: 16px 18px; margin-bottom: 8px; background: var(--bg-soft);
+    font: 400 0.875rem/1.35 var(--f-body); color: var(--ink);
+  }
+  .pv__term { padding: 6px 10px; background: var(--surface); border: 1px solid var(--line-2); }
+  .pv__term--result { background: var(--blue-fill); border-color: var(--blue-fill); color: #fff; }
+  .pv__op { font-size: 1.125rem; color: var(--muted); }
+
+  /* kolumna wartości w rem — rośnie z „Większym tekstem” razem z liczbą */
+  .pv__rows, .pv__axis { --label-w: 220px; --value-w: 6rem; --gap: 16px; }
+  .pv__row {
+    display: grid; grid-template-columns: var(--label-w) 1fr var(--value-w); align-items: center; gap: var(--gap);
+    padding: 12px 0; border-bottom: 1px solid var(--line);
+  }
+  .pv__label { font-size: 0.90625rem; line-height: 1.3; color: var(--ink); }
+  .pv__label em { display: block; margin-top: 2px; font: 400 0.71875rem/1.3 var(--f-mono); font-style: normal; color: var(--muted); }
+
+  /* Tor ze skalą w tle: pionowe kreski co 0,1 TWD */
+  .pv__track {
+    position: relative; height: 24px;
+    background: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 25%) 0 0 / calc(100% + 1px) 100%;
+  }
+  .pv__mark {
+    position: absolute; top: 50%; left: var(--from); width: calc(var(--to) - var(--from) + 12px);
+    height: 12px; transform: translate(-6px, -50%);
+    background: var(--blue); border-radius: 6px;
+  }
+  .pv__row--nominal .pv__mark { background: var(--surface); box-shadow: inset 0 0 0 2px var(--ink); }
+
+  .pv__value { font: 400 1.25rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pv__value small { font: 400 0.75rem/1 var(--f-body); letter-spacing: 0; color: var(--muted); }
+
+  .pv__axis { position: relative; height: 22px; margin-inline: calc(var(--label-w) + var(--gap)) calc(var(--value-w) + var(--gap)); }
+  .pv__axis span { position: absolute; top: 8px; left: var(--at); transform: translateX(-50%); font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+  /* skrajne wartości nie wychodzą poza kolumnę */
+  .pv__axis span:first-child { transform: none; }
+  .pv__axis span:last-child { transform: translateX(-100%); }
+
+  @container (max-width: 560px) {
+    .pv__rows, .pv__axis { --label-w: 1fr; --value-w: auto; }
+    .pv__row { grid-template-columns: 1fr auto; gap: 8px 12px; }
+    .pv__track { grid-column: 1 / -1; grid-row: 2; }
+    .pv__axis { margin-inline: 0; }
+    .pv__value { font-size: 1.0625rem; }
+  }
+</style>

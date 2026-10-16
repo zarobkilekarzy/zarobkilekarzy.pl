@@ -1,0 +1,51 @@
+---
+/** „Zanim cokolwiek zgłosisz” — kilka kroków w kolejności, w jakiej warto je zrobić. */
+import type { HTMLAttributes } from 'astro/types';
+import { inline, sentence, type Resolve } from '@/lib/inline';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'section'> {
+  title: string;
+  steps: { title: string; text: string }[];
+  resolve?: Resolve;
+}
+
+const { title, steps, resolve, class: className, ...rest } = Astro.props;
+---
+<section class:list={['steps', className]} aria-labelledby="steps-title" {...rest}>
+  <h3 class="steps__title" id="steps-title">{typo(title)}</h3>
+  <ol>
+    {steps.map((step, i) => (
+      <li>
+        <span class="steps__n" aria-hidden="true">{i + 1}</span>
+        <p><strong>{typo(sentence(step.title))}</strong> <span set:html={inline(step.text, resolve)} /></p>
+      </li>
+    ))}
+  </ol>
+</section>
+
+<style>
+  .steps__title { font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text); padding-bottom: 0.75rem; border-bottom: 1px solid var(--ink); }
+  ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.875rem; padding: 1.25rem 1.25rem 1.25rem 0; }
+  li + li { padding-left: 1.25rem; border-left: 1px solid var(--line-2); }
+  .steps__n {
+    display: grid; place-items: center; width: 2rem; height: 2rem;
+    border: 1px solid var(--ink); font: 500 0.9375rem/1 var(--f-mono); color: var(--ink);
+  }
+  li:first-child .steps__n { background: var(--blue-fill); border-color: var(--blue-fill); color: #fff; }
+  p { font-size: 0.9875rem; line-height: 1.55; color: var(--text); }
+  strong { display: block; margin-bottom: 0.25rem; font: 500 1.0625rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  p :global(a) { color: var(--blue-700); text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 1024px) {
+    ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    li:nth-child(odd) { padding-left: 0; border-left: 0; }
+    li:nth-child(n+3) { border-top: 1px solid var(--line-2); }
+  }
+  @media (max-width: 720px) {
+    ol { grid-template-columns: minmax(0, 1fr); }
+    li, li + li { padding: 1rem 0; border-left: 0; }
+    li + li { border-top: 1px solid var(--line-2); }
+  }
+</style>

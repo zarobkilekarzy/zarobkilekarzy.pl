@@ -1,0 +1,39 @@
+---
+/**
+ * Dwie kolumny: treść + media (slot "media"). Poniżej 1024 px — jedna kolumna,
+ * w kolejności z `media` ("start" = media najpierw, także na telefonie).
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'div'> {
+  /** grid-template-columns w układzie dwukolumnowym */
+  cols: string;
+  gap?: string;
+  media?: 'start' | 'end';
+  /** maks. szerokość mediów w układzie jednokolumnowym */
+  mediaMax?: string;
+}
+
+const { cols, gap = 'clamp(40px, 6vw, 96px)', media = 'end', mediaMax = '640px', class: className, ...rest } = Astro.props;
+const vars = `--split-cols: ${cols}; --split-gap: ${gap}; --split-media-max: ${mediaMax}`;
+---
+<div class:list={['split', className]} style={vars} {...rest}>
+  {media === 'start' && <div class="split__media" data-reveal><slot name="media" /></div>}
+  <div class="split__body"><slot /></div>
+  {media === 'end' && <div class="split__media" data-reveal><slot name="media" /></div>}
+</div>
+
+<style>
+  .split {
+    display: grid;
+    grid-template-columns: var(--split-cols);
+    gap: var(--split-gap);
+    align-items: center;
+  }
+  .split__media { position: relative; }
+
+  @media (max-width: 1024px) {
+    .split { grid-template-columns: 1fr; }
+    .split__media { max-width: var(--split-media-max); }
+  }
+</style>

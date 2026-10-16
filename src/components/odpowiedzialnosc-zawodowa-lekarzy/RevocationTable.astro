@@ -1,0 +1,136 @@
+---
+/**
+ * Prawomocne odebrania prawa wykonywania zawodu lekarzom rok po roku: Polska (sądy lekarskie),
+ * Norwegia i Szwecja (urzędy państwowe), z sumami i wskaźnikiem na 100 tys. lekarzy dla okna porównania.
+ * Cztery wąskie kolumny liczb mieszczą się także na telefonie, więc tabela zostaje tabelą (bez kart).
+ * Kolumna Polski to temat tekstu — jedyny akcent (--blue); zera są wyciszone, żeby było widać lata z decyzjami.
+ * Liczby pochodzą z trzech wydawców, więc źródła są tu, w podpisie, a nie w jednym linku Figure.
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import Icon from '@/components/ui/Icon.astro';
+import {
+  COUNTRIES,
+  FIRST_YEAR,
+  LAST_YEAR,
+  LINKS,
+  REVOCATIONS,
+  WINDOW,
+  ratePer100k,
+  total,
+  type CountryKey,
+} from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
+import { formatPL, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+const plWindow = total('pl', WINDOW.from, WINDOW.to);
+const doctors = (key: CountryKey) => {
+  const c = COUNTRIES.find((x) => x.key === key)!;
+  return `${c.name} ${c.doctorsLabel} ${c.doctorsNote}`;
+};
+const span = `${WINDOW.from}–${WINDOW.to}`;
+
+const sources = [
+  { label: 'NIL (zestawienie własne)', href: LINKS.nilCourts },
+  { label: 'Helsetilsynet', href: LINKS.helsetilsynet },
+  { label: 'HSAN', href: LINKS.hsan },
+];
+const denominators = [
+  { label: 'NIL', href: LINKS.nilRegister },
+  { label: 'SSB', href: LINKS.ssb },
+  { label: 'Socialstyrelsen', href: LINKS.socialstyrelsen },
+];
+---
+<Figure
+  title={`W latach ${span} polskie sądy lekarskie prawomocnie odebrały prawo do zawodu ${plWindow} lekarzom. Urzędy w Norwegii i Szwecji — po kilkadziesiąt rocznie.`}
+>
+  <table class="revo">
+    <caption class="sr-only">
+      Prawomocne odebrania prawa wykonywania zawodu lekarzom w latach {FIRST_YEAR}–{LAST_YEAR}: Polska, Norwegia, Szwecja; sumy i średnia roczna na 100 tys. lekarzy w latach {span}.
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Rok</th>
+        {COUNTRIES.map((c) => (
+          <th scope="col" class:list={{ 'is-pl': c.key === 'pl' }}>
+            {c.name}<span>{c.body}</span>
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {REVOCATIONS.map((r) => (
+        <tr class:list={{ 'is-before-window': r.year === WINDOW.from - 1 }}>
+          <th scope="row">{r.year}</th>
+          {COUNTRIES.map((c) => (
+            <td class:list={{ 'is-pl': c.key === 'pl', 'is-zero': r[c.key] === 0 }}>{r[c.key]}</td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row">Razem {FIRST_YEAR}–{LAST_YEAR}</th>
+        {COUNTRIES.map((c) => <td class:list={{ 'is-pl': c.key === 'pl' }}>{total(c.key)}</td>)}
+      </tr>
+      <tr>
+        <th scope="row">Razem {span}</th>
+        {COUNTRIES.map((c) => <td class:list={{ 'is-pl': c.key === 'pl' }}>{total(c.key, WINDOW.from, WINDOW.to)}</td>)}
+      </tr>
+      <tr class="is-rate">
+        <th scope="row">Rocznie na 100 tys. lekarzy, {span}</th>
+        {COUNTRIES.map((c) => <td class:list={{ 'is-pl': c.key === 'pl' }}>≈{formatPL(ratePer100k(c.key), 1)}</td>)}
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="revo__caption">
+    <p>
+      {typo(`Polska: pozbawienia prawa wykonywania zawodu, które się uprawomocniły — orzeczenia okręgowych sądów lekarskich bez odwołania oraz utrzymane albo wydane przez Naczelny Sąd Lekarski, suma 24 izb, w roku uprawomocnienia. Za lata 2021 i 2022 sumujemy kolumny izb, bo komórka sumy w plikach NIL podaje 0. Rok ${LAST_YEAR} bez izby w Koszalinie, a orzeczenia z tego roku mogą się jeszcze uprawomocnić. Norwegia i Szwecja: odebrania autoryzacji (legitymacji) lekarzom w roku decyzji urzędu. Wskaźnik: średnia roczna z lat ${span} podzielona przez liczbę lekarzy (${doctors('pl')}; ${doctors('no')}; ${doctors('se')}) — mianowniki pochodzą z różnych rejestrów, więc wynik jest przybliżony.`)}
+    </p>
+    <p class="revo__source">
+      Źródło: {sources.map((s, i) => <>{i > 0 && ', '}<a {...linkAttrs(s.href)}>{s.label}<Icon name="arrow-ne" size={10} /></a></>)}; liczba lekarzy: {denominators.map((s, i) => <>{i > 0 && ', '}<a {...linkAttrs(s.href)}>{s.label}<Icon name="arrow-ne" size={10} /></a></>)}
+    </p>
+  </div>
+</Figure>
+
+<style>
+  .revo { width: 100%; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
+  /* .revo przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .revo thead th {
+    padding: 0 8px 10px 0; text-align: right; vertical-align: bottom;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink);
+    border-bottom: 1px solid var(--ink);
+  }
+  .revo thead th:first-child { width: 34%; text-align: left; color: var(--muted); }
+  .revo thead th span {
+    display: block; margin-top: 3px;
+    font: 400 0.6875rem/1.3 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--muted);
+  }
+  .revo thead th.is-pl, .revo thead th.is-pl span { color: var(--blue); }
+
+  .revo tbody th, .revo tbody td, .revo tfoot th, .revo tfoot td {
+    padding: 7px 8px 7px 0; border-bottom: 1px solid var(--line); vertical-align: baseline;
+  }
+  .revo tbody th { text-align: left; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .revo td { text-align: right; font: 400 0.9375rem/1.4 var(--f-body); color: var(--ink); }
+  .revo td.is-zero { color: var(--muted); }
+  .revo td.is-pl:not(.is-zero) { color: var(--blue); font-weight: 600; }
+  /* Linie atramentowe: nad oknem porównania i nad sumami. W border-collapse przy równej grubości
+     wygrywa krawędź komórki wyżej, więc kolor zmienia dolna krawędź wiersza nad linią. */
+  .revo tr.is-before-window > *, .revo tbody tr:last-child > * { border-bottom-color: var(--ink); }
+
+  .revo tfoot th { text-align: left; font: 500 0.84375rem/1.35 var(--f-body); color: var(--ink); }
+  .revo tfoot td { font: 500 1.0625rem/1.2 var(--f-display); letter-spacing: -0.01em; }
+  .revo tfoot td.is-pl { color: var(--blue); }
+  .revo tfoot .is-rate > * { border-bottom: 0; }
+
+  /* Podpis jak w Figure: uwaga w Plex Sans, źródła w mono */
+  .revo__caption { display: grid; gap: 6px; margin-top: 16px; font: 400 0.84375rem/1.55 var(--f-body); color: var(--text); }
+  .revo__source { font: 400 0.75rem/1.55 var(--f-mono); color: var(--muted); }
+  .revo__source a {
+    display: inline-flex; align-items: center; gap: 4px; color: var(--text);
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px;
+    transition: color .2s, text-decoration-color .2s;
+  }
+  .revo__source a:hover { color: var(--blue); text-decoration-color: currentColor; }
+</style>

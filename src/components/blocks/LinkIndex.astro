@@ -1,0 +1,55 @@
+---
+/** Spis linków w kolumnach z tytułem po lewej (np. „Działy danych”). */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import type { IndexLink } from '@/types';
+import { linkAttrs } from '@/lib/links';
+
+interface Props extends HTMLAttributes<'nav'> {
+  title: string;
+  links: IndexLink[];
+}
+
+const { title, links, class: className, ...rest } = Astro.props;
+---
+<nav class:list={['link-index', className]} aria-label={title} data-reveal {...rest}>
+  <p class="mono-label link-index__title">{title}</p>
+  <ul>
+    {links.map((link) => (
+      <li>
+        <a {...linkAttrs(link.href)}>
+          <span>{link.label}</span>
+          {link.badge ? <em>{link.badge}</em> : <Icon name="arrow" size={16} class="link-index__icon" />}
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  .link-index { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: start; }
+  .link-index__title { padding-top: 16px; }
+  ul { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: 24px; border-top: 1px solid var(--ink); }
+  a {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 16px 4px 16px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.90625rem; color: var(--ink);
+    transition: color .2s;
+  }
+  .link-index__icon { color: var(--line-2); transition: color .2s, transform .3s var(--ease); }
+  em { font: 500 0.6875rem/1 var(--f-mono); font-style: normal; padding: 4px 6px; background: var(--blue-50); color: var(--blue); }
+  a:hover { color: var(--blue); }
+  a:hover .link-index__icon { color: var(--blue); transform: translateX(3px); }
+
+  @media (max-width: 1180px) {
+    .link-index { grid-template-columns: 1fr; }
+    .link-index__title { padding-top: 0; }
+  }
+  @media (max-width: 1024px) {
+    ul { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 720px) {
+    ul { grid-template-columns: 1fr; }
+  }
+</style>

@@ -1,0 +1,95 @@
+---
+/**
+ * Zwięzła oś zdarzeń do analizy o Kanadzie (Quebec, Ontario, Alberta): data, kto działa
+ * (rząd, lekarze, sąd lub arbiter, porozumienie), jedno zdanie i link do źródła przy każdym wpisie.
+ * Statyczna lista bez JS. Oś pokazuje tylko kolejność zdarzeń — kwoty i analiza są w tekście,
+ * żeby się nie powtarzać. W MDX zwykle w ramie `Figure` (tytuł nad osią).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import type { ChronoEvent, ChronoKind } from '@/data/kanada-lekarze-ustawa-specjalna';
+import { typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Props extends HTMLAttributes<'div'> {
+  events: ChronoEvent[];
+  /** nazwa listy dla czytników ekranu */
+  label: string;
+}
+
+const KIND: Record<ChronoKind, string> = {
+  rzad: 'Rząd',
+  lekarze: 'Lekarze',
+  sad: 'Sąd lub arbiter',
+  porozumienie: 'Porozumienie',
+};
+
+const MONTHS = [
+  'styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec',
+  'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień',
+];
+
+/** '2025-10-25' → „25.10.2025”, '2012-05' → „maj 2012”; `when` ma pierwszeństwo */
+function when(e: ChronoEvent): string {
+  if (e.when) return e.when;
+  const [y, m, d] = e.date.split('-');
+  return d ? `${d}.${m}.${y}` : `${MONTHS[Number(m) - 1]} ${y}`;
+}
+
+const { events, label, class: className, ...rest } = Astro.props;
+---
+<div class:list={['chron-wrap', className]} {...rest}>
+  <ol class="chron" aria-label={label}>
+    {events.map((e) => (
+      <li class:list={['chron__item', `chron__item--${e.kind}`]}>
+        <p class="chron__when"><time datetime={e.date}>{when(e)}</time></p>
+        <div class="chron__body">
+          <p class="chron__kind">{KIND[e.kind]}</p>
+          <p class="chron__text">{typo(e.text)}</p>
+          <p class="chron__src">
+            <a {...linkAttrs(e.source.href)}>{typo(e.source.label)}<Icon name="arrow-ne" size={10} /></a>
+          </p>
+        </div>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<style>
+  .chron-wrap { container-type: inline-size; }
+  .chron { border-top: 1px solid var(--ink); }
+
+  .chron__item {
+    display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: 6px 24px;
+    padding: 14px 0 16px; border-bottom: 1px solid var(--line);
+  }
+  .chron__when { padding-top: 1px; font: 400 0.75rem/1.4 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--text); }
+
+  /* rodzaj zdarzenia: etykieta i kwadrat — rząd wypełniony atramentem, lekarze pusty,
+     sąd lub arbiter w kolorze danych, porozumienie (rozstrzygnięcie sporu) jedynym akcentem */
+  .chron__kind {
+    display: flex; align-items: center; gap: 8px;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+  }
+  .chron__kind::before { content: ""; flex: none; width: 8px; height: 8px; border: 1px solid var(--ink); }
+  .chron__item--rzad .chron__kind::before { background: var(--ink); }
+  .chron__item--sad .chron__kind::before { background: var(--chart); border-color: var(--chart); }
+  .chron__item--porozumienie .chron__kind::before { background: var(--blue); border-color: var(--blue); }
+
+  .chron__text { margin-top: 6px; font: 400 0.9375rem/1.55 var(--f-body); color: var(--ink-2); }
+  .chron__src { margin-top: 6px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .chron__src a {
+    display: inline-flex; align-items: center; gap: 4px; color: var(--text);
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px;
+    transition: color .2s, text-decoration-color .2s;
+  }
+  .chron__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  /* Wąsko: data i rodzaj w jednej linii, zdanie i źródło pod nimi na całą szerokość */
+  @container (max-width: 520px) {
+    .chron__item { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 12px; }
+    .chron__when { padding-top: 0; }
+    .chron__body { display: contents; }
+    .chron__text, .chron__src { grid-column: 1 / -1; }
+  }
+</style>

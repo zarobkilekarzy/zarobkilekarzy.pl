@@ -1,0 +1,110 @@
+---
+/**
+ * Przeglądarka monitoringu „Ile zarabiają lekarze?” — datagrid z konfiguracją z ./grid.ts.
+ * Dane dostaje przez propsy (strona czyta je z lib/monitoring), a przeglądarka pobiera
+ * ten sam zbiór z `src` (publiczny plik JSON).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Datagrid from '@/components/datagrid/Datagrid.astro';
+import type { MonitoringDoc } from '@/lib/monitoring';
+import { grid } from './grid';
+
+interface Props extends HTMLAttributes<'div'> {
+  doc: MonitoringDoc;
+  src: string;
+}
+
+const { doc, src, ...rest } = Astro.props;
+---
+<Datagrid tag="zl-monitoring" config={grid} json={doc} src={src} {...rest} />
+
+<script>
+  import { defineDatagrid } from '@/components/datagrid/element';
+  import { grid } from './grid';
+
+  defineDatagrid('zl-monitoring', grid);
+</script>
+
+<style is:global>
+  /* Odcienie odpowiedzi: pasek przy wierszu, segmenty rozkładu, legenda */
+  zl-monitoring [data-tone="ok"] { --tone: var(--ok); }
+  zl-monitoring [data-tone="bad"] { --tone: var(--bad); }
+  /* kolor-stały: początek — kolory kategorii te same w obu trybach; w nocy każdy ma ≥ 3:1 do tła */
+  zl-monitoring [data-tone="mute"] { --tone: #59616F; }
+  zl-monitoring [data-tone="mid"] { --tone: #D49A12; }
+  zl-monitoring [data-tone="soft"] { --tone: #EAD49A; }
+  /* kolor-stały: koniec */
+  zl-monitoring [data-tone="fwd"] { --tone: var(--blue-pale); }
+  zl-monitoring [data-tone="unk"] { --tone: var(--line-2); }
+
+  /* ---------- Komórka „Placówka” ---------- */
+  .mon-name { display: block; font: 500 0.9375rem/1.4 var(--f-body); color: var(--ink); text-wrap: pretty; }
+  /* separator w odstępie między pozycjami; na początku nowego wiersza wypada za lewą krawędź i jest ucięty */
+  .mon-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 15px; margin-top: 4px; overflow: hidden; font-size: 0.8125rem; line-height: 1.45; color: var(--muted); }
+  .mon-meta > * { position: relative; }
+  .mon-meta > * + *::before { content: "·"; position: absolute; left: -10px; color: light-dark(#A7AEBB, #56627A); }
+  .mon-net { color: var(--blue-700); }
+  .mon-case { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; white-space: nowrap; }
+  .mon-case:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .mon-void strong { font-weight: 500; color: var(--ink); }
+
+  /* ---------- Miniaturowy histogram ---------- */
+  /* Neutralne szarości (tu i w szczegółach) w nocy przygaszone jak --chart, żeby wyróżnienie --blue prowadziło oko */
+  .mon-spark { display: block; margin: 1px 0 0 auto; overflow: visible; }
+  .mon-spark rect { fill: light-dark(#9AA1AE, #56627A); }
+  .mon-spark rect.hi { fill: var(--blue); }
+  .mon-spark__base { stroke: var(--line-2); stroke-width: 1; }
+
+  /* ---------- Szczegóły wiersza ---------- */
+  .mon-detail {
+    display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px 48px;
+    padding: 8px 24px 28px calc(var(--dg-x) + 12px);
+  }
+  .mon-detail__head { margin-bottom: 14px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+  .mon-detail__iqr { margin-top: 14px; font-size: 0.875rem; color: var(--text); }
+  .mon-detail__iqr b { font-weight: 600; color: var(--ink); }
+  .mon-detail__note { margin-top: 12px; font-size: 0.78125rem; line-height: 1.5; color: var(--muted); }
+  .mon-detail > .mon-detail__note { grid-column: 1 / -1; margin-top: -8px; }
+
+  .mon-h { display: grid; gap: 6px; }
+  .mon-h li { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 3.2em 3em; align-items: center; gap: 12px; font-size: 0.84375rem; }
+  .mon-h__lab { color: var(--text); white-space: nowrap; }
+  .mon-h__bar { height: 14px; background: light-dark(rgba(4, 11, 27, .05), rgba(255, 255, 255, .06)); }
+  .mon-h__bar i { display: block; height: 100%; background: light-dark(#8D95A3, #6B7790); }
+  .mon-h .is-hi .mon-h__bar i { background: var(--blue); }
+  .mon-h__n { text-align: right; color: var(--ink); font-weight: 500; }
+  .mon-h__pct { text-align: right; font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+
+  .mon-r { display: grid; gap: 10px; }
+  .mon-r li { display: grid; grid-template-columns: 7.5em 6.5em minmax(60px, 1fr) 4.5em; align-items: center; gap: 12px; font-size: 0.84375rem; }
+  .mon-r__lab { color: var(--text); }
+  .mon-r__val { text-align: right; color: var(--ink); font-weight: 500; white-space: nowrap; }
+  .mon-r__rank { text-align: right; font: 400 0.75rem/1 var(--f-mono); color: var(--muted); white-space: nowrap; }
+  .mon-r__rank b { font-weight: 500; color: var(--ink); }
+  .mon-strip { display: block; width: 100%; height: 16px; overflow: visible; }
+  .mon-strip__axis { stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .mon-strip__ticks { stroke: light-dark(#A7AEBB, #6B7790); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .mon-strip__me { stroke: var(--blue); stroke-width: 3; vector-effect: non-scaling-stroke; }
+
+  .mon-detail__meta {
+    grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px 24px;
+    padding-top: 18px; border-top: 1px solid var(--blue-100);
+  }
+  .mon-detail__meta dt { margin-bottom: 4px; font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .mon-detail__meta dd { font-size: 0.84375rem; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
+  .mon-detail__meta a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+  @container dg (max-width: 939px) {
+    .mon-detail { grid-template-columns: minmax(0, 1fr); }
+    .mon-detail__meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @container dg (max-width: 719px) {
+    .mon-spark { margin-left: 0; }
+    .mon-detail { padding: 4px 16px 24px; gap: 24px; }
+    .mon-h li { grid-template-columns: 6.8em minmax(0, 1fr) 2.6em 2.6em; gap: 8px; }
+    .mon-r li { grid-template-columns: 1fr auto; gap: 4px 12px; }
+    .mon-r .mon-strip { grid-column: 1 / -1; order: 3; }
+    .mon-r__rank { order: 4; grid-column: 1 / -1; text-align: left; }
+    .mon-detail__meta { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

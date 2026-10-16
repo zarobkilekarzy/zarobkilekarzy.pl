@@ -1,0 +1,52 @@
+---
+/**
+ * Ramka w treści artykułu (MDX). Wnętrze to zwykły Markdown ze slotu.
+ * - note:      dopowiedzenie, zastrzeżenie („Uczciwie: …”)
+ * - info:      praktyczna informacja, co dalej
+ * - editorial: stanowisko redakcji — wyraźnie oddzielone od części informacyjnej
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'aside'> {
+  /** nagłówek ramki (nie atrybut HTML) */
+  title: string;
+  variant?: 'note' | 'info' | 'editorial';
+}
+
+const LABEL: Record<NonNullable<Props['variant']>, string> = {
+  note: 'Dopowiedzenie',
+  info: 'Warto wiedzieć',
+  editorial: 'Stanowisko redakcji',
+};
+
+const { title, variant = 'note', class: className, ...rest } = Astro.props;
+---
+<aside class:list={['aside', `aside--${variant}`, className]} {...rest}>
+  <p class="aside__label">{LABEL[variant]}</p>
+  <p class="aside__title">{title}</p>
+  <div class="aside__body"><slot /></div>
+</aside>
+
+<style>
+  .aside { padding: 24px 28px; border-left: 2px solid var(--line-2); background: var(--bg-soft); }
+  .aside--info { border-left-color: var(--blue); background: var(--blue-50); }
+  .aside--editorial { position: relative; border: 1px solid var(--line-2); border-left: 4px solid var(--blue); background: var(--surface); }
+  .aside--editorial::after { content: ""; position: absolute; top: -4px; right: -4px; width: 7px; height: 7px; background: var(--blue); }
+
+  .aside__label { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .aside--info .aside__label, .aside--editorial .aside__label { color: var(--blue); }
+  .aside__title { margin: 8px 0 12px; font: 500 1.25rem/1.3 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+
+  /* Treść ze slotu to Markdown z MDX — stąd :global() */
+  .aside__body :global(p) { font-size: 1rem; line-height: 1.7; color: var(--prose, var(--text-strong)); }
+  .aside__body :global(p + p) { margin-top: 12px; }
+  .aside__body :global(ul) { display: grid; gap: 10px; }
+  .aside__body :global(li) { position: relative; padding-left: 20px; font-size: 1rem; line-height: 1.6; color: var(--prose, var(--text-strong)); }
+  .aside__body :global(li)::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; background: var(--blue); }
+  .aside__body :global(strong) { color: var(--ink); font-weight: 600; }
+  .aside__body :global(a:not([data-footnote-ref])) { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 720px) {
+    .aside { padding: 20px; }
+  }
+</style>

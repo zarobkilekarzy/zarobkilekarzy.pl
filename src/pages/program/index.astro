@@ -1,0 +1,59 @@
+---
+/**
+ * /program/ — szerszy program: kierunki spoza jawności wynagrodzeń. Celowo osobno od /postulat/,
+ * który zostaje jednym żądaniem z projektem ustawy (stamtąd prowadzi tu jedno zdanie pod „Zarzutami”).
+ * Treść: src/data/program.ts. Sekcje: components/program/*.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import JumpList from '@/components/blocks/JumpList.astro';
+import HowToRead from '@/components/program/HowToRead.astro';
+import ProgramGroup from '@/components/program/ProgramGroup.astro';
+import Closing from '@/components/program/Closing.astro';
+import { programGroups, programPage } from '@/data/program';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const total = programGroups.reduce((n, g) => n + g.items.length, 0);
+// numer pierwszego kierunku w każdej grupie — jedna numeracja przez całą stronę
+const starts = programGroups.map((_, i) => 1 + programGroups.slice(0, i).reduce((n, g) => n + g.items.length, 0));
+
+const jump = [
+  { label: 'Jak czytać program', href: '#jak-czytac' },
+  ...programGroups.map((g) => ({ label: g.label, href: `#${g.id}`, count: g.items.length })),
+  { label: 'Dla kogo ten program', href: '#zakonczenie' },
+];
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Szerszy program' }];
+const seo: SeoInput = { title: programPage.seoTitle, description: programPage.description, breadcrumbs: crumbs };
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="prog-top">
+    <PageHeader
+      title={programPage.title}
+      lead={programPage.lead}
+      eyebrow={programPage.eyebrow}
+      crumbs={crumbs}
+    >
+      <PageMeta
+        items={[
+          { label: 'Kierunki', value: total },
+          { label: 'Status', value: 'bez projektu ustawy' },
+          { label: 'Aktualizacja', value: programPage.updated },
+        ]}
+      />
+      <JumpList slot="aside" title="Na tej stronie" items={jump} />
+    </PageHeader>
+  </Section>
+
+  <HowToRead />
+  {programGroups.map((group, i) => (
+    <ProgramGroup group={group} start={starts[i]} total={total} tone={i % 2 ? 'soft' : 'default'} />
+  ))}
+  <Closing />
+</BaseLayout>
+
+<style>
+  .prog-top { padding-top: clamp(32px, 4vw, 56px); }
+</style>

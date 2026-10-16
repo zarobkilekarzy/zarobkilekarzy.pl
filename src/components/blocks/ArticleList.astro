@@ -1,0 +1,41 @@
+---
+/** Lista materiałów: metadane, tytuł, dwuwierszowy lead. */
+import Meta from '@/components/ui/Meta.astro';
+import Icon from '@/components/ui/Icon.astro';
+import { articleHref, type Article } from '@/lib/content';
+import { typo } from '@/lib/format';
+
+interface Props {
+  articles: Article[];
+}
+const { articles } = Astro.props;
+---
+<ol class="feed">
+  {articles.map((a) => (
+    <li class="feed__item" data-reveal>
+      <a href={articleHref(a)}>
+        <Meta category={a.data.category} date={a.data.date} />
+        <h3 class="feed__title">{typo(a.data.title)}</h3>
+        <p class="feed__desc">{typo(a.data.summary)}</p>
+        <Icon name="arrow-ne" class="feed__arrow" />
+      </a>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .feed { border-top: 1px solid var(--ink); }
+  .feed__item a {
+    position: relative; display: block;
+    padding: 22px 48px 24px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .feed__title { font: 500 1.25rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); margin: 10px 0 8px; transition: color .2s; }
+  .feed__desc {
+    font-size: 0.90625rem; line-height: 1.55;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  }
+  .feed__arrow { position: absolute; top: 24px; right: 0; color: var(--line-2); transition: color .2s, transform .3s var(--ease); }
+  .feed__item a:hover .feed__title { color: var(--blue); }
+  .feed__item a:hover .feed__arrow { color: var(--blue); transform: translate(2px, -2px); }
+</style>

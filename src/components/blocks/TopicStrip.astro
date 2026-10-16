@@ -1,0 +1,75 @@
+---
+/** Pełnoszerokościowy pasek kafli ze zdjęciami i podpisami (na ciemnym tle). */
+import Photo from '@/components/ui/Photo.astro';
+import type { Topic } from '@/types';
+import { pad2, typo } from '@/lib/format';
+
+interface Props {
+  topics: Topic[];
+}
+const { topics } = Astro.props;
+---
+<ul class="strip">
+  {topics.map((t, i) => (
+    <li class="strip__item" data-reveal>
+      <a href={t.href}>
+        {/* Kafel ~3:4, zdjęcie poziome skalowane do wysokości kafla */}
+        <Photo
+          src={t.image}
+          alt=""
+          position={t.position}
+          widths={[480, 720, 960, 1280]}
+          sizes="(min-width: 1025px) 620px, (min-width: 721px) 50vw, 500px"
+          fill
+        />
+        <div class="strip__label">
+          <span class="strip__num">{pad2(i + 1)}</span>
+          <h3>{typo(t.title)}</h3>
+          <p>{typo(t.desc)}</p>
+        </div>
+      </a>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; background: var(--inverse); }
+  .strip__item {
+    --img-filter: grayscale(1) contrast(1.08) brightness(.82);
+    position: relative; height: clamp(360px, 34vw, 500px); overflow: hidden;
+  }
+  .strip__item > a { display: block; height: 100%; }
+  .strip__item > a:hover { --img-filter: grayscale(1) contrast(1.08) brightness(.95); --img-transform: scale(1.04); }
+  .strip__item > a:focus-visible { outline-offset: -4px; }
+
+  .strip__label {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+    padding: 80px 24px 24px;
+    background: linear-gradient(to top, rgba(4, 11, 27, .96) 30%, rgba(4, 11, 27, 0));
+    color: #fff; /* kolor-stały: napis na zdjęciu pod ciemnym gradientem */
+  }
+  .strip__num { font: 500 0.71875rem/1 var(--f-mono); letter-spacing: .08em; color: var(--blue-pale); }
+  .strip__label h3 { font: 400 1.5rem/1.15 var(--f-display); letter-spacing: -0.025em; margin: 10px 0 8px; }
+  .strip__label h3::after {
+    content: ""; display: block; width: 24px; height: 1px; margin-top: 14px;
+    background: var(--blue); transition: width .5s var(--ease);
+  }
+  .strip__label p {
+    font-size: 0.875rem; line-height: 1.5; color: rgba(255, 255, 255, .66);
+    max-height: 0; opacity: 0; overflow: hidden;
+    transition: max-height .5s var(--ease), opacity .4s var(--ease);
+  }
+  .strip__item > a:hover .strip__label p,
+  .strip__item > a:focus-visible .strip__label p { max-height: 80px; opacity: 1; }
+  .strip__item > a:hover .strip__label h3::after { width: 64px; }
+
+  @media (max-width: 1024px) {
+    .strip { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 720px) {
+    .strip { grid-template-columns: 1fr; }
+    .strip__item { height: 400px; }
+    .strip__label p { max-height: 80px; opacity: 1; }
+  }
+</style>

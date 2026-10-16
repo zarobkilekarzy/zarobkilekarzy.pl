@@ -1,0 +1,72 @@
+---
+/**
+ * /postulat/ — misja serwisu: cel (stały), droga do niego (projekt ustawy — wersjonowany,
+ * etap z src/data/projekt-ustawy.ts) i archiwum wcześniejszej formy (petycja).
+ * Sekcje to kompozycje bloków z danymi (components/postulat/*), jak na stronie głównej.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import JumpList from '@/components/blocks/JumpList.astro';
+import Problem from '@/components/postulat/Problem.astro';
+import Demands from '@/components/postulat/Demands.astro';
+import WithoutNames from '@/components/postulat/WithoutNames.astro';
+import Identifier from '@/components/postulat/Identifier.astro';
+import Route from '@/components/postulat/Route.astro';
+import Evidence from '@/components/postulat/Evidence.astro';
+import Objections from '@/components/postulat/Objections.astro';
+import { postulatPage } from '@/data/postulat';
+import { currentStage, projekt } from '@/data/projekt-ustawy';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { typo } from '@/lib/format';
+
+const jump = [
+  { label: 'Problem', href: '#problem' },
+  { label: 'Co postulujemy', href: '#postulat' },
+  { label: 'Dlaczego bez nazwisk', href: '#bez-nazwisk' },
+  { label: 'Jak działa identyfikator', href: '#identyfikator' },
+  { label: 'Droga do ustawy', href: '#droga' },
+  { label: 'Dowody', href: '#dowody' },
+  { label: 'Zarzuty', href: '#zarzuty' },
+];
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Postulat' }];
+const seo: SeoInput = { title: postulatPage.docTitle, description: postulatPage.description, breadcrumbs: crumbs };
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="post-top">
+    <PageHeader
+      title={postulatPage.title}
+      lead={postulatPage.lead}
+      eyebrow={postulatPage.eyebrow}
+      crumbs={crumbs}
+    >
+      <blockquote class="post-quote">{typo(postulatPage.quote)}</blockquote>
+      <PageMeta
+        items={[
+          { label: 'Etap', value: currentStage.label },
+          { label: 'Projekt ustawy', value: `wersja ${projekt.version}` },
+          { label: 'Aktualizacja', value: projekt.date },
+        ]}
+      />
+      <JumpList slot="aside" title="Na tej stronie" items={jump} />
+    </PageHeader>
+  </Section>
+
+  <Problem />
+  <Demands />
+  <WithoutNames />
+  <Identifier />
+  <Route />
+  <Evidence />
+  <Objections />
+</BaseLayout>
+
+<style>
+  .post-top { padding-top: clamp(32px, 4vw, 56px); }
+  .post-quote {
+    margin: 32px 0 0; padding-left: 20px; border-left: 2px solid var(--blue);
+    font: 400 1.3125rem/1.45 var(--f-display); letter-spacing: -0.015em; color: var(--ink); max-width: 34ch;
+  }
+</style>

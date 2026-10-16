@@ -1,0 +1,197 @@
+---
+/**
+ * /egzamin/ — symulator LEK/LDEK na jawnej bazie CEM: kreator testu, przeglądarka bazy,
+ * test w trybie skupienia (components/egzamin), a pod spodem: skąd pytania, jak czytać statystyki.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Icon from '@/components/ui/Icon.astro';
+import KeyFacts from '@/components/blocks/KeyFacts.astro';
+import ExamApp from '@/components/egzamin/ExamApp.astro';
+import {
+  BANK, DEMO_DISTRIBUTION, EXAMS, FIELDS, GAP_YEARS, MODES, ORIGIN_TABLE, RULES, SESSIONS,
+  egzaminPage, egzaminSources,
+} from '@/data/egzamin';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { formatPL, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+const facts = [
+  { value: String(RULES.questions), unit: 'pytań', label: 'jednokrotnego wyboru' },
+  { value: String(RULES.minutes / 60), unit: 'godziny', label: 'na cały egzamin' },
+  { value: String(Math.round(RULES.threshold * 100)), unit: '%', label: 'próg zdania' },
+];
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Egzamin LEK' }];
+const seo: SeoInput = {
+  title: 'Egzamin LEK online: jawna baza pytań',
+  description:
+    'Rozwiąż LEK lub LDEK na pytaniach z jawnej bazy CEM: pełny egzamin na czas, szybki test albo nauka z natychmiastową odpowiedzią i statystyką zdających.',
+  breadcrumbs: crumbs,
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="top">
+    <PageHeader
+      title={egzaminPage.title}
+      lead={egzaminPage.lead}
+      crumbs={crumbs}
+      eyebrow="Narzędzie · dostęp do zawodu"
+    >
+      <PageMeta items={[
+        { label: 'Pytania w bazie', value: formatPL(BANK.questions) },
+        { label: 'Ze statystyką sali', value: formatPL(BANK.withStats) },
+        { label: 'Sesje', value: BANK.sessions },
+        { label: 'Dziedziny', value: BANK.fields },
+      ]} />
+      <KeyFacts slot="aside" items={facts} />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom" aria-label="Test">
+    <ExamApp
+      rules={RULES}
+      exams={EXAMS}
+      modes={MODES}
+      sessions={SESSIONS}
+      fields={FIELDS}
+      distribution={DEMO_DISTRIBUTION}
+      gapYears={GAP_YEARS}
+      total={BANK.questions}
+      privacy={egzaminPage.privacy}
+    />
+  </Section>
+
+  <Section tone="soft" aria-labelledby="jawnosc">
+    <div class="about">
+      <div class="about__main">
+        <p class="mono-label">Skąd te pytania</p>
+        <Heading as="h2" size="h2" id="jawnosc" class="about__title">Dlaczego pytania z LEK są jawne</Heading>
+        <div class="prose">
+          <p>{typo('Ustawa o zawodach lekarza i lekarza dentysty (art. 14c ust. 5) każe Centrum Egzaminów Medycznych publikować pytania po ich wykorzystaniu na egzaminie — razem z kluczem odpowiedzi. Z tej publicznej bazy pochodzi 70% pytań każdej kolejnej sesji, pozostałe 30% to pytania nowe.')}</p>
+          <p>{typo('Jawność nie była oczywista. CEM przez lata nie udostępniał pytań; zmienił to dopiero wyrok Naczelnego Sądu Administracyjnego z 21 maja 2020 r. (I OSK 2466/19) w sprawie wytoczonej przez Sieć Obywatelską Watchdog.')}</p>
+          <p>{typo('Jawna baza wyrównuje szanse — każdy uczy się z tych samych materiałów i każdą odpowiedź może sprawdzić. Gorzej sprawdza się jako ranking do rezydentur: gdy duża część pytań jest znana, wyniki się spłaszczają. Na ten argument powołuje się projekt nowelizacji z czerwca 2026 r., który przewiduje koniec jawnej bazy. To na razie projekt, nie obowiązujące prawo.')}</p>
+        </div>
+      </div>
+
+      <div class="about__side">
+        <figure class="origin">
+          <figcaption class="mono-label">Pytania z bazy łatwiej trafić · sesje {ORIGIN_TABLE.sessions}</figcaption>
+          <table>
+            <thead><tr><th scope="col">Pochodzenie</th><th scope="col">Pytań</th><th scope="col">Średnio poprawnych</th></tr></thead>
+            <tbody>
+              {ORIGIN_TABLE.rows.map((r) => (
+                <tr>
+                  <th scope="row">{r.label}</th>
+                  <td>{r.count}</td>
+                  <td><span class="origin__bar" style={`--v:${r.share / 100}`}></span>{formatPL(r.share, r.share % 1 ? 1 : 0)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p class="origin__note">{typo(ORIGIN_TABLE.note)}</p>
+        </figure>
+      </div>
+    </div>
+
+    <div class="howto">
+      <div>
+        <h3 class="howto__title"><Icon name="chart" />Jak czytać statystyki</h3>
+        <p>{typo('Przy każdym pytaniu widać, jaki odsetek zdających wybrał każdą odpowiedź, oraz wskaźnik trudności — odsetek poprawnych odpowiedzi na egzaminie (0,9 = łatwe, 0,3 = bardzo trudne). „Przeciętny zdający” w wyniku to suma tych wskaźników, czyli punkty osoby odpowiadającej jak cała sala.')}</p>
+      </div>
+      <div>
+        <h3 class="howto__title"><Icon name="alert" />Uwagi CEM przy pytaniach</h3>
+        <p>{typo('Pytania unieważnione przez CEM nie liczą się do wyniku i obniżają maksimum punktów — jak na egzaminie. Pytania zgłoszone w bazie jako niezgodne z aktualną wiedzą oznaczamy; CEM zastrzega, że treść nie może być podstawą decyzji klinicznych.')}</p>
+      </div>
+      <div id="prywatnosc">
+        <h3 class="howto__title"><Icon name="db" />Co zapisujemy</h3>
+        <p>{typo(egzaminPage.privacy)} {typo('Bez adresu IP, ciasteczek i identyfikatorów. Testy rozwiązywane przez asystentów AI nie trafiają do statystyk.')}</p>
+      </div>
+    </div>
+
+    <details class="agent">
+      <summary><span class="agent__sum">
+        <span><strong>Sprawdź swojego asystenta AI</strong> — gotowe polecenie: agent rozwiąże test przez <code>window.lek</code></span>
+        <span class="agent__more" aria-hidden="true">+</span>
+      </span></summary>
+      <div class="agent__body">
+        <pre data-agent-prompt>{egzaminPage.agentPrompt}</pre>
+        <button type="button" class="agent__copy" data-copy>Kopiuj polecenie</button>
+      </div>
+    </details>
+
+    <div class="sources">
+      <p class="mono-label">Źródła</p>
+      <ul>
+        {egzaminSources.map((s) => <li><a {...linkAttrs(s.href)}>{s.label}<Icon name="arrow-ne" size={14} /></a></li>)}
+      </ul>
+      <p class="sources__note">{typo('Moduł nie jest powiązany z CEM. Wersja demonstracyjna: pytania w teście są przykładowe, napisane przez redakcję w formacie LEK.')}</p>
+    </div>
+  </Section>
+</BaseLayout>
+
+<script>
+  document.querySelector('[data-copy]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    const text = document.querySelector('[data-agent-prompt]')?.textContent ?? '';
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = 'Skopiowano';
+    } catch {
+      btn.textContent = 'Zaznacz i skopiuj ręcznie';
+    }
+    setTimeout(() => { btn.textContent = 'Kopiuj polecenie'; }, 2000);
+  });
+</script>
+
+<style>
+  .top { padding-top: clamp(32px, 4vw, 56px); }
+
+
+  .about { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 96px); align-items: start; }
+  .about :global(.about__title) { margin: 14px 0 24px; }
+  .prose { display: grid; gap: 16px; font-size: 1.03125rem; line-height: 1.7; max-width: 38em; }
+
+  .origin { margin: 0; padding: 24px; background: var(--surface); border: 1px solid var(--line); }
+  .origin table { width: 100%; margin-top: 16px; border-collapse: collapse; font-size: 0.90625rem; }
+  .origin th, .origin td { padding: 12px 0; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; }
+  .origin thead th { font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .origin tbody th { color: var(--ink); }
+  .origin td { font: 500 0.9375rem/1 var(--f-mono); color: var(--ink); }
+  .origin td:last-child { display: flex; align-items: center; gap: 10px; }
+  .origin__bar { display: inline-block; width: calc(var(--v) * 90px); height: 8px; background: var(--blue); }
+  .origin tbody tr:last-child .origin__bar { background: var(--amber); }
+  .origin__note { margin-top: 14px; font-size: 0.78125rem; line-height: 1.5; color: var(--muted); }
+
+  .howto { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin-top: clamp(48px, 6vw, 80px); padding-top: 32px; border-top: 1px solid var(--line-2); }
+  .howto__title { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font: 500 1.0625rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .howto__title :global(svg) { color: var(--blue); }
+  .howto p { font-size: 0.9375rem; line-height: 1.65; }
+
+  .agent { margin-top: 48px; border: 1px solid var(--line-2); background: var(--surface); }
+  .agent summary { display: block; padding: 18px 20px; cursor: pointer; list-style: none; font-size: 0.9375rem; color: var(--ink); }
+  .agent__sum { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .agent summary::-webkit-details-marker { display: none; }
+  .agent strong { font-weight: 600; }
+  .agent code { font: 400 0.84375rem/1 var(--f-mono); padding: 2px 5px; background: var(--bg-soft); }
+  .agent__more { font: 300 1.5rem/1 var(--f-display); color: var(--blue); transition: transform .25s var(--ease); }
+  .agent[open] .agent__more { transform: rotate(45deg); }
+  .agent__body { padding: 0 20px 20px; }
+  .agent pre { margin: 0 0 12px; padding: 16px; background: var(--inverse); color: #e6ebf5; font: 400 0.8125rem/1.6 var(--f-mono); white-space: pre-wrap; } /* kolor-stały: blok kodu na --inverse */
+  .agent__copy { height: 40px; padding: 0 16px; border: 1px solid var(--ink); font-size: 0.875rem; color: var(--ink); }
+  .agent__copy:hover { background: var(--ink); color: var(--on-ink); }
+
+  .sources { margin-top: 40px; }
+  .sources ul { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 12px; }
+  .sources a { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .sources a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .sources__note { margin-top: 16px; font-size: 0.8125rem; color: var(--muted); }
+
+  @media (max-width: 1024px) {
+    .about { grid-template-columns: minmax(0, 1fr); }
+    .howto { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  }
+</style>

@@ -1,0 +1,65 @@
+---
+/**
+ * Moduł „Egzamin LEK”: zakładki „Rozwiąż test” i „Przeglądaj bazę pytań” + okno testu.
+ * Konfiguracja trafia do przeglądarki jako JSON (komponenty klienta nie importują src/data),
+ * a pytania — osobnym plikiem /egzamin/<egzamin>.json pobieranym przed startem.
+ */
+import Tabs from '@/components/blocks/Tabs.astro';
+import ExamSetup from './ExamSetup.astro';
+import ExamBank from './ExamBank.astro';
+import ExamRunner from './ExamRunner.astro';
+import type { ExamId, FieldInfo, ModeInfo, SessionInfo } from '@/lib/egzamin/types';
+import type { ClientConfig } from './client/app';
+import './question.css';
+
+interface Props {
+  rules: ClientConfig['rules'];
+  exams: { id: ExamId; label: string; name: string }[];
+  modes: ModeInfo[];
+  sessions: SessionInfo[];
+  fields: Record<ExamId, FieldInfo[]>;
+  distribution: number[];
+  gapYears: string;
+  total: number;
+  privacy: string;
+}
+
+const { rules, exams, modes, sessions, fields, distribution, gapYears, total, privacy } = Astro.props;
+const config: ClientConfig = { rules, exams, modes, sessions, fields, distribution, bankUrl: '/egzamin/{exam}.json' };
+// JSON w <script>: „<” zamienione, żeby treść nie mogła zamknąć znacznika
+const json = JSON.stringify(config).replace(/</g, '\\u003c');
+---
+<zl-exam class="exam">
+  <script type="application/json" is:inline data-config set:html={json} />
+  <Tabs>
+    <div class="tabs" role="tablist" aria-label="Egzamin LEK">
+      <button class="tab" type="button" role="tab" id="tab-test" aria-controls="panel-test" aria-selected="true">Rozwiąż test</button>
+      <button class="tab" type="button" role="tab" id="tab-bank" aria-controls="panel-bank" aria-selected="false" tabindex="-1">Przeglądaj bazę pytań</button>
+    </div>
+    <div role="tabpanel" id="panel-test" aria-labelledby="tab-test">
+      <ExamSetup exams={exams} modes={modes} sessions={sessions} fields={fields} gapYears={gapYears} total={total} privacy={privacy} />
+    </div>
+    <div role="tabpanel" id="panel-bank" aria-labelledby="tab-bank" hidden>
+      <ExamBank exams={exams} sessions={sessions} />
+    </div>
+  </Tabs>
+  <ExamRunner />
+</zl-exam>
+
+<script>
+  import './client/app';
+</script>
+
+<style>
+  zl-exam { display: block; }
+  .tabs { display: flex; gap: 32px; margin-bottom: 32px; border-bottom: 1px solid var(--line); }
+  .tab { position: relative; padding: 0 0 14px; font: 400 clamp(1.1875rem, 2vw, 1.5rem)/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--muted); transition: color .2s; }
+  .tab::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--ink); transform: scaleX(0); transform-origin: left; transition: transform .3s var(--ease); }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); }
+  .tab[aria-selected="true"]::after { transform: none; }
+
+  @media (max-width: 720px) {
+    .tabs { gap: 20px; margin-bottom: 24px; }
+  }
+</style>

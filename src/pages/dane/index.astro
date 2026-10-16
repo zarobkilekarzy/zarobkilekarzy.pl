@@ -1,0 +1,78 @@
+---
+/**
+ * /dane/ — spis zestawień (układ „Katalog”): wyróżnione narzędzie, zasady czytania danych,
+ * działy z zestawieniami w wierszach i osiem kluczowych liczb.
+ * Zestawienia to wpisy kolekcji `articles` z polem `topic`; opisy działów — src/data/dane.ts.
+ */
+import IndexLayout from '@/layouts/IndexLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import AccuracyLegend from '@/components/ui/AccuracyLegend.astro';
+import ArticleFeature from '@/components/blocks/ArticleFeature.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import NumberTiles from '@/components/blocks/NumberTiles.astro';
+import TopicCatalog from '@/components/blocks/TopicCatalog.astro';
+import { danePage, dataTopics, keyNumbers } from '@/data/dane';
+import { principles } from '@/data/home';
+import { site } from '@/data/navigation';
+import { countArticles, getArticle, getTopicGroups, withTargets } from '@/lib/content';
+import { DATA_TOPICS } from '@/types';
+
+const [groups, numbers, flagship] = await Promise.all([
+  getTopicGroups(DATA_TOPICS, dataTopics),
+  withTargets(keyNumbers),
+  getArticle(danePage.flagship),
+]);
+---
+<IndexLayout
+  title={danePage.title}
+  docTitle="Dane: zarobki lekarzy i budżet NFZ"
+  lead={danePage.lead}
+  description={danePage.description}
+  eyebrow="Liczby"
+  meta={[
+    { label: 'Zestawienia', value: countArticles(groups) + 1 },
+    { label: 'Działy', value: groups.length },
+    { label: 'Aktualizacja', value: site.updated },
+  ]}
+  jump={{ title: 'Działy', items: groups.map((g) => ({ label: g.info.label, href: `#${g.topic}`, count: g.articles.length })) }}
+  articles={[flagship, ...groups.flatMap((g) => g.articles)]}
+>
+  <AccuracyLegend slot="legend" />
+
+  <Section space="bottom">
+    <div class="highlights">
+      <ArticleFeature article={flagship} sizes="(min-width: 1025px) 720px, 100vw" />
+      <div>
+        <p class="mono-label highlights__label">Jak czytać te dane</p>
+        <NumberedList items={principles.slice(0, 3)} />
+      </div>
+    </div>
+  </Section>
+
+  <Section space="bottom">
+    <TopicCatalog groups={groups} noun={['zestawienie', 'zestawienia', 'zestawień']} />
+  </Section>
+
+  <Section tone="soft" aria-labelledby="liczby-title">
+    <SectionHead
+      eyebrow="Na start"
+      title="Osiem liczb, które pokazują skalę"
+      id="liczby-title"
+      aside="Najmocniejsze dane z całego serwisu. Kliknij dowolną, żeby wejść głębiej — z pełnym rozbiciem i źródłami."
+    />
+    <NumberTiles items={numbers} note={danePage.note} />
+  </Section>
+</IndexLayout>
+
+<style>
+  .highlights {
+    display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 32px clamp(32px, 4vw, 56px); align-items: start;
+    padding-top: 48px; border-top: 1px solid var(--line);
+  }
+  .highlights__label { margin: 0; padding-bottom: 12px; }
+
+  @media (max-width: 1024px) {
+    .highlights { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

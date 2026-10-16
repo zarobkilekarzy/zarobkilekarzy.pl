@@ -1,0 +1,187 @@
+---
+/**
+ * Dymek z objaśnieniem przy elemencie — popover i tooltip w jednym module.
+ *
+ * - Natywny `popover="auto"`: klik/dotyk otwiera, Esc i klik obok zamykają, otwarty jest jeden naraz.
+ *   Działa bez JS.
+ * - Pozycja: CSS anchor positioning (Baseline 2026) — nad wyzwalaczem, a gdy brakuje miejsca,
+ *   pod nim lub przesunięty do krawędzi. Przeglądarka bez kotwic pokazuje dymek jako pasek u dołu ekranu.
+ * - `peek` (domyślnie): na urządzeniach z kursorem dymek wysuwa się już po najechaniu lub fokusie
+ *   z klawiatury, jak tooltip; klik go „przypina”. Dotyk zawsze działa kliknięciem.
+ *
+ * Wyzwalacz: `variant="marker"` — numer w kwadracie (objaśnienia do ilustracji),
+ * `variant="term"` — termin w tekście z kropkowanym podkreśleniem,
+ * `variant="hint"` — kółko „?” przy etykiecie (definicje w nagłówkach tabeli; treść wyzwalacza zbędna),
+ * `variant="pin"` — wypełniony numer nad ilustracją (rozmiar: `--pop-pin`, domyślnie 22px).
+ * `placement="bottom"` — dymek pod wyzwalaczem (np. w nagłówku tabeli, żeby nie zasłaniał filtrów).
+ * Treść dymka to treść frazowa (tekst, <strong>, <a>) — dymek bywa osadzony w akapicie.
+ *
+ *   <Popover label="Objaśnienie 1: opłata rejestracyjna" heading="Opłata rejestracyjna">
+ *     <Fragment slot="trigger">1</Fragment>
+ *     Opłata administracyjna spoza ubezpieczenia.
+ *   </Popover>
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { uid } from '@/lib/uid';
+
+interface Props extends HTMLAttributes<'span'> {
+  /** dostępna nazwa wyzwalacza (gdy widać tylko numer albo ikonę) */
+  label?: string;
+  /** pogrubiony nagłówek dymka */
+  heading?: string;
+  variant?: 'marker' | 'term' | 'hint' | 'pin';
+  /** strona, po której dymek staje najpierw (gdy brak miejsca — przeciwna) */
+  placement?: 'top' | 'bottom';
+  /** podgląd po najechaniu/fokusie; false = tylko klik */
+  peek?: boolean;
+}
+
+const { label, heading, variant = 'marker', placement = 'top', peek = true, id = uid('pop'), class: className, ...rest } = Astro.props;
+---
+<zl-popover class:list={['pop', className]} data-peek={peek ? '' : undefined} {...rest}>
+  <button
+    type="button"
+    class:list={['pop__trigger', `pop__trigger--${variant}`]}
+    popovertarget={id}
+    aria-label={label}
+    style={`anchor-name: --${id}`}
+  ><slot name="trigger">{variant === 'hint' && '?'}</slot></button>
+  <span id={id} popover="auto" class:list={['pop__panel', `pop__panel--${placement}`]} style={`position-anchor: --${id}`}>
+    {heading && <strong class="pop__heading">{heading}</strong>}
+    <span class="pop__body"><slot /></span>
+  </span>
+</zl-popover>
+
+<style>
+  .pop { display: inline-flex; vertical-align: baseline; }
+
+  /* ---------- Wyzwalacze ---------- */
+  .pop__trigger--marker {
+    display: inline-grid; place-items: center; width: 18px; height: 18px;
+    font: 500 0.65625rem/1 var(--f-mono); color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue);
+    transition: background .15s, color .15s;
+  }
+  .pop__trigger--marker:hover, .pop__trigger--marker[aria-expanded="true"], .pop:has(:popover-open) .pop__trigger--marker {
+    background: var(--blue-fill); color: #fff; box-shadow: none;
+  }
+  .pop__trigger--term {
+    color: inherit; text-decoration: underline dotted 1px; text-decoration-color: var(--muted); text-underline-offset: 3px;
+    cursor: help; transition: color .15s, text-decoration-color .15s;
+  }
+  .pop__trigger--term:hover, .pop:has(:popover-open) .pop__trigger--term { color: var(--blue); text-decoration-color: currentColor; }
+  .pop__trigger--hint {
+    display: inline-grid; place-items: center; flex: none; width: 16px; height: 16px; border-radius: 50%;
+    border: 1px solid var(--line-2); font: 500 0.625rem/1 var(--f-mono); color: var(--muted);
+    text-transform: none; letter-spacing: 0; transition: color .15s, border-color .15s;
+  }
+  .pop__trigger--hint:hover, .pop:has(:popover-open) .pop__trigger--hint { color: var(--blue); border-color: var(--blue); }
+  /* Numer nad ilustracją: pełne wypełnienie i obwódka w kolorze tła, żeby był czytelny na każdym motywie obrazka */
+  .pop__trigger--pin {
+    display: inline-grid; place-items: center; width: var(--pop-pin, 22px); height: var(--pop-pin, 22px);
+    font: 500 calc(var(--pop-pin, 22px) * .52)/1 var(--f-mono); color: #fff; background: var(--blue-fill); /* kolor-stały: numer na kobaltowym wypełnieniu */
+    box-shadow: 0 0 0 2px var(--bg); transition: background .15s;
+  }
+  .pop__trigger--pin:hover { background: var(--blue-600); }
+  .pop:has(:popover-open) .pop__trigger--pin { background: var(--blue-600); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--blue-fill); }
+
+  /* ---------- Dymek: w dzień jasny (powierzchnia, ramka, cień), w nocy granat uniesiony nad tło ---------- */
+  .pop__panel {
+    /* Schemat idzie za motywem strony, a nie za ilustracją, w której siedzi wyzwalacz
+       (papier rachunku i karta NHI są zawsze jasne) — przełącznik motywu: reguły :root[data-theme] niżej */
+    color-scheme: light dark;
+    position: fixed; inset: auto; margin: 0; padding: 14px 16px; border: 0;
+    width: max-content; max-width: min(300px, calc(100vw - 32px));
+    background: light-dark(var(--surface), var(--inverse-2));
+    color: light-dark(var(--text-strong), rgba(255, 255, 255, .82)); /* kolor-stały: w nocy tekst na granatowym dymku */
+    font: 400 0.84375rem/1.55 var(--f-body); text-align: left; text-transform: none; letter-spacing: 0; white-space: normal;
+    /* ramka jako cień wewnętrzny (bez zmiany wymiarów); w nocy przezroczysta — jak dotąd */
+    box-shadow:
+      inset 0 0 0 1px light-dark(var(--line-2), transparent),
+      0 20px 40px -16px light-dark(rgba(4, 11, 27, .18), rgba(4, 11, 27, .5)),
+      0 2px 6px light-dark(rgba(4, 11, 27, .06), transparent);
+
+    /* 8 px od wyzwalacza i od krawędzi okna — przy brzegu dymek się dosuwa, ale nie dotyka krawędzi */
+    margin: 8px;
+  }
+  .pop__panel--top {
+    position-area: top;
+    position-try-fallbacks: flip-block, top span-left, top span-right, bottom span-left, bottom span-right;
+  }
+  .pop__panel--bottom {
+    position-area: bottom;
+    position-try-fallbacks: flip-block, bottom span-left, bottom span-right, top span-left, top span-right;
+  }
+  .pop__panel:popover-open { display: block; }
+  :global(:root[data-theme="light"]) .pop__panel { color-scheme: light; }
+  :global(:root[data-theme="dark"]) .pop__panel { color-scheme: dark; }
+  /* Dymek bywa osadzony w Prose, której reguły strong/a są mocniejsze od pojedynczej klasy — stąd .pop .pop__panel */
+  .pop .pop__panel :global(strong) { color: light-dark(var(--ink), #fff); font-weight: 600; } /* kolor-stały: w nocy biały na granacie */
+  .pop .pop__heading, .pop__body { display: block; }
+  .pop__heading + .pop__body { margin-top: 4px; }
+  /* sam nagłówek (etykieta bez opisu) — bez pustego odstępu pod nim */
+  .pop__body:empty { display: none; }
+  .pop .pop__panel :global(a) { color: light-dark(var(--blue), #fff); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* Bez kotwic CSS (starsze przeglądarki): pasek u dołu ekranu zamiast dymka przy elemencie */
+  @supports not (anchor-name: --a) {
+    .pop__panel { position: fixed; inset: auto 16px 16px; max-width: 480px; margin-inline: auto; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pop__panel:popover-open { animation: pop-in .14s var(--ease); }
+    @keyframes pop-in { from { opacity: 0; translate: 0 4px; } }
+  }
+</style>
+
+<script>
+  // Podgląd po najechaniu / fokusie z klawiatury (tylko gdy jest data-peek i precyzyjny kursor).
+  // Otwarty podglądem dymek klik „przypina” — wtedy zamyka go dopiero Esc albo klik obok.
+  const fine = matchMedia('(hover: hover) and (pointer: fine)');
+  const OPEN_DELAY = 120;
+  const CLOSE_DELAY = 160;
+
+  class ZlPopover extends HTMLElement {
+    connectedCallback() {
+      if (!this.hasAttribute('data-peek')) return;
+      const trigger = this.querySelector<HTMLButtonElement>('.pop__trigger');
+      const panel = this.querySelector<HTMLElement>('[popover]');
+      if (!trigger || !panel) return;
+
+      let timer = 0;
+      let peeking = false;
+      const isOpen = () => panel.matches(':popover-open');
+
+      const peek = () => {
+        clearTimeout(timer);
+        if (isOpen()) return;
+        timer = window.setTimeout(() => {
+          if (isOpen()) return;
+          panel.showPopover();
+          peeking = true;
+        }, OPEN_DELAY);
+      };
+      const unpeek = () => {
+        clearTimeout(timer);
+        if (!peeking) return;
+        timer = window.setTimeout(() => { if (peeking && isOpen()) panel.hidePopover(); }, CLOSE_DELAY);
+      };
+
+      trigger.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && fine.matches) peek(); });
+      trigger.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') unpeek(); });
+      panel.addEventListener('pointerenter', () => clearTimeout(timer));
+      panel.addEventListener('pointerleave', unpeek);
+      trigger.addEventListener('focus', () => { if (trigger.matches(':focus-visible')) peek(); });
+      trigger.addEventListener('blur', unpeek);
+
+      trigger.addEventListener('click', (e) => {
+        clearTimeout(timer);
+        // dymek wysunięty podglądem: klik go zostawia (przypina), zamiast przełączać na zamknięty
+        if (peeking && isOpen()) e.preventDefault();
+        peeking = false;
+      });
+      panel.addEventListener('toggle', (e) => { if ((e as ToggleEvent).newState === 'closed') peeking = false; });
+    }
+  }
+
+  customElements.define('zl-popover', ZlPopover);
+</script>

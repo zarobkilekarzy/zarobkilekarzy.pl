@@ -1,0 +1,169 @@
+---
+/**
+ * Wykres liniowy indeksów (rok bazowy = 100) dla kilku serii o różnych jednostkach.
+ * Linie rysuje SVG rozciągnięte na obszar wykresu (preserveAspectRatio="none" + non-scaling-stroke),
+ * a wszystko, co jest tekstem albo kropką — siatka, lata, znaczniki pomiarów, podpisy na końcach linii —
+ * to HTML, więc nie skaluje się razem z rysunkiem i zostaje czytelne na telefonie.
+ *
+ * Ton serii (README → Wykresy): `accent` — to, o czym jest teza (kobalt), `data` — dane bez
+ * wyróżnienia (--chart), `ref` — linia odniesienia (przerywana, --muted). Punkt z `gapBefore`
+ * łączy się z poprzednim kreską przerywaną (brak pomiaru pomiędzy).
+ * Podpisy stoją na końcach linii zamiast legendy; `labelShift` -1 / 1 przesuwa podpis nad / pod
+ * punkt, gdy dwie linie kończą się blisko siebie.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { typo } from '@/lib/format';
+
+interface Point {
+  /** położenie na osi czasu: rok + ułamek */
+  x: number;
+  /** wartość indeksu */
+  v: number;
+  gapBefore?: boolean;
+}
+
+interface Series {
+  id: string;
+  label: string;
+  tone: 'accent' | 'data' | 'ref';
+  /** podpis wartości na końcu linii, np. „×3,1” */
+  end: string;
+  labelShift?: number;
+  markers?: boolean;
+  points: Point[];
+}
+
+interface Props extends HTMLAttributes<'div'> {
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+  ticks: number[];
+  /** lata podpisane pod osią (podpis na środku roku) */
+  years: number[];
+  series: Series[];
+  /** rok bazowy — podpis przy linii 100 */
+  base: number;
+  /** pełny opis danych dla czytników ekranu */
+  caption: string;
+}
+
+const { xMin, xMax, yMin, yMax, ticks, years, series, base, caption, class: className, ...rest } = Astro.props;
+
+const X = (x: number) => ((x - xMin) / (xMax - xMin)) * 1000;
+const Y = (v: number) => 1000 - ((v - yMin) / (yMax - yMin)) * 1000;
+const pct = (x: number, lo: number, hi: number) => (((x - lo) / (hi - lo)) * 100).toFixed(3);
+
+/** Ciągłe odcinki serii (przerwa przy `gapBefore`) i odcinki przerywane między nimi */
+function paths(points: Point[]) {
+  const runs: Point[][] = [];
+  const gaps: [Point, Point][] = [];
+  points.forEach((p, i) => {
+    if (i > 0 && p.gapBefore) {
+      gaps.push([points[i - 1], p]);
+      runs.push([p]);
+    } else if (runs.length) runs.at(-1)!.push(p);
+    else runs.push([p]);
+  });
+  return {
+    runs: runs.filter((r) => r.length > 1).map((r) => r.map((p) => `${X(p.x).toFixed(1)},${Y(p.v).toFixed(1)}`).join(' ')),
+    gaps,
+  };
+}
+---
+<div class:list={['ix', className]} {...rest}>
+  <div class="ix__plot" aria-hidden="true">
+    {ticks.map((t) => (
+      <span class:list={['ix__tick', { 'is-base': t === 100 }]} style={`--t: ${pct(t, yMin, yMax)}%`}>
+        <span>{t === 100 ? `100 = ${base}` : t}</span>
+      </span>
+    ))}
+    <div class="ix__area">
+      <svg class="ix__svg" viewBox="0 0 1000 1000" preserveAspectRatio="none" focusable="false">
+        {series.map((s) => {
+          const { runs, gaps } = paths(s.points);
+          return (
+            <g class={`ix__line ix__line--${s.tone}`}>
+              {runs.map((pts) => <polyline points={pts} vector-effect="non-scaling-stroke" />)}
+              {gaps.map(([a, b]) => (
+                <line class="ix__gap" x1={X(a.x)} y1={Y(a.v)} x2={X(b.x)} y2={Y(b.v)} vector-effect="non-scaling-stroke" />
+              ))}
+            </g>
+          );
+        })}
+      </svg>
+      {series.filter((s) => s.markers).map((s) =>
+        s.points.map((p) => (
+          <span class={`ix__dot ix__dot--${s.tone}`} style={`left: ${pct(p.x, xMin, xMax)}%; bottom: ${pct(p.v, yMin, yMax)}%`}></span>
+        )),
+      )}
+      {series.map((s) => {
+        const last = s.points.at(-1)!;
+        return (
+          <p class={`ix__end ix__end--${s.tone}`} style={`bottom: ${pct(last.v, yMin, yMax)}%; --shift: ${s.labelShift ?? 0}`}>
+            <span class="ix__name">{typo(s.label)}</span>
+            <span class="ix__val">{typo(s.end)}</span>
+          </p>
+        );
+      })}
+    </div>
+  </div>
+  <div class="ix__years" aria-hidden="true">
+    {years.map((y) => <span style={`left: ${pct(y, xMin, xMax)}%; width: ${(100 / (xMax - xMin)).toFixed(3)}%`}>{y}</span>)}
+  </div>
+  <p class="sr-only">{caption}</p>
+</div>
+
+<style>
+  .ix { --reserve: 128px; --h: clamp(240px, 52cqi, 360px); }
+  .ix__plot { position: relative; height: var(--h); margin-top: 24px; }
+
+  /* Siatka: linia przez obszar wykresu, podpis nad nią przy lewej krawędzi */
+  .ix__tick { position: absolute; left: 0; right: var(--reserve); bottom: var(--t); border-top: 1px solid var(--line); }
+  .ix__tick.is-base { border-top-color: var(--line-2); }
+  /* podpis bazy po prawej: na lewym brzegu linie startują właśnie ze 100 */
+  .ix__tick.is-base span { left: auto; right: 0; }
+  .ix__tick span { position: absolute; left: 0; bottom: 4px; font: 400 0.65625rem/1 var(--f-mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  .ix__area { position: absolute; inset: 0 var(--reserve) 0 0; }
+  .ix__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .ix__line polyline, .ix__line line { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .ix__line--data :is(polyline, line) { stroke: var(--chart); stroke-width: 2.5px; }
+  .ix__line--ref :is(polyline, line) { stroke: var(--muted); stroke-width: 1.5px; stroke-dasharray: 5 4; }
+  .ix__line--accent :is(polyline, line) { stroke: var(--blue); stroke-width: 2.5px; }
+  .ix__line .ix__gap { stroke-width: 1.5px; stroke-dasharray: 2 5; }
+
+  /* Pomiar — kropka z wycięciem w kolorze tła */
+  .ix__dot { position: absolute; width: 9px; height: 9px; translate: -50% 50%; border-radius: 50%; border: 2px solid var(--under); }
+  .ix__dot--accent { background: var(--blue); }
+  .ix__dot--data { background: var(--chart); }
+
+  /* Podpis na końcu linii, w marginesie po prawej: kreska w kolorze serii, nazwa, wartość */
+  .ix__end {
+    position: absolute; left: calc(100% + 12px); width: calc(var(--reserve) - 12px);
+    translate: 0 calc(50% + var(--shift) * 50%);
+    display: grid; gap: 2px; padding-left: 20px;
+  }
+  .ix__end::before { content: ""; position: absolute; left: 0; top: 0.5rem; width: 14px; border-top: 2.5px solid var(--chart); }
+  .ix__end--accent::before { border-top-color: var(--blue); }
+  .ix__end--ref::before { border-top: 1.5px dashed var(--muted); }
+  .ix__name { font: 400 0.78125rem/1.25 var(--f-body); color: var(--text); }
+  .ix__val { font: 400 1.125rem/1.1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+
+  /* Lata: podpis na środku roku, kreska na granicy */
+  .ix__years { position: relative; height: 24px; margin-right: var(--reserve); }
+  .ix__years span {
+    position: absolute; top: 0; height: 100%; display: flex; justify-content: center; align-items: flex-end;
+    font: 400 0.6875rem/1 var(--f-mono); color: var(--muted);
+  }
+  .ix__years span::before { content: ""; position: absolute; top: 0; left: 0; width: 1px; height: 6px; background: var(--line-2); }
+
+  @container (max-width: 560px) {
+    .ix { --reserve: 104px; }
+    .ix__name { font-size: 0.71875rem; }
+    .ix__val { font-size: 1rem; }
+    .ix__years span { font-size: 0.625rem; }
+    /* co drugi rok bez podpisu (kreska granicy zostaje) */
+    .ix__years span:nth-child(even) { color: transparent; }
+  }
+</style>

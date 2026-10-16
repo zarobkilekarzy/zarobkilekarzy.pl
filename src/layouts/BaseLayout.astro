@@ -1,505 +1,113 @@
 ---
-// Pliki-indeksy fontsource: każdy niesie @font-face z unicode-range dla subsetów
-// `latin` ORAZ `latin-ext`, więc przeglądarka złoży pełną polszczyznę (m.in. „ó",
-// która jest w zakresie podstawowym `latin`, nie w `latin-ext`). Nieużywane subsety
-// (cyrylica/greka/wietnamski) mają rozłączny unicode-range i nie są pobierane.
-import '@fontsource/ibm-plex-sans/400.css';
-import '@fontsource/ibm-plex-sans/500.css';
-import '@fontsource/ibm-plex-sans/600.css';
-import '@fontsource/ibm-plex-serif/500.css';
-import '@fontsource/ibm-plex-serif/600.css';
-import '@fontsource/ibm-plex-mono/400.css';
-import '@fontsource/ibm-plex-mono/500.css';
-// Główny font tekstowy — preload obu subsetów wagi 400 (ASCII/„ó" + diakryty),
-// by ograniczyć FOUT i opóźnienie LCP.
-import bodyFontUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2?url';
-import bodyFontExtUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-ext-400-normal.woff2?url';
-import '../styles/global.css';
-import Nav from '../components/Nav.astro';
-import Footer from '../components/Footer.astro';
-import CytatLink from '../components/CytatLink.astro';
-import { ogPages } from '../lib/ogPages';
-import { lastmodFor, normalizePath } from '../lib/pageDates.mjs';
+/**
+ * Szkielet każdej strony: <head> (SEO, fonty), nagłówek, stopka, wyszukiwarka.
+ * To tu konfiguracja serwisu trafia do komponentów — one same nie importują danych.
+ */
+import { Font } from 'astro:assets';
+
+import '@/styles/tokens.css';
+import '@/styles/base.css';
+import '@/styles/footnotes.css';
+
+import Sprite from '@/components/ui/Sprite.astro';
+import Topbar from '@/components/site/Topbar.astro';
+import Header from '@/components/site/Header.astro';
+import Footer from '@/components/site/Footer.astro';
+import SearchDialog from '@/components/site/SearchDialog.astro';
+import Analytics from '@/components/site/Analytics.astro';
+import HeadingAnchors from '@/components/site/HeadingAnchors.astro';
+import SelectionShare from '@/components/site/SelectionShare.astro';
+import CopySource from '@/components/site/CopySource.astro';
+
+import SeoHead from '@/components/seo/SeoHead.astro';
+import JsonLd from '@/components/seo/JsonLd.astro';
+
+import { site, mainNav, mobileExtras, topbarLinks, footerNav } from '@/data/navigation';
+import { identity } from '@/data/seo/identity';
+import { newsletter, newsletterOn } from '@/data/newsletter';
+import { getPopularSearches } from '@/lib/search/build';
+import { OG_HEIGHT, OG_WIDTH, ogImageFor } from '@/lib/og/registry';
+import { buildGraph, resolveSeo, type SeoInput } from '@/lib/seo';
 
 interface Props {
+  /** SEO strony: tytuł bez nazwy serwisu, opis, okruszki, rodzaj strony i byty — zob. lib/seo/types.ts */
+  seo?: SeoInput;
+  /** @deprecated pełny tytuł — użyj `seo` */
   title?: string;
+  /** @deprecated użyj `seo` */
   description?: string;
-  image?: string;
-  noindex?: boolean;
-  /** Czy treść strony ma trafić do indeksu wyszukiwarki (Pagefind). Domyślnie
-   *  jak `!noindex` — strony wewnętrzne, wydruki i sama /szukaj są pomijane. */
-  search?: boolean;
 }
 
-const {
-  title = 'zarobkilekarzy.pl — jawność wynagrodzeń w ochronie zdrowia',
-  description =
-    'Obywatelska inicjatywa na rzecz jawności publicznych pieniędzy w ochronie zdrowia. Dane, źródła i postulat jawnego rejestru wynagrodzeń lekarzy.',
-  image,
-  noindex = false,
-  search = !noindex,
-} = Astro.props;
+const props = Astro.props;
+// Stare wywołania (title/description) działają dalej, ale bez okruszków i danych strukturalnych strony
+if (!props.seo) console.warn(`[seo] ${Astro.url.pathname}: BaseLayout bez propsa seo — przejdź z title/description na seo`);
+const input: SeoInput = props.seo ?? { title: props.title ?? site.name, titleAbsolute: true, description: props.description ?? '' };
 
-// Obraz OG: jawny `image` z propsów > dynamiczny per-strona (ogPages). Dla tras
-// dynamicznych (paginacja artykułów, kategorie) dziedziczymy OG najbliższego rodzica
-// z mapy (np. artykuly/2 → artykuly). Brak trafienia → navy karta strony głównej —
-// nigdy biały statyczny fallback (ten wisiał w cache X jako „stara karta").
-const rawKey = Astro.url.pathname.replace(/^\/+|\/+$/g, '') || 'home';
-const ogKey = (() => {
-  const parts = rawKey.split('/');
-  while (parts.length) {
-    const k = parts.join('/');
-    if (ogPages[k]) return k;
-    parts.pop();
-  }
-  return 'home';
-})();
-const resolvedImage = image ?? `/og/${ogKey}.png`;
-
-const canonical = new URL(Astro.url.pathname, Astro.site);
-const ogImage = new URL(resolvedImage, Astro.site);
-
-const orgSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'zarobkilekarzy.pl',
-  url: Astro.site?.toString(),
-  logo: new URL('/favicon.png', Astro.site).toString(),
-  description:
-    'Obywatelska inicjatywa na rzecz jawności publicznych pieniędzy w ochronie zdrowia.',
-};
-
-const siteSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'zarobkilekarzy.pl',
-  url: Astro.site?.toString(),
-  inLanguage: 'pl-PL',
-  description:
-    'Dane, źródła i postulat jawnego rejestru wynagrodzeń lekarzy ze środków publicznych.',
-};
-
-// Wydawca powtarzany w kilku schematach (Article/Dataset) — jedna definicja.
-const publisher = {
-  '@type': 'Organization',
-  name: 'zarobkilekarzy.pl',
-  url: Astro.site?.toString(),
-  logo: {
-    '@type': 'ImageObject',
-    url: new URL('/favicon.png', Astro.site).toString(),
-  },
-};
-
-// Dane strukturalne generowane automatycznie z URL — bez propsów per-strona:
-//  • BreadcrumbList — dla stron zagnieżdżonych (widoczny trop to „eyebrow"),
-//  • Article       — teksty redakcyjne (/analizy, /mechanizmy),
-//  • Dataset       — strony danych (/dane) → kwalifikacja do Google Dataset Search.
-// Nazwa strony do schematów = tytuł bez sufiksu „ — zarobkilekarzy.pl".
-const headline = title.replace(/\s*—\s*zarobkilekarzy\.pl\s*$/, '').trim();
-const norm = normalizePath(Astro.url.pathname);
-const segs = norm === '/' ? [] : norm.slice(1).split('/');
-const nested = segs.length >= 2;
-const modified = lastmodFor(Astro.url.pathname);
-
-const SECTION_LABELS = {
-  dane: 'Dane',
-  analizy: 'Analizy',
-  mechanizmy: 'Mechanizmy',
-};
-
-// noindex (np. /admin) nie dostają żadnych danych strukturalnych.
-const wantSchema = !noindex && nested;
-const isArticle = wantSchema && (segs[0] === 'analizy' || segs[0] === 'mechanizmy');
-const isDataset = wantSchema && segs[0] === 'dane';
-
-// Typ strony wyprowadzony z adresu — steruje UKŁADEM, nie treścią. „tekst" to
-// podstrony czytane liniowo (analizy, mechanizmy): dostają węższą miarę czytania
-// i automatyczny spis treści. Huby i /dane zostają szerokie (siatki, tabele,
-// rankingi). Dzięki wyprowadzeniu z URL żadna z ~50 podstron nie wymaga własnego
-// propsa — nowa strona w tych działach dostaje układ z automatu. /preview/ (podglądy
-// tekstów przed publikacją) dostaje ten sam układ, żeby wyglądał jak docelowa strona.
-// Wyjątki spoza prefiksów — tekst czytany liniowo pod adresem najwyższego poziomu — wymienione
-// jawnie, żeby układ nie zmieniał się po cichu przy przenosinach z /preview/.
-const TEKST_POZA_DZIALAMI = new Set(['/projekt-nowelizacji']);
-const kind =
-  (nested && (segs[0] === 'analizy' || segs[0] === 'mechanizmy' || segs[0] === 'preview')) ||
-  TEKST_POZA_DZIALAMI.has(norm)
-    ? 'tekst'
-    : null;
-
-let breadcrumbSchema = null;
-if (wantSchema) {
-  const crumbs = [{ name: 'Strona główna', url: Astro.site?.toString() }];
-  let acc = '';
-  segs.forEach((s, i) => {
-    acc += `/${s}`;
-    const last = i === segs.length - 1;
-    crumbs.push({
-      name: last ? headline : (SECTION_LABELS[s as keyof typeof SECTION_LABELS] ?? s),
-      url: new URL(acc, Astro.site).toString(),
-    });
-  });
-  breadcrumbSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: crumbs.map((c, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      name: c.name,
-      item: c.url,
-    })),
-  };
-}
-
-const articleSchema = isArticle
-  ? {
-      '@context': 'https://schema.org',
-      '@type': 'Article',
-      headline,
-      description,
-      inLanguage: 'pl-PL',
-      image: ogImage.toString(),
-      mainEntityOfPage: canonical.toString(),
-      author: publisher,
-      publisher,
-      ...(modified ? { datePublished: modified, dateModified: modified } : {}),
-    }
-  : null;
-
-const datasetSchema = isDataset
-  ? {
-      '@context': 'https://schema.org',
-      '@type': 'Dataset',
-      name: headline,
-      description,
-      url: canonical.toString(),
-      inLanguage: 'pl-PL',
-      isAccessibleForFree: true,
-      license: 'https://creativecommons.org/licenses/by/4.0/',
-      creator: publisher,
-      publisher,
-      spatialCoverage: { '@type': 'Place', name: 'Polska' },
-      keywords: [
-        'wynagrodzenia lekarzy',
-        'NFZ',
-        'ochrona zdrowia',
-        'dane publiczne',
-        'jawność',
-        'Polska',
-      ],
-      ...(modified ? { dateModified: modified } : {}),
-    }
-  : null;
-
-// Wszystkie schematy w jednej tablicy — render jedną pętlą (mniej powtórzeń).
-const jsonLd = [orgSchema, siteSchema, breadcrumbSchema, articleSchema, datasetSchema].filter(
-  Boolean,
-);
+// Obrazek OG wynika ze ścieżki strony (lib/og/registry.ts) — strony niczego nie przekazują.
+// Strony poza indeksem go nie potrzebują (i nie mają wpisu w rejestrze).
+const ogImage = input.index === false ? undefined : await ogImageFor(Astro.url.pathname);
+const seo = resolveSeo(input, {
+  site: Astro.site!,
+  pathname: Astro.url.pathname,
+  siteName: identity.name,
+  image: ogImage && { ...ogImage, width: OG_WIDTH, height: OG_HEIGHT },
+});
+const graph = buildGraph(input, seo, identity, Astro.site!);
+const popularSearches = await getPopularSearches();
 ---
-
 <!doctype html>
 <html lang="pl">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="preload" href={bodyFontUrl} as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href={bodyFontExtUrl} as="font" type="font/woff2" crossorigin />
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" id="theme-color-meta" content="#0f4c81" />
-    {/* Motyw jasny/ciemny ustawiany PRZED pierwszym malowaniem, żeby nie było
-        mignięcia białym (FOUC) przy odświeżeniu w trybie ciemnym. Kolejność:
-        wybór użytkownika z localStorage > preferencja systemu. `is:inline` —
-        Astro nie może tego przenieść/odroczyć; musi wykonać się synchronicznie
-        w <head>. Kolor paska przeglądarki (theme-color) dobierany tak samo. */}
+    <SeoHead seo={seo} siteName={identity.name} locale={identity.locale} twitter={identity.twitter} />
+    <meta name="theme-color" content={identity.themeColor} />
+    <meta name="color-scheme" content="light dark" />
+    {/* Motyw (site/ThemeToggle.astro) i „Większy tekst” (site/TextSizeToggle.astro) z zapisu —
+        ustawione przed pierwszym malowaniem, bez mignięcia i przeskoku tekstu */}
     <script is:inline>
-      (function () {
-        try {
-          var stored = localStorage.getItem('theme');
-          if (stored === 'dark' || stored === 'light') {
-            document.documentElement.setAttribute('data-theme', stored);
-          }
-          var dark = stored
-            ? stored === 'dark'
-            : window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var m = document.getElementById('theme-color-meta');
-          if (m) m.setAttribute('content', dark ? '#0e1622' : '#0f4c81');
-        } catch (e) {}
-      })();
+      try {
+        const t = localStorage.getItem('zl-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        if (localStorage.getItem('zl-text-size') === 'lg') document.documentElement.dataset.textSize = 'lg';
+      } catch {}
     </script>
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <link rel="canonical" href={canonical} />
-    {/* max-image-preview:large — bez tej dyrektywy Google pokazuje nasze obrazki wyłącznie
-        jako małą miniaturkę (wyszukiwarka, Grafika, Discover), niezależnie od tego, jak dobry
-        jest og:image. Discover wymaga jej wprost + obrazka min. 1200 px szerokości — karta
-        z /og/*.png ma dokładnie 1200 px. Strony `noindex` jej nie dostają: nie są indeksowane,
-        więc nie miałaby czego dotyczyć. */}
-    <meta name="robots" content={noindex ? 'noindex,follow' : 'index,follow,max-image-preview:large'} />
-    <link
-      rel="alternate"
-      type="application/rss+xml"
-      title="zarobkilekarzy.pl — baza źródeł"
-      href="/rss.xml"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="zarobkilekarzy.pl" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
-    <meta property="og:locale" content="pl_PL" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@zarobkilekarzy" />
-    <meta property="og:image" content={ogImage} />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="zarobkilekarzy.pl — jawność wynagrodzeń w ochronie zdrowia" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
-    <meta name="twitter:image" content={ogImage} />
-    {jsonLd.map((schema) => (
-      <script type="application/ld+json" set:html={JSON.stringify(schema).replace(/</g, '\\u003c')} />
-    ))}
-    {/* Cloudflare Web Analytics — beacon wpięty ręcznie (nie przez auto-iniekcję
-        w panelu, która jest krucha na Pages i cicho się urwała). `is:inline` —
-        Astro renderuje tag dosłownie, nie bundluje. Token jest publiczny z natury
-        (i tak trafia do HTML), więc może siedzieć w repo. Beacon raportuje do
-        `cloudflareinsights.com/cdn-cgi/rum` — stąd wpis w connect-src (_headers). */}
-    <script
-      is:inline
-      type="module"
-      src="https://static.cloudflareinsights.com/beacon.min.js"
-      data-cf-beacon='{"token": "41998160098a4fd3965151cf1b67f440"}'
-    ></script>
+    <meta name="generator" content={Astro.generator} />
+
+    {/* Fonty pobierane w czasie budowania i serwowane z naszej domeny (bez Google Fonts).
+        Preload wszystkich plików: polskie litery (poza „ó”) są w podzbiorze latin-ext, a Plex Mono składa
+        etykiety na każdej stronie. Plik bez preloadu dochodzi po pierwszej klatce — polskie znaki
+        i etykiety rysowały się fontem zastępczym i mrugały przy każdym wejściu na podstronę */}
+    <Font cssVariable="--font-inter-tight" preload />
+    <Font cssVariable="--font-plex-sans" preload />
+    <Font cssVariable="--font-plex-mono" preload />
+
+    <Analytics />
+    {/* Jeden graf danych strukturalnych strony (lib/seo/schema) */}
+    <JsonLd graph={graph} />
+    {/* Dodatkowe znaczniki od konkretnej strony (np. preload danych) */}
     <slot name="head" />
   </head>
-  <body {...(kind ? { 'data-kind': kind } : {})}>
-    <a href="#main" class="skip-link">Przejdź do treści</a>
-    <Nav />
-    {/* `data-pagefind-body` wyznacza zakres indeksu wyszukiwarki: tylko treść
-        <main>, bez powtarzanej nawigacji i stopki. Strony niewidoczne w wynikach
-        (noindex, wydruki, /szukaj) atrybutu nie dostają — patrz prop `search`. */}
-    <main id="main"{...(search ? { 'data-pagefind-body': true } : {})}>
+  <body>
+    <a class="skip-link" href="#tresc">Przejdź do treści</a>
+    <Sprite />
+    <Topbar updated={site.updated} announcement={site.announcement} links={topbarLinks} />
+    <Header nav={mainNav} mobileExtras={mobileExtras} />
+
+    <main id="tresc">
       <slot />
     </main>
-    {/* Spis treści dłuższej analizy — wypełniany w przeglądarce z nagłówków h2,
-        które `src/middleware.ts` i tak numeruje i zaopatruje w `id`. Pusty w HTML:
-        gdy JS nie wystartuje albo sekcji jest mniej niż cztery, nic się nie
-        pokazuje i nic nie przeskakuje (element jest poza układem — `position: fixed`).
-        Poza <main>, więc nie wchodzi do indeksu Pagefind. */}
-    {kind === 'tekst' && <nav class="toc" data-toc hidden aria-label="Spis treści"></nav>}
-    {/* Zaznacz fragment → „Kopiuj link do cytatu" (Text Fragments). Tylko teksty
-        czytane liniowo — tam się cytuje; na /dane zaznacza się raczej liczby w tabelach. */}
-    {kind === 'tekst' && <CytatLink />}
-    <Footer />
-    <script>
-      // Wejście z linku do sekcji (np. udostępnione /mechanizmy/wycena-swiadczen#6-pointa).
-      // `scroll-behavior: smooth` psuje natywny skok do #fragmentu przy ładowaniu strony:
-      // animacja rusza, zanim dojdą fonty i obrazy, gubi cel i strona zostaje na górze
-      // (sprawdzone: z `auto` skacze, ze `smooth` nie). Kotwice mają być klikalnym
-      // adresem sekcji, więc domykamy to jednym skokiem bez animacji, po zbudowaniu DOM.
-      (() => {
-        if (!location.hash) return;
-        let el = null;
-        try {
-          el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-        } catch (e) {
-          return; // niepoprawny %-kod w adresie — nie ma czego szukać
-        }
-        if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
-      })();
-      // Płynne przewijanie (klik w spis treści, przypis) włącza pierwszy gest
-      // czytelnika. Do tego czasu przeglądarka sama, bez animacji, ustawia stronę
-      // na celu linku, także na cytacie `#:~:text=` (patrz `html[data-smooth]`).
-      (() => {
-        const smooth = () => document.documentElement.setAttribute('data-smooth', '');
-        addEventListener('pointerdown', smooth, { once: true, capture: true });
-        addEventListener('keydown', smooth, { once: true, capture: true });
-      })();
-    </script>
-    <script>
-      // Spis treści analizy — buduje się z nagłówków h2, którym middleware nadał
-      // `id`. Powstał, bo dłuższe teksty mają dziś po 8 sekcji: bez spisu jedyną
-      // nawigacją jest przewijanie w ciemno. Pokazujemy dopiero od czterech sekcji
-      // (przy dwóch–trzech spis jest szumem) i tylko tam, gdzie CSS ma miejsce na
-      // boczną szynę (≥1180 px) — na węższych ekranach reguła `display: none`
-      // trzyma go schowanym, więc nie zabiera miejsca treści.
-      (() => {
-        const toc = document.querySelector<HTMLElement>('nav[data-toc]');
-        if (!toc) return;
-        // Numer sekcji bywa już w tekście nagłówka („2. Po najwyższą karę…") —
-        // zdejmujemy go, żeby nie dublować numeracji spisu.
-        const clean = (h: Element) => {
-          const copy = h.cloneNode(true) as Element;
-          copy.querySelectorAll('.hanchor').forEach((a) => a.remove());
-          return (copy.textContent ?? '').trim().replace(/^\s*\d+[.)]\s*/, '');
-        };
-        const heads = [...document.querySelectorAll<HTMLElement>('main h2[id]')].filter(
-          (h) => h.offsetParent !== null && clean(h),
-        );
-        if (heads.length < 4) return;
 
-        const list = document.createElement('ol');
-        list.className = 'toc-list';
-        const links = heads.map((h) => {
-          const li = document.createElement('li');
-          const a = document.createElement('a');
-          a.href = '#' + h.id;
-          a.textContent = clean(h);
-          li.append(a);
-          list.append(li);
-          return a;
-        });
-        const head = document.createElement('p');
-        head.className = 'toc-head';
-        head.textContent = 'Na tej stronie';
-        toc.append(head, list);
-        toc.hidden = false;
+    <Footer groups={footerNav} newsletter={newsletterOn ? newsletter : undefined} />
+    <SearchDialog popular={popularSearches} />
+    {/* Linki do sekcji (ikona przy nagłówku) i do zaznaczonego fragmentu (pasek przy zaznaczeniu) */}
+    <HeadingAnchors />
+    <SelectionShare />
+    {/* Dopisek „źródło: …” do tekstu kopiowanego ze strony */}
+    <CopySource name={site.name} />
 
-        // Podświetlenie aktualnej sekcji. Obserwujemy wąski pas tuż pod przyklejoną
-        // nawigacją — dzięki temu „aktywna" jest sekcja, której nagłówek właśnie
-        // minął górę ekranu, a nie ta, która przypadkiem jest największa.
-        // -1 = jesteśmy jeszcze nad pierwszą sekcją (lead, wstęp) i NIC nie jest
-        // podświetlone; podświetlenie pierwszej pozycji od razu po wejściu
-        // sugerowałoby, że czytelnik jest w sekcji, do której nie dojechał.
-        let active = -1;
-        const mark = () => {
-          let i = -1;
-          heads.forEach((h, n) => {
-            if (h.getBoundingClientRect().top < 120) i = n;
-          });
-          if (i === active) return;
-          if (active >= 0) links[active].removeAttribute('aria-current');
-          if (i >= 0) links[i].setAttribute('aria-current', 'true');
-          active = i;
-        };
-        mark();
-        let ticking = false;
-        addEventListener(
-          'scroll',
-          () => {
-            if (ticking) return;
-            ticking = true;
-            requestAnimationFrame(() => {
-              mark();
-              ticking = false;
-            });
-          },
-          { passive: true },
-        );
-      })();
-    </script>
     <script>
-      // Dostępność przewijalnych tabel (WCAG 2.1.1): kontenery `.table-wrap`
-      // z poziomym przewijaniem muszą być osiągalne i przewijalne klawiaturą.
-      // Nadajemy fokusowalność + nazwę tylko tym, które faktycznie się przewijają
-      // (zależy od szerokości/zoomu), i aktualizujemy przy zmianie rozmiaru.
-      (() => {
-        const wraps = document.querySelectorAll<HTMLElement>('.table-wrap');
-        if (!wraps.length) return;
-        // Tekst nagłówka bez doklejonego anchora („#") — inaczej wpadłby do nazwy tabeli.
-        const headingText = (h: Element) => {
-          const copy = h.cloneNode(true) as Element;
-          copy.querySelectorAll('.hanchor').forEach((a) => a.remove());
-          return (copy.textContent ?? '').trim();
-        };
-        const label = (el: HTMLElement) => {
-          if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')) return;
-          let h = el.previousElementSibling;
-          while (h && !/^H[2-6]$/.test(h.tagName)) h = h.previousElementSibling;
-          const cap = h ? headingText(h).slice(0, 70) : 'Tabela z danymi';
-          el.setAttribute('aria-label', cap + ' — tabela, przewiń w poziomie');
-        };
-        const sync = () => {
-          wraps.forEach((el) => {
-            const scrollable = el.scrollWidth > el.clientWidth + 1;
-            if (scrollable) {
-              el.tabIndex = 0;
-              el.setAttribute('role', 'region');
-              label(el);
-            } else {
-              el.removeAttribute('tabindex');
-              el.removeAttribute('role');
-            }
-          });
-        };
-        sync();
-        let t: ReturnType<typeof setTimeout>;
-        window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(sync, 200); });
-      })();
-    </script>
-    <script>
-      // Liczniki przejść do źródeł: pokaż liczby (1 cache'owany GET /api/clicks)
-      // i policz kliknięcie w kartę (beacon POST, raz na ~12 h na slug w tej
-      // przeglądarce). Bez ciasteczek, bez danych osobowych. No-op, gdy na
-      // stronie nie ma kart artykułów lub gdy D1 nie jest jeszcze podpięte.
-      (async () => {
-        const badges = document.querySelectorAll<HTMLElement>('.article-clicks[data-clicks-for]');
-        if (badges.length) {
-          try {
-            const res = await fetch('/api/clicks');
-            if (res.ok) {
-              const { counts } = (await res.json()) as { counts?: Record<string, number> };
-              badges.forEach((el) => {
-                const slug = el.dataset.clicksFor;
-                const n = (slug && counts && counts[slug]) || 0;
-                if (n > 0) {
-                  el.textContent = n + ' ↗';
-                  el.title = 'Przejścia do źródła: ' + n;
-                  el.hidden = false;
-                }
-              });
-            }
-          } catch (e) {}
-        }
-        document.addEventListener('click', (e) => {
-          const t = e.target;
-          if (!(t instanceof Element)) return;
-          const a = t.closest<HTMLAnchorElement>('a.article-link[data-slug]');
-          if (!a) return;
-          const slug = a.dataset.slug;
-          try {
-            const key = 'clk:' + slug;
-            const now = Date.now();
-            if (now - (Number(localStorage.getItem(key)) || 0) < 12 * 3600 * 1000) return;
-            localStorage.setItem(key, String(now));
-          } catch (e) {}
-          try {
-            navigator.sendBeacon('/api/clicks', JSON.stringify({ slug }));
-          } catch (e) {}
-        });
-      })();
-    </script>
-    <script>
-      // Zwijane przypisy (integrations/rehype-przypisy.mjs): sekcja jest zamknięta, więc
-      // przed skokiem do przypisu — z odnośnika w tekście albo z adresu #przypisu —
-      // trzeba ją otworzyć; przed drukiem rozwijamy wszystkie. No-op bez przypisów.
-      (() => {
-        if (!document.querySelector('details.przypisy')) return;
-        const otworz = (id: string) => {
-          const cel = id ? document.getElementById(id) : null;
-          const sekcja = cel?.closest<HTMLDetailsElement>('details.przypisy');
-          if (!sekcja || sekcja.open) return null;
-          sekcja.open = true;
-          return cel;
-        };
-        const zAdresu = () => {
-          const cel = otworz(decodeURIComponent(location.hash.slice(1)));
-          cel?.scrollIntoView();
-        };
-        document.addEventListener('click', (e) => {
-          const a = e.target instanceof Element ? e.target.closest('a[href^="#"]') : null;
-          if (a) otworz(decodeURIComponent((a.getAttribute('href') ?? '').slice(1)));
-        });
-        addEventListener('hashchange', zAdresu);
-        addEventListener('beforeprint', () => {
-          document.querySelectorAll<HTMLDetailsElement>('details.przypisy').forEach((d) => (d.open = true));
-        });
-        zAdresu();
-      })();
+      import '@/scripts/reveal';
+      import '@/scripts/open-target';
     </script>
   </body>
 </html>

@@ -1,0 +1,54 @@
+---
+/**
+ * /postulat/ — najczęstsze zarzuty (RODO, rozpoznawalność, „atak na lekarzy”), odsyłacz do szerszego
+ * programu (jedno zdanie — program jest osobno) i pomoc w nagłośnieniu.
+ */
+import Section from '@/components/layout/Section.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Faq from '@/components/blocks/Faq.astro';
+import ShareLinks from '@/components/article/ShareLinks.astro';
+import { objections, postulatPage, programNote } from '@/data/postulat';
+import { programPage } from '@/data/program';
+import { projekt } from '@/data/projekt-ustawy';
+import { typo } from '@/lib/format';
+
+const url = new URL('/postulat/', Astro.site).href;
+---
+<Section id="zarzuty" tone="soft" aria-labelledby="zarzuty-title">
+  <div class="obj">
+    <div class="obj__intro">
+      <Eyebrow>Zarzuty</Eyebrow>
+      <Heading id="zarzuty-title" punct="?">A co z RODO</Heading>
+      <p>RODO nie zakazuje przetwarzania danych — określa, kiedy i na jakiej podstawie wolno je przetwarzać. Odpowiadamy też na pytania, na które sami nie znamy jeszcze odpowiedzi.</p>
+      <LinkArrow href={`${projekt.href}#zalacznik-b`}>Otwarte pytania prawne</LinkArrow>
+    </div>
+    <Faq items={objections} openFirst />
+  </div>
+
+  <p class="obj__program">
+    <span>{typo(programNote)}</span>
+    <LinkArrow href={programPage.href}>{programPage.title}</LinkArrow>
+  </p>
+
+  <div class="obj__share">
+    <ShareLinks url={url} title={postulatPage.title} label="Pomóż nagłośnić postulat" />
+  </div>
+</Section>
+
+<style>
+  .obj { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+  .obj__intro p { margin: 24px 0 24px; font-size: 1.03125rem; line-height: 1.7; max-width: 40ch; color: var(--ink-2); }
+  .obj__program {
+    display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 32px;
+    margin-top: clamp(48px, 6vw, 72px); padding-top: 24px; border-top: 1px solid var(--line-2);
+    font-size: 1.03125rem; line-height: 1.6; color: var(--ink-2);
+  }
+  .obj__program span { max-width: 64ch; }
+  .obj__share { margin-top: clamp(56px, 7vw, 88px); }
+
+  @media (max-width: 1024px) {
+    .obj { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

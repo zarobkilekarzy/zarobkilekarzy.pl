@@ -1,0 +1,74 @@
+---
+/**
+ * Oś etapów (np. droga projektu ustawy do Sejmu): zakończone, bieżący, przed nami.
+ * Poziomo w szerokim kontenerze, pionowo w wąskim (container queries) — działa i na całą
+ * szerokość strony, i w kolumnie nagłówka. `compact` — bez dopowiedzeń, mniejsze odstępy.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { Stage } from '@/types';
+import { formatDate, isoDate, typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'div'> {
+  stages: Stage[];
+  /** nazwa listy dla czytników ekranu */
+  label: string;
+  compact?: boolean;
+}
+
+const STATE: Record<Stage['state'], string> = {
+  done: 'Zrobione',
+  current: 'Jesteśmy tu',
+  next: 'Przed nami',
+};
+
+const { stages, label, compact = false, class: className, ...rest } = Astro.props;
+---
+<div class:list={['track-wrap', { 'track-wrap--compact': compact }, className]} {...rest}>
+  <ol class="track" style={`--n: ${stages.length}`} aria-label={label}>
+    {stages.map((s) => (
+      <li class:list={['track__step', `track__step--${s.state}`]} aria-current={s.state === 'current' ? 'step' : undefined}>
+        <span class="track__mark" aria-hidden="true"></span>
+        <p class="track__state">
+          {STATE[s.state]}
+          {s.date && <> · <time datetime={isoDate(s.date)}>{formatDate(s.date)}</time></>}
+        </p>
+        <p class="track__label">{s.href ? <a href={s.href}>{typo(s.label)}</a> : typo(s.label)}</p>
+        {!compact && s.note && <p class="track__note">{typo(s.note)}</p>}
+      </li>
+    ))}
+  </ol>
+</div>
+
+<style>
+  .track-wrap { container-type: inline-size; }
+  .track { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+
+  .track__step { position: relative; padding: 30px 24px 0 0; }
+  /* odcinek od znacznika do następnego etapu: niebieski, gdy etap jest za nami */
+  .track__step::before { content: ""; position: absolute; top: 5px; left: 0; right: 0; height: 2px; background: var(--line-2); }
+  .track__step--done::before { background: var(--blue); }
+  .track__step:last-child::before { display: none; }
+
+  .track__mark { position: absolute; top: 0; left: 0; width: 12px; height: 12px; background: var(--surface); border: 2px solid var(--line-2); }
+  .track__step--done .track__mark { background: var(--blue); border-color: var(--blue); }
+  .track__step--current .track__mark { border-color: var(--blue); box-shadow: 0 0 0 4px var(--blue-100); }
+
+  .track__state { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .track__step--current .track__state { color: var(--blue); }
+  .track__label { margin-top: 8px; font: 500 1.125rem/1.25 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .track__step--next .track__label { color: var(--text); font-weight: 400; }
+  .track__label a { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; transition: color .2s, text-decoration-color .2s; }
+  .track__label a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .track__note { margin-top: 6px; font-size: 0.84375rem; line-height: 1.5; color: var(--muted); }
+
+  .track-wrap--compact .track__step { padding: 24px 16px 0 0; }
+  .track-wrap--compact .track__label { margin-top: 4px; font-size: 0.9375rem; }
+
+  /* Wąski kontener: oś pionowa, znacznik z lewej */
+  @container (max-width: 720px) {
+    .track { grid-template-columns: minmax(0, 1fr); }
+    .track__step, .track-wrap--compact .track__step { padding: 0 0 22px 30px; }
+    .track__step::before { top: 12px; bottom: 0; left: 5px; right: auto; width: 2px; height: auto; }
+    .track__state { line-height: 0.75rem; }
+  }
+</style>

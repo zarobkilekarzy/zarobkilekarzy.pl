@@ -1,0 +1,44 @@
+---
+/** Wyróżniony materiał: zdjęcie z etykietą, metadane, tytuł, lead. */
+import Photo from '@/components/ui/Photo.astro';
+import Badge from '@/components/ui/Badge.astro';
+import Meta from '@/components/ui/Meta.astro';
+import { articleHref, type Article } from '@/lib/content';
+import { typo } from '@/lib/format';
+
+interface Props {
+  article: Article;
+  /** atrybut sizes zdjęcia — zależy od szerokości kolumny w danym układzie */
+  sizes?: string;
+}
+
+const { article, sizes = '(min-width: 1025px) 690px, 100vw' } = Astro.props;
+const { title, summary, category, date, kicker, cover, coverAlt, coverPosition, badge } = article.data;
+---
+<article class="feature" data-reveal>
+  <a class="feature__link" href={articleHref(article)}>
+    {cover && (
+      <Photo src={cover} alt={coverAlt ?? ''} ratio="16/10" position={coverPosition} widths={[480, 720, 1080, 1600]} sizes={sizes} frame>
+        {badge && <Badge variant="light" icon="pin" label={badge} />}
+      </Photo>
+    )}
+    <div class="feature__body">
+      <Meta category={category} date={date} extra={kicker} />
+      <h3 class="feature__title">{typo(title)}</h3>
+      <p class="feature__desc">{typo(summary)}</p>
+    </div>
+  </a>
+</article>
+
+<style>
+  .feature__link { display: block; }
+  .feature__link:hover { --img-filter: grayscale(1) contrast(1.12) brightness(.96); }
+  .feature__body { padding-top: 28px; }
+  .feature__title {
+    font: 400 clamp(1.75rem, 2.6vw, 2.25rem)/1.1 var(--f-display); letter-spacing: -0.03em; color: var(--ink);
+    margin: 14px 0 14px; max-width: 22ch;
+    transition: color .2s;
+  }
+  .feature__link:hover .feature__title { color: var(--blue); }
+  .feature__desc { font-size: 1rem; max-width: 54ch; }
+</style>

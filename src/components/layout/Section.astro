@@ -1,0 +1,29 @@
+---
+/**
+ * Sekcja strony: tło, rytm pionowy i kontener `.wrap`.
+ * Atrybuty (id, aria-labelledby, class) trafiają na <section>.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'section'> {
+  tone?: 'default' | 'soft' | 'dark';
+  /** które odstępy pionowe zastosować */
+  space?: 'both' | 'top' | 'bottom' | 'none';
+  /** false = treść na pełną szerokość (sekcja sama układa .wrap) */
+  wrap?: boolean;
+}
+
+const { tone = 'default', space = 'both', wrap = true, class: className, ...rest } = Astro.props;
+---
+<section class:list={['section', `section--${tone}`, `section--space-${space}`, className]} {...rest}>
+  {wrap ? <div class="wrap"><slot /></div> : <slot />}
+</section>
+
+<style>
+  .section--space-both { padding-block: var(--section); }
+  .section--space-top { padding-top: var(--section); }
+  .section--space-bottom { padding-bottom: var(--section); }
+
+  .section--soft { background: var(--bg-soft); border-block: 1px solid var(--line); }
+  .section--dark { background: var(--inverse); color: rgba(255, 255, 255, .7); }
+</style>

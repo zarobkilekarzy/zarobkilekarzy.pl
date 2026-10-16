@@ -1,0 +1,40 @@
+---
+/**
+ * Okruszki nawigacyjne. Ostatni element to bieżąca strona (bez linku).
+ * Dane strukturalne (BreadcrumbList) powstają z tych samych okruszków w <head>:
+ * strona podaje je też w `seo.breadcrumbs` (BaseLayout → lib/seo/schema).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { Crumb } from '@/lib/seo';
+
+interface Props extends HTMLAttributes<'nav'> {
+  items: Crumb[];
+}
+
+const { items, class: className, ...rest } = Astro.props;
+---
+<nav class:list={['crumbs', className]} aria-label="Okruszki" {...rest}>
+  <ol>
+    {items.map((item, i) => (
+      <li>
+        {item.href && i < items.length - 1
+          ? <a href={item.href}>{item.label}</a>
+          : <span aria-current="page">{item.label}</span>}
+      </li>
+    ))}
+  </ol>
+</nav>
+
+<style>
+  ol { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; font: 400 0.75rem/1.4 var(--f-mono); letter-spacing: .02em; color: var(--muted); }
+  li { display: inline-flex; align-items: center; }
+  li + li::before { content: "/"; margin-inline: 10px; color: var(--line-2); }
+  a { color: var(--text); transition: color .2s; }
+  a:hover { color: var(--blue); }
+  span { color: var(--ink); }
+
+  /* Na wąskim ekranie bieżąca strona to i tak nagłówek tuż pod okruszkami */
+  @media (max-width: 720px) {
+    li:has([aria-current]):not(:first-child) { display: none; }
+  }
+</style>

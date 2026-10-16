@@ -1,0 +1,505 @@
+---
+/**
+ * Datagrid: wyszukiwarka, filtry z licznikami, sortowanie, rozwijane wiersze, eksport CSV.
+ *
+ * Serwer renderuje kompletny pierwszy widok (pasek filtrów z licznikami, nagłówek, pierwsze wiersze),
+ * więc strona działa i indeksuje się bez JS. W przeglądarce custom element (element.ts) pobiera
+ * pełne dane z `src` i przejmuje tabelę. Element definiuje komponent z konfiguracją:
+ *   <Datagrid tag="zl-monitoring" config={grid} json={dane} src="/…/dane.json" />
+ *   <script> defineDatagrid('zl-monitoring', grid) </script>
+ *
+ * Style są globalne z prefiksem .dg — wiersze powstają też w JS, a style zakresowe Astro ich nie obejmują.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import Popover from '@/components/ui/Popover.astro';
+import { formatPL, plural } from '@/lib/format';
+import { buildIndex, defaultState, extent, pageOf, query } from './engine';
+import { columnClass, esc, fullSpans, pageRange, renderPages, renderRows } from './render';
+import type { Column, GridConfig } from './types';
+
+interface Props extends HTMLAttributes<'div'> {
+  /** nazwa custom elementu zdefiniowanego przez defineDatagrid() */
+  tag: `${string}-${string}`;
+  config: GridConfig<any, any>;
+  /** te same dane, które przeglądarka pobierze z `src` */
+  json: unknown;
+  src: string;
+}
+
+const { tag, config, json, src, class: className, ...rest } = Astro.props;
+// nazwa custom elementu; dla TS to zwykły kontener z atrybutami <div>
+const Tag = tag as unknown as 'div';
+
+const { rows, data } = config.load(json);
+const state = defaultState(config);
+const result = query(config, buildIndex(config, rows), state);
+const extents = Object.fromEntries(config.columns.filter((c) => c.bar).map((c) => [c.id, extent(c, rows)]));
+const page = pageOf(result.rows, state);
+const body = renderRows(config, page.rows, {
+  ctx: { data, mark: esc, sort: state.sort },
+  spans: fullSpans(config),
+  open: new Set(),
+  extents,
+  prefix: tag,
+});
+
+const count = (facet: string, value: string) => formatPL(result.counts[facet][value] ?? 0);
+const barFacets = config.facets.filter((f) => f.display === 'bar');
+const menuFacets = config.facets.filter((f) => f.display !== 'bar');
+
+// wiersz grup w nagłówku: kolejne kolumny tej samej grupy (albo bez grupy) tworzą jeden odcinek
+const segments: { group?: string; cols: Column<any, any>[] }[] = [];
+for (const col of config.columns) {
+  const last = segments.at(-1);
+  if (last && last.group === col.group) last.cols.push(col);
+  else segments.push({ group: col.group, cols: [col] });
+}
+const groupLabel = (id?: string) => config.groups?.find((g) => g.id === id)?.label;
+const hasGroups = segments.some((s) => s.group);
+
+const sortOptions = config.columns
+  .filter((c) => c.sort)
+  .flatMap((c) => {
+    const text = c.align !== 'end';
+    const first = c.dir ?? 'asc';
+    return (first === 'desc' ? ['desc', 'asc'] : ['asc', 'desc']).map((dir) => ({
+      value: `${c.id}:${dir}`,
+      label: `${c.label}: ${text ? (dir === 'asc' ? 'A–Z' : 'Z–A') : dir === 'desc' ? 'od największych' : 'od najmniejszych'}`,
+    }));
+  });
+
+const ariaSort = (c: Column<any, any>) =>
+  state.sort.by === c.id ? (state.sort.dir === 'asc' ? 'ascending' : 'descending') : undefined;
+const popId = (id: string) => `${tag}-pop-${id}`;
+const pageSizes = config.pageSizes ?? [config.pageSize];
+const smallestPage = Math.min(...pageSizes.filter((n) => n > 0));
+const nounAll = plural(rows.length, config.noun);
+---
+<Tag class:list={['dg', className]} data-src={src} data-prefix={tag} aria-busy="true" {...rest}>
+  {barFacets.map((f) => (
+    <div class="dg-dist" role="group" aria-labelledby={`${tag}-${f.id}-label`}>
+      <div class="dg-dist__head">
+        <p class="dg-label" id={`${tag}-${f.id}-label`}>{f.label} · {formatPL(rows.length)} {nounAll}</p>
+        <p class="dg-dist__tip">
+          Kliknij kategorię, by zawęzić listę
+          {f.hint && <Popover id={popId(f.id)} variant="hint" placement="bottom" label={`Wyjaśnienie: ${f.label}`} heading={f.label}>{f.hint}</Popover>}
+        </p>
+      </div>
+      <div class="dg-dist__track" aria-hidden="true">
+        {f.options.map((o) => (
+          <span
+            class="dg-dist__seg"
+            data-tone={o.tone}
+            data-dg-seg={`${f.id}:${o.value}`}
+            style={`flex-grow:${result.counts[f.id][o.value] ?? 0}`}
+            title={o.label}
+          />
+        ))}
+      </div>
+      <ul class="dg-dist__legend">
+        {f.options.map((o) => (
+          <li>
+            <button type="button" class="dg-pick" data-tone={o.tone} data-dg-pick={`${f.id}:${o.value}`} aria-pressed="false">
+              <span class="dg-pick__dot" aria-hidden="true" />{o.label}<b data-dg-count={`${f.id}:${o.value}`}>{count(f.id, o.value)}</b>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+
+  <div class="dg-bar" data-dg-toolbar>
+    <div class="dg-bar__row">
+      <div class="dg-search">
+        <label class="sr-only" for={`${tag}-q`}>{config.search.label}</label>
+        <Icon name="search" size={18} />
+        <input
+          id={`${tag}-q`}
+          type="search"
+          data-dg-search
+          placeholder={config.search.placeholder}
+          autocomplete="off"
+          spellcheck="false"
+          enterkeyhint="search"
+        />
+        <kbd aria-hidden="true">/</kbd>
+      </div>
+
+      <div class="dg-filters">
+        {menuFacets.map((f) => (
+          <details class="dg-menu" data-dg-menu={f.id}>
+            <summary class="dg-btn">{f.label}<span class="dg-menu__n" data-dg-picked={f.id} hidden>0</span></summary>
+            <div class="dg-menu__panel">
+              {f.hint && <p class="dg-menu__hint">{f.hint}</p>}
+              <fieldset>
+                <legend class="sr-only">{f.label}</legend>
+                {f.options.map((o) => (
+                  <label class="dg-opt">
+                    <input type="checkbox" data-dg-opt={f.id} value={o.value} />
+                    <span>{o.label}</span>
+                    <span class="dg-opt__n" data-dg-count={`${f.id}:${o.value}`}>{count(f.id, o.value)}</span>
+                  </label>
+                ))}
+              </fieldset>
+            </div>
+          </details>
+        ))}
+
+        {config.toggles?.map((t) => (
+          <label class="dg-switch">
+            <input type="checkbox" role="switch" data-dg-toggle={t.id} checked={state.toggles.includes(t.id)} />
+            <span class="dg-switch__track" aria-hidden="true" />
+            {t.label}
+            <span class="dg-switch__n" data-dg-count={`toggle:${t.id}`}>{formatPL(result.toggles[t.id])}</span>
+          </label>
+        ))}
+
+        <label class="dg-sortsel">
+          <span class="sr-only">Sortowanie</span>
+          <select data-dg-sortselect>
+            {sortOptions.map((o) => <option value={o.value} selected={o.value === `${state.sort.by}:${state.sort.dir}`}>{o.label}</option>)}
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="dg-bar__row dg-bar__row--status">
+      <p class="dg-total" data-dg-total aria-live="polite"><strong>{formatPL(rows.length)}</strong> {nounAll}</p>
+      <div class="dg-chips" data-dg-chips hidden></div>
+      <p class="dg-relaxed" data-dg-relaxed role="status" hidden></p>
+      <div class="dg-actions">
+        <button type="button" class="dg-act" data-dg-copy>Kopiuj link</button>
+        {config.csv && <button type="button" class="dg-act" data-dg-csv>CSV</button>}
+        <a class="dg-act" href={src} download>JSON</a>
+      </div>
+    </div>
+    <p class="dg-error" role="alert">Nie udało się wczytać danych do filtrowania. Odśwież stronę albo pobierz <a href={src} download>plik JSON</a>.</p>
+  </div>
+
+  <table class="dg-table" data-dg-table aria-rowcount={result.rows.length + (hasGroups ? 2 : 1)}>
+    <caption class="sr-only">{config.caption}</caption>
+    <thead>
+      {hasGroups && (
+        <tr class="dg-groups">
+          {segments.map((s, i) => {
+            const ids = s.cols.map((c) => c.id).join(' ');
+            const span = s.cols.length + (i === 0 ? 1 : 0);
+            return s.group
+              ? <th scope="colgroup" colspan={span} data-dg-cols={ids} data-dg-lead={i === 0 ? '' : undefined}>{groupLabel(s.group)}</th>
+              : <td colspan={span} data-dg-cols={ids} data-dg-lead={i === 0 ? '' : undefined} />;
+          })}
+        </tr>
+      )}
+      <tr class="dg-head">
+        <td class="dg-c dg-x" />
+        {config.columns.map((c) => (
+          <th
+            scope="col"
+            class={columnClass(c, state.sort)}
+            data-col={c.id}
+            data-group={c.group}
+            style={c.width && `width:${c.width}`}
+            aria-sort={ariaSort(c)}
+          >
+            <span class="dg-th">
+              {c.sort
+                ? <button type="button" class="dg-sort" data-dg-sort={c.id}>{c.label}<span class="dg-sort__ico" aria-hidden="true" /></button>
+                : <span class="dg-th__label">{c.label}</span>}
+              {c.hint && <Popover id={popId(c.id)} variant="hint" placement="bottom" label={`Co to znaczy: ${c.label}`} heading={c.label}>{c.hint}</Popover>}
+            </span>
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody data-dg-body set:html={body} />
+  </table>
+
+  <div class="dg-empty" data-dg-empty hidden>
+    <p><strong>Nic nie pasuje do tych filtrów.</strong> Usuń któryś z nich powyżej albo</p>
+    <button type="button" class="dg-btn" data-dg-reset>wyczyść wszystkie</button>
+  </div>
+
+  <nav class="dg-pager" data-dg-pager aria-label="Strony tabeli" hidden={result.rows.length <= smallestPage}>
+    <p class="dg-pager__range" data-dg-range>{pageRange(page.from, page.rows.length, result.rows.length)}</p>
+    <div class="dg-pager__pages" data-dg-pages set:html={renderPages(page.page, page.pages)} />
+    {pageSizes.length > 1 && (
+      <label class="dg-perpage">
+        Na stronie
+        <select data-dg-perpage>
+          {pageSizes.map((n) => <option value={n} selected={n === state.perPage}>{n > 0 ? n : 'wszystkie'}</option>)}
+        </select>
+      </label>
+    )}
+  </nav>
+
+  <noscript><p class="dg-noscript">Wyszukiwanie, filtry i sortowanie działają z włączonym JavaScriptem. Pełne dane: <a href={src}>plik JSON</a>.</p></noscript>
+</Tag>
+
+<style is:global>
+  .dg {
+    --dg-bar-h: 0px;
+    --dg-x: 34px;
+    display: block;
+    container: dg / inline-size;
+  }
+
+  /* ---------- Pasek rozkładu (filtr w formie wykresu) ---------- */
+  .dg-dist { padding: 18px 0 22px; border-top: 1px solid var(--ink); }
+  .dg-dist__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; margin-bottom: 14px; }
+  .dg-label { font: 500 0.71875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+  .dg-dist__tip { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--muted); }
+  .dg-dist__track { display: flex; gap: 2px; height: 16px; }
+  .dg-dist__seg {
+    flex: 0 1 0; min-width: 0; background: var(--tone, var(--line-2)); cursor: pointer;
+    transition: flex-grow .5s var(--ease), opacity .2s;
+  }
+  .dg-dist__seg:hover { filter: brightness(.92); }
+  .dg-dist__seg.is-off { opacity: .18; }
+  .dg-dist__legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .dg-pick {
+    display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px;
+    border: 1px solid var(--line); background: var(--bg); font-size: 0.875rem; color: var(--ink);
+    transition: border-color .15s, background .15s;
+  }
+  .dg-pick:hover { border-color: var(--line-2); background: var(--bg-soft); }
+  .dg-pick[aria-pressed="true"] { border-color: var(--ink); background: var(--bg-soft); box-shadow: inset 0 0 0 1px var(--ink); }
+  .dg-pick__dot { width: 10px; height: 10px; background: var(--tone, var(--line-2)); }
+  .dg-pick b { font: 500 0.75rem/1 var(--f-mono); color: var(--muted); }
+
+  /* ---------- Pasek narzędzi (przyklejony pod nagłówkiem strony) ---------- */
+  .dg-bar {
+    position: sticky; top: var(--header-h); z-index: 20;
+    padding: 12px 0; background: var(--bg); border-block: 1px solid var(--line);
+  }
+  .dg-bar__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .dg-bar__row--status { gap: 8px 16px; margin-top: 10px; min-height: 28px; }
+
+  .dg-search { position: relative; flex: 1 1 300px; max-width: 460px; }
+  .dg-search .icon { position: absolute; left: 12px; top: 50%; translate: 0 -50%; color: var(--muted); pointer-events: none; }
+  .dg-search input {
+    width: 100%; height: 42px; padding: 0 40px; appearance: none; border-radius: 0;
+    border: 1px solid var(--line-2); background: var(--bg); font-size: 0.9375rem; color: var(--ink);
+  }
+  .dg-search input::placeholder { color: var(--muted); }
+  .dg-search input:focus { outline: 2px solid var(--blue); outline-offset: -2px; border-color: var(--blue); }
+  .dg-search kbd { position: absolute; right: 10px; top: 50%; translate: 0 -50%; }
+  .dg-search input:focus ~ kbd, .dg-search input:not(:placeholder-shown) ~ kbd { display: none; }
+  @media (hover: none) { .dg-search kbd { display: none; } }
+
+  .dg-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .dg-btn {
+    display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px;
+    border: 1px solid var(--line-2); background: var(--bg); font: 500 0.875rem/1 var(--f-body); color: var(--ink);
+    white-space: nowrap; cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .dg-btn:hover { border-color: var(--ink); }
+  .dg-btn--primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .dg-btn--primary:hover { background: var(--blue); border-color: var(--blue); }
+
+  .dg-menu { position: relative; }
+  .dg-menu > summary { list-style: none; user-select: none; }
+  .dg-menu > summary::-webkit-details-marker { display: none; }
+  .dg-menu > summary::after {
+    content: ""; width: 6px; height: 6px; margin-left: 2px;
+    border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+    rotate: 45deg; translate: 0 -2px; transition: rotate .2s, translate .2s;
+  }
+  .dg-menu[open] > summary { border-color: var(--ink); }
+  .dg-menu[open] > summary::after { rotate: -135deg; translate: 0 2px; }
+  .dg-menu__n {
+    display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px;
+    background: var(--blue-fill); color: #fff; font: 500 0.6875rem/1 var(--f-mono);
+  }
+  .dg-menu__panel {
+    position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
+    width: max-content; min-width: 260px; max-width: min(380px, 90vw); max-height: min(60vh, 460px); overflow: auto;
+    padding: 6px; background: var(--bg); border: 1px solid var(--ink);
+    box-shadow: 0 24px 48px -24px rgba(4, 11, 27, .35);
+  }
+  .dg-menu__panel fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  .dg-menu__hint { padding: 8px 10px 12px; margin-bottom: 4px; border-bottom: 1px solid var(--line); font-size: 0.8125rem; line-height: 1.5; color: var(--text); max-width: 46ch; }
+  .dg-opt { display: grid; grid-template-columns: 16px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; font-size: 0.90625rem; color: var(--ink); cursor: pointer; }
+  .dg-opt:hover { background: var(--bg-soft); }
+  .dg-opt input { width: 16px; height: 16px; margin: 0; accent-color: var(--blue); }
+  .dg-opt__n { font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+  .dg-opt:has(input:disabled) { opacity: .45; cursor: default; }
+  .dg-opt:has(input:disabled):hover { background: none; }
+
+  .dg-switch {
+    position: relative; display: inline-flex; align-items: center; gap: 10px; height: 42px; padding: 0 12px;
+    border: 1px solid var(--line-2); font: 500 0.875rem/1 var(--f-body); color: var(--ink); white-space: nowrap; cursor: pointer;
+  }
+  .dg-switch:hover, .dg-switch:has(input:checked) { border-color: var(--ink); }
+  .dg-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .dg-switch__track { position: relative; width: 30px; height: 18px; background: var(--line-2); transition: background .2s; }
+  .dg-switch__track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; background: #fff; transition: translate .2s var(--ease); } /* kolor-stały: gałka przełącznika */
+  .dg-switch input:checked + .dg-switch__track { background: var(--blue-fill); }
+  .dg-switch input:checked + .dg-switch__track::after { translate: 12px 0; }
+  .dg-switch input:focus-visible + .dg-switch__track { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .dg-switch__n { font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+  /* włączony, ale chwilowo pominięty (brak wyników z nim) */
+  .dg-switch.is-relaxed { border-style: dashed; border-color: var(--line-2); }
+  .dg-switch.is-relaxed input:checked + .dg-switch__track { background: var(--blue-pale); }
+
+  .dg-relaxed {
+    flex-basis: 100%; order: 3; padding: 8px 12px; background: var(--blue-50); border-left: 2px solid var(--blue);
+    font-size: 0.84375rem; line-height: 1.45; color: var(--ink);
+  }
+
+  .dg-sortsel { display: none; }
+  .dg-sortsel select {
+    height: 42px; max-width: 100%; padding: 0 34px 0 12px; appearance: none; border-radius: 0;
+    border: 1px solid var(--line-2); font: 500 0.875rem/1 var(--f-body); color: var(--ink);
+    background: var(--bg) var(--select-arrow) no-repeat right 12px center;
+  }
+
+  .dg-total { font-size: 0.875rem; color: var(--text); white-space: nowrap; }
+  .dg-total strong { font-weight: 600; color: var(--ink); }
+  .dg[aria-busy="true"] .dg-total::after { content: " · wczytuję dane…"; color: var(--muted); }
+  .dg-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .dg-chip {
+    display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px 0 10px;
+    background: var(--blue-50); border: 1px solid var(--blue-100); color: var(--blue-700); font-size: 0.8125rem;
+  }
+  .dg-chip:hover { border-color: var(--blue); }
+  .dg-chip__x { position: relative; width: 9px; height: 9px; }
+  .dg-chip__x::before, .dg-chip__x::after { content: ""; position: absolute; left: 4px; top: -1px; width: 1.5px; height: 11px; background: currentColor; rotate: 45deg; }
+  .dg-chip__x::after { rotate: -45deg; }
+  .dg-clear { font-size: 0.8125rem; color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+  .dg-clear:hover { color: var(--blue); }
+  .dg-actions { display: flex; gap: 2px; margin-left: auto; }
+  .dg-act {
+    padding: 7px 9px; border: 1px solid transparent; font: 500 0.71875rem/1 var(--f-mono); letter-spacing: .06em;
+    text-transform: uppercase; color: var(--text); white-space: nowrap;
+  }
+  .dg-act:hover { color: var(--blue); border-color: var(--line); }
+  .dg-error { display: none; margin-top: 10px; padding: 10px 12px; background: var(--bad-bg); color: var(--bad); font-size: 0.875rem; }
+  .dg-error a { text-decoration: underline; }
+  .dg[data-failed] .dg-error { display: block; }
+
+  /* Dymki z definicjami (przy etykietach i w nagłówkach kolumn): ui/Popover, variant="hint" */
+
+  /* ---------- Tabela ---------- */
+  .dg-table { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+  .dg-table thead { position: sticky; top: calc(var(--header-h) + var(--dg-bar-h)); z-index: 10; background: var(--bg); }
+  .dg-groups > * { padding: 16px 12px 6px; text-align: left; vertical-align: bottom; }
+  .dg-groups th { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); border-bottom: 2px solid var(--ink); }
+  .dg-head > * { padding: 10px 12px; text-align: left; vertical-align: bottom; font-weight: 400; border-bottom: 1px solid var(--ink); }
+  .dg-head > .dg-x { width: var(--dg-x); padding: 0; }
+  /* kolumna bez zadanej szerokości bierze całą resztę miejsca (pozostałe mają szerokość z konfiguracji) */
+  .dg-head > .dg-flex { width: 100%; }
+  /* etykiety mogą się złamać na dwa wiersze — kolumny liczbowe trzymają szerokość z konfiguracji */
+  .dg-th { display: flex; align-items: flex-end; gap: 4px 6px; }
+  .dg-head .dg-num { text-align: right; }
+  .dg-head .dg-num .dg-th { justify-content: flex-end; }
+  .dg-sort, .dg-th__label {
+    display: inline-block; text-align: inherit;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+  }
+  .dg-sort__ico { display: inline-block; margin-left: 3px; }
+  .dg-sort:hover, .dg-head .is-sorted .dg-sort { color: var(--ink); }
+  .dg-sort__ico::before { content: "↕"; opacity: .35; }
+  .dg-head [aria-sort="descending"] .dg-sort__ico::before { content: "↓"; opacity: 1; color: var(--blue); }
+  .dg-head [aria-sort="ascending"] .dg-sort__ico::before { content: "↑"; opacity: 1; color: var(--blue); }
+
+  .dg-row > td { padding: 14px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .dg-row:hover > td { background: var(--bg-soft); }
+  .dg-row.is-expandable { cursor: pointer; }
+  .dg-row.is-open > td { background: var(--blue-50); border-bottom-color: transparent; }
+  .dg-row > .dg-x { width: var(--dg-x); padding: 12px 0 0; text-align: center; box-shadow: inset 3px 0 0 var(--tone, transparent); }
+  .dg-toggle { display: inline-grid; place-items: center; width: 26px; height: 26px; color: var(--muted); }
+  .dg-toggle::before {
+    content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+    rotate: -45deg; transition: rotate .2s var(--ease);
+  }
+  .dg-row:hover .dg-toggle, .dg-row.is-open .dg-toggle { color: var(--blue); }
+  .dg-row.is-open .dg-toggle::before { rotate: 45deg; }
+
+  .dg-num { text-align: right; white-space: nowrap; }
+  td.dg-num { font-size: 0.9375rem; line-height: 1.4; color: var(--ink); }
+  .dg-u { font-size: 0.75rem; color: var(--muted); }
+  td.is-sorted { position: relative; font-weight: 500; }
+  /* pasek tuż pod liczbą (komórki są wyrównane do góry, a wiersz bywa wysoki) */
+  td.is-sorted[style]::after {
+    content: ""; position: absolute; right: 12px; top: calc(14px + 1.4em + 3px); height: 3px;
+    width: calc((100% - 24px) * var(--dg-bar)); background: var(--blue); opacity: .3;
+  }
+  .dg-void { vertical-align: middle !important; font-size: 0.84375rem; line-height: 1.45; color: var(--muted); }
+  .dg-detail > td { padding: 0; background: var(--blue-50); border-bottom: 1px solid var(--line); box-shadow: inset 3px 0 0 var(--blue); }
+  .dg-table mark { background: light-dark(#FFEB99, #5C4B0A); color: inherit; padding: 0 1px; }
+
+  .dg-empty { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 40px 0; border-bottom: 1px solid var(--line); color: var(--text); }
+  .dg-empty strong { color: var(--ink); }
+  /* ---------- Paginacja ---------- */
+  .dg-pager { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px 24px; padding: 24px 0; }
+  .dg-pager__range { font: 400 0.78125rem/1.3 var(--f-mono); color: var(--muted); }
+  .dg-pager__pages { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+  .dg-page {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 40px; height: 40px; padding: 0 10px;
+    border: 1px solid var(--line-2); background: var(--bg); font: 500 0.875rem/1 var(--f-body); color: var(--ink);
+    font-variant-numeric: tabular-nums; transition: border-color .15s, background .15s;
+  }
+  .dg-page:hover:not(:disabled) { border-color: var(--ink); }
+  .dg-page[aria-current="page"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .dg-page:disabled { opacity: .35; cursor: default; }
+  .dg-page--prev, .dg-page--next { padding: 0 14px; }
+  .dg-page__gap { align-self: center; min-width: 20px; text-align: center; color: var(--muted); }
+  .dg-perpage { justify-self: end; display: inline-flex; align-items: center; gap: 10px; font-size: 0.84375rem; color: var(--text); white-space: nowrap; }
+  .dg-perpage select {
+    height: 40px; padding: 0 32px 0 12px; appearance: none; border-radius: 0; border: 1px solid var(--line-2);
+    font: 500 0.875rem/1 var(--f-body); color: var(--ink);
+    background: var(--bg) var(--select-arrow) no-repeat right 12px center;
+  }
+  .dg-noscript { padding: 16px 0; color: var(--text); }
+  .dg-noscript a { color: var(--blue); text-decoration: underline; }
+
+  /* ---------- Węższa tabela: najpierw znikają kolumny o priorytecie 3, potem 2 ---------- */
+  /* .dg .dg-pN — mocniej niż reguły kart (.dg-row > td), żeby kolumna znikała w obu widokach */
+  @container dg (max-width: 1099px) {
+    .dg .dg-p3 { display: none; }
+  }
+  @container dg (min-width: 720px) and (max-width: 939px) {
+    .dg .dg-p2 { display: none; }
+  }
+
+  /* ---------- Karty zamiast tabeli (wąski ekran) ---------- */
+  @container dg (max-width: 719px) {
+    .dg-bar { position: relative; top: auto; }
+    .dg-search { flex-basis: 100%; max-width: none; }
+    .dg-menu { position: static; }
+    .dg-menu__panel { left: 0; right: 0; width: auto; max-width: none; }
+    .dg-sortsel { display: block; flex: 1 1 100%; }
+    .dg-sortsel select { width: 100%; }
+    .dg-actions { margin-left: 0; }
+    .dg-dist__legend { gap: 4px; }
+    .dg-pick { height: 32px; font-size: 0.8125rem; padding: 0 8px; }
+
+    .dg-table, .dg-table tbody, .dg-detail, .dg-detail > td { display: block; }
+    .dg-table thead { display: block; position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .dg-row {
+      position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
+      padding: 16px 12px 16px 16px; border-bottom: 1px solid var(--line);
+      box-shadow: inset 3px 0 0 var(--tone, transparent);
+    }
+    .dg-row:hover > td, .dg-row.is-open > td { background: none; }
+    .dg-row.is-open { background: var(--blue-50); }
+    .dg-row > td { display: block; padding: 0; border: 0; }
+    .dg-row > .dg-x { position: absolute; top: 12px; right: 4px; width: auto; padding: 0; box-shadow: none; }
+    .dg-row > .dg-flex, .dg-row > .dg-void { grid-column: 1 / -1; }
+    .dg-row > .dg-flex { padding-right: 28px; }
+    .dg-row > td.dg-num { text-align: left; }
+    .dg-row > td[data-label]:not(.dg-flex)::before {
+      content: attr(data-label); display: block; margin-bottom: 3px;
+      font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    }
+    td.is-sorted[style]::after { left: 0; right: auto; top: auto; bottom: -5px; width: calc(100% * var(--dg-bar)); }
+    .dg-detail > td { box-shadow: none; }
+
+    .dg-pager { grid-template-columns: 1fr auto; }
+    .dg-pager__pages { grid-column: 1 / -1; grid-row: 1; gap: 3px; }
+    .dg-page { min-width: 36px; height: 38px; padding: 0 6px; font-size: 0.84375rem; }
+    .dg-page--prev, .dg-page--next { padding: 0 10px; }
+    .dg-page__word { display: none; }
+  }
+</style>

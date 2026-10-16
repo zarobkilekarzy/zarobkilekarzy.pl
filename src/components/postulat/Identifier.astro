@@ -1,0 +1,102 @@
+---
+/**
+ * /postulat/ — jak działa identyfikator: analogia z tablicą rejestracyjną i przykład
+ * funkcji z kluczem tajnym liczony w przeglądarce (PseudonymDemo).
+ * Pierwszy widok liczy build (node:crypto), więc karta i przykład pokazują ten sam identyfikator.
+ */
+import { createHmac } from 'node:crypto';
+import Section from '@/components/layout/Section.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import PseudonymDemo from '@/components/postulat/PseudonymDemo.astro';
+import { groups, neighbour } from '@/components/postulat/pseudonym';
+import { identifier, pseudonymDemo } from '@/data/postulat';
+import { typo } from '@/lib/format';
+
+const hmac = (key: string, message: string) => createHmac('sha256', key).update(message).digest('hex');
+const id = hmac(pseudonymDemo.key, pseudonymDemo.pwz);
+const nearPwz = neighbour(pseudonymDemo.pwz);
+const nearId = hmac(pseudonymDemo.key, nearPwz);
+const { car, pay, rows } = identifier.analogy;
+---
+<Section id="identyfikator" aria-labelledby="identyfikator-title">
+  <div class="ident">
+    <div class="ident__intro">
+      <Eyebrow>Jak działa identyfikator</Eyebrow>
+      <Heading id="identyfikator-title">{typo(identifier.title)}</Heading>
+      <p class="ident__lead">{typo(identifier.lead)}</p>
+    </div>
+
+    <div class="analogy" role="table" aria-label="Tablica rejestracyjna a identyfikator w danych o wynagrodzeniach">
+      <div class="analogy__row analogy__row--head" role="row">
+        <span role="columnheader" class="analogy__corner"></span>
+        <div role="columnheader" class="analogy__obj">
+          <span class="analogy__name">{car.title}</span>
+          <span class="plate" aria-label={`tablica ${car.plate}`}>
+            <span class="plate__eu" aria-hidden="true"><span class="plate__stars"></span>PL</span>
+            <span class="plate__num">{car.plate}</span>
+          </span>
+        </div>
+        <div role="columnheader" class="analogy__obj">
+          <span class="analogy__name">{pay.title}</span>
+          <span class="pid" aria-label="identyfikator">{groups(id.slice(0, 8), 4).join(' ')}…</span>
+        </div>
+      </div>
+      {rows.map((row) => (
+        <div class="analogy__row" role="row">
+          <p role="rowheader" class="analogy__label">{row.label}</p>
+          <p role="cell">{typo(row.car)}</p>
+          <p role="cell" class="analogy__pay">{typo(row.pay)}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <PseudonymDemo pseudonym={id} nearPwz={nearPwz} nearId={nearId} class="ident__demo" />
+</Section>
+
+<style>
+  .ident { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+  .ident__lead { margin-top: 24px; font-size: 1.0625rem; line-height: 1.7; max-width: 44ch; color: var(--ink-2); }
+
+  .analogy { container-type: inline-size; border-top: 1px solid var(--ink); }
+  .analogy__row { display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr); gap: 0 24px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .analogy__row--head { align-items: end; padding: 20px 0; }
+  .analogy__obj { display: grid; gap: 12px; justify-items: start; }
+  .analogy__name { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .analogy__row .analogy__label { font: 500 0.6875rem/1.6 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .analogy__row p { font-size: 0.96875rem; line-height: 1.55; color: var(--ink-2); }
+  .analogy__row .analogy__pay { color: var(--ink); }
+
+  /* Tablica rejestracyjna — przedmiot z rzeczywistości, więc te same kolory w obu trybach */
+  /* kolor-stały: początek — tablica rejestracyjna */
+  .plate { display: inline-flex; height: 44px; border: 2px solid #111; border-radius: 5px; background: #fff; color: #111; overflow: hidden; }
+  .plate__eu {
+    display: grid; place-items: center; align-content: center; gap: 2px; width: 26px;
+    background: #003399; color: #fff; font: 600 0.625rem/1 var(--f-body);
+  }
+  .plate__stars { width: 12px; height: 12px; border-radius: 50%; border: 1.5px dotted #FFCC00; }
+  /* kolor-stały: koniec */
+  .plate__num { display: grid; place-items: center; padding: 0 14px; font: 600 1.375rem/1 var(--f-mono); letter-spacing: .06em; }
+
+  .pid {
+    display: inline-flex; align-items: center; height: 44px; padding: 0 14px;
+    border: 1px solid var(--blue); background: var(--blue-50); color: var(--ink);
+    font: 500 1.125rem/1 var(--f-mono); letter-spacing: .02em; white-space: nowrap;
+  }
+
+  .ident__demo { margin-top: clamp(56px, 7vw, 88px); }
+
+  /* Wąsko: etykieta wiersza nad parą „samochód | wynagrodzenia” */
+  @container (max-width: 560px) {
+    .analogy__row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 16px; }
+    .analogy__label, .analogy__corner { grid-column: 1 / -1; }
+    .analogy__corner { display: none; }
+    .plate__num { padding: 0 10px; font-size: 1.0625rem; }
+    .pid { padding: 0 10px; font-size: 0.875rem; }
+  }
+
+  @media (max-width: 1024px) {
+    .ident { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

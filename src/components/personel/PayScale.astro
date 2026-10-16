@@ -1,0 +1,97 @@
+---
+/**
+ * Ustawowa siatka płac w ochronie zdrowia — tabela z paskami w komórkach (minimum zasadnicze
+ * na wspólnej skali od zera). Kwoty liczy ze współczynników i kwoty bazowej
+ * (data/personel-medyczny.ts), więc 1 lipca wystarczy zmienić BASE.
+ * Niebieski pasek — zawody opisane w zestawieniu, szary — lekarze dla porównania.
+ * W wąskim kontenerze wiersz staje się kartą.
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import { BASE, NON_MEDICAL, PAY_SCALE, minimum } from '@/data/personel-medyczny';
+import { formatPL, typo } from '@/lib/format';
+
+interface Props {
+  /** publikacja z pełną siatką — z listy `sources` artykułu */
+  source: { label: string; href?: string };
+}
+
+const { source } = Astro.props;
+
+const rows = PAY_SCALE.map((g) => ({ ...g, amount: minimum(g.coef) }));
+const amounts = rows.map((r) => r.amount);
+const max = Math.max(...amounts);
+const zl = (n: number, decimals = 0) => `${formatPL(n, decimals)} zł`;
+---
+<Figure
+  title={`Od ${zl(Math.min(...amounts))} do ${zl(max)} — tyle co najmniej wynosi płaca zasadnicza na etacie od ${BASE.from}`}
+  note={`Minimum = współczynnik × kwota bazowa ${zl(BASE.amount, 2)} (${BASE.basis}). Bez dyżurów, nadgodzin i dodatków. Niżej w siatce są grupy niemedyczne, np. ${NON_MEDICAL.title} (grupa ${NON_MEDICAL.group}): ${zl(minimum(NON_MEDICAL.coef))}. Niebieski pasek — zawody opisane w tym zestawieniu, szary — lekarze dla porównania.`}
+  source={source}
+>
+  <table class="scale" data-reveal="grow" style={`--max: ${max}`}>
+    <thead>
+      <tr>
+        <th scope="col">Grupa i zawody</th>
+        <th scope="col">Współczynnik</th>
+        <th scope="col">Minimum zasadnicze</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((r) => (
+        <tr class:list={{ 'is-doctor': r.doctor }}>
+          <th scope="row">
+            <span class="scale__group">Grupa {r.group}</span>
+            {typo(r.title)}
+            {r.note && <span class="scale__note">{typo(r.note)}</span>}
+          </th>
+          <td data-label="Współczynnik" class="scale__coef">×{formatPL(r.coef, 2)}</td>
+          <td data-label="Minimum" style={`--v: ${r.amount}`}>
+            <span class="scale__v">{formatPL(r.amount, 2)}<small> zł/mies.</small></span>
+            <span class="scale__bar" aria-hidden="true"></span>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</Figure>
+
+<style>
+  .scale { width: 100%; border-collapse: collapse; }
+  /* .scale przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .scale thead th {
+    padding: 0 16px 10px 0; text-align: left; vertical-align: bottom;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .scale thead th:last-child { width: 34%; }
+  .scale tbody th, .scale td { padding: 16px 16px 16px 0; vertical-align: top; border-bottom: 1px solid var(--line); }
+  .scale tbody th { font: 500 0.9375rem/1.4 var(--f-display); letter-spacing: -0.01em; text-transform: none; color: var(--ink); }
+  .scale__group { display: block; margin-bottom: 4px; font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--blue); }
+  .scale__note { display: block; margin-top: 4px; font: 400 0.84375rem/1.5 var(--f-body); letter-spacing: 0; color: var(--muted); }
+  .scale__coef { font: 400 0.875rem/1.6 var(--f-mono); color: var(--ink-2); white-space: nowrap; }
+
+  .scale__v { display: block; font: 400 1.375rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scale__v small { font: 400 0.78125rem/1 var(--f-body); letter-spacing: 0; color: var(--muted); }
+  .scale__bar { display: block; position: relative; height: 8px; margin-top: 10px; }
+  .scale__bar::after {
+    content: ""; position: absolute; inset: 0 auto 0 0;
+    width: calc(var(--v) / var(--max) * 100%); background: var(--blue);
+    transform-origin: left; transition: transform 1.1s var(--ease);
+  }
+  .scale.is-armed .scale__bar::after { transform: scaleX(0); }
+  .scale.is-armed.is-in .scale__bar::after { transform: scaleX(1); }
+
+  /* Lekarze — punkt odniesienia, wyciszeni */
+  .is-doctor .scale__group { color: var(--muted); }
+  .is-doctor .scale__bar::after { background: var(--chart); }
+
+  /* Wąsko: grupa = karta, współczynnik i kwota w jednym wierszu, pasek pod spodem */
+  @container (max-width: 560px) {
+    .scale thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .scale, .scale tbody, .scale tbody th { display: block; width: auto; }
+    .scale tr { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 10px 16px; padding: 16px 0; border-bottom: 1px solid var(--line-2); }
+    .scale tbody th { grid-column: 1 / -1; padding: 0; border: 0; }
+    .scale td { display: block; padding: 0; border: 0; }
+    .scale__v { text-align: right; }
+    .scale__bar { margin-top: 8px; }
+  }
+</style>

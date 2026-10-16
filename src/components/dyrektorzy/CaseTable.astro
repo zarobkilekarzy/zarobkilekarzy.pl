@@ -1,0 +1,110 @@
+---
+/**
+ * Przypadki kadry zarządzającej szpitali z oświadczeń majątkowych: za kierowanie, praca lekarska
+ * i inne dochody, łącznie, kondycja szpitala i źródła wiersza. Kolumna „Za kierowanie” stoi
+ * pierwsza z kwot, bo to ją trzeba odróżnić od sumy. W wąskim kontenerze wiersz staje się kartą
+ * z etykietą kolumny nad komórką (jak english-division/SourcedTable). Statycznie, bez JS.
+ * Ramę (teza, uwagi) daje blocks/Figure w artykule.
+ */
+import type { Amount, DirectorCase } from '@/data/zarobki-dyrektorow-szpitali';
+import { typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Props {
+  cases: DirectorCase[];
+  /** opis tabeli dla czytników ekranu */
+  caption: string;
+}
+
+const { cases, caption } = Astro.props;
+const COLS = { mgmt: 'Za kierowanie', other: 'Praca lekarska i inne', total: 'Łącznie', hospital: 'Szpital', src: 'Źródła' };
+const NONE = 'źródło nie podaje';
+type Col = 'mgmt' | 'other' | 'total';
+const amounts = (c: DirectorCase): [Col, Amount | undefined][] => [['mgmt', c.management], ['other', c.other], ['total', c.total]];
+---
+<div class="ct-wrap">
+  <table class="ct">
+    <caption class="sr-only">{caption}</caption>
+    <thead>
+      <tr>
+        <th scope="col">Gdzie i kto</th>
+        <th scope="col" class="ct__num">{COLS.mgmt}</th>
+        <th scope="col" class="ct__num">{COLS.other}</th>
+        <th scope="col" class="ct__num">{COLS.total}</th>
+        <th scope="col">{COLS.hospital}</th>
+        <th scope="col">{COLS.src}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {cases.map((c) => (
+        <tr>
+          <th scope="row">
+            <span class="ct__place">{typo(c.place)}</span>
+            <span class="ct__role">{typo(c.role)}, {c.year}&nbsp;r.</span>
+          </th>
+          {amounts(c).map(([key, a]) => (
+            <td class:list={['ct__num', key === 'mgmt' && 'ct__mgmt']} data-label={COLS[key]}>
+              {a ? (
+                <>
+                  <span class="ct__value">{typo(a.text)}</span>
+                  {a.note && <span class="ct__note">{typo(a.note)}</span>}
+                </>
+              ) : (
+                <span class="ct__none">{NONE}</span>
+              )}
+            </td>
+          ))}
+          <td class="ct__hospital" data-label={COLS.hospital}>
+            {c.hospital ? typo(c.hospital) : <span class="ct__none">{NONE}</span>}
+          </td>
+          <td class="ct__src" data-label={COLS.src}>
+            {c.sources.map((s) => <a {...linkAttrs(s.href)}>{s.label}</a>)}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .ct-wrap { container-type: inline-size; }
+  .ct { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.45; font-variant-numeric: tabular-nums; }
+  /* .ct przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .ct thead th {
+    text-align: left; vertical-align: bottom; padding: 0 14px 10px 0;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .ct tbody th, .ct td { text-align: left; vertical-align: top; padding: 14px 14px 14px 0; border-bottom: 1px solid var(--line); }
+  .ct tbody th { width: 22%; font-weight: 400; text-transform: none; letter-spacing: 0; }
+  .ct__place { display: block; font: 500 0.9375rem/1.35 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .ct__role { display: block; margin-top: 3px; font-size: 0.8125rem; line-height: 1.4; color: var(--muted); }
+  .ct td { color: var(--ink-2); }
+  .ct__value { display: block; font: 500 1rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+  .ct__mgmt .ct__value { color: var(--blue); }
+  .ct__note { display: block; margin-top: 3px; font-size: 0.78125rem; line-height: 1.4; color: var(--muted); }
+  .ct__none { font-size: 0.78125rem; color: var(--muted); }
+  .ct td.ct__hospital { font-size: 0.8125rem; color: var(--text-strong); }
+  .ct td.ct__src { padding-right: 0; }
+  /* .ct przed selektorem — Prose koloruje linki bez klasy */
+  .ct .ct__src a {
+    display: block; font: 400 0.75rem/1.6 var(--f-mono); color: var(--text); white-space: nowrap;
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s;
+  }
+  .ct .ct__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  /* Wąsko: wiersz = karta, etykieta kolumny nad komórką */
+  @container (max-width: 760px) {
+    .ct thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .ct, .ct tbody, .ct tr, .ct tbody th, .ct td { display: block; width: auto; }
+    .ct tr { padding: 16px 0; border-bottom: 1px solid var(--line-2); }
+    .ct tbody th, .ct td { padding: 4px 0; border: 0; }
+    .ct tbody th { padding-bottom: 8px; }
+    .ct td[data-label]::before {
+      content: attr(data-label); display: block; margin: 8px 0 2px;
+      font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    }
+    .ct__value { white-space: normal; }
+    .ct .ct__src a { display: inline-block; margin-right: 14px; }
+  }
+</style>

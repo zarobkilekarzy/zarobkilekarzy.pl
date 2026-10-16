@@ -1,0 +1,191 @@
+---
+title: Rozkład wynagrodzeń lekarzy
+category: Dane
+topic: wynagrodzenia
+order: 1
+format: Wykresy
+stat: { value: "25 595", unit: "zł — mediana jednego kontraktu specjalisty" }
+date: 2026-07-06
+updated: 2026-10-15
+summary: Mediany AOTMiT według formy zatrudnienia, ustawowe minimum na etacie i 625 kontraktów ponad 100 tys. zł miesięcznie. Każda z tych kwot to wypłata z jednej placówki, a nie dochód lekarza.
+description: Mediany AOTMiT według formy zatrudnienia, minimum na etacie i 625 kontraktów ponad 100 tys. zł. Każda kwota to wypłata z jednej placówki, nie dochód lekarza.
+keyPoints:
+  - Według danych AOTMiT z lutego 2026 r. mediana miesięcznej wypłaty specjalisty z jednego kontraktu w szpitalu to 25 595 zł brutto, a z etatu 23 666 zł. Najniższe mediany mają umowy zlecenia i o dzieło, ok. 17–18 tys. zł.
+  - Ponad 100 tys. zł miesięcznie w jednym szpitalu dostawało 625 kontraktów (1,2%) i 49 etatów (0,2%) specjalistów. Ilu lekarzy przekracza ten próg po zsumowaniu wszystkich miejsc pracy, nie wiadomo — prezes AOTMiT szacuje, że 5–10%.
+  - Ustawowe minimum specjalisty na etacie to od 1 lipca 2026 r. 12 910,16 zł, czyli ok. 77 zł za godzinę i ok. 116–155 zł za godzinę dyżuru. Rynkowe widełki kontraktów w szpitalach to 180–300 zł za godzinę.
+  - Każda z tych liczb opisuje wypłatę z jednej placówki. Lekarz pracujący w kilku miejscach jest w danych kilkoma niepowiązanymi wpisami, a jego łącznych zarobków nie sumuje nikt.
+related:
+  - kontrakt-vs-etat
+  - wieloetatowosc
+  - zarobki-ujawnione-listy
+  - rekordy
+dataset:
+  temporalCoverage: "2026-02"
+  spatialCoverage: Polska
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import TwoLists from '@/components/blocks/TwoLists.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import {
+  LINKS,
+  MEDIANS,
+  KONTRAKT_PREMIUM,
+  medianRows,
+  MEDIAN_MAX,
+  medianCaption,
+  ETAT_SPEC,
+  BRACKETS,
+  SHARES,
+  RESIDENT_AVERAGE,
+  OVER_100K,
+  MONTH_HOURS,
+  SPECIALIST_FLOOR,
+  NON_SPECIALIST_FLOOR,
+  INTERN_FLOOR,
+  floorTable,
+  B2B,
+  B2B_RATIO,
+  PER_100H,
+  INVOICE_EXAMPLE,
+} from '@/data/rozklad-wynagrodzen';
+import { BASE } from '@/data/personel-medyczny';
+import { RATE } from '@/data/poz';
+import { MEDIAN as WATCHDOG_MEDIAN, DATA as WATCHDOG_DATA } from '@/data/zarobki-ujawnione-listy';
+import { formatPL, plural } from '@/lib/format';
+
+{/* Liczby AOTMiT i minima na etacie liczy src/data/rozklad-wynagrodzen.ts; frontmatter (stat, summary, keyPoints) trzeba poprawić ręcznie */}
+
+Ile zarabiają lekarze w polskich szpitalach, najpełniej pokazuje zestawienie AOTMiT z lutego 2026 r. Agencja zebrała dane o wynagrodzeniach z 538 szpitali, czyli z ok. 96% placówek tzw. sieci szpitali, i w maju przedstawiła je na posiedzeniu Trójstronnego Zespołu do spraw Ochrony Zdrowia.[^rp-etat][^pap] To materiał roboczy agencji; jego liczby znamy z artykułów Rzeczpospolitej i PAP.[^rp-aotmit] Zebraliśmy je tu w jeden rozkład: od ustawowego minimum na etacie po wypłaty ponad 100 tys. zł miesięcznie.
+
+Żadna z tych kwot nie jest łącznym dochodem lekarza. AOTMiT widzi wynagrodzenie w obrębie jednej placówki, więc lekarz pracujący w trzech szpitalach to w jej danych trzy osobne wpisy.[^wywiad] Dla takiej osoby każda liczba poniżej opisuje tylko część zarobków. Dlatego [postulujemy](/postulat/), by łączne wypłaty z publicznych pieniędzy dla każdej osoby były jawne — pod stałym identyfikatorem, bez nazwisk.
+
+## Mediany według formy zatrudnienia
+
+Mediana to kwota środkowa: połowa wypłat jest od niej wyższa, połowa niższa. AOTMiT podała ją osobno dla lekarzy ze specjalizacją i bez niej oraz dla trzech form zatrudnienia: etatu, kontraktu i umowy zlecenia lub o dzieło.[^rp-aotmit]
+
+<Figure
+  title={`Specjalista na kontrakcie: mediana ${formatPL(MEDIANS.specKontrakt)} zł, o ${KONTRAKT_PREMIUM}% wyższa niż na etacie`}
+  note="Mediany miesięcznego wynagrodzenia brutto z jednej umowy w jednym szpitalu, luty 2026 r. Kontrakt to tu umowa z lekarzem prowadzącym praktykę jako firma (B2B); zlecenia i umowy o dzieło AOTMiT liczy osobno."
+  source={{ label: 'AOTMiT (luty 2026) za: Rzeczpospolita, 27.05.2026', href: LINKS.aotmit }}
+>
+  <BarChart rows={medianRows} max={MEDIAN_MAX} unit="zł" caption={medianCaption} />
+</Figure>
+
+Na medianie forma zatrudnienia różnicuje płace umiarkowanie: specjalista na kontrakcie dostaje o ok. {KONTRAKT_PREMIUM}% więcej niż na etacie. U lekarzy bez specjalizacji kolejność jest odwrotna — najwyższą medianę ma etat. Najniżej wypadają zlecenia i umowy o dzieło.
+
+Ok. 73% specjalistów (dokładnie {formatPL(SHARES.civil, 2)}%) rozlicza się na umowach cywilnoprawnych, a ok. {SHARES.etat}% pracuje na etacie.[^rp-aotmit] Skąd ta przewaga i co z niej wynika, opisujemy w tekście [Kontrakt czy etat](/mechanizmy/kontrakt-vs-etat/).
+
+Mediany kontraktów są więc znane: AOTMiT zebrała je od szpitali. Nieznane pozostają dwie inne rzeczy — kwoty poszczególnych kontraktów, bo nikt ich nie publikuje, i suma wypłat jednej osoby z wielu placówek, bo nikt jej nie liczy.
+
+### Jak szeroko rozkładają się kwoty
+
+Mediana nie pokazuje rozpiętości. Z tego samego zestawienia wiadomo jeszcze, że:
+
+- najliczniejsza grupa kontraktów specjalistów mieści się w przedziale {BRACKETS.kontrakt.label} miesięcznie — to {formatPL(BRACKETS.kontrakt.share, 1)}% kontraktów ({formatPL(BRACKETS.kontrakt.n)}).[^rp-aotmit] Mediana leży o ponad 10 tys. zł powyżej tego przedziału, więc kwoty kontraktów rozciągają się szeroko;
+- na etacie najliczniejsza grupa specjalistów zarabia {BRACKETS.etat.label}: {formatPL(BRACKETS.etat.n)} {plural(BRACKETS.etat.n, ['osoba', 'osoby', 'osób'])}, czyli {formatPL(BRACKETS.etat.share, 1)}%;[^rp-aotmit]
+- średnia płaca specjalisty na etacie, z dyżurami i dodatkami stażowymi, wynosi {formatPL(ETAT_SPEC.average, 2)} zł. Najsłabiej opłacana ćwiartka dostaje średnio {formatPL(ETAT_SPEC.bottomQuartileAvg, 2)} zł, a najlepiej opłacana — ponad {formatPL(ETAT_SPEC.topQuartileFrom, 2)} zł.[^rp-etat]
+
+## Podłoga: ustawowe minimum na etacie
+
+Na etacie płaca zasadnicza nie może spaść poniżej minimum z ustawy z 8 czerwca 2017 r. Od {BASE.from} wynosi ono {formatPL(SPECIALIST_FLOOR.monthly, 2)} zł dla specjalisty, {formatPL(NON_SPECIALIST_FLOOR.monthly, 2)} zł dla lekarza bez specjalizacji i {formatPL(INTERN_FLOOR.monthly, 2)} zł dla stażysty.[^siatka] To kwoty bez dyżurów i dodatków. Minima pozostałych zawodów medycznych pokazujemy w zestawieniu [Inne zawody medyczne](/dane/personel-medyczny/).
+
+Stawka za godzinę przy minimalnej pensji zależy od liczby dni roboczych w miesiącu. Dobowa norma czasu pracy w placówkach leczniczych to 7 godzin 35 minut, więc miesiąc z 22 dniami roboczymi ma {formatPL(MONTH_HOURS, 1)} godziny. Dyżur medyczny na etacie opłaca się jak nadgodziny: z dodatkiem 50% w dzień powszedni i 100% w nocy, w niedziele i święta.[^udl][^wds]
+
+<Figure
+  title={`Godzina dyżuru specjalisty na etacie: co najmniej ok. ${formatPL(SPECIALIST_FLOOR.dutyDay)}–${formatPL(SPECIALIST_FLOOR.dutyNight)} zł`}
+  note={`Minimum miesięczne podzielone przez ${formatPL(MONTH_HOURS, 1)} h (22 dni robocze po 7 h 35 min), w zaokrągleniu do złotego. W miesiącu z mniejszą liczbą dni roboczych godzina kosztuje więcej. Bez dodatku stażowego i innych dodatków.`}
+  source={{ label: 'minima z ustawy z 8.06.2017; metoda: Wsparcie dla Szpitala; wyliczenie redakcji', href: LINKS.dyzury }}
+>
+  <Comparison table={floorTable} />
+</Figure>
+
+Rezydenci, czyli lekarze w trakcie specjalizacji w ramach rezydentury, zarabiali w lutym 2026 r. średnio {formatPL(RESIDENT_AVERAGE, 2)} zł.[^rp-etat] To średnia, a nie mediana, dlatego nie stawiamy jej na wykresie obok median. Źródło nie podaje też, czy kwota obejmuje dyżury. Dla porównania: mediana wszystkich lekarzy bez specjalizacji na etacie to {formatPL(MEDIANS.bezEtat)} zł.[^rp-aotmit] Pensje rezydentów w poszczególnych specjalizacjach zbieramy w zestawieniu [Według specjalizacji](/dane/wedlug-specjalizacji/).
+
+### Kontrakt: stawka z rynku, nie z ustawy
+
+Stawek kontraktowych nie wyznacza żadna ustawa ani nie zbiera żaden rejestr. Według portalu Wsparcie dla Szpitala szpitale płacą specjalistom na kontrakcie {B2B.mid.from}–{B2B.mid.to} zł za godzinę w średnich miastach i dziedzinach niedeficytowych, {B2B.big.from}–{B2B.big.to} zł w dużych miastach, a na SOR-ze i w intensywnej terapii do {B2B.max} zł.[^wds] To od ok. {formatPL(B2B_RATIO.from, 1)} do {formatPL(B2B_RATIO.to, 1)} raza więcej niż minimalna godzina specjalisty na etacie.
+
+Porównanie nie jest jednak równe. Z kwoty na fakturze lekarz sam opłaca składki, a płatnego urlopu ani chorobowego od szpitala nie dostaje. To też widełki z rynku, a nie zmierzone wypłaty.
+
+## Szczyt: ponad 100 tys. zł z jednej umowy
+
+<StatRow
+  label="Wypłaty ponad 100 tys. zł miesięcznie w jednym szpitalu"
+  items={[
+    { value: OVER_100K.contracts, unit: 'kontraktów', desc: `specjalistów przekroczyło 100 tys. zł brutto miesięcznie — ${formatPL(OVER_100K.contractsShare, 1)}% wszystkich kontraktów`, accuracy: 'exact', source: 'AOTMiT, luty 2026 · Rzeczpospolita', href: LINKS.aotmit },
+    { value: OVER_100K.etat, unit: 'specjalistów', desc: `na etacie z płacą ponad 100 tys. zł — ${formatPL(OVER_100K.etatShare, 1)}% specjalistów na umowie o pracę`, accuracy: 'exact', source: 'AOTMiT, luty 2026 · Rzeczpospolita', href: LINKS.aotmit },
+    { prefix: '~', value: OVER_100K.persons, unit: 'osób', desc: 'czyli niewiele ponad 1% lekarzy — tyle według prezesa AOTMiT przekracza próg w jednej placówce', accuracy: 'exact', source: 'Rynek Zdrowia, 17.06.2026', href: LINKS.wywiad },
+  ]}
+/>
+
+Liczba {formatPL(OVER_100K.contracts)} dotyczy kontraktów, a nie lekarzy: AOTMiT liczy wypłaty w każdym szpitalu osobno.[^rp-aotmit][^pap] Prezes agencji mówił w wywiadzie dla Rynku Zdrowia o ok. {OVER_100K.persons} osobach, czyli niewiele ponad 1% lekarzy.[^wywiad] Próg 100 tys. zł to blisko czterokrotność mediany kontraktu specjalisty. Górnej granicy zestawienie nie podaje; najwyższe znane kwoty z pojedynczych szpitali zbieramy w zestawieniu [Rekordy](/dane/rekordy/).
+
+## Jedna osoba, kilka niepowiązanych rozliczeń
+
+Wszystkie liczby wyżej mają wspólną cechę: opisują wypłatę z jednej placówki. Prezes AOTMiT przyznał, że agencja nie ma danych łączących wynagrodzenia tej samej osoby z różnych podmiotów.[^wywiad] Nie umie też jeszcze przeliczyć kontraktu na etat.[^pap]
+
+Jak to wygląda z perspektywy jednego lekarza, pokazuje poniższy model. To przykład poglądowy, a nie opis konkretnej osoby, a każde z tych rozliczeń z osobna jest legalne.
+
+1. **Kontrakt w szpitalu.** Przy stawce {B2B.mid.from}–{B2B.max} zł za godzinę każde 100 godzin w miesiącu daje {formatPL(PER_100H.from / 1000)}–{formatPL(PER_100H.to / 1000)} tys. zł. Wsparcie dla Szpitala opisuje anonimowy przykład anestezjologa na kontrakcie w szpitalu wojewódzkim: {INVOICE_EXAMPLE.hours} godzin w miesiącu, w tym {INVOICE_EXAMPLE.dutyHours} dyżurowych, i faktura na {formatPL(INVOICE_EXAMPLE.amount)} zł brutto.[^wds]
+2. **Dyżury albo gotowość w drugim szpitalu.** Ten sam lekarz może dyżurować gdzie indziej — na etacie albo na kolejnym kontrakcie. Na etacie płatna jest też gotowość „pod telefonem”: za każdą jej godzinę należy się połowa godzinowej stawki zasadniczej, bez obecności w szpitalu.[^udl]
+3. **Poradnia albo praktyka POZ.** Do tego mogą dojść wizyty w poradni specjalistycznej z umową z NFZ, a u lekarza rodzinnego z własną praktyką — stawka kapitacyjna: od lipca 2026 r. {formatPL(RATE.rate, 2)} zł rocznie za każdego pacjenta na liście, mnożona przez współczynnik zależny od wieku.[^poz] To przychód praktyki, z którego opłaca ona m.in. badania, a nie wynagrodzenie lekarza.
+
+Każde z tych rozliczeń trafia do innej placówki albo do NFZ. Żadne z nich nie musi przekroczyć 100 tys. zł, żeby razem przekroczyły ten próg. A jeśli żadne go nie przekracza, tej osoby nie ma wśród {formatPL(OVER_100K.contracts)} kontraktów z zestawienia AOTMiT. Jak sumuje się praca w kilku miejscach, opisujemy w tekście o [wieloetatowości](/mechanizmy/wieloetatowosc/), a stawkę za pacjenta — w analizie [Pieniądz za pacjenta w POZ](/analizy/poz-pieniadz-za-pacjenta/).
+
+### Ilu lekarzy przekracza 100 tys. zł po zsumowaniu
+
+Tego nie wie nikt. Prezes AOTMiT szacuje, że gdyby dało się połączyć wypłaty tej samej osoby z różnych placówek, ponad 100 tys. zł miesięcznie mogłoby mieć 5–10% lekarzy.[^wywiad] To szacunek, a nie wynik obliczeń: metody nie przedstawiono, a agencja nie ma danych, którymi dałoby się go sprawdzić. Pewne jest tylko tyle, że dla każdego, kto pracuje w więcej niż jednym miejscu, kwoty z tej strony są dolną granicą.
+
+Od 5 sierpnia 2026 r. minister zdrowia może żądać od placówek danych o wynagrodzeniach powiązanych z numerem PESEL i numerem prawa wykonywania zawodu, czyli takich, które da się zsumować dla jednej osoby. Ustawa nie przewiduje jednak publikacji tych danych.[^ustawa-972] Szczegóły opisujemy w analizie [Ustawa o danych płacowych](/analizy/ustawa-o-danych-a-jawny-rejestr/).
+
+## Co te liczby mówią, a czego nie
+
+<TwoLists
+  yes={{
+    title: 'Co mówią',
+    note: 'dane AOTMiT z lutego 2026 r.',
+    items: [
+      'ile wynosi środkowa wypłata z jednej umowy w szpitalu — osobno dla etatu, kontraktu i zlecenia',
+      `że na medianie kontrakt specjalisty daje ok. ${KONTRAKT_PREMIUM}% więcej niż etat`,
+      'jak rzadko wypłata z jednej umowy przekracza 100 tys. zł miesięcznie',
+    ],
+  }}
+  no={{
+    title: 'Czego nie mówią',
+    note: 'tego zestawienie nie obejmuje',
+    items: [
+      'ile łącznie zarabia lekarz, który pracuje w kilku miejscach',
+      'ilu lekarzy przekracza 100 tys. zł po zsumowaniu wszystkich wypłat',
+      'ile godzin pracy stoi za kwotą kontraktu',
+      'ile lekarze zarabiają poza szpitalami: w poradniach, w POZ i prywatnie',
+      'czy to dużo, czy mało — to już ocena, a nie dane',
+    ],
+  }}
+/>
+
+<Aside title="Mediana z list Watchdog to inny pomiar">
+
+W serwisie pojawia się też druga mediana: ok. {formatPL(WATCHDOG_MEDIAN.rounded / 1000)} tys. zł rocznie, czyli ok. {formatPL(WATCHDOG_MEDIAN.rounded / 12000)} tys. zł miesięcznie, z pełnych list płac, które placówki przysłały w monitoringu Watchdog Polska za {WATCHDOG_DATA.year} r. To roczna kwota przypadająca na jedną pozycję na liście jednej placówki, bez względu na to, ile miesięcy i godzin za nią stoi. Mediany AOTMiT to co innego — miesięczne wynagrodzenia według formy zatrudnienia — więc obu nie należy porównywać ani podpisywać jednej źródłem drugiej. Więcej: [Zarobki z ujawnionych list płac](/dane/zarobki-ujawnione-listy/).
+
+</Aside>
+
+[^rp-aotmit]: Rzeczpospolita, [625 lekarzy w Polsce zarabia powyżej 100 tys. zł. Dotarliśmy do wyliczeń](https://www.rp.pl/ochrona-zdrowia/art44466691-625-lekarzy-w-polsce-zarabia-powyzej-100-tys-zl-dotarlismy-do-wyliczen), 27.05.2026 — dane AOTMiT z lutego 2026 r.: mediany według formy zatrudnienia, najliczniejsze przedziały płac, 625 kontraktów (1,2%) i 49 etatów (0,2%) powyżej 100 tys. zł, udział umów cywilnoprawnych (73,16%) i etatu (25%) wśród specjalistów. Dane dotyczą pojedynczych umów z konkretnym szpitalem.
+
+[^rp-etat]: Rzeczpospolita, [Tak zarabia się na etacie w szpitalu. „Rzeczpospolita” ujawnia zarobki w ochronie zdrowia](https://www.rp.pl/ochrona-zdrowia/art44409431-tak-zarabia-sie-na-etacie-w-szpitalu-rzeczpospolita-ujawnia-zarobki-w-ochronie-zdrowia), 20.05.2026 — dane AOTMiT z lutego 2026 r. z 538 szpitali (ok. 96% sieci szpitali): średnie i kwartyle płac na etacie, średnia pensja rezydenta.
+
+[^pap]: Puls Medycyny (PAP), [Ilu lekarzy zarabia ponad 100 tys. miesięcznie? Dane AOTMiT](https://pulsmedycyny.pl/system-ochrony-zdrowia/finanse/ilu-lekarzy-zarabia-ponad-100-tys-miesiecznie-dane-aotmit/) — materiał roboczy AOTMiT z lutego 2026 r. przedstawiony na majowym posiedzeniu Trójstronnego Zespołu do spraw Ochrony Zdrowia: 1,2% kontraktów specjalistów, czyli 625, powyżej 100 tys. zł miesięcznie; kontraktów agencja nie umie jeszcze przeliczyć na etaty.
+
+[^wywiad]: Rynek Zdrowia, [wywiad z prezesem AOTMiT Danielem Rutkowskim](https://www.rynekzdrowia.pl/Polityka-zdrowotna/Szef-rzadowej-agencji-po-aferze-Kacprzyka-wynaturzenia-musimy-sie-zabezpieczyc,285516,14.html), 17.06.2026 — niewiele ponad 1%, czyli ok. 560 osób, zarabia ponad 100 tys. zł miesięcznie w jednej placówce; po zsumowaniu wypłat z wielu placówek mogłoby to być 5–10% (szacunek prezesa); agencja nie ma danych łączonych dla jednej osoby między podmiotami. Ten sam szacunek prezes podał wcześniej Rzeczpospolitej (27.05.2026).
+
+[^siatka]: Rynek Zdrowia, [Od dziś 12 910 zł dla lekarzy, 11 485 zł dla pielęgniarek — 1 lipca podwyżki medyków](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Od-dzis-12-910-zl-zl-dla-lekarzy-11-485-zl-dla-pielegniarek-1-lipca-podwyzki-medykow,286085,1.html) — minima płacy zasadniczej od 1.07.2026 r. według ustawy z 8 czerwca 2017 r.: współczynnik grupy razy kwota bazowa.
+
+[^wds]: Wsparcie dla Szpitala, [Ile zarabia lekarz w szpitalu 2026? Od 10 595 zł brutto](https://wsparciedlaszpitala.pl/personel-medyczny/dyzur-lekarski-szpital-stawki-opt-out-czas-pracy/), stan na wrzesień 2026 — stawka godzinowa specjalisty z minimum (12 910,16 zł ÷ 166,8 h ≈ 77,4 zł), dyżur rozliczany jak nadgodziny (art. 95 ust. 5 ustawy o działalności leczniczej w zw. z art. 151¹ Kodeksu pracy), widełki stawek kontraktowych w szpitalach i anonimowy przykład faktury za 220 godzin.
+
+[^udl]: Ustawa o działalności leczniczej w serwisie LexLege: [art. 93](https://lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-93/) (norma 7 h 35 min na dobę i przeciętnie 37 h 55 min tygodniowo), [art. 95](https://lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-95/) (dyżur medyczny; ust. 5 odsyła do art. 151¹ Kodeksu pracy o nadgodzinach) i [art. 98](https://lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-98/) (wynagrodzenie za gotowość do udzielania świadczeń).
+
+[^poz]: NFZ, [Zarządzenie nr 65/2026/DSOZ Prezesa NFZ z 14 lipca 2026 r.](https://baw.nfz.gov.pl/NFZ/document/43917/Zarzadzenie-65_2026_DSOZ), załącznik nr 1 — stawka kapitacyjna lekarza POZ dla świadczeń od 1 lipca 2026 r.
+
+[^ustawa-972]: [Ustawa z 19 czerwca 2026 r. o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych oraz ustawy o działalności leczniczej](https://api.sejm.gov.pl/eli/acts/DU/2026/972/text.pdf) (Dz.U. 2026 poz. 972), w życie od 5.08.2026 — nowe brzmienie art. 27a ustawy o działalności leczniczej.

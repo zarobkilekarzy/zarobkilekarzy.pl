@@ -1,0 +1,225 @@
+---
+title: Zarobki z ujawnionych list płac
+seoTitle: Zarobki lekarzy z ujawnionych list płac
+category: Dane
+topic: wynagrodzenia
+order: 3
+format: Tabela
+stat: { value: "11 030", unit: rozliczeń z 93 placówek }
+date: 2026-07-18
+updated: 2026-10-15
+summary: Pełne roczne listy płac lekarzy przysłały w monitoringu Watchdog Polska 93 placówki — to 11 030 rozliczeń za 2025 r. Mediana wynosi ok. 180 tys. zł rocznie, a 13% kwot przekracza pół miliona, choć każda to wypłata tylko jednej placówki.
+description: "Mediana ok. 180 tys. zł rocznie, 13% rozliczeń ponad 500 tys. zł: rozkład 11 030 kwot z pełnych list płac lekarzy w monitoringu Watchdog Polska."
+keyPoints:
+  - Pełne roczne listy płac lekarzy za 2025 r. przysłały 93 z 1 358 placówek zapytanych przez Watchdog Polska — razem 11 030 rozliczeń. Ok. 70% wniosków skończyło się odmową, milczeniem albo samym potwierdzeniem odbioru.
+  - Mediana rozliczeń z tych list to ok. 180 tys. zł rocznie, czyli ok. 15 tys. zł miesięcznie brutto. 13% kwot przekracza 500 tys. zł, a 172 rozliczenia — milion złotych.
+  - Każda kwota to wypłata jednej placówki, a pozycja na liście nie zawsze oznacza jedną osobę. Dla konkretnego lekarza to dolna granica, dla całego zawodu — opis wybranych list, a nie pomiar rynku.
+  - Najwyższych kwot z list, na których lekarzy oznaczono samymi inicjałami, nie można porównywać jak rekordów jednej osoby — wiersz może łączyć kilka umów albo różne osoby.
+related:
+  - monitoring-watchdog
+  - rozklad-wynagrodzen
+  - rekordy
+  - wieloetatowosc
+dataset:
+  temporalCoverage: "2025"
+  spatialCoverage: Polska
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import KeyFacts from '@/components/blocks/KeyFacts.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import {
+  DATA,
+  LIST_CRITERION,
+  LISTS,
+  POSITIONS,
+  PAYROLL_TOTAL,
+  OUTCOMES,
+  REFUSED_OR_SILENT,
+  outcome,
+  DISTRIBUTION,
+  HIGH,
+  THRESHOLDS,
+  OVER_500K,
+  OVER_1M,
+  OVER_1M_FACILITIES,
+  MAX_OVER_2M_FACILITIES,
+  MEDIAN,
+  FACILITY_MEDIAN,
+  LARGEST,
+  EXAMPLE,
+  below,
+} from '@/data/zarobki-ujawnione-listy';
+import { formatDate, formatPL, plural } from '@/lib/format';
+
+{/* Wszystkie liczby w treści liczy src/data/zarobki-ujawnione-listy.ts z pliku monitoringu; frontmatter (stat, summary, keyPoints) trzeba poprawić ręcznie */}
+
+export const pct = (x, d = 1) => formatPL(x * 100, d);
+export const tys = (zl) => formatPL(zl / 1000);
+export const R = ['rozliczenie', 'rozliczenia', 'rozliczeń'];
+export const POS = ['pozycja', 'pozycje', 'pozycji'];
+export const count = (n, forms) => `${formatPL(n)} ${plural(n, forms)}`;
+export const asOf = formatDate(DATA.asOf);
+export const statSource = `Watchdog Polska, stan na ${asOf}`;
+export const figSource = { label: `Watchdog Polska, monitoring „${DATA.source.monitoring}”, stan na ${asOf}; obliczenia redakcji`, href: DATA.source.url };
+
+export const outcomeRows = OUTCOMES.map((o) => ({
+  label: o.label,
+  note: `· ${pct(o.n / DATA.requests)}%`,
+  value: o.n,
+  display: formatPL(o.n),
+  highlight: o.key === 'list',
+}));
+export const distRows = DISTRIBUTION.map((b) => ({
+  label: `${b.label} zł`,
+  note: `· ${formatPL(b.n)}`,
+  value: b.share * 100,
+  display: `${pct(b.share)}%`,
+  highlight: b.from >= HIGH,
+}));
+export const thresholdTable = {
+  columns: ['Roczna kwota z jednej placówki', 'Rozliczeń', 'Udział', 'Mniej więcej'],
+  rows: THRESHOLDS.map((t) => ({
+    cells: [t.label, formatPL(t.n), `${pct(t.share)}%`, t.oneIn ? `1 na ${formatPL(t.oneIn)}` : '—'],
+  })),
+};
+
+Sieć Obywatelska Watchdog Polska wysłała {formatPL(DATA.requests)} placówkom ochrony zdrowia ten sam wniosek o informację publiczną: ile brutto wypłaciły poszczególnym lekarzom za {DATA.year} r. Wnioski i odpowiedzi są jawne na platformie fedrowanie, w monitoringu „{DATA.source.monitoring}”.[^watchdog] Część placówek odesłała pełne roczne listy płac, wiersz po wierszu.
+
+Tu zbieramy te listy w jeden rozkład i opisujemy, co z niego wynika, a czego nie da się z niego odczytać. Liczby pochodzą z tego samego pliku co [przeglądarka monitoringu](/dane/monitoring-watchdog/), według stanu danych na {asOf}. W przeglądarce każdą placówkę można obejrzeć osobno i przejść do jej sprawy u źródła.
+
+<StatRow
+  label="Pełne listy płac w monitoringu Watchdog Polska"
+  items={[
+    { value: LISTS, unit: plural(LISTS, ['placówka', 'placówki', 'placówek']), desc: `z pełną roczną listą płac lekarzy — spośród ${formatPL(DATA.requests)} zapytanych`, accuracy: 'exact', source: statSource, href: DATA.source.url },
+    { value: POSITIONS, unit: plural(POSITIONS, R), desc: `rocznych kwot brutto za ${DATA.year} r. na tych listach; każda to wypłata jednej placówki`, accuracy: 'exact', source: statSource, href: DATA.source.url },
+    { prefix: '~', value: MEDIAN.rounded / 1000, unit: 'tys. zł', desc: `mediana rozliczeń za rok, czyli ok. ${formatPL(MEDIAN.rounded / 12000)} tys. zł miesięcznie; szacunek z rozkładu`, accuracy: 'est', source: statSource, href: DATA.source.url },
+    { value: (OVER_500K / POSITIONS) * 100, decimals: 1, unit: '%', desc: `rozliczeń przekracza 500 tys. zł rocznie; ponad milion — ${count(OVER_1M, R)}`, accuracy: 'exact', source: statSource, href: DATA.source.url },
+  ]}
+/>
+
+## Kto przysłał listy, a kto nie
+
+Na tej stronie „placówki z listą” to jedna, stała grupa: te, które przysłały roczny wykaz brutto w podziale na lekarzy, z co najmniej {LIST_CRITERION.minPositions} pozycjami i medianą od {tys(LIST_CRITERION.minMedian)} tys. zł (to samo kryterium stosuje [przeglądarka monitoringu](/dane/monitoring-watchdog/#metoda)). Według stanu monitoringu na {asOf} takich placówek jest {formatPL(LISTS)}.[^watchdog] Kryterium odsiewa wykazy miesięczne i cząstkowe. Od kolejnych {formatPL(outcome('disclosed'))} placówek przyszły dane, których nie da się z nimi zestawić, np. widełki, sumy dla oddziałów albo nieczytelne skany. Rozkład poniżej liczymy wyłącznie z pełnych list.
+
+Odmową, milczeniem albo samym potwierdzeniem odbioru skończyło się {pct(REFUSED_OR_SILENT / DATA.requests, 0)}% wniosków, czyli w przypadku {formatPL(REFUSED_OR_SILENT)} placówek. Pozostałe kategorie odpowiedzi pokazuje wykres.
+
+<Figure
+  title={`Pełne listy płac: ${formatPL(LISTS)} z ${formatPL(DATA.requests)} placówek. Odmowa, cisza albo samo potwierdzenie odbioru: ${pct(REFUSED_OR_SILENT / DATA.requests, 0)}% wniosków.`}
+  note="Kategorię odpowiedzi nadaje automat platformy fedrowanie i bywa omylny; placówka, która przysłała pełną listę, zawsze liczy się tu jako lista."
+  source={figSource}
+>
+  <BarChart
+    rows={outcomeRows}
+    max={Math.ceil(OUTCOMES[0].n / 100) * 100}
+    unit="placówek"
+    caption={`Wyniki ${formatPL(DATA.requests)} wniosków: ${OUTCOMES.map((o) => `${o.label.toLowerCase()} — ${formatPL(o.n)}`).join(', ')}.`}
+  />
+</Figure>
+
+Większość placówek z listą to szpitale, ale są wśród nich też m.in. uzdrowiska, ośrodki psychiatryczne, stacja pogotowia ratunkowego i areszty śledcze — dlatego piszemy o placówkach, a nie o szpitalach. Razem ich listy opiewają na {formatPL(PAYROLL_TOTAL / 1e9, 2)} mld zł brutto wypłaconych lekarzom za {DATA.year} r. — to suma kolumny „Fundusz płac” w [przeglądarce](/dane/monitoring-watchdog/).
+
+## Rozkład kwot
+
+<Figure
+  title={`${pct(OVER_500K / POSITIONS)}% rozliczeń przekracza 500 tys. zł rocznie — z jednej placówki`}
+  note={`Roczne kwoty brutto za ${DATA.year} r. z ${formatPL(LISTS)} pełnych list; przy przedziale liczba rozliczeń. Rozliczenie to pozycja na liście, nie zawsze jedna osoba.`}
+  source={figSource}
+>
+  <BarChart
+    rows={distRows}
+    max={Math.ceil(Math.max(...DISTRIBUTION.map((b) => b.share)) * 20) * 5}
+    unit="%"
+    caption={`Rozkład ${formatPL(POSITIONS)} rozliczeń według rocznej kwoty brutto: ${DISTRIBUTION.map((b) => `${b.label} zł — ${pct(b.share)}%`).join(', ')}.`}
+  />
+</Figure>
+
+Środkowa kwota w tym zbiorze — mediana rozliczeń z pełnych list monitoringu Watchdog Polska — to ok. {tys(MEDIAN.rounded)} tys. zł za rok.[^watchdog] Połowa pozycji na listach jest niższa, połowa wyższa. W przeliczeniu daje to ok. {formatPL(MEDIAN.rounded / 12000)} tys. zł brutto na miesiąc, ale to tylko dzielenie przez dwanaście: z listy nie wynika, ile miesięcy ani godzin pracy stoi za kwotą.
+
+Tę medianę szacujemy. Plik monitoringu podaje dla każdej placówki liczbę rozliczeń w przedziałach, a nie pojedyncze kwoty. Wiadomo więc dokładnie, że mediana leży w przedziale {MEDIAN.bucket.label} zł, a jej miejsce w tym przedziale wyznaczamy, zakładając, że kwoty rozkładają się w nim równo. Udziały powyżej progów, zebrane w tabeli niżej, są dokładne, bo progi pokrywają się z granicami przedziałów.
+
+{pct(below(100000).share)}% rozliczeń to mniej niż 100 tys. zł za cały rok. Sama lista nie mówi, kto za nimi stoi: lekarz zatrudniony przez kilka miesięcy, pracujący w niepełnym wymiarze, biorący pojedyncze dyżury czy rozpisany na kilka wierszy. Rozkład opisuje więc to, jak placówki dzielą pieniądze między pozycje na liście, a nie typowy dochód lekarza.
+
+<Aside title="Mediana z list Watchdog, nie z danych AOTMiT">
+
+W serwisie występują dwie różne mediany. Ta pochodzi z list płac przysłanych w monitoringu Watchdog Polska: to roczna wypłata jednej placówki dla jednej pozycji na liście, bez względu na wymiar pracy. Mediany w zestawieniu [Rozkład wynagrodzeń](/dane/rozklad-wynagrodzen/) pochodzą z danych AOTMiT i dotyczą miesięcznych wynagrodzeń według formy zatrudnienia. To dwa różne pomiary, więc nie należy ich mieszać ani podpisywać liczby z jednego źródłem drugiego.
+
+</Aside>
+
+## Im wyżej, tym rzadziej
+
+Przy kolejnych progach rozliczeń szybko ubywa, ale nie znikają. Tabela pokazuje, ile pozycji na listach przekracza dany próg rocznej kwoty z jednej placówki.
+
+<Figure
+  title={`Ponad milion złotych za rok: ${count(OVER_1M, R)} w ${formatPL(OVER_1M_FACILITIES)} z ${formatPL(LISTS)} placówek`}
+  note="Progi to granice przedziałów rozkładu, więc „ponad 200 tys. zł” obejmuje też kwotę równą 200 tys. zł."
+  source={figSource}
+>
+  <Comparison table={thresholdTable} />
+</Figure>
+
+## Pozycja na liście to nie zawsze jedna osoba
+
+Wszystkie liczby na tej stronie dotyczą rozliczeń, czyli pozycji na listach. W wielu wykazach jeden wiersz to jeden lekarz, ale nie we wszystkich:
+
+- **Kilka tabel.** Osobno umowy o pracę, kontrakty, czasem rezydentury — każda numerowana od nowa. Ten sam lekarz może trafić do dwóch tabel i liczyć się dwa razy.
+- **Wiersz na umowę.** Lekarz z kilkoma umowami w tej samej placówce ma kilka pozycji, a każda jest niższa niż jego łączna wypłata.
+- **Same inicjały.** Pary inicjałów się powtarzają i nie da się rozstrzygnąć, czy to różne osoby, czy jedna osoba z kilkoma umowami.
+
+Dlatego piszemy „{count(OVER_1M, R)} powyżej miliona złotych”, a nie „{formatPL(OVER_1M)} lekarzy”. Tam, gdzie jedną osobę rozpisano na kilka wierszy, jej łączna wypłata z tej placówki jest wyższa niż każda z pozycji. Układ każdej listy można sprawdzić w sprawie u źródła: link do niej stoi przy każdej placówce w [przeglądarce monitoringu](/dane/monitoring-watchdog/).
+
+## Rekordy: ostrożnie z listami z inicjałami
+
+Na samym końcu rozkładu są pojedyncze bardzo wysokie kwoty: w {formatPL(MAX_OVER_2M_FACILITIES)} placówkach najwyższa pozycja (kolumna „Najwyższa” w [przeglądarce](/dane/monitoring-watchdog/)) przekracza 2 mln zł. Takich pozycji nie układamy w ranking i nie porównujemy ich ze sobą jak rekordów jednej osoby.
+
+Szczególnie ostrożnie trzeba czytać listy, na których lekarzy oznaczono samymi inicjałami. Skoro te same inicjały się powtarzają, wysoka pozycja może łączyć kilka umów albo kilka osób, a dwie niższe mogą należeć do jednego lekarza. Do tego dochodzą błędy odczytu: kwoty wyłuskano automatycznie z korespondencji, także z OCR skanów. Pojedyncza kwota to materiał do sprawdzenia u źródła, a nie gotowy wynik.
+
+Pewniej czyta się listy, w których placówka sama ponumerowała lekarzy. Jeden ze szpitali wojewódzkich przysłał właśnie taki wykaz: w każdym wierszu liczba porządkowa, słowo „lekarz” i kwota za rok — bez nazwisk.
+
+<Figure
+  title="Lista z numerami zamiast nazwisk: kwoty są jawne, osoby nie"
+  note={`Ponad milion złotych: ${count(EXAMPLE.over1m, POS)}. Kwoty roczne brutto za ${DATA.year} r. — wypłaty tego jednego szpitala.`}
+  source={figSource}
+>
+  <KeyFacts
+    items={[
+      { value: formatPL(EXAMPLE.doctors), label: `${plural(EXAMPLE.doctors, POS)} na liście` },
+      { value: tys(EXAMPLE.median), unit: 'tys. zł', label: 'mediana' },
+      { value: formatPL(EXAMPLE.max / 1e6, 2), unit: 'mln zł', label: 'najwyższa pozycja' },
+      { value: formatPL(EXAMPLE.over500k), label: `${plural(EXAMPLE.over500k, POS)} powyżej 500 tys. zł` },
+    ]}
+  />
+</Figure>
+
+Nazwy szpitala nie podajemy: pełna lista to dobra praktyka, a nie powód do zarzutów. Udokumentowane rekordy pojedynczych osób, każdy ze źródłem, zbieramy w zestawieniu [Rekordowe rozliczenia](/dane/rekordy/).
+
+## Dolna granica dla lekarza, nie dla zawodu
+
+Każda kwota z listy to wypłata jednej placówki. Ten sam lekarz może w tym samym roku pracować w kilku miejscach naraz, na etacie i na kontrakcie, a tych wypłat lista nie pokazuje. Dla konkretnej osoby kwota z listy jest więc dolną granicą: jej łączne wypłaty ze wszystkich miejsc pracy nie mogą być niższe.
+
+Ta zasada nie przenosi się jednak na medianę. Mediana {formatPL(LISTS)} list nie jest dolną granicą zarobków lekarzy w Polsce, tylko opisem wybranych wykazów. Działają na nią siły w przeciwnych kierunkach:
+
+- **Dobór placówek nie jest losowy.** Listy pochodzą od {formatPL(LISTS)} z {formatPL(DATA.requests)} zapytanych placówek — od tych, które zdecydowały się je przysłać. Pięć najdłuższych list to {pct(LARGEST.share, 0)}% wszystkich rozliczeń. Gdy każdą placówkę liczyć raz, [mediana z median placówek](#metoda-i-stan-danych) wynosi ok. {tys(FACILITY_MEDIAN)} tys. zł, wobec ok. {tys(MEDIAN.rounded)} tys. zł dla wszystkich rozliczeń razem.
+- **Kwoty za część roku albo niepełny wymiar pracy** trafiają na listy na równi z pełnymi i mogą ciągnąć medianę w dół.
+- **Rozpisanie jednej osoby na kilka wierszy** zaniża kwoty w przeliczeniu na pozycję.
+
+Rozkład pokazuje więc rząd wielkości i rozpiętość kwot, a nie przeciętny dochód lekarza w Polsce. Jak wypłaty jednej osoby rozkładają się na kilka placówek, opisujemy w tekście o [wieloetatowości](/mechanizmy/wieloetatowosc/).
+
+## Czego brakuje do pełnego obrazu
+
+Lista z numerami zamiast nazwisk pokazuje, że kwotę da się ujawnić bez ujawniania osoby. Taki numer działa jednak tylko w jednym wykazie: „lekarz 17” w jednym szpitalu i „lekarz 203” w innym mogą być tą samą osobą, a z dwóch list nie da się tego ustalić. Do zsumowania wypłat potrzebny jest identyfikator wspólny dla wszystkich placówek.
+
+Dlatego postulujemy jawne łączne wypłaty z publicznych pieniędzy dla każdej osoby — pod stałym identyfikatorem, bez nazwisk. Zamiast list zbieranych wnioskami od części placówek byłaby wtedy jedna suma dla każdej osoby, ze wszystkich miejsc pracy. Szczegóły w [postulacie](/postulat/).
+
+## Metoda i stan danych
+
+- **Źródło.** Monitoring „{DATA.source.monitoring}”[^watchdog] Sieci Obywatelskiej Watchdog Polska: wnioski o informację publiczną o wynagrodzeniach lekarzy za {DATA.year} r. i odpowiedzi placówek, jawne na platformie fedrowanie. Stan danych na {asOf}.
+- **Plik.** Liczymy z tego samego pliku co [przeglądarka monitoringu](/dane/monitoring-watchdog/) (można go też pobrać jako [plik JSON](/dane/monitoring-watchdog/monitoring-watchdog.json)). Gdy plik zostanie zaktualizowany, liczby w tekście, na wykresach i w tabeli przeliczą się same.
+- **Kryterium listy.** Roczny wykaz brutto w podziale na lekarzy, co najmniej {LIST_CRITERION.minPositions} pozycji, mediana od {tys(LIST_CRITERION.minMedian)} tys. zł.
+- **Obliczenia.** Liczby i udziały rozliczeń powyżej progów, suma list i mediana z median placówek są dokładne. Mediana wszystkich rozliczeń to szacunek z rozkładu: interpolacja liniowa w przedziale, w którym wypada połowa rozliczeń, zaokrąglona do 10 tys. zł.
+- **Jakość danych.** Kwoty i kategorie odpowiedzi wyłuskano automatycznie z korespondencji, także z OCR skanów, więc mogą zawierać błędy. Zanim zacytujesz pojedynczą liczbę, sprawdź ją w sprawie u źródła. Kto zebrał i wyłuskał dane — zob. [podziękowania](/dane/monitoring-watchdog/#podziekowania).
+- **Wcześniejsza wersja.** Poprzednia wersja tej strony, z lipca 2026 r., liczyła rozkład z mniejszej liczby list. Obecne liczby ją zastępują.
+
+[^watchdog]: Sieć Obywatelska Watchdog Polska, [monitoring „Ile zarabiają lekarze?”](https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabiaja-lekarze) — wnioski do placówek ochrony zdrowia i ich odpowiedzi na platformie fedrowanie.

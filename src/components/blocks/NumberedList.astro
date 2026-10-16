@@ -1,0 +1,60 @@
+---
+/**
+ * Lista z numeracją „01.”.
+ * layout="rows"    — numer z lewej, pogrubiony lead + tekst (np. „Temat w 30 sekund”)
+ * layout="columns" — kolumny: numer, tytuł, tekst (np. zasady redakcyjne)
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Num from '@/components/ui/Num.astro';
+import type { TextItem } from '@/types';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'ol'> {
+  items: TextItem[];
+  layout?: 'rows' | 'columns';
+}
+
+const { items, layout = 'rows', class: className, ...rest } = Astro.props;
+---
+<ol class:list={['nlist', `nlist--${layout}`, className]} style={`--n: ${items.length}`} {...rest}>
+  {items.map((item, i) => (
+    <li data-reveal>
+      <Num n={i + 1} size="sm" />
+      {layout === 'rows' ? (
+        <p><strong>{typo(item.title)}</strong> {typo(item.text)}</p>
+      ) : (
+        <>
+          <h3>{typo(item.title)}</h3>
+          <p>{typo(item.text)}</p>
+        </>
+      )}
+    </li>
+  ))}
+</ol>
+
+<style>
+  /* rows */
+  .nlist--rows { border-top: 1px solid var(--line-2); }
+  .nlist--rows li { display: grid; grid-template-columns: 64px 1fr; gap: 16px; padding: 24px 0; border-bottom: 1px solid var(--line-2); }
+  .nlist--rows p { font-size: 1rem; line-height: 1.65; }
+  .nlist--rows strong { color: var(--ink); font-weight: 600; }
+
+  /* columns */
+  .nlist--columns { display: grid; grid-template-columns: repeat(var(--n), 1fr); border-top: 1px solid var(--ink); }
+  .nlist--columns li { padding: 28px 28px 8px 0; }
+  .nlist--columns li + li { padding-left: 28px; border-left: 1px solid var(--line); }
+  .nlist--columns h3 { font: 500 1.1875rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); margin: 20px 0 10px; }
+  .nlist--columns p { font-size: 0.90625rem; line-height: 1.6; }
+
+  @media (max-width: 1024px) {
+    .nlist--columns { grid-template-columns: repeat(2, 1fr); }
+    .nlist--columns li:nth-child(odd) { padding-left: 0; border-left: 0; }
+    .nlist--columns li:nth-child(n+3) { border-top: 1px solid var(--line); }
+  }
+
+  @media (max-width: 720px) {
+    .nlist--columns { grid-template-columns: 1fr; }
+    .nlist--columns li, .nlist--columns li:nth-child(n) { padding: 24px 0 8px; border-left: 0; }
+    .nlist--columns li + li { border-top: 1px solid var(--line); }
+  }
+</style>

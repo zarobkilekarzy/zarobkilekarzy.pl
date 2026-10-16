@@ -1,0 +1,226 @@
+---
+/**
+ * /dane/monitoring-watchdog/ — przeglądarka monitoringu „Ile zarabiają lekarze?”.
+ * Dane: src/data/monitoring-watchdog.json (generowany skryptem, kontrakt w lib/monitoring).
+ * Wpis kolekcji `monitoring-watchdog` zostaje bez treści i linkuje tutaj (href).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import XProfile from '@/components/blocks/XProfile.astro';
+import MonitoringGrid from '@/components/monitoring/MonitoringGrid.astro';
+import { grid } from '@/components/monitoring/grid';
+import { monitoring } from '@/lib/monitoring';
+import { mainNav } from '@/data/navigation';
+import { formatDate, formatPL, isoDate, typo } from '@/lib/format';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+import watchdogLogo from '@/assets/logos/watchdog-polska.svg';
+import nicoboguAvatar from '@/assets/people/nicobogu.jpg';
+import watchdogAvatar from '@/assets/people/siecobywatelska.jpg';
+
+const SRC = '/dane/monitoring-watchdog/monitoring-watchdog.json';
+const CORRECTIONS = 'sprostowania@zarobkilekarzy.pl';
+const WATCHDOG = 'https://siecobywatelska.pl/';
+const WATCHDOG_SUPPORT = 'https://siecobywatelska.pl/wspieraj-dzialania-watchdoga/';
+
+const { facilities, year, source } = monitoring;
+const total = facilities.length;
+const lists = facilities.filter((f) => f.payroll).length;
+const updated = new Date(monitoring.updated);
+
+const title = 'Przeglądarka monitoringu płac lekarzy';
+const lead = `Watchdog Polska zapytał ${formatPL(total)} publicznych placówek o roczne wynagrodzenia lekarzy za ${year} r. Sprawdź, kto ujawnił dane, kto odmówił, a kto milczy — i jak rozkładają się płace w ${lists} placówkach, które przysłały pełne listy.`;
+const description = `${formatPL(total)} placówek z obywatelskiego monitoringu płac lekarzy: odpowiedzi na wnioski i roczne listy płac. Wyszukiwarka, filtry, sortowanie, eksport CSV.`;
+
+const dataHref = mainNav.find((link) => link.match === '/dane/')?.href;
+// definicje pod tabelą = te same teksty co w dymkach nagłówków (jedno źródło)
+const definitions = [
+  ...grid.columns.filter((c) => c.hint).map((c) => ({ term: c.label, def: c.hint! })),
+  ...grid.facets.filter((f) => f.hint).map((f) => ({ term: f.label, def: f.hint! })),
+];
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Dane', href: dataHref }, { label: title }];
+const seo: SeoInput = {
+  title,
+  description,
+  breadcrumbs: crumbs,
+  dates: { modified: updated },
+  entities: [
+    {
+      kind: 'dataset',
+      license: 'https://creativecommons.org/licenses/by/4.0/',
+      temporalCoverage: String(year),
+      isBasedOn: [source.url],
+      distribution: [{ encodingFormat: 'application/json', contentUrl: new URL(SRC, Astro.site).href }],
+    },
+  ],
+};
+---
+<BaseLayout seo={seo}>
+  <Fragment slot="head">
+    {/* datagrid pobiera ten plik zaraz po starcie — niech ładuje się równolegle ze skryptem */}
+    <link rel="preload" href={SRC} as="fetch" crossorigin="anonymous" />
+  </Fragment>
+
+  <Section space="none" class="mon-page">
+    <header class="mon-page__head">
+      <Breadcrumbs items={crumbs} />
+      <div class="mon-page__intro">
+        <div>
+          <Eyebrow>Dane · wyszukiwarka</Eyebrow>
+          <Heading as="h1" size="display" class="mon-page__title">{typo(title)}</Heading>
+          <p class="lead mon-page__lead">{typo(lead)}</p>
+        </div>
+        <dl class="mon-page__meta">
+          <div><dt>Stan danych</dt><dd><time datetime={isoDate(updated)}>{formatDate(updated)}</time></dd></div>
+          <div class="mon-page__source">
+            <dt>Źródło</dt>
+            <dd>
+              <a href={source.url} target="_blank" rel="noopener">
+                <img src={watchdogLogo.src} width="168" height="42" alt={`${source.name} — monitoring „${source.monitoring}”`} />
+              </a>
+            </dd>
+          </div>
+          <div><dt>Ludność</dt><dd>{monitoring.population.source}</dd></div>
+          <div><dt>Licencja danych</dt><dd><a href="https://creativecommons.org/licenses/by/4.0/deed.pl" target="_blank" rel="noopener">CC BY 4.0</a></dd></div>
+        </dl>
+      </div>
+      <p class="mon-page__warn">
+        <strong>Dane zbierane maszynowo.</strong>{' '}
+        {typo('Kwoty i kategorie odpowiedzi wyłuskano automatycznie z jawnej korespondencji (także z OCR skanów), więc mogą zawierać błędy. Zanim zacytujesz liczbę, sprawdź ją w sprawie u źródła — link jest w każdym wierszu. Błąd w wierszu Twojej placówki?')}{' '}
+        <a href={`mailto:${CORRECTIONS}`}>{CORRECTIONS}</a>
+      </p>
+    </header>
+
+    <MonitoringGrid doc={monitoring} src={SRC} class="mon-page__grid" />
+  </Section>
+
+  <Section aria-labelledby="podziekowania" space="bottom">
+    <SectionHead
+      eyebrow="Podziękowania"
+      title="Kto zebrał te dane"
+      id="podziekowania"
+      aside="Ta strona tylko porządkuje dane. Wnioski, korespondencję i żmudne wyłuskiwanie kwot wykonali inni."
+    />
+    <div class="mon-credits">
+      <article class="mon-org" aria-label={source.name}>
+        <p class="mon-org__eyebrow">Monitoring i wnioski</p>
+        <a class="mon-org__logo" href={WATCHDOG} target="_blank" rel="noopener">
+          <img src={watchdogLogo.src} width="300" height="75" alt={source.name} />
+        </a>
+        <p class="mon-org__text">
+          {typo(`${source.name} wysłała wnioski o informację publiczną do ${formatPL(total)} placówek i publikuje całą korespondencję na platformie fedrowanie. Dlatego każdą liczbę w tabeli można sprawdzić u źródła — i dlatego ta tabela w ogóle mogła powstać.`)}
+        </p>
+        <div class="mon-org__links">
+          <LinkArrow href={source.url}>Monitoring „{source.monitoring}”</LinkArrow>
+          <LinkArrow href={WATCHDOG}>siecobywatelska.pl</LinkArrow>
+        </div>
+      </article>
+
+      <XProfile
+        name="Watchdog Polska"
+        handle="SiecObywatelska"
+        avatar={watchdogAvatar}
+        eyebrow="Watchdog na X"
+        bio="Wszystko o prawie do informacji i granicach władzy. Nie odpuszczamy! Wspieraj nas regularnie."
+        link={{ label: 'Wspieraj działania Watchdoga', href: WATCHDOG_SUPPORT }}
+      />
+
+      <XProfile
+        name="nicolabo"
+        handle="nicobogu"
+        avatar={nicoboguAvatar}
+        eyebrow="Ekstrakcja danych"
+        link={{ label: 'Hospitalizacje w Polsce', href: 'https://hospitalizacje-nfz.pages.dev/' }}
+      >
+        {typo(`Kwoty i kategorie odpowiedzi wyłuskane automatycznie z korespondencji placówek, także z OCR skanów. Bez tej pracy byłoby ${formatPL(total)} wątków mailowych zamiast tabeli. Dziękujemy!`)}
+      </XProfile>
+    </div>
+  </Section>
+
+  <Section tone="soft" aria-labelledby="jak-czytac" id="metoda">
+    <SectionHead eyebrow="Metoda" title="Jak czytać tę tabelę" id="jak-czytac" />
+    <div class="mon-method">
+      <div class="mon-method__text">
+        <p>{typo(`Kolumny płacowe wypełniamy tylko dla ${lists} placówek, które przysłały pełną roczną listę brutto w podziale na lekarzy: co najmniej 10 pozycji i mediana od 60 tys. zł. To odsiewa listy miesięczne i cząstkowe. Pozostałe odpowiedzi z danymi (widełki, sumy oddziałów, nieczytelne skany) oznaczamy jako „dane nieporównywalne”.`)}</p>
+        <p>{typo('Domyślnie tabela pokazuje tylko placówki z listą płac. Pozostałe zobaczysz po wyłączeniu przełącznika „Tylko z listą płac” albo po kliknięciu kategorii odpowiedzi. Gdy wyszukiwanie nie trafia w żadną placówkę z listą, tabela sama pokazuje wszystkie pasujące.')}</p>
+        <p>{typo('Każda kwota to wypłata jednej placówki. Lekarz pracujący w kilku miejscach ma tu tylko część dochodu — łącznych zarobków nikt nie zna, bo nikt nie sumuje wypłat jednej osoby z różnych placówek. Traktuj kwoty jako dolne granice.')}</p>
+        <p>{typo('Przedziały w rozkładzie są takie same dla wszystkich placówek, więc wykresy da się porównywać. Publikujemy wyłącznie liczebności przedziałów, nigdy pojedynczych kwot.')}</p>
+        <p>{typo('Ujawnienie danych to dobra praktyka, a nie zarzut wobec placówki. Odmowa czy milczenie to informacja o stanie jawności, nie o samych lekarzach.')}</p>
+        <p class="mon-method__credit">{typo('Ludność miejscowości dołączona po kodzie gminy TERYT. Kto zebrał i wyłuskał dane — zob.')}{' '}<a href="#podziekowania">podziękowania</a>.</p>
+      </div>
+      <dl class="mon-method__defs">
+        {definitions.map((d) => (
+          <div><dt>{d.term}</dt><dd>{typo(d.def)}</dd></div>
+        ))}
+      </dl>
+    </div>
+  </Section>
+</BaseLayout>
+
+<style>
+  .mon-page { padding-top: clamp(28px, 4vw, 48px); padding-bottom: clamp(56px, 6vw, 88px); }
+
+  .mon-page__intro {
+    display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 32px clamp(40px, 6vw, 96px);
+    align-items: end; margin-top: 36px;
+  }
+  .mon-page__title { font-size: clamp(2.375rem, 4.4vw, 3.875rem); max-width: 17ch; margin-bottom: 22px; }
+  .mon-page__lead { font-size: 1.125rem; max-width: 42em; }
+
+  .mon-page__meta { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
+  .mon-page__meta > div { padding: 14px 16px 14px 0; border-bottom: 1px solid var(--line); }
+  .mon-page__meta > div:nth-child(even) { padding-left: 16px; border-left: 1px solid var(--line); }
+  dt { margin-bottom: 6px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .mon-page__meta dd { font: 400 1rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .mon-page__meta a, .mon-page__warn a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+  .mon-page__source a { display: inline-block; margin-top: 2px; transition: opacity .2s; }
+  .mon-page__source a:hover { opacity: .75; }
+  /* Logo partnera bez zmian kolorów — w nocy na jasnej plakietce (cień = margines bez zmiany układu) */
+  .mon-page__source img { display: block; width: 168px; height: auto; background: light-dark(transparent, #fff); box-shadow: 0 0 0 8px light-dark(transparent, #fff); }
+
+  .mon-credits { display: grid; grid-template-columns: minmax(0, 1.3fr) repeat(2, minmax(0, 1fr)); gap: 24px; align-items: stretch; }
+  .mon-org {
+    display: flex; flex-direction: column; gap: 22px; padding: 28px;
+    border: 1px solid var(--line-2); border-top: 4px solid #983039; /* kolor-stały: kolor z logo Watchdog */
+  }
+  .mon-org__eyebrow { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .mon-org__logo { align-self: flex-start; transition: opacity .2s; }
+  .mon-org__logo:hover { opacity: .8; }
+  .mon-org__logo img { display: block; width: min(300px, 100%); height: auto; background: light-dark(transparent, #fff); box-shadow: 0 0 0 8px light-dark(transparent, #fff); }
+  .mon-org__text { max-width: 56ch; font-size: 1rem; line-height: 1.65; color: var(--text); }
+  .mon-org__links { display: flex; flex-wrap: wrap; gap: 4px 28px; margin-top: auto; }
+
+  .mon-page__warn {
+    margin: 32px 0 36px; padding: 14px 18px; max-width: 100%;
+    background: var(--amber-bg); border-left: 2px solid var(--amber); font-size: 0.90625rem; line-height: 1.6; color: light-dark(#4A3A12, #F0D9A8);
+  }
+  .mon-page__warn strong { color: var(--amber); font-weight: 600; }
+
+  .mon-method { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+  .mon-method__text { display: grid; gap: 16px; max-width: 60ch; }
+  .mon-method__text p { font-size: 1rem; line-height: 1.7; color: var(--text-strong); }
+  .mon-method__credit { padding-top: 16px; border-top: 1px solid var(--line-2); font-size: 0.90625rem !important; color: var(--text) !important; }
+  .mon-method__credit a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+  .mon-method__defs { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+  .mon-method__defs > div { padding: 16px 0; border-top: 1px solid var(--line-2); }
+  .mon-method__defs dd { font-size: 0.90625rem; line-height: 1.6; color: var(--text); }
+
+  @media (max-width: 1180px) {
+    .mon-credits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mon-org { grid-column: 1 / -1; }
+  }
+  @media (max-width: 1024px) {
+    .mon-page__intro, .mon-method { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .mon-credits { grid-template-columns: 1fr; }
+    .mon-page__lead { font-size: 1.03125rem; }
+    .mon-method__defs { grid-template-columns: 1fr; }
+  }
+</style>

@@ -1,0 +1,92 @@
+---
+/**
+ * Pierwsza pomoc strony: bezpłatna infolinia (duży numer do stuknięcia) i 112.
+ * Dla kogoś w stresie to najważniejszy element — stoi obok tytułu, a na telefonie
+ * zaraz pod nim. CallBar pokazuje numer ponownie, gdy ta karta zniknie z ekranu.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import type { Phone } from '@/lib/pacjent/types';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'aside'> {
+  helpline: { phone: Phone; name: string; hours: string; who: string; abroad: string };
+  emergency: { phone: Phone; text: string };
+}
+
+const { helpline, emergency, class: className, ...rest } = Astro.props;
+---
+<aside class:list={['help', className]} aria-labelledby="help-title" data-help {...rest}>
+  <p class="help__label" id="help-title">Nie wiesz, od czego zacząć? Zadzwoń</p>
+  <a class="help__number" href={`tel:${helpline.phone.tel}`}>
+    <span class="help__icon"><Icon name="phone" size={22} /></span>
+    <span>{helpline.phone.display}</span>
+  </a>
+  <p class="help__hours">{typo(helpline.hours)}</p>
+  <p class="help__who"><strong>{helpline.name}.</strong> {typo(helpline.who)}</p>
+  <details class="help__abroad">
+    <summary>Dzwonisz z zagranicy?</summary>
+    <p>{typo(helpline.abroad)}</p>
+  </details>
+  <p class="help__sos">
+    <a href={`tel:${emergency.phone.tel}`} class="help__sos-num">{emergency.phone.display}</a>
+    <span>{typo(emergency.text)}</span>
+  </p>
+</aside>
+
+<style>
+  .help {
+    position: relative;
+    padding: 1.5rem 1.5rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--blue-100);
+  }
+  .help__label { font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue-700); }
+
+  .help__number {
+    display: inline-flex; align-items: center; gap: 0.875rem;
+    margin: 0.75rem 0 0.5rem;
+    font: 400 clamp(2.5rem, 4.2vw, 3.25rem)/1 var(--f-display);
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+  }
+  .help__icon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; background: var(--blue-fill); color: #fff; flex: none; }
+  .help__number:hover { color: var(--blue); }
+  .help__number:hover .help__icon { background: var(--blue-600); }
+
+  .help__hours { font: 500 1rem/1.4 var(--f-body); color: var(--ink); }
+  .help__who { margin-top: 0.5rem; font-size: 0.9375rem; line-height: 1.55; color: var(--text); }
+  .help__who strong { color: var(--ink); font-weight: 600; }
+
+  .help__abroad { margin-top: 0.75rem; font-size: 0.9375rem; }
+  .help__abroad summary {
+    display: inline-flex; align-items: center; gap: 6px; min-height: 2.75rem;
+    cursor: pointer; list-style: none; color: var(--ink);
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px;
+  }
+  .help__abroad summary::-webkit-details-marker { display: none; }
+  .help__abroad summary::after { content: "+"; color: var(--blue); font-family: var(--f-mono); }
+  .help__abroad[open] summary::after { content: "–"; }
+  .help__abroad p { line-height: 1.55; color: var(--text); padding-bottom: 0.25rem; }
+
+  .help__sos {
+    display: flex; align-items: center; gap: 0.875rem;
+    margin: 0.75rem -1.5rem -1.25rem; padding: 0.875rem 1.5rem;
+    background: var(--bad-bg); border-top: 1px solid light-dark(#F3C5BF, #5A2420);
+    font-size: 0.9375rem; line-height: 1.45; color: var(--ink-2);
+  }
+  .help__sos-num {
+    flex: none; display: grid; place-items: center; min-width: 3.25rem; height: 2.75rem; padding: 0 0.5rem;
+    background: var(--bad); color: var(--on-ink);
+    font: 500 1.25rem/1 var(--f-display); letter-spacing: -0.01em;
+  }
+  .help__sos-num:hover { background: light-dark(#8f1c13, #FFB3AA); }
+
+  @media (max-width: 720px) {
+    .help { padding: 1.25rem 1.125rem 1rem; box-shadow: 4px 4px 0 var(--blue-100); }
+    .help__sos { margin: 0.75rem -1.125rem -1rem; padding: 0.75rem 1.125rem; }
+  }
+</style>

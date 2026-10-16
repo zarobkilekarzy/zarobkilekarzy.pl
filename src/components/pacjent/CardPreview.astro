@@ -1,0 +1,94 @@
+---
+/**
+ * Podgląd karty kieszonkowej w HTML: przód i tył w proporcji A6, z tych samych danych co PDF.
+ * To prawdziwy tekst (nie obrazek), więc czytnik ekranu przeczyta, co jest na karcie, zanim
+ * ktoś ją wydrukuje. Zawsze „papier” — jasny także w trybie nocnym.
+ */
+import type { CardContent, CardPhones } from '@/lib/pacjent/types';
+import { typo } from '@/lib/format';
+
+interface Props {
+  card: CardContent;
+  phones: CardPhones;
+}
+
+const { card, phones } = Astro.props;
+---
+<div class="cards">
+  <div class="sheet"><article class="paper" aria-label="Przód karty">
+    <p class="p-stamp">Karta kieszonkowa · {card.stamp}</p>
+    <h3 class="p-title">{card.title}</h3>
+    <p class="p-label">Nie wiesz, od czego zacząć? Zadzwoń</p>
+    <p class="p-phone">{phones.helpline.phone.display}</p>
+    <p class="p-small"><strong>{phones.helpline.name}</strong> — {phones.helpline.hours.toLowerCase()}.</p>
+    <p class="p-sos"><span>{phones.emergency.phone.display}</span> Zagrożenie życia? Dzwoń pod 112.</p>
+    <h4 class="p-label p-label--rule">Masz prawo do</h4>
+    <ul class="p-list">
+      {card.rights.map((r) => <li><span>{typo(r.text)}</span><span class="p-basis">{r.basis}</span></li>)}
+    </ul>
+    <p class="p-foot">Pełna wersja i źródła: <strong>{card.url}</strong></p>
+  </article></div>
+
+  <div class="sheet"><article class="paper" aria-label="Tył karty">
+    <h4 class="p-label p-label--rule">To jest bezpłatne — choć rzadko kto o tym mówi</h4>
+    <ul class="p-list">
+      {card.free.map((r) => <li><span>{typo(r.text)}</span><span class="p-basis">{r.basis}</span></li>)}
+    </ul>
+    <h4 class="p-label p-label--rule">Pilnuj terminów</h4>
+    <ul class="p-dl">
+      {card.deadlines.map((d) => <li><span class="p-value">{d.value}</span><span>{typo(d.text)}</span></li>)}
+    </ul>
+    <p class="p-warn"><strong>Uwaga.</strong> {typo(card.warning)}</p>
+    <h4 class="p-label p-label--rule">Gdzie zgłosić</h4>
+    <ul class="p-routes">
+      {card.routes.map((r) => <li><strong>{typo(r.situation)}</strong><span>{r.contact}</span></li>)}
+    </ul>
+    <p class="p-foot">{typo(card.legal)}</p>
+  </article></div>
+</div>
+
+<style>
+  .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(1rem, 3vw, 2rem); max-width: 56rem; }
+
+  /* Kontener zapytań na opakowaniu: 1cqi = 1% szerokości karty, więc proporcje jak w PDF
+     (stopień pisma w pt ÷ 297,6 pt szerokości panelu A6 × 100) */
+  .sheet { container-type: inline-size; }
+  /* kolor-stały: początek — papier jak w PDF */
+  .paper {
+    color-scheme: light;
+    aspect-ratio: 105 / 148;
+    display: flex; flex-direction: column;
+    padding: 7.1cqi;
+    background: #fff; color: #000;
+    border: 1px solid #c9ced8;
+    box-shadow: 0 30px 50px -36px rgba(4, 11, 27, .45);
+    font: 400 2.65cqi/1.3 var(--f-body);
+    overflow: hidden;
+  }
+  .p-stamp, .p-label, .p-basis { font-family: var(--f-mono); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
+  .p-stamp { font-size: 1.95cqi; color: #333; }
+  .p-title { margin-top: 1.3cqi; padding-bottom: 1.3cqi; border-bottom: 0.47cqi solid #000; font: 500 7.05cqi/1.05 var(--f-display); letter-spacing: -0.02em; }
+  .p-label { margin-top: 3.7cqi; font-size: 2cqi; }
+  .p-label--rule { padding-bottom: 0.5cqi; border-bottom: 0.25cqi solid #000; margin-bottom: 1.85cqi; }
+  .p-phone { font: 400 10.1cqi/1 var(--f-display); letter-spacing: -0.02em; margin-top: 0.7cqi; }
+  .p-small { margin-top: 1cqi; font-size: 2.42cqi; line-height: 1.36; color: #333; }
+  .p-sos { display: flex; align-items: center; gap: 2.35cqi; margin-top: 2cqi; font-size: 2.42cqi; color: #333; }
+  .p-sos span { display: grid; place-items: center; flex: none; width: 8.7cqi; height: 5.7cqi; background: #000; color: #fff; font: 500 3.7cqi/1 var(--f-display); }
+
+  .p-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2cqi; padding: 0.75cqi 0; border-bottom: 0.1cqi solid #bdbdbd; }
+  .p-list li:last-child { border-bottom: 0; }
+  .p-basis { font-size: 1.95cqi; color: #333; white-space: nowrap; padding-top: 0.3cqi; }
+
+  .p-dl li { display: grid; grid-template-columns: 17.5cqi minmax(0, 1fr); padding: 0.85cqi 0; }
+  .p-value { font: 500 4.2cqi/1 var(--f-display); }
+  .p-warn { margin: 2.35cqi 0 0.6cqi; padding: 1.7cqi 2.35cqi; border: 0.3cqi solid #000; }
+  .p-routes li { display: grid; padding: 0.75cqi 0; }
+  .p-routes span { font-size: 2.42cqi; color: #333; }
+
+  .p-foot { margin-top: auto; padding-top: 2cqi; font-size: 2.08cqi; color: #333; }
+  /* kolor-stały: koniec */
+
+  @media (max-width: 720px) {
+    .cards { grid-template-columns: minmax(0, 1fr); max-width: 24rem; }
+  }
+</style>

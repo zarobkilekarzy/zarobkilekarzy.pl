@@ -1,0 +1,17 @@
+---
+/**
+ * Cloudflare Web Analytics — lekka analityka bez ciasteczek (nie wymaga banera zgody).
+ *
+ * Skrypt renderuje się tylko w buildzie produkcyjnym i tylko z ustawionym
+ * CF_WEB_ANALYTICS_TOKEN. Jeśli domena jest proxowana przez Cloudflare z włączonym
+ * automatycznym wstrzykiwaniem, zostaw token pusty — na stronie może być tylko
+ * jeden taki skrypt.
+ */
+import { CF_WEB_ANALYTICS_TOKEN } from 'astro:env/server';
+
+const enabled = import.meta.env.PROD && Boolean(CF_WEB_ANALYTICS_TOKEN);
+const beacon = JSON.stringify({ token: CF_WEB_ANALYTICS_TOKEN });
+---
+{enabled && (
+  <script is:inline type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={beacon}></script>
+)}

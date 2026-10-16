@@ -1,0 +1,63 @@
+---
+/**
+ * Treść petycji z lipca 2026 r. w układzie pisma — dokument archiwalny, zapisany dosłownie.
+ * Pola, które wypełniał wnoszący, zostają w nawiasach kwadratowych.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { petitionText as t, petycja } from '@/data/petycja';
+import { formatDate, typo } from '@/lib/format';
+
+type Props = HTMLAttributes<'article'>;
+const { class: className, ...rest } = Astro.props;
+---
+<article class:list={['letter', className]} {...rest}>
+  <p class="letter__stamp">Archiwum · treść z {formatDate(petycja.launched)}</p>
+  <p class="letter__topic"><span>Temat</span>{petycja.subject}</p>
+
+  <header class="letter__head">
+    <p class="letter__kind">{t.title}</p>
+    <p>{typo(t.subject)}</p>
+  </header>
+
+  <div class="letter__sender">{t.sender.map((line) => <p>{line}</p>)}</div>
+
+  <p>{typo(t.basis)}</p>
+  <ol class="letter__demands">{t.demands.map((d) => <li>{typo(d)}</li>)}</ol>
+  <p>{typo(t.closing)}</p>
+
+  <p class="letter__section">Uzasadnienie</p>
+  {t.justification.map((p) => <p>{typo(p)}</p>)}
+
+  <p class="letter__section">Oświadczenia</p>
+  {t.statements.map((p) => <p>{typo(p)}</p>)}
+
+  <div class="letter__sign">{t.signature.map((line) => <p>{line}</p>)}</div>
+  <p class="letter__foot">{typo(t.footer)}</p>
+</article>
+
+<style>
+  .letter {
+    position: relative; display: grid; gap: 16px;
+    padding: clamp(24px, 5vw, 56px); border: 1px solid var(--line-2); background: var(--surface);
+    font-size: 0.96875rem; line-height: 1.75; color: var(--ink-2);
+  }
+  .letter__stamp {
+    justify-self: start; padding: 4px 8px; border: 1px solid var(--line-2);
+    font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+  }
+  .letter__topic { display: grid; gap: 2px; padding-bottom: 16px; border-bottom: 1px solid var(--line); font-weight: 500; color: var(--ink); }
+  .letter__topic span { font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+
+  .letter__head { margin-top: 8px; text-align: center; }
+  .letter__kind { font: 500 0.8125rem/1.4 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
+  .letter__head p + p { margin-top: 6px; font-weight: 600; color: var(--ink); max-width: 56ch; margin-inline: auto; }
+
+  .letter__sender { color: var(--text); }
+  .letter__demands { display: grid; gap: 12px; counter-reset: d; }
+  .letter__demands li { counter-increment: d; position: relative; padding-left: 28px; }
+  .letter__demands li::before { content: counter(d) "."; position: absolute; left: 0; font-weight: 600; color: var(--ink); }
+
+  .letter__section { margin-top: 12px; font: 500 0.75rem/1.4 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
+  .letter__sign { margin-top: 12px; }
+  .letter__foot { margin-top: 12px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 0.84375rem; line-height: 1.6; color: var(--muted); }
+</style>

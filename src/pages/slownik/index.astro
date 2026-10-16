@@ -1,0 +1,181 @@
+---
+/**
+ * /slownik/ — słownik pojęć (DefinedTermSet w grafie lib/seo). Hasła: src/content/glossary.yaml
+ * (to samo źródło co moduł „Słowniczek” na stronie głównej i wyszukiwarka). Każde hasło ma kotwicę #<id>,
+ * także stare adresy /slownik/#kontrakt, #gotowosc itd. z poprzedniej wersji serwisu.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import Actions from '@/components/layout/Actions.astro';
+import Button from '@/components/ui/Button.astro';
+import { getGlossary } from '@/lib/content';
+import { contact } from '@/data/o-serwisie';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import type { Term } from '@/types';
+
+const page = {
+  title: 'Słownik pojęć',
+  docTitle: 'Słownik pojęć ochrony zdrowia',
+  lead: 'Ochrona zdrowia mówi swoim językiem. Tu wyjaśniamy najważniejsze pojęcia z naszych tekstów w kilku zdaniach — przy każdym haśle podajemy podstawę prawną albo źródło i odsyłamy do tekstu, który opisuje temat szerzej.',
+  description: 'Kontrakt, kapitacja, ryczałt, gotowość, PWZ, JGP — pojęcia z ochrony zdrowia w kilku zdaniach, z podstawą prawną albo źródłem przy każdym haśle.',
+  updated: '16.10.2026',
+};
+
+const terms = await getGlossary();
+
+/** Hasła pogrupowane po pierwszej literze (kolejność alfabetyczna z getGlossary). */
+const groups = terms.reduce<{ letter: string; terms: Term[] }[]>((acc, t) => {
+  const letter = t.term.charAt(0).toLocaleUpperCase('pl');
+  const last = acc.at(-1);
+  if (last?.letter === letter) last.terms.push(t);
+  else acc.push({ letter, terms: [t] });
+  return acc;
+}, []);
+const letterId = (letter: string) => `litera-${letter.toLowerCase()}`;
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: page.title }];
+const seo: SeoInput = {
+  title: page.docTitle,
+  description: page.description,
+  breadcrumbs: crumbs,
+  entities: [
+    {
+      kind: 'termSet',
+      name: page.title,
+      terms: terms.map((t) => ({ id: t.id, name: t.term, alternateName: t.full, description: t.def })),
+    },
+  ],
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="gl-top">
+    <PageHeader title={page.title} lead={page.lead} eyebrow="Bez żargonu" crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Hasła', value: terms.length },
+          { label: 'Aktualizacja', value: page.updated },
+        ]}
+      />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom">
+    <nav class="gl-index" aria-label="Indeks haseł">
+      <ul class="gl-index__groups">
+        {groups.map((g) => (
+          <li class="gl-index__group">
+            <a class="gl-index__letter" href={`#${letterId(g.letter)}`} aria-label={`Litera ${g.letter}`}>{g.letter}</a>
+            <ul class="gl-index__terms">
+              {g.terms.map((t) => <li><a href={`#${t.id}`}>{t.term}</a></li>)}
+            </ul>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="gl-list">
+      {groups.map((g) => (
+        <section class="gl-group" id={letterId(g.letter)} aria-labelledby={`${letterId(g.letter)}-title`}>
+          <h2 class="gl-group__letter" id={`${letterId(g.letter)}-title`} data-no-anchor>{g.letter}</h2>
+          <div class="gl-group__entries">
+            {g.terms.map((t) => (
+              <article class="gl-entry" id={t.id} aria-labelledby={`${t.id}-term`}>
+                <header class="gl-entry__head">
+                  <h3 class="gl-entry__term" id={`${t.id}-term`}>{t.term}</h3>
+                  <p class="gl-entry__full">{typo(t.full)}</p>
+                </header>
+                <div class="gl-entry__body">
+                  <p class="gl-entry__def">{typo(t.def)}</p>
+                  <dl class="gl-entry__meta">
+                    <div>
+                      <dt>Więcej</dt>
+                      <dd>
+                        <ul>{t.more.map((l) => <li><a href={l.href}>{typo(l.label)}</a></li>)}</ul>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{t.sources.length > 1 ? 'Źródła' : 'Źródło'}</dt>
+                      <dd>
+                        <ul>{t.sources.map((s) => <li><a {...linkAttrs(s.href)}>{typo(s.label)}</a></li>)}</ul>
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+
+    <p class="gl-note">
+      Definicje opisują pojęcia, a nie oceniają. Kwoty i stawki, które zmieniają się co roku, podajemy w tekstach,
+      do których prowadzi „Więcej”. Brakuje pojęcia albo widzisz błąd? Napisz na <a href={`mailto:${contact.email}`}>{contact.email}</a>.
+    </p>
+    <Actions class="gl-actions">
+      <Button href="/mechanizmy/">Zobacz mechanizmy</Button>
+      <Button href="/postulat/" variant="ghost">Poznaj postulat</Button>
+    </Actions>
+  </Section>
+</BaseLayout>
+
+<style>
+  .gl-top { padding-top: clamp(32px, 4vw, 56px); }
+
+  /* Indeks: litery z hasłami w siatce na całą szerokość kolumny */
+  .gl-index { border-block: 1px solid var(--line-2); padding-block: 24px; }
+  .gl-index__groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr)); gap: 20px 24px; }
+  .gl-index__group { display: grid; grid-template-columns: 2rem minmax(0, 1fr); align-items: baseline; }
+  .gl-index__letter { font: 400 1.25rem/1.2 var(--f-display); color: var(--blue); text-decoration: none; }
+  .gl-index__terms { display: grid; gap: 4px; }
+  .gl-index__terms a { font-size: 0.9375rem; line-height: 1.4; color: var(--ink); text-decoration: none; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .2s, color .2s; }
+  .gl-index__terms a:hover { color: var(--blue); background-size: 100% 1px; }
+
+  /* Lista: litera w lewej kolumnie, hasła do prawej krawędzi siatki */
+  .gl-group { display: grid; grid-template-columns: minmax(0, 5rem) minmax(0, 1fr); gap: 0 clamp(24px, 4vw, 56px); border-bottom: 1px solid var(--line-2); }
+  .gl-group__letter {
+    font: 300 clamp(2.5rem, 4vw, 3.5rem)/1 var(--f-display); letter-spacing: -0.04em; color: var(--blue);
+    padding-top: 28px; align-self: start; position: sticky; top: calc(var(--header-h) + 16px);
+  }
+  .gl-group { scroll-margin-top: calc(var(--header-h) + 16px); }
+
+  .gl-entry {
+    display: grid; grid-template-columns: minmax(0, 17rem) minmax(0, 1fr); gap: 12px clamp(24px, 4vw, 56px);
+    padding-block: 32px; scroll-margin-top: calc(var(--header-h) + 16px);
+  }
+  .gl-entry + .gl-entry { border-top: 1px solid var(--line); }
+  .gl-entry:target { box-shadow: inset 0 3px 0 var(--blue); }
+
+  .gl-entry__term { font: 400 clamp(1.5rem, 2.2vw, 1.875rem)/1.15 var(--f-display); letter-spacing: -0.02em; color: var(--ink); overflow-wrap: anywhere; }
+  .gl-entry__full { font: 500 0.75rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 10px; }
+
+  .gl-entry__def { font-size: 1.125rem; line-height: 1.65; color: var(--text-strong); max-width: 780px; }
+
+  .gl-entry__meta { display: grid; gap: 10px; margin-top: 18px; max-width: 780px; }
+  .gl-entry__meta > div { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 12px; align-items: baseline; }
+  .gl-entry__meta dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .gl-entry__meta ul { display: grid; gap: 6px; }
+  .gl-entry__meta a { font-size: 0.9375rem; line-height: 1.45; color: var(--blue); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; overflow-wrap: anywhere; }
+  .gl-entry__meta a:hover { text-decoration-thickness: 2px; }
+
+  .gl-note { margin-top: 40px; max-width: 780px; font-size: 1rem; line-height: 1.6; color: var(--text); }
+  .gl-note a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+  .gl-actions { margin-top: 32px; }
+
+  @media (max-width: 1024px) {
+    .gl-entry { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .gl-group { grid-template-columns: minmax(0, 1fr); }
+    .gl-group__letter { position: static; padding-top: 32px; font-size: 2.25rem; }
+    .gl-entry { padding-block: 20px 28px; }
+    .gl-group__letter + .gl-group__entries .gl-entry:first-child { padding-top: 12px; }
+    .gl-entry__def { font-size: 1.0625rem; }
+    .gl-entry__meta > div { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+    .gl-index__group { grid-template-columns: 1.5rem minmax(0, 1fr); }
+  }
+</style>

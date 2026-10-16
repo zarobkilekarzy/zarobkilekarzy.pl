@@ -1,0 +1,53 @@
+---
+/**
+ * Zachowanie zakładek ARIA (klik, strzałki, Home/End) dla dowolnego markupu
+ * z role="tab" / role="tabpanel" umieszczonego w slocie. Wygląd — po stronie konsumenta.
+ * Panele wskazuje atrybut aria-controls zakładki.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'div'>;
+const { class: className, ...rest } = Astro.props;
+---
+<zl-tabs class={className} {...rest}><slot /></zl-tabs>
+
+<script>
+  const STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+
+  class ZlTabs extends HTMLElement {
+    connectedCallback() {
+      const tabs = [...this.querySelectorAll<HTMLElement>('[role="tab"]')];
+
+      const select = (tab: HTMLElement, focus = false) => {
+        tabs.forEach((t) => {
+          const on = t === tab;
+          t.setAttribute('aria-selected', String(on));
+          t.tabIndex = on ? 0 : -1;
+          const panel = document.getElementById(t.getAttribute('aria-controls') ?? '');
+          if (panel) panel.hidden = !on;
+        });
+        if (focus) tab.focus();
+      };
+
+      tabs.forEach((tab, i) => {
+        tab.addEventListener('click', () => select(tab));
+        tab.addEventListener('keydown', (e) => {
+          const target =
+            e.key in STEP ? tabs[(i + STEP[e.key] + tabs.length) % tabs.length]
+            : e.key === 'Home' ? tabs[0]
+            : e.key === 'End' ? tabs[tabs.length - 1]
+            : null;
+          if (!target) return;
+          e.preventDefault();
+          select(target, true);
+        });
+      });
+    }
+  }
+
+  if (!customElements.get('zl-tabs')) customElements.define('zl-tabs', ZlTabs);
+</script>
+
+<style>
+  zl-tabs { display: block; }
+</style>

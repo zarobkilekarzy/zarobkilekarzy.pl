@@ -1,0 +1,56 @@
+---
+/**
+ * Instrukcja krok po kroku (MDX). Autor pisze zwykłą listę numerowaną Markdown,
+ * a blok nadaje jej numerację „01.” w stylu serwisu.
+ *
+ *   <Steps>
+ *   1. Pierwszy krok
+ *   2. Drugi krok
+ *   </Steps>
+ *
+ * Pod krokiem można wstawić zrzut ekranu (wcięty o 3 spacje, po pustej linii):
+ *
+ *   1. Pierwszy krok
+ *
+ *      <Screenshot src={zrzut} alt="…" />
+ */
+interface Props {
+  title?: string;
+}
+const { title } = Astro.props;
+---
+<div class="steps">
+  {title && <p class="steps__title">{title}</p>}
+  <slot />
+</div>
+
+<style>
+  .steps__title { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+
+  /* Lista pochodzi z Markdownu (slot) — stąd :global() */
+  .steps :global(ol) { counter-reset: step; border-top: 1px solid var(--line-2); }
+  .steps :global(ol > li) {
+    counter-increment: step;
+    position: relative;
+    padding: 18px 0 18px 72px;
+    min-height: 64px;
+    border-bottom: 1px solid var(--line);
+    font-size: 1.0625rem; line-height: 1.65; color: var(--prose, var(--text-strong));
+  }
+  .steps :global(ol > li)::before {
+    content: counter(step, decimal-leading-zero) ".";
+    position: absolute; left: 0; top: 14px;
+    font: 300 1.875rem/1 var(--f-display); letter-spacing: -0.04em; color: var(--blue);
+    font-variant-numeric: tabular-nums;
+  }
+  .steps :global(ol > li > * + *) { margin-top: 16px; }
+  .steps :global(strong) { color: var(--ink); font-weight: 600; }
+  .steps :global(a:not([data-footnote-ref])) { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 720px) {
+    .steps :global(ol > li) { padding-left: 52px; font-size: 1rem; }
+    .steps :global(ol > li)::before { font-size: 1.5rem; top: 17px; }
+    /* zrzut na całą szerokość kolumny, a nie tylko pod tekstem kroku */
+    .steps :global(ol > li > figure) { margin-left: -52px; }
+  }
+</style>

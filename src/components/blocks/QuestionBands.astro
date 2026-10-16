@@ -1,0 +1,83 @@
+---
+/**
+ * Działy strony-indeksu jako pytania czytelnika: zdjęcie z liczbą, krótka odpowiedź
+ * i materiały działu. Zdjęcie i tekst zamieniają się stronami co drugi dział.
+ * Liczba na zdjęciu pochodzi z pierwszego materiału działu, który ma `stat`.
+ */
+import Photo from '@/components/ui/Photo.astro';
+import Badge from '@/components/ui/Badge.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Icon from '@/components/ui/Icon.astro';
+import Tag from '@/components/ui/Tag.astro';
+import { articleHref, type Article } from '@/lib/content';
+import type { QuestionTopic } from '@/types';
+import { pad2, typo } from '@/lib/format';
+
+interface Props {
+  groups: { topic: string; info: QuestionTopic; articles: Article[] }[];
+  /** nagłówek listy materiałów pod odpowiedzią */
+  listLabel?: string;
+}
+
+const { groups, listLabel = 'Czytaj dalej' } = Astro.props;
+---
+<div class="guide">
+  {groups.map(({ topic, info, articles }, i) => {
+    const lead = articles.find((a) => a.data.stat);
+    return (
+      <section class:list={['band', { 'band--flip': i % 2 === 1 }]} id={topic} aria-labelledby={`${topic}-title`}>
+        <div class="band__media" data-reveal>
+          <Photo src={info.image} alt="" ratio="5/6" position={info.position} widths={[480, 720, 960]} sizes="(min-width: 1025px) 520px, (min-width: 721px) 70vw, 100vw" frame>
+            {lead?.data.stat && <Badge variant="stat" value={lead.data.stat.value} label={lead.data.stat.unit} note={lead.data.title} />}
+          </Photo>
+        </div>
+        <div class="band__body">
+          <Eyebrow>{pad2(i + 1)} · {info.label}</Eyebrow>
+          <Heading id={`${topic}-title`} punct="" class="band__question">{typo(info.question)}</Heading>
+          <p class="band__answer">{typo(info.answer)}</p>
+          <p class="mono-label band__label">{listLabel}</p>
+          <ul class="band__list">
+            {articles.map((a) => (
+              <li>
+                <a href={articleHref(a)}>
+                  <span class="band__title">{typo(a.data.title)}</span>
+                  {a.data.format && <Tag>{a.data.format}</Tag>}
+                  <Icon name="arrow" size={16} class="band__arrow" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    );
+  })}
+</div>
+
+<style>
+  .guide { display: grid; gap: clamp(80px, 9vw, 136px); }
+  .band { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 40px clamp(48px, 7vw, 112px); align-items: center; scroll-margin-top: calc(var(--header-h) + 24px); }
+  .band--flip .band__media { order: 2; }
+  .band__question { margin: 18px 0 20px; max-width: 18ch; }
+  .band__answer { font-size: 1.125rem; line-height: 1.7; max-width: 52ch; color: var(--ink-2); }
+  .band__label { margin: 36px 0 0; padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+  .band__list a {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; align-items: center; gap: 16px;
+    padding: 15px 0; border-bottom: 1px solid var(--line);
+  }
+  .band__title { font: 500 1.0625rem/1.3 var(--f-display); letter-spacing: -0.015em; color: var(--ink); transition: color .2s; }
+  .band__arrow { color: var(--line-2); transition: color .2s, transform .3s var(--ease); }
+  .band__list a:hover .band__title { color: var(--blue); }
+  .band__list a:hover .band__arrow { color: var(--blue); transform: translateX(3px); }
+
+  @media (max-width: 1024px) {
+    .band { grid-template-columns: minmax(0, 1fr); }
+    .band--flip .band__media { order: 0; }
+    .band__media { max-width: 560px; }
+  }
+  @media (max-width: 720px) {
+    .band__answer { font-size: 1.0625rem; }
+    .band__list a { grid-template-columns: minmax(0, 1fr) 16px; }
+    .band__list :global(.tag) { display: none; }
+  }
+</style>

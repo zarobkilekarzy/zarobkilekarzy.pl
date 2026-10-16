@@ -1,0 +1,230 @@
+---
+/**
+ * /postulat/projekt-ustawy/ — obywatelski projekt nowelizacji art. 27a jako dokument:
+ * metryczka, „W skrócie”, etap, tekst z kotwicami ustępów, uzasadnienie, załączniki, historia wersji.
+ * Treść i etap: src/data/projekt-ustawy.ts. Adres bez wersji — przeżyje zmianę w druk sejmowy.
+ */
+import type { MarkdownHeading } from 'astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import Actions from '@/components/layout/Actions.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Button from '@/components/ui/Button.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Icon from '@/components/ui/Icon.astro';
+import Num from '@/components/ui/Num.astro';
+import StatusTrack from '@/components/blocks/StatusTrack.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Faq from '@/components/blocks/Faq.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Toc from '@/components/article/Toc.astro';
+import Prose from '@/components/article/Prose.astro';
+import ShareLinks from '@/components/article/ShareLinks.astro';
+import BillText from '@/components/postulat/BillText.astro';
+import {
+  annexes,
+  changes,
+  consolidated,
+  history,
+  justification,
+  legalQuestions,
+  path,
+  projekt,
+  references,
+  stages,
+  statusNote,
+} from '@/data/projekt-ustawy';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { formatDate, isoDate, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+import { projektPdfPages } from '@/lib/projekt/download';
+
+// Spis treści — te same kotwice co nagłówki h2 poniżej
+const headings: MarkdownHeading[] = [
+  ['nota', 'Nota o statusie dokumentu'],
+  ['droga', 'Jak projekt ma trafić do Sejmu'],
+  ['projekt', 'Projekt'],
+  ['uzasadnienie', 'Uzasadnienie'],
+  ['zalacznik-a', 'Załącznik A. Tekst ujednolicony'],
+  ['zalacznik-b', 'Załącznik B. Pytania do weryfikacji prawnej'],
+  ['zalacznik-c', 'Załącznik C. Źródła'],
+  ['historia', 'Historia wersji'],
+].map(([slug, text]) => ({ depth: 2, slug, text }));
+
+// liczba stron z pliku składanego przy buildzie (lib/projekt/pdf.ts)
+const pdfPages = await projektPdfPages();
+const url = new URL(projekt.href, Astro.site).href;
+const description = `${projekt.kind}, wersja ${projekt.version}. ${projekt.subject}`;
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Postulat', href: '/postulat/' }, { label: 'Projekt ustawy' }];
+const seo: SeoInput = {
+  // pełny tytuł projektu (h1) jest za długi dla wyszukiwarki
+  title: 'Projekt ustawy: jawność płac, art. 27a',
+  social: { title: projekt.title },
+  description,
+  breadcrumbs: crumbs,
+  dates: { published: history[0]?.date, modified: projekt.date },
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="ptop">
+    <header class="dhead">
+      <Breadcrumbs items={crumbs} />
+
+      <div class="dhead__grid">
+        <div>
+          <Eyebrow>{projekt.kind} · do weryfikacji prawnej</Eyebrow>
+          <Heading as="h1" size="display" class="dhead__title" punct="">{typo(projekt.title)}</Heading>
+          <p class="lead dhead__lead">{typo(projekt.subject)}</p>
+          <PageMeta
+            items={[
+              { label: 'Wersja', value: `${projekt.version} · ${projekt.versionLabel}` },
+              { label: 'Data', value: projekt.date },
+              { label: 'Zakres', value: projekt.scope },
+            ]}
+          />
+          <Actions class="dhead__actions">
+            <Button href={projekt.pdf.href} variant="ghost" icon="doc">Pobierz PDF ({pdfPages})</Button>
+            <LinkArrow href="/postulat/">Postulat, który realizuje</LinkArrow>
+          </Actions>
+        </div>
+
+        <aside class="dhead__points" aria-labelledby="w-skrocie">
+          <p class="dhead__points-title" id="w-skrocie">W skrócie: trzy zmiany</p>
+          <ol>
+            {changes.map((c, i) => (
+              <li>
+                <Num n={i + 1} size="sm" />
+                <div>
+                  <p class="dhead__point-title">{typo(c.title)} <a href={`#${c.anchor}`}>{c.ref}</a></p>
+                  <p>{typo(c.text)}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </aside>
+      </div>
+
+      <p class="dhead__warn"><Icon name="alert" size={18} />{typo(projekt.disclaimer)}</p>
+      <StatusTrack stages={stages} label="Etapy projektu ustawy" compact class="dhead__track" />
+    </header>
+  </Section>
+
+  <Section space="bottom">
+    <div class="dbody">
+      <aside class="dbody__toc"><Toc headings={headings} title="Spis treści" /></aside>
+
+      <div class="dbody__main">
+        <Prose>
+          <h2 id="nota">Nota o statusie dokumentu</h2>
+          {statusNote.map((p) => <p>{typo(p)}</p>)}
+
+          <h2 id="droga">Jak projekt ma trafić do Sejmu</h2>
+          <p>{typo(path.intro)}</p>
+          <div><NumberedList items={path.steps} /></div>
+          <p class="dbody__src">
+            Źródła:{' '}
+            {path.sources.map((s, i) => <>{i > 0 && '; '}<a {...linkAttrs(s.href)}>{s.label}</a></>)}.
+          </p>
+
+          <h2 id="projekt">Projekt</h2>
+          <BillText />
+          <Aside variant="info" title="Jak działa identyfikator z ust. 5">
+            <p>Jak tablica rejestracyjna: każdy widzi numer, a właściciela ustali tylko uprawniona instytucja. Funkcja z kluczem tajnym działa w jedną stronę — z identyfikatora nie da się odtworzyć numeru. <a href="/postulat/#identyfikator">Zobacz przykład liczony w przeglądarce</a>.</p>
+          </Aside>
+
+          <h2 id="uzasadnienie">Uzasadnienie</h2>
+          {justification.map((section) => (
+            <>
+              <h3 id={section.id}>{section.title}</h3>
+              {section.paragraphs.map((p) => <p>{p.lead && <strong>{p.lead}</strong>}{p.lead && ' '}{typo(p.text)}</p>)}
+              {section.table && <Comparison table={section.table} />}
+              {section.after?.map((p) => <p>{typo(p.text)}</p>)}
+            </>
+          ))}
+
+          <h2 id={annexes.a.id}>{annexes.a.label}. {annexes.a.title}</h2>
+          <Comparison table={consolidated} markLabel="nowy" />
+
+          <h2 id={annexes.b.id}>{annexes.b.label}. {annexes.b.title}</h2>
+          <p>Te pytania kierujemy do osoby weryfikującej projekt. Publikujemy je, bo uczciwiej jest pokazać, czego jeszcze nie wiemy, niż udawać gotowy tekst.</p>
+          <Faq items={legalQuestions} numbered />
+          <Aside variant="info" title="Znasz odpowiedź na któreś z pytań?">
+            <p>Napisz do nas. Każdą uwagę prawną uwzględnimy w kolejnej wersji projektu i odnotujemy w historii wersji.</p>
+          </Aside>
+
+          <h2 id={annexes.c.id}>{annexes.c.label}. {annexes.c.title}</h2>
+          <ol>
+            {references.map((r) => (
+              <li>{typo(r.text)}{r.link && <> <a {...linkAttrs(r.link.href)}>{r.link.label}</a>.</>}</li>
+            ))}
+          </ol>
+
+          <h2 id="historia">Historia wersji</h2>
+          <ol class="dbody__history">
+            {history.map((h) => (
+              <li>
+                <strong>Wersja {h.version}</strong> · <time datetime={isoDate(h.date)}>{formatDate(h.date)}</time>. {typo(h.text)}
+                {h.pdf && <> <a {...linkAttrs(h.pdf)}>PDF</a></>}
+              </li>
+            ))}
+          </ol>
+        </Prose>
+
+        <footer class="dbody__foot">
+          <ShareLinks url={url} title={projekt.title} label="Udostępnij projekt" />
+          <LinkArrow href="/postulat/">Wróć do postulatu</LinkArrow>
+        </footer>
+      </div>
+    </div>
+  </Section>
+</BaseLayout>
+
+<style>
+  .ptop { padding-top: clamp(32px, 4vw, 56px); }
+
+  .dhead__grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 40px clamp(40px, 6vw, 96px); align-items: end; margin-top: 40px; }
+  .dhead__title { font-size: clamp(2.25rem, 4.2vw, 3.75rem); margin-bottom: 24px; max-width: 18ch; }
+  .dhead__lead { font-size: 1.1875rem; max-width: 40em; }
+  .dhead__actions { margin-top: 32px; }
+
+  .dhead__points { position: relative; padding: 28px; background: var(--blue-fill); color: #fff; --num-color: #fff; --num-dot: rgba(255, 255, 255, .6); }
+  .dhead__points::before { content: ""; position: absolute; top: -4px; left: -4px; width: 7px; height: 7px; background: var(--ink); }
+  .dhead__points-title { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .75); padding-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, .3); }
+  .dhead__points li { display: grid; grid-template-columns: 44px 1fr; gap: 8px; padding: 16px 0; border-bottom: 1px solid rgba(255, 255, 255, .2); }
+  .dhead__points li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .dhead__points p { font-size: 0.90625rem; line-height: 1.55; color: rgba(255, 255, 255, .9); }
+  .dhead__points .dhead__point-title { margin-bottom: 4px; font: 500 1rem/1.3 var(--f-display); color: #fff; } /* kolor-stały: biel na kobalcie --blue-fill */
+  .dhead__point-title a { margin-left: 6px; font: 400 0.71875rem/1 var(--f-mono); color: rgba(255, 255, 255, .8); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+  .dhead__point-title a:hover { color: #fff; } /* kolor-stały: biel na kobalcie --blue-fill */
+
+  .dhead__warn {
+    display: flex; gap: 12px; align-items: flex-start; margin-top: clamp(40px, 5vw, 56px); padding: 16px 20px;
+    background: var(--amber-bg); border-left: 3px solid var(--amber); color: var(--ink-2); font-size: 0.90625rem; line-height: 1.55;
+  }
+  .dhead__warn :global(.icon) { margin-top: 1px; color: var(--amber); }
+  .dhead__track { margin-top: 32px; }
+
+  /* Jak w ArticleLayout: treść do prawej krawędzi siatki, długość wiersza pilnuje Prose (--measure) */
+  .dbody {
+    display: grid; grid-template-columns: 220px minmax(0, 1fr);
+    gap: clamp(40px, 5vw, 72px); align-items: start;
+    padding-top: 40px; border-top: 1px solid var(--line);
+  }
+  .dbody__toc { position: sticky; top: calc(var(--header-h) + 32px); }
+  .dbody__main .dbody__src { font-size: 0.875rem; color: var(--muted); }
+  .dbody__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line-2); }
+
+  @media (max-width: 1024px) {
+    .dhead__grid { grid-template-columns: minmax(0, 1fr); }
+    .dbody { grid-template-columns: minmax(0, 1fr); padding-top: 24px; gap: 32px; }
+    .dbody__toc { position: static; }
+  }
+  @media (max-width: 720px) {
+    .dhead__lead { font-size: 1.0625rem; }
+    .dhead__points { padding: 22px 20px; }
+  }
+</style>

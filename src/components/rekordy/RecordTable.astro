@@ -1,0 +1,104 @@
+---
+/**
+ * Pojedyncze ujawnione kwoty rozliczeń (/dane/rekordy/): gdzie, czym jest kwota, kwota z okresem,
+ * stan sprawy z datą i źródła wiersza. Stan sprawy to neutralna etykieta bez koloru — tabela
+ * nie sugeruje winy, a „brak postępowania” i „śledztwo” wyglądają tak samo; różni je tylko tekst.
+ * W wąskim kontenerze wiersz staje się kartą z etykietą kolumny nad komórką (jak dyrektorzy/CaseTable).
+ * Statycznie, bez JS. Ramę (teza, uwagi) daje blocks/Figure w artykule.
+ */
+import type { RecordRow } from '@/data/rekordy';
+import { typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Props {
+  rows: RecordRow[];
+  /** opis tabeli dla czytników ekranu */
+  caption: string;
+}
+
+const { rows, caption } = Astro.props;
+const COLS = { what: 'Czym jest kwota', amount: 'Kwota', status: 'Stan sprawy', src: 'Źródła' };
+---
+<div class="rt-wrap">
+  <table class="rt">
+    <caption class="sr-only">{caption}</caption>
+    <thead>
+      <tr>
+        <th scope="col">Gdzie</th>
+        <th scope="col">{COLS.what}</th>
+        <th scope="col">{COLS.amount}</th>
+        <th scope="col">{COLS.status}</th>
+        <th scope="col">{COLS.src}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((r) => (
+        <tr id={`rekord-${r.id}`}>
+          <th scope="row"><span class="rt__place">{typo(r.place)}</span></th>
+          <td data-label={COLS.what}>{typo(r.what)}</td>
+          <td class="rt__amount" data-label={COLS.amount}>
+            <span class="rt__value">{typo(r.amount)}</span>
+            <span class="rt__period">{typo(r.period)}</span>
+            {r.note && <span class="rt__note">{typo(r.note)}</span>}
+          </td>
+          <td class="rt__status" data-label={COLS.status}>
+            <span class="rt__stage">{typo(r.status.label)}</span>
+            <span class="rt__asof">stan na {r.status.asOf}</span>
+            {r.status.note && <span class="rt__note">{typo(r.status.note)}</span>}
+          </td>
+          <td class="rt__src" data-label={COLS.src}>
+            {r.sources.map((s) => <a {...linkAttrs(s.href)}>{s.label}</a>)}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .rt-wrap { container-type: inline-size; }
+  .rt { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.45; font-variant-numeric: tabular-nums; }
+  /* .rt przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .rt thead th {
+    text-align: left; vertical-align: bottom; padding: 0 14px 10px 0;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .rt tbody th, .rt td { text-align: left; vertical-align: top; padding: 14px 14px 14px 0; border-bottom: 1px solid var(--line); color: var(--ink-2); }
+  .rt tbody th { width: 20%; font-weight: 400; text-transform: none; letter-spacing: 0; }
+  .rt__place { display: block; font: 500 0.9375rem/1.35 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .rt td.rt__amount { width: 26%; }
+  .rt__value { display: block; font: 500 1.0625rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+  .rt__period { display: block; margin-top: 2px; font-size: 0.8125rem; line-height: 1.4; color: var(--text-strong); }
+  .rt__note { display: block; margin-top: 4px; font-size: 0.78125rem; line-height: 1.45; color: var(--muted); }
+  .rt td.rt__status { width: 22%; }
+  /* etykieta stanu: ten sam neutralny wygląd dla każdego etapu */
+  .rt__stage {
+    display: inline-block; padding: 2px 7px; border: 1px solid var(--line-2);
+    font-size: 0.78125rem; line-height: 1.35; color: var(--text-strong);
+  }
+  .rt__asof { display: block; margin-top: 4px; font: 400 0.6875rem/1.4 var(--f-mono); letter-spacing: .02em; color: var(--muted); }
+  .rt td.rt__src { padding-right: 0; }
+  /* .rt przed selektorem — Prose koloruje linki bez klasy */
+  .rt .rt__src a {
+    display: block; font: 400 0.75rem/1.6 var(--f-mono); color: var(--text); white-space: nowrap;
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s;
+  }
+  .rt .rt__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  /* Wąsko: wiersz = karta, etykieta kolumny nad komórką */
+  @container (max-width: 760px) {
+    .rt thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .rt, .rt tbody, .rt tr, .rt tbody th, .rt td { display: block; width: auto; }
+    .rt td.rt__amount, .rt td.rt__status { width: auto; }
+    .rt tr { padding: 16px 0; border-bottom: 1px solid var(--line-2); }
+    .rt tbody th, .rt td { padding: 4px 0; border: 0; }
+    .rt tbody th { padding-bottom: 8px; }
+    .rt td[data-label]::before {
+      content: attr(data-label); display: block; margin: 8px 0 2px;
+      font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    }
+    .rt__value { white-space: normal; }
+    .rt .rt__src a { display: inline-block; margin-right: 14px; }
+  }
+</style>

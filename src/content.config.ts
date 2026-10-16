@@ -1,110 +1,105 @@
-import { defineCollection, z } from 'astro:content';
+/**
+ * Kolekcje treści. Artykuły i pojęcia słowniczka to jedno źródło prawdy
+ * dla strony głównej, wyszukiwarki i podstron artykułów.
+ */
+import { defineCollection, reference } from 'astro:content';
 import { glob, file } from 'astro/loaders';
+import { z } from 'astro/zod';
+import { CATEGORIES, DATA_FORMATS, TOPICS } from './types';
+import { ogSchema } from './lib/og/schema';
 
-// Baza artykułów = rdzeń serwisu. Każdy wpis to odnośnik do
-// OGÓLNODOSTĘPNEGO materiału źródłowego (prasa, raport, dane publiczne).
-// Wpisy oznaczone `example: true` to placeholdery do podmiany na realne źródła.
 const articles = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/articles' }),
+  // .md dla prostych tekstów, .mdx gdy artykuł osadza komponenty (wykresy, ramki)
+  loader: glob({ base: './src/content/articles', pattern: '**/*.{md,mdx}' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      category: z.enum(CATEGORIES),
+      /** data publikacji; brak = materiał stały */
+      date: z.coerce.date().optional(),
+      /** data ostatniej aktualizacji — pokazywana w artykule, liczy się do „Nowe i zaktualizowane” */
+      updated: z.coerce.date().optional(),
+      /** lead: jedno–dwa zdania pod tytułem, też opis w wynikach wyszukiwania i meta description */
+      summary: z.string(),
+      /** „W skrócie” — najważniejsze tezy artykułu */
+      keyPoints: z.array(z.string()).optional(),
+      /** wycofane: źródła to przypisy `[^id]` w treści — pole zostaje, żeby stary wzorzec nie przechodził po cichu */
+      sources: z.never({ error: 'Pole `sources` jest wycofane: źródła zapisuj jako przypisy [^id] (README → „Nowa treść”).' }).optional(),
+      /**
+       * „Dlaczego to nasz temat” — stanowisko redakcji pod treścią (akapity).
+       * Opcjonalne: tylko przy tematach, w których redakcja zajmuje stanowisko.
+       */
+      editorial: z.array(z.string()).min(1).optional(),
+      /** powiązane materiały; bez tego pola — inne z tej samej kategorii */
+      related: z.array(reference('articles')).optional(),
+      /** tymczasowy adres dla materiałów bez treści — zob. lib/content.ts → articleHref */
+      href: z.string().optional(),
+      featured: z.boolean().default(false),
+      cover: image().optional(),
+      coverAlt: z.string().optional(),
+      coverPosition: z.string().optional(),
+      /** krótka etykieta na zdjęciu, np. „1 358 placówek” */
+      badge: z.string().optional(),
+      kicker: z.string().optional(),
+      /**
+       * dział na stronie-indeksie (/dane/, /mechanizmy/, /analizy/) — materiał pojawia się w jej spisie;
+       * lista, gdy materiał należy do kilku stron (np. porównanie jest i w danych, i w analizach)
+       */
+      topic: z.union([z.enum(TOPICS), z.array(z.enum(TOPICS))]).optional(),
+      /** forma zestawienia (etykieta w spisie): wykresy, tabela, wyszukiwarka… */
+      format: z.enum(DATA_FORMATS).optional(),
+      /** liczba na karcie w spisie, np. { value: '1 358', unit: 'placówek' } */
+      stat: z.object({ value: z.string(), unit: z.string() }).optional(),
+      /** kolejność w dziale (mniejsza = wyżej); bez niej — alfabetycznie, na końcu */
+      order: z.number().optional(),
+      /** obrazek OG: nadpisania presetu artykułu — zob. docs/og-system.md */
+      og: ogSchema({ image }),
+      /**
+       * SEO — zob. docs/seo-system.md. `seoTitle`: tytuł w wynikach wyszukiwania, gdy tytuł H1 jest
+       * za długi (audyt ostrzega > 60 znaków z nazwą serwisu) albo nie zawiera frazy, której ludzie szukają.
+       */
+      seoTitle: z.string().optional(),
+      /** meta description, gdy `summary` ma ponad 160 znaków; domyślnie `summary` */
+      description: z.string().optional(),
+      /** materiał z treścią, który nie ma trafić do wyszukiwarek (noindex, poza sitemapą) */
+      noindex: z.boolean().default(false),
+      /** schema.org/Dataset dla działu Dane — uzupełnienia domyślnych wartości (licencja, zasięg) */
+      dataset: z
+        .object({
+          temporalCoverage: z.string().optional(),
+          spatialCoverage: z.string().optional(),
+          license: z.url().optional(),
+        })
+        .optional(),
+    }),
+});
+
+/** Odnośnik z pola URL: adres bezwzględny (źródło) albo ścieżka serwisu zakończona „/” (strona). */
+const glossaryLink = z.object({ label: z.string(), href: z.string() });
+
+/** Słownik pojęć (/slownik/, moduł na stronie głównej, wyszukiwarka). Opis pól: nagłówek glossary.yaml. */
+const glossary = defineCollection({
+  loader: file('src/content/glossary.yaml'),
   schema: z.object({
-    title: z.string(),
-    // Nazwa wydawcy/źródła, np. "Najwyższa Izba Kontroli", "dziennik ogólnopolski".
-    source: z.string(),
-    sourceType: z.enum(['prasa', 'raport', 'analiza', 'dane', 'wideo', 'social']),
-    // Pełny adres do oryginalnego, ogólnodostępnego materiału.
-    url: z.url(),
-    // Nazwa pliku miniatury w `src/assets/artykuly/` (bez ścieżki). Wypełnia je
-    // `scripts/fetch-miniatury.mjs`, pobierając `og:image` ze źródła RAZ i
-    // zapisując własną, przeskalowaną kopię — build nie odpytuje cudzych
-    // serwerów. Pole opcjonalne: wpisy bez miniatury dostają monogram źródła.
-    thumb: z.string().optional(),
-    date: z.coerce.date(),
-    excerpt: z.string(),
-    category: z.enum([
-      'wieloetatowosc',
-      'kontrakty',
-      'kolejki',
-      'wynagrodzenia',
-      'system',
-    ]),
-    tags: z.array(z.string()).default([]),
-    // Czy to materiał poglądowy (do zastąpienia realnym źródłem)?
-    example: z.boolean().default(false),
+    term: z.string(),
+    full: z.string(),
+    def: z.string(),
+    /** „Więcej”: artykuł z kolekcji (adres i tytuł z lib/content) albo strona spoza kolekcji */
+    more: z
+      .array(
+        z.union([
+          z.object({ ref: reference('articles'), anchor: z.string().optional(), label: z.string().optional() }).strict(),
+          glossaryLink.extend({ href: z.string().regex(/^\/.*\/$/, 'adres strony serwisu: /sciezka/') }).strict(),
+        ]),
+      )
+      .min(1),
+    /** podstawa prawna albo źródło definicji */
+    sources: z.array(glossaryLink.extend({ href: z.url() }).strict()).min(1),
+    /** pozycja w module „Słowniczek” na stronie głównej; brak = hasło tylko na /slownik/ */
+    home: z.number().int().positive().optional(),
+    /** krótsza etykieta zakładki na stronie głównej (domyślnie `term`) */
+    tab: z.string().optional(),
   }),
 });
 
-// Warstwa danych o zarobkach = ustrukturyzowane, oźródłowane liczby.
-// Każdy wpis to JEDNA liczba (lub jeden wiersz per specjalizacja) z linkiem do
-// ogólnodostępnego źródła. Zasada „żadnej liczby bez źródła" jest WYMUSZONA przez
-// schemat (pole `zrodloUrl` wymagane). Rozróżnienie exact/szacunek jest obowiązkowe —
-// nie mieszamy pomiarów regulowanych (rozporządzenie) z ankietowymi/ogłoszeniowymi.
-
-// Ogólne punkty danych: rozkład, rekordy, budżet, kolejki, stawki, porównania.
-// Jeden plik JSON (obiekt kluczowany po id) — łatwy do masowej edycji i rozbudowy.
-const zarobki = defineCollection({
-  loader: file('./src/content/zarobki.json'),
-  schema: z.object({
-    etykieta: z.string(),
-    grupa: z.enum([
-      'rozklad',      // rozkład wynagrodzeń (rezydent → mediana → górny 1%)
-      'rekord',       // udokumentowane rekordowe rozliczenia (bez nazwisk)
-      'budzet',       // budżet NFZ, koszt ustawy płacowej
-      'kolejki',      // czas oczekiwania
-      'stawka',       // stawki rynkowe zł/h, dyżury
-      'porownanie',   // Polska na tle UE/OECD, koszt hipotetyczny
-      'rezydent',     // regulowane pensje rezydentów
-      'zadluzenie',   // dług publicznych szpitali
-      'personel',     // inni pracownicy OZ — drabina taryfowa ustawy (piel., ratownicy, diagności…)
-    ]),
-    kwota: z.number(),
-    jednostka: z.enum(['zł/mies.', 'zł/h', 'zł/dzień', 'zł/rok', 'zł/dyżur', 'mies.', 'mld zł', 'lek./1000', '%', 'x']),
-    // Współczynnik pracy z załącznika do ustawy o najniższym wynagrodzeniu (grupa 'personel').
-    wspolczynnik: z.number().optional(),
-    forma: z.enum(['etat', 'kontrakt', 'umowa cywilnoprawna', 'oświadczenie majątkowe', '—']).optional(),
-    rola: z.string().optional(),
-    specjalizacja: z.string().optional(),
-    region: z.string().optional(),
-    rok: z.number(),
-    // Twarda zasada z research: nie mieszać liczby regulowanej ze szacunkiem.
-    status: z.enum(['exact', 'szacunek']),
-    // Fakt ≠ zarzut: rozliczenia w postępowaniu oznaczamy jako zarzut.
-    statusFaktu: z.enum(['fakt', 'zarzut']).default('fakt'),
-    zrodloUrl: z.url(),
-    zrodloNazwa: z.string(),
-    uwaga: z.string().optional(),
-    kolejnosc: z.number().default(0),
-  }),
-});
-
-// Per specjalizacja: złączone metryki (pensja rezydenta EXACT + stawka rynkowa
-// SZACUNEK + miejsca + konkurencja + kolejka). Każda metryka ma własne źródło.
-const specjalizacje = defineCollection({
-  loader: file('./src/content/specjalizacje.json'),
-  schema: z.object({
-    nazwa: z.string(),
-    // Priorytetowa = państwo płaci rezydentowi więcej i otwiera więcej miejsc.
-    priorytetowa: z.boolean(),
-    // Pensja rezydenta: regulowana, brutto, 1–2 rok, od 1 VII 2025 (EXACT).
-    pensjaRezydent: z.number(),
-    pensjaRezydentZrodlo: z.url(),
-    // Stawka rynkowa zł/h: SZACUNEK (ogłoszenia, ~90% prywatne) — nie wypłata.
-    stawkaRynkowa: z.number().optional(),
-    stawkaRynkowaSesja: z.string().optional(),
-    stawkaRynkowaZrodlo: z.url().optional(),
-    stawkaRynkowaUwaga: z.string().optional(),
-    miejscaRezydenckie: z.number().optional(),
-    miejscaOgolem: z.number().optional(),
-    miejscaSesja: z.string().optional(),
-    miejscaZrodlo: z.url().optional(),
-    // Chętnych na miejsce (konkurencja).
-    konkurencja: z.number().optional(),
-    konkurencjaSesja: z.string().optional(),
-    konkurencjaZrodlo: z.url().optional(),
-    kolejkaNFZ: z.string().optional(),
-    kolejkaZrodlo: z.url().optional(),
-    uwaga: z.string().optional(),
-    kolejnosc: z.number().default(0),
-  }),
-});
-
-export const collections = { articles, zarobki, specjalizacje };
+export const collections = { articles, glossary };

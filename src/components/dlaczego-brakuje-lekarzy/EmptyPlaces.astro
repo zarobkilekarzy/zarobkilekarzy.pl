@@ -1,0 +1,87 @@
+---
+/**
+ * Puste miejsca specjalizacyjne w sesjach jesiennych: jeden poziomy słupek na sesję, w skali
+ * liczby oferowanych miejsc (dłuższy słupek = więcej miejsc). Segmenty: obsadzone (--chart),
+ * puste rezydenckie (--chart-soft) i puste pozarezydenckie (--blue — o nich jest teza nad wykresem),
+ * rozdzielone szczeliną w kolorze tła. Każda sesja ma własne źródło (link pod słupkiem),
+ * więc Figure nie ma jednego źródła w podpisie. Statycznie, bez JS.
+ * Dane i arytmetyka: data/dlaczego-brakuje-lekarzy.ts (AUTUMN, sessionStats).
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import { AUTUMN, sessionStats } from '@/data/dlaczego-brakuje-lekarzy';
+import { formatPL, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+const rows = AUTUMN.map((s) => ({ ...s, ...sessionStats(s) }));
+const max = Math.max(...rows.map((r) => r.offered));
+const lo = Math.min(...rows.map((r) => r.emptyPct));
+const hi = Math.max(...rows.map((r) => r.emptyPct));
+const width = (n: number) => `${((100 * n) / max).toFixed(2)}%`;
+
+const title = `W sesjach jesiennych pustych zostaje od ${lo} do ${hi}% miejsc specjalizacyjnych — głównie pozarezydenckich`;
+const note =
+  'Sesje jesienne postępowania kwalifikacyjnego, lekarze i lekarze dentyści. Obsadzone — miejsca, których przyjęcie lekarz potwierdził na liście ostatecznej. Długość słupka odpowiada liczbie oferowanych miejsc; odsetek pustych w nawiasie liczony od miejsc danego trybu. Odsetki — obliczenia własne.';
+---
+<Figure title={title} note={note}>
+  <ul class="ep-legend" aria-hidden="true">
+    <li><span class="ep-key ep-key--filled"></span>obsadzone</li>
+    <li><span class="ep-key ep-key--rez"></span>puste rezydenckie</li>
+    <li><span class="ep-key ep-key--non"></span>puste pozarezydenckie</li>
+  </ul>
+  <ol class="ep">
+    {rows.map((r) => (
+      <li class="ep__row">
+        <p class="ep__head">
+          <span class="ep__label">{r.label}</span>
+          <span class="ep__pct">{r.emptyPct}% pustych</span>
+        </p>
+        <div class="ep__bar" style={`--w: ${width(r.offered)}`} aria-hidden="true">
+          <span class="ep__seg ep__seg--filled" style={`--s: ${r.filled}`}></span>
+          <span class="ep__seg ep__seg--rez" style={`--s: ${r.emptyRez}`}></span>
+          <span class="ep__seg ep__seg--non" style={`--s: ${r.emptyNon}`}></span>
+        </div>
+        <p class="ep__nums">
+          {typo(`${formatPL(r.offered)} miejsc, obsadzone ${formatPL(r.filled)}. Puste: ${formatPL(r.emptyRez)} rezydenckich (${r.emptyRezPct}%) i ${formatPL(r.emptyNon)} pozarezydenckich (${r.emptyNonPct}%).`)}{' '}
+          <a class="ep__src" {...linkAttrs(r.source.href)}>{r.source.label}</a>
+        </p>
+      </li>
+    ))}
+  </ol>
+</Figure>
+
+<style>
+  .ep-legend {
+    display: flex; flex-wrap: wrap; gap: 6px 20px; margin-bottom: 20px;
+    font: 400 0.84375rem/1.4 var(--f-body); color: var(--text);
+  }
+  .ep-legend li { display: inline-flex; align-items: center; gap: 8px; }
+  .ep-key { display: inline-block; width: 12px; height: 12px; }
+  .ep-key--filled { background: var(--chart); }
+  .ep-key--rez { background: var(--chart-soft); }
+  .ep-key--non { background: var(--blue); }
+
+  .ep { display: grid; gap: 22px; }
+  .ep__row { display: grid; gap: 8px; }
+  .ep__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
+  .ep__label { font: 500 1rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .ep__pct { font: 400 1.25rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
+
+  .ep__bar { display: flex; width: var(--w); height: 14px; }
+  .ep__seg { flex: var(--s) 1 0; min-width: 0; box-sizing: border-box; }
+  /* Segmenty dzieli szczelina 2 px w kolorze tła, nie obrys */
+  .ep__seg + .ep__seg { border-left: 2px solid var(--bg); }
+  .ep__seg--filled { background: var(--chart); }
+  .ep__seg--rez { background: var(--chart-soft); }
+  .ep__seg--non { background: var(--blue); }
+
+  .ep__nums { font: 400 0.875rem/1.5 var(--f-body); color: var(--text); }
+  /* .ep przed selektorem — wykres stoi w Prose, która koloruje linki */
+  .ep .ep__src { font: 400 0.75rem/1.5 var(--f-mono); color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; white-space: nowrap; transition: color .2s, text-decoration-color .2s; }
+  .ep .ep__src:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  @media (max-width: 720px) {
+    .ep { gap: 18px; }
+    .ep__bar { height: 12px; }
+    .ep__pct { font-size: 1.125rem; }
+  }
+</style>

@@ -1,0 +1,38 @@
+---
+/** Spis działów strony z liczbą materiałów — kotwice do sekcji poniżej. */
+import type { HTMLAttributes } from 'astro/types';
+import { pad2, typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'nav'> {
+  title: string;
+  items: { label: string; href: string; count?: number }[];
+}
+
+const { title, items, class: className, ...rest } = Astro.props;
+---
+<nav class:list={['jump', className]} aria-label={title} {...rest}>
+  <p class="mono-label jump__title">{title}</p>
+  <ol>
+    {items.map((item, i) => (
+      <li>
+        <a href={item.href}>
+          <span class="jump__num">{pad2(i + 1)}</span>
+          <span class="jump__label">{typo(item.label)}</span>
+          {item.count !== undefined && <span class="jump__count">{item.count}</span>}
+        </a>
+      </li>
+    ))}
+  </ol>
+</nav>
+
+<style>
+  .jump__title { padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+  a {
+    display: grid; grid-template-columns: 32px 1fr auto; align-items: baseline; gap: 8px;
+    padding: 13px 0; border-bottom: 1px solid var(--line);
+    font-size: 0.96875rem; line-height: 1.35; color: var(--ink); transition: color .2s;
+  }
+  .jump__num { font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+  .jump__count { font: 500 0.6875rem/1 var(--f-mono); padding: 4px 6px; background: var(--blue-50); color: var(--blue); }
+  a:hover { color: var(--blue); }
+</style>

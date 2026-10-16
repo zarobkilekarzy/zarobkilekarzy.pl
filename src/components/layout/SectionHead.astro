@@ -1,0 +1,54 @@
+---
+/**
+ * Nagłówek sekcji: eyebrow + tytuł, a obok opis (`aside`) i/lub akcja (slot "action").
+ * layout="split" — tytuł | opis;  layout="row" — tytuł i link w jednym wierszu.
+ */
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import { typo } from '@/lib/format';
+
+interface Props {
+  eyebrow: string;
+  title: string;
+  /** id nagłówka — do aria-labelledby sekcji */
+  id: string;
+  punct?: string;
+  aside?: string;
+  layout?: 'split' | 'row';
+}
+
+const { eyebrow, title, id, punct, aside, layout = 'split' } = Astro.props;
+const hasAction = Astro.slots.has('action');
+---
+<header class:list={['section-head', `section-head--${layout}`]}>
+  <div>
+    <Eyebrow>{eyebrow}</Eyebrow>
+    <Heading id={id} punct={punct}>{typo(title)}</Heading>
+  </div>
+  {aside && <p class="section-head__aside">{typo(aside)}</p>}
+  {hasAction && <div class="section-head__action"><slot name="action" /></div>}
+</header>
+
+<style>
+  .section-head {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr);
+    align-items: end; gap: 24px 64px;
+    margin-bottom: clamp(40px, 4.5vw, 64px);
+  }
+  .section-head--row { grid-template-columns: 1fr auto; }
+  .section-head__aside { max-width: 44ch; justify-self: end; font-size: 0.96875rem; }
+  .section-head__action { justify-self: end; }
+
+  @media (max-width: 1024px) {
+    .section-head { grid-template-columns: 1fr; }
+    .section-head__aside, .section-head__action { justify-self: start; }
+    .section-head--row { grid-template-columns: 1fr auto; }
+    .section-head--row .section-head__aside { display: none; }
+    .section-head--row .section-head__action { justify-self: end; }
+  }
+
+  @media (max-width: 720px) {
+    .section-head--row { grid-template-columns: 1fr; }
+    .section-head--row .section-head__action { justify-self: start; }
+  }
+</style>

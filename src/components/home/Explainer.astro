@@ -1,0 +1,32 @@
+---
+import Section from '@/components/layout/Section.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import Glossary from '@/components/blocks/Glossary.astro';
+import { steps } from '@/data/home';
+import { getHomeGlossary } from '@/lib/content';
+
+const terms = await getHomeGlossary();
+---
+<Section tone="soft" aria-labelledby="explain-title">
+  <div class="explain">
+    <div>
+      <Eyebrow>Temat w 30 sekund</Eyebrow>
+      <Heading id="explain-title" punct="?" class="explain__title">Skąd ten cały spór</Heading>
+      <NumberedList items={steps} />
+    </div>
+    <Glossary terms={terms} moreHref="/slownik/" class="explain__glossary" />
+  </div>
+</Section>
+
+<style>
+  .explain { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 96px); align-items: start; }
+  .explain__title { margin-bottom: 40px; }
+  .explain__glossary { position: sticky; top: calc(var(--header-h) + 24px); }
+
+  @media (max-width: 1024px) {
+    .explain { grid-template-columns: 1fr; }
+    .explain__glossary { position: static; }
+  }
+</style>

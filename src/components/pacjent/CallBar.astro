@@ -1,0 +1,60 @@
+---
+/**
+ * Numer infolinii pod kciukiem (tylko telefon). Pojawia się, gdy karta pomocy (HelpCard,
+ * atrybut data-help) zniknie z ekranu — kto przewija prawa na szpitalnym korytarzu,
+ * nie musi wracać na górę, żeby zadzwonić. Ukryty jest też dla czytników ekranu i klawiatury.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import type { Phone } from '@/lib/pacjent/types';
+
+interface Props {
+  phone: Phone;
+  label: string;
+}
+
+const { phone, label } = Astro.props;
+---
+<zl-callbar>
+  <a class="callbar" href={`tel:${phone.tel}`}>
+    <span class="callbar__icon"><Icon name="phone" size={18} /></span>
+    <span class="callbar__text"><span class="callbar__label">{label}</span> {phone.display}</span>
+  </a>
+</zl-callbar>
+
+<script>
+  class ZlCallBar extends HTMLElement {
+    connectedCallback() {
+      const help = document.querySelector('[data-help]');
+      if (!help || !('IntersectionObserver' in window)) return;
+      new IntersectionObserver(([entry]) => {
+        // tylko gdy karta jest NAD ekranem (przewinięta), a nie gdy jeszcze do niej nie dotarliśmy
+        this.toggleAttribute('data-shown', !entry.isIntersecting && entry.boundingClientRect.top < 0);
+      }).observe(help);
+    }
+  }
+  if (!customElements.get('zl-callbar')) customElements.define('zl-callbar', ZlCallBar);
+</script>
+
+<style>
+  zl-callbar { display: none; }
+
+  @media (max-width: 720px) {
+    zl-callbar {
+      display: block; position: fixed; z-index: 30; right: 12px; bottom: max(12px, env(safe-area-inset-bottom));
+      visibility: hidden; opacity: 0; translate: 0 12px;
+      transition: opacity .25s var(--ease), translate .25s var(--ease), visibility 0s .25s;
+    }
+    zl-callbar[data-shown] { visibility: visible; opacity: 1; translate: 0 0; transition: opacity .25s var(--ease), translate .25s var(--ease); }
+  }
+
+  .callbar {
+    display: inline-flex; align-items: center; gap: 0.625rem; min-height: 3rem; padding: 0.25rem 1rem 0.25rem 0.25rem;
+    background: var(--inverse-2); color: #fff;
+    box-shadow: 0 10px 24px -8px rgba(4, 11, 27, .45);
+    font: 500 1rem/1 var(--f-body);
+  }
+  .callbar__icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; background: var(--blue-fill); }
+  .callbar__label { font: 500 0.6875rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; opacity: .75; margin-right: 0.25rem; }
+
+  @media print { zl-callbar { display: none !important; } }
+</style>

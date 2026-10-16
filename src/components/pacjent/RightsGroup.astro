@@ -1,0 +1,37 @@
+---
+/** Grupa praw: wstęp sekcji (na szerokim ekranie przyklejony z lewej) i lista pytań. */
+import Intro from './Intro.astro';
+import RightItem from './RightItem.astro';
+import type { RightsGroup } from '@/lib/pacjent/types';
+import type { Resolve } from '@/lib/inline';
+import { plural } from '@/lib/format';
+
+interface Props {
+  group: RightsGroup;
+  act: { name: string; url: string };
+  resolve?: Resolve;
+}
+
+const { group, act, resolve } = Astro.props;
+---
+<div class="rights">
+  <Intro class="rights__intro" eyebrow={group.eyebrow} title={group.title} id={`${group.id}-title`} lead={group.lead}>
+    <p class="rights__count">{group.items.length} {plural(group.items.length, ['pytanie', 'pytania', 'pytań'])} · odpowiedź od razu, szczegóły po rozwinięciu</p>
+  </Intro>
+  <div class="rights__list">
+    {group.items.map((item) => <RightItem item={item} act={act} resolve={resolve} />)}
+  </div>
+</div>
+
+<style>
+  .rights { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr); gap: 2rem clamp(40px, 6vw, 96px); align-items: start; }
+  .rights :global(.rights__intro) { position: sticky; top: calc(var(--header-h) + 32px); }
+  .rights__count { margin-top: 1.5rem; padding-top: 0.875rem; border-top: 1px solid var(--line-2); font: 400 0.8125rem/1.5 var(--f-mono); color: var(--text); }
+  .rights__list { border-bottom: 1px solid var(--line-2); }
+
+  @media (max-width: 1024px) {
+    .rights { grid-template-columns: minmax(0, 1fr); }
+    .rights :global(.rights__intro) { position: static; }
+    .rights__count { display: none; }
+  }
+</style>

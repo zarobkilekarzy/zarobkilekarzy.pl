@@ -1,0 +1,75 @@
+---
+/**
+ * /postulat/ — droga do ustawy: co zrobiło państwo, oś etapów projektu i dwie formy postulatu
+ * (projekt ustawy — bieżąca, petycja — archiwum). Etapy i wersja: src/data/projekt-ustawy.ts.
+ */
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import Button from '@/components/ui/Button.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Tag from '@/components/ui/Tag.astro';
+import StatusTrack from '@/components/blocks/StatusTrack.astro';
+import { route } from '@/data/postulat';
+import { projekt, stages } from '@/data/projekt-ustawy';
+import { petycja } from '@/data/petycja';
+import { formatDate, isoDate, typo } from '@/lib/format';
+import { projektPdfPages } from '@/lib/projekt/download';
+
+// liczba stron z pliku składanego przy buildzie
+const pdfPages = await projektPdfPages();
+---
+<Section id="droga" tone="soft" aria-labelledby="droga-title">
+  <SectionHead eyebrow="Jak to wprowadzić" title="Droga do ustawy" id="droga-title" />
+
+  <div class="route__context">
+    <h3>{typo(route.title)}</h3>
+    <p>{typo(route.text)}</p>
+  </div>
+
+  <StatusTrack stages={stages} label="Etapy projektu ustawy" class="route__track" />
+  <p class="route__help"><LinkArrow href="/dzialaj/">Jak możesz pomóc</LinkArrow></p>
+
+  <div class="route__docs">
+    <article class="doc doc--current">
+      <p class="doc__kicker"><Tag tone="blue">Bieżąca forma</Tag><span>wersja {projekt.version} · <time datetime={isoDate(projekt.date)}>{formatDate(projekt.date)}</time></span></p>
+      <h3 class="doc__title">Projekt ustawy</h3>
+      <p class="doc__text">{typo(`${projekt.kind}: nowelizacja ${projekt.scope}. Tekst, uzasadnienie i pytania do weryfikacji prawnej.`)}</p>
+      <div class="doc__actions">
+        <Button href={projekt.href} icon="doc">Przeczytaj projekt</Button>
+        <LinkArrow href={projekt.pdf.href}>PDF ({pdfPages})</LinkArrow>
+      </div>
+    </article>
+
+    <article class="doc doc--archive">
+      <p class="doc__kicker"><Tag>Archiwum</Tag><span>od <time datetime={isoDate(petycja.launched)}>{formatDate(petycja.launched)}</time></span></p>
+      <h3 class="doc__title">Petycja</h3>
+      <p class="doc__text">{typo(`Do Ministra Zdrowia i Senatu: jawny rejestr imienny, po numerze PWZ. Wcześniejsza wersja postulatu.`)}</p>
+      <div class="doc__actions">
+        <LinkArrow href={petycja.href}>Treść i stan petycji</LinkArrow>
+      </div>
+    </article>
+  </div>
+</Section>
+
+<style>
+  .route__context { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 16px clamp(40px, 6vw, 96px); padding-top: 24px; border-top: 1px solid var(--line-2); }
+  .route__context h3 { font: 500 1.375rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .route__context p { font-size: 1.03125rem; line-height: 1.7; max-width: 62ch; color: var(--ink-2); }
+
+  .route__track { margin-top: clamp(48px, 6vw, 72px); }
+  .route__help { margin-top: 20px; }
+
+  .route__docs { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; margin-top: clamp(48px, 6vw, 72px); }
+  .doc { display: flex; flex-direction: column; padding: clamp(24px, 3vw, 36px); border: 1px solid var(--line-2); }
+  .doc--current { background: linear-gradient(90deg, var(--blue) 0 4px, transparent 4px), var(--surface); }
+  .doc--archive { background: transparent; border-style: dashed; }
+  .doc__kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted); }
+  .doc__title { margin-top: 18px; font: 400 clamp(1.625rem, 2.6vw, 2.125rem)/1.1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .doc--archive .doc__title { color: var(--text); }
+  .doc__text { margin-top: 12px; font-size: 0.96875rem; line-height: 1.6; max-width: 46ch; }
+  .doc__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; margin-top: auto; padding-top: 28px; }
+
+  @media (max-width: 1024px) {
+    .route__context, .route__docs { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

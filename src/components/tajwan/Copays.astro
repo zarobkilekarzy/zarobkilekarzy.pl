@@ -1,0 +1,98 @@
+---
+/**
+ * Dopłata pacjenta za wizytę według poziomu placówki — tabela z paskami w komórkach.
+ * Jedna ilustracja zamiast tabeli i osobnego wykresu: kwota, złote i pasek na wspólnej skali
+ * (do największej stawki), wyróżniona komórka to stawka z przykładowego rachunku.
+ * W wąskim kontenerze wiersz staje się kartą z trzema stawkami.
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import { COPAY, LINKS, TWD, zl } from '@/data/tajwan';
+import { formatPL } from '@/lib/format';
+
+const max = Math.max(...COPAY.levels.flatMap((l) => l.values));
+const isReceipt = (row: number, col: number) => row === COPAY.receipt.level && col === COPAY.receipt.column;
+
+const cheapest = COPAY.levels[0].values[1];
+const priciest = COPAY.levels.at(-1)!.values[1];
+const ratio = formatPL(priciest / cheapest, 1);
+---
+<Figure
+  title={`Ta sama porada bez skierowania: ${cheapest} TWD w przychodni, ${priciest} TWD w centrum medycznym — ${ratio} raza więcej.`}
+  note={`Dopłata podstawowa za wizytę u lekarza medycyny zachodniej, bez zwolnień. Przychodnie nie mają SOR — 150 TWD to stawka za świadczenia rozliczane w trybie nagłym. Złote po kursie NBP z ${TWD.date}.`}
+  source={{ label: 'NHI Annual Report 2025–2026, tab. 3-3', href: LINKS.annualReport }}
+>
+  <table class="copay" data-reveal="grow" style={`--max: ${max}`}>
+    <thead>
+      <tr>
+        <th scope="col">Poziom placówki</th>
+        {COPAY.columns.map((c) => <th scope="col">{c}</th>)}
+      </tr>
+    </thead>
+    <tbody>
+      {COPAY.levels.map((l, row) => (
+        <tr>
+          <th scope="row">{l.level} <span lang="zh-Hant">{l.zh}</span></th>
+          {l.values.map((v, col) => (
+            <td data-label={COPAY.columns[col]} class:list={{ 'is-receipt': isReceipt(row, col) }} style={`--v: ${v}`}>
+              <span class="copay__v">{v}<small> TWD</small></span>
+              <span class="copay__zl">{zl(v)}</span>
+              <span class="copay__bar" aria-hidden="true"></span>
+              {isReceipt(row, col) && <span class="copay__mark">na rachunku niżej</span>}
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</Figure>
+
+<style>
+  .copay { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  /* .copay przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .copay thead th {
+    padding: 0 12px 10px 0; text-align: left; vertical-align: bottom;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .copay thead th:first-child { width: 30%; }
+  .copay tbody th, .copay td { padding: 14px 12px 14px 0; vertical-align: top; border-bottom: 1px solid var(--line); }
+  .copay tbody th { font: 500 0.9375rem/1.35 var(--f-display); letter-spacing: -0.01em; text-transform: none; color: var(--ink); }
+  .copay tbody th span { display: block; margin-top: 2px; font: 400 0.8125rem/1.3 var(--f-body); color: var(--muted); }
+
+  .copay td { color: var(--ink); }
+  .copay__v { display: block; font: 400 1.375rem/1 var(--f-display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .copay__v small { font: 400 0.78125rem/1 var(--f-body); letter-spacing: 0; color: var(--muted); }
+  .copay__zl { display: block; margin-top: 4px; font: 400 0.8125rem/1.3 var(--f-body); color: var(--muted); }
+  .copay__bar { display: block; position: relative; height: 8px; margin-top: 10px; }
+  .copay__bar::after {
+    content: ""; position: absolute; inset: 0 auto 0 0;
+    width: calc(var(--v) / var(--max) * 100%); background: var(--chart);
+    transform-origin: left; transition: transform 1.1s var(--ease);
+  }
+  .copay.is-armed .copay__bar::after { transform: scaleX(0); }
+  .copay.is-armed.is-in .copay__bar::after { transform: scaleX(1); }
+
+  .copay td.is-receipt { background: var(--blue-50); box-shadow: inset 3px 0 0 var(--blue); padding-left: 12px; }
+  .copay .is-receipt .copay__v { color: var(--blue); }
+  .copay .is-receipt .copay__bar::after { background: var(--blue); }
+  .copay__mark { display: block; margin-top: 8px; font: 500 0.625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--blue); }
+
+  /* Wąsko: poziom placówki = karta, trzy stawki jedna pod drugą (etykieta | kwota | pasek) */
+  @container (max-width: 520px) {
+    .copay thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .copay, .copay tbody, .copay tr, .copay tbody th { display: block; width: auto; }
+    .copay tr { padding: 14px 0 6px; border-bottom: 1px solid var(--line-2); }
+    .copay tbody th { padding: 0 0 6px; border: 0; }
+    .copay tbody th span { display: inline; margin: 0 0 0 6px; }
+    .copay td {
+      display: grid; grid-template-columns: 112px auto 1fr; align-items: baseline; gap: 4px 12px;
+      padding: 8px 0; border: 0;
+    }
+    .copay td::before { content: attr(data-label); font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted); }
+    .copay__v { font-size: 1.125rem; }
+    .copay__zl { grid-column: 3; margin: 0; text-align: right; }
+    .copay__bar { grid-column: 1 / -1; margin-top: 2px; }
+    .copay__mark { grid-column: 1 / -1; margin-top: 0; }
+    .copay td.is-receipt { padding-inline: 10px; }
+  }
+</style>

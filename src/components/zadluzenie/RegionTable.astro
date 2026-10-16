@@ -1,0 +1,120 @@
+---
+/**
+ * Dług SPZOZ według województw (i szpitali resortowych): kwota z paskiem na wspólnej skali,
+ * część przeterminowana jako ciemniejszy odcinek tego samego paska, dynamika w 2025 r.
+ * i w pierwszym półroczu 2026 r. Wiersze od największego długu; wzrost szybszy niż w całym
+ * kraju jest wyróżniony słowem i kolorem. W wąskim kontenerze wiersz staje się kartą.
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import { LINKS, REGIONS, REGIONS_DATE } from '@/data/zadluzenie';
+import { formatPL } from '@/lib/format';
+
+interface Props {
+  /** teza tabeli — zdanie nad nią (pisane w treści artykułu, bo zależy od odmiany nazw) */
+  title?: string;
+}
+
+const { title } = Astro.props;
+
+const rows = [...REGIONS].sort((a, b) => b.now - a.now);
+const sum = (key: 'y2024' | 'y2025' | 'now' | 'overdue') => REGIONS.reduce((s, r) => s + r[key], 0);
+const total = { y2024: sum('y2024'), y2025: sum('y2025'), now: sum('now'), overdue: sum('overdue') };
+const max = rows[0].now;
+
+const change = (to: number, from: number) => to / from - 1;
+const pctText = (r: number) => `${r >= 0 ? '+' : '−'}${formatPL(Math.abs(r) * 100)}%`;
+const country = { y2025: change(total.y2025, total.y2024), h1: change(total.now, total.y2025) };
+const bn = (mln: number, d = 2) => formatPL(mln / 1000, d);
+---
+<Figure
+  title={title}
+  note={`Zobowiązania SPZOZ według siedziby podmiotu tworzącego, stan na ${REGIONS_DATE}. MON i MSWiA to szpitale resortowe. Wyróżniony wzrost — szybszy niż w całym kraju (${pctText(country.y2025)} w 2025 r., ${pctText(country.h1)} w I półroczu 2026 r.).`}
+  source={{ label: 'Ministerstwo Zdrowia, zobowiązania SPZOZ według województw', href: LINKS.mz }}
+>
+  <table class="rg" data-reveal="grow" style={`--max: ${max}`}>
+    <thead>
+      <tr>
+        <th scope="col">Województwo</th>
+        <th scope="col">Dług, mld zł</th>
+        <th scope="col">2025 r.</th>
+        <th scope="col">I półr. 2026</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((r) => {
+        const y = change(r.y2025, r.y2024);
+        const h = change(r.now, r.y2025);
+        return (
+          <tr style={`--v: ${r.now}; --od: ${r.overdue}`}>
+            <th scope="row">{r.name}</th>
+            <td class="rg__debt" data-label="Dług, mld zł">
+              <span class="rg__v">{bn(r.now)}</span>
+              <span class:list={['rg__od', { 'has-sw': r.overdue > 0 }]}>{r.overdue > 0 ? `w tym ${bn(r.overdue)} przeterminowane` : 'bez przeterminowanych'}</span>
+              <span class="rg__bar" aria-hidden="true"><span></span></span>
+            </td>
+            <td data-label="2025 r." class:list={{ 'is-fast': y > country.y2025 }}>{pctText(y)}</td>
+            <td data-label="I półr. 2026" class:list={{ 'is-fast': h > country.h1 }}>{pctText(h)}</td>
+          </tr>
+        );
+      })}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row">Razem</th>
+        <td class="rg__debt" data-label="Dług, mld zł"><span class="rg__v">{bn(total.now)}</span><span class="rg__od">w tym {bn(total.overdue)} przeterminowane</span></td>
+        <td data-label="2025 r.">{pctText(country.y2025)}</td>
+        <td data-label="I półr. 2026">{pctText(country.h1)}</td>
+      </tr>
+    </tfoot>
+  </table>
+</Figure>
+
+<style>
+  .rg { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  /* .rg przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .rg thead th {
+    padding: 0 12px 10px 0; text-align: right; vertical-align: bottom;
+    font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .rg thead th:first-child, .rg thead th:nth-child(2) { text-align: left; }
+  .rg thead th:nth-child(2) { width: 46%; }
+
+  .rg tbody th, .rg tbody td, .rg tfoot th, .rg tfoot td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); vertical-align: middle; text-align: right; }
+  .rg tbody th, .rg tfoot th { text-align: left; font: 500 0.90625rem/1.3 var(--f-display); letter-spacing: -0.01em; text-transform: none; color: var(--ink); }
+  .rg td { font-size: 0.875rem; color: var(--text); }
+  .rg td.is-fast { color: var(--bad); font-weight: 600; }
+
+  /* .rg tbody/tfoot przed td — reguła musi przeważyć ogólne style komórek wyżej i w wersji wąskiej */
+  .rg :is(tbody, tfoot) td.rg__debt { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 2px 10px; text-align: left; }
+  .rg__v { font: 400 1.0625rem/1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .rg__od { font: 400 0.78125rem/1.2 var(--f-body); color: var(--muted); }
+  /* kwadrat w kolorze ciemniejszego odcinka paska — mówi, która część to przeterminowane */
+  .rg__od.has-sw::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; background: var(--chart); }
+  .rg__bar { grid-column: 1 / -1; position: relative; height: 8px; margin-top: 6px; }
+  .rg__bar::before, .rg__bar span {
+    content: ""; position: absolute; inset: 0 auto 0 0;
+    transform-origin: left; transition: transform 1.1s var(--ease);
+  }
+  .rg__bar::before { width: calc(var(--v) / var(--max) * 100%); background: var(--chart-soft); }
+  .rg__bar span { width: calc(var(--od) / var(--max) * 100%); background: var(--chart); box-shadow: 2px 0 0 var(--bg); }
+  .rg.is-armed .rg__bar::before, .rg.is-armed .rg__bar span { transform: scaleX(0); }
+  .rg.is-armed.is-in .rg__bar::before, .rg.is-armed.is-in .rg__bar span { transform: scaleX(1); }
+
+  .rg tfoot th, .rg tfoot td { border-top: 1px solid var(--ink); border-bottom: 0; }
+  /* W border-collapse dolna linia ostatniego wiersza (--line) wygrywała z górną stopki — linia „Razem” była tylko w kolumnie długu */
+  .rg tbody tr:last-child > * { border-bottom: 0; }
+  .rg tfoot td { color: var(--ink); font-weight: 500; }
+
+  /* Wąsko: województwo = karta (nazwa, kwota z paskiem, dwie zmiany obok siebie) */
+  @container (max-width: 560px) {
+    .rg thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .rg, .rg tbody, .rg tfoot { display: block; }
+    .rg tr { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .rg tfoot tr { border-top: 1px solid var(--ink); border-bottom: 0; }
+    .rg tbody th, .rg tbody td, .rg tfoot th, .rg tfoot td { display: block; padding: 0; border: 0; text-align: left; }
+    .rg tbody th, .rg tfoot th { grid-column: 1 / -1; }
+    .rg :is(tbody, tfoot) td.rg__debt { grid-column: 1 / -1; display: grid; }
+    .rg td[data-label]:not(.rg__debt)::before { content: attr(data-label) " "; font: 400 0.6875rem/1.3 var(--f-mono); color: var(--muted); font-weight: 400; }
+  }
+</style>

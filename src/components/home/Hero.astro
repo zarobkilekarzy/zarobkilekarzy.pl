@@ -1,0 +1,72 @@
+---
+import Section from '@/components/layout/Section.astro';
+import Split from '@/components/layout/Split.astro';
+import Actions from '@/components/layout/Actions.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Button from '@/components/ui/Button.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Photo from '@/components/ui/Photo.astro';
+import Badge from '@/components/ui/Badge.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import { heroPopular, keyNumbers } from '@/data/home';
+import { HEADLINE } from '@/data/zarobki-ujawnione-listy';
+import { formatPL } from '@/lib/format';
+
+import heroImg from '@/assets/img/hero-pokoj-lekarski.jpg';
+---
+<Section class="hero" space="none" aria-labelledby="hero-title">
+  <Split cols="minmax(0, 1.08fr) minmax(0, 1fr)">
+    <Eyebrow>Przewodnik po pracy i zarobkach lekarzy</Eyebrow>
+    <Heading as="h1" size="display" id="hero-title" class="hero__title">Zarobki lekarzy.<br /> Bez emocji, ze&nbsp;źródłami</Heading>
+    <p class="lead hero__lead">Wyjaśniamy, jak publiczne pieniądze płyną od składki zdrowotnej do gabinetu — i&nbsp;co z&nbsp;tego wynika dla pacjentów. Przy każdej liczbie podajemy źródło i&nbsp;zaznaczamy, czy to dana dokładna, czy szacunek.</p>
+    <Actions stack="mobile">
+      <Button href="#start">Zacznij od przewodnika</Button>
+      <LinkArrow href="#dane">Najważniejsze dane</LinkArrow>
+    </Actions>
+    <div class="hero__popular">
+      <span class="mono-label">Często szukane</span>
+      <ul>
+        {heroPopular.map((p) => <li><a href={p.href}>{p.label}</a></li>)}
+      </ul>
+    </div>
+
+    {/* Poziome zdjęcie 3:2 w pionowym kadrze 5:6 — rysowane ~1,8× szerzej niż kadr */}
+    <Photo
+      slot="media"
+      src={heroImg}
+      alt="Pokój lekarski w szpitalu publicznym: biurko z dokumentacją, stetoskop i fartuch na krześle"
+      ratio="5/6"
+      position="38% 50%"
+      widths={[640, 960, 1280, 1600, 1920]}
+      sizes="(min-width: 1025px) 1000px, 180vw"
+      priority
+      frame
+    >
+      <Badge icon="db" value={formatPL(HEADLINE.positions)} label="rozliczeń w bazie" />
+    </Photo>
+  </Split>
+
+  <StatRow items={keyNumbers} label="Cztery liczby na start" class="hero__stats" />
+</Section>
+
+<style>
+  .hero { padding-top: clamp(40px, 6vw, 88px); }
+  .hero__title { margin-bottom: 28px; }
+  .hero__lead { margin-bottom: 36px; }
+  .hero__stats { margin-top: clamp(64px, 7vw, 104px); }
+
+  .hero__popular { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-top: 44px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .hero__popular ul { display: flex; flex-wrap: wrap; gap: 8px; }
+  .hero__popular a {
+    display: inline-block; padding: 7px 12px;
+    border: 1px solid var(--line-2);
+    font-size: 0.84375rem; color: var(--ink-2);
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .hero__popular a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-50); }
+
+  @media (max-width: 720px) {
+    .hero__popular { margin-top: 32px; }
+  }
+</style>

@@ -1,25 +1,35 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
----
+/**
+ * Strona 404 — na razie sam mechanizm: noindex, bez grafu danych strukturalnych i bez wpisu w sitemapie.
+ * Cloudflare Pages serwuje dist/404.html ze statusem 404 dla każdego adresu bez pliku i bez przekierowania.
+ * Treść (wyszukiwarka, popularne miejsca) dojdzie później; stare adresy obsługuje src/data/seo/redirects.ts.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import type { SeoInput } from '@/lib/seo';
 
-<BaseLayout
-  title="404 — nie znaleziono strony · zarobkilekarzy.pl"
-  description="Strona, której szukasz, nie istnieje lub została przeniesiona."
-  search={false}
->
-  <section class="section">
-    <div class="container" style="text-align: center; max-width: 640px;">
-      <p class="eyebrow">Błąd 404</p>
-      <h1>Nie znaleźliśmy tej strony</h1>
-      <p class="lead">
-        Strona mogła zostać przeniesiona albo nigdy nie istniała. Wróć na stronę
-        główną lub przejdź do danych i źródeł.
-      </p>
-      <div class="cta-row" style="justify-content: center;">
-        <a class="btn btn-primary" href="/">Strona główna</a>
-        <a class="btn" href="/dane/">Dane</a>
-        <a class="btn" href="/artykuly/">Baza artykułów</a>
-      </div>
-    </div>
-  </section>
+const seo: SeoInput = {
+  title: 'Nie ma takiej strony',
+  description: 'Pod tym adresem nie ma strony. Wróć na stronę główną albo użyj wyszukiwarki.',
+  index: false,
+};
+---
+<BaseLayout seo={seo}>
+  <Section class="nf">
+    <Eyebrow>Błąd 404</Eyebrow>
+    <Heading as="h1" size="display">Nie ma takiej strony</Heading>
+    <p class="lead nf__lead">Adres mógł się zmienić albo zawierać literówkę.</p>
+    <p class="nf__links">
+      <LinkArrow href="/">Strona główna</LinkArrow>
+      <LinkArrow href="/szukaj/">Szukaj w serwisie</LinkArrow>
+    </p>
+  </Section>
 </BaseLayout>
+
+<style>
+  .nf__lead { margin-top: 1.5rem; }
+  .nf__links { display: flex; flex-wrap: wrap; gap: 1rem 2rem; margin-top: 2rem; }
+</style>

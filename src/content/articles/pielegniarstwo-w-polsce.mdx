@@ -1,0 +1,244 @@
+---
+title: "Pielęgniarstwo w Polsce: drabina wieku"
+category: Analiza
+topic: ksztalcenie
+order: 10
+stat: { value: "55", unit: lat — średni wiek pielęgniarki }
+date: 2026-07-15
+updated: 2026-10-16
+summary: Średni wiek pielęgniarki to 55 lat, a w 2023 r. co trzecia zarejestrowana miała ponad 60. Na 1000 mieszkańców pracuje 5,9 pielęgniarki, przy średniej UE 8,5.
+keyPoints:
+  - "W styczniu 2023 r. 34% zarejestrowanych pielęgniarek miało ponad 60 lat, a 16,5% mniej niż 40. Średni wiek wzrósł z 44,2 roku w 2008 r. do 55,2 na koniec 2025 r."
+  - "Prognozy niedoboru z lat 2021–2023 zakładały, że do zawodu będzie wchodzić ok. 6 tys. osób rocznie. W 2025 r. prawo wykonywania zawodu uzyskały 10 152 osoby, a liczba zatrudnionych pielęgniarek i położnych od 2021 r. wzrosła o ok. 11 tys."
+  - "Pracujących pielęgniarek jest 5,9 na 1000 mieszkańców przy średniej UE 8,5, a do 2030 r. liczba osób w wieku 80+ ma wzrosnąć z 1,6 do 2,1 mln."
+  - "Minimum płacy pielęgniarki na etacie wynika z jawnej ustawy. Kwot kontraktów — pielęgniarskich i lekarskich — nie publikuje nikt."
+related:
+  - personel-medyczny
+  - kontrakt-vs-etat
+  - zadluzenie-szpitali
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import {
+  AGE_BASE,
+  LINKS,
+  OVER_60,
+  UNDER_40,
+  REGISTRY,
+  MODEL_INFLOW,
+  ageRows,
+  densityRows,
+  licenseRows,
+  modelTable,
+  checkedYears,
+  actualGap,
+  modelGap,
+  signed,
+  employedShare,
+  employed2021,
+  employed2025,
+  RETIREMENT_NOW,
+  RETIREMENT_2030,
+} from '@/data/pielegniarstwo-w-polsce';
+import { formatPL } from '@/lib/format';
+
+W Centralnym Rejestrze Pielęgniarek i Położnych (CRPiP) jest 333 336 pielęgniarek i 43 965 położnych.[^crpip] Zestawiamy dane o ich wieku, liczbie pracujących i dopływie do zawodu z prognozami niedoboru, które od lat publikuje samorząd zawodowy, i sprawdzamy, co z tych prognoz wynika dziś. Liczby pochodzą głównie z rejestru i raportów Naczelnej Izby Pielęgniarek i Położnych (NIPiP), z OECD i z GUS. Każdą datę podajemy przy liczbie, bo dane o wieku i prognozy pochodzą z różnych lat.
+
+## Drabina wieku
+
+W styczniu 2023 r. w rejestrze było 315 670 pielęgniarek. Najliczniejszą grupę tworzyły osoby w wieku 51–60 lat (31,5%), drugą — w wieku 61–70 lat (25,3%). Ponad 60 lat miało 34% zarejestrowanych, mniej niż 40 lat — 16,5%.[^nipip2023] Nowszego rozkładu wieku w raportach NIPiP nie znaleźliśmy.
+
+<Figure
+  title="W 2023 r. co trzecia zarejestrowana pielęgniarka miała ponad 60 lat, co szósta — mniej niż 40"
+  note={`Udział grup wieku wśród ${formatPL(AGE_BASE.nurses)} pielęgniarek w CRPiP, ${AGE_BASE.date}. Wyróżnione grupy powyżej 60 lat to ${formatPL(OVER_60, 1)}%, osoby poniżej 40 lat — ${formatPL(UNDER_40, 1)}%. Rejestr obejmuje też osoby, które nie pracują w zawodzie.`}
+  source={{ label: 'NIPiP, Raport o stanie pielęgniarstwa i położnictwa w Polsce, maj 2023, wykres 3', href: LINKS.report2023 }}
+>
+  <BarChart
+    rows={ageRows}
+    max={35}
+    unit="%"
+    caption={`Struktura wieku zarejestrowanych pielęgniarek, ${AGE_BASE.date}: ${ageRows.map((r) => `${r.label} — ${r.display}`).join(', ')}.`}
+  />
+</Figure>
+
+Położne są młodsze: w wieku emerytalnym była niecała co trzecia (prawie 30%), a mniej niż 40 lat miało 25,7% z nich.[^nipip2023]
+
+Rejestr to nie to samo co kadra przy łóżku: pracuje ok. 74% zarejestrowanych pielęgniarek.[^nipip2023] Wiek samych zatrudnionych NIPiP podał w raporcie z 2022 r. Wtedy 36,0% z nich miało 51–60 lat, a 29,4% — ponad 60 lat.[^nipip2022]
+
+Średni wiek zarejestrowanej pielęgniarki wzrósł z 44,2 roku w 2008 r. do 55,2 roku na koniec 2025 r., a położnej — z 43,2 do 52,2 roku. Średnia rośnie jednak coraz wolniej: w 2022 r. przybyło jej 0,46 roku, w 2025 r. — 0,28 roku.[^crpip] Zbiega się to z rosnącym dopływem do zawodu, o którym piszemy niżej.
+
+## Ile pielęgniarek jest w wieku emerytalnym
+
+W debacie krążą dwie liczby: 34% pielęgniarek „już w wieku emerytalnym” i 65% „do 2030 r.”. Opisują różne grupy w różnych latach, więc nie należy ich łączyć w jeden szereg.
+
+**34% to pomiar.** Tyle zarejestrowanych pielęgniarek miało w styczniu 2023 r. 61 lat lub więcej.[^nipip2023] Kobiety, czyli 96,5% zawodu,[^crpip] nabywają prawo do emerytury w wieku 60 lat, a 60-latki mieszczą się na wykresie w grupie 51–60. Jeśli roczniki w tej grupie są mniej więcej równe, w wieku emerytalnym było wtedy ok. {RETIREMENT_NOW}% zarejestrowanych pielęgniarek.[^szacunek]
+
+**65% to prognoza.** NIPiP podał w kwietniu 2022 r., że w 2030 r. w wieku uprawniającym do emerytury będzie 65% pielęgniarek zatrudnionych w tamtym momencie, wliczając te, które już go osiągnęły. Przyjął przy tym wiek 60 lat dla wszystkich, także dla mężczyzn. Odpowiada to mniej więcej wszystkim zatrudnionym, którzy w kwietniu 2022 r. mieli co najmniej 51 lat (65,4%).[^nipip2022]
+
+**Na danych z 2023 r. wychodzi mniej.** Do końca 2030 r. 60 lat skończą zarejestrowane pielęgniarki, które w styczniu 2023 r. miały co najmniej 52 lata. Przy równych rocznikach to ok. {RETIREMENT_2030}% rejestru, a nie 65,5% — tyle wynosi udział wszystkich grup od 51. roku życia.[^szacunek]
+
+Wiek emerytalny nie oznacza odejścia z pracy. W 2022 r. pracowało 76 388 pielęgniarek i położnych, które miały już uprawnienia emerytalne — i każda z nich mogła w dowolnej chwili przejść na emeryturę.[^nipip2022]
+
+## Rejestr a praca przy pacjencie
+
+<StatRow
+  label={`Pielęgniarki w CRPiP, stan na ${REGISTRY.date}`}
+  items={[
+    { value: REGISTRY.nurses.registered, unit: 'w rejestrze', desc: `pielęgniarek z prawem wykonywania zawodu, w tym ${formatPL(REGISTRY.nurses.men)} mężczyzn`, accuracy: 'exact', source: `NIPiP, CRPiP, ${REGISTRY.date}`, href: LINKS.registry },
+    { value: REGISTRY.nurses.employed, unit: 'zatrudnionych', desc: `czyli ${formatPL(employedShare, 1)}% zarejestrowanych; różnica to blisko 90 tys. osób`, accuracy: 'exact', source: `NIPiP, CRPiP, ${REGISTRY.date}`, href: LINKS.registry },
+  ]}
+/>
+
+Kim są pozostali, rejestr nie mówi wprost. Za granicą przebywa według niego niecały 1% zarejestrowanych, a 8,7% ma ponad 70 lat, więc część to zapewne emerytki.[^nipip2023] Strona NIPiP nie wyjaśnia też, jakie formy pracy liczy jako zatrudnienie, więc nie wiadomo, czy obejmuje wszystkie pielęgniarki na kontraktach.[^crpip]
+
+Na tle Europy kadra jest szczupła. W 2023 r. w Polsce pracowało 5,9 pielęgniarki na 1000 mieszkańców, przy średniej UE 8,5[^soh] i średniej krajów OECD 9,2.[^hag] Profil Polski w raporcie State of Health in the EU wskazuje niską liczbę lekarzy i pielęgniarek jako kluczowe ograniczenie wydolności systemu.[^soh]
+
+<Figure
+  title="Na 1000 mieszkańców Polska ma o 30% mniej pielęgniarek niż średnio UE"
+  note="Praktykujące pielęgniarki na 1000 mieszkańców, 2023 r. lub najbliższy dostępny. Dane obejmują wszystkie kategorie pielęgniarek. Średnia OECD: Health at a Glance 2025, nota o Polsce."
+  source={{ label: 'OECD/European Observatory, State of Health in the EU: Poland 2025', href: LINKS.stateOfHealth }}
+>
+  <BarChart
+    rows={densityRows}
+    max={10}
+    unit="na 1000"
+    caption="Praktykujące pielęgniarki na 1000 mieszkańców w 2023 r.: Polska 5,9, średnia UE 8,5, średnia OECD 9,2."
+  />
+</Figure>
+
+## Dopływ do zawodu: prognozy kontra dane
+
+Prognozy niedoboru, które NIPiP publikował w latach 2021–2023, liczyły ubytek kadry jako różnicę między osobami osiągającymi wiek emerytalny a osobami, które uzyskują prawo wykonywania zawodu (PWZ). Dopływ zamrażały na stałym poziomie. Raport z 2022 r. przyjął 6205 osób rocznie — średnią z lat 2019–2021 dla pielęgniarek i położnych łącznie — i założył, że wszystkie podejmą pracę.[^model2022]
+
+Tymczasem dopływ rósł. W 2025 r. PWZ uzyskały 10 152 osoby (9153 pielęgniarki i 999 położnych), wobec 5969 w 2019 r. i 4202 w 2014 r.[^pwz] Raport NIPiP z 2023 r. sam zastrzegał, że prognoza nie uwzględnia rosnącej od 2014 r. liczby nowych PWZ.[^prognoza2023]
+
+<Figure
+  title={`Od ${checkedYears.from} r. nowych PWZ jest co roku więcej, niż zakładała prognoza (${formatPL(MODEL_INFLOW)})`}
+  note={`Pielęgniarki i położne łącznie. Wyróżnione lata ${checkedYears.from}–${checkedYears.to}, w których prognoza NIPiP z 2022 r. zakładała stały dopływ ${formatPL(MODEL_INFLOW)} osób rocznie.`}
+  source={{ label: 'NIPiP, Liczba osób, które uzyskały prawo wykonywania zawodu', href: LINKS.licenses }}
+>
+  <BarChart
+    rows={licenseRows}
+    max={11000}
+    unit="osób"
+    caption={`Nowe prawa wykonywania zawodu pielęgniarki i położnej w latach 2014–2025: ${licenseRows.map((r) => `${r.label} — ${r.display}`).join(', ')}.`}
+  />
+</Figure>
+
+Gdy w rachunek NIPiP podstawić faktyczną liczbę nowych PWZ, bilans lat {checkedYears.from}–{checkedYears.to} wynosi {signed(actualGap)} osób zamiast {signed(modelGap(checkedYears.from, checkedYears.to))}, które wynikają z prognozy.[^model2022]
+
+<Figure
+  title={`Faktyczny dopływ z lat ${checkedYears.from}–${checkedYears.to} prawie zrównoważył przechodzących w wiek emerytalny`}
+  note="Rachunek redakcji. Osiągający 60 lat i założenie dopływu — prognoza NIPiP z kwietnia 2022 r. (zatrudnione pielęgniarki i położne). Faktyczne nowe PWZ — dane NIPiP za kolejne lata (przypis w tekście). Nie każda osoba z nowym PWZ podejmuje pracę w Polsce, a wiek emerytalny nie oznacza odejścia z zawodu."
+  source={{ label: 'NIPiP, Pielęgniarka, położna — zawody deficytowe, kwiecień 2022, rozdz. V', href: LINKS.report2022 }}
+>
+  <Comparison table={modelTable} />
+</Figure>
+
+Dane o zatrudnieniu idą w tę samą stronę. Na koniec 2021 r. zatrudnionych było {formatPL(employed2021)} pielęgniarek i położnych, na koniec 2025 r. — {formatPL(employed2025)}, czyli o {formatPL(employed2025 - employed2021)} więcej.[^crpip] Prognozy z lat 2021–2022 przewidywały w tym okresie spadek: o 16 761 osób do 2025 r. według raportu z 2021 r.[^raport2021] i o 11 663 według raportu z 2022 r.[^model2022]
+
+To dobra wiadomość, ale nie rozwiązanie. Dopływ z trudem równoważy przechodzących w wiek emerytalny, średni wiek kadry wciąż rośnie, a liczba pielęgniarek na 1000 mieszkańców pozostaje daleko od średniej UE.
+
+### Skąd różne liczby niedoboru
+
+W mediach pojawiają się trzy liczby. Wszystkie pochodzą z tego samego rachunku z zamrożonym dopływem, ale z różnych lat i okresów:
+
+- **ponad 26 tys.** — suma rocznych różnic w latach 2023–2030 (dokładnie 26 273), przy dopływie 6205 osób rocznie; pielęgniarki i położne zatrudnione; tę liczbę ogłosił też komunikat NIPiP z 9.02.2024 r.;[^prognoza2023]
+- **28 889** — ta sama prognoza liczona od 2022 r., czyli za lata 2022–2030;[^model2022]
+- **36 293** — spadek liczby zatrudnionych pielęgniarek i położnych do 2030 r. w starszym raporcie z 2021 r., który zamroził dopływ na poziomie 2020 r. (5693 PWZ).[^raport2021]
+
+Żadna z nich nie uwzględnia wzrostu dopływu w latach 2022–2025. Opisują scenariusz, w którym nabór zatrzymałby się na poziomie sprzed kilku lat — a tak się nie stało.
+
+## Ilu absolwentów zostaje w zawodzie
+
+Kształcenie wyraźnie przyspieszyło. W lutym 2023 r. pielęgniarstwo mogło prowadzić 126 uczelni z akredytacją ministra zdrowia.[^uczelnie] Liczba nowych PWZ dla samych pielęgniarek wzrosła z 3443 w 2014 r. do 9153 w 2025 r.[^pwz]
+
+Nie każdy dyplom zamienia się jednak w pracę w zawodzie. Pomiar, który udało nam się znaleźć, dotyczy rocznika 2020: dyplom studiów pielęgniarskich uzyskało wtedy 4525 osób, a o prawo wykonywania zawodu do końca 2021 r. wystąpiły 2504 z nich, czyli ok. 55%.[^demagog] To liczba wniosków o PWZ, a nie umów o pracę, i bez podziału na placówki publiczne i prywatne. O pozostałych 45% wiadomo tylko tyle, że w tym czasie nie złożyły wniosku. Nowszego pomiaru nie znaleźliśmy, a prognozy NIPiP zakładały, że pracę podejmuje każda osoba z nowym PWZ.[^model2022]
+
+## Wyjazdy: co wiadomo, a czego nie
+
+Ile pielęgniarek wyjeżdża, nie wiadomo. Najwyższa Izba Kontroli stwierdziła w 2016 r., że Polska nie monitoruje emigracji kadr medycznych.[^nik] Są trzy pośrednie miary i każda mierzy co innego.
+
+<StatRow
+  label="Wyjazdy pielęgniarek: trzy różne miary"
+  items={[
+    { value: 23424, unit: 'zaświadczeń', desc: 'do uznania kwalifikacji za granicą wydano pielęgniarkom i położnym w latach 2004–2025', accuracy: 'exact', source: 'NIPiP', href: LINKS.certificates },
+    { prefix: '<', value: 6, unit: '%', desc: 'pracujących pielęgniarek rozważało wyjazd w ciągu 12 miesięcy, zdecydowanie — 1,7% (ankieta ze stycznia 2023 r.)', accuracy: 'est', source: 'MedMedia Consulting dla NIPiP', href: LINKS.report2023 },
+    { prefix: '~', value: 64, unit: 'tys.', desc: 'pielęgniarek urodzonych w Polsce pracowało w krajach OECD w latach 2020/21 — zasób według kraju urodzenia, nie liczba wyjazdów', accuracy: 'est', source: 'OECD, Health at a Glance 2025', href: LINKS.oecdMigration },
+  ]}
+/>
+
+**Zaświadczenia.** Kto chce pracować w innym kraju UE, potrzebuje zaświadczenia do uznania kwalifikacji. Najwięcej wydano ich w 2015 r. (1527). Od 2023 r. NIPiP liczy je w zmienionym zakresie (w 2025 r. — 230), więc nowszych lat nie da się wprost porównać ze starszymi.[^zaswiadczenia] Zaświadczenie świadczy raczej o zamiarze wyjazdu niż o samym wyjeździe.[^nik]
+
+**Ankieta.** W badaniu, które MedMedia Consulting (MMC) przeprowadziła na zlecenie NIPiP w styczniu 2023 r.,[^mmc-data] niespełna 6% pracujących pielęgniarek rozważało wyjazd w ciągu roku, a zdecydowanie — 1,7%. Pytane o kierunek, najczęściej wskazywały kraje skandynawskie (28,6%), Niemcy (25,2%), Wielką Brytanię (16,5%) i Szwajcarię (12,7%).[^ankieta] To deklaracje, a nie wyjazdy.
+
+**Dane OECD.** Według raportu OECD Health at a Glance 2025 w krajach OECD pracowało w latach 2020/21 ok. 64 tys. pielęgniarek urodzonych w Polsce. Wśród krajów urodzenia pielęgniarek-migrantek Polska jest trzecia, po Filipinach i Indiach.[^oecd-migracja] To jednak zasób, a nie liczba wyjazdów: obejmuje osoby, które wyjechały wiele lat temu, także takie, które zdobyły zawód już za granicą.
+
+## Starzeje się też społeczeństwo
+
+Kadra starzeje się w tym samym czasie co pacjenci. W 2024 r. w Polsce mieszkało ponad 7,7 mln osób w wieku 65 lat i więcej (20,6% ludności) i ponad 1,6 mln osób w wieku 80+.[^gus2024] Według prognozy GUS do 2030 r. liczba osób 80+ wzrośnie do 2,1 mln, a do 2060 r. — do 3,5 mln. Osoby 65+ będą wtedy stanowić ok. 30% ludności.[^gusprognoza]
+
+<StatRow
+  label="Popyt na opiekę"
+  items={[
+    { prefix: '>', value: 7.7, decimals: 1, unit: 'mln', desc: 'osób w wieku 65+ w 2024 r., czyli 20,6% ludności; w 2030 r. ma ich być 8,1 mln', accuracy: 'exact', source: 'GUS, dane za 2024 r.', href: LINKS.gus2024 },
+    { value: 2.1, decimals: 1, unit: 'mln', desc: 'osób w wieku 80+ w 2030 r. według prognozy, wobec 1,6 mln w 2024 r.', accuracy: 'est', source: 'GUS, prognoza 2023–2060', href: LINKS.gusProjection },
+    { value: 151607, unit: 'miejsc', desc: 'w opiece długoterminowej (DPS, prywatne domy opieki, ZOL, ZPO) w 2024 r., co odpowiada 5% liczby osób w wieku 75+', accuracy: 'exact', source: 'BGK, luty 2026', href: LINKS.bgk },
+  ]}
+/>
+
+Według BGK, żeby w 2040 r. zapewnić miejsca dla 6% osób w wieku 75+, potrzeba by 276 tys. miejsc — prawie dwa razy więcej niż dziś.[^bgk] Rosnąca liczba najstarszych pacjentów zwiększa zapotrzebowanie na opiekę, także pielęgniarską, właśnie w latach, w których najliczniejsze roczniki pielęgniarek osiągają wiek emerytalny.
+
+## Jawna siatka płac, niejawne kontrakty
+
+Serwis zajmuje się tym, dokąd płyną publiczne pieniądze w ochronie zdrowia. Przy pielęgniarkach część z nich widać wyjątkowo dobrze. Minimum płacy zasadniczej na etacie w podmiocie leczniczym wynika z ustawy: to współczynnik grupy zawodowej razy kwota bazowa ogłaszana co roku. Kwoty dla pielęgniarek, położnych i pozostałych zawodów zestawiamy w materiale [Inne zawody medyczne: siatka płac i liczebność](/dane/personel-medyczny/).
+
+U lekarzy specjalistów jest odwrotnie: większość rozlicza się na kontraktach, których kwot nikt nie publikuje (zob. [Kontrakt czy etat](/mechanizmy/kontrakt-vs-etat/)). Pielęgniarki pracujące na kontrakcie też wypadają z tego obrazu — ich stawki znamy tylko z ogłoszeń.
+
+Jawne minimum jest też punktem odniesienia w sporach o płacę. W Wojewódzkim Szpitalu Zespolonym w Kaliszu zaległości wobec personelu, głównie pielęgniarek, sięgnęły ok. 37 mln zł. Według nowego dyrektora wynikały z błędnego zaszeregowania i zaniżonych stawek zasadniczych.[^kalisz] Finanse tego szpitala, w tym koszt kontraktów lekarskich, opisujemy w zestawieniu o [zadłużeniu szpitali](/dane/zadluzenie-szpitali/).
+
+Jawność płac nie usunie niedoboru pielęgniarek: jego źródłem jest przede wszystkim struktura wieku kadry i przez lata zbyt mały dopływ. Ale o tym, ile pieniędzy zostaje na pensje personelu, decyduje podział jednego budżetu, a ten podział widać tylko w części. Pełny obraz dałyby jawne łączne wypłaty z publicznych pieniędzy dla każdej osoby, pod stałym identyfikatorem i bez nazwisk — dla lekarzy, pielęgniarek i pozostałych zawodów. Tego dotyczy [nasz postulat](/postulat/).
+
+[^crpip]: NIPiP, [Liczba pielęgniarek i położnych zarejestrowanych i zatrudnionych](https://nipip.pl/liczba-pielegniarek-poloznych-zarejestrowanych-zatrudnionych/) (CRPiP, aktualizacja 14.01.2026): zarejestrowani według płci i średni wiek w latach 2008–2025, zatrudnieni w latach 2012–2025. Strona nie definiuje, jakie formy pracy obejmuje „zatrudnienie”. Udział kobiet: 321 832 z 333 336 pielęgniarek.
+
+[^nipip2023]: NIPiP, [Raport o stanie pielęgniarstwa i położnictwa w Polsce](https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf), maj 2023, rozdz. I: struktura wieku zarejestrowanych pielęgniarek i położnych (wykres 3, dane CRPiP ze stycznia 2023 r.), udział osób w wieku emerytalnym i poniżej 40 lat; odsetek zarejestrowanych pracujących w zawodzie i przebywających za granicą.
+
+[^nipip2022]: NIPiP, [Pielęgniarka, położna — zawody deficytowe w polskim systemie ochrony zdrowia](https://nipip.pl/wp-content/uploads/2022/06/2022_Raport-NIPiP-struktura-wiekowa-kadr.pdf), kwiecień 2022, rozdz. I i V: struktura wieku 234 665 zatrudnionych pielęgniarek (CRPiP, 30.04.2022), prognoza 65% w wieku emerytalnym do 2030 r. (położne: 60%), 76 388 pielęgniarek i położnych pracujących z uprawnieniami emerytalnymi.
+
+[^szacunek]: Rachunek redakcji na danych z wykresu 3 raportu NIPiP z 2023 r., przy założeniu równych roczników w grupie 51–60 lat (po 3,15% na rocznik). Dziś: 34,0% + 3,15% ≈ 37%. Do końca 2030 r.: 34,0% + 9 × 3,15% ≈ 62%. Jak w prognozie NIPiP, pomijamy wyższy wiek emerytalny mężczyzn (65 lat), którzy stanowią 3,5% zawodu. Rachunek dotyczy rejestru, a prognoza NIPiP — zatrudnionych.
+
+[^model2022]: NIPiP, [Pielęgniarka, położna — zawody deficytowe w polskim systemie ochrony zdrowia](https://nipip.pl/wp-content/uploads/2022/06/2022_Raport-NIPiP-struktura-wiekowa-kadr.pdf), kwiecień 2022, rozdz. IV–V: liczba nowych PWZ w latach 2019–2021 (średnio 6205), założenia prognozy (stały dopływ, 100% podejmuje pracę, wiek emerytalny 60 lat), tabela osób osiągających uprawnienia emerytalne w latach 2022–2030, ubytek 11 663 do 2025 r. i 28 889 do 2030 r.
+
+[^pwz]: NIPiP, [Liczba osób, które uzyskały prawo wykonywania zawodu](https://nipip.pl/liczba-osob-ktore-uzyskaly-prawo-wykonywania-zawodu/): pielęgniarki i położne w latach 2014–2025.
+
+[^prognoza2023]: NIPiP, [Raport o stanie pielęgniarstwa i położnictwa w Polsce](https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf), maj 2023, rozdz. I.3: ubytek od 2,5 tys. osób w 2023 r. do prawie 3,9 tys. w 2029 r., łącznie ponad 26 tys. w latach 2023–2030, oraz zastrzeżenie o rosnącej od 2014 r. liczbie PWZ. Liczbę 26 tys. ogłosił też [komunikat NIPiP](https://nipip.pl/do-2030-roku-liczba-pielegniarek-i-poloznych-zmniejszy-sie-o-ponad-26-tysiecy-alarmuje-samorzad-zawodowy-informacja-prasowa/) z 9.02.2024 r. Dokładna suma (26 273) — z tabeli w raporcie z 2022 r.
+
+[^raport2021]: NIPiP, [raport z 2021 r.](https://nipip.pl/raport2021/), za: [Puls Medycyny](https://pulsmedycyny.pl/medycyna/zdrowie/nipip-liczba-zatrudnionych-pielegniarek-i-poloznych-zmniejszy-sie-do-2030-r-o-363-tys/) — spadek liczby zatrudnionych pielęgniarek i położnych o 16 761 do 2025 r. i o 36 293 do 2030 r., przy dopływie równym liczbie PWZ z 2020 r. (5693).
+
+[^soh]: OECD i European Observatory on Health Systems and Policies, [State of Health in the EU: Poland, Country Health Profile 2025](https://www.oecd.org/content/dam/oecd/en/publications/reports/2025/12/country-health-profile-2025-country-notes_7e72146d/poland_388161c0/5b674a77-en.pdf), s. 7 i rys. 11: 5,9 pielęgniarki na 1000 mieszkańców wobec 8,5 średnio w UE (2023 r., średnia nieważona). Dane obejmują wszystkie kategorie pielęgniarek, nie tylko spełniające wymogi unijnej dyrektywy o uznawaniu kwalifikacji.
+
+[^hag]: OECD, [Health at a Glance 2025 — nota o Polsce](https://www.oecd.org/content/dam/oecd/en/publications/reports/2025/11/health-at-a-glance-2025-country-notes_2f94481e/poland_3e11c239/c3917772-en.pdf): 5,9 praktykującej pielęgniarki na 1000 mieszkańców wobec 9,2 średnio w OECD.
+
+[^uczelnie]: NIPiP, [Raport o stanie pielęgniarstwa i położnictwa w Polsce](https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf), maj 2023, rozdz. II.2 — według listy akredytacji Ministra Zdrowia z lutego 2023 r.
+
+[^demagog]: Demagog, [Ile wykształconych pielęgniarek nie podejmuje pracy w zawodzie?](https://demagog.org.pl/wypowiedzi/ile-wyksztalconych-pielegniarek-nie-podejmuje-pracy-w-zawodzie/), 13.10.2021 — na podstawie odpowiedzi NIPiP na wniosek o informację publiczną. Liczba 2504 obejmuje wnioski złożone w latach 2020–2021.
+
+[^nik]: K. Domagała i in., [artykuł o emigracji polskich kadr medycznych](https://pmc.ncbi.nlm.nih.gov/articles/PMC8776200/), International Journal of Environmental Research and Public Health, 2022 — powołanie na raport NIK „Kształcenie i przygotowanie zawodowe kadr medycznych” (2016) i ocena, że zaświadczenia wskazują raczej zamiar wyjazdu niż faktyczną emigrację.
+
+[^zaswiadczenia]: NIPiP, [Liczba zaświadczeń wydanych na potrzeby uznawania kwalifikacji zawodowych](https://nipip.pl/liczba-zaswiadczen-wydanych-na-potrzeby-uznawania-kwalifikacji-zawodowych/): lata 2004–2025 (2004–2007 łącznie), od 2023 r. z adnotacją o zmianie zakresu zaświadczeń. Suma 23 424 — obliczenie redakcji.
+
+[^ankieta]: NIPiP, [Raport o stanie pielęgniarstwa i położnictwa w Polsce](https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf), maj 2023, rozdz. VII: reprezentatywne badanie MMC na zlecenie NIPiP (wykresy 38–39), metodą ankiety internetowej (CAWI), 16 518 pielęgniarek i 3 051 położnych. Kierunki wskazywały tylko osoby rozważające wyjazd; można było wskazać kilka krajów.
+
+[^mmc-data]: Raport NIPiP nie podaje daty badania ani pełnej nazwy wykonawcy (pisze o „badaniu MMC”; na stronie tytułowej: MedMedia Sp. z o.o.). Datę i nazwę MedMedia Consulting znamy ze źródeł wtórnych: mp.pl, [Portret polskiej pielęgniarki i położnej](https://www.mp.pl/pacjent/aktualnosci/338479,portret-polskiej-pielegniarki-i-poloznej), 21.12.2023 — badanie przeprowadzone w styczniu 2023 r.
+
+[^oecd-migracja]: OECD, [Health at a Glance 2025 — International migration of nurses](https://www.oecd.org/en/publications/2025/11/health-at-a-glance-2025_a894f72e/full-report/international-migration-of-nurses_9f4ba769.html): pielęgniarki pracujące w krajach OECD według kraju urodzenia, 2020/21 (Filipiny ok. 270 tys., Indie 120 tys., Polska 64 tys.); dane z bazy OECD o imigrantach (DIOC), opartej na spisach i badaniach aktywności. To samo w [pełnym raporcie PDF](https://www.oecd.org/content/dam/oecd/en/publications/reports/2025/11/health-at-a-glance-2025_a894f72e/8f9e3f98-en.pdf), rozdz. 8, s. 200.
+
+[^gus2024]: GUS, [Sytuacja demograficzna Polski do 2024 r.](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5468/40/5/1/sytuacja_demograficzna_polski_do_2024.pdf), rozdz. o strukturze ludności według wieku.
+
+[^gusprognoza]: GUS, [Prognoza ludności rezydującej dla Polski na lata 2023–2060](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5469/12/1/1/prognoza_ludnosci_rezydujacej_dla_polski_na_lata_2023-2060.pdf), tablica 1. Prognoza, nie pomiar.
+
+[^bgk]: BGK, [Opieka długoterminowa w Polsce](https://www.bgk.pl/files/public/Pliki/Raporty/Opieka_d%C5%82ugoterminowa_w_Polsce_raport_BGK_luty_2026.pdf), luty 2026: 151 607 miejsc w 2024 r. (wskaźnik 5,0% populacji 75+) i 276 tys. miejsc potrzebnych w 2040 r. przy wskaźniku 6%.
+
+[^kalisz]: abcZdrowie, [Szpital w Kaliszu z 37 mln zł długu. Nowy dyrektor ujawnia skalę zaniedbań](https://portal.abczdrowie.pl/szpital-w-kaliszu-z-37-mln-zl-dlugu-nowy-dyrektor-ujawnia-skale-zaniedban/7183447202130688a), 29.07.2025.

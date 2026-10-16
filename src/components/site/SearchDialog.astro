@@ -1,0 +1,90 @@
+---
+/**
+ * Wyszukiwarka w oknie dialogowym (⌘K / Ctrl+K / „/”). Samo wyszukiwanie to SearchBox,
+ * a tu jest tylko okno: otwieranie z przycisków [data-search-open] i skrótów, zamykanie po wyborze
+ * oraz link do pełnej strony wyników z bieżącym zapytaniem.
+ */
+import SearchBox from '@/components/site/SearchBox.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { searchPageHref } from '@/lib/search/engine';
+import type { SearchHit } from '@/types';
+
+interface Props {
+  /** pozycje pokazywane przed wpisaniem zapytania */
+  popular: SearchHit[];
+}
+
+const { popular } = Astro.props;
+---
+<dialog class="search" data-search aria-label="Wyszukiwarka">
+  <SearchBox id="search" popular={popular} class="search__box">
+    <button slot="end" type="button" data-search-close aria-label="Zamknij wyszukiwarkę"><kbd>Esc</kbd></button>
+  </SearchBox>
+  <p class="search__footer"><LinkArrow href={searchPageHref()} data-search-all>Wszystkie wyniki</LinkArrow></p>
+</dialog>
+
+<script>
+  import { prefetchSearch, searchPageHref } from '@/lib/search/engine';
+
+  const dialog = document.querySelector<HTMLDialogElement>('[data-search]');
+
+  if (dialog && typeof dialog.showModal === 'function') {
+    const input = dialog.querySelector<HTMLInputElement>('input')!;
+    const allResults = dialog.querySelector<HTMLAnchorElement>('[data-search-all]')!;
+
+    const open = () => {
+      if (dialog.open) return;
+      document.dispatchEvent(new CustomEvent('zl:search-open'));
+      prefetchSearch();
+      input.value = '';
+      input.dispatchEvent(new Event('input'));
+      dialog.showModal();
+      requestAnimationFrame(() => input.focus());
+    };
+    const close = () => dialog.open && dialog.close();
+
+    document.querySelectorAll('[data-search-open]').forEach((trigger) => {
+      trigger.addEventListener('click', open);
+      // Indeks zaczyna się pobierać, gdy użytkownik dopiero sięga po wyszukiwarkę
+      trigger.addEventListener('pointerenter', prefetchSearch, { once: true });
+      trigger.addEventListener('focus', prefetchSearch, { once: true });
+    });
+    dialog.querySelector('[data-search-close]')?.addEventListener('click', close);
+    // Klik w tło albo w link (wynik — także wybrany Enterem — lub „Wszystkie wyniki”) zamyka okno
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog || (e.target as Element).closest('a')) close();
+    });
+    input.addEventListener('input', () => (allResults.href = searchPageHref(input.value.trim())));
+    // Esc zamyka okno od razu (w polu type="search" przeglądarka najpierw tylko czyściłaby tekst)
+    input.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      close();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      const el = document.activeElement as HTMLElement | null;
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(el?.tagName ?? '') || el?.isContentEditable;
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        dialog.open ? close() : open();
+      } else if (e.key === '/' && !typing && !dialog.open) {
+        e.preventDefault();
+        open();
+      }
+    });
+  }
+</script>
+
+<style>
+  .search {
+    width: min(680px, calc(100% - 32px)); max-height: min(560px, 80vh);
+    margin: 12vh auto auto; padding: 0;
+    border: 1px solid var(--line-2); background: var(--surface); color: var(--text);
+    box-shadow: 0 40px 80px -20px rgba(4, 11, 27, .35);
+  }
+  .search::backdrop { background: rgba(4, 11, 27, .5); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  .search[open] { animation: fadeUp .3s var(--ease); }
+  .search__box { --search-results-height: min(360px, 45vh); }
+  .search__footer { padding: 6px 20px 10px; border-top: 1px solid var(--line); }
+</style>

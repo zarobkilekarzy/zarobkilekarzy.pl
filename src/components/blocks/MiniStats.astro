@@ -1,0 +1,34 @@
+---
+/** Kilka małych wskaźników w kolumnach (lista definicji). Gdy kolumny się nie mieszczą
+ *  (wąska karta, „Większy tekst”), układają się w wiersze: etykieta po lewej, wartość po prawej. */
+import { typo } from '@/lib/format';
+
+interface Props {
+  items: { label: string; value: string }[];
+}
+const { items } = Astro.props;
+---
+<div class="mini-stats-box">
+  <dl class="mini-stats" style={`--n: ${items.length}`}>
+    {items.map((it) => <div><dt>{typo(it.label)}</dt><dd>{typo(it.value)}</dd></div>)}
+  </dl>
+</div>
+
+<style>
+  .mini-stats-box { container-type: inline-size; }
+  .mini-stats { display: grid; grid-template-columns: repeat(var(--n), 1fr); border-top: 1px solid var(--line); }
+  .mini-stats > div { padding: 14px 12px 0 0; }
+  .mini-stats > div + div { padding-left: 14px; border-left: 1px solid var(--line); }
+  dt { font: 400 0.6875rem/1.3 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  dd { font: 400 1.125rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+
+  /* Próg w rem rośnie razem z tekstem: trzy wartości typu „Ponad 1 mln zł” potrzebują ok. 18,5rem */
+  @container (max-width: 20rem) {
+    .mini-stats { grid-template-columns: 1fr; }
+    .mini-stats > div, .mini-stats > div + div {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+      padding: 10px 0; border-left: 0; border-bottom: 1px solid var(--line);
+    }
+    dt { margin-bottom: 0; }
+  }
+</style>

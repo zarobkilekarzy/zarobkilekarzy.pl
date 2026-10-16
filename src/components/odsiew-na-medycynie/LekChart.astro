@@ -1,0 +1,103 @@
+---
+/**
+ * Wynik LEK uczelni względem średniej sesji — słupki od zera w obie strony (BarChart rysuje
+ * tylko wartości dodatnie). Kobalt = uczelnie „nowe”, łupek = „stare”; ciągła włoskowa linia
+ * zera biegnie od podpisu „średnia sesji” przez wszystkie wiersze (jak średnia w BarChart).
+ * Wartość stoi za końcem słupka: przy dodatnich po prawej, przy ujemnych po lewej.
+ * Szeroko: nazwa uczelni w kolumnie obok słupka; wąsko (Figure < 560 px): nad słupkiem.
+ * Statycznie, bez JS. Dane: data/odsiew-na-medycynie.ts (LEK).
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import { LEK, LEK_SCALE, LINKS, lekDisplay } from '@/data/odsiew-na-medycynie';
+import { formatPL } from '@/lib/format';
+
+const { min, max } = LEK_SCALE;
+const range = max - min;
+/** położenie zera na skali (0–1) */
+const zero = -min / range;
+const rows = LEK.map((r) => ({
+  ...r,
+  start: (Math.min(r.diff, 0) - min) / range,
+  width: Math.abs(r.diff) / range,
+  negative: r.diff < 0,
+}));
+---
+<Figure
+  title="Egzamin końcowy: uczelnie „stare” i „nowe” są wymieszane, wyraźnie odstaje jedna"
+  note="Średni wynik zdających po raz pierwszy (egzamin po polsku) minus średnia sesji, w punktach na 200; sześć sesji od wiosny 2024 do jesieni 2026, ważone liczbą zdających. Kobaltem — uczelnie „nowe” (podział jak w ankiecie NIL). Średnio: „stare” +0,3 pkt i 97,2% zdało, „nowe” −1,7 pkt i 95,4%."
+  source={{ label: 'CEM, statystyka LEK — zdający po raz pierwszy; obliczenia własne', href: LINKS.cem }}
+>
+  <div class="dev" style={`--z: ${zero}`}>
+    <p class="dev__zero" aria-hidden="true"><span>średnia sesji</span></p>
+    <ol class="dev__rows">
+      {rows.map((r) => (
+        <li class:list={['dev__row', { 'dev__row--hi': r.type === 'nowa' }]} style={`--s: ${r.start}; --w: ${r.width}`}>
+          <span class="dev__label">{r.school}{r.type === 'nowa' && <em> · nowa</em>}</span>
+          <span class="dev__track">
+            <span class="dev__bar" aria-hidden="true"></span>
+            <span class:list={['dev__value', { 'dev__value--neg': r.negative }]}>
+              {lekDisplay(r.diff)}<span class="sr-only"> pkt względem średniej sesji; zdało {formatPL(r.passed, 1)}%</span>
+            </span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  </div>
+</Figure>
+
+<style>
+  /* Zapytania o szerokość idą do kontenera Figure (.fig ma container-type) */
+  .dev {
+    /* --pad: miejsce na wartość po obu stronach skali; --lab: kolumna nazw (wąsko 0) */
+    --pad: 3rem; --lab: 0px; --gap: 12px; --bar: 12px;
+    /* x zera w wierszu: kolumna nazw + margines + część skali */
+    --zero-x: calc(var(--lab) + var(--pad) + (100% - var(--lab) - 2 * var(--pad)) * var(--z));
+  }
+  .dev__rows { display: grid; gap: var(--gap); margin: 0; padding: 0; list-style: none; }
+  .dev__row { position: relative; display: grid; gap: 6px; }
+
+  /* Nazwa nad linią zera — tło wycina linię (jak etykiety przy średniej w BarChart) */
+  .dev__label {
+    position: relative; z-index: 1; justify-self: start; padding-right: 6px; background: var(--under);
+    font: 400 0.875rem/1.3 var(--f-body); color: var(--ink);
+  }
+  .dev__label em { font-style: normal; color: var(--muted); }
+
+  .dev__track { position: relative; display: block; height: var(--bar); margin-inline: var(--pad); }
+  .dev__bar {
+    position: absolute; top: 0; bottom: 0;
+    left: calc(var(--s) * 100%); width: max(2px, var(--w) * 100%);
+    background: var(--chart);
+  }
+  .dev__row--hi .dev__bar { background: var(--blue); }
+
+  .dev__value {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    left: calc((var(--s) + var(--w)) * 100% + 8px);
+    font: 400 1rem/1 var(--f-display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+    color: var(--ink); white-space: nowrap;
+  }
+  .dev__value--neg { left: auto; right: calc((1 - var(--s)) * 100% + 8px); }
+
+  /* Linia zera: każdy wiersz rysuje odcinek od przerwy nad sobą do dołu słupka,
+     odcinki się zazębiają; pierwszy dochodzi do kreski podpisu nad wykresem */
+  .dev__row::after {
+    content: ""; position: absolute; top: calc(-1 * var(--gap)); bottom: 0; left: var(--zero-x);
+    width: 1px; background: var(--ink);
+  }
+  .dev__row:first-child::after { top: -10px; }
+
+  .dev__zero { position: relative; height: 26px; margin: 0 0 10px; }
+  .dev__zero span {
+    position: absolute; bottom: 0; left: var(--zero-x);
+    padding-left: 8px; border-left: 1px solid var(--ink);
+    font: 500 0.65625rem/1.6 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); white-space: nowrap;
+  }
+
+  /* Szeroko: nazwa w kolumnie po lewej, słupek obok */
+  @container (min-width: 560px) {
+    .dev { --lab: calc(15rem + 16px); --gap: 8px; }
+    .dev__row { grid-template-columns: 15rem minmax(0, 1fr); column-gap: 16px; align-items: center; }
+    .dev__label { justify-self: end; padding: 0; text-align: right; background: none; }
+  }
+</style>

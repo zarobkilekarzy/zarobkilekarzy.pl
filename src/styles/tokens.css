@@ -1,0 +1,125 @@
+/* ==========================================================================
+   zarobkilekarzy.pl — tokeny systemu wizualnego
+   Szwajcarski minimalizm (ref. „protocol.”): kobalt + granat, linie 1px,
+   ostre narożniki, zdjęcia B&W
+
+   Tryb nocny: kolor = light-dark(jasny, ciemny). Wybór wartości zależy od
+   `color-scheme` elementu — domyślnie za systemem, ręcznie przez
+   <html data-theme="light|dark"> (site/ThemeToggle.astro).
+   Komponent może też wymusić schemat lokalnie (`color-scheme: dark`).
+   ========================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  /* Kolor — akcent. --blue to tekst, linie i drobne wypełnienia (w nocy jaśnieje,
+     żeby trzymać kontrast); --blue-fill i --blue-600 to pełne wypełnienia pod
+     białym tekstem (przyciski, karty, „W skrócie”) — stały kobalt w obu trybach. */
+  --blue: light-dark(#2664EC, #6E9BFF);
+  --blue-fill: #2664EC;
+  --blue-600: #1C52D4;
+  --blue-700: light-dark(#1743AE, #9BBBFF);
+  --blue-50: light-dark(#F0F4FE, #101B36);
+  --blue-100: light-dark(#DFE8FD, #172850);
+  --blue-pale: #C2D3F6;
+
+  /* Kolor — neutralne. --ink to najmocniejszy tekst (w nocy jasny);
+     --on-ink to tekst na wypełnieniu kolorem --ink/--ok/--bad (wybrany chip, przycisk);
+     --inverse to tło sekcji zawsze ciemnych (topbar, stopka, .section--dark),
+     --surface — kart i pól nad tłem (w nocy o ton jaśniejsze, jak uniesione). */
+  --ink: light-dark(#040B1B, #EEF2F8);
+  --ink-2: light-dark(#111827, #DCE2EC);
+  --ink-soft: #0C1428;
+  --on-ink: light-dark(#FFFFFF, #0A0F1C);
+  --inverse: light-dark(#040B1B, #05080F);
+  --inverse-2: light-dark(#040B1B, #222C42); /* dymki i elementy pływające — w nocy unoszą się nad tłem */
+  --text-strong: light-dark(#283041, #C6CEDB);
+  --text: light-dark(#4B5466, #A3ADBF);
+  /* Drobne etykiety, źródła, daty i przypisy — co najmniej 4,5:1 (WCAG AA) na --bg, --bg-soft
+     i --blue-50 (dzień: 5,1 / 4,8 / 4,6). Do 2026-10-15 dzień był #7B8394 = 3,8:1. */
+  --muted: light-dark(#666E80, #8691A5);
+  --line: light-dark(#E6E9EF, #1E2638);
+  --line-2: light-dark(#D5DAE2, #2C3549);
+  --bg: light-dark(#FFFFFF, #0A0F1C);
+  --bg-soft: light-dark(#F6F7FA, #0F1626);
+  --surface: light-dark(#FFFFFF, #131B2E);
+  /* Tło, na którym stoi komponent — do wycięć (podpis zasłaniający linię wykresu).
+     Kontener z własnym tłem (ui/Card) nadpisuje je swoim. */
+  --under: var(--bg);
+  /* Wykresy. Atrament to w v2 tekst i linie 1px, nie pola — dane bez wyróżnienia są w jasnym
+     łupku, a oko prowadzi jedyny akcent: --blue. --chart: słupek neutralny; --chart-soft: o stopień
+     bliżej tła (drugi segment w stosie, historia); --chart-proj: szacunek, nie dane (blady kobalt,
+     zwykle z krawędzią --blue). Etykiety wartości zawsze w kolorach tekstu, nigdy w kolorze serii. */
+  --chart: light-dark(#A3ADBD, #56627A);
+  --chart-soft: light-dark(#D3D9E2, #2E374C);
+  --chart-proj: light-dark(#DCE6FC, #172850);
+
+  --ok: light-dark(#0F7B4F, #4FC98F);
+  --ok-bg: light-dark(#E7F5EE, #0E2A1F);
+  --bad: light-dark(#B42318, #FF8E82);
+  --bad-bg: light-dark(#FDECEA, #34171A);
+  --amber: light-dark(#8A5A00, #EDB54A);
+  --amber-bg: light-dark(#FFF4DB, #2B210E);
+
+  /* Typografia — zmienne --font-* generuje Fonts API Astro (astro.config.mjs) */
+  --f-display: var(--font-inter-tight);
+  --f-body: var(--font-plex-sans);
+  --f-mono: var(--font-plex-mono);
+
+  /* Layout */
+  --wrap: 1240px;
+  --gutter: 32px;
+  --section: clamp(80px, 9vw, 136px);
+  --header-h: 72px;
+
+  --shadow-photo: 0 40px 60px -40px light-dark(rgba(4, 11, 27, .45), rgba(0, 0, 0, .7)), 0 2px 6px light-dark(rgba(4, 11, 27, .04), rgba(0, 0, 0, .3));
+  /* Wartości nie-kolorowe nie przyjmują light-dark() — wersje nocne niżej.
+     --photo-filter: przygaszenie zdjęć i zrzutów; --select-arrow: strzałka własnych <select> */
+  --photo-filter: brightness(1);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23040B1B' stroke-width='1.5'/%3E%3C/svg%3E");
+  --ease: cubic-bezier(.2, .7, .1, 1);
+}
+
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --photo-filter: brightness(.86);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23EEF2F8' stroke-width='1.5'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --photo-filter: brightness(.86);
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23EEF2F8' stroke-width='1.5'/%3E%3C/svg%3E");
+  }
+}
+
+/* Systemowe „zwiększ kontrast” (macOS/iOS: Dostępność → Ekran, Windows: motywy kontrastowe
+   bez wymuszonych kolorów) — bez przełącznika na stronie, bo domyślne kolory spełniają już AA.
+   Każdy szczebel o stopień mocniej: tekst ≥ 12:1, etykiety --muted ≥ 6,9:1 (AAA), obramowania pól
+   ≥ 3,5:1, słupki wykresów ≥ 4,2:1. Wypełnienia pod białym tekstem ciemnieją o stopień. */
+@media (prefers-contrast: more) {
+  :root {
+    --text-strong: light-dark(#111827, #F4F6FA);
+    --text: light-dark(#283041, #DCE2EC);
+    --muted: light-dark(#4B5466, #B9C2D0);
+    --blue: light-dark(#1743AE, #9BBBFF);
+    --blue-700: light-dark(#0F3590, #C2D5FF);
+    --blue-fill: #1C52D4;
+    --blue-600: #1743AE;
+    --line: light-dark(#A3ADBD, #465169);
+    --line-2: light-dark(#7B8394, #6E7A93);
+    --chart: light-dark(#6B7588, #8591A8);
+    --chart-soft: light-dark(#B3BBC8, #4A5570);
+    --ok: light-dark(#0A6340, #6FDCA8);
+    --bad: light-dark(#9A1C12, #FFA89E);
+    --amber: light-dark(#6B4600, #F2C46B);
+  }
+}
+
+@media (max-width: 1024px) {
+  :root { --gutter: 24px; }
+}
+
+@media (max-width: 720px) {
+  :root { --gutter: 16px; --header-h: 64px; }
+}

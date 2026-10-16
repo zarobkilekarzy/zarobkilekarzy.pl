@@ -1,0 +1,323 @@
+---
+title: Kto odpada z medycyny, a kto wyjeżdża
+category: Analiza
+topic: ksztalcenie
+order: 4
+stat: { value: "1 na 5", unit: rozpoczynających nie kończy w terminie }
+date: "2026-10-05"
+updated: 2026-10-16
+summary: Co piąty Polak, który zaczyna medycynę, nie kończy jej w terminie, a najwięcej osób odpada na pierwszym roku. Po dyplomie w Polsce pracuje zdecydowana większość absolwentów.
+description: Co piąty student medycyny nie kończy studiów w terminie, odsiew skupia się na I roku, a 6 lat po dyplomie bez składki ZUS w Polsce jest 5% absolwentów.
+keyPoints:
+  - "Z Polaków, którzy zaczynają kierunek lekarski, dyplom w terminie zdobywa 80–82%. To porównanie roczników — część osób kończy później, więc „nie kończy w terminie” nie znaczy „rzuca medycynę”."
+  - "Odsiew to sprawa pierwszego roku: w 2023/24 skreślono na nim 16,7% studentów, a pierwszy rok dał 71% wszystkich skreśleń z kierunku. Przyczyn skreśleń nie zapisuje nawet POL-on — tylko ich datę."
+  - "Sześć lat po dyplomie składkę ZUS w Polsce ma 94,9% absolwentów, a 5% jej nie ma. To górna granica wyjazdów w tym okresie, bo obejmuje też przerwy w pracy i braki w danych."
+  - "Z miejsc na studiach do prawa wykonywania zawodu dochodzi ok. 55%. Większość różnicy to jednak miejsca obcojęzyczne i dla cudzoziemców, a nie odsiew."
+editorial:
+  - >-
+    Odsiew na medycynie rozstrzyga się w pierwszych dwunastu miesiącach studiów, a porównywalnych danych
+    dla wszystkich uczelni nie ma — jest tylko dobrowolna ankieta izby lekarskiej. Uważamy, że każda uczelnia
+    powinna co roku pokazywać, ilu studentów pierwszego roku traci i z jakiego powodu. Inaczej reaguje się na
+    przeniesienia na inną uczelnię, a inaczej na masowe niezaliczenia przedmiotów podstawowych.
+  - >-
+    Państwo ma już narzędzie, które łączy dane o tej samej osobie z kilku rejestrów i publikuje z nich tylko
+    zestawienia zbiorcze. Tymczasem debata o kadrach medycznych toczy się wokół ankiet i pojedynczych liczb
+    wyrwanych z kontekstu. Dane, które państwo ma, powinny być jawne w formie pozwalającej je sprawdzić —
+    tak jak postulujemy dla wypłat z publicznych pieniędzy: łączna kwota dla każdej osoby, pod stałym
+    identyfikatorem, bez nazwisk.
+related:
+  - symulator-podazy-lekarzy
+  - ciecie-limitow-na-medycyne
+  - english-division
+  - dlaczego-brakuje-lekarzy
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import LekChart from '@/components/odsiew-na-medycynie/LekChart.astro';
+import PwzLedger from '@/components/odsiew-na-medycynie/PwzLedger.astro';
+import { LINKS, firstYearRows, nilRows, noZusRows, noZusNote, funnelRows } from '@/data/odsiew-na-medycynie';
+
+O studiach lekarskich krążą dwie obiegowe opinie: że studenci masowo je porzucają i że absolwenci masowo wyjeżdżają. Obie można sprawdzić w aplikacji Ministerstwa Zdrowia, która zestawia dane z systemu POL-on, ZUS i NFZ.[^mz] Wynika z niej, że mniej więcej co piąty Polak rozpoczynający medycynę nie kończy jej w terminie, że najwięcej osób odpada na pierwszym roku i że sześć lat po dyplomie składki ZUS w Polsce nie ma 5% absolwentów. Jednej rzeczy państwo nie gromadzi w ogóle: dlaczego studenci odpadają.
+
+<StatRow
+  label="Od pierwszego semestru do pracy — dane POL-on i ZUS"
+  items={[
+    { value: 80, unit: '%', desc: 'tylu absolwentów-Polaków w 2023/24 przypadało na studentów I semestru z 2018/19 — dyplom w nominalnym terminie', accuracy: 'est', source: 'MZ BASiW, obliczenia własne', href: LINKS.mz },
+    { value: 16.7, decimals: 1, unit: '%', desc: 'studentów I roku skreślono w ciągu roku akademickiego 2023/24', accuracy: 'est', source: 'MZ BASiW, obliczenia własne', href: LINKS.mz },
+    { value: 5, decimals: 1, unit: '%', desc: 'absolwentów z rocznika 2016/17 nie miało w 2023 r. składki ZUS w Polsce', accuracy: 'exact', source: 'MZ BASiW, losy absolwentów', href: LINKS.mz },
+  ]}
+/>
+
+## Trzy liczby, które łatwo źle odczytać
+
+Kto szuka danych o odsiewie na medycynie, trafia zwykle na trzy liczby. Żadna z nich nie mierzy tego, co się jej przypisuje.
+
+- **„29% porzuca studia”.** Wynik Ośrodka Przetwarzania Informacji dotyczy całej dziedziny nauk medycznych, a nie samego kierunku lekarskiego, i roczników, które zaczynały studia w latach 2012–2017. Nauki medyczne miały w tym zestawieniu najniższy odsetek porzuceń, na równi ze sztuką; średnia dla wszystkich studiów wyniosła 40%.[^opi]
+- **„Nawet 2/3 przyjętych rezygnuje”.** To zjawisko z rekrutacji, a nie ze studiów: kandydaci zapisują się na kilka uczelni naraz i zwalniają miejsca, z których nie skorzystają.[^rz]
+- **Zaświadczenia do pracy za granicą.** Samorząd lekarski wydał ich 4 884 w latach 2018–2022 (do końca września 2022 r.), łącznie lekarzom, lekarzom dentystom i specjalistom. NIK zastrzega jednak, że liczba zaświadczeń nie jest liczbą osób, które wyjechały: obejmuje także tych, którzy dopiero zamierzają pracować w innym kraju UE.[^nik23]
+
+## Co piąty nie kończy w terminie
+
+Najprostszą uczciwą miarą jest porównanie absolwentów danego roku ze studentami pierwszego semestru w roczniku, który powinien wtedy kończyć studia. Kto zaczął w roku akademickim 2018/19, w nominalnym terminie kończy w 2023/24. Dyplom uzyskało wtedy 4 776 osób narodowości polskiej, a na pierwszym semestrze w 2018/19 było ich 5 954 — to 80%. W czterech ostatnich zamkniętych rocznikach, kończących w latach 2020/21–2023/24, wynik mieści się w przedziale 80–82%, a wśród cudzoziemców 69–74%.[^mz]
+
+To porównanie roczników, a nie śledzenie tych samych osób. Część studentów kończy z opóźnieniem, część przychodzi z innych uczelni albo z zagranicy, część powtarza pierwszy rok; przeniesienia między polskimi uczelniami w skali kraju się znoszą. Dlatego „co piąty nie kończy w terminie” nie oznacza, że co piąty rezygnuje z medycyny.
+
+## Odsiew to sprawa pierwszego roku
+
+W roku akademickim 2023/24 na pierwszym semestrze kierunku lekarskiego było 8 710 studentów narodowości polskiej. Przed końcem roku skreślono 1 457 z nich, czyli 16,7% — mniej więcej co szóstego. Na pierwszy rok przypadło 71% wszystkich skreśleń z kierunku w tym roku akademickim, na trzy pierwsze lata — 88%, a na lata IV–VI tylko 12%.[^mz]
+
+<Figure
+  title="Na pierwszym roku skreśla się dziś co szóstego studenta, do 2018/19 — co piątego"
+  note="Polacy: skreśleni w semestrach 1–2 jako odsetek studentów 1. semestru; przy roku ten sam wskaźnik dla cudzoziemców. Liczba brutto — obejmuje też przeniesienia na inne uczelnie i osoby, które później wznowiły studia."
+  source={{ label: 'MZ BASiW, „Studenci i absolwenci kierunków medycznych” (POL-on); obliczenia własne', href: LINKS.mz }}
+>
+  <BarChart
+    rows={firstYearRows}
+    max={25}
+    unit="%"
+    caption="Odsetek studentów narodowości polskiej skreślonych na I roku kierunku lekarskiego: 20,5–22,3% w latach 2015/16–2018/19, 14,7–17,0% od 2019/20, 16,7% w 2023/24."
+  />
+</Figure>
+
+To liczba brutto. Mieszczą się w niej osoby, które w pierwszych tygodniach przeniosły się na inną uczelnię albo kierunek, i te, które później wróciły na studia. Warszawski Uniwersytet Medyczny opisuje w raporcie o jakości kształcenia studentów, którzy rezygnują, zanim w ogóle pojawią się na zajęciach, i zauważa, że takie przypadki sztucznie zawyżają wskaźnik odsiewu.[^wum-rek]
+
+W latach 2015/16–2018/19 na pierwszym roku skreślano od 20,5 do 22,3% studentów, a od 2019/20 — od 14,7 do 17,0%.[^mz] Przełom zbiega się w czasie z trzema zmianami. Od roku 2019/20 wszystkie uczelnie musiały stosować nowe regulaminy studiów, wydane na podstawie ustawy z 2018 r.[^regulaminy] W tym samym roku zmieniał się sposób zgłaszania studentów do POL-on, czyli przejście na POL-on 2.0.[^polon2] W marcu 2020 r. z powodu pandemii zawieszono zajęcia na uczelniach i dopuszczono naukę zdalną.[^covid] Która z tych zmian przesądziła, z danych nie wynika.
+
+Najwięcej mówi rocznik 2019/20, pierwszy po przełomie. Na pierwszym roku skreślono z niego najmniej osób w całym szeregu — 14,7% — a już w drugim semestrze jego zajęcia przeszły do sieci. W nominalnym terminie, w roku 2024/25, dyplom uzyskało 4 874 Polaków, czyli 78% z 6 251 rozpoczynających — mniej niż w poprzednich rocznikach.[^mz] Dane za 2024/25 mogą być jeszcze niepełne, ale na razie niższy odsiew na starcie nie przełożył się na więcej absolwentów w terminie. To wskazuje, że część spadku skreśleń mogła oznaczać dłuższe studiowanie albo zmianę ewidencji, a nie mniej odejść.
+
+## Stare i nowe uczelnie
+
+Według aplikacji MZ kierunek lekarski prowadziło w 2015 r. 15 uczelni, a w 2025 r. — 37.[^mz] To liczba uczelni, które w danym roku miały ten kierunek (jednolite studia magisterskie) w POL-on, a nie liczba uczelni z naborem. Tych jest mniej: w projekcie rozporządzenia o limitach przyjęć na rok 2025/26 ministerstwo pominęło sześć uczelni bez pozytywnej opinii Polskiej Komisji Akredytacyjnej.[^limity-2025] Dlatego zestawienia oparte na limitach podają dla tych samych lat mniejsze liczby.
+
+W latach 2022–2023 minister zgodził się na nowy kierunek lekarski na 17 uczelniach, z czego 11 nie miało pozytywnej opinii PKA. Dziewięć z nich zaczęło kształcić mimo opinii negatywnej, bo ta nie wiąże ministra.[^pka] Czy nowe kierunki kształcą gorzej? Jawne dane pozwalają porównać dwie rzeczy.
+
+### Odsiew na pierwszym roku według uczelni
+
+Naczelna Izba Lekarska zapytała uczelnie, jaki odsetek studentów każdego roku nie dostał w 2023/24 promocji na kolejny rok.[^nil] Ankietę wypełniło 19 uczelni. Wynik dla pierwszego roku da się odczytać dla 18 z nich — ośmiu „starych” i dziesięciu „nowych” według podziału NIL; danych Gdańskiego Uniwersytetu Medycznego dla kierunku lekarskiego nie dało się zinterpretować. W ankiecie nie ma m.in. UJ Collegium Medicum ani UM w Lublinie.[^nil-stud]
+
+Na pierwszym roku wyniki rozciągają się od 0 do 24%, a od czwartego roku prawie wszędzie wynoszą 0–2%. Mediana obu grup jest podobna: 10% wśród uczelni „starych” i 10,5% wśród „nowych”. Jeśli pominąć dwie nowe uczelnie z wynikiem zerowym, które mogły jeszcze nie zamknąć pierwszego rocznika, mediana „nowych” rośnie do 14%.[^nil-stud]
+
+Te liczby trzeba czytać ostrożnie. Uczelnie podawały je same, NIL nie zdefiniował „braku promocji” i nie oddzielił studiów anglojęzycznych, na których odsiew bywa znacznie wyższy. Najwyższy wynik — 24% na WUM — co do punktu procentowego odpowiada łącznym danym ścieżki polskiej i angielskiej z raportu uczelni. W samej ścieżce polskiej skreślono na pierwszym roku 17,8% studentów.[^wum-tab]
+
+<Figure
+  title="Pierwszy rok: od 0 do 24% studentów bez promocji, zależnie od uczelni"
+  note="Odsetek studentów I roku kierunku lekarskiego bez promocji na II rok w roku akademickim 2023/24, według deklaracji uczelni. Kobaltem — uczelnie „nowe” według podziału NIL. WUM: ścieżka polska i English Division łącznie (sama polska — 17,8% według raportu uczelni). Zera mogą oznaczać, że pierwszy rocznik nie zamknął jeszcze roku."
+  source={{ label: 'NIL, „Barometr 25” (rok akad. 2023/24), s. 95', href: LINKS.nil }}
+>
+  <BarChart
+    rows={nilRows}
+    max={25}
+    unit="%"
+    caption="Odsetek studentów I roku bez promocji na II rok w 18 uczelniach, 2023/24: od 24% (WUM, razem z English Division) i 22% (UWM w Olsztynie) do 0% (Politechnika Wrocławska, UJD w Częstochowie). Mediana: uczelnie stare 10%, nowe 10,5%."
+  />
+</Figure>
+
+### Wyniki egzaminu końcowego
+
+Lepiej porównywalną miarą jest Lekarski Egzamin Końcowy. Wszyscy piszą ten sam test, a Centrum Egzaminów Medycznych publikuje wyniki każdej uczelni osobno i oddziela egzamin zdawany po angielsku.[^cem] Sesje różnią się trudnością, dlatego średni wynik uczelni porównujemy ze średnią sesji. W sześciu sesjach od wiosny 2024 do jesieni 2026 zdający po raz pierwszy absolwenci uczelni „starych” uzyskiwali średnio o 0,3 pkt więcej niż średnia sesji, a „nowych” — o 1,7 pkt mniej (na 200 możliwych). Przy pierwszym podejściu egzamin zdało 97,2% zdających ze „starych” i 95,4% z „nowych” uczelni.
+
+Różnicę tworzy w dużej mierze jedna uczelnia. Absolwenci Akademii Śląskiej wypadli o 16,4 pkt poniżej średniej sesji, a egzamin zdało 85% z nich; bez tej uczelni średnia „nowych” byłaby bliska średniej sesji (ok. −0,1 pkt). Najlepszy wynik w całym zestawieniu miał z kolei nowy kierunek na Uniwersytecie Opolskim (+6,2 pkt), a dwa uniwersytety medyczne, w Gdańsku i w Białymstoku, znalazły się w dolnej części stawki.[^cem]
+
+<LekChart />
+
+Oba porównania obejmują tylko uczelnie, których studenci doszli już do egzaminu końcowego. Najmłodszych kierunków — m.in. na Politechnice Wrocławskiej, w Częstochowie, Siedlcach, Elblągu i na Uniwersytecie Warszawskim — w statystykach LEK jeszcze nie ma, więc o ich wynikach dane nic nie mówią.[^cem] Szeregu z ankiety NIL nie da się przedłużyć wstecz: wcześniejsze edycje podawały tylko liczbę osób bez promocji, bez podziału na lata studiów.[^nil-wczesniej]
+
+## Dlaczego studenci odpadają? Tego nie zapisuje nawet POL-on
+
+System POL-on, do którego uczelnie zgłaszają każdego studenta, przechowuje datę skreślenia z listy studentów, ale nie jego przyczynę. Ustawa wymienia w wykazie studentów wyłącznie datę skreślenia,[^pswin] a rozporządzenie o danych w POL-on tego zakresu nie poszerza.[^rozp] Powód — rezygnacja, niezaliczenie roku, brak postępów w nauce, nieopłacenie studiów — trafia tylko do decyzji o skreśleniu, którą wydaje uczelnia.[^pswin108] Kto chciałby poznać przyczyny w skali kraju, musiałby pytać każdą uczelnię z osobna.
+
+Publicznie dostępne są tylko pojedyncze dane:
+
+- **UJ Collegium Medicum, 2020/21:** spośród 287 studentów pierwszego roku skreślono 60 — najczęściej za niezaliczenie roku w terminie (35 osób), rzadziej z powodu rezygnacji (23). Tabela w raporcie nie sumuje się w pełni, a rok przypadł na pandemię.[^uj]
+- **UM w Łodzi, nabór wojskowy 2022/23:** z 200 przyjętych w dniu sporządzenia raportu studiowało 111 osób. Uczelnia wskazuje na skreślenia za niezaliczone przedmioty podstawowe i nazywa tę sytuację bezprecedensową.[^lodz]
+- **Regulamin WUM:** w roku 2023/24 nikt nie powtarzał tam pierwszego roku, bo niezaliczony rok kończył się skreśleniem. Taka zasada podnosi statystykę odsiewu niezależnie od tego, jacy studenci zaczęli studia.[^wum-tab]
+
+Ankiety o „rozważaniu rezygnacji” mierzą deklaracje, a nie rezygnacje. Przegląd badań międzynarodowych za jedyny spójny czynnik ryzyka uznał wyniki w nauce — wcześniejsze i z początku studiów.[^oneill]
+
+## Ilu skreślonych wraca na studia
+
+Z jawnych danych tego nie policzymy. Można to tylko oszacować z bilansu: sprawdzić, ilu studentów pojawia się na wyższych semestrach spoza naboru — po wznowieniu studiów, po przeniesieniu z zagranicy albo z innego kierunku. W latach 2016/17–2019/20 było to od 905 do 1 345 osób narodowości polskiej rocznie, w 2023/24 — 236.[^mz] Spadek jest wyraźny, ale jego znaczenie już nie: kto po skreśleniu wraca przez ponowną rekrutację na pierwszy rok, w tym rachunku jest niewidoczny. Dokładnie mogłyby to policzyć ministerstwo nauki i OPI, bo POL-on rozpoznaje studenta po numerze PESEL.[^pswin]
+
+## Po dyplomie w Polsce pracuje zdecydowana większość
+
+Aplikacja ministerstwa pokazuje też losy kolejnych roczników absolwentów narodowości polskiej. Z rocznika 2016/17, liczącego 3 305 osób, w 2023 r., sześć lat po dyplomie:[^mz]
+
+- 94,9% miało opłacaną składkę ZUS w Polsce,
+- 92,1% pracowało w podmiocie leczniczym,
+- 86,7% udzielało świadczeń w ramach umów z NFZ,
+- 5,0% nie miało w Polsce składki ZUS.
+
+<Figure
+  title="Sześć lat po dyplomie bez składki ZUS w Polsce jest 5% absolwentów"
+  note={noZusNote}
+  source={{ label: 'MZ BASiW, moduł „Losy absolwentów” (POL-on i ZUS); obliczenia własne', href: LINKS.mz }}
+>
+  <BarChart
+    rows={noZusRows}
+    max={8}
+    unit="%"
+    caption="Absolwenci kierunku lekarskiego narodowości polskiej z rocznika 2016/17 bez składki ZUS w Polsce: 2,4% dwa lata po dyplomie, 4,4–4,6% po trzech–czterech latach, 5,0% po pięciu i sześciu latach."
+  />
+</Figure>
+
+Odsetek bez składki jest najniższy w roku stażu, a później rośnie do 4–5% po pięciu–sześciu latach.[^mz] To górna granica wyjazdów, bo obejmuje też przerwy w pracy, urlopy i braki w danych. Ministerstwo już z tych danych korzystało: w odpowiedzi na kontrolę NIK z 2023 r. podało, że w 2019 r. w Polsce pracowało ponad 90% absolwentów kierunku lekarskiego z lat 2014–2019.[^nik23-mz] Była to odpowiedź na zarzut NIK, że resort nie analizował skali emigracji personelu medycznego.[^nik23]
+
+Okno tych danych ma jednak granice. W ankiecie Ośrodka Badań nad Migracjami UW z 2023 r. wyjazd całkowicie wykluczało 13% studentów ostatniego roku, a większość odkładała ewentualną decyzję na czas po stażu albo po specjalizacji.[^obm] Dane ZUS sięgają na razie najwyżej sześć lat po dyplomie, więc wyjazdy po specjalizacji widać w nich w najlepszym razie częściowo.
+
+Szerszy obraz daje OECD. Około 2017/18 r. w innych krajach OECD pracowało ok. 11 300 lekarzy z polskim dyplomem, czyli 11% wszystkich wykształconych w Polsce. To zasób z całej kariery zawodowej, łącznie z cudzoziemcami po polskich studiach. W Rumunii ten sam wskaźnik wynosił 33%, na Słowacji 26%, na Węgrzech 19%, na Litwie 9%, a w Czechach 8%.[^oecd]
+
+Cudzoziemcy to ok. jednej piątej absolwentów: w roku 2023/24 — 1 231 z 6 007.[^mz] Wielu z nich studiuje w płatnych programach anglojęzycznych i po dyplomie wyjeżdża. Według monitoringu Ekonomicznych Losów Absolwentów w polskich danych ZUS widać mniej niż 1% absolwentów-cudzoziemców nauk medycznych i nauk o zdrowiu.[^ela] Rosnąca liczba absolwentów nie przekłada się więc wprost na przyszłą kadrę polskiego systemu.
+
+<Figure
+  title="Ze 100 Polaków, którzy zaczynają medycynę, ok. 80 kończy ją w terminie, a ok. 76 ma potem składkę ZUS w Polsce"
+  note="Kroki 1–2: studenci I semestru 2018/19 i absolwenci 2023/24; kroki 3–5: losy rocznika 2016/17 w 2023 r., przyłożone do wyniku z kroku 2. To zestawienie proporcji z kilku roczników, a nie śledzenie jednej grupy osób. Ilu z nich zostaje specjalistami, jawne dane nie pokazują."
+  source={{ label: 'MZ BASiW, „Studenci i absolwenci kierunków medycznych” (POL-on, ZUS, NFZ); obliczenia własne', href: LINKS.mz }}
+>
+  <BarChart
+    rows={funnelRows}
+    max={100}
+    unit=""
+    caption="Na 100 Polaków rozpoczynających kierunek lekarski: 80 kończy studia w terminie, 76 ma składkę ZUS w Polsce, 74 pracuje w podmiocie leczniczym, 70 udziela świadczeń w ramach umów z NFZ."
+  />
+</Figure>
+
+## Od miejsca na studiach do prawa wykonywania zawodu
+
+Ten sam lejek można policzyć inaczej: zestawić miejsca na studiach z liczbą lekarzy, którzy kilka lat później mają prawo wykonywania zawodu (PWZ). Izba lekarska nie publikuje, ile takich praw wydaje co roku, ale podaje strukturę wieku lekarzy. W połowie 2026 r. PWZ miało 20 457 lekarzy w wieku 26–30 lat, licząc rocznikami.[^nil-wiek] To w przybliżeniu ci, którzy zaczynali studia w latach 2015–2019, a limity przyjęć wynosiły wtedy łącznie 37 059 miejsc.[^limity] Do prawa wykonywania zawodu dochodzi więc ok. 55% miejsc. Różnica, ok. 16,6 tys., w większości nie jest jednak odsiewem — widać to, gdy policzyć ją krok po kroku z tych samych źródeł:
+
+<PwzLedger />
+
+Największą część różnicy, ok. 9,3 tys. (25% limitu), stanowią miejsca na studiach w języku obcym i dla cudzoziemców; ich absolwenci zwykle wyjeżdżają.[^limity] Polacy, którzy nie skończyli studiów w terminie, to ok. 5,5 tys. (15%).[^mz] Ostatni krok, ok. 2,6 tys. (7%), łączy grupy, których nie da się rozdzielić: absolwentów, którzy zaczęli studia później niż w wieku 19 lat i wypadają z przedziału wieku, osoby, które nie wzięły PWZ, oraz — z przeciwnym znakiem — lekarzy z dyplomami zagranicznymi, którzy liczbę lekarzy z PWZ podnoszą. Różnicę pomniejsza z kolei ok. 0,8 tys. (2%): o tyle więcej Polaków było na pierwszym semestrze, niż wynosiły miejsca po polsku. Razem daje to 16,6 tys.
+
+Lekarzy z dyplomem zagranicznym nie jest mało. Pod koniec 2024 r. PWZ na czas stażu miało 5 927 osób,[^stazysci] a polskich absolwentów w roku 2023/24 było 4 776.[^mz] W latach 2024–2026 do LEK po raz pierwszy przystępowało rocznie od 860 do 1 210 osób z dyplomem zagranicznej uczelni.[^cem] Ubytek na polskich uczelniach w dużej części uzupełnia więc napływ z zagranicy. Ilu z tych lekarzy to Polacy po studiach w innych krajach, nie wiadomo — takiej statystyki nikt nie publikuje, podobnie jak danych o powtarzaniu roku czy urlopach dziekańskich.
+
+Trzy przepływy opisane w tej analizie — 80% kończących studia, 5% absolwentów bez pracy w Polsce i ok. 1 000 lekarzy z dyplomem zagranicznym rocznie — są ustawieniami domyślnymi [symulatora podaży lekarzy](/analizy/symulator-podazy-lekarzy/). W tym modelu odsiew mniejszy o połowę (90% kończących zamiast 80%) daje co roku tylu nowych lekarzy, co ok. 1 110 dodatkowych miejsc przy dzisiejszym limicie na studia po polsku, wynoszącym 8 892 miejsca (2026/27).[^limit]
+
+## Specjalizacja: tu dane się urywają
+
+Do uzyskania prawa wykonywania zawodu da się prześledzić niemal każdy krok, dalej dane się urywają. Wiadomo, że:
+
+- przyjęcie miejsca specjalizacyjnego potwierdza rocznie 7,2–8,2 tys. osób (lata 2023–2025). To suma sesji wiosennej i jesiennej, łącznie z lekarzami dentystami i drugimi specjalizacjami, więc zestawienia jednej sesji albo samych rezydentur podają mniejsze liczby;[^cmkp]
+- specjalizację ma 63,9% lekarzy pracujących z pacjentem (2025; rok wcześniej 64,5%) — odsetek spada, bo nowych lekarzy przybywa szybciej niż specjalistów;[^gus]
+- ostatni pomiar rezygnacji z rezydentur pochodzi z kontroli NIK z 2016 r. i wynosi 5,2% w naborach z lat 2011–2014.[^nik16]
+
+Jaki odsetek absolwentów zostaje specjalistą i po ilu latach, na jawnych danych nie da się dziś ustalić.
+
+## Na tle innych krajów
+
+Kraje liczą odsiew różnie, a część z nich selekcjonuje kandydatów przed studiami medycznymi albo po wspólnym pierwszym roku, a nie w trakcie studiów. Zestawiać można więc tylko miary, które dotyczą utraty studentów już przyjętych na medycynę:
+
+<Comparison
+  table={{
+    caption: 'Studenci medycyny, którzy nie kończą studiów — różne definicje, porównanie orientacyjne',
+    columns: ['', 'Co mierzy', 'Wynik'],
+    rows: [
+      { cells: ['Polska', 'Polacy, którzy nie kończą studiów w terminie (porównanie roczników, wliczone opóźnienia)', 'ok. 20%'], marked: true },
+      { cells: ['USA', 'Odsiew w całym cyklu studiów MD: średnia z 20 kohort (start w latach 2000/01–2019/20), wszystkie programy MD, także łączone; selekcja odbywa się po licencjacie, przed przyjęciem', '3,1%'] },
+      { cells: ['Niemcy', 'Odejście ze szkolnictwa wyższego bez dyplomu wśród osób, które zaczęły medycynę (zmiana kierunku lub uczelni się nie liczy); studenci z niemieckim obywatelstwem, wskaźnik dla absolwentów 2020; selekcja głównie przez wynik matury', 'ok. 6%'] },
+    ],
+  }}
+/>
+
+Dane dla USA pochodzą z AAMC,[^aamc] dla Niemiec z DZHW.[^dzhw] Polski wynik obejmuje także opóźnienia, a niemiecki tylko odejście z uczelni bez żadnego dyplomu, więc część różnicy to różnica definicji. Niemiecki wskaźnik nie mierzy też „porzucenia medycyny”: kto przeniósł się z medycyny na inny kierunek, nie jest w nim liczony.
+
+Francji w tym zestawieniu celowo nie ma. Często cytowane 36% to odsetek tegorocznych maturzystów, którzy w 2021 r. zaczęli wspólny pierwszy rok (ścieżka PASS) i po roku awansowali na drugi rok medycyny albo kierunku pokrewnego (położnictwo, stomatologia, farmacja, fizjoterapia; razem grupa MMOPK). To miara selekcji na wejściu, a nie odsiewu. Z osób już przyjętych na drugi rok na trzeci awansuje 93%, a 5,4% powtarza rok; z kierunków MMOPK odchodzi ok. 1%.[^sies]
+
+Bliżej polskiego modelu — szeroki nabór, trudny pierwszy rok, duże programy anglojęzyczne — są Węgry i Czechy, ale dla nich dostępne są tylko dane orientacyjne. Na Węgrzech studiów nie ukończyło 17% osób, które w roku 2011/12 zaczęły jednolite studia z grupy kierunków medycznych, a nie samego kierunku lekarskiego. Tę liczbę znamy tylko ze źródła wtórnego — portalu Eduline z 2019 r., bez definicji odsiewu.[^hu] Dziekan 1. Wydziału Lekarskiego Uniwersytetu Karola w Pradze ocenił w 2019 r., że w całym toku studiów odpada ok. 30% zapisanych; osobno mówił o studentach, którzy powtarzają rok.[^cz]
+
+## Czego brakuje w danych
+
+Państwo wie o studentach medycyny więcej, niż pokazuje, a kilku podstawowych rzeczy nie zbiera wcale:
+
+- **przyczyn skreśleń** — katalog podstaw skreślenia jest w ustawie,[^pswin108] ale do POL-on trafia tylko data; dopisanie podstawy do wykazu studentów pozwoliłoby publikować zestawienia według uczelni i roku studiów w przekroju, który nie pozwala rozpoznać osób;
+- **odsiewu według uczelni** — porównywalne między uczelniami są dziś tylko wyniki LEK, a dane o odsiewie pochodzą z ankiety izby lekarskiej, na którą odpowiedziała część uczelni;
+- **losów skreślonych** — ilu wraca na studia i je kończy, choć POL-on zna numer PESEL każdego studenta;[^pswin]
+- **losów po specjalizacji** — jaki odsetek rocznika zostaje specjalistą i ilu lekarzy wyjeżdża po jej zakończeniu.
+
+Łączenie danych o tej samej osobie z kilku rejestrów jest już praktyką administracji. Ministerstwo Zdrowia zestawia dane absolwentów z POL-on, ZUS i Centralnego Rejestru Lekarzy,[^nik23-mz] a publikuje z nich tylko zestawienia zbiorcze.[^mz] Na tej samej zasadzie opiera się [postulat serwisu](/postulat/): łączne wypłaty z publicznych pieniędzy dla każdej osoby, pod stałym identyfikatorem, bez nazwisk.
+
+## Metoda
+
+Dane studentów pochodzą z aplikacji MZ „Studenci i absolwenci kierunków medycznych” (POL-on, odczyt 4.10.2026). Aplikacja jest aktualizowana, więc wcześniejsze odczyty mogą się nieznacznie różnić.[^mz] Filtr „semestr studenta” ma wartości 1–6 i oznacza semestry, a nie lata studiów: suma studentów semestrów 1–6 przekracza liczbę wszystkich studentów, bo ta sama osoba liczy się w obu semestrach roku. Odsiew pierwszego roku to skreśleni w semestrach 1–2 jako odsetek studentów semestru 1. „Kończy w terminie” to absolwenci roku t podzieleni przez studentów semestru 1 z roku t−5. Rok 2024/25 może być w danych niezamknięty. „Bez składki ZUS” oznacza, że w danym roku żaden płatnik nie odprowadzał za absolwenta składki.
+
+Wyniki LEK porównano jako odchylenie średniego wyniku uczelni od średniej sesji (zdający po polsku z polskich uczelni), ważone liczbą zdających.[^cem] Raport NIL dzieli na „stare” i „nowe” tylko 19 uczelni, które wypełniły ankietę. „Stare”, czyli o długiej tradycji kształcenia lekarzy, to w nim uniwersytety medyczne w Białymstoku, Gdańsku, Katowicach, Łodzi, Poznaniu, Szczecinie, Warszawie i Wrocławiu oraz Uniwersytet Warmińsko-Mazurski; pozostałe dziesięć to „nowe”. Jako nieuczestniczące raport wymienia tylko Uniwersytet Kaliski i Krakowską Akademię im. Andrzeja Frycza Modrzewskiego, które brały udział w poprzedniej edycji.[^nil-stud] UJ Collegium Medicum, Uniwersytetu Medycznego w Lublinie i Collegium Medicum UMK w raporcie nie ma. W porównaniu wyników LEK zaliczamy je do „starych” według tego samego kryterium — to nasza klasyfikacja, nie NIL.
+
+Rachunek „od miejsca do PWZ” zestawia sumę limitów przyjęć z lat 2015/16–2019/20 z liczbą lekarzy z PWZ w wieku 26–30 lat. Izba liczy wiek rocznikami, więc są to urodzeni w latach 1996–2000, czyli — przy typowym starcie studiów w wieku 19 lat — przyjęci w latach 2015–2019. Liczba 20 457 obejmuje wszystkich lekarzy (bez dentystów) będących członkami izby, z czego 20 435 wykonuje zawód.[^nil-wiek] W rejestrze ze stycznia 2026 r., od którego startuje symulator podaży, ta sama grupa wieku liczyła 20 346 lekarzy wykonujących zawód; różnica wynika z daty i definicji.[^crl]
+
+[^mz]: Ministerstwo Zdrowia, BASiW, [aplikacja „Studenci i absolwenci kierunków medycznych”](https://basiw.mz.gov.pl/mapy-informacje/mapa-2022-2026/analizy/kadry-medyczne/studenci-i-absolwenci-kierunkow-medycznych/) — dane POL-on, ZUS i NFZ; zakładki „Analizy w ujęciu tabelarycznym” (studenci, skreśleni i absolwenci według narodowości i semestru; liczba uczelni) oraz „Losy absolwentów”; odczyt 4.10.2026, obliczenia własne.
+
+[^opi]: OPI PIB, [„Zjawisko drop-outu na polskich uczelniach”](https://pcgacademia.pl/wp-content/uploads/2024/10/Prezentacja-OPI-PIB.pdf#page=6), slajdy 3 (średnia 40%) i 6 (nauki medyczne 29%); dane POL-on według stanu na 27.04.2020.
+
+[^rz]: Rynek Zdrowia, [„Aplikują na potęgę, a potem rezygnują. Nawet 2/3 przyjętych na medycynę zwalnia miejsce”](https://www.rynekzdrowia.pl/Nauka/Aplikuja-na-potege-a-potem-rezygnuja-Nawet-2-3-przyjetych-na-medycyne-zwalnia-miejsce,261075,9.html), 2024.
+
+[^nik23]: NIK, [„Zasoby kadry medycznej w systemie ochrony zdrowia”](https://www.nik.gov.pl/plik/id,28020,vp,30841.pdf#page=12), 2023, s. 12 i 33 — 4 884 zaświadczenia wydane w latach 2018–2022 (do końca września) według Centralnego Rejestru Lekarzy i Lekarzy Dentystów; zastrzeżenie, że liczba zaświadczeń nie jest tożsama z liczbą osób, które wyjechały; brak analiz skali emigracji w MZ.
+
+[^nik23-mz]: NIK, [„Zasoby kadry medycznej w systemie ochrony zdrowia”](https://www.nik.gov.pl/plik/id,28020,vp,30841.pdf#page=122), 2023, s. 122 — stanowisko Ministra Zdrowia: „ponad 90%” absolwentów z lat 2014–2019 pracowało w 2019 r. w Polsce; opracowanie na podstawie danych POL-on, ZUS i Centralnego Rejestru Lekarzy.
+
+[^wum-rek]: Warszawski Uniwersytet Medyczny, Wydział Lekarski, [Raport Wydziałowego Zespołu ds. Jakości Kształcenia 2023/2024](https://wl.wum.edu.pl/sites/wl.wum.edu.pl/files/wl_raport_wzjk_2023_2024-w.2025.03.09.pdf#page=45), s. 45, rekomendacja 13.
+
+[^wum-tab]: Warszawski Uniwersytet Medyczny, Wydział Lekarski, [Raport Wydziałowego Zespołu ds. Jakości Kształcenia 2023/2024](https://wl.wum.edu.pl/sites/wl.wum.edu.pl/files/wl_raport_wzjk_2023_2024-w.2025.03.09.pdf#page=19), s. 19 — tabele dla lat I–VI (ścieżka polska: 17,80% skreślonych na I roku, nikt nie powtarzał I roku; English Division: rok ukończyło 88 ze 175 osób).
+
+[^regulaminy]: [Ustawa z 3 lipca 2018 r. — Przepisy wprowadzające ustawę Prawo o szkolnictwie wyższym i nauce](https://eli.gov.pl/api/acts/DU/2018/1669/text.html), Dz.U. 2018 poz. 1669, art. 263 ust. 1 (nowe regulaminy najpóźniej od 1.10.2019).
+
+[^polon2]: POL-on, baza wiedzy: [„Jak mogę wprowadzić studentów na rok 2019/20 do systemu POL-on?”](https://polon.nauka.gov.pl/pomoc/knowledge-base/jak-moge-wprowadzic-studentow-na-rok-2019-20-do-systemu-pol-on/).
+
+[^covid]: [Rozporządzenie MNiSW z 11 marca 2020 r.](https://eli.gov.pl/api/acts/DU/2020/405/text.html) w sprawie czasowego ograniczenia funkcjonowania niektórych podmiotów systemu szkolnictwa wyższego i nauki w związku z COVID-19, Dz.U. 2020 poz. 405, § 1.
+
+[^limity-2025]: Rynek Zdrowia, [„Nowe limity przyjęć na medycynę w roku 2025/2026. Sześć uczelni wypada z listy”](https://www.rynekzdrowia.pl/Nauka/Nowe-limity-przyjec-na-medycyne-w-roku-2025-2026-Szesc-uczelni-wypada-z-listy,272518,9.html), 12.06.2025 — omówienie projektu rozporządzenia.
+
+[^pka]: Konkret24, [„Likwidują kierunki lekarskie. Jaki problem ma dziewięć uczelni”](https://konkret24.tvn24.pl/polska/likwiduja-kierunki-lekarskie-jaki-problem-ma-dziewiec-uczelni-st7962526), 17.06.2024.
+
+[^nil]: Naczelna Izba Lekarska, Komisja Kształcenia Medycznego, [Raport z badania „Barometr 25” za rok akademicki 2023/24](https://nil.org.pl/uploaded_files/art_1770477600_raport-nil-komisja-ksztalcenia-barometr-2025.pdf#page=95), s. 95 — odsetek studentów bez promocji według uczelni i roku studiów.
+
+[^nil-stud]: Tamże, [s. 6–9](https://nil.org.pl/uploaded_files/art_1770477600_raport-nil-komisja-ksztalcenia-barometr-2025.pdf#page=6) — lista 19 uczelni uczestniczących, uczelnie, które nie wzięły udziału w tej edycji, kryterium i podział na uczelnie „stare” i „nowe”, liczba studentów według uczelni; mediany — obliczenia własne.
+
+[^cem]: Centrum Egzaminów Medycznych, [Statystyka Lekarskiego Egzaminu Końcowego](https://www.cem.edu.pl/lep_s.php) — sesje od wiosny 2024 do jesieni 2026, tabela „wyniki lekarzy zdających po raz pierwszy” według uczelni (wiersze uczelni to egzamin po polsku, osobno uczelnie zagraniczne); obliczenia własne.
+
+[^nil-wczesniej]: NIL, raporty z badania uczelni: [edycja 1 (2021/22)](https://nil.org.pl/uploaded_files/art_1700657393_raport-nil-komisja-ksztalcenia-2023v2.pdf), [edycja 2 (2022/23)](https://nil.org.pl/uploaded_files/art_1724836085_doc-20240828-wa0005-240828-110237.pdf).
+
+[^pswin]: [Ustawa — Prawo o szkolnictwie wyższym i nauce](https://eli.gov.pl/api/acts/DU/2024/1571/text.html), tekst jedn. Dz.U. 2024 poz. 1571, art. 344 ust. 1 pkt 2 (PESEL) i pkt 13 (data skreślenia z listy studentów).
+
+[^rozp]: [Rozporządzenie Ministra Nauki z 12 września 2024 r. w sprawie danych przetwarzanych w POL-on](https://eli.gov.pl/api/acts/DU/2024/1403/text.html), Dz.U. 2024 poz. 1403; zmiana z 2025 r. (Dz.U. 2025 poz. 1337) tego zakresu nie dotyczy.
+
+[^pswin108]: [Ustawa — Prawo o szkolnictwie wyższym i nauce](https://eli.gov.pl/api/acts/DU/2024/1571/text.html), art. 108 — obowiązkowe i fakultatywne podstawy skreślenia z listy studentów.
+
+[^uj]: UJ Collegium Medicum, Wydział Lekarski, [raport samooceny dla PKA — kierunek lekarski](https://akredytacje.bip.uj.edu.pl/documents/144014970/150467493/lekarski_WL_PKA_2022_raport_samooceny.pdf/3e77030e-3b07-4d62-8416-c63342637ff6#page=32), 2022, s. 32, tab. 5.
+
+[^lodz]: Uniwersytet Medyczny w Łodzi, [Raport Uczelnianego Zespołu ds. Zapewnienia Jakości Kształcenia 2022/23](https://umed.pl/pliki/2014/12/Raport-UZZJK-2022_23.pdf#page=16), s. 16.
+
+[^oneill]: L.D. O’Neill i in., [„Factors associated with dropout in medical education: a literature review”](https://dx.doi.org/10.1111/j.1365-2923.2010.03898.x), Medical Education 45(5), 2011.
+
+[^obm]: Rynek Zdrowia, [„Tylko 13 proc. studentów medycyny wyklucza wyjazd z Polski”](https://www.rynekzdrowia.pl/Nauka/Tylko-13-proc-studentow-medycyny-wyklucza-wyjazd-z-Polski-Reszte-z-kraju-wypycha-sytuacja-polityczna-i-warunki-pracy,246695,9.html), 2023 — omówienie badania Ośrodka Badań nad Migracjami UW (źródło wtórne).
+
+[^oecd]: OECD, [„International migration and movement of doctors to and within OECD countries — 2000 to 2018”](https://www.oecd.org/content/dam/oecd/en/publications/reports/2021/02/international-migration-and-movement-of-doctors-to-and-within-oecd-countries-2000-to-2018_d424b075/7ca8643e-en), OECD Health Working Paper nr 126, 2021, aneks, tab. A.1.
+
+[^ela]: Ekonomiczne Losy Absolwentów (MNiSW/OPI), [„Absolwenci obcokrajowcy na polskim rynku pracy”](https://ela.nauka.gov.pl/pl/labor-market/absolwenci_obcokrajowcy_na_polskim_rynku_pracy).
+
+[^nil-wiek]: Naczelna Izba Lekarska, [Zestawienie liczbowe lekarzy i lekarzy dentystów według wieku, płci i tytułu zawodowego, stan na 30.06.2026](https://nil.org.pl/uploaded_files/1783510889_30062026-zestawienie-nr-3.pdf) — przedziały wieku liczone rocznikowo; lekarze w wieku 26–30 lat: 7 392 mężczyzn i 13 065 kobiet wśród członków izby, 20 435 wykonujących zawód.
+
+[^limity]: Rozporządzenia Ministra Zdrowia w sprawie limitu przyjęć na kierunki lekarski i lekarsko-dentystyczny na lata 2015/16–2019/20: [Dz.U. 2015 poz. 1119](https://eli.gov.pl/api/acts/DU/2015/1119/text.pdf), [Dz.U. 2016 poz. 982](https://eli.gov.pl/api/acts/DU/2016/982/text.pdf), [Dz.U. 2017 poz. 1251](https://eli.gov.pl/api/acts/DU/2017/1251/text.pdf), [Dz.U. 2018 poz. 1381](https://eli.gov.pl/api/acts/DU/2018/1381/text.pdf) i [poz. 1845](https://eli.gov.pl/api/acts/DU/2018/1845/text.pdf), [Dz.U. 2019 poz. 1344](https://eli.gov.pl/api/acts/DU/2019/1344/text.pdf) i [poz. 1713](https://eli.gov.pl/api/acts/DU/2019/1713/text.pdf) (wersja końcowa, z nowelizacjami); sumy, w tym 8 940 miejsc w języku obcym i 374 w puli dla cudzoziemców — obliczenia własne.
+
+[^stazysci]: Naczelna Izba Lekarska, [Zestawienie ilościowe według rodzaju prawa wykonywania zawodu, stan na 31.12.2024](https://nil.org.pl/uploaded_files/1737380333_zestawienie-nr-7-31122024.pdf) — PWZ lekarza na czas odbycia stażu.
+
+[^limit]: Rozporządzenie Ministra Zdrowia z 28 sierpnia 2026 r. w sprawie limitu przyjęć na studia na kierunkach lekarskim i lekarsko-dentystycznym, [Dz.U. 2026 poz. 1167](https://api.sejm.gov.pl/eli/acts/DU/2026/1167/text.pdf), zał. nr 1 — 10 730 miejsc na kierunku lekarskim, w tym 1 838 w języku obcym; różnica (8 892) — obliczenia własne. Równoważnik ok. 1 110 miejsc to jedna ósma z 8 892 (90% wobec 80% kończących).
+
+[^cmkp]: CMKP, komunikaty o wynikach postępowań kwalifikacyjnych, np. [sesja jesienna 2025](https://www.cmkp.edu.pl/aktualnosci/opublikowano-ostateczne-wyniki-rekrutacji-na-specjalizacje-w-sesji-jesiennej-2025); suma sesji — obliczenie własne (szacunek).
+
+[^gus]: GUS, „Zasoby kadrowe w wybranych zawodach medycznych na podstawie źródeł administracyjnych”: [edycja 2025](https://stat.gov.pl/download/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/28/5/1/zasoby_kadrowe_w_wybranych_zawodach_medycznych_na_podstawie_zrodel_administracyjnych_w_2025.pdf#page=3), s. 3; [edycja 2024](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/28/4/1/zasoby_kadrowe_w_wybranych_zawodach_medycznych_na_podstawie_zrodel_administracyjnych_w_2024_r..pdf).
+
+[^nik16]: NIK, [„Kształcenie i przygotowanie zawodowe kadr medycznych”](https://www.nik.gov.pl/plik/id,10242,vp,12565.pdf#page=25), 2016, s. 25.
+
+[^aamc]: AAMC, [Data Snapshot: Graduation Rates and Attrition Rates of U.S. Medical Students](https://www.aamc.org/media/48526/download), październik 2025 — średnia ogólnokrajowa stopa odsiewu 3,1% w 20 kohortach rozpoczynających studia w latach 2000/01–2019/20, łącznie dla wszystkich programów MD (także łączonych, np. licencjat z MD i MD-PhD).
+
+[^dzhw]: DZHW, [Brief 05/2022: Die Entwicklung der Studienabbruchquoten in Deutschland](https://www.dzhw.eu/pdf/pub_brief/dzhw_brief_05_2022.pdf), s. 1 i 12 — medycyna (Staatsexamen): ok. 6% dla rocznika absolwentów 2020. Wskaźnik obejmuje osoby z niemieckim obywatelstwem, które opuściły szkolnictwo wyższe bez pierwszego dyplomu; zmiana kierunku lub uczelni nie jest liczona jako porzucenie.
+
+[^sies]: MESR-SIES, [nota informacyjna 2024-31 o ścieżkach PASS i L.AS](https://www.enseignementsup-recherche.gouv.fr/sites/default/files/2024-11/nf-sies-2024-31-35439.pdf#page=1), listopad 2024 — kohorta 2021: 36% tegorocznych maturzystów z PASS awansowało po roku na drugi rok MMOPK (medycyna, położnictwo, stomatologia, farmacja, fizjoterapia); na drugim roku 93% awansowało na trzeci, 5,4% powtarzało rok, ok. 1% odeszło z MMOPK.
+
+[^hu]: Eduline.hu, [„Riasztó lemorzsolódási adatok: orvos- és egészségtudományi szakok”](https://eduline.hu/felsooktatas/20190226_orvosi-kepzesek-lemorzsolodas), 26.02.2019 — 17% odsiewu wśród rozpoczynających w roku 2011/12 jednolite („klasyczne”) studia medyczne, czyli grupę kierunków, nie sam lekarski; na podstawie analiz Oktatási Hivatal, których oryginału nie znaleźliśmy (źródło wtórne). Artykuł nie definiuje odsiewu.
+
+[^cz]: [Zdravotnický deník, wywiad z dziekanem 1. Wydziału Lekarskiego Uniwersytetu Karola](https://www.zdravotnickydenik.cz/2019/04/zebricky-lekarskych-fakult-ano-podle-profesionalni-metodiky-rika-dekan-1-lf-aleksi-sedo/), 11.04.2019 — szacunek dla całego toku studiów (do ostatniego roku dochodzi ok. 70% zapisanych); wypowiedź, nie dane administracyjne.
+
+[^crl]: Naczelna Izba Lekarska, [Centralny Rejestr Lekarzy — informacje statystyczne](https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne) — lekarze wykonujący zawód według wieku, stan na 16.01.2026; to punkt wyjścia [symulatora podaży lekarzy](/analizy/symulator-podazy-lekarzy/).

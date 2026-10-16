@@ -1,0 +1,55 @@
+---
+/**
+ * Rama ilustracji w treści artykułu (tabela z paskami, rachunek, wzór dokumentu):
+ * tytuł z tezą ilustracji, treść ze slotu i podpis — uwagi oraz źródło.
+ * Źródło z `href` jest linkiem, więc liczby na ilustracji mają pokrycie tak jak w StatRow.
+ *
+ *   <Figure title="Dopłata rośnie z poziomem placówki" source={{ label: 'NHI Annual Report', href }}>
+ *     …ilustracja…
+ *   </Figure>
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'figure'> {
+  /** teza ilustracji — jedno zdanie nad nią (nie atrybut HTML) */
+  title?: string;
+  /** dopowiedzenie pod ilustracją: założenia, kurs, uproszczenia */
+  note?: string;
+  source?: { label: string; href?: string };
+}
+
+const { title, note, source, class: className, ...rest } = Astro.props;
+---
+<figure class:list={['fig', className]} {...rest}>
+  {title && <p class="fig__title">{typo(title)}</p>}
+  <slot />
+  {(note || source) && (
+    <figcaption class="fig__caption">
+      {note && <span>{typo(note)}</span>}
+      {source && (
+        <span class="fig__source">
+          Źródło:{' '}
+          {source.href
+            ? <a {...linkAttrs(source.href)}>{typo(source.label)}<Icon name="arrow-ne" size={10} /></a>
+            : typo(source.label)}
+        </span>
+      )}
+    </figcaption>
+  )}
+</figure>
+
+<style>
+  .fig { container-type: inline-size; }
+  .fig__title {
+    margin-bottom: 20px; padding-top: 14px; border-top: 1px solid var(--ink);
+    font: 500 1.1875rem/1.35 var(--f-display); letter-spacing: -0.015em; color: var(--ink);
+  }
+  /* Uwaga to tekst do czytania (Plex Sans); mono zostaje tylko w linii źródła — jak w StatRow */
+  .fig__caption { display: grid; gap: 6px; margin-top: 16px; font: 400 0.84375rem/1.55 var(--f-body); color: var(--text); }
+  .fig__source { font: 400 0.75rem/1.55 var(--f-mono); color: var(--muted); }
+  .fig__source a { display: inline-flex; align-items: center; gap: 4px; color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s; }
+  .fig__source a:hover { color: var(--blue); text-decoration-color: currentColor; }
+</style>

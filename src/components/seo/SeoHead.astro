@@ -1,0 +1,54 @@
+---
+/**
+ * Znaczniki SEO w <head>: tytuł, opis, canonical, robots, podgląd linku (Open Graph, X)
+ * i odnośniki dla robotów i przeglądarek (ikony, manifest, sitemap, RSS).
+ * Wartości liczy lib/seo/meta.ts — komponent tylko je drukuje.
+ */
+import type { ResolvedSeo } from '@/lib/seo';
+
+interface Props {
+  seo: ResolvedSeo;
+  siteName: string;
+  locale: string;
+  twitter: string;
+}
+
+const { seo, siteName, locale, twitter } = Astro.props;
+const { social } = seo;
+---
+<title>{seo.title}</title>
+<meta name="description" content={seo.description} />
+<link rel="canonical" href={seo.canonical} />
+<meta name="robots" content={seo.robots} />
+
+<meta property="og:type" content={social.type} />
+<meta property="og:locale" content={locale} />
+<meta property="og:site_name" content={siteName} />
+<meta property="og:url" content={seo.canonical} />
+<meta property="og:title" content={social.title} />
+<meta property="og:description" content={social.description} />
+{social.image && (
+  <>
+    <meta property="og:image" content={social.image.url} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content={String(social.image.width)} />
+    <meta property="og:image:height" content={String(social.image.height)} />
+    <meta property="og:image:alt" content={social.image.alt} />
+  </>
+)}
+{social.type === 'article' && (
+  <>
+    {seo.published && <meta property="article:published_time" content={seo.published} />}
+    {seo.modified && <meta property="article:modified_time" content={seo.modified} />}
+    {seo.section && <meta property="article:section" content={seo.section} />}
+  </>
+)}
+<meta name="twitter:card" content={social.image ? 'summary_large_image' : 'summary'} />
+<meta name="twitter:site" content={twitter} />
+
+<link rel="icon" href="/favicon.ico" sizes="32x32" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<link rel="sitemap" href="/sitemap-index.xml" />
+<link rel="alternate" type="application/rss+xml" title={`${siteName} — nowe i zaktualizowane materiały`} href="/rss.xml" />

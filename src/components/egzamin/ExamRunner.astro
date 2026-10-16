@@ -1,0 +1,329 @@
+---
+/**
+ * Tryb skupienia: pełnoekranowy <dialog> z testem. Pasek górny (tryb, licznik, czas/wynik,
+ * narzędzia) i dolny (nawigacja pod kciukiem) stoją w miejscu — przewija się tylko pytanie.
+ * Mapa pytań: kolumna obok na szerokim ekranie, szuflada na węższym.
+ * Treść (pytanie, komórki mapy, wynik) renderuje client/runner.ts i client/result.ts.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import ExamResult from './ExamResult.astro';
+
+const KEYS: [string[], string][] = [
+  [['A', '–', 'E'], 'wybór odpowiedzi (także 1–5)'],
+  [['→'], 'następne pytanie (także Enter)'],
+  [['←'], 'poprzednie pytanie'],
+  [['F'], 'oznacz pytanie do powrotu'],
+  [['N'], 'notatka do pytania'],
+  [['M'], 'mapa pytań'],
+  [['P'], 'pauza (testy na czas)'],
+  [['?'], 'ta lista'],
+];
+---
+<dialog class="run" data-runner aria-labelledby="run-title">
+  <div class="run__shell" data-shell>
+    <p class="sr-only" aria-live="polite" data-announce></p>
+    <header class="top">
+      <button class="tb tb--exit" type="button" data-act="exit" title="Wyjdź — postęp zostaje zapisany">
+        <Icon name="close" size={18} /><span class="tb__label">Wyjdź</span>
+      </button>
+      <p class="top__title" id="run-title">
+        <span class="top__mode" data-mode>Nauka</span>
+        <span class="top__session" data-session></span>
+      </p>
+      <p class="top__count" data-count></p>
+      <div class="top__status">
+        <p class="score" data-score hidden>
+          <span class="score__ok" title="Dobre odpowiedzi"><Icon name="check" size={14} /><b data-ok>0</b></span>
+          <span class="score__bad" title="Złe odpowiedzi"><Icon name="close" size={14} /><b data-bad>0</b></span>
+        </p>
+        <div class="timer" data-timer-wrap hidden>
+          <Icon name="clock" size={16} />
+          <span class="timer__value" data-timer role="timer" aria-label="Pozostały czas">0:00</span>
+          <button class="tb tb--icon" type="button" data-act="pause" aria-label="Wstrzymaj (P)" title="Wstrzymaj (P)"><Icon name="pause" size={18} /></button>
+        </div>
+      </div>
+      <div class="top__tools">
+        <button class="tb tb--icon tb--wide" type="button" data-act="size" aria-label="Wielkość tekstu" title="Wielkość tekstu"><Icon name="text-size" /></button>
+        <button class="tb tb--icon tb--wide" type="button" data-act="fullscreen" aria-label="Pełny ekran" title="Pełny ekran" hidden><Icon name="expand" /></button>
+        <button class="tb tb--icon tb--wide" type="button" data-act="keys" aria-label="Skróty klawiszowe (?)" title="Skróty klawiszowe (?)"><Icon name="keyboard" /></button>
+        <button class="tb tb--map" type="button" data-act="map" aria-expanded="false" aria-controls="run-map" title="Mapa pytań (M)">
+          <Icon name="grid" size={18} /><span class="tb__label">Mapa</span>
+        </button>
+        <button class="tb tb--line" type="button" data-act="finish">Zakończ</button>
+      </div>
+      <div class="top__bar" aria-hidden="true"><span data-bar></span></div>
+    </header>
+
+    <div class="body">
+      <div class="main" data-main>
+        <div class="main__inner">
+          <p class="demo"><Icon name="info" size={14} />Wersja demonstracyjna: pytania przykładowe redakcji, nie z bazy CEM.</p>
+          <article class="lq" data-question></article>
+          <div data-feedback-slot></div>
+          <div data-note-slot></div>
+        </div>
+        <div class="pause" data-pause hidden>
+          <div class="pause__card">
+            <p class="mono-label">Test wstrzymany</p>
+            <p class="pause__time" data-pause-time></p>
+            <p class="pause__left">do końca testu</p>
+            <p class="pause__hint">Czas stoi. Pytanie jest zasłonięte, żeby pauza nie była dodatkowym czasem na myślenie.</p>
+            <button class="act act--primary" type="button" data-act="resume"><Icon name="play" size={18} />Wznów<kbd>P</kbd></button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="map" id="run-map" data-map aria-label="Mapa pytań">
+        <header class="map__head">
+          <p class="mono-label">Mapa pytań</p>
+          <button class="tb tb--icon" type="button" data-act="map" aria-label="Zamknij mapę"><Icon name="close" size={18} /></button>
+        </header>
+        <div class="map__filters" data-map-filters role="group" aria-label="Pokaż na mapie"></div>
+        <div class="map__pages" data-map-pages role="group" aria-label="Zakres numerów"></div>
+        <div class="map__grid" data-map-grid></div>
+        <ul class="map__legend" role="list">
+          <li><i class="lg lg--answered"></i>odpowiedź</li>
+          <li data-legend-reveal><i class="lg lg--correct"></i>dobrze</li>
+          <li data-legend-reveal><i class="lg lg--wrong"></i>źle</li>
+          <li><i class="lg lg--flag"></i>oznaczone</li>
+          <li><i class="lg lg--note"></i>notatka</li>
+          <li><i class="lg lg--void"></i>unieważnione</li>
+        </ul>
+      </aside>
+      <div class="map-scrim" data-act="map" aria-hidden="true"></div>
+    </div>
+
+    <footer class="bottom">
+      <button class="act act--ghost" type="button" data-act="prev" aria-keyshortcuts="ArrowLeft">
+        <Icon name="arrow-left" size={18} /><span class="act__label">Poprzednie</span>
+      </button>
+      <div class="bottom__mid">
+        <button class="act act--tool" type="button" data-act="flag" aria-pressed="false" aria-keyshortcuts="F">
+          <Icon name="flag" size={18} /><span class="act__label">Oznacz</span><kbd>F</kbd>
+        </button>
+        <button class="act act--tool" type="button" data-act="note" aria-expanded="false" aria-keyshortcuts="N">
+          <Icon name="pencil" size={18} /><span class="act__label">Notatka</span><kbd>N</kbd>
+        </button>
+      </div>
+      <button class="act act--primary act--next" type="button" data-act="next" aria-keyshortcuts="ArrowRight Enter">
+        <span data-next-label>Następne</span><Icon name="arrow" size={18} />
+      </button>
+    </footer>
+  </div>
+
+  <ExamResult />
+
+  <dialog class="modal" data-confirm aria-labelledby="confirm-title">
+    <form method="dialog">
+      <h2 class="modal__title" id="confirm-title">Zakończyć test?</h2>
+      <div class="modal__body" data-confirm-body></div>
+      <div class="modal__actions">
+        <button class="act act--ghost" value="cancel" autofocus>Wróć do testu</button>
+        <button class="act act--primary" value="finish" data-confirm-ok>Zakończ i pokaż wynik</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" data-keys aria-labelledby="keys-title">
+    <form method="dialog">
+      <h2 class="modal__title" id="keys-title">Skróty klawiszowe</h2>
+      <dl class="keys">
+        {KEYS.map(([keys, desc]) => (
+          <div><dt>{keys.map((k) => (k === '–' ? k : <kbd>{k}</kbd>))}</dt><dd>{desc}</dd></div>
+        ))}
+      </dl>
+      <div class="modal__actions"><button class="act act--primary" value="close">Gotowe</button></div>
+    </form>
+  </dialog>
+</dialog>
+
+<style>
+  /* ---------- Okno na cały ekran ---------- */
+  .run {
+    --top-h: 64px;
+    --bottom-h: 76px;
+    --map-w: 320px;
+    width: 100%; height: 100%; max-width: none; max-height: none;
+    margin: 0; padding: 0; border: 0;
+    background: var(--bg); color: var(--text);
+  }
+  .run[open] { display: block; animation: runIn .35s var(--ease); }
+  .run::backdrop { background: var(--inverse); }
+  @keyframes runIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  :global(html:has(.run[open])) { overflow: hidden; }
+
+  .run__shell { display: grid; grid-template-rows: var(--top-h) minmax(0, 1fr) var(--bottom-h); grid-template-columns: minmax(0, 1fr); height: 100dvh; }
+
+  /* ---------- Pasek górny ---------- */
+  .top { position: relative; display: flex; align-items: center; gap: 20px; padding: 0 20px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .top__title { display: flex; align-items: baseline; gap: 12px; min-width: 0; flex: 1; }
+  .top__mode { font: 500 0.71875rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+  .top__session { font-size: 0.875rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top__count { font: 400 0.875rem/1 var(--f-mono); color: var(--muted); white-space: nowrap; }
+  .top__count :global(b) { font-weight: 500; color: var(--ink); }
+  .top__status { display: flex; align-items: center; }
+  .top__tools { display: flex; align-items: center; gap: 4px; }
+  .top__bar { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: transparent; }
+  .top__bar span { display: block; height: 100%; width: calc(var(--p, 0) * 100%); background: var(--blue); transition: width .4s var(--ease); }
+
+  .score { display: flex; gap: 12px; font: 500 0.875rem/1 var(--f-mono); }
+  .score span { display: inline-flex; align-items: center; gap: 5px; }
+  .score__ok { color: var(--ok); }
+  .score__bad { color: var(--bad); }
+
+  .timer { display: flex; align-items: center; gap: 8px; padding-left: 12px; border: 1px solid var(--line-2); color: var(--ink); }
+  .timer__value { min-width: 64px; font: 500 0.9375rem/1 var(--f-mono); font-variant-numeric: tabular-nums; }
+  .timer.is-low { border-color: var(--amber); color: var(--amber); background: var(--amber-bg); }
+  .timer.is-critical { border-color: var(--bad); color: var(--bad); background: var(--bad-bg); }
+  .timer .tb { border-left: 1px solid var(--line-2); }
+
+  .tb { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 12px; font-size: 0.875rem; color: var(--ink); transition: background .15s, color .15s, border-color .15s; }
+  .tb:hover { background: var(--bg-soft); }
+  .tb--icon { width: 40px; padding: 0; }
+  .tb--exit { margin-left: -8px; padding-right: 14px; border-right: 1px solid var(--line); }
+  .tb--line { border: 1px solid var(--ink); margin-left: 6px; padding: 0 16px; }
+  .tb--line:hover { background: var(--ink); color: var(--on-ink); }
+  .tb--map[aria-expanded="true"] { background: var(--blue-50); color: var(--blue); }
+
+  /* ---------- Treść i mapa ---------- */
+  .body { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .run[data-map-open] .body { grid-template-columns: minmax(0, 1fr) var(--map-w); }
+  .main { position: relative; overflow-y: auto; overscroll-behavior: contain; scroll-padding-bottom: 24px; }
+  .main__inner { max-width: 800px; margin: 0 auto; padding: 32px 32px 48px; }
+  .main__inner :global(.lq) { --lq-size: var(--q-size, 1.125rem); }
+  .run[data-size="1"] { --q-size: 1.25rem; }
+  .run[data-size="2"] { --q-size: 1.40625rem; }
+
+  .demo { display: flex; align-items: center; gap: 8px; margin-bottom: 22px; font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted); }
+
+  .pause { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: color-mix(in srgb, var(--bg-soft) 90%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .pause__card { max-width: 400px; padding: 32px; background: var(--surface); border: 1px solid var(--line-2); text-align: center; box-shadow: 0 24px 48px -24px rgba(4, 11, 27, .25); }
+  .pause__time { margin: 10px 0 8px; font: 400 3.25rem/1 var(--f-display); letter-spacing: -0.04em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .pause__left { font: 400 0.8125rem/1 var(--f-mono); color: var(--muted); margin-bottom: 18px; }
+  .pause__hint { margin-bottom: 22px; font-size: 0.875rem; color: var(--muted); }
+
+  .map { display: none; flex-direction: column; gap: 14px; padding: 18px 20px 24px; border-left: 1px solid var(--line); background: var(--surface); overflow-y: auto; overscroll-behavior: contain; }
+  .run[data-map-open] .map { display: flex; }
+  .map__head { display: flex; justify-content: space-between; align-items: center; margin: -6px -10px -4px 0; }
+  .map__filters, .map__pages { display: flex; flex-wrap: wrap; gap: 6px; }
+  .map__pages:empty { display: none; }
+  .map__grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
+  .map__legend { display: flex; flex-wrap: wrap; gap: 8px 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 0.75rem; color: var(--muted); }
+  .map__legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .run:not([data-reveal]) [data-legend-reveal], .run[data-reveal] .map__legend li:first-child { display: none; }
+  .map-scrim { display: none; }
+
+  .map :global(.mf) { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px solid var(--line-2); font-size: 0.78125rem; color: var(--ink); }
+  .map :global(.mf b) { font: 500 0.71875rem/1 var(--f-mono); color: var(--muted); }
+  .map :global(.mf:hover) { border-color: var(--ink); }
+  .map :global(.mf[aria-pressed="true"]) { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .map :global(.mf[aria-pressed="true"] b) { color: color-mix(in srgb, var(--on-ink) 70%, transparent); }
+  .map :global(.mf:disabled) { opacity: .4; cursor: default; }
+
+  .map :global(.cell) {
+    position: relative; display: grid; place-items: center; aspect-ratio: 1;
+    border: 1px solid var(--line-2); background: var(--surface);
+    font: 400 0.6875rem/1 var(--f-mono); color: var(--muted);
+    transition: opacity .2s, transform .15s;
+  }
+  .map :global(.cell:hover) { border-color: var(--ink); color: var(--ink); }
+  .map :global(.cell[data-s="answered"]) { background: var(--blue-100); border-color: var(--blue-pale); color: var(--blue-700); }
+  .map :global(.cell[data-s="correct"]) { background: var(--ok); border-color: var(--ok); color: var(--on-ink); }
+  .map :global(.cell[data-s="wrong"]) { background: var(--bad); border-color: var(--bad); color: var(--on-ink); }
+  .map :global(.cell[data-s="void"]) { background: repeating-linear-gradient(135deg, var(--bg-soft) 0 3px, var(--surface) 3px 6px); text-decoration: line-through; }
+  .map :global(.cell.is-flag::after) { content: ""; position: absolute; top: -1px; right: -1px; border: 6px solid transparent; border-top-color: var(--amber); border-right-color: var(--amber); }
+  .map :global(.cell.is-note::before) { content: ""; position: absolute; left: 2px; bottom: 2px; width: 4px; height: 4px; background: var(--blue); border-radius: 50%; }
+  .map :global(.cell[data-s="correct"].is-note::before), .map :global(.cell[data-s="wrong"].is-note::before) { background: var(--on-ink); }
+  .map :global(.cell[aria-current="true"]) { outline: 2px solid var(--ink); outline-offset: 1px; z-index: 1; color: var(--ink); font-weight: 500; }
+  .map :global(.cell.is-dim) { opacity: .16; }
+
+  .lg { display: inline-block; width: 11px; height: 11px; border: 1px solid var(--line-2); }
+  .lg--answered { background: var(--blue-100); border-color: var(--blue-pale); }
+  .lg--correct { background: var(--ok); border-color: var(--ok); }
+  .lg--wrong { background: var(--bad); border-color: var(--bad); }
+  .lg--flag { border: 5.5px solid transparent; border-top-color: var(--amber); border-right-color: var(--amber); }
+  .lg--note { width: 6px; height: 6px; border: 0; border-radius: 50%; background: var(--blue); }
+  .lg--void { background: repeating-linear-gradient(135deg, var(--line-2) 0 2px, var(--surface) 2px 4px); }
+
+  /* ---------- Pasek dolny ---------- */
+  .bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 20px; border-top: 1px solid var(--line); background: var(--surface); }
+  .bottom__mid { display: flex; gap: 6px; }
+
+  .act { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 48px; padding: 0 18px; font: 500 0.9375rem/1 var(--f-body); color: var(--ink); border: 1px solid transparent; transition: background .15s, border-color .15s, color .15s, box-shadow .2s; white-space: nowrap; }
+  .act kbd { margin-left: 2px; }
+  .act:disabled { opacity: .35; cursor: default; }
+  .act--ghost { border-color: var(--line-2); }
+  .act--ghost:not(:disabled):hover { border-color: var(--ink); }
+  .act--tool { color: var(--text); font-weight: 400; }
+  .act--tool:hover { background: var(--bg-soft); color: var(--ink); }
+  .act--tool[aria-pressed="true"] { background: var(--amber-bg); color: var(--amber); }
+  .act--tool[aria-expanded="true"] { background: var(--bg-soft); color: var(--ink); }
+  .act--tool.has-note :global(svg) { color: var(--blue); }
+  .act--primary { background: var(--blue-fill); border-color: var(--blue-fill); color: #fff; padding: 0 22px; }
+  .act--primary:not(:disabled):hover { background: var(--blue-600); }
+  .act--primary kbd { background: rgba(255, 255, 255, .15); border-color: transparent; color: #fff; } /* kolor-stały: biel na kobalcie --blue-fill */
+  .act--next { min-width: 168px; }
+  /* „Pomiń” — przed odpowiedzią w nauce dalej jest wtórne */
+  .act--next.is-skip { background: var(--surface); color: var(--ink); border-color: var(--line-2); }
+  .act--next.is-skip:hover { background: var(--surface); border-color: var(--ink); }
+  .act--next.is-ready { box-shadow: 0 0 0 4px var(--blue-100); }
+
+  /* ---------- Okna potwierdzeń ---------- */
+  .modal { width: min(100% - 32px, 480px); padding: 0; border: 1px solid var(--ink); color: var(--text); box-shadow: 0 40px 80px -30px rgba(4, 11, 27, .45); }
+  .modal::backdrop { background: rgba(4, 11, 27, .45); }
+  .modal form { padding: 28px; }
+  .modal__title { font: 400 1.75rem/1.1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); margin-bottom: 14px; }
+  .modal__body { font-size: 0.9375rem; line-height: 1.55; }
+  .modal__body :global(ul) { margin: 14px 0; border-top: 1px solid var(--line); }
+  .modal__body :global(li) { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .modal__body :global(li b) { font: 500 0.875rem/1.4 var(--f-mono); color: var(--ink); }
+  .modal__body :global(.linkish) { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+  .modal__body :global(.modal__note) { font-size: 0.84375rem; color: var(--muted); }
+  .modal__actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+  .keys div { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 0.90625rem; }
+  .keys dt { display: flex; align-items: center; gap: 4px; color: var(--muted); }
+  .keys dd { color: var(--ink); }
+
+  /* ---------- Responsywność ---------- */
+  @media (max-width: 1180px) {
+    /* mapa jako szuflada nad treścią */
+    .run[data-map-open] .body { grid-template-columns: minmax(0, 1fr); }
+    .map { position: absolute; top: 0; right: 0; bottom: 0; z-index: 3; width: min(360px, 100%); box-shadow: -24px 0 48px -24px rgba(4, 11, 27, .3); }
+    .run[data-map-open] .map-scrim { display: block; position: absolute; inset: 0; z-index: 2; background: rgba(4, 11, 27, .25); }
+  }
+
+  @media (max-width: 860px) {
+    .tb--wide { display: none; }
+    .top__title { display: none; }
+    .top { justify-content: space-between; }
+    .top__count { margin-right: auto; }
+  }
+
+  @media (max-width: 720px) {
+    .run { --top-h: 56px; --bottom-h: 68px; }
+    .top { gap: 6px; padding: 0 10px; }
+    .tb--exit { margin-left: -4px; width: 40px; padding: 0; border-right: 0; }
+    .timer { gap: 4px; padding-left: 8px; }
+    .timer > :global(svg) { display: none; }
+    .timer__value { min-width: 0; font-size: 0.875rem; }
+    .timer .tb { width: 34px; }
+    .score { gap: 8px; font-size: 0.8125rem; }
+    .tb--exit .tb__label, .tb--map .tb__label { display: none; }
+    .tb--map { width: 40px; padding: 0; }
+    .tb--line { margin-left: 0; padding: 0 10px; font-size: 0.84375rem; }
+    .main__inner { padding: 20px 16px 32px; }
+    .demo { margin-bottom: 16px; }
+    .bottom { padding: 0 12px; gap: 6px; }
+    .act { height: 46px; padding: 0 12px; }
+    .act kbd { display: none; }
+    .act--ghost .act__label { display: none; }
+    .act--ghost { width: 46px; padding: 0; }
+    .act--tool { flex-direction: column; gap: 3px; height: 50px; padding: 0 8px; font-size: 0.6875rem; }
+    .act--next { min-width: 0; flex: 1; max-width: 200px; }
+    /* mapa jako arkusz od dołu */
+    .map { top: auto; left: 0; width: 100%; max-height: 78%; border-left: 0; border-top: 1px solid var(--ink); box-shadow: 0 -24px 48px -24px rgba(4, 11, 27, .35); }
+    .map__grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+    .map :global(.cell) { font-size: 0.75rem; }
+    .pause__time { font-size: 2.75rem; }
+  }
+</style>

@@ -1,0 +1,66 @@
+---
+/**
+ * Dopisek „źródło: zarobkilekarzy.pl” do tekstu kopiowanego ze strony (Cmd/Ctrl+C, menu kontekstowe).
+ * Zwykły tekst dostaje go w nowym akapicie, wersja sformatowana (wklejanie do Worda, Dokumentów, maila) —
+ * akapit z linkiem do strony, z której skopiowano. Sformatowana kopia idzie bez stylów strony: w trybie
+ * nocnym nie wkleja się biały tekst, a ikony i przyciski zostają na stronie.
+ * Bez dopisku: kopiowanie w polach formularzy oraz linki z przycisków serwisu (pasek zaznaczenia, kotwice
+ * nagłówków, „Kopiuj link”) — te trafiają do schowka przez navigator.clipboard, bez zdarzenia copy.
+ */
+interface Props {
+  /** nazwa serwisu w dopisku */
+  name: string;
+}
+
+const { name } = Astro.props;
+---
+<zl-copy-source data-name={name} hidden></zl-copy-source>
+
+<script>
+  // Twarde spacje z typo() — poza stroną tylko przeszkadzają
+  const NBSP = new RegExp(String.fromCharCode(0xa0), 'g');
+  const FIELDS = 'input, textarea, select, [contenteditable]';
+  const STRIP = 'svg, script, style, template, button, .h-anchor';
+  // Do schowka idzie sama struktura i treść — bez klas, id i atrybutów skryptów strony
+  const KEEP = new Set(['href', 'src', 'alt', 'title', 'colspan', 'rowspan']);
+
+  class ZlCopySource extends HTMLElement {
+    connectedCallback() {
+      const name = this.dataset.name ?? location.host;
+
+      document.addEventListener('copy', (event) => {
+        const selection = getSelection();
+        const node = event.target as Node | null;
+        const target = node instanceof Element ? node : node?.parentElement;
+        if (event.defaultPrevented || !event.clipboardData || !selection || selection.isCollapsed) return;
+        if (target?.closest(FIELDS)) return;
+
+        const text = selection.toString().replace(NBSP, ' ').trim();
+        if (!text) return;
+
+        const box = document.createElement('div');
+        for (let i = 0; i < selection.rangeCount; i++) box.append(selection.getRangeAt(i).cloneContents());
+        box.querySelectorAll(STRIP).forEach((el) => el.remove());
+        // Adresy względne przestałyby działać po wklejeniu w innym miejscu
+        box.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) => a.setAttribute('href', a.href));
+        box.querySelectorAll<HTMLImageElement>('img[src]').forEach((img) => img.setAttribute('src', img.src));
+        box.querySelectorAll('*').forEach((el) => {
+          for (const { name: attr } of [...el.attributes]) if (!KEEP.has(attr)) el.removeAttribute(attr);
+        });
+
+        const source = document.createElement('p');
+        const link = document.createElement('a');
+        link.href = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href ?? location.href;
+        link.textContent = name;
+        source.append('źródło: ', link);
+        box.append(source);
+
+        event.clipboardData.setData('text/plain', `${text}\n\nźródło: ${name}`);
+        event.clipboardData.setData('text/html', box.innerHTML);
+        event.preventDefault();
+      });
+    }
+  }
+
+  if (!customElements.get('zl-copy-source')) customElements.define('zl-copy-source', ZlCopySource);
+</script>

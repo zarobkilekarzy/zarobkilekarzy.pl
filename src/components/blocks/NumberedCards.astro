@@ -1,0 +1,91 @@
+---
+/**
+ * Karty z numeracją „01.”. Wyróżniona karta jest niebieska; przy hover
+ * wyróżnienie „wędruje” do wskazanej karty (czysty CSS).
+ */
+import Num from '@/components/ui/Num.astro';
+import Icon from '@/components/ui/Icon.astro';
+import type { PathCard } from '@/types';
+import { typo } from '@/lib/format';
+
+interface Props {
+  items: PathCard[];
+}
+const { items } = Astro.props;
+---
+<div class="pcards">
+  {items.map((item, i) => (
+    <a class:list={['pcard', { 'pcard--featured': item.featured }]} href={item.href} data-reveal>
+      <Num n={i + 1} />
+      <div class="pcard__body">
+        <p class="pcard__kicker">{item.kicker}</p>
+        <h3 class="pcard__title">{typo(item.title)}</h3>
+        <p class="pcard__desc">{typo(item.desc)}</p>
+        <ul class="pcard__tags">{item.tags.map((t) => <li>{t}</li>)}</ul>
+      </div>
+      <span class="pcard__go" aria-hidden="true"><Icon name="arrow" class="pcard__go-icon" /></span>
+    </a>
+  ))}
+</div>
+
+<style>
+  .pcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .pcard {
+    --c-bg: var(--surface); --c-fg: var(--ink); --c-text: var(--text); --c-accent: var(--blue); --c-line: var(--line-2);
+    --num-color: var(--c-accent);
+    --num-dot: var(--c-fg);
+    position: relative;
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-height: 400px;
+    padding: 28px 28px 30px;
+    background: var(--c-bg);
+    border: 1px solid var(--c-line);
+    color: var(--c-fg);
+    transition: background .45s var(--ease), border-color .45s var(--ease), color .45s var(--ease);
+  }
+  .pcard__body { transition: transform .5s var(--ease); }
+  .pcard__kicker { font: 500 0.71875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--c-accent); margin-bottom: 12px; transition: color .45s var(--ease); }
+  .pcard__title { font: 500 1.4375rem/1.2 var(--f-display); letter-spacing: -0.02em; margin-bottom: 12px; max-width: 18ch; }
+  .pcard__desc { font-size: 0.9375rem; line-height: 1.6; color: var(--c-text); max-width: 34ch; transition: color .45s var(--ease); }
+  .pcard__tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 20px; }
+  .pcard__tags li {
+    font: 400 0.75rem/1 var(--f-mono); padding: 6px 8px;
+    border: 1px solid var(--c-line); color: var(--c-text);
+    transition: border-color .45s var(--ease), color .45s var(--ease);
+  }
+  .pcard__go {
+    position: absolute; top: 28px; right: 28px;
+    display: grid; place-items: center; width: 44px; height: 44px;
+    border: 1px solid var(--c-line); color: var(--c-fg);
+    transition: all .45s var(--ease);
+  }
+  .pcard__go-icon { transition: transform .3s var(--ease); }
+  .pcard:hover .pcard__go-icon { transform: translateX(2px); }
+
+  /* Stan aktywny: domyślnie karta wyróżniona, przy hover — wskazana */
+  .pcard--featured,
+  .pcards:hover .pcard:hover,
+  .pcard:focus-visible {
+    --c-bg: var(--blue-fill); --c-fg: #fff; --c-text: rgba(255, 255, 255, .82); --c-accent: #fff; --c-line: rgba(255, 255, 255, .35);
+  }
+  .pcard--featured .pcard__body,
+  .pcards:hover .pcard:hover .pcard__body { transform: translateY(10px); }
+  .pcard--featured .pcard__go,
+  .pcards:hover .pcard:hover .pcard__go { background: #fff; color: var(--blue-fill); border-color: #fff; } /* kolor-stały: biały kwadrat na kobalcie */
+
+  .pcards:hover .pcard--featured:not(:hover) {
+    --c-bg: var(--surface); --c-fg: var(--ink); --c-text: var(--text); --c-accent: var(--blue); --c-line: var(--line-2);
+  }
+  .pcards:hover .pcard--featured:not(:hover) .pcard__body { transform: none; }
+  .pcards:hover .pcard--featured:not(:hover) .pcard__go { background: transparent; color: var(--ink); border-color: var(--line-2); }
+
+  @media (max-width: 1024px) {
+    .pcards { grid-template-columns: 1fr; }
+    .pcard { min-height: 300px; }
+  }
+
+  @media (max-width: 720px) {
+    .pcard { padding: 24px 20px; min-height: 0; gap: 48px; }
+    .pcard__go { top: 24px; right: 20px; }
+  }
+</style>

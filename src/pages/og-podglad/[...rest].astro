@@ -1,0 +1,49 @@
+---
+/**
+ * Podgląd wszystkich obrazków OG — tylko w `astro dev` (w buildzie getStaticPaths zwraca pustą listę).
+ * Zmień frontmatter artykułu (pole `og`) albo src/data/og.ts i odśwież stronę.
+ */
+import type { GetStaticPaths } from 'astro';
+import '@/styles/tokens.css';
+import { getOgEntries, ogUrl } from '@/lib/og/registry';
+
+export const getStaticPaths = (() => (import.meta.env.DEV ? [{ params: { rest: undefined } }] : [])) satisfies GetStaticPaths;
+
+const entries = await getOgEntries();
+const kind = (e: (typeof entries)[number]) => (e.file ? 'własny plik' : e.spec!.media.kind);
+---
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Podgląd obrazków OG</title>
+  </head>
+  <body>
+    <header>
+      <h1>Obrazki OG <span>{entries.length}</span></h1>
+      <p>Pierwszy obrazek jest też domyślnym dla tras bez własnego wpisu. Zasady i pola nadpisań: <code>docs/og-system.md</code>.</p>
+    </header>
+    <ul>
+      {entries.map((e) => (
+        <li>
+          <a href={ogUrl(e)} target="_blank"><img src={ogUrl(e)} alt={e.alt} width="1200" height="630" loading="lazy" /></a>
+          <p><a href={e.route}>{e.route}</a><span>{kind(e)}</span></p>
+        </li>
+      ))}
+    </ul>
+  </body>
+</html>
+
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg-soft); color: var(--text); font: 0.875rem/1.5 system-ui, sans-serif; }
+  header { margin-bottom: 24px; }
+  h1 { margin: 0 0 4px; font-size: 1.375rem; color: var(--ink); }
+  h1 span, li span { color: var(--muted); font-weight: 400; }
+  ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr)); gap: 24px; margin: 0; padding: 0; list-style: none; }
+  img { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: #fff; } /* kolor-stały: obrazki OG są zawsze dzienne */
+  li p { display: flex; justify-content: space-between; gap: 12px; margin: 8px 0 0; font-family: ui-monospace, monospace; font-size: 0.78125rem; }
+  li a { color: var(--ink); }
+  code { font-size: 0.8125rem; }
+</style>

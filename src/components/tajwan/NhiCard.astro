@@ -1,0 +1,149 @@
+---
+/**
+ * Ilustracja tajwańskiej karty ubezpieczenia NHI z ponumerowanymi elementami. Gdy figura ma
+ * co najmniej 640 px, numery na karcie otwierają dymki (ui/Popover, wariant `pin`); węziej
+ * są zwykłymi znakami, a objaśnienia stoją listą pod kartą — jak na rachunku (tajwan/Receipt).
+ * Ilustracja przedmiotu — zawsze w jasnych barwach karty, także w trybie nocnym.
+ * Znak w rogu jest umowny (nie godło NHI), dane — przykładowego pacjenta z rachunku.
+ */
+import { getImage } from 'astro:assets';
+import Figure from '@/components/blocks/Figure.astro';
+import Popover from '@/components/ui/Popover.astro';
+import { CARD_PARTS } from '@/data/tajwan';
+import { typo } from '@/lib/format';
+import portrait from '@/assets/articles/tajwan-ochrona-zdrowia/nosacz-portret.webp';
+
+const W = 856;
+const H = 540;
+const photo = await getImage({ src: portrait, width: 400, format: 'webp' });
+
+// Numery w układzie współrzędnych karty (viewBox) → procenty nad ilustracją
+const MARKS: [number, number][] = [
+  [139, 178], // chip
+  [226, 228], // imię i nazwisko
+  [226, 318], // numer identyfikacyjny
+  [226, 368], // data urodzenia
+  [806, 150], // zdjęcie
+  [36, 462], // numer karty
+];
+const at = ([x, y]: [number, number]) => `left: ${((x / W) * 100).toFixed(2)}%; top: ${((y / H) * 100).toFixed(2)}%`;
+---
+<Figure note="Uproszczona ilustracja karty. Znak w lewym górnym rogu jest umowny — to nie godło NHI.">
+  <div class="nhi">
+    <div class="card">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="nhi-card-title">
+        <title id="nhi-card-title">Ilustracja karty ubezpieczenia NHI: chip, imię i nazwisko chińskimi znakami, numer identyfikacyjny, data urodzenia, zdjęcie i numer karty</title>
+        <defs>
+          <linearGradient id="nhi-bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#e4f1f7" /><stop offset=".55" stop-color="#f6faf3" /><stop offset="1" stop-color="#dcefe6" />
+          </linearGradient>
+          <linearGradient id="nhi-chip" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#f3d27a" /><stop offset=".5" stop-color="#d8a93c" /><stop offset="1" stop-color="#b98a22" />
+          </linearGradient>
+          <clipPath id="nhi-frame"><rect width={W} height={H} rx="34" /></clipPath>
+          <clipPath id="nhi-photo"><rect x="606" y="150" width="200" height="252" rx="6" /></clipPath>
+        </defs>
+
+        <g clip-path="url(#nhi-frame)">
+          <rect width={W} height={H} fill="url(#nhi-bg)" />
+          <g fill="none" stroke="#9cc7b4" stroke-opacity=".35" stroke-width="1.2">
+            <path d="M0 330 C140 270 280 390 420 330 S700 270 856 330" />
+            <path d="M0 350 C140 290 280 410 420 350 S700 290 856 350" />
+            <path d="M0 370 C140 310 280 430 420 370 S700 310 856 370" />
+            <circle cx="560" cy="250" r="120" /><circle cx="560" cy="250" r="150" /><circle cx="560" cy="250" r="180" />
+          </g>
+          <rect y="118" width={W} height="2" fill="#7fb59a" fill-opacity=".5" />
+        </g>
+        <rect x="1" y="1" width={W - 2} height={H - 2} rx="34" fill="none" stroke="#b9cdd8" stroke-width="2" />
+
+        <g transform="translate(70 26)" fill="#2f8f57">
+          <circle cx="38" cy="38" r="36" fill="#fff" stroke="#2f8f57" stroke-width="5" />
+          <circle cx="27" cy="25" r="7" /><circle cx="49" cy="25" r="7" />
+          <rect x="20" y="35" width="14" height="26" rx="6" /><rect x="42" y="35" width="14" height="26" rx="6" />
+        </g>
+        <text x="170" y="66" class="zh title" lang="zh-Hant">全民健康保險</text>
+        <text x="171" y="100" class="en">NATIONAL HEALTH INSURANCE</text>
+
+        <path d="M38 252 L62 230 L62 274 Z" fill="#3a9b5c" />
+        <g transform="translate(78 196)">
+          <rect width="122" height="98" rx="16" fill="url(#nhi-chip)" stroke="#a37a1e" stroke-width="2" />
+          <g fill="none" stroke="#8a6414" stroke-width="2.4" stroke-linecap="round">
+            <path d="M0 33H40M0 65H40M82 33H122M82 65H122M40 14V84M82 14V84" />
+            <rect x="40" y="33" width="42" height="32" rx="6" />
+          </g>
+        </g>
+
+        <text x="250" y="262" class="zh name" lang="zh-Hant">雅努什·科瓦爾斯基</text>
+        <text x="252" y="330" class="data">A123456789</text>
+        <text x="252" y="380" class="data">89/01/01</text>
+        <text x="70" y="472" class="number">0000 1234 5678</text>
+
+        <rect x="606" y="150" width="200" height="252" rx="6" fill="#fff" />
+        <image href={photo.src} x="606" y="150" width="200" height="252" preserveAspectRatio="xMidYMid slice" clip-path="url(#nhi-photo)" />
+        <rect x="606" y="150" width="200" height="252" rx="6" fill="none" stroke="#c4d2dc" stroke-width="2" />
+      </svg>
+      {MARKS.map((m, i) => (
+        <span class="card__mark" style={at(m)}>
+          <span class="card__live">
+            <Popover variant="pin" label={`Element karty ${i + 1}: ${CARD_PARTS[i].title}`} heading={CARD_PARTS[i].title}>
+              <Fragment slot="trigger">{i + 1}</Fragment>
+              {CARD_PARTS[i].text && typo(CARD_PARTS[i].text)}
+            </Popover>
+          </span>
+          <span class="card__n" aria-hidden="true">{i + 1}</span>
+        </span>
+      ))}
+    </div>
+
+    <p class="nhi__hint">Kliknij numer na karcie, żeby zobaczyć, co oznacza.</p>
+
+    <ol class="parts">
+      {CARD_PARTS.map((p, i) => (
+        <li>
+          <span class="card__n" aria-hidden="true">{i + 1}</span>
+          <p><strong>{typo(p.title)}.</strong>{p.text && <> {typo(p.text)}</>}</p>
+        </li>
+      ))}
+    </ol>
+  </div>
+</Figure>
+
+<style>
+  /* Przedmiot, nie interfejs: barwy karty są stałe w obu trybach */
+  .card { position: relative; max-width: 600px; color-scheme: light; }
+  svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 18px 24px light-dark(rgba(4, 11, 27, .14), rgba(0, 0, 0, .5))); }
+  text { fill: #1d2b36; } /* kolor-stały: nadruk karty */
+  .zh { font-family: 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', var(--f-body); }
+  .title { font-size: 2.875rem; font-weight: 600; letter-spacing: .08em; fill: #1f6b45; } /* kolor-stały: nadruk karty */
+  .en { font: 600 1.3125rem var(--f-body); letter-spacing: .14em; fill: #1f6b45; } /* kolor-stały: nadruk karty */
+  .name { font-size: 2.5rem; font-weight: 500; }
+  .data { font: 500 2.25rem var(--f-mono); letter-spacing: .04em; }
+  .number { font: 400 1.625rem var(--f-mono); letter-spacing: .08em; fill: #3d4c58; } /* kolor-stały: nadruk karty */
+
+  /* Numer elementu — ten sam znak na karcie (bez dymka) i przy objaśnieniu na liście */
+  .card__n {
+    display: inline-grid; place-items: center; width: var(--pop-pin); height: var(--pop-pin);
+    font: 500 calc(var(--pop-pin) * .52)/1 var(--f-mono); color: #fff; background: var(--blue-fill); /* kolor-stały: numer na kobaltowym wypełnieniu */
+  }
+  .nhi { --pop-pin: 22px; }
+  .card__mark { position: absolute; display: flex; transform: translate(-50%, -50%); }
+  .card__mark .card__n { box-shadow: 0 0 0 2px var(--bg); }
+
+  /* Wąsko: karta na całą szerokość, numery bez dymków, objaśnienia listą pod kartą */
+  .card__live, .nhi__hint { display: none; }
+  .parts { display: grid; gap: 12px; margin-top: 24px; }
+  .parts li { display: grid; grid-template-columns: var(--pop-pin) 1fr; gap: 12px; align-items: start; }
+  .parts p { font-size: 0.90625rem; line-height: 1.55; color: var(--text-strong); }
+  .parts strong { font-weight: 600; color: var(--ink); }
+  @container (max-width: 560px) {
+    .nhi { --pop-pin: 18px; }
+  }
+
+  /* Szeroko: numery otwierają dymki, lista znika — karta może być większa */
+  @container (min-width: 640px) {
+    .card { max-width: 680px; }
+    .card__live { display: flex; }
+    .card__mark .card__n, .parts { display: none; }
+    .nhi__hint { display: block; margin-top: 16px; font-size: 0.8125rem; color: var(--muted); }
+  }
+</style>

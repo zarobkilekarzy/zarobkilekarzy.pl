@@ -1,0 +1,239 @@
+---
+/**
+ * Dług kwartał po kwartale: słupki z danymi MZ (SPZOZ + od końca 2025 r. spółki i instytuty)
+ * i projekcja tylko na 12 miesięcy — blade słupki z krawędzią w tempie licznika, kreska w słupku
+ * to wolniejszy wariant (razem: przedział). Znacznik „teraz” ustawia serwer (chwila buildu)
+ * i poprawia skrypt.
+ *
+ * Słupki to HTML/CSS (napisy zostają czytelne na telefonie). Pod wykresem rozwijana
+ * tabela z danymi kwartalnymi — także jako tekstowa wersja wykresu.
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import { DEBT, LINKS } from '@/data/zadluzenie';
+import { mld, pct, projectQuarters } from '@/lib/zadluzenie/model';
+import { formatPL, typo } from '@/lib/format';
+
+const { quarters, last, params: p, lowSpan } = DEBT;
+const quarterName = (label: string) => label.replace(' ', ' kw. ');
+const signed = (rate: number) => `${rate < 0 ? '−' : '+'}${pct(Math.abs(rate))}%`;
+const now = Date.now();
+const projected = projectQuarters(p, last, now);
+const B = 1e9;
+
+const bars = [
+  ...quarters.map((q) => ({ label: q.label, end: q.end, spzoz: q.spzoz / B, others: (q.others ?? 0) / B, total: q.total / B, low: undefined as number | undefined, kind: 'data' })),
+  ...projected.map((q) => ({ label: q.label, end: q.end, spzoz: 0, others: 0, total: q.high / B, low: q.low / B, kind: 'proj' })),
+];
+const n = bars.length;
+const lastIndex = quarters.length - 1;
+const top = Math.max(...bars.map((b) => b.total));
+const max = Math.ceil(top / 10) * 10;
+const ticks = Array.from({ length: max / 10 + 1 }, (_, i) => i * 10);
+
+/** Ułamkowy indeks słupka dla chwili t — środek słupka to koniec jego kwartału */
+const ends = bars.map((b) => b.end);
+function nowX(t: number) {
+  const k = ends.findLastIndex((e) => e <= t);
+  if (k < 0 || k >= n - 1) return null;
+  return k + 0.5 + (t - ends[k]) / (ends[k + 1] - ends[k]);
+}
+const x = nowX(now);
+
+const end = projected.at(-1);
+const labels = new Map<number, string>([
+  [0, formatPL(bars[0].total, 1)],
+  [lastIndex, formatPL(last.total / B, 1)],
+]);
+// Rok = grupa kwartałów: kreska na granicy, podpis na środku grupy
+const starts = bars.flatMap((b, i) => (b.label.startsWith('I ') ? [i] : []));
+const years = starts.map((i, k) => ({ i, span: (starts[k + 1] ?? n) - i, year: bars[i].label.slice(2) }));
+
+const ratio = formatPL(last.spzoz / quarters[0].spzoz, 1);
+---
+<Figure
+  title={`Od początku 2020 r. dług SPZOZ wzrósł ${ratio} raza. W ostatnim roku przybyło mu ${pct(p.rate)}% — i w tym tempie liczy licznik.`}
+  note={`Słupki do ${quarterName(last.label)} to dane MZ o zobowiązaniach SPZOZ, od końca 2025 r. z dodanym długiem szpitali-spółek i instytutów (MZ podało go raz, dalej rośnie w tempie SPZOZ). Kreskowane — projekcja na najbliższe 12 miesięcy, nie dane.`}
+  source={{ label: 'Ministerstwo Zdrowia, zobowiązania SPZOZ (dane kwartalne)', href: LINKS.mz }}
+>
+  <div class="dc" data-reveal="grow" style={`--n: ${n}; --max: ${max}`}>
+    <div class="dc__plot" aria-hidden="true">
+      {ticks.map((t) => <span class="dc__tick" style={`--t: ${t}`}><span>{t}{t === max && ' mld zł'}</span></span>)}
+      <div class="dc__area">
+        <ol class="dc__bars">
+          {bars.map((b, i) => (
+            <li class:list={['dc__bar', `dc__bar--${b.kind}`, { 'is-first': i === 0, 'is-latest': i === lastIndex }]} style={`--v: ${b.total}; --o: ${b.others / b.total || 0}${b.low !== undefined ? `; --lo: ${b.low}` : ''}`}>
+              <span class="dc__fill"><span class="dc__others"></span></span>
+              {b.low !== undefined && <span class="dc__low"></span>}
+              {labels.has(i) && <span class="dc__val">{labels.get(i)}</span>}
+            </li>
+          ))}
+        </ol>
+        {/* Ostatni słupek to koniec kwartału, nie „za 12 miesięcy” z licznika — stąd nazwa kwartału przy kwocie */}
+        {end && (
+          <p class="dc__end" style={`--v: ${end.high / B}`}>
+            <span>{quarterName(end.label)}</span>{mld(end.low, 0)}–{mld(end.high, 0)} mld zł
+          </p>
+        )}
+        <span class="dc__now" data-now={JSON.stringify(ends)} style={x === null ? 'display: none' : `--x: ${x}`}><span>teraz</span></span>
+      </div>
+    </div>
+    <div class="dc__years" aria-hidden="true">
+      {years.map((y) => <span style={`--i: ${y.i}; --span: ${y.span}`}>{y.year}</span>)}
+    </div>
+    <p class="sr-only">
+      {typo(`Zobowiązania SPZOZ według MZ: ${formatPL(bars[0].total, 1)} mld zł w ${quarterName(bars[0].label)} i ${formatPL(last.spzoz / B, 1)} mld zł w ${quarterName(last.label)}; z szpitalami-spółkami i instytutami ${formatPL(last.total / B, 1)} mld zł. Projekcja: ${end ? `w ${quarterName(end.label)} od ${mld(end.low, 0)} do ${mld(end.high, 0)} mld zł` : ''}.`)}
+    </p>
+
+    <ul class="dc__legend">
+      <li><i class="dc__sw dc__sw--data"></i>SPZOZ — dane MZ</li>
+      <li><i class="dc__sw dc__sw--others"></i>szpitale-spółki i instytuty</li>
+      <li><i class="dc__sw dc__sw--proj"></i>{typo(`projekcja: tempo z ostatniego roku (+${pct(p.rate)}%)`)}</li>
+      <li><i class="dc__sw dc__sw--low"></i>{typo(`wolniej: tempo średnio ${lowSpan} (+${pct(p.low)}%)`)}</li>
+    </ul>
+  </div>
+</Figure>
+
+<details class="dc__data">
+  <summary>Dane kwartalne w tabeli</summary>
+  <table>
+    <thead>
+      <tr><th scope="col">Koniec kwartału</th><th scope="col">SPZOZ, mld zł</th><th scope="col">w tym wymagalne</th><th scope="col">rok do roku</th></tr>
+    </thead>
+    <tbody>
+      {quarters.toReversed().map((q, i, all) => {
+        const prev = all[i + 4];
+        return (
+          <tr>
+            <th scope="row">{quarterName(q.label)}</th>
+            <td>{formatPL(q.spzoz / B, 2)}</td>
+            <td>{formatPL(q.overdue / B, 2)}</td>
+            <td>{prev ? signed(q.spzoz / prev.spzoz - 1) : '—'}</td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</details>
+
+<script>
+  // Znacznik „teraz” według zegara czytelnika (serwer ustawił go na chwilę buildu)
+  for (const el of document.querySelectorAll<HTMLElement>('.dc__now[data-now]')) {
+    const ends: number[] = JSON.parse(el.dataset.now ?? '[]');
+    const t = Date.now();
+    const k = ends.findLastIndex((e) => e <= t);
+    if (k < 0 || k >= ends.length - 1) { el.style.display = 'none'; continue; }
+    el.style.removeProperty('display');
+    el.style.setProperty('--x', String(k + 0.5 + (t - ends[k]) / (ends[k + 1] - ends[k])));
+  }
+</script>
+
+<style>
+  .dc { --gutter: 34px; --h: clamp(220px, 46cqi, 320px); }
+  .dc__plot { position: relative; height: var(--h); margin-top: 44px; }
+
+  /* Siatka: linia przez całą szerokość, etykieta w marginesie po lewej */
+  .dc__tick { position: absolute; left: 0; right: 0; bottom: calc(var(--t) / var(--max) * 100%); border-top: 1px solid var(--line); }
+  .dc__tick:first-child { border-top-color: var(--line-2); }
+  .dc__tick span { position: absolute; left: 0; bottom: 4px; font: 400 0.65625rem/1 var(--f-mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  .dc__area { position: absolute; inset: 0 0 0 var(--gutter); }
+  .dc__bars { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); height: 100%; }
+  .dc__bar { position: relative; display: flex; align-items: flex-end; justify-content: center; }
+  .dc__fill {
+    position: relative; display: flex; flex-direction: column;
+    width: 62%; height: calc(var(--v) / var(--max) * 100%);
+    background: var(--chart);
+    transform-origin: bottom; transition: transform 1s var(--ease);
+  }
+  /* Segment u góry słupka, oddzielony od SPZOZ szczeliną w kolorze tła */
+  .dc__others { box-sizing: border-box; height: calc(var(--o) * 100%); background: var(--chart-soft); border-bottom: 2px solid var(--bg); }
+  .dc__others:empty { border: 0; }
+  .dc__bar--proj .dc__fill { background: var(--chart-proj); border-top: 2px solid var(--blue); }
+  .dc__bar--proj .dc__others { display: none; }
+
+  /* Wolniejszy wariant — kreska w słupku projekcji (z krawędzią u góry daje przedział) */
+  .dc__low {
+    position: absolute; left: 50%; width: 62%; translate: -50% 0;
+    bottom: calc(var(--lo) / var(--max) * 100% - 1px); height: 2px; background: var(--ink);
+  }
+
+  .dc__val {
+    position: absolute; bottom: calc(var(--v) / var(--max) * 100% + 6px); left: 50%; transform: translateX(-50%);
+    padding: 1px 3px; background: var(--under);
+    font: 500 0.71875rem/1 var(--f-mono); color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .dc__bar.is-first .dc__val { left: 0; transform: none; }
+  /* ostatni odczyt: podpis w lewo, nad niższe słupki — z prawej stoi „teraz” i projekcja */
+  .dc__bar.is-latest .dc__val { left: auto; right: 0; transform: none; }
+
+  /* Przedział na koniec projekcji: nazwa kwartału + kwota nad ostatnim słupkiem */
+  .dc__end {
+    position: absolute; right: 0; bottom: calc(var(--v) / var(--max) * 100% + 8px);
+    z-index: 1; /* nad linią „teraz”, gdy na wąskim ekranie podpis sięga na jej lewą stronę */
+    display: grid; justify-items: end; gap: 3px; padding-left: 6px; background: var(--under);
+    font: 400 0.9375rem/1.1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap;
+  }
+  .dc__end span { font: 500 0.625rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  /* „Teraz” — linia włoskowa, podpis po lewej (z kropką jak przy liczniku na żywo) */
+  .dc__now {
+    position: absolute; top: -34px; bottom: 0; left: calc(var(--x) / var(--n) * 100%);
+    border-left: 1px solid var(--ink);
+  }
+  .dc__now span {
+    position: absolute; top: 0; right: 0; display: flex; align-items: center; gap: 6px;
+    padding-right: 7px; white-space: nowrap;
+    font: 500 0.625rem/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink);
+  }
+  .dc__now span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--bad); }
+
+  /* Lata: kreska na granicy roku, podpis na środku jego kwartałów */
+  .dc__years { position: relative; height: 24px; margin-left: var(--gutter); }
+  .dc__years span {
+    position: absolute; top: 0; height: 100%; left: calc(var(--i) / var(--n) * 100%); width: calc(var(--span) / var(--n) * 100%);
+    display: flex; justify-content: center; align-items: flex-end;
+    font: 400 0.6875rem/1 var(--f-mono); color: var(--muted);
+  }
+  .dc__years span::before { content: ""; position: absolute; top: 0; left: 0; width: 1px; height: 6px; background: var(--line-2); }
+
+  .dc__legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 20px; font-size: 0.8125rem; line-height: 1.4; color: var(--text); }
+  .dc__legend li { display: flex; align-items: center; gap: 8px; }
+  .dc__sw { flex: none; width: 12px; height: 12px; }
+  .dc__sw--data { background: var(--chart); }
+  .dc__sw--others { background: var(--chart-soft); }
+  .dc__sw--proj { background: var(--chart-proj); border-top: 2px solid var(--blue); }
+  .dc__sw--low { height: 2px; background: var(--ink); }
+
+  /* Animacja wzrostu (scripts/reveal.ts) */
+  .dc.is-armed .dc__fill { transform: scaleY(0); }
+  .dc.is-armed.is-in .dc__fill { transform: scaleY(1); }
+  .dc.is-armed :is(.dc__low, .dc__val, .dc__end, .dc__now) { opacity: 0; }
+  .dc.is-armed.is-in :is(.dc__low, .dc__val, .dc__end, .dc__now) { opacity: 1; transition: opacity .4s .9s; }
+
+  /* Tabela danych */
+  .dc__data { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .dc__data summary {
+    display: flex; align-items: center; padding: 12px 0; cursor: pointer; list-style: none;
+    font: 500 0.71875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text);
+  }
+  .dc__data summary::-webkit-details-marker { display: none; }
+  .dc__data summary::after { content: "+"; margin-left: auto; font: 400 1.125rem/1 var(--f-mono); color: var(--blue); }
+  .dc__data[open] summary::after { content: "–"; }
+  .dc__data summary:hover { color: var(--ink); }
+  /* .dc__data przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .dc__data table { width: 100%; border-collapse: collapse; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+  .dc__data thead th { padding: 8px 12px 8px 0; text-align: right; font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--ink); }
+  .dc__data thead th:first-child, .dc__data tbody th { text-align: left; }
+  .dc__data tbody th, .dc__data td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); text-align: right; color: var(--ink-2); }
+  .dc__data tbody th { font: 400 0.875rem/1.3 var(--f-body); text-transform: none; letter-spacing: 0; color: var(--ink); }
+
+  @container (max-width: 520px) {
+    .dc { --gutter: 26px; }
+    .dc__fill, .dc__low { width: 76%; }
+    .dc__val { font-size: 0.6875rem; }
+    .dc__tick span { font-size: 0.59375rem; }
+    .dc__years span { font-size: 0.625rem; }
+    /* co drugi rok bez podpisu (kreska granicy zostaje) — na wąskim ekranie etykiety by się zlewały */
+    .dc__years span:nth-child(even) { color: transparent; }
+  }
+</style>

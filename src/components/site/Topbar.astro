@@ -1,0 +1,54 @@
+---
+import Icon from '@/components/ui/Icon.astro';
+import type { Link } from '@/types';
+import { formatDate, isoDate, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Props {
+  updated: Date;
+  announcement?: { text: string; href: string };
+  links: Link[];
+}
+
+const { updated, announcement, links } = Astro.props;
+---
+<div class="topbar">
+  <div class="wrap topbar__inner">
+    <p class="topbar__news">
+      <span class="pulse" aria-hidden="true"></span>
+      <span class="topbar__date">Aktualizacja <time datetime={isoDate(updated)}>{formatDate(updated)}</time></span>
+      {announcement && (
+        <a href={announcement.href}><span class="topbar__text">{typo(announcement.text)}</span><Icon name="arrow" size={16} /></a>
+      )}
+    </p>
+    <ul class="topbar__links">
+      {links.map((link) => <li><a {...linkAttrs(link.href)}>{link.label}</a></li>)}
+    </ul>
+  </div>
+</div>
+
+<style>
+  .topbar {
+    background: var(--inverse);
+    color: rgba(255, 255, 255, .72);
+    font: 400 0.78125rem/1 var(--f-mono);
+  }
+  .topbar__inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 38px; }
+  .topbar__news { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .topbar__news a { display: inline-flex; align-items: center; gap: 6px; min-width: 0; color: #fff; } /* kolor-stały: tło --inverse, zawsze ciemne */
+  .topbar__news a:hover { color: var(--blue-pale); }
+  .topbar__text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar__date { color: rgba(255, 255, 255, .5); white-space: nowrap; }
+  .topbar__links { display: flex; gap: 22px; white-space: nowrap; }
+  .topbar__links a:hover { color: #fff; } /* kolor-stały: tło --inverse, zawsze ciemne */
+  .pulse { position: relative; width: 7px; height: 7px; background: var(--blue); flex: none; }
+  .pulse::after {
+    content: ""; position: absolute; inset: -4px; border: 1px solid var(--blue);
+    animation: pulse 2.2s var(--ease) infinite;
+  }
+  @keyframes pulse { 0% { opacity: .9; transform: scale(.6); } 100% { opacity: 0; transform: scale(1.6); } }
+
+  @media (max-width: 720px) {
+    .topbar__links, .topbar__date { display: none; }
+  }
+</style>

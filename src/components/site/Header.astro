@@ -1,0 +1,178 @@
+---
+import Logo from '@/components/ui/Logo.astro';
+import Icon from '@/components/ui/Icon.astro';
+import ThemeToggle from './ThemeToggle.astro';
+import TextSizeToggle from './TextSizeToggle.astro';
+import type { Link } from '@/types';
+import { isCurrent } from '@/lib/links';
+
+interface Props {
+  nav: Link[];
+  /** pozycje dodatkowo pokazywane tylko w menu mobilnym */
+  mobileExtras?: Link[];
+}
+
+const { nav, mobileExtras = [] } = Astro.props;
+const { pathname } = Astro.url;
+---
+<header class="header" data-header>
+  <div class="wrap header__inner">
+    <Logo />
+
+    <nav class="nav" aria-label="Główna nawigacja">
+      <ul class="nav__list">
+        {nav.map((link) => {
+          const current = isCurrent(link, pathname);
+          return <li><a class:list={{ 'is-active': current }} aria-current={current ? 'page' : undefined} href={link.href} data-label={link.label}>{link.label}</a></li>;
+        })}
+      </ul>
+    </nav>
+
+    <div class="header__tools">
+      <button class="search-trigger" type="button" data-search-open aria-label="Szukaj w serwisie">
+        <Icon name="search" size={18} />
+        <span class="search-trigger__label">Szukaj</span>
+        <kbd>⌘K</kbd>
+      </button>
+      <div class="display" role="group" aria-label="Wyświetlanie">
+        <TextSizeToggle class="display__text" />
+        <ThemeToggle />
+      </div>
+      <button class="menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="mobile-menu" aria-label="Otwórz menu">
+        <Icon name="menu" class="menu-toggle__open" />
+        <Icon name="close" class="menu-toggle__close" />
+      </button>
+    </div>
+  </div>
+
+  <div class="mobile-menu" id="mobile-menu" data-mobile-menu hidden>
+    <ul>
+      {[...nav, ...mobileExtras].map((link) => <li><a href={link.href}>{link.label}</a></li>)}
+    </ul>
+    {/* Na telefonie nagłówek mieści tylko tryb nocny — „Większy tekst” jest tu, z podpisem */}
+    <div class="mobile-menu__prefs">
+      <TextSizeToggle labelled />
+    </div>
+  </div>
+</header>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-header]');
+  const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const menu = document.querySelector<HTMLElement>('[data-mobile-menu]');
+
+  const onScroll = () => header?.classList.toggle('is-scrolled', window.scrollY > 8);
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  const setMenu = (open: boolean) => {
+    if (!toggle || !menu) return;
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Zamknij menu' : 'Otwórz menu');
+    menu.hidden = !open;
+  };
+
+  toggle?.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
+  menu?.addEventListener('click', (e) => {
+    if ((e.target as Element).closest('a')) setMenu(false);
+  });
+  window.matchMedia('(min-width: 1025px)').addEventListener('change', (e) => e.matches && setMenu(false));
+  // Otwarcie wyszukiwarki zamyka menu mobilne (zdarzenie z SearchDialog.astro)
+  document.addEventListener('zl:search-open', () => setMenu(false));
+</script>
+
+<style>
+  .header {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    backdrop-filter: saturate(1.4) blur(14px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .3s, background .3s;
+  }
+  .header.is-scrolled { border-bottom-color: var(--line); background: color-mix(in srgb, var(--bg) 94%, transparent); }
+  .header__inner { display: flex; align-items: center; justify-content: space-between; gap: 32px; height: var(--header-h); }
+
+  .nav { margin-left: auto; }
+  .nav__list { display: flex; align-items: center; gap: 4px; }
+  .nav__list a {
+    position: relative;
+    display: block; padding: 10px 14px;
+    font: 400 0.90625rem/1 var(--f-body);
+    color: var(--ink-2);
+    text-align: center;
+    transition: color .2s;
+  }
+  /* Miejsce na pogrubioną wersję etykiety: aktywna pozycja nie poszerza się, więc menu nie drga przy zmianie sekcji */
+  .nav__list a::before {
+    content: attr(data-label); content: attr(data-label) / "";
+    display: block; height: 0; overflow: hidden; visibility: hidden; font-weight: 600;
+  }
+  .nav__list a::after {
+    content: ""; position: absolute; left: 14px; right: 14px; bottom: 2px; height: 1px;
+    background: var(--blue); transform: scaleX(0); transform-origin: left; transition: transform .3s var(--ease);
+  }
+  .nav__list a:hover { color: var(--blue); }
+  .nav__list a:hover::after { transform: scaleX(1); }
+  .nav__list a.is-active { font-weight: 600; color: var(--ink); }
+  .nav__list a.is-active::after { transform: scaleX(1); background: var(--ink); }
+
+  .header__tools { display: flex; align-items: center; gap: 8px; }
+  /* Większy tekst i tryb nocny jako jeden zestaw: kwadraty ze wspólną krawędzią */
+  .display { display: flex; }
+  .display > :global(* + *) { margin-left: -1px; }
+  .display > :global(*:hover) { position: relative; z-index: 1; }
+  /* Stała szerokość: przy podmianie fontu zastępczego na docelowy przycisk nie zmienia rozmiaru,
+     więc lupa nie przeskakuje (pasek narzędzi jest wyrównany do prawej) */
+  .search-trigger {
+    display: inline-flex; align-items: center; gap: 10px;
+    width: 148px; height: 40px; padding: 0 8px 0 12px;
+    border: 1px solid var(--line-2);
+    color: var(--ink);
+    font-size: 0.875rem;
+    transition: border-color .2s, color .2s;
+  }
+  .search-trigger:hover { border-color: var(--ink); }
+  .search-trigger__label { flex: 1; text-align: left; color: var(--muted); }
+
+  .menu-toggle { display: none; width: 44px; height: 44px; place-items: center; border: 1px solid var(--line-2); color: var(--ink); }
+  .menu-toggle__close { display: none; }
+  .menu-toggle[aria-expanded="true"] .menu-toggle__open { display: none; }
+  .menu-toggle[aria-expanded="true"] .menu-toggle__close { display: block; }
+
+  .mobile-menu { border-top: 1px solid var(--line); background: var(--bg); }
+  .mobile-menu ul { width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; padding: 8px 0 20px; }
+  .mobile-menu__prefs { display: none; }
+  .mobile-menu a {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 0; border-bottom: 1px solid var(--line);
+    font: 400 1.375rem/1.1 var(--f-display); letter-spacing: -0.02em; color: var(--ink);
+  }
+
+  @media (max-width: 1180px) {
+    .nav__list a { padding-inline: 10px; }
+    .search-trigger__label, .search-trigger kbd { display: none; }
+    .search-trigger { width: auto; padding: 0 11px; }
+  }
+
+  @media (max-width: 1024px) {
+    .nav { display: none; }
+    .menu-toggle { display: grid; }
+    .search-trigger { height: 44px; }
+  }
+
+  /* Większy tekst: menu w nagłówku potrzebuje ok. 625 px i między 1025 a ~1055 px łamałoby się
+     na dwie linie — do 1080 px nawigacja chowa się w menu jak na tablecie */
+  @media (max-width: 1080px) {
+    :global(:root[data-text-size="lg"]) .nav { display: none; }
+    :global(:root[data-text-size="lg"]) .menu-toggle { display: grid; }
+  }
+
+  @media (max-width: 720px) {
+    .display :global(.display__text) { display: none; }
+    .mobile-menu__prefs {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; padding: 4px 0 24px;
+    }
+  }
+</style>

@@ -1,0 +1,98 @@
+---
+import Logo from '@/components/ui/Logo.astro';
+import Icon from '@/components/ui/Icon.astro';
+import Heading from '@/components/ui/Heading.astro';
+import NewsletterForm from '@/components/blocks/NewsletterForm.astro';
+import type { NavGroup } from '@/types';
+import type { newsletter as NewsletterConfig } from '@/data/newsletter';
+import { isExternal, linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+interface Props {
+  groups: NavGroup[];
+  /** blok newslettera; bez tego propa stopka go nie pokazuje (data/newsletter.ts → newsletterOn) */
+  newsletter?: typeof NewsletterConfig;
+}
+const { groups, newsletter } = Astro.props;
+---
+<footer class="footer">
+  <div class="wrap">
+    {newsletter && (
+      <div class="footer__newsletter">
+        <div>
+          <Heading tone="light" class="footer__title">{newsletter.title}</Heading>
+          <p>{typo(newsletter.lead)}</p>
+        </div>
+        <NewsletterForm
+          endpoint={newsletter.endpoint}
+          messages={newsletter.messages}
+          note={newsletter.note}
+          doubleOptIn={newsletter.doubleOptIn}
+          timeoutMs={newsletter.timeoutMs}
+        />
+      </div>
+    )}
+
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <Logo tone="light" />
+        <p>Obywatelska inicjatywa na rzecz jawności wydatków w&nbsp;ochronie zdrowia. Przewodnik dla pacjentów, studentów i&nbsp;wszystkich, którzy płacą składkę.</p>
+      </div>
+      {groups.map((group) => (
+        <nav aria-label={group.title}>
+          <p class="mono-label footer__heading">{group.title}</p>
+          <ul>
+            {group.links.map((link) => (
+              <li><a {...linkAttrs(link.href)}>{link.label}{isExternal(link.href) && <Icon name="arrow-ne" size={16} class="footer__ext" />}</a></li>
+            ))}
+          </ul>
+        </nav>
+      ))}
+    </div>
+
+    <div class="footer__bottom">
+      <p>© 2026 zarobkilekarzy.pl</p>
+      <p>Dane mogą zawierać błędy — <a href="/o-projekcie/#sprostowania">zgłoś sprostowanie</a>. Serwis nie udziela porad medycznych ani prawnych.</p>
+      <p><a href="/prywatnosc/">Polityka prywatności</a></p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer { background: var(--inverse); color: rgba(255, 255, 255, .62); padding-top: clamp(72px, 7vw, 104px); }
+
+  .footer__newsletter {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px 64px; align-items: end;
+    padding-bottom: clamp(56px, 6vw, 88px);
+    border-bottom: 1px solid rgba(255, 255, 255, .12);
+  }
+  .footer__title { margin-bottom: 14px; }
+  .footer__newsletter p { font-size: 0.96875rem; max-width: 44ch; }
+
+  .footer__grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; padding-block: 56px; }
+  .footer__brand p { margin-top: 20px; font-size: 0.90625rem; line-height: 1.65; max-width: 38ch; }
+  .footer__heading { color: rgba(255, 255, 255, .55); margin-bottom: 18px; } /* ≥ 6:1 na --inverse (było .42 = 4:1) */
+  nav li + li { margin-top: 10px; }
+  nav a { display: inline-flex; align-items: center; gap: 6px; font-size: 0.90625rem; color: rgba(255, 255, 255, .78); transition: color .2s; }
+  nav a:hover { color: #fff; } /* kolor-stały: tło --inverse, zawsze ciemne */
+  .footer__ext { opacity: .5; }
+
+  .footer__bottom {
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 32px;
+    padding-block: 24px 32px; border-top: 1px solid rgba(255, 255, 255, .12);
+    font: 400 0.75rem/1.5 var(--f-mono); color: rgba(255, 255, 255, .55);
+  }
+  .footer__bottom a { color: rgba(255, 255, 255, .75); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, .3); }
+  .footer__bottom a:hover { color: #fff; } /* kolor-stały: tło --inverse, zawsze ciemne */
+
+  @media (max-width: 1024px) {
+    .footer__newsletter { grid-template-columns: 1fr; }
+    .footer__grid { grid-template-columns: 1fr 1fr 1fr; }
+    .footer__brand { grid-column: 1 / -1; }
+  }
+
+  @media (max-width: 720px) {
+    .footer__grid { grid-template-columns: 1fr 1fr; }
+    .footer__bottom { flex-direction: column; }
+  }
+</style>

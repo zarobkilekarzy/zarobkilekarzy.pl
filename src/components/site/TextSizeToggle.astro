@@ -1,0 +1,50 @@
+---
+/**
+ * Przełącznik „Większy tekst”. W nagłówku stoi jako ikona obok trybu nocnego (site/ThemeToggle.astro),
+ * w menu telefonu — z podpisem (`labelled`). Stan, zapis i obsługa kliknięć — lib/text-size.ts.
+ */
+import Icon from '@/components/ui/Icon.astro';
+
+interface Props {
+  /** podpis obok ikony zamiast samej ikony z dymkiem */
+  labelled?: boolean;
+  class?: string;
+}
+
+const { labelled = false, class: className } = Astro.props;
+---
+<button
+  class:list={['tsize', { 'tsize--labelled': labelled }, className]}
+  type="button" data-text-size-toggle aria-pressed="false"
+  aria-label={labelled ? undefined : 'Większy tekst'} title={labelled ? undefined : 'Większy tekst'}
+>
+  <Icon name="text-size" size={18} />
+  {labelled && <span>Większy tekst</span>}
+</button>
+
+<script>
+  import '@/lib/text-size';
+</script>
+
+<style>
+  .tsize {
+    display: grid; place-items: center;
+    width: 40px; height: 40px;
+    border: 1px solid var(--line-2);
+    color: var(--ink);
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .tsize:hover { border-color: var(--ink); }
+  .tsize--labelled {
+    display: inline-flex; align-items: center; gap: 10px;
+    width: auto; height: 44px; padding: 0 14px;
+    font: 500 0.9375rem/1 var(--f-body);
+  }
+  /* Stan „włączony” wybiera CSS z atrybutu na <html>, który skrypt w <head> ustawia przed
+     malowaniem — aria-pressed synchronizuje dopiero moduł, więc przycisk by mignął */
+  :global(:root[data-text-size="lg"]) .tsize { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+
+  @media (max-width: 1024px) {
+    .tsize:not(.tsize--labelled) { width: 44px; height: 44px; }
+  }
+</style>

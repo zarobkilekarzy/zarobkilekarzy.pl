@@ -1,0 +1,68 @@
+---
+/**
+ * Pytania i odpowiedzi jako rozwijane wiersze (<details>) — bez JS, każdy wiersz niezależny.
+ * `numbered` — numeracja „01” przy pytaniach (np. lista pytań do weryfikacji prawnej).
+ * Odpowiedzi w zapisie lib/inline: **pogrubienie**, [link](adres) — adres już rozwiązany przez wywołującego —
+ * i przypis [^id] z listy `notes` (lib/notes); samą listę „Przypisy” strona stawia pod pytaniami (article/NoteList).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { FaqItem } from '@/types';
+import { pad2, typo } from '@/lib/format';
+import { inline } from '@/lib/inline';
+import type { Notes } from '@/lib/notes';
+
+interface Props extends HTMLAttributes<'div'> {
+  items: FaqItem[];
+  numbered?: boolean;
+  /** rozwinięty pierwszy wiersz */
+  openFirst?: boolean;
+  /** przypisy, na które wskazują odpowiedzi (`[^id]`) */
+  notes?: Notes;
+}
+
+const { items, numbered = false, openFirst = false, notes, class: className, ...rest } = Astro.props;
+---
+<div class:list={['faq', { 'faq--numbered': numbered }, className]} {...rest}>
+  {items.map((item, i) => (
+    <details open={openFirst && i === 0}>
+      <summary>
+        {numbered && <span class="faq__num">{pad2(i + 1)}</span>}
+        <span class="faq__q">{typo(item.question)}</span>
+      </summary>
+      <div class="faq__a">
+        {item.answer.map((p) => <p set:html={inline(p, undefined, notes)} />)}
+      </div>
+    </details>
+  ))}
+</div>
+
+<style>
+  .faq { border-top: 1px solid var(--ink); }
+  details { border-bottom: 1px solid var(--line-2); }
+  summary {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: baseline;
+    padding: 20px 0; cursor: pointer; list-style: none;
+    font: 500 1.1875rem/1.35 var(--f-display); letter-spacing: -0.015em; color: var(--ink);
+    transition: color .2s;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font: 400 1.25rem/1 var(--f-mono); color: var(--blue); }
+  details[open] summary::after { content: "–"; }
+  summary:hover { color: var(--blue); }
+
+  .faq--numbered summary { grid-template-columns: 40px minmax(0, 1fr) auto; }
+  .faq__num { font: 400 0.75rem/1 var(--f-mono); color: var(--blue); }
+
+  .faq__a { padding: 0 40px 24px 0; max-width: 68ch; }
+  .faq--numbered .faq__a { padding-left: 56px; }
+  .faq__a p { font-size: 1rem; line-height: 1.7; color: var(--prose, var(--text-strong)); }
+  .faq__a p + p { margin-top: 12px; }
+  .faq__a :global(a:not([data-footnote-ref])) { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 720px) {
+    summary { font-size: 1.0625rem; }
+    .faq__a, .faq--numbered .faq__a { padding-right: 0; }
+    .faq--numbered summary { grid-template-columns: 32px minmax(0, 1fr) auto; }
+    .faq--numbered .faq__a { padding-left: 48px; }
+  }
+</style>

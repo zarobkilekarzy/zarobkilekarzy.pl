@@ -1,48 +1,43 @@
 import type { APIRoute } from 'astro';
-import { ogPages } from '../lib/ogPages';
+import { mainNav } from '@/data/navigation';
+import { identity } from '@/data/seo/identity';
+import { getFeedItems } from '@/lib/seo/feeds';
 
-// llms.txt — kurowany, maszynowo-czytelny indeks strony dla modeli językowych
-// i narzędzi agentowych (propozycja standardu llmstxt.org). Generowany w buildzie
-// z tego samego źródła co obrazy OG (src/lib/ogPages.ts), więc nigdy nie rozjedzie
-// się z treścią. Format: H1 + streszczenie w cytacie + sekcje z listą linków.
-// Adopcja przez duże crawlery jest dziś niepewna — to tani, bezstratny bonus,
-// nie główna dźwignia (tą jest czysty HTML SSG + dane strukturalne + źródła).
+/**
+ * llms.txt (llmstxt.org): spis serwisu dla modeli językowych — H1, streszczenie, sekcje z linkami.
+ * Generowany z kolekcji, więc nie rozjedzie się z treścią. Pełną treść stron w Markdown dla agentów
+ * daje Cloudflare (Markdown for Agents), więc llms-full.txt nie robimy.
+ */
+const SECTION_ORDER = ['Dane', 'Mechanizmy', 'Analizy'];
 
-export const prerender = true;
+export const GET: APIRoute = async ({ site }) => {
+  const url = (href: string) => new URL(href, site).href;
+  const items = await getFeedItems();
 
-const SITE = 'https://zarobkilekarzy.pl';
+  const sections = Map.groupBy(items, (i) => i.section);
+  const order = [...SECTION_ORDER, ...[...sections.keys()].filter((s) => !SECTION_ORDER.includes(s)).sort()];
+  const blocks = order
+    .filter((name) => sections.has(name))
+    .map((name) => {
+      const list = sections.get(name)!.sort((a, b) => a.article.data.title.localeCompare(b.article.data.title, 'pl'));
+      return [`## ${name}`, '', ...list.map((i) => `- [${i.article.data.title}](${url(i.href)}): ${i.article.data.summary}`)].join('\n');
+    });
 
-const url = (key: string) => `${SITE}/${key}/`;
-const line = (key: string) => {
-  const p = ogPages[key];
-  return `- [${p.title}](${url(key)}): ${p.subtitle}`;
+  const hubs = mainNav.filter((link) => link.href !== '/').map((link) => `- [${link.label}](${url(link.href)})`);
+
+  const body = [
+    `# ${identity.name}`,
+    '',
+    `> ${identity.description}`,
+    '',
+    'Zasady: każda liczba ma ogólnodostępne źródło podane przy tekście; opisujemy mechanizmy systemu, nie konkretne osoby. Treść na licencji CC BY 4.0.',
+    '',
+    ...blocks.flatMap((b) => [b, '']),
+    '## Działy serwisu',
+    '',
+    ...hubs,
+    '',
+  ].join('\n');
+
+  return new Response(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 };
-
-// Klucze w kolejności z ogPages (już zredagowanej: hub, potem podstrony),
-// pogrupowane po pierwszym segmencie ścieżki.
-const keys = Object.keys(ogPages).filter((k) => k !== 'home');
-const inSection = (seg: string) => keys.filter((k) => k === seg || k.startsWith(`${seg}/`));
-const TOP = ['dane', 'analizy', 'mechanizmy'];
-const rest = keys.filter((k) => !TOP.some((s) => k === s || k.startsWith(`${s}/`)));
-
-const body = `# zarobkilekarzy.pl
-
-> Obywatelski watchdog jawności pieniędzy publicznych w ochronie zdrowia. Postulujemy jawny rejestr łącznego wynagrodzenia lekarzy ze środków publicznych, powiązany z numerem prawa wykonywania zawodu (PWZ) — nie z numerem PESEL ani danymi prywatnymi. Zasady redakcyjne: każda teza ma ogólnodostępne źródło, opisujemy mechanizmy, a nie osoby, a liczby cytujemy dokładnie. Nie jesteśmy antylekarscy — przeciwnikiem jest nieprzejrzystość, nie zawód i nie konkretna osoba.
-
-## Dane
-${inSection('dane').map(line).join('\n')}
-
-## Analizy
-${inSection('analizy').map(line).join('\n')}
-
-## Mechanizmy
-${inSection('mechanizmy').map(line).join('\n')}
-
-## Projekt i działanie
-${rest.map(line).join('\n')}
-`;
-
-export const GET: APIRoute = () =>
-  new Response(body, {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-  });

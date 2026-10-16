@@ -1,0 +1,40 @@
+---
+/**
+ * Karta z ramką: etykieta mono, opcjonalny tytuł, treść i stopka.
+ * Sloty: domyślny (treść), "footer" (źródło, link).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'article'> {
+  label: string;
+  title?: string;
+  tone?: 'default' | 'blue';
+}
+
+const { label, title, tone = 'default', class: className, ...rest } = Astro.props;
+const hasFooter = Astro.slots.has('footer');
+---
+<article class:list={['card', `card--${tone}`, className]} data-reveal {...rest}>
+  <header class:list={['card__head', { 'card__head--bare': !title }]}>
+    <p class="mono-label card__label">{label}</p>
+    {title && <h3 class="card__title">{typo(title)}</h3>}
+  </header>
+  <slot />
+  {hasFooter && <footer class="card__foot"><slot name="footer" /></footer>}
+</article>
+
+<style>
+  .card { --under: var(--surface); position: relative; display: flex; flex-direction: column; border: 1px solid var(--line-2); background: var(--surface); padding: 32px; }
+  .card--blue { --under: var(--blue-fill); background: var(--blue-fill); border-color: var(--blue-fill); color: rgba(255, 255, 255, .85); }
+  .card--blue .card__label { color: rgba(255, 255, 255, .7); }
+
+  .card__head { margin-bottom: 28px; }
+  .card__head--bare { margin-bottom: 0; }
+  .card__title { font: 400 clamp(1.375rem, 2vw, 1.75rem)/1.15 var(--f-display); letter-spacing: -0.025em; color: var(--ink); margin-top: 12px; max-width: 24ch; }
+  .card__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); }
+
+  @media (max-width: 720px) {
+    .card { padding: 24px 20px; }
+  }
+</style>

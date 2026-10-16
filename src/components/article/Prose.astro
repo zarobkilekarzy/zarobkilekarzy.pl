@@ -1,0 +1,72 @@
+---
+/**
+ * Typografia długich tekstów (treść Markdown/MDX ze slotu).
+ * Stylujemy tylko BEZPOŚREDNICH potomków — elementy Markdownu. Komponenty osadzone
+ * w MDX (StatRow, Aside, Steps…) mają własne style i nie są tu nadpisywane; listy z Markdownu
+ * nie mają klasy, więc `ul`/`ol` stylujemy tylko bez niej (NumberedList to też `ol`).
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'div'>;
+const { class: className, ...rest } = Astro.props;
+---
+<div class:list={['prose', className]} {...rest}><slot /></div>
+
+<style>
+  /* --measure: najdłuższy wiersz tekstu (ok. 90 znaków przy 19 px); bloki osadzone w MDX i nagłówki h2 biorą całą kolumnę */
+  .prose { --prose: var(--text-strong); --measure: 780px; color: var(--prose); }
+  .prose > :global(:is(p, ul:not([class]), ol:not([class]), blockquote, h3)) { max-width: var(--measure); }
+
+  /* Rytm pionowy: o odstępach decyduje kontener, bloki nie mają własnych marginesów zewnętrznych */
+  .prose > :global(*) { margin: 0; }
+  .prose > :global(* + :is(p, ul:not([class]), ol:not([class]), blockquote, table)) { margin-top: 22px; }
+  .prose > :global(:not(p, ul:not([class]), ol:not([class]), h2, h3, blockquote, table, hr)) { margin-block: 36px; }
+
+  .prose > :global(p) { font-size: 1.1875rem; line-height: 1.75; }
+  .prose > :global(p:first-child) { font-size: 1.3125rem; line-height: 1.6; color: var(--ink); }
+
+  .prose > :global(h2) {
+    margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line-2);
+    font: 400 clamp(1.75rem, 2.6vw, 2.25rem)/1.15 var(--f-display); letter-spacing: -0.03em; color: var(--ink);
+    scroll-margin-top: calc(var(--header-h) + 24px);
+  }
+  /* Linię nad pierwszym nagłówkiem rysuje już kontener treści — bez dublowania */
+  .prose > :global(h2:first-child) { margin-top: 0; padding-top: 0; border-top: 0; }
+  .prose > :global(h3) {
+    margin-top: 40px;
+    font: 500 1.375rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink);
+    scroll-margin-top: calc(var(--header-h) + 24px);
+  }
+
+  .prose > :global(:is(ul:not([class]), ol:not([class]))) { display: grid; gap: 10px; }
+  .prose > :global(:is(ul:not([class]), ol:not([class])) > li) { position: relative; padding-left: 28px; font-size: 1.1875rem; line-height: 1.65; }
+  .prose > :global(ul:not([class]) > li)::before { content: ""; position: absolute; left: 4px; top: .7em; width: 6px; height: 6px; background: var(--blue); }
+  .prose > :global(ol:not([class])) { counter-reset: item; }
+  .prose > :global(ol:not([class]) > li) { counter-increment: item; }
+  .prose > :global(ol:not([class]) > li)::before { content: counter(item) "."; position: absolute; left: 0; font: 500 0.9375rem/1.95 var(--f-mono); color: var(--blue); }
+
+  .prose :global(strong) { color: var(--ink); font-weight: 600; }
+  /* Tylko zwykłe linki z Markdownu (bez klasy) — przyciski i komponenty zachowują własny wygląd,
+     a przypisy (numer w tekście i lista) — swój, ze styles/footnotes.css */
+  .prose :global(a:not([class], [data-footnote-ref], .footnotes a)) { color: var(--blue); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .prose :global(a:not([class], [data-footnote-ref], .footnotes a):hover) { text-decoration-thickness: 2px; }
+
+  .prose > :global(blockquote) {
+    padding-left: 24px; border-left: 2px solid var(--blue);
+    font: 400 1.375rem/1.45 var(--f-display); letter-spacing: -0.015em; color: var(--ink);
+  }
+  .prose > :global(hr) { border: 0; border-top: 1px solid var(--line-2); margin-block: 48px; }
+  .prose > :global(table) { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+  .prose :global(th) { text-align: left; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--ink); padding: 10px 12px 10px 0; }
+  .prose :global(td) { border-bottom: 1px solid var(--line); padding: 12px 12px 12px 0; vertical-align: top; }
+
+  /* Przypisy: wygląd w styles/footnotes.css (numer stoi też poza Prose); tu tylko miejsce listy w rytmie tekstu */
+  .prose :global(sup) { line-height: 0; }
+  .prose > :global(.footnotes) { margin-top: 72px; }
+
+  @media (max-width: 720px) {
+    .prose > :global(p), .prose > :global(:is(ul:not([class]), ol:not([class])) > li) { font-size: 1.0625rem; }
+    .prose > :global(p:first-child) { font-size: 1.125rem; }
+    .prose > :global(h2) { margin-top: 56px; }
+  }
+</style>

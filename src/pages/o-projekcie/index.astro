@@ -1,0 +1,50 @@
+---
+/**
+ * /o-projekcie/ — cel serwisu, zasady pracy, sprostowania. Bez informacji, kto prowadzi serwis
+ * (decyzja redakcji z 15.10.2026). Dane: src/data/o-serwisie.ts.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import Prose from '@/components/article/Prose.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import { contact, editorialRules, legalPages } from '@/data/o-serwisie';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const page = legalPages.oProjekcie;
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: page.title }];
+const seo: SeoInput = { title: page.docTitle, description: page.description, breadcrumbs: crumbs };
+const mail = `mailto:${contact.email}`;
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="about-top">
+    <PageHeader title={page.title} lead={page.lead} eyebrow="O serwisie" crumbs={crumbs}>
+      <PageMeta items={[{ label: 'Aktualizacja', value: page.updated }, { label: 'Kontakt', value: contact.email }]} />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom">
+    <Prose>
+      <p>Wynagrodzenia z publicznych pieniędzy w ochronie zdrowia są w Polsce jawne tylko częściowo. Znamy ustawowe minima płac i pojedyncze umowy, ale nikt nie zestawia, ile łącznie trafia do jednej osoby z kilku miejsc pracy.</p>
+
+      <h2 id="po-co">Po co ten serwis</h2>
+      <p>Zbieramy to, co da się ustalić z ogólnodostępnych źródeł — dane, raporty kontrolne, wyroki, odpowiedzi na wnioski o informację publiczną — i pokazujemy, czego ustalić się nie da. Opisujemy, jak działa system: skąd biorą się pieniądze, jak trafiają do szpitali i lekarzy, dlaczego brakuje kadr i czego nie widać w statystykach.</p>
+      <p>Nie jesteśmy przeciwko lekarzom. Jesteśmy za tym, żeby publiczny pieniądz był widoczny. Dlatego postulujemy <a href="/postulat/">jawne łączne wypłaty dla każdej osoby, pod stałym identyfikatorem i bez nazwisk</a>.</p>
+
+      <h2 id="zasady">Zasady pracy</h2>
+      <NumberedList items={editorialRules} />
+
+      <h2 id="kto">Kto prowadzi serwis</h2>
+      <p>Serwis jest prowadzony anonimowo. Nie stoi za nim żadna fundacja, firma ani organizacja. Oceniaj nas po źródłach: każda liczba ma przypis z linkiem do dokumentu, który możesz sprawdzić sam.</p>
+
+      <h2 id="sprostowania">Sprostowania i kontakt</h2>
+      <p>Widzisz błąd, nieaktualną liczbę albo źródło, które przestało działać? Napisz na <a href={mail}>{contact.email}</a>. Sprawdzamy każde zgłoszenie, a poprawiony tekst dostaje nową datę aktualizacji.</p>
+      <p>Serwis ma charakter informacyjny i nie udziela porad medycznych ani prawnych. Jak traktujemy dane, opisuje <a href="/prywatnosc/">polityka prywatności</a>, a na najczęstsze zarzuty odpowiadamy w <a href="/faq/">osobnym tekście</a>.</p>
+    </Prose>
+  </Section>
+</BaseLayout>
+
+<style>
+  .about-top { padding-top: clamp(32px, 4vw, 56px); }
+</style>

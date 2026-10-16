@@ -1,0 +1,29 @@
+---
+/**
+ * Przycisk „Większy tekst” z podpisem — na stronie pacjenta, obok tego samego przełącznika
+ * w nagłówku (site/TextSizeToggle.astro). Oba działają na jednym stanie: <html data-text-size="lg">,
+ * zapis 'zl-text-size' i logika w lib/text-size.ts.
+ */
+import Icon from '@/components/ui/Icon.astro';
+---
+<button type="button" class="tsize" data-text-size-toggle aria-pressed="false">
+  <Icon name="text-size" size={20} />
+  <span>Większy tekst</span>
+</button>
+
+<script>
+  import '@/lib/text-size';
+</script>
+
+<style>
+  .tsize {
+    display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1rem;
+    border: 1px solid var(--line-2); background: var(--surface);
+    font: 500 0.9375rem/1 var(--f-body); color: var(--ink);
+    transition: border-color .2s, background .2s, color .2s;
+  }
+  .tsize:hover { border-color: var(--ink); }
+  /* Stan „włączony” z atrybutu na <html> (ustawionego przed malowaniem), nie z aria-pressed —
+     inaczej przy każdym wejściu na stronę przycisk mignąłby jako wyłączony */
+  :global(:root[data-text-size="lg"]) .tsize { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+</style>

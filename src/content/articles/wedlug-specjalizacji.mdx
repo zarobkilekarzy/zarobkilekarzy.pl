@@ -1,0 +1,208 @@
+---
+title: "Według specjalizacji: pensje rezydentów i miejsca szkoleniowe"
+seoTitle: Pensje rezydentów według specjalizacji
+category: Dane
+topic: zawod
+order: 1
+format: Tabela
+stat: { value: "29", unit: specjalizacji }
+date: 2026-07-06
+updated: 2026-10-15
+summary: Pensja rezydenta, stawka z ogłoszeń, liczba miejsc szkoleniowych i kandydatów na miejsce w 29 dziedzinach. Najwięcej chętnych jest w dziedzinach spoza listy priorytetów, w których rezydent zarabia mniej.
+description: "Pensje rezydentów od 1 lipca 2026 r., stawki z ogłoszeń, miejsca szkoleniowe i kandydaci na miejsce w 29 specjalizacjach lekarskich."
+keyPoints:
+  - Pensję zasadniczą rezydenta ustala rozporządzenie ministra zdrowia. Od 1 lipca 2026 r. w 23 dziedzinach priorytetowych wynosi 11 654,76 zł brutto, w pozostałych 10 595,24 zł — w pierwszych dwóch latach szkolenia.
+  - Jesienią 2025 r. najwięcej kandydatów na jedno miejsce miały dziedziny spoza listy priorytetów — chirurgia plastyczna (7,47), dermatologia (6,94) i endokrynologia (5,88). W internie, medycynie ratunkowej czy geriatrii miejsc było więcej niż chętnych.
+  - W ogłoszeniach o pracę z 2023 r. dziedziny spoza listy miały zwykle wyższe stawki niż priorytetowe (mediana 232 wobec 194 zł/h). Najwyżej wyceniono jednak psychiatrię, która jest na liście.
+  - Po dwóch etapach jesiennego naboru zajętych było 4 096 z 6 653 miejsc rezydenckich i 1 387 z 7 945 pozarezydenckich. W kardiologii i ortopedii obsadzono 96% rezydentur, w internie — połowę.
+related:
+  - dlaczego-brakuje-lekarzy
+  - symulator-podazy-lekarzy
+  - kontrakt-vs-etat
+  - personel-medyczny
+dataset:
+  temporalCoverage: "2023/2026"
+  spatialCoverage: Polska
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import SpecTable from '@/components/wedlug-specjalizacji/SpecTable.astro';
+import { BASE } from '@/data/personel-medyczny';
+import {
+  AUTUMN_2025,
+  COMMITMENT,
+  FORECAST_2028,
+  LINKS,
+  PAY_ACT,
+  PRIORITY_AS_OF,
+  PRIORITY_FIELDS,
+  PRIORITY_OUTSIDE_TABLE,
+  RATE_MEDIAN,
+  RESIDENT_COEF,
+  RESIDENT_PAY,
+  SPECIALTIES,
+  TABLE,
+  spec,
+} from '@/data/wedlug-specjalizacji';
+import { formatPL, plural } from '@/lib/format';
+
+{/* Liczby w treści liczy src/data/wedlug-specjalizacji.ts (pensje z kwoty bazowej w data/personel-medyczny.ts); frontmatter (summary, keyPoints) i nazwy w tezach trzeba poprawić ręcznie */}
+
+export const zl = (n, d = 2) => `${formatPL(n, d)} zł`;
+export const count = (n, forms) => `${formatPL(n)} ${plural(n, forms)}`;
+export const REZ = ['miejsce rezydenckie', 'miejsca rezydenckie', 'miejsc rezydenckich'];
+export const NONREZ = ['miejsce pozarezydenckie', 'miejsca pozarezydenckie', 'miejsc pozarezydenckich'];
+export const pct = (part, whole) => formatPL((part / whole) * 100);
+export const and = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} i ${xs[xs.length - 1]}`);
+export const lower = (s) => s.name.toLowerCase();
+export const P = RESIDENT_PAY.priority;
+export const O = RESIDENT_PAY.other;
+export const top = SPECIALTIES.filter((s) => typeof s.candidates === 'number');
+export const topRez = top.reduce((n, s) => n + s.rez, 0);
+export const topList = and(top.map((s) => `${lower(s)} (${formatPL(s.candidates, 2)})`));
+export const below = SPECIALTIES.filter((s) => s.candidates === 'below-1');
+export const belowPriority = and(below.filter((s) => s.priority).map(lower));
+export const belowOther = and(below.filter((s) => !s.priority).map(lower));
+export const nonRez = (id) => `${formatPL(spec(id).takenNonRez)} z ${formatPL(spec(id).nonRez)}`;
+export const tableRez = TABLE.priority.rez + TABLE.other.rez;
+export const fillRows = SPECIALTIES.filter((s) => s.takenRez !== undefined)
+  .map((s) => ({ s, v: (s.takenRez / s.rez) * 100 }))
+  .sort((a, b) => b.v - a.v)
+  .map(({ s, v }) => ({
+    label: s.short ?? s.name,
+    note: `· ${formatPL(s.takenRez)} z ${formatPL(s.rez)}${s.priority ? '' : ' · poza listą'}`,
+    value: v,
+    display: `${formatPL(v)}%`,
+    highlight: !s.priority,
+  }));
+export const fillCaption = fillRows.map((r) => `${r.label}: ${r.display}`).join('; ');
+export const signed = (n) => `${n < 0 ? '−' : '+'}${formatPL(Math.abs(n))}`;
+export const gaps = FORECAST_2028.filter((r) => r.gap < 0);
+export const gapsOutside = gaps.filter((r) => !r.priority);
+export const forecastTable = {
+  columns: ['', 'Nowi specjaliści minus osiągający wiek emerytalny, do 2028 r.', 'Na liście priorytetów'],
+  rows: FORECAST_2028.map((r) => ({ cells: [r.name, signed(r.gap), r.priority ? 'tak' : 'nie'], marked: r.gap < 0 && !r.priority })),
+};
+
+Zestawienie zbiera dla 29 specjalizacji lekarskich cztery liczby: ile zarabia rezydent w czasie szkolenia, ile w ogłoszeniach o pracę oferuje się za godzinę w danej dziedzinie, ile miejsc szkoleniowych otwarto w ostatnim jesiennym naborze i ilu lekarzy ubiegało się o jedno miejsce. Pensja rezydenta pochodzi z rozporządzenia i jest dokładna. Stawka z ogłoszeń to szacunek z ofert, a nie z wypłat.
+
+<Aside title="To nie są zarobki lekarzy danej dziedziny">
+
+Pensja rezydenta to płaca zasadnicza w czasie szkolenia — bez dyżurów i pracy w innych miejscach. Stawka z ogłoszenia to propozycja pracodawcy, a nie kwota wypłacona. Lekarze często łączą kilka umów w kilku placówkach (zob. [Wieloetatowość](/mechanizmy/wieloetatowosc/)), a łącznych kwot wypłacanych jednej osobie nikt nie publikuje. Dlatego postulujemy jawne dane: łączne wypłaty z publicznych pieniędzy dla każdej osoby, pod stałym identyfikatorem, bez nazwisk ([postulat](/postulat/)).
+
+</Aside>
+
+## Zestawienie 29 dziedzin
+
+Dziedziny są podzielone na dwie grupy według listy priorytetów ministra zdrowia, bo od niej zależy pensja rezydenta. Liczbę kandydatów na miejsce CMKP podało tylko dla najbardziej obleganych dziedzin, a o najmniej obleganych napisało, że miejsc było więcej niż chętnych. Przy pozostałych jest kreska.
+
+<SpecTable title="Najwięcej kandydatów na jedno miejsce było w dziedzinach spoza listy priorytetów" />
+
+## Kim jest rezydent
+
+Rezydent to lekarz albo lekarz dentysta, który odbywa szkolenie specjalizacyjne w trybie rezydenckim. Ma umowę o pracę z placówką prowadzącą szkolenie, zawartą na czas wymagany programem specjalizacji.[^uzl-16h] Jego pensję zasadniczą, dyżury objęte programem i składki finansuje minister zdrowia z budżetu państwa.[^uzl-16j]
+
+Miejsca rezydenckie minister przyznaje na każde postępowanie kwalifikacyjne. Lekarz składa wniosek w Systemie Monitorowania Kształcenia i może w nim wskazać do 15 wariantów: dziedzinę, województwo i tryb szkolenia. O kolejności na rezydenturę decyduje wynik Lekarskiego Egzaminu Końcowego (LEK; u lekarzy dentystów — LDEK), a dodatkowe punkty dają doktorat i publikacje naukowe.[^uzl-16c]
+
+Nie każdy lekarz w trakcie specjalizacji jest rezydentem. W trybie pozarezydenckim szkoli się na wolnych miejscach poza pulą ministra — m.in. na umowie o pracę lub umowie cywilnoprawnej z placówką, na płatnym urlopie szkoleniowym albo ze stypendium ufundowanym przez podmiot leczniczy. Pensji z budżetu ministra wtedy nie dostaje, a umowa cywilnoprawna o szkolenie nie może przewidywać mniej niż minimalna stawka godzinowa.[^uzl-16h]
+
+Rezydent może też pracować poza rezydenturą. W poradniach specjalistycznych finansowanych przez NFZ lekarz w trakcie specjalizacji może przyjmować samodzielnie po ukończeniu pierwszego roku szkolenia — w okulistyce oraz dermatologii i wenerologii po ukończeniu drugiego — gdy kierownik specjalizacji potwierdzi jego wiedzę i umiejętności.[^aos] W ogłoszeniach o pracę z 2023 r. rezydentom oferowano średnio 172 zł za godzinę. Oferty dla rezydentów po drugim lub trzecim roku, głównie w poradniach, były zbliżone do ofert dla specjalistów.[^lop-2023]
+
+## Pensja rezydenta: dwie stawki
+
+Ile zarabia rezydent, ustala minister zdrowia w rozporządzeniu. Ustawa każe różnicować tę kwotę według dziedziny, ze szczególnym uwzględnieniem dziedzin priorytetowych, oraz według roku szkolenia.[^uzl-16j] Od {PAY_ACT.from} obowiązują dwie stawki.[^rozp-2026]
+
+<StatRow
+  label="Pensja zasadnicza rezydenta"
+  items={[
+    { value: P.first, decimals: 2, unit: 'zł', desc: `miesięcznie brutto w ${PRIORITY_FIELDS.length} dziedzinach priorytetowych, w pierwszych dwóch latach rezydentury; później ${zl(P.later)}`, accuracy: 'exact', source: `rozporządzenie MZ, ${PAY_ACT.label}`, href: PAY_ACT.href },
+    { value: O.first, decimals: 2, unit: 'zł', desc: `miesięcznie brutto w pozostałych dziedzinach, w pierwszych dwóch latach; później ${zl(O.later)}`, accuracy: 'exact', source: `rozporządzenie MZ, ${PAY_ACT.label}`, href: PAY_ACT.href },
+  ]}
+/>
+
+Punktem wyjścia jest ustawowe minimum płacy lekarza bez specjalizacji: współczynnik {formatPL(RESIDENT_COEF, 2)} razy kwota bazowa {zl(BASE.amount)}, czyli {zl(O.first)}.[^prawo-pl] Kwota bazowa to przeciętne wynagrodzenie w gospodarce z poprzedniego roku i zmienia się co roku 1 lipca (zob. [siatka płac w ochronie zdrowia](/dane/personel-medyczny/)).[^ustawa-placowa] Z kwot w rozporządzeniu wynika, że w dziedzinie priorytetowej rezydent dostaje o 10% więcej niż ta podstawa, a po dwóch latach o 20% więcej. W pozostałych dziedzinach pensja po dwóch latach rośnie o 3%. Różnica między grupami wynosi więc {zl(P.first - O.first)} miesięcznie na początku szkolenia i {zl(P.later - O.later)} po dwóch latach.
+
+### Lista priorytetów: 23 dziedziny
+
+Dziedziny priorytetowe wskazuje osobne rozporządzenie ministra zdrowia z 27 grudnia 2022 r. Jedyna późniejsza zmiana to dopisanie neurologii od 1 lipca 2023 r.[^priorytety] Lista ma {PRIORITY_FIELDS.length} pozycje (stan na {PRIORITY_AS_OF}) i tę samą listę powtarza rozporządzenie o pensjach.[^rozp-2026]
+
+W tabeli jest {TABLE.priority.fields} dziedzin z tej listy. Pozostałych {PRIORITY_OUTSIDE_TABLE.length} to {and(PRIORITY_OUTSIDE_TABLE)} — specjalizacje dziecięce i onkologiczne oraz specjalizacja lekarzy dentystów.
+
+### Dodatek za zobowiązanie do pracy w Polsce
+
+Każdy rezydent, nie tylko w dziedzinie priorytetowej, może zadeklarować, że po uzyskaniu specjalizacji przepracuje w Polsce łącznie {COMMITMENT.years} lata z kolejnych {COMMITMENT.window}, co najmniej na pełny etat, w placówce udzielającej świadczeń finansowanych ze środków publicznych. W zamian jego pensja zasadnicza rośnie o {zl(COMMITMENT.priority, 0)} miesięcznie w dziedzinie priorytetowej i o {zl(COMMITMENT.other, 0)} w pozostałych.[^uzl-2b] Z dodatkiem rezydent w dziedzinie priorytetowej dostaje w pierwszych dwóch latach {zl(P.first + COMMITMENT.priority)}, a w pozostałych — {zl(O.first + COMMITMENT.other)}. Potocznie dodatek nazywa się „bonem patriotycznym”.
+
+Jeśli lekarz zobowiązania nie dotrzyma albo przerwie program specjalizacji, wojewoda nakłada na niego karę równą {formatPL(COMMITMENT.penaltyShare * 100)}% sumy otrzymanych zwiększeń. Kara maleje proporcjonalnie do okresu, który lekarz przepracował zgodnie z deklaracją. Kto pobierał dodatek krócej, niż trwała specjalizacja, ma proporcjonalnie krótsze zobowiązanie, a z dodatku można zrezygnować — pensja spada wtedy od następnego miesiąca.[^uzl-2l] Przykład: rezydent dziedziny priorytetowej, który pobierał dodatek przez 60 miesięcy i nie przepracował w ramach zobowiązania ani dnia, zapłaci {zl(COMMITMENT.penaltyShare * 60 * COMMITMENT.priority, 0)}.
+
+## Kandydaci i stawki z ogłoszeń
+
+Żadna z dziesięciu najbardziej obleganych dziedzin, które wymienił dyrektor CMKP, nie jest na liście priorytetów. W tabeli jest {top.length} z nich (w nawiasie kandydaci na jedno miejsce): {topList}.[^filipiak] Miały razem {count(topRez, REZ)} — mniej niż połowę puli samej pediatrii ({formatPL(spec('pediatria').rez)}).[^cmkp-miejsca]
+
+Na drugim biegunie CMKP wymieniło dziesięć dziedzin, w których miejsc było więcej niż chętnych. Siedem z nich jest na liście priorytetów — w tabeli {belowPriority}, poza tabelą radioterapia onkologiczna. Spoza listy są trzy: {belowOther}, medycyna nuklearna i nefrologia.[^filipiak]
+
+Stawki z ogłoszeń układają się podobnie, choć z wyjątkami. W 2023 r. środkowa dziedzina spoza listy miała w ogłoszeniach średnio {formatPL(RATE_MEDIAN.other)} zł/h, a środkowa dziedzina priorytetowa — {formatPL(RATE_MEDIAN.priority)} zł/h (mediana średnich stawek dziedzin z tabeli).[^lop-2023] Najwyższą średnią miała jednak psychiatria, która jest na liście: {formatPL(spec('psychiatria').rate)} zł/h. Autorzy raportu zaznaczają, że podniosły ją oferty jednej sieci placówek po 400 zł/h. Najniższą miała rehabilitacja medyczna spoza listy: {formatPL(spec('rehabilitacja-medyczna').rate)} zł/h. Choroby płuc ({formatPL(spec('choroby-pluc').rate)} zł/h) i medycyna pracy ({formatPL(spec('medycyna-pracy').rate)} zł/h) miały wyższe stawki niż okulistyka czy gastroenterologia, a nie ma ich wśród najbardziej obleganych dziedzin. Dla chirurgii plastycznej, w której kandydatów było najwięcej, raport nie podaje stawki.
+
+Tabela pokazuje zbieżność, a nie przyczynę. Wyższa pensja w dziedzinie priorytetowej — o {zl(P.first - O.first)} miesięcznie na początku szkolenia — nie odwraca proporcji: najwięcej kandydatów na miejsce jest w dziedzinach spoza listy. Dane nie mówią jednak, co przesądza o wyborze. Nie obejmują np. warunków pracy po specjalizacji ani tego, ile lekarze danej dziedziny zarabiają łącznie.
+
+## Miejsca specjalizacyjne
+
+Na sesję jesień 2025 CMKP wykazało {count(AUTUMN_2025.rez, REZ)} i {count(AUTUMN_2025.nonRez, NONREZ)}.[^cmkp-miejsca] Lekarze złożyli {count(AUTUMN_2025.applications, ['poprawny wniosek', 'poprawne wnioski', 'poprawnych wniosków'])}. Po dwóch etapach przyjęcie miejsca potwierdziło {formatPL(AUTUMN_2025.takenRez + AUTUMN_2025.takenNonRez)} lekarzy: {formatPL(AUTUMN_2025.takenRez)} na rezydenturze i {formatPL(AUTUMN_2025.takenNonRez)} w trybie pozarezydenckim.[^cmkp-wyniki] Zajętych było więc {pct(AUTUMN_2025.takenRez, AUTUMN_2025.rez)}% rezydentur i {pct(AUTUMN_2025.takenNonRez, AUTUMN_2025.nonRez)}% miejsc pozarezydenckich. W dodatkowym, trzecim etapie — wyłącznie na rezydentury w dziedzinach priorytetowych — miejsce przyjęło jeszcze {formatPL(AUTUMN_2025.thirdStageRez)} lekarzy.[^filipiak]
+
+Po dwóch etapach {formatPL(AUTUMN_2025.applications - AUTUMN_2025.takenRez - AUTUMN_2025.takenNonRez)} wnioskodawców nie potwierdziło przyjęcia żadnego miejsca, a {formatPL(AUTUMN_2025.rez - AUTUMN_2025.takenRez)} rezydentur pozostało wolnych. Pula rezydentur skupia się w dziedzinach priorytetowych: w tabeli mają one {formatPL(TABLE.priority.rez)} z {formatPL(tableRez)} miejsc rezydenckich ({pct(TABLE.priority.rez, tableRez)}%). Największe pule obsadzono tylko częściowo. Wśród dziesięciu dziedzin, dla których CMKP podało liczbę przyjętych, prawie wszystkie rezydentury zajęto w trzech spoza listy priorytetów i w anestezjologii.
+
+<Figure
+  title="W kardiologii, ortopedii i ginekologii obsadzono prawie wszystkie rezydentury, w internie — połowę"
+  note="Dziesięć dziedzin, w których po dwóch etapach jesiennego naboru 2025 r. najwięcej lekarzy przyjęło rezydenturę (tylko tyle opublikowało CMKP). Odsetek to przyjęci na miejsca rezydenckie z wykazu CMKP na tę sesję. Niebieskie — dziedziny spoza listy priorytetów."
+  source={{ label: 'CMKP za: Termedia, 20.11.2025; miejsca — wykaz CMKP; obliczenia redakcji', href: LINKS.cmkpResults }}
+>
+  <BarChart rows={fillRows} max={100} unit="%" caption={`Odsetek obsadzonych miejsc rezydenckich, jesień 2025: ${fillCaption}.`} />
+</Figure>
+
+Miejsca pozarezydenckie zostają w większości puste: w medycynie rodzinnej zajęto {nonRez('medycyna-rodzinna')}, w kardiologii {nonRez('kardiologia')}, w ortopedii {nonRez('ortopedia')}. Inaczej jest w okulistyce ({nonRez('okulistyka')}), medycynie pracy ({nonRez('medycyna-pracy')}) i radiologii ({nonRez('radiologia')}) — tam lekarze biorą także miejsca bez pensji z budżetu ministra.[^cmkp-wyniki]
+
+Wąskie gardło nie polega więc na braku miejsc w ogóle, tylko na ich rozkładzie. Najwięcej rezydentur jest w dziedzinach, w których część z nich zostaje pusta, a w najbardziej obleganych pule liczy się w dziesiątkach. Jak nabór na studia przekłada się na liczbę lekarzy w kolejnych dekadach, pokazuje [symulator podaży lekarzy](/analizy/symulator-podazy-lekarzy/), a przyczyny braków omawia analiza [Dlaczego brakuje lekarzy](/analizy/dlaczego-brakuje-lekarzy/).
+
+## Lista priorytetów a prognozy braków
+
+Ministerstwo Zdrowia w mapach potrzeb zdrowotnych porównuje, ilu lekarzy skończy specjalizację w danej dziedzinie, z liczbą tych, którzy osiągną wiek emerytalny. Do 2028 r. największą lukę prognozuje w chorobach wewnętrznych i chirurgii ogólnej. Ubytek ma być też w dziedzinach spoza listy priorytetów: medycynie pracy, rehabilitacji medycznej, chorobach płuc, balneologii i otorynolaryngologii. W medycynie rodzinnej i pediatrii, które są na liście, nowych specjalistów ma za to przybyć więcej, niż osiągnie wiek emerytalny.[^mapy]
+
+<Figure
+  title={`${gapsOutside.length} z ${gaps.length} dziedzin z prognozowaną luką jest poza listą priorytetów`}
+  note="Bilans to liczba lekarzy, którzy do 2028 r. ukończą specjalizację, minus liczba osiągających w tym czasie wiek emerytalny. Mierzy wymianę pokoleń, a nie pełne zapotrzebowanie. Omówienie wymienia dziedziny przykładowo, więc lista nie jest pełna. Wyróżnione — luka w dziedzinie spoza listy priorytetów, w której rezydent zarabia według niższej stawki."
+  source={{ label: 'mapy potrzeb zdrowotnych MZ za: Rynek Zdrowia, 21.07.2025', href: LINKS.forecast }}
+>
+  <Comparison table={forecastTable} />
+</Figure>
+
+[^rozp-2026]: Rozporządzenie Ministra Zdrowia z 25 czerwca 2026 r. w sprawie wysokości zasadniczego wynagrodzenia miesięcznego lekarzy i lekarzy dentystów odbywających specjalizacje w ramach rezydentury, [Dz.U. 2026 poz. 856](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000856) — § 1 (23 dziedziny priorytetowe i ich stawki), § 2 (pozostałe dziedziny); obowiązuje od 1 lipca 2026 r.
+
+[^prawo-pl]: Prawo.pl, [Od 1 lipca lekarze rezydenci zarobią więcej — jest projekt](https://www.prawo.pl/zdrowie/ile-zarabia-lekarz-rezydent-w-2026-r-rozporzadzenie,1544065.html), 05.05.2026 — wyliczenie ministerstwa w projekcie: współczynnik 1,19 razy przeciętne wynagrodzenie za 2025 r.
+
+[^ustawa-placowa]: [Ustawa z 8 czerwca 2017 r. o sposobie ustalania najniższego wynagrodzenia zasadniczego niektórych pracowników zatrudnionych w podmiotach leczniczych](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20170001473) (ISAP) — kwota bazowa i współczynnik 1,19 dla lekarza bez specjalizacji.
+
+[^priorytety]: Rozporządzenie Ministra Zdrowia z 27 grudnia 2022 r. w sprawie określenia priorytetowych dziedzin medycyny, [Dz.U. 2022 poz. 2814](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20220002814); neurologia dodana od 1 lipca 2023 r. — [Dz.U. 2023 poz. 1503](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20230001503); tekst jednolity — [Dz.U. 2024 poz. 791](https://www.prawo.pl/akty/dz-u-2024-791-t-j,21771637.html). Innych zmian w Dzienniku Ustaw do 15.10.2026 nie było.
+
+[^uzl-16j]: [Ustawa z 5 grudnia 1996 r. o zawodach lekarza i lekarza dentysty](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000037) (tekst jednolity Dz.U. 2026 poz. 37), art. 16j ust. 1–5 — finansowanie rezydentury i zasady ustalania pensji.
+
+[^uzl-16h]: Ustawa o zawodach lekarza i lekarza dentysty, [art. 16h ust. 1–2](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000037) — umowa o pracę w trybie rezydenckim i formy szkolenia w trybie pozarezydenckim.
+
+[^uzl-16c]: Ustawa o zawodach lekarza i lekarza dentysty, [art. 16c ust. 1d i 10](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000037) — warianty wyboru we wniosku i kryteria postępowania konkursowego.
+
+[^uzl-2b]: Ustawa o zawodach lekarza i lekarza dentysty, [art. 16j ust. 2b](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000037) — zobowiązanie do pracy w Polsce i zwiększenie pensji o 700 albo 600 zł.
+
+[^uzl-2l]: Ustawa o zawodach lekarza i lekarza dentysty, [art. 16j ust. 2g, 2l, 2n, 2s i 2t](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000037) — skrócenie zobowiązania, kara w wysokości 75% otrzymanych zwiększeń, jej zmniejszenie, decyzja wojewody i rezygnacja z dodatku.
+
+[^aos]: Rozporządzenie Ministra Zdrowia z 6 listopada 2013 r. w sprawie świadczeń gwarantowanych z zakresu ambulatoryjnej opieki specjalistycznej, § 2 pkt 3 lit. b i c ([tekst jednolity Dz.U. 2016 poz. 357](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20160000357), ze zm.) — definicja lekarza w trakcie specjalizacji, który może pracować w poradni.
+
+[^lop-2023]: Raport „PRACA. Lekarze – oferty pracy za cały 2023 rok”, grupa Lekarze – oferty pracy, partner: OZZL ([PDF](https://www.termedia.pl/pobierz/28761ac10ff69d4055cd0f793cfa9175)) — 1 473 ogłoszenia ze stawką godzinową; stawki według etapu kariery s. 15–16, według specjalizacji s. 17–19.
+
+[^cmkp-miejsca]: CMKP, [Liczba miejsc szkoleniowych dla lekarzy i lekarzy dentystów — sesja jesień 2025](https://www.cmkp.edu.pl/wp-content/uploads/2025/08/Liczba-miejsc-szkoleniowych-jesien-2025.pdf), lista z 28.08.2025; sumy dla dziedzin z 16 województw — obliczenia redakcji.
+
+[^cmkp-wyniki]: Termedia za CMKP, [Ostateczne wyniki rekrutacji na specjalizacje w sesji jesiennej 2025](https://www.termedia.pl/wartowiedziec/Ostateczne-wyniki-rekrutacji-na-specjalizacje-w-sesji-jesiennej-2025,64937.html), 20.11.2025 — miejsca, wnioski i przyjęci po dwóch etapach, dziesięć dziedzin z największą liczbą przyjętych w każdym trybie.
+
+[^filipiak]: Beauty Razem, [Chirurgia plastyczna i dermatologia na czele najbardziej obleganych specjalizacji lekarskich](https://beautyrazem.pl/chirurgia-plastyczna-i-dermatologia-na-czele-najbardziej-obleganych-specjalizacji-lekarskich/), 10.12.2025 — zestawienie dyrektora CMKP: kandydaci (pierwszy wybór we wniosku) na wszystkie miejsca w dziedzinach z ponad 10 miejscami; wyniki po trzecim etapie.
+
+[^mapy]: Rynek Zdrowia, [Choć kształcimy coraz więcej, w tych dziedzinach nadal będzie brakować lekarzy](https://www.rynekzdrowia.pl/Polityka-zdrowotna/Choc-ksztalcimy-coraz-wiecej-w-tych-dziedzinach-nadal-bedzie-brakowac-lekarzy,273691,14.html), 21.07.2025 — omówienie map potrzeb zdrowotnych Ministerstwa Zdrowia.

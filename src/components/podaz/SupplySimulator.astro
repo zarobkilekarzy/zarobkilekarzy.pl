@@ -1,0 +1,423 @@
+---
+/**
+ * Symulator podaży lekarzy: ustawienia po lewej, wynik po prawej — przyklejony,
+ * więc każdy ruch suwaka widać od razu, bez przewijania. Na wąskim ekranie
+ * wynik (liczba + wykres) przykleja się u góry, a kroki przewijają się pod nim.
+ * Rachunek: lib/podaz/model, wykresy: lib/podaz/charts (te same funkcje rysują
+ * pierwszy render tutaj i każdą klatkę w client.ts).
+ */
+import {
+  BASE_INTAKE, DEFAULTS, FIRST_EDITABLE, GUS_WITH_PATIENTS, INTAKE_MAX, INTAKE_STEP, LIMIT_TODAY,
+  MEASURED, PRESETS, YEAR0, YEAR_MAX, simulate,
+} from '@/lib/podaz/model';
+import { intakeChart, resultChart } from '@/lib/podaz/charts';
+import { commentary } from '@/lib/podaz/summary';
+import { formatPL } from '@/lib/format';
+
+/** Rozmiar pierwszego renderu (bez JS); skrypt przerysowuje wykresy w rozmiarze kontenera. */
+const SSR = { intake: [420, 168], result: [680, 300] } as const;
+
+const scenario = simulate(BASE_INTAKE);
+const at = (year: number) => scenario[year - YEAR0];
+
+// Losy rocznika — trzy przepływy zmierzone w analizie o odsiewie. `scale` przelicza
+// wartość suwaka na pole modelu (procenty → ułamek).
+const rates = [
+  { key: 'graduate', label: 'Kończy studia', suffix: '%', unit: 'przyjętych', min: 50, max: 100, step: 1, scale: 100, note: 'Dziś kończy 80–82% przyjętych.' },
+  { key: 'abroad', label: 'Nie pracuje w Polsce', suffix: '%', unit: 'absolwentów', min: 0, max: 40, step: 1, scale: 100, note: 'Dziś 5% — bez składki ZUS 6 lat po dyplomie. Z Rumunii wyjechała co trzecia osoba (OECD).' },
+  { key: 'inflow', label: 'Napływ z zagranicy', suffix: '', unit: 'lekarzy rocznie', min: 0, max: 4000, step: 100, scale: 1, note: 'Do LEK podchodzi co roku 860–1\u00A0210 osób z dyplomem zagranicznym.' },
+] as const;
+const rateValue = (r: (typeof rates)[number]) => Math.round(MEASURED[r.key] * r.scale);
+const pct = (v: number, min: number, max: number) => `${(((v - min) / (max - min)) * 100).toFixed(1)}%`;
+---
+<zl-supply class="sim" data-no-anchor>
+  <div class="sim__in">
+    <h2 class="sr-only">Ustawienia</h2>
+
+    <section class="step" aria-labelledby="sim-s1">
+      <h3 class="step__label" id="sim-s1"><span class="step__n">01</span>Scenariusz</h3>
+      <div class="chips" role="group" aria-labelledby="sim-s1">
+        {PRESETS.map((p) => (
+          <button type="button" class:list={['chip', { 'chip--history': p.history }]} data-preset={p.id} aria-pressed={p.id === 'baza' ? 'true' : 'false'}>{p.label}</button>
+        ))}
+      </div>
+      <p class="step__hint step__hint--3" data-el="preset-desc">{PRESETS[0].desc}</p>
+    </section>
+
+    <section class="step" aria-labelledby="sim-s2">
+      <div class="step__row">
+        <h3 class="step__label" id="sim-s2"><span class="step__n">02</span>Limit miejsc od {FIRST_EDITABLE}/{String(FIRST_EDITABLE + 1).slice(2)}</h3>
+        <output class="big" for="sim-limit" data-el="limit-out">{formatPL(LIMIT_TODAY)}</output>
+      </div>
+      <input
+        class="range range--main" type="range" id="sim-limit" data-el="limit" aria-labelledby="sim-s2"
+        min="0" max={INTAKE_MAX} step={INTAKE_STEP} value={LIMIT_TODAY} style={`--p: ${pct(LIMIT_TODAY, 0, INTAKE_MAX)}`}
+      />
+      <div class="scale" aria-hidden="true">
+        <span>0</span>
+        <span class="scale__now" style={`--at: ${LIMIT_TODAY / INTAKE_MAX}`}>dziś</span>
+        <span>{formatPL(INTAKE_MAX)}</span>
+      </div>
+      <p class="step__hint step__hint--2" data-el="limit-note">Dzisiejszy limit, co roku aż do {YEAR_MAX} r.</p>
+    </section>
+
+    <section class="step" aria-labelledby="sim-s3">
+      <h3 class="step__label" id="sim-s3"><span class="step__n">03</span>Nabór rok po roku</h3>
+      <p class="step__hint step__hint--top">Przeciągnij po wykresie, żeby narysować nabór. Kliknij słupek, żeby wpisać liczbę.</p>
+      <div class="intake" data-el="intake-wrap">
+        <svg
+          class="intake__svg" data-el="intake" viewBox={`0 0 ${SSR.intake[0]} ${SSR.intake[1]}`}
+          tabindex="0" role="application" aria-roledescription="wykres do edycji"
+          aria-label="Nabór na studia lekarskie 1987–2050. Strzałki w lewo i w prawo wybierają rocznik, w górę i w dół zmieniają liczbę miejsc o 50 (z Shift o 500)."
+          set:html={intakeChart(SSR.intake[0], SSR.intake[1], BASE_INTAKE)}
+        />
+        <div class="pop" data-el="pop" role="dialog" aria-label="Nabór w wybranym roczniku" hidden>
+          <div class="pop__head">
+            <button type="button" class="pop__icon" data-el="pop-prev" aria-label="Poprzedni rocznik">‹</button>
+            <strong class="pop__year" data-el="pop-year"></strong>
+            <button type="button" class="pop__icon" data-el="pop-next" aria-label="Następny rocznik">›</button>
+            <span class="pop__era" data-el="pop-era"></span>
+            <button type="button" class="pop__icon pop__close" data-el="pop-close" aria-label="Zamknij">×</button>
+          </div>
+          <div class="pop__row">
+            <button type="button" class="pop__step" data-step="-500">−500</button>
+            <input class="pop__input" type="number" data-el="pop-input" min="0" max={INTAKE_MAX} step={INTAKE_STEP} inputmode="numeric" aria-label="Liczba miejsc w tym roczniku" />
+            <button type="button" class="pop__step" data-step="500">+500</button>
+          </div>
+          <p class="pop__info">
+            <span data-el="pop-base"></span>
+            <button type="button" class="link" data-el="pop-reset">przywróć</button>
+          </p>
+        </div>
+      </div>
+      <ul class="key" aria-hidden="true">
+        <li><i class="key__sw key__sw--past"></i>historia</li>
+        <li><i class="key__sw key__sw--future"></i>przyszłość</li>
+        <li><i class="key__sw key__sw--changed"></i>twoja zmiana</li>
+        <li><i class="key__sw key__sw--ref"></i>rzeczywistość</li>
+      </ul>
+    </section>
+
+    <section class="step" aria-labelledby="sim-s4">
+      <div class="step__row">
+        <h3 class="step__label" id="sim-s4"><span class="step__n">04</span>Losy rocznika</h3>
+        <button type="button" class="link" data-el="rates-reset" hidden>przywróć zmierzone</button>
+      </div>
+      <div class="fields">
+        {rates.map((r) => (
+          <div class="field">
+            <label class="field__label" for={`sim-${r.key}`}>
+              {r.label}
+              <span><output data-out={r.key}>{formatPL(rateValue(r))}</output>{r.suffix} {r.unit}</span>
+            </label>
+            <input
+              class="range" type="range" id={`sim-${r.key}`} data-rate={r.key} data-scale={r.scale}
+              min={r.min} max={r.max} step={r.step} value={rateValue(r)} style={`--p: ${pct(rateValue(r), r.min, r.max)}`}
+              aria-describedby={`sim-${r.key}-note`}
+            />
+            <p class="field__note" id={`sim-${r.key}-note`}>{r.note}</p>
+          </div>
+        ))}
+      </div>
+      <p class="step__hint">Zmieniają tylko twój scenariusz; „bez zmian” zostaje przy wartościach zmierzonych.</p>
+    </section>
+
+    <section class="step" aria-labelledby="sim-s5">
+      <h3 class="step__label" id="sim-s5"><span class="step__n">05</span>Założenia modelu</h3>
+      <div class="fields">
+        <div class="field">
+          <label class="field__label" for="sim-spec">
+            Kończy specjalizację
+            <span><output data-el="spec-out">{Math.round(DEFAULTS.specShare * 100)}</output>% rocznika</span>
+          </label>
+          <input
+            class="range" type="range" id="sim-spec" data-el="spec" min="0" max="100" step="5"
+            value={Math.round(DEFAULTS.specShare * 100)} style={`--p: ${DEFAULTS.specShare * 100}%`}
+          />
+        </div>
+        <div class="field" role="radiogroup" aria-labelledby="sim-age-label">
+          <span class="field__label" id="sim-age-label">Pracuje do wieku</span>
+          <div class="seg">
+            {[65, 70, 75].map((age) => (
+              <label class="seg__opt">
+                <input type="radio" name="sim-age" value={age} checked={age === DEFAULTS.retireAge} />
+                <span>{age} lat</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+      <p class="step__hint">Przesuwają obie krzywe — twoją i „bez zmian”.</p>
+    </section>
+  </div>
+
+  <div class="sim__out">
+    <h2 class="sr-only">Wynik</h2>
+    <div class="out" data-el="out">
+      <div class="out__head">
+        <p class="mono-label">Lekarzy w 2050 r.</p>
+        <p class="out__big" data-el="y2050">{formatPL(at(2050).doctors)}</p>
+        <p class="delta" data-el="y2050-d">bez zmian</p>
+      </div>
+      <ul class="legend" aria-hidden="true">
+        <li><i class="legend__sw legend__sw--you"></i>twój scenariusz</li>
+        <li><i class="legend__sw legend__sw--ref"></i>bez zmian</li>
+        <li class="legend__gap"><i class="legend__sw legend__sw--more"></i>więcej<i class="legend__sw legend__sw--less"></i>mniej lekarzy</li>
+      </ul>
+      <div class="chart" data-el="result-wrap">
+        <svg
+          class="chart__svg" data-el="result" viewBox={`0 0 ${SSR.result[0]} ${SSR.result[1]}`}
+          role="img" aria-label="Liczba lekarzy na rynku 2026–2062: twój scenariusz i scenariusz bez zmian"
+          set:html={resultChart({ width: SSR.result[0], height: SSR.result[1], scenario, reference: scenario, gus: GUS_WITH_PATIENTS })}
+        />
+        <div class="tip" data-el="tip" hidden></div>
+      </div>
+    </div>
+
+    <dl class="stats">
+      <div>
+        <dt class="mono-label">W 2040 r.</dt>
+        <dd class="stats__num" data-el="y2040">{formatPL(at(2040).doctors)}</dd>
+        <dd class="delta" data-el="y2040-d">bez zmian</dd>
+      </div>
+      <div>
+        <dt class="mono-label">Ze specjalizacją, 2050</dt>
+        <dd class="stats__num" data-el="spec2050">{formatPL(at(2050).specialists)}</dd>
+        <dd class="delta" data-el="spec2050-d">bez zmian</dd>
+      </div>
+      <div>
+        <dt class="mono-label">Skutek widać od</dt>
+        <dd class="stats__num" data-el="visible">—</dd>
+        <dd class="delta">różnica ≥ {formatPL(1000)} lekarzy</dd>
+      </div>
+    </dl>
+
+    <p class="comment" data-el="comment">
+      {commentary({ intake: BASE_INTAKE, settings: DEFAULTS, scenario, reference: scenario, ratesChanged: false })}
+    </p>
+  </div>
+
+  <p class="sr-only" aria-live="polite" data-el="status"></p>
+</zl-supply>
+
+<script>
+  import './client';
+</script>
+
+<style>
+  /* ---------- Układ: ustawienia | wynik (przyklejony) ---------- */
+  .sim {
+    display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+    gap: clamp(32px, 4vw, 64px); align-items: start;
+  }
+  .sim__in { border-bottom: 1px solid var(--line); }
+  .sim__out { position: sticky; top: calc(var(--header-h) + 24px); display: grid; gap: 16px; }
+
+  /* ---------- Kroki ---------- */
+  .step { padding: 22px 0 24px; border-top: 1px solid var(--line); }
+  .step:first-of-type { border-top-color: var(--ink); }
+  .step__row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .step__label {
+    display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px;
+    font: 500 0.75rem/1.4 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink);
+  }
+  .step__n { color: var(--blue); }
+  .step__hint { margin-top: 12px; font-size: 0.84375rem; line-height: 1.5; color: var(--muted); }
+  .step__hint--top { margin: -4px 0 12px; }
+  /* Opisy zmieniane skryptem mają stałą wysokość — inaczej kroki niżej podskakują przy każdej zmianie */
+  .step__hint--2 { min-height: 3em; }
+  .step__hint--3 { min-height: 4.5em; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 8px 12px; border: 1px solid var(--line-2); font-size: 0.84375rem; color: var(--ink);
+    transition: border-color .2s, background .2s, color .2s;
+  }
+  .chip:hover { border-color: var(--ink); }
+  .chip--history { border-style: dashed; }
+  .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+
+  .big { font: 400 2.125rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .big[data-mixed] { font-size: 1.0625rem; line-height: 2.125rem; letter-spacing: -0.01em; color: var(--muted); }
+
+  .link { font-size: 0.8125rem; color: var(--blue); text-decoration: underline; text-underline-offset: .2em; }
+  .link:hover { color: var(--ink); }
+
+  /* ---------- Suwaki: cienki tor, kwadratowa gałka; zmieniony = kobalt („twoje”, jak słupki naboru i linia scenariusza) ---------- */
+  .range {
+    --c: var(--ink);
+    appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 28px; margin: 0;
+    background: transparent; cursor: pointer;
+  }
+  .range[data-changed] { --c: var(--blue); }
+  .range::-webkit-slider-runnable-track {
+    height: 2px; background: linear-gradient(var(--c), var(--c)) 0 / var(--p, 50%) 100% no-repeat, var(--line-2);
+  }
+  .range::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; margin-top: -8px;
+    background: var(--surface); border: 2px solid var(--c); border-radius: 0;
+  }
+  .range::-moz-range-track { height: 2px; background: var(--line-2); }
+  .range::-moz-range-progress { height: 2px; background: var(--c); }
+  .range::-moz-range-thumb { width: 14px; height: 14px; background: var(--surface); border: 2px solid var(--c); border-radius: 0; }
+  .range:focus-visible { outline: 0; }
+  .range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .range:focus-visible::-moz-range-thumb { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .range--main { height: 36px; }
+  .range--main::-webkit-slider-runnable-track { height: 4px; }
+  .range--main::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -10px; background: var(--c); border-color: var(--c); }
+  .range--main::-moz-range-track, .range--main::-moz-range-progress { height: 4px; }
+  .range--main::-moz-range-thumb { width: 20px; height: 20px; background: var(--c); }
+
+  .scale { position: relative; display: flex; justify-content: space-between; font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+  /* „dziś” pod torem — tor jest wcięty o pół gałki z każdej strony */
+  .scale__now { position: absolute; left: calc(12px + (100% - 24px) * var(--at)); transform: translateX(-50%); color: var(--ink); }
+  .scale__now::before { content: ""; position: absolute; left: 50%; top: -9px; height: 6px; border-left: 1px solid var(--ink); }
+
+  /* ---------- Nabór rok po roku ---------- */
+  .intake { position: relative; }
+  .intake__svg { width: 100%; height: 168px; touch-action: pan-y; cursor: crosshair; overflow: visible; }
+  .intake__svg:focus-visible:not([data-pointer]) { outline: 2px solid var(--blue); outline-offset: 4px; }
+  .intake__svg[data-pointer] { outline: 0; }
+
+  .key { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 0.78125rem; color: var(--muted); }
+  .key li { display: inline-flex; align-items: center; gap: 6px; }
+  .key__sw { display: inline-block; width: 8px; height: 12px; }
+  .key__sw--past { background: var(--chart-soft); }
+  .key__sw--future { background: var(--chart); }
+  .key__sw--changed { background: var(--blue); }
+  .key__sw--ref { width: 14px; height: 0; border-top: 1px solid color-mix(in srgb, var(--ink) 50%, transparent); }
+
+  /* Dymek z dokładną liczbą — nad słupkiem, ponad przyklejonym wynikiem */
+  .pop {
+    position: absolute; z-index: 30; width: 244px; padding: 10px 12px;
+    background: var(--surface); border: 1px solid var(--ink);
+    box-shadow: 0 10px 30px -10px light-dark(rgba(4, 11, 27, .35), rgba(0, 0, 0, .7));
+  }
+  .pop__head { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+  .pop__year { font: 500 0.9375rem/1 var(--f-display); color: var(--ink); font-variant-numeric: tabular-nums; min-width: 4.4em; text-align: center; }
+  .pop__era { margin-left: 6px; font: 400 0.65625rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .pop__icon { display: grid; place-items: center; width: 26px; height: 26px; font-size: 1.125rem; line-height: 1; color: var(--ink); }
+  .pop__icon:hover { background: var(--bg-soft); }
+  .pop__close { margin-left: auto; color: var(--muted); }
+  .pop__row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px; }
+  .pop__input {
+    width: 100%; min-width: 0; padding: 6px; border: 1px solid var(--line-2); background: var(--surface);
+    font: 400 1.0625rem/1 var(--f-display); text-align: center; font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+  .pop__step { padding: 0 8px; border: 1px solid var(--line-2); font: 400 0.75rem/1 var(--f-mono); color: var(--ink); }
+  .pop__step:hover { border-color: var(--ink); }
+  .pop__info { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; font-size: 0.78125rem; color: var(--muted); }
+
+  /* ---------- Pola (losy rocznika, założenia) ---------- */
+  .fields { display: grid; gap: 14px; }
+  .field__label { display: flex; justify-content: space-between; gap: 12px; font-size: 0.875rem; color: var(--ink); }
+  .field__label span { color: var(--muted); white-space: nowrap; }
+  .field__label output { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .field__note { font-size: 0.78125rem; line-height: 1.45; color: var(--muted); }
+
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 8px; border: 1px solid var(--line-2); }
+  .seg__opt { position: relative; cursor: pointer; }
+  .seg__opt + .seg__opt { border-left: 1px solid var(--line-2); }
+  .seg__opt input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg__opt span { display: block; padding: 8px; text-align: center; font-size: 0.875rem; color: var(--ink); transition: background .2s, color .2s; }
+  .seg__opt:hover span { background: var(--bg-soft); }
+  .seg__opt:has(:checked) span { background: var(--ink); color: var(--on-ink); }
+  .seg__opt:has(:focus-visible) span { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  /* ---------- Wynik ---------- */
+  .out { padding: 20px 22px 16px; background: var(--surface); border: 1px solid var(--line-2); border-top: 2px solid var(--ink); }
+  .out__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+  .out__head .mono-label { flex-basis: 100%; }
+  .out__big { font: 400 clamp(2.5rem, 4.6vw, 3.75rem)/1 var(--f-display); letter-spacing: -0.04em; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .delta { font: 500 0.8125rem/1.3 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .delta[data-sign="plus"] { color: var(--ok); }
+  .delta[data-sign="minus"] { color: var(--bad); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 14px 0 6px; font-size: 0.78125rem; color: var(--muted); }
+  .legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .legend__sw { display: inline-block; width: 18px; height: 0; }
+  .legend__sw--you { border-top: 2px solid var(--blue); }
+  .legend__sw--ref { border-top: 1.5px dashed color-mix(in srgb, var(--ink) 55%, transparent); }
+  .legend__sw--more, .legend__sw--less { width: 10px; height: 10px; }
+  .legend__sw--more { background: color-mix(in srgb, var(--ok) 16%, transparent); }
+  .legend__sw--less { margin-left: 4px; background: color-mix(in srgb, var(--bad) 16%, transparent); }
+
+  .chart { position: relative; }
+  .chart__svg { width: 100%; height: clamp(200px, 36vh, 320px); touch-action: pan-y; overflow: visible; }
+
+  .tip {
+    position: absolute; z-index: 2; min-width: 196px; padding: 10px 12px; pointer-events: none;
+    background: var(--inverse-2); color: rgba(255, 255, 255, .75); font-size: 0.78125rem; /* kolor-stały: dymek na ciemnym tle */
+  }
+  .tip :global(strong) { display: block; margin-bottom: 4px; font: 500 0.9375rem/1.2 var(--f-display); color: #fff; } /* kolor-stały */
+  .tip :global(p) { display: flex; justify-content: space-between; gap: 16px; }
+  .tip :global(b) { font-weight: 500; color: #fff; font-variant-numeric: tabular-nums; } /* kolor-stały */
+  .tip :global(.tip__d) { margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, .2); }
+
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+  .stats > div { padding: 12px 12px 0 0; }
+  .stats > div + div { padding-left: 14px; border-left: 1px solid var(--line); }
+  .stats__num { margin-top: 4px; font: 400 1.5rem/1.15 var(--f-display); letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stats .delta { font-size: 0.75rem; font-weight: 400; }
+
+  .comment { padding: 12px 14px; background: var(--bg-soft); border-left: 2px solid var(--blue); font-size: 0.90625rem; line-height: 1.55; color: var(--text-strong); }
+
+  /* ---------- Wykresy (SVG wstawiane jako HTML — stąd :global) ---------- */
+  .sim :global(.c-grid) { stroke: var(--line); }
+  .sim :global(.c-axis) { stroke: var(--line-2); }
+  .sim :global(.c-label) { font: 400 0.65625rem var(--f-mono); fill: var(--muted); font-variant-numeric: tabular-nums; }
+  .sim :global(.c-label--strong) { fill: var(--ink); }
+  .sim :global(.c-future) { fill: var(--bg-soft); }
+  .sim :global(.c-now) { stroke: var(--muted); stroke-dasharray: 3 3; }
+  /* Kobalt = „twoje”: zmieniony nabór tu, twój scenariusz na wykresie wyniku */
+  .sim :global(.c-bar--past) { fill: var(--chart-soft); }
+  .sim :global(.c-bar--future) { fill: var(--chart); }
+  .sim :global(.c-bar--changed) { fill: var(--blue); }
+  .sim :global(.c-ref) { fill: none; stroke: var(--ink); stroke-width: 1; opacity: .5; }
+  .sim :global(.c-selected) { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+  .sim :global(.c-gap--more) { fill: var(--ok); opacity: .16; }
+  .sim :global(.c-gap--less) { fill: var(--bad); opacity: .16; }
+  .sim :global(.c-gus) { stroke: var(--muted); stroke-dasharray: 2 4; }
+  .sim :global(.c-label--gus) { font-size: 0.625rem; }
+  .sim :global(.c-line) { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .sim :global(.c-line--you) { stroke: var(--blue); stroke-width: 2; }
+  .sim :global(.c-line--ref) { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: .55; }
+  .sim :global(.c-guide) { stroke: var(--muted); stroke-dasharray: 2 3; }
+  .sim :global(.c-dot) { stroke: var(--surface); stroke-width: 2; }
+  .sim :global(.c-dot--you) { fill: var(--blue); }
+  .sim :global(.c-dot--ref) { fill: var(--muted); }
+
+  /* ---------- Średnie ekrany: węższa kolumna ustawień ---------- */
+  @media (max-width: 1100px) {
+    .sim { grid-template-columns: minmax(0, 360px) minmax(0, 1fr); }
+    .stats__num { font-size: 1.25rem; }
+  }
+
+  /* ---------- Wąskie ekrany: wynik przyklejony u góry, kroki pod nim ----------
+     .sim__out znika z układu (display: contents), więc jego dzieci stają się
+     elementami .sim: karta wyniku idzie na górę i przykleja się w obrębie całego
+     symulatora, statystyki i komentarz — na koniec, pod ustawieniami. */
+  @media (max-width: 860px) {
+    .sim { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+    .sim__out { display: contents; }
+    .out {
+      order: -1; position: sticky; top: var(--header-h); z-index: 20;
+      padding: 12px 14px 8px; border-width: 1px; border-top-width: 2px;
+      box-shadow: 0 12px 24px -16px light-dark(rgba(4, 11, 27, .35), rgba(0, 0, 0, .8));
+    }
+    .out__head .mono-label { flex-basis: auto; }
+    .out__big { font-size: 1.875rem; }
+    .legend { margin: 6px 0 2px; font-size: 0.71875rem; gap: 2px 12px; }
+    .chart__svg { height: clamp(120px, 20vh, 170px); }
+    .sim__in { margin-top: 8px; }
+    .stats { margin-top: 32px; }
+    .comment { margin-top: 16px; }
+  }
+  @media (max-width: 480px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .stats > div:nth-child(3) { grid-column: 1 / -1; padding-left: 0; border-left: 0; border-top: 1px solid var(--line); margin-top: 12px; }
+    .legend .legend__gap { display: none; }
+  }
+</style>

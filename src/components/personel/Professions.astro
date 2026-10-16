@@ -1,0 +1,88 @@
+---
+/**
+ * Zawody medyczne: liczebność, wynagrodzenie rynkowe i miejsce w ustawowej siatce.
+ * Każda liczba ma pod sobą dopowiedzenie i link do źródła (adresy przychodzą z listy `sources`
+ * artykułu, więc są zapisane tylko raz). Pole bez źródła to „—” z wyjaśnieniem.
+ * W wąskim kontenerze wiersz staje się kartą: komórki z etykietą kolumny nad treścią.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Flag from '@/components/ui/Flag.astro';
+import Icon from '@/components/ui/Icon.astro';
+import type { Accuracy } from '@/types';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+interface Cell {
+  value: string;
+  note?: string;
+  accuracy?: Accuracy;
+  source?: { label: string; href: string };
+}
+
+interface Props extends HTMLAttributes<'div'> {
+  items: { name: string; count: Cell; market: Cell; groups: string }[];
+}
+
+const COLUMNS = ['Zawód', 'Liczebność', 'Rynek: mediana lub widełki', 'Grupa w siatce'];
+
+const { items, class: className, ...rest } = Astro.props;
+---
+<div class:list={['prof-wrap', className]} {...rest}>
+  <table class="prof">
+    <thead>
+      <tr>{COLUMNS.map((c) => <th scope="col">{c}</th>)}</tr>
+    </thead>
+    <tbody>
+      {items.map((p) => (
+        <tr>
+          <th scope="row">{typo(p.name)}</th>
+          {[p.count, p.market].map((cell, i) => (
+            <td data-label={COLUMNS[i + 1]}>
+              <span class="prof__v">{typo(cell.value)}</span>
+              {cell.note && <span class="prof__note">{typo(cell.note)}</span>}
+              {(cell.accuracy || cell.source) && (
+                <span class="prof__src">
+                  {cell.accuracy && <Flag accuracy={cell.accuracy} />}
+                  {cell.source && <a {...linkAttrs(cell.source.href)}>{typo(cell.source.label)}<Icon name="arrow-ne" size={10} /></a>}
+                </span>
+              )}
+            </td>
+          ))}
+          <td data-label={COLUMNS[3]} class="prof__group">{typo(p.groups)}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .prof-wrap { container-type: inline-size; }
+  .prof { width: 100%; border-collapse: collapse; }
+  /* .prof przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .prof thead th {
+    padding: 0 16px 10px 0; text-align: left; vertical-align: bottom;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .prof thead th:first-child { width: 18%; }
+  .prof thead th:last-child { width: 14%; }
+  .prof tbody th, .prof td { padding: 16px 16px 16px 0; vertical-align: top; border-bottom: 1px solid var(--line); }
+  .prof tbody th { font: 500 0.9375rem/1.4 var(--f-display); letter-spacing: -0.01em; text-transform: none; color: var(--ink); }
+
+  .prof__v { display: block; font: 400 1.375rem/1.1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .prof__note { display: block; margin-top: 6px; font-size: 0.84375rem; line-height: 1.5; color: var(--text); }
+  .prof__src { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font: 400 0.71875rem/1.3 var(--f-mono); color: var(--muted); }
+  .prof__src a { display: inline-flex; align-items: center; gap: 4px; color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s; }
+  .prof__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .prof__group { font-size: 0.90625rem; line-height: 1.5; color: var(--ink-2); }
+
+  /* Wąsko: wiersz = karta, etykieta kolumny nad komórką */
+  @container (max-width: 640px) {
+    .prof thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .prof, .prof tbody, .prof tr, .prof tbody th, .prof td { display: block; width: auto; }
+    .prof tr { padding: 16px 0; border-bottom: 1px solid var(--line-2); }
+    .prof tbody th, .prof td { padding: 0; border: 0; }
+    .prof tbody th { padding-bottom: 4px; font-size: 1.0625rem; }
+    .prof td[data-label]::before { content: attr(data-label); display: block; margin: 14px 0 4px; font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  }
+</style>

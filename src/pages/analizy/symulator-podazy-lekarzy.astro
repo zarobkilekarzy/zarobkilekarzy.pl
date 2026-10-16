@@ -1,1048 +1,165 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import ShareRow from '../../components/ShareRow.astro';
-import Aktualizacja from '../../components/Aktualizacja.astro';
+/**
+ * /analizy/symulator-podazy-lekarzy/ — ustaw nabór na medycynę, zobacz, ilu lekarzy będzie.
+ * Widok: components/podaz (ustawienia | przyklejony wynik). Rachunek: lib/podaz/model.
+ * Wpis kolekcji `symulator-podazy-lekarzy` zostaje bez treści i linkuje tutaj (href).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Prose from '@/components/article/Prose.astro';
+import NoteRef from '@/components/article/NoteRef.astro';
+import NoteList from '@/components/article/NoteList.astro';
+import SupplySimulator from '@/components/podaz/SupplySimulator.astro';
 import {
-  ROK_MIN, ROK0, ROK_DOKLADNE_OD,
-  STUDIA, SPECJALIZACJA, REJESTR_DATA, REJESTR_SUMA, GUS_PRZY_PACJENCIE,
-  LIMIT_DZIS, NIL_BAZA, naborBazowy, presety, symuluj, USTAWIENIA_DOMYSLNE, WSKAZNIKI_ZMIERZONE,
-  WYK, NABOR_MAX, szerSlupka, naborX, naborY, wynikX, wynikY, skalaWyniku, sciezka,
-  fmt, tys,
-} from '../../lib/symulatorPodazy';
+  DEFAULTS, GUS_WITH_PATIENTS, LIMIT_TODAY, LIMIT_TODAY_LABEL, MEASURED, seats, NIL_BASE, OVER_70, REGISTER_DATE, REGISTER_TOTAL,
+  SPEC_YEARS, STUDY_YEARS, YEAR_END,
+} from '@/lib/podaz/model';
+import { thousands } from '@/lib/podaz/charts';
+import { articleHref, getArticle, isPublished } from '@/lib/content';
+import { mainNav } from '@/data/navigation';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { formatPL, typo } from '@/lib/format';
+import { defineNotes } from '@/lib/notes';
 
-// Co to jest: symulator podaży lekarzy. Użytkownik ustawia nabór na studia rok po
-// roku (1987–2050), a model pokazuje, ilu lekarzy będzie na rynku do 2062 r.
-// Rachunek i dane siedzą w src/lib/symulatorPodazy.ts — tu jest tylko widok.
-//
-// Uczciwość modelu (to jest warunek publikacji, nie ozdoba):
-//   1. Przy nietkniętych suwakach rok 2026 równa się CO DO OSOBY wydrukowi z rejestru
-//      NIL (164 892). Model nie „mniej więcej odtwarza" rzeczywistości — odtwarza ją.
-//   2. Wszystko poza tym to założenia użytkownika, wypisane w sekcji „Czego ten model
-//      nie robi". Wartość informacyjną mają RÓŻNICE między scenariuszami.
-//   3. Warianty NIL przeliczamy proporcjonalnie (analiza mówi o 7797 miejscach z
-//      projektu na 2024/25, dziś limit polskojęzyczny to 8616) — i mówimy o tym wprost.
+const title = 'Symulator podaży lekarzy';
+const lead = `Limit miejsc na medycynie działa z opóźnieniem: ${STUDY_YEARS} lat do dyplomu, ${STUDY_YEARS + SPEC_YEARS} do specjalisty. Zmień nabór i od razu zobacz, ilu lekarzy będzie w 2040 i 2050 r.`;
+const description = `Ustaw limit przyjęć na medycynę i zobacz, ilu lekarzy będzie do ${YEAR_END} r. Start: rejestr NIL (${formatPL(REGISTER_TOTAL)} lekarzy wykonujących zawód) i limity z rozporządzeń.`;
+const analysesHref = mainNav.find((link) => link.match === '/analizy/')?.href ?? '/analizy/';
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Analizy', href: analysesHref }, { label: title }];
+// Narzędzie z opisem modelu i źródłami — w danych strukturalnych to artykuł działu Analizy.
+// Daty z wpisu kolekcji (src/content/articles/symulator-podazy-lekarzy.md: date / updated).
+const entry = await getArticle('symulator-podazy-lekarzy');
+const seo: SeoInput = {
+  title: `${title} w Polsce`,
+  description,
+  type: 'article',
+  section: 'Analizy',
+  dates: { published: entry?.data.date, modified: entry?.data.updated ?? entry?.data.date },
+  breadcrumbs: crumbs,
+  entities: [{ kind: 'article' }],
+};
 
-const nabor0 = [...naborBazowy];
-const wynik0 = symuluj(nabor0);
-const vMax0 = skalaWyniku(Math.max(...wynik0.map((w) => w.lekarze)));
+// Powiązane analizy — link tylko do opublikowanych (zapowiedź nie ma jeszcze strony)
+const related = async (id: string) => {
+  const article = await getArticle(id);
+  return isPublished(article) ? articleHref(article) : undefined;
+};
+const odsiew = await related('odsiew-na-medycynie');
+const ciecie = await related('ciecie-limitow-na-medycyne');
+const specjalizacje = await related('wedlug-specjalizacji');
 
-const w = (rok: number) => wynik0[rok - ROK0];
-const LEKARZE_2040 = w(2040).lekarze;
-const LEKARZE_2050 = w(2050).lekarze;
+// Źródła opisu modelu — przypisy (lib/notes) w kolejności, w jakiej stoją w tekście
+const notes = defineNotes({
+  nil: `NIL, [Centralny Rejestr Lekarzy — informacje statystyczne](https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne): lekarze wykonujący zawód według grup wieku, stan na ${REGISTER_DATE}.`,
+  mz: 'Ministerstwo Zdrowia, BASiW, [„Studenci i absolwenci kierunków medycznych”](https://basiw.mz.gov.pl/mapy-informacje/mapa-2022-2026/analizy/kadry-medyczne/studenci-i-absolwenci-kierunkow-medycznych/) (POL-on, ZUS): odsiew w trakcie studiów i absolwenci bez pracy w Polsce.',
+  cem: 'Centrum Egzaminów Medycznych, [statystyki LEK](https://www.cem.edu.pl/lep_s.php): lekarze z dyplomem zagranicznym zdający egzamin.',
+  gus: 'GUS, [Zasoby kadrowe w wybranych zawodach medycznych na podstawie źródeł administracyjnych w 2024 r.](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/28/4/1/zasoby_kadrowe_w_wybranych_zawodach_medycznych_na_podstawie_zrodel_administracyjnych_w_2024_r..pdf), dane za 2024 r.',
+  ccomptes: 'Cour des comptes, [L’accès aux études de santé](https://www.ccomptes.fr/sites/default/files/2024-12/20241211-Lacces-aux-%C3%A9tudes-de-sante.pdf), grudzień 2024.',
+});
 
-// Etykiety osi X wykresu naboru — rzadkie, bo słupków jest 64.
-const lataOsi = [1987, 1995, 2003, 2011, 2019, 2026, 2034, 2042, 2050];
-const lataOsiWynik = [2026, 2032, 2038, 2044, 2050, 2056, 2062];
-const siatkaNabor = [3000, 6000, 9000, 12000];
-const dzisX = naborX(ROK0);
-
-// Losy rocznika — trzy wskaźniki z analizy o odsiewie. `skala` przelicza wartość
-// suwaka na pole modelu (procenty → ułamek); skrypt czyta ją z data-skala.
-const suwakiWsk = [
-  {
-    pole: 'konczy', przed: 'Kończy studia', po: 'przyjętych', min: 50, max: 100, krok: 1, skala: 100,
-    zrodlo: 'Dziś 80–82% Polaków kończy w terminie.',
-  },
-  {
-    pole: 'wyjazdy', przed: 'Nie pracuje w Polsce', po: 'absolwentów', min: 0, max: 40, krok: 1, skala: 100,
-    zrodlo: 'Dziś 5% nie ma składki ZUS sześć lat po dyplomie. Z Rumunii wyjechało 33% lekarzy (OECD).',
-  },
-  {
-    pole: 'naplyw', przed: 'Napływ z zagranicy', po: 'lekarzy rocznie', min: 0, max: 4000, krok: 100, skala: 1,
-    zrodlo: 'Do LEK podchodzi co roku 860–1 210 osób z dyplomem zagranicznym.',
-  },
-] as const;
-const wartoscWsk = (s: (typeof suwakiWsk)[number]) => Math.round(WSKAZNIKI_ZMIERZONE[s.pole] * s.skala);
-const opisWsk = (s: (typeof suwakiWsk)[number]) => (s.skala === 100 ? `${wartoscWsk(s)}%` : fmt(wartoscWsk(s)));
-
+const meta = [
+  { label: 'Start modelu', value: `${formatPL(REGISTER_TOTAL)} lekarzy` },
+  { label: 'Rejestr NIL', value: '16.01.2026' },
+  { label: `Limit ${LIMIT_TODAY_LABEL}`, value: seats(LIMIT_TODAY) },
+  { label: 'Horyzont', value: `${YEAR_END} r.` },
+];
 ---
-
-<BaseLayout
-  title="Symulator podaży lekarzy: ustaw nabór, zobacz skutek — zarobkilekarzy.pl"
-  description="Przesuń limity przyjęć na medycynę rok po roku — od 1987 do 2050 — i zobacz, ilu lekarzy będzie na rynku do 2062 roku. Model startuje od rzeczywistego rejestru NIL (164 892 lekarzy wykonujących zawód) i rzeczywistych limitów z rozporządzeń."
->
-  <section class="section">
-    <div class="container">
-      <p class="eyebrow"><a href="/analizy/">Analizy</a> · Dostęp do zawodu</p>
-      <h1>Symulator podaży lekarzy</h1>
-      <Aktualizacja />
-      <p class="lead">
-        Decyzja o liczbie miejsc na medycynie działa z opóźnieniem <strong>{STUDIA} lat</strong> do dyplomu i <strong>{STUDIA + SPECJALIZACJA} lat</strong> do specjalisty. To dłużej niż kadencja, więc nikt, kto ją podejmuje, nie odpowiada za jej skutek. Tu możesz ten skutek zobaczyć: ustaw nabór rok po roku, a model policzy, ilu lekarzy będzie na rynku. Startuje od prawdziwych limitów i prawdziwego rejestru — <strong>{fmt(REJESTR_SUMA)}</strong> lekarzy wykonujących zawód ({REJESTR_DATA}).
-      </p>
-
-      <div class="callout">
-        <p>
-          <strong>Jak to czytać.</strong> Przy nietkniętych suwakach symulator odtwarza rzeczywistość: rok {ROK0} to co do osoby wydruk z rejestru izby lekarskiej, a historia naboru to rozporządzenia Ministra Zdrowia. Wszystko, co zmienisz, model liczy jako odchylenie od tego stanu. Z przyszłych roczników odejmuje tych, którzy nie kończą studiów albo nie pracują w Polsce, i dolicza lekarzy z dyplomem zagranicznym — domyślnie w wartościach <a href="/analizy/odsiew-na-medycynie/">zmierzonych w danych ministerstwa i CEM</a>. To jednak uproszczenie, więc <strong>wiarygodne są przede wszystkim różnice między scenariuszami, nie poziomy bezwzględne</strong>.
-        </p>
+<BaseLayout seo={seo}>
+  <Section space="none" class="sim-page">
+    <header class="sim-page__head">
+      <Breadcrumbs items={crumbs} />
+      <div class="sim-page__intro">
+        <div>
+          <Eyebrow>Narzędzie · dostęp do zawodu</Eyebrow>
+          <Heading as="h1" size="display" class="sim-page__title">{title}</Heading>
+          <p class="lead sim-page__lead">{typo(lead)}</p>
+        </div>
+        <dl class="sim-page__meta">
+          {meta.map(({ label, value }) => <div><dt>{label}</dt><dd>{value}</dd></div>)}
+        </dl>
       </div>
-    </div>
-  </section>
+    </header>
 
-  <section class="section section-alt sym-sekcja">
-    <div class="container">
-      <div class="sym">
-        <!-- KROK 1: wejście -->
-        <div class="sym-panel">
-          <div class="sym-head">
-            <h2 id="sym-h-nabor">1. Ustaw nabór na studia</h2>
-            <p class="sym-hint">
-              <strong>Kliknij słupek</strong>, żeby wpisać dokładną liczbę, albo <strong>przeciągnij</strong> po wykresie, żeby rysować całe okresy. Szare słupki to prawdziwe limity, granatowe — przyszłość, pomarańczowe — twoja zmiana. Cienka linia pokazuje, gdzie przebiega rzeczywistość.
-            </p>
-          </div>
+    <SupplySimulator />
+  </Section>
 
-          <div class="sym-plot-wrap">
-          <div class="sym-plot">
-            <svg
-              id="sym-nabor"
-              viewBox={`0 0 ${WYK.szer} ${WYK.wys}`}
-              tabindex="0"
-              role="application"
-              aria-label="Wykres naboru na studia lekarskie, roczniki 1987–2050. Strzałkami w lewo i w prawo wybierasz rocznik, w górę i w dół zmieniasz liczbę miejsc o 50 (z klawiszem Shift o 500)."
-              aria-describedby="sym-status"
-            >
-              {siatkaNabor.map((v) => (
-                <g>
-                  <line x1={WYK.x0} y1={naborY(v)} x2={WYK.x1} y2={naborY(v)} class="sym-siatka"></line>
-                  <text x={WYK.x0 - 8} y={naborY(v) + 4} text-anchor="end" class="sym-oslab">{fmt(v)}</text>
-                </g>
-              ))}
-              <line x1={WYK.x0} y1={WYK.y0} x2={WYK.x1} y2={WYK.y0} class="sym-os"></line>
-
-              <rect x={dzisX} y={WYK.yTop} width={WYK.x1 - dzisX} height={WYK.y0 - WYK.yTop} class="sym-przyszlosc"></rect>
-              <line x1={dzisX} y1={WYK.yTop - 8} x2={dzisX} y2={WYK.y0} class="sym-dzis"></line>
-              <text x={dzisX + 5} y={WYK.yTop - 12} class="sym-dzislab">dziś →</text>
-              <text x={dzisX - 5} y={WYK.yTop - 12} text-anchor="end" class="sym-dzislab">← historia</text>
-
-              {nabor0.map((v, i) => (
-                <rect
-                  class="sym-bar"
-                  data-rok={ROK_MIN + i}
-                  x={(naborX(ROK_MIN + i) + 0.7).toFixed(1)}
-                  y={naborY(v).toFixed(1)}
-                  width={(szerSlupka - 1.4).toFixed(1)}
-                  height={(WYK.y0 - naborY(v)).toFixed(1)}
-                ></rect>
-              ))}
-
-              <polyline
-                id="sym-baza-linia"
-                class="sym-baza"
-                points={nabor0.map((v, i) => `${(naborX(ROK_MIN + i) + szerSlupka / 2).toFixed(1)},${naborY(v).toFixed(1)}`).join(' ')}
-              ></polyline>
-
-              <rect id="sym-zaznaczenie" class="sym-zazn" x="0" y="0" width="0" height="0" rx="2"></rect>
-
-              {lataOsi.map((r) => (
-                <text x={naborX(r) + szerSlupka / 2} y={WYK.y0 + 19} text-anchor="middle" class="sym-oslab">{r}</text>
-              ))}
-              <rect id="sym-plotno" x={WYK.x0} y={WYK.yTop} width={WYK.x1 - WYK.x0} height={WYK.y0 - WYK.yTop} fill="transparent"></rect>
-            </svg>
-          </div>
-
-          <div id="sym-pop" class="sym-pop" hidden role="dialog" aria-label="Liczba miejsc w wybranym roczniku">
-            <div class="sym-pop-head">
-              <strong id="sym-pop-rok">2026/27</strong>
-              <span id="sym-pop-era" class="sym-pop-era"></span>
-              <button type="button" id="sym-pop-x" class="sym-pop-x" aria-label="Zamknij">×</button>
-            </div>
-            <div class="sym-pop-row">
-              <button type="button" class="sym-pop-krok" data-krok="-500" aria-label="Mniej o 500">−500</button>
-              <input type="number" id="sym-pop-val" min="0" max={NABOR_MAX} step="50" aria-label="Liczba miejsc w tym roczniku" />
-              <button type="button" class="sym-pop-krok" data-krok="500" aria-label="Więcej o 500">+500</button>
-            </div>
-            <p class="sym-pop-info">
-              <span id="sym-pop-baza"></span>
-              <button type="button" id="sym-pop-reset" class="sym-pop-link">przywróć</button>
-            </p>
-          </div>
-          </div>
-
-          <p class="sym-podpis source-note">
-            Miejsca na studiach lekarskich <strong>po polsku</strong> (stacjonarne, niestacjonarne i pula dla cudzoziemców). Studia obcojęzyczne są poza modelem — zostaje po nich w Polsce <a href="/analizy/english-division/">mniej niż 1% absolwentów</a>. Lata <strong>{ROK_DOKLADNE_OD}–2025</strong> to dokładne wartości z rozporządzeń MZ; <strong>{ROK_MIN}–{ROK_DOKLADNE_OD - 1}</strong> — punkty kontrolne ({ROK_MIN}: 6000, 1990: 3300, 2003: 2090) z latami pośrednimi interpolowanymi. Kategorie przez cztery dekady nie są idealnie tożsame; szerzej w analizie <a href="/analizy/ciecie-limitow-na-medycyne/">o cięciu limitów</a>.
-          </p>
-
-          <div class="sym-presety" role="group" aria-label="Gotowe scenariusze">
-            {presety.map((p) => (
-              <button type="button" class:list={['sym-preset', { 'jest-historia': p.historia }]} data-preset={p.id} title={p.opis}>{p.nazwa}</button>
-            ))}
-          </div>
-
-          <fieldset class="sym-grupa">
-            <legend>Losy rocznika</legend>
-            <p class="sym-grupa-opis">
-              Wartości domyślne pochodzą z analizy <a href="/analizy/odsiew-na-medycynie/">„Kto odpada z medycyny, a kto wyjeżdża”</a>. Zmieniają tylko twój scenariusz — odniesienie zostaje przy wartościach zmierzonych. Odsiew działa od naboru {ROK0}, bo starsze roczniki mają pierwszy rok za sobą.
-              <button type="button" id="sym-wsk-reset" class="sym-pop-link" hidden>przywróć zmierzone</button>
-            </p>
-            <div class="sym-kontrolki sym-kontrolki-wsk">
-              {suwakiWsk.map((s) => (
-                <div class="sym-pole">
-                  <label for={`sym-${s.pole}`}>
-                    {s.przed}: <output id={`sym-${s.pole}-out`}>{opisWsk(s)}</output> {s.po}
-                  </label>
-                  <input
-                    type="range"
-                    id={`sym-${s.pole}`}
-                    data-wsk={s.pole}
-                    data-skala={s.skala}
-                    min={s.min}
-                    max={s.max}
-                    step={s.krok}
-                    value={wartoscWsk(s)}
-                    aria-describedby={`sym-${s.pole}-zr`}
-                  />
-                  <span id={`sym-${s.pole}-zr`} class="sym-zrodlo">{s.zrodlo}</span>
-                </div>
-              ))}
-            </div>
-          </fieldset>
-
-          <fieldset class="sym-grupa">
-            <legend>Założenia modelu</legend>
-            <p class="sym-grupa-opis">Przesuwają obie krzywe — twoją i odniesienie.</p>
-            <div class="sym-kontrolki">
-              <div class="sym-pole sym-pole-szeroki">
-                <label for="sym-spec">
-                  Kończy specjalizację: <output id="sym-spec-out">{Math.round(USTAWIENIA_DOMYSLNE.udzialSpec * 100)}%</output> rocznika
-                </label>
-                <input type="range" id="sym-spec" min="0" max="100" step="5" value={Math.round(USTAWIENIA_DOMYSLNE.udzialSpec * 100)} />
-              </div>
-              <fieldset class="sym-pole sym-fieldset">
-                <legend>Pracuje do wieku</legend>
-                <div class="sym-radia">
-                  {[65, 70, 75].map((r) => (
-                    <label><input type="radio" name="sym-wiek" value={r} checked={r === USTAWIENIA_DOMYSLNE.wiekOdejscia} />{` ${r} lat`}</label>
-                  ))}
-                </div>
-              </fieldset>
-            </div>
-          </fieldset>
-          <p id="sym-status" class="sym-status" aria-live="polite"></p>
-        </div>
-
-        <!-- KROK 2: wynik -->
-        <div class="sym-panel">
-          <div class="sym-head">
-            <h2 id="sym-h-wynik">2. Zobacz, ilu będzie lekarzy</h2>
-            <p class="sym-hint">
-              Rocznik przyjęty w roku R wchodzi na rynek w R+{STUDIA}, a jako specjalista — w R+{STUDIA + SPECJALIZACJA}. Przerywana linia to scenariusz odniesienia: prawdziwa historia, utrzymanie dzisiejszego limitu i zmierzone losy rocznika.
-            </p>
-          </div>
-
-          <div class="sym-plot-wrap">
-          <div class="sym-plot">
-            <svg id="sym-wynik" viewBox={`0 0 ${WYK.szer} ${WYK.wys}`} role="img" aria-labelledby="sym-h-wynik" aria-describedby="sym-odczyty">
-              {[0, 0.25, 0.5, 0.75, 1].map((f) => (
-                <g>
-                  <line class="sym-siatka" data-siatka={f} x1={WYK.x0} y1={wynikY(vMax0 * f, vMax0)} x2={WYK.x1} y2={wynikY(vMax0 * f, vMax0)}></line>
-                  <text class="sym-oslab" data-siatka-lab={f} x={WYK.x0 - 8} y={wynikY(vMax0 * f, vMax0) + 4} text-anchor="end">{f === 0 ? '0' : tys(vMax0 * f)}</text>
-                </g>
-              ))}
-
-              <line id="sym-gus" class="sym-ref" x1={WYK.x0} y1={wynikY(GUS_PRZY_PACJENCIE, vMax0)} x2={WYK.x1} y2={wynikY(GUS_PRZY_PACJENCIE, vMax0)}></line>
-              <text id="sym-gus-lab" class="sym-reflab" x={WYK.x1} y={wynikY(GUS_PRZY_PACJENCIE, vMax0) - 7} text-anchor="end">{tys(GUS_PRZY_PACJENCIE)} — tylu pracuje dziś z pacjentem (GUS 2024)</text>
-
-              <path id="sym-linia-baza" class="sym-ln-baza" d={sciezka(wynik0, 'lekarze', vMax0)}></path>
-              <path id="sym-linia-lekarze" class="sym-ln-lekarze" d={sciezka(wynik0, 'lekarze', vMax0)}></path>
-              <path id="sym-linia-spec" class="sym-ln-spec" d={sciezka(wynik0, 'specjalisci', vMax0)}></path>
-
-              <line x1={WYK.x0} y1={WYK.y0} x2={WYK.x1} y2={WYK.y0} class="sym-os"></line>
-              {lataOsiWynik.map((r) => (
-                <text x={wynikX(r)} y={WYK.y0 + 19} text-anchor="middle" class="sym-oslab">{r}</text>
-              ))}
-
-              <g id="sym-w-lupa" class="sym-ukryty">
-                <line id="sym-w-prowadnica" class="sym-prowadnica" y1={WYK.yTop} y2={WYK.y0}></line>
-                <circle id="sym-w-pkt-lek" class="sym-pkt sym-pkt-lek" r="4.5"></circle>
-                <circle id="sym-w-pkt-spec" class="sym-pkt sym-pkt-spec" r="4"></circle>
-              </g>
-              <rect id="sym-w-plotno" x={WYK.x0} y={WYK.yTop} width={WYK.x1 - WYK.x0} height={WYK.y0 - WYK.yTop} fill="transparent"></rect>
-            </svg>
-          </div>
-
-          <div id="sym-w-pop" class="sym-pop sym-pop-odczyt" hidden aria-hidden="true">
-            <strong id="sym-w-rok"></strong>
-            <p class="sym-w-wiersz"><span class="sym-kropka" style="background: var(--brand)"></span>Wszyscy lekarze<b id="sym-w-lek"></b></p>
-            <p class="sym-w-wiersz"><span class="sym-kropka" style="background: var(--teal)"></span>Ze specjalizacją<b id="sym-w-spec"></b></p>
-            <p class="sym-w-wiersz sym-w-baza"><span class="sym-kreska"></span>Odniesienie<b id="sym-w-odn"></b></p>
-            <p id="sym-w-delta" class="sym-w-delta"></p>
-          </div>
-          </div>
-
-          <div class="sym-legenda">
-            <span class="sym-lg"><span class="sym-kropka" style="background: var(--brand)"></span>Wszyscy lekarze</span>
-            <span class="sym-lg"><span class="sym-kropka" style="background: var(--teal)"></span>Ze specjalizacją</span>
-            <span class="sym-lg"><span class="sym-kreska"></span>Scenariusz odniesienia</span>
-          </div>
-
-          <div id="sym-odczyty" class="sym-odczyty">
-            <div class="sym-karta">
-              <span class="sym-karta-lab">Lekarzy w 2040</span>
-              <span class="sym-karta-num" id="sym-2040">{fmt(LEKARZE_2040)}</span>
-              <span class="sym-karta-delta" id="sym-2040-d">bez zmian</span>
-            </div>
-            <div class="sym-karta">
-              <span class="sym-karta-lab">Lekarzy w 2050</span>
-              <span class="sym-karta-num" id="sym-2050">{fmt(LEKARZE_2050)}</span>
-              <span class="sym-karta-delta" id="sym-2050-d">bez zmian</span>
-            </div>
-            <div class="sym-karta">
-              <span class="sym-karta-lab">Ze specjalizacją w 2050</span>
-              <span class="sym-karta-num" id="sym-spec-2050">{fmt(w(2050).specjalisci)}</span>
-              <span class="sym-karta-delta" id="sym-spec-2050-d">bez zmian</span>
-            </div>
-            <div class="sym-karta">
-              <span class="sym-karta-lab">Skutek widać od roku</span>
-              <span class="sym-karta-num" id="sym-widac">—</span>
-              <span class="sym-karta-delta">różnica przekracza 1000 lekarzy</span>
-            </div>
-          </div>
-
-          <p id="sym-komentarz" class="sym-komentarz">
-            Na razie odtwarzasz rzeczywistość. Przesuń dowolny rocznik albo weź gotowy scenariusz.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="container">
-      <div class="prose">
-        <h2>Co ten model robi</h2>
-        <ol class="sym-lista">
-          <li><strong>Startuje od rejestru, nie od szacunku.</strong> Punkt wyjścia to wydruk z rejestru izby lekarskiej z {REJESTR_DATA}: <strong>{fmt(REJESTR_SUMA)}</strong> lekarzy wykonujących zawód, w jedenastu grupach wieku. Przy nietkniętych suwakach rok {ROK0} na wykresie równa się tej liczbie co do osoby.</li>
-          <li><strong>Przypisuje roczniki rejestru do roczników naboru.</strong> Lekarz, który ma dziś 48 lat, zaczynał studia około 1997 r. Kiedy przesuniesz suwak dla 1997 r., model skaluje ten rocznik proporcjonalnie — i dlatego zmiana przeszłości od razu zmienia dzisiejszy stan.</li>
-          <li><strong>Dolicza roczniki, które dopiero wejdą — po odsiewie i wyjazdach.</strong> Kto zaczął studia w 2020 r., kończy je w 2026 r.; kto zacznie w 2050 r. — w 2056 r. Z każdego rocznika model odejmuje tych, którzy nie kończą studiów (domyślnie {100 - Math.round(WSKAZNIKI_ZMIERZONE.konczy * 100)}% przyjętych) i nie pracują w Polsce ({Math.round(WSKAZNIKI_ZMIERZONE.wyjazdy * 100)}% absolwentów), a co roku dolicza {fmt(WSKAZNIKI_ZMIERZONE.naplyw)} lekarzy z dyplomem zagranicznym. Skąd te liczby — w analizie <a href="/analizy/odsiew-na-medycynie/">o odsiewie na medycynie</a>.</li>
-          <li><strong>Odejmuje odchodzących.</strong> Rocznik wygasa po jednej piątej rocznie między wybranym wiekiem odejścia a pięcioma latami później. Tak samo model traktuje tych, którzy dziś już ten wiek przekroczyli — a to <strong>{tys(24595)} osób powyżej 70 lat</strong>, które rejestr wciąż liczy jako wykonujące zawód.</li>
-        </ol>
-
-        <h2>Czego ten model nie robi</h2>
-        <div class="callout alert">
-          <p>
-            <strong>Losy rocznika to trzy stałe liczby, a nie prognoza.</strong> Odsiew, wyjazdy i napływ z zagranicy zmieniają się z roku na rok, a model trzyma je na jednym poziomie. Kto kończy studia z opóźnieniem, w modelu przepada; nikt nie umiera przed emeryturą ani nie odchodzi z zawodu. Wyjazdy są zmierzone tylko w pierwszych sześciu latach po dyplomie — późniejszych dane ZUS jeszcze nie obejmują. Różnica między dwoma scenariuszami zostaje wiarygodna, bo obie krzywe liczone są tak samo.
-          </p>
-        </div>
-        <ul class="sym-lista">
-          <li><strong>Nie liczy godzin ani miejsca pracy.</strong> Lekarz w modelu to osoba w rejestrze, nie etat w szpitalu powiatowym. Dlatego na wykresie jest linia GUS: z {fmt(REJESTR_SUMA)} lekarzy w rejestrze <strong>{fmt(GUS_PRZY_PACJENCIE)}</strong> pracuje bezpośrednio z pacjentem. Cała różnica między „ilu ich jest" a „czy lekarz jest, gdy go potrzebujesz" siedzi w <a href="/analizy/dlaczego-brakuje-lekarzy/">sześciu mechanizmach paradoksu</a>.</li>
-          <li><strong>Nie rozróżnia dziedzin.</strong> Deficyt jest specjalizacyjny i lokalny; model daje jedną liczbę na cały kraj. Miejsca specjalizacyjne bywają puste nie dlatego, że brak chętnych na medycynę, lecz dlatego, że <a href="/analizy/lejek-ksztalcenia/">lejek kształcenia</a> ma inne wąskie gardło.</li>
-          <li><strong>Nie zna popytu.</strong> Pokazuje podaż, a nie potrzeby zdrowotne starzejącego się społeczeństwa. To zresztą jest sedno całego sporu: <a href="https://www.ccomptes.fr/sites/default/files/2024-12/20241211-Lacces-aux-%C3%A9tudes-de-sante.pdf" target="_blank" rel="noopener noreferrer">francuska izba obrachunkowa</a> po pięćdziesięciu latach regulowania liczby lekarzy stwierdziła, że wspólnej metody liczenia potrzeb wciąż nie ma.</li>
-          <li><strong>Liczy napływ z zagranicy tylko na skróty.</strong> Model dolicza stałą liczbę lekarzy z dyplomem zagranicznym, ale nie wie, ilu z nich to Polacy po studiach w innych krajach, ilu zostaje na stałe ani w jakim są wieku — takich danych nikt nie publikuje. Lekarze przyjeżdżający na uproszczonej ścieżce w przyszłych rocznikach nie występują wcale, choć dzisiejszy rejestr już ich obejmuje.</li>
-        </ul>
-
-        <p class="source-note">
-          Dane: rejestr Naczelnej Izby Lekarskiej (stan na {REJESTR_DATA}) — liczba lekarzy wykonujących zawód w grupach wieku; rozporządzenia Ministra Zdrowia w sprawie limitów przyjęć na kierunek lekarski (roczniki {ROK_DOKLADNE_OD}–2025); GUS, „Zdrowie i ochrona zdrowia" (2024) — lekarze pracujący z pacjentem i udział specjalistów; losy rocznika — aplikacja Ministerstwa Zdrowia „Studenci i absolwenci kierunków medycznych” (POL-on, ZUS) i statystyki LEK Centrum Egzaminów Medycznych, zestawione w <a href="/analizy/odsiew-na-medycynie/">analizie o odsiewie</a>; warianty cięcia — analiza zespołu eksperckiego NIL z czerwca 2024 r., przeliczona proporcjonalnie z {fmt(NIL_BAZA)} miejsc z projektu rozporządzenia na 2024/25 na dzisiejszy limit {fmt(LIMIT_DZIS)}. Model i wszystkie założenia: <code>src/lib/symulatorPodazy.ts</code>.
+  <Section tone="soft" aria-labelledby="model">
+    <div class="about">
+      <div>
+        <p class="mono-label">Jak czytać wynik</p>
+        <Heading as="h2" size="h2" id="model" class="about__title">Różnice, nie poziomy</Heading>
+        <p class="about__lead">
+          {typo(`Bez ruszania suwaków symulator odtwarza rzeczywistość: rok 2026 to co do osoby rejestr izby lekarskiej, a historia naboru — limity z rozporządzeń MZ. Wszystko, co zmienisz, model liczy jako odchylenie od tego stanu, więc wiarygodne są przede wszystkim różnice między scenariuszami.`)}
         </p>
       </div>
 
-      <ShareRow />
+      <div>
+        <Prose class="about__body">
+          <h3>Co model robi</h3>
+          <ol>
+            <li><strong>Startuje od rejestru, nie od szacunku.</strong> {typo(`Punkt wyjścia to ${formatPL(REGISTER_TOTAL)} lekarzy wykonujących zawód w jedenastu grupach wieku.`)}<NoteRef notes={notes} id="nil" /></li>
+            <li><strong>Wiąże wiek z rocznikiem naboru.</strong> {typo('Lekarz, który ma dziś 48 lat, zaczynał studia ok. 1997 r. Zmiana naboru w tamtym roku skaluje ten rocznik proporcjonalnie — dlatego zmiana przeszłości od razu zmienia stan na dziś.')}</li>
+            <li>
+              <strong>Dolicza nowe roczniki po odsiewie i wyjazdach.</strong>{' '}
+              {typo(`Z każdego przyszłego rocznika odpada ${Math.round((1 - MEASURED.graduate) * 100)}% przyjętych, a ${Math.round(MEASURED.abroad * 100)}% absolwentów nie pracuje w Polsce; co roku dochodzi ${formatPL(MEASURED.inflow)} lekarzy z dyplomem zagranicznym. Dane:`)}{' '}
+              {typo('aplikacja MZ „Studenci i absolwenci kierunków medycznych”')}<NoteRef notes={notes} id="mz" /> i {typo('statystyki LEK z CEM')}<NoteRef notes={notes} id="cem" />{odsiew && <>, zestawione w <a href={odsiew}>analizie o odsiewie</a></>}.
+            </li>
+            <li><strong>Odejmuje odchodzących.</strong> {typo(`Po osiągnięciu wybranego wieku (domyślnie ${DEFAULTS.retireAge} lat) rocznik wygasa przez pięć lat. Dotyczy to też ${thousands(OVER_70)} osób powyżej 70 lat, które rejestr wciąż liczy jako wykonujące zawód.`)}</li>
+          </ol>
+
+          <h3>Czego model nie robi</h3>
+          <ul>
+            <li><strong>Nie prognozuje losów rocznika.</strong> {typo('Odsiew, wyjazdy i napływ to trzy stałe liczby. Kto kończy studia z opóźnieniem, w modelu przepada, a wyjazdy są zmierzone tylko w pierwszych sześciu latach po dyplomie. Obie krzywe liczone są tak samo, więc różnica między nimi zostaje wiarygodna.')}</li>
+            <li><strong>Nie liczy etatów ani godzin.</strong> {typo(`Lekarz w modelu to osoba w rejestrze. Z pacjentem pracuje ${formatPL(GUS_WITH_PATIENTS)} z nich`)}<NoteRef notes={notes} id="gus" /> — stąd kropkowana linia na wykresie.</li>
+            <li><strong>Nie rozróżnia dziedzin ani regionów.</strong> {typo('Braki są specjalizacyjne i lokalne, a model daje jedną liczbę na cały kraj.')}{specjalizacje && <> Miejsca specjalizacyjne mają własne wąskie gardło — pokazujemy je w zestawieniu <a href={`${specjalizacje}#miejsca-specjalizacyjne`}>według specjalizacji</a>.</>}</li>
+            <li><strong>Nie zna popytu.</strong> {typo('Pokazuje podaż, a nie potrzeby starzejącego się społeczeństwa. Francuski trybunał obrachunkowy po pół wieku regulowania liczby lekarzy stwierdził, że wspólnej metody liczenia potrzeb wciąż nie ma.')}<NoteRef notes={notes} id="ccomptes" /></li>
+            <li><strong>Napływ z zagranicy liczy na skróty.</strong> {typo('Stała liczba rocznie — bez wieku i bez wiedzy, ilu zostaje na stałe, bo takich danych nikt nie publikuje.')}</li>
+          </ul>
+        </Prose>
+
+        <p class="about__sources">
+          {typo(`Nabór to miejsca na studiach lekarskich po polsku (stacjonarne, niestacjonarne i pula dla cudzoziemców); studia anglojęzyczne są poza modelem, bo zostaje po nich w Polsce mniej niż 1% absolwentów. Lata 2012–${LIMIT_TODAY_LABEL.slice(0, 4)} to dokładne limity z rozporządzeń MZ w wersji końcowej, po nowelizacjach (ta sama tabela co w analizie o English Division), 1987–2011 — punkty kontrolne (1987: ${formatPL(6000)}, 1990: ${formatPL(3300)}, 2003: ${formatPL(2090)}) z latami pośrednimi interpolowanymi.`)}
+          {ciecie && <> Szerzej w analizie <a href={ciecie}>o cięciu limitów</a>.</>}
+          {' '}{typo(`Warianty cięcia A–C to analiza zespołu ekspertów NIL z czerwca 2024 r., przeliczona proporcjonalnie z ${formatPL(NIL_BASE)} miejsc z projektu rozporządzenia na 2024/25 na dzisiejszy limit ${formatPL(LIMIT_TODAY)}.`)}
+        </p>
+
+        <NoteList notes={notes} class="about__notes" />
+      </div>
     </div>
-  </section>
+  </Section>
 </BaseLayout>
 
 <style>
-  .sym-sekcja { padding-top: 2rem; }
-  /* Jedna kolumna zawsze. Dwie się nie mieszczą: układ „tekst" rezerwuje prawą
-     szynę na spis treści (15rem), więc na treść zostaje ~970 px — a dwa wykresy
-     obok siebie potrzebowałyby ponad 1260 px i wypychały stronę w poziomie.
-     `minmax(0, …)` jest tu zabezpieczeniem: bez niego kolumna siatki nie schodzi
-     poniżej min-content wykresu i strona znowu zaczyna się przewijać w bok. */
-  .sym { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
-  .sym-panel {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem 1.25rem 1.4rem;
+  .sim-page { padding-top: clamp(28px, 4vw, 48px); padding-bottom: clamp(56px, 6vw, 96px); }
+  .sim-page__head { margin-bottom: clamp(28px, 3vw, 40px); }
+  .sim-page__intro {
+    display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 24px clamp(32px, 5vw, 80px); align-items: end; margin-top: 32px;
   }
-  .sym-head h2 { margin: 0 0 0.35rem; font-size: 1.15rem; }
-  .sym-hint { margin: 0 0 0.9rem; font-size: 0.9rem; color: var(--ink-soft); max-width: 78ch; line-height: 1.55; }
+  .sim-page__title { font-size: clamp(2.375rem, 4.4vw, 3.875rem); margin-bottom: 18px; }
+  .sim-page__lead { font-size: 1.125rem; max-width: 38em; }
+  .sim-page__meta { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
+  .sim-page__meta > div { padding: 12px 16px 12px 0; border-bottom: 1px solid var(--line); }
+  .sim-page__meta dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .sim-page__meta dd { font: 400 1.0625rem/1.2 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
 
-  .sym-plot-wrap { position: relative; }
-  .sym-plot { overflow-x: auto; }
-  .sym-plot svg { display: block; width: 100%; min-width: 620px; height: auto; }
-  /* `pan-y`, nie `none`: rysowanie palcem wymagałoby przechwycenia ruchu w pionie,
-     a wtedy wykres na całą szerokość ekranu stałby się pułapką na przewijanie.
-     Na dotyku stuknięcie otwiera popover z dokładną liczbą (patrz skrypt), rysowanie
-     przeciąganiem zostaje dla myszy i pióra. */
-  #sym-nabor { touch-action: pan-y; cursor: crosshair; }
+  .about { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+  .about__title { margin: 14px 0 20px; }
+  .about__lead { font-size: 1.0625rem; line-height: 1.65; color: var(--text-strong); }
+  .about__body :global(h3:first-child) { margin-top: 0; }
+  .about__notes { margin-top: 32px; }
+  .about__sources { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line-2); font-size: 0.90625rem; line-height: 1.6; color: var(--muted); }
+  /* Linki z szablonu strony dostają atrybut zakresu, więc wygląd jak w Prose ustawiamy tutaj; numery przypisów stylują się same (styles/footnotes.css) */
+  .about__body a, .about__sources a { color: var(--blue); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .about__body a:hover, .about__sources a:hover { text-decoration-thickness: 2px; }
 
-  .sym-siatka { stroke: var(--line); stroke-width: 1; }
-  .sym-os { stroke: var(--line-2); stroke-width: 1; }
-  .sym-oslab { font-size: 11px; fill: var(--ink-faint); font-variant-numeric: tabular-nums; }
-  .sym-przyszlosc { fill: var(--paper-2); opacity: 0.55; }
-  .sym-dzis { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 3 3; }
-  .sym-dzislab { font-size: 10.5px; fill: var(--ink-faint); font-weight: 600; }
-
-  .sym-bar { fill: var(--neutral-fill); opacity: 0.55; }
-  .sym-bar[data-era='przyszlosc'] { fill: var(--brand); opacity: 0.85; }
-  .sym-bar[data-zmiana='tak'] { fill: var(--amber); opacity: 1; }
-  .sym-baza { fill: none; stroke: var(--ink); stroke-width: 1.2; opacity: 0.45; }
-  .sym-zazn { fill: none; stroke: var(--brand-link); stroke-width: 2; }
-
-  .sym-ref { stroke: var(--alert); stroke-width: 1; stroke-dasharray: 2 4; }
-  .sym-reflab { font-size: 10.5px; fill: var(--alert); font-weight: 600; }
-  .sym-ln-baza { fill: none; stroke: var(--ink-faint); stroke-width: 1.6; stroke-dasharray: 6 4; }
-  .sym-ln-lekarze { fill: none; stroke: var(--brand); stroke-width: 2.6; stroke-linejoin: round; }
-  .sym-ln-spec { fill: none; stroke: var(--teal); stroke-width: 2.2; stroke-linejoin: round; }
-
-  #sym-nabor:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 2px; }
-
-  /* Popover nad słupkiem. Leży POZA przewijanym .sym-plot, żeby go nie przycinało;
-     pozycję liczymy z getBoundingClientRect słupka, więc przewijanie w poziomie
-     nie rozjeżdża go z wykresem (jest tylko przeliczany na zdarzeniu scroll). */
-  .sym-pop {
-    position: absolute;
-    z-index: 5;
-    width: 15.5rem;
-    padding: 0.6rem 0.7rem 0.5rem;
-    background: var(--surface);
-    border: 1px solid var(--line-2);
-    border-radius: var(--radius);
-    box-shadow: 0 6px 20px rgb(0 0 0 / 0.16);
+  @media (max-width: 960px) {
+    .sim-page__intro, .about { grid-template-columns: minmax(0, 1fr); }
   }
-  .sym-pop-head { display: flex; align-items: baseline; gap: 0.4rem; margin-bottom: 0.45rem; }
-  .sym-pop-head strong { font-size: 0.95rem; font-variant-numeric: tabular-nums; }
-  .sym-pop-era { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); }
-  .sym-pop-x {
-    margin-left: auto;
-    border: 0;
-    background: none;
-    color: var(--ink-faint);
-    font-size: 1.1rem;
-    line-height: 1;
-    padding: 0 0.15rem;
-    cursor: pointer;
+  @media (max-width: 720px) {
+    .sim-page__lead { font-size: 1.03125rem; }
   }
-  .sym-pop-x:hover { color: var(--alert); }
-  .sym-pop-row { display: flex; gap: 0.3rem; align-items: center; }
-  .sym-pop-row input {
-    font: inherit;
-    font-size: 1rem;
-    font-variant-numeric: tabular-nums;
-    text-align: center;
-    width: 100%;
-    min-width: 0;
-    padding: 0.35rem 0.3rem;
-    border: 1px solid var(--line-2);
-    border-radius: var(--radius);
-    background: var(--surface);
-    color: var(--ink);
-  }
-  .sym-pop-krok {
-    font: inherit;
-    font-size: 0.8rem;
-    padding: 0.35rem 0.4rem;
-    border: 1px solid var(--line-2);
-    border-radius: var(--radius);
-    background: var(--paper);
-    color: var(--ink-soft);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .sym-pop-krok:hover { border-color: var(--brand-link); color: var(--brand-link); }
-  .sym-pop-info { margin: 0.45rem 0 0; font-size: 0.78rem; color: var(--ink-faint); display: flex; gap: 0.4rem; flex-wrap: wrap; }
-  .sym-pop-link {
-    font: inherit;
-    font-size: 0.78rem;
-    border: 0;
-    background: none;
-    padding: 0;
-    color: var(--brand-link);
-    text-decoration: underline;
-    cursor: pointer;
-  }
-  .sym-pop-link[hidden] { display: none; }
-  .sym-pop :focus-visible, .sym-preset:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 1px; }
-
-  /* Dymek odczytu na wykresie wyniku — czysto informacyjny, bez pól do wpisywania,
-     więc `pointer-events: none`: nie może przechwytywać kursora, bo urwałby
-     śledzenie roku pod myszą. */
-  .sym-pop-odczyt { pointer-events: none; width: auto; min-width: 12.5rem; }
-  .sym-pop-odczyt strong { display: block; font-size: 0.95rem; margin-bottom: 0.3rem; font-variant-numeric: tabular-nums; }
-  .sym-w-wiersz {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin: 0.15rem 0;
-    font-size: 0.82rem;
-    color: var(--ink-soft);
-  }
-  .sym-w-wiersz b { margin-left: auto; color: var(--ink); font-variant-numeric: tabular-nums; }
-  .sym-w-baza { color: var(--ink-faint); }
-  .sym-w-delta { margin: 0.35rem 0 0; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
-  .sym-w-delta[data-znak='minus'] { color: var(--alert); font-weight: 600; }
-  .sym-w-delta[data-znak='plus'] { color: var(--ok); font-weight: 600; }
-  .sym-ukryty { display: none; }
-  .sym-prowadnica { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 2 3; }
-  .sym-pkt { stroke: var(--surface); stroke-width: 2; }
-  .sym-pkt-lek { fill: var(--brand); }
-  .sym-pkt-spec { fill: var(--teal); }
-  #sym-wynik { touch-action: pan-y; }
-
-  .sym-podpis { margin: 0.7rem 0 1rem; max-width: 92ch; }
-
-  .sym-presety { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1rem; }
-  .sym-preset {
-    font: inherit;
-    font-size: 0.85rem;
-    padding: 0.4rem 0.75rem;
-    border: 1px solid var(--line-2);
-    border-radius: 999px;
-    background: var(--surface);
-    color: var(--ink);
-    cursor: pointer;
-  }
-  .sym-preset:hover { border-color: var(--brand-link); color: var(--brand-link); }
-  .sym-preset:focus-visible { outline: 2px solid var(--brand-link); outline-offset: 2px; }
-  .sym-preset.jest-historia { border-style: dashed; }
-  .sym-preset[aria-pressed='true'] { background: var(--brand-50); border-color: var(--brand); color: var(--brand-link); font-weight: 600; }
-
-  .sym-kontrolki {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-    gap: 0.85rem;
-    align-items: end;
-  }
-  .sym-pole { display: flex; flex-direction: column; gap: 0.3rem; }
-  /* Losy rocznika: etykieta, suwak i podpis w trzech wspólnych wierszach siatki
-     (subgrid) — etykiety zawijają się różnie, a suwaki mają stać w jednej linii. */
-  .sym-kontrolki-wsk { align-items: start; }
-  @supports (grid-template-rows: subgrid) {
-    .sym-kontrolki-wsk .sym-pole { display: grid; grid-row: span 3; grid-template-rows: subgrid; align-items: end; row-gap: 0.3rem; }
-    .sym-kontrolki-wsk .sym-zrodlo { align-self: start; }
-  }
-  .sym-pole label, .sym-fieldset legend { font-size: 0.82rem; color: var(--ink-soft); font-weight: 600; }
-  .sym-pole select, .sym-pole input[type='number'] {
-    font: inherit;
-    font-size: 0.92rem;
-    padding: 0.4rem 0.5rem;
-    border: 1px solid var(--line-2);
-    border-radius: var(--radius);
-    background: var(--surface);
-    color: var(--ink);
-  }
-  .sym-pole input[type='range'] { accent-color: var(--brand); width: 100%; }
-  .sym-fieldset { border: 0; padding: 0; margin: 0; }
-  .sym-grupa { border: 0; border-top: 1px solid var(--line); padding: 0.9rem 0 0; margin: 0 0 1.1rem; min-width: 0; }
-  .sym-grupa > legend { font-size: 0.92rem; font-weight: 600; color: var(--ink); padding: 0 0.5rem 0 0; }
-  .sym-grupa-opis { margin: 0.1rem 0 0.75rem; font-size: 0.82rem; color: var(--ink-faint); max-width: 78ch; line-height: 1.5; }
-  .sym-grupa-opis .sym-pop-link { margin-left: 0.3rem; }
-  .sym-zrodlo { font-size: 0.76rem; color: var(--ink-faint); line-height: 1.4; }
-  .sym-pole output { font-variant-numeric: tabular-nums; color: var(--brand-link); }
-  .sym-pole input[type='range'][data-zmiana='tak'] { accent-color: var(--amber); }
-  .sym-radia { display: flex; gap: 0.75rem; }
-  .sym-radia label { font-weight: 400; font-size: 0.9rem; color: var(--ink); display: flex; align-items: center; gap: 0.25rem; }
-  #sym-spec-out { font-variant-numeric: tabular-nums; color: var(--brand-link); }
-
-  .sym-status { margin: 0.9rem 0 0; font-size: 0.85rem; color: var(--ink-soft); min-height: 1.2em; }
-
-  .sym-legenda { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.6rem 0 1rem; font-size: 0.85rem; color: var(--ink-soft); }
-  .sym-lg { display: inline-flex; align-items: center; gap: 0.35rem; }
-  .sym-kropka { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
-  .sym-kreska { width: 18px; border-top: 2px dashed var(--ink-faint); display: inline-block; }
-
-  .sym-odczyty { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; }
-  .sym-karta { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.7rem 0.8rem; }
-  .sym-karta-lab { display: block; font-size: 0.78rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
-  .sym-karta-num { display: block; font-size: 1.5rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.25; }
-  .sym-karta-delta { display: block; font-size: 0.8rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
-  .sym-karta-delta[data-znak='minus'] { color: var(--alert); font-weight: 600; }
-  .sym-karta-delta[data-znak='plus'] { color: var(--ok); font-weight: 600; }
-
-  .sym-komentarz {
-    margin: 1rem 0 0;
-    padding: 0.7rem 0.9rem;
-    background: var(--paper-2);
-    border-radius: var(--radius);
-    font-size: 0.92rem;
-    color: var(--ink);
-    line-height: 1.55;
-  }
-
-  .sym-lista li { margin: 0.55rem 0; }
-
 </style>
-
-<script>
-  import {
-    ROK_MIN, ROK_MAX, ROK0, ROK_KONIEC, LICZBA_LAT, STUDIA,
-    GUS_PRZY_PACJENCIE, naborBazowy, presety, symuluj, efektMiejsca,
-    USTAWIENIA_DOMYSLNE, WSKAZNIKI_ZMIERZONE,
-    WYK, NABOR_MAX, szerSlupka, naborX, naborY, xNaRok, yNaNabor,
-    wynikX, wynikY, skalaWyniku, sciezka, fmt, tys,
-    type Ustawienia, type Wskazniki,
-  } from '../../lib/symulatorPodazy';
-
-  const svgNabor = document.getElementById('sym-nabor') as SVGSVGElement | null;
-  if (svgNabor) {
-    const plotno = document.querySelector<SVGRectElement>('#sym-plotno')!;
-    const slupki = Array.from(svgNabor.querySelectorAll<SVGRectElement>('.sym-bar'));
-    const zazn = document.querySelector<SVGRectElement>('#sym-zaznaczenie')!;
-    // Opakowań jest teraz dwa (nabór i wynik) — bierzemy to od SWOJEGO wykresu,
-    // inaczej dymek wyniku pozycjonowałby się względem wykresu naboru.
-    const wrap = svgNabor.closest<HTMLElement>('.sym-plot-wrap')!;
-    const przewijak = svgNabor.closest<HTMLElement>('.sym-plot')!;
-    const pop = document.querySelector<HTMLElement>('#sym-pop')!;
-    const popRok = document.querySelector<HTMLElement>('#sym-pop-rok')!;
-    const popEra = document.querySelector<HTMLElement>('#sym-pop-era')!;
-    const popVal = document.querySelector<HTMLInputElement>('#sym-pop-val')!;
-    const popBaza = document.querySelector<HTMLElement>('#sym-pop-baza')!;
-    const popReset = document.querySelector<HTMLButtonElement>('#sym-pop-reset')!;
-    const inSpec = document.getElementById('sym-spec') as HTMLInputElement;
-    const outSpec = document.getElementById('sym-spec-out') as HTMLOutputElement;
-    const status = document.getElementById('sym-status') as HTMLParagraphElement;
-    const komentarz = document.getElementById('sym-komentarz') as HTMLParagraphElement;
-    const lnBaza = document.querySelector<SVGPathElement>('#sym-linia-baza')!;
-    const lnLek = document.querySelector<SVGPathElement>('#sym-linia-lekarze')!;
-    const lnSpec = document.querySelector<SVGPathElement>('#sym-linia-spec')!;
-    const svgWynik = document.querySelector<SVGSVGElement>('#sym-wynik')!;
-    const wWrap = svgWynik.closest<HTMLElement>('.sym-plot-wrap')!;
-    const wPrzewijak = svgWynik.closest<HTMLElement>('.sym-plot')!;
-    const wPlotno = document.querySelector<SVGRectElement>('#sym-w-plotno')!;
-    const wLupa = document.querySelector<SVGGElement>('#sym-w-lupa')!;
-    const wProwadnica = document.querySelector<SVGLineElement>('#sym-w-prowadnica')!;
-    const wPktLek = document.querySelector<SVGCircleElement>('#sym-w-pkt-lek')!;
-    const wPktSpec = document.querySelector<SVGCircleElement>('#sym-w-pkt-spec')!;
-    const wPop = document.querySelector<HTMLElement>('#sym-w-pop')!;
-    const gusLn = document.querySelector<SVGLineElement>('#sym-gus')!;
-    const gusLab = document.querySelector<SVGTextElement>('#sym-gus-lab')!;
-
-    const nabor = [...naborBazowy];
-    const ustawienia: Ustawienia = { ...USTAWIENIA_DOMYSLNE };
-    let wybranyRok = ROK0;
-
-    // Scenariusz odniesienia liczymy raz na komplet ustawień. Założenia (wiek odejścia,
-    // udział specjalizacji) przesuwają OBIE krzywe — różnica ma pokazywać skutek decyzji,
-    // a nie skutek zmiany założeń. Losy rocznika (odsiew, wyjazdy, napływ) to natomiast
-    // dźwignie, więc odniesienie trzyma je na wartościach zmierzonych: dopiero wtedy
-    // widać, ile daje np. mniejszy odsiew.
-    const odniesienie = () => ({ ...ustawienia, ...WSKAZNIKI_ZMIERZONE });
-    let baza = symuluj(naborBazowy, odniesienie());
-
-    const suwakiWsk = Array.from(document.querySelectorAll<HTMLInputElement>('input[data-wsk]'));
-    const wskReset = document.querySelector<HTMLButtonElement>('#sym-wsk-reset')!;
-    const zmienioneWsk = () => suwakiWsk.some((s) => s.value !== s.defaultValue);
-
-    const el = <T extends Element>(id: string) => document.getElementById(id) as unknown as T;
-
-    function rysujSlupki() {
-      for (let i = 0; i < LICZBA_LAT; i++) {
-        const s = slupki[i];
-        const v = nabor[i];
-        const y = naborY(v);
-        s.setAttribute('y', y.toFixed(1));
-        s.setAttribute('height', (WYK.y0 - y).toFixed(1));
-        const rok = ROK_MIN + i;
-        s.setAttribute('data-era', rok < ROK0 ? 'historia' : 'przyszlosc');
-        if (v !== naborBazowy[i]) s.setAttribute('data-zmiana', 'tak');
-        else s.removeAttribute('data-zmiana');
-      }
-      const i = wybranyRok - ROK_MIN;
-      const y = naborY(nabor[i]);
-      zazn.setAttribute('x', naborX(wybranyRok).toFixed(1));
-      zazn.setAttribute('y', (Math.min(y, WYK.y0 - 3) - 3).toFixed(1));
-      zazn.setAttribute('width', szerSlupka.toFixed(1));
-      zazn.setAttribute('height', (WYK.y0 - Math.min(y, WYK.y0 - 3) + 3).toFixed(1));
-    }
-
-    let ostatniWynik = symuluj(nabor, ustawienia);
-    let ostatniVMax = skalaWyniku(Math.max(...ostatniWynik.map((p) => p.lekarze)));
-    let rokPodKursorem: number | null = null;
-
-    function rysujWynik() {
-      const wynik = symuluj(nabor, ustawienia);
-      const vMax = skalaWyniku(Math.max(...wynik.map((p) => p.lekarze), ...baza.map((p) => p.lekarze)));
-      ostatniWynik = wynik;
-      ostatniVMax = vMax;
-
-      for (const f of [0, 0.25, 0.5, 0.75, 1]) {
-        const linia = document.querySelector<SVGLineElement>(`[data-siatka="${f}"]`);
-        const lab = document.querySelector<SVGTextElement>(`[data-siatka-lab="${f}"]`);
-        const y = wynikY(vMax * f, vMax);
-        linia?.setAttribute('y1', String(y));
-        linia?.setAttribute('y2', String(y));
-        if (lab) {
-          lab.setAttribute('y', String(y + 4));
-          lab.textContent = f === 0 ? '0' : tys(vMax * f);
-        }
-      }
-      const yGus = wynikY(GUS_PRZY_PACJENCIE, vMax);
-      gusLn.setAttribute('y1', String(yGus));
-      gusLn.setAttribute('y2', String(yGus));
-      gusLab.setAttribute('y', String(yGus - 7));
-
-      lnBaza.setAttribute('d', sciezka(baza, 'lekarze', vMax));
-      lnLek.setAttribute('d', sciezka(wynik, 'lekarze', vMax));
-      lnSpec.setAttribute('d', sciezka(wynik, 'specjalisci', vMax));
-
-      const wr = (rok: number) => wynik[rok - ROK0];
-      const br = (rok: number) => baza[rok - ROK0];
-      const karta = (id: string, v: number, d: number) => {
-        el<HTMLElement>(id).textContent = fmt(v);
-        const box = el<HTMLElement>(`${id}-d`);
-        if (Math.abs(d) < 500) {
-          box.textContent = 'jak w odniesieniu';
-          box.removeAttribute('data-znak');
-        } else {
-          box.textContent = `${d > 0 ? '+' : '−'}${fmt(Math.abs(d))} wobec odniesienia`;
-          box.setAttribute('data-znak', d > 0 ? 'plus' : 'minus');
-        }
-      };
-      karta('sym-2040', wr(2040).lekarze, wr(2040).lekarze - br(2040).lekarze);
-      karta('sym-2050', wr(2050).lekarze, wr(2050).lekarze - br(2050).lekarze);
-      karta('sym-spec-2050', wr(2050).specjalisci, wr(2050).specjalisci - br(2050).specjalisci);
-
-      const pierwszy = wynik.find((p, i) => Math.abs(p.lekarze - baza[i].lekarze) >= 1000);
-      el<HTMLElement>('sym-widac').textContent = pierwszy ? String(pierwszy.rok) : '—';
-
-      komentarz.textContent = skomentuj(wynik, vMax);
-      if (rokPodKursorem !== null) pokazOdczyt(rokPodKursorem);
-    }
-
-    // — Odczyt roku na wykresie wyniku: prowadnica, dwa znaczniki i dymek z liczbami.
-    //   Czytanie wartości z siatki było nieczytelne, a karty pod wykresem pokazują
-    //   tylko wybrane lata.
-    function pokazOdczyt(rok: number) {
-      rokPodKursorem = Math.max(ROK0, Math.min(ROK_KONIEC, rok));
-      const i = rokPodKursorem - ROK0;
-      const p = ostatniWynik[i];
-      const b = baza[i];
-      const x = wynikX(p.rok);
-      const yLek = wynikY(p.lekarze, ostatniVMax);
-      const ySpec = wynikY(p.specjalisci, ostatniVMax);
-
-      wLupa.classList.remove('sym-ukryty');
-      wProwadnica.setAttribute('x1', String(x));
-      wProwadnica.setAttribute('x2', String(x));
-      wPktLek.setAttribute('cx', String(x));
-      wPktLek.setAttribute('cy', String(yLek));
-      wPktSpec.setAttribute('cx', String(x));
-      wPktSpec.setAttribute('cy', String(ySpec));
-
-      document.querySelector('#sym-w-rok')!.textContent = String(p.rok);
-      document.querySelector('#sym-w-lek')!.textContent = fmt(p.lekarze);
-      document.querySelector('#sym-w-spec')!.textContent = fmt(p.specjalisci);
-      document.querySelector('#sym-w-odn')!.textContent = fmt(b.lekarze);
-      const d = p.lekarze - b.lekarze;
-      const delta = document.querySelector<HTMLElement>('#sym-w-delta')!;
-      if (Math.abs(d) < 500) {
-        delta.textContent = 'Twój scenariusz nie różni się w tym roku od odniesienia.';
-        delta.removeAttribute('data-znak');
-      } else {
-        delta.textContent = `${d > 0 ? '+' : '−'}${fmt(Math.abs(d))} lekarzy wobec odniesienia`;
-        delta.setAttribute('data-znak', d > 0 ? 'plus' : 'minus');
-      }
-
-      wPop.hidden = false;
-      const pr = svgWynik.getBoundingClientRect();
-      const wr = wWrap.getBoundingClientRect();
-      const skala = pr.width / WYK.szer;
-      const px = pr.left - wr.left + x * skala;
-      const py = pr.top - wr.top + Math.min(yLek, ySpec) * skala;
-      wPop.style.left = `${Math.max(4, Math.min(wr.width - wPop.offsetWidth - 4, px - wPop.offsetWidth / 2))}px`;
-      const nad = py - wPop.offsetHeight - 12;
-      wPop.style.top = `${nad >= -80 ? nad : py + 14}px`;
-    }
-
-    function schowajOdczyt() {
-      rokPodKursorem = null;
-      wLupa.classList.add('sym-ukryty');
-      wPop.hidden = true;
-    }
-
-    function skomentuj(wynik: ReturnType<typeof symuluj>, _vMax: number): string {
-      const zmienionaHistoria = nabor.some((v, i) => v !== naborBazowy[i] && ROK_MIN + i < ROK0);
-      const zmienionaPrzyszlosc = nabor.some((v, i) => v !== naborBazowy[i] && ROK_MIN + i >= ROK0);
-      const zmWsk = zmienioneWsk();
-      if (!zmienionaHistoria && !zmienionaPrzyszlosc && !zmWsk) {
-        return 'Na razie odtwarzasz rzeczywistość. Przesuń dowolny rocznik albo weź gotowy scenariusz.';
-      }
-      const kon = wynik[wynik.length - 1];
-      const konBaza = baza[baza.length - 1];
-      const d = kon.lekarze - konBaza.lekarze;
-      const pierwszy = wynik.find((p, i) => Math.abs(p.lekarze - baza[i].lekarze) >= 1000);
-      const zera = nabor.filter((v, i) => v === 0 && ROK_MIN + i >= ROK0).length;
-
-      if (zera > 10) {
-        // Ostatni rocznik, który jeszcze kogoś przyjął — od niego liczy się koniec dyplomów.
-        let ostatni = ROK0 - 1;
-        nabor.forEach((v, i) => { if (v > 0) ostatni = Math.max(ostatni, ROK_MIN + i); });
-        const reszta = ustawienia.naplyw > 0
-          ? `potem nowych lekarzy dają już tylko przyjazdy z zagranicy (${fmt(ustawienia.naplyw)} rocznie), a reszta rynku się starzeje.`
-          : 'a potem rynek już tylko się starzeje — bez jednego nowego lekarza.';
-        return `Nabór wygaszony. Ostatni rocznik kończy studia w ${ostatni + STUDIA} r., ${reszta} Model nie protestuje; system by protestował.`;
-      }
-      // Same losy rocznika, nabór nietknięty: przeliczamy skutek na „tyle samo dałoby
-      // N dodatkowych miejsc" — to porównanie mówi więcej niż sama liczba lekarzy.
-      if (zmWsk && !zmienionaHistoria && !zmienionaPrzyszlosc) {
-        const i50 = 2050 - ROK0;
-        const d50 = wynik[i50].lekarze - baza[i50].lekarze;
-        if (Math.abs(d50) < 1000) {
-          return 'Zmiana jest zbyt mała, żeby ruszyć rynek — w 2050 r. różnica nie przekracza tysiąca lekarzy.';
-        }
-        const miejsc = Math.round(Math.abs(d50) / efektMiejsca(odniesienie(), 2050) / 10) * 10;
-        return d50 > 0
-          ? `Bez jednego dodatkowego miejsca na studiach: w 2050 r. o ${fmt(d50)} lekarzy więcej. Tyle samo dałoby ok. ${fmt(miejsc)} nowych miejsc co roku od ${ROK0} r.`
-          : `W 2050 r. o ${fmt(-d50)} lekarzy mniej — tyle, ile odjęłoby cięcie limitu o ok. ${fmt(miejsc)} miejsc rocznie od ${ROK0} r.`;
-      }
-      if (zmWsk) {
-        return `Nabór i losy rocznika razem: w ${ROK_KONIEC} r. ${d >= 0 ? `o ${fmt(d)} lekarzy więcej` : `o ${fmt(-d)} lekarzy mniej`} niż w odniesieniu${pierwszy ? `, a różnica przekracza tysiąc od ${pierwszy.rok} r.` : '.'}`;
-      }
-      if (zmienionaHistoria && !zmienionaPrzyszlosc) {
-        const dzis = wynik[0].lekarze - baza[0].lekarze;
-        return dzis > 0
-          ? `Zmieniłeś przeszłość: dziś byłoby o ${fmt(dzis)} lekarzy więcej. Pierwsza kolumna wykresu nie jest już rejestrem izby, tylko historią alternatywną — i to jest jedyny sposób, żeby zobaczyć, ile kosztuje decyzja sprzed trzydziestu lat.`
-          : `Zmieniłeś przeszłość: dziś byłoby o ${fmt(Math.abs(dzis))} lekarzy mniej. Decyzja z lat dziewięćdziesiątych działa nadal — nie da się jej cofnąć niczym, co zrobimy w tym roku.`;
-      }
-      if (d < -40000) {
-        return `Cięcie o tej skali odejmuje do ${ROK_KONIEC} r. ${fmt(Math.abs(d))} lekarzy, ale pierwsze 1000 różnicy widać dopiero w ${pierwszy?.rok ?? '—'} r. Decyzję podejmuje jedna kadencja, rachunek płacą trzy następne.`;
-      }
-      if (d < -1000) {
-        return `Mniej lekarzy o ${fmt(Math.abs(d))} na koniec horyzontu. Skutek zaczyna być widoczny w ${pierwszy?.rok ?? '—'} r. — czyli za tyle lat, ile trwa dyplom plus specjalizacja.`;
-      }
-      if (d > 60000) {
-        return `Tylu lekarzy na mieszkańca nie ma dziś żaden kraj Unii. Model tego nie kwestionuje, bo nie pyta, kto ich wykształci, kto im zapłaci i czy starczy miejsc specjalizacyjnych — a to jest właśnie <a href="/analizy/lejek-ksztalcenia/">wąskie gardło lejka</a>.`.replace(/<[^>]+>/g, '');
-      }
-      if (d > 1000) {
-        return `Więcej lekarzy o ${fmt(d)} na koniec horyzontu, przy pierwszej widocznej różnicy w ${pierwszy?.rok ?? '—'} r. Zwróć uwagę, jak płaska jest ta krzywa przez pierwszą dekadę — nabór nie leczy dzisiejszej kolejki.`;
-      }
-      return 'Zmiana jest zbyt mała, żeby ruszyć rynek — różnica nie przekracza tysiąca lekarzy w całym horyzoncie.';
-    }
-
-    const etykietaRoku = (r: number) => `${r}/${String(r + 1).slice(2)}`;
-
-    function ustawRok(rok: number, wartosc: number, glosno = false) {
-      wybranyRok = Math.max(ROK_MIN, Math.min(ROK_MAX, rok));
-      const i = wybranyRok - ROK_MIN;
-      nabor[i] = Math.max(0, Math.min(NABOR_MAX, wartosc));
-      odznaczPresety();
-      rysujSlupki();
-      rysujWynik();
-      odswiezPola();
-      if (glosno) status.textContent = `${etykietaRoku(wybranyRok)}: ${fmt(nabor[i])} miejsc.`;
-    }
-
-    /** Treść popovera dla aktualnie wybranego rocznika (pozycji nie rusza). */
-    function odswiezPola() {
-      const i = wybranyRok - ROK_MIN;
-      popRok.textContent = etykietaRoku(wybranyRok);
-      popEra.textContent = wybranyRok < ROK0 ? 'historia' : 'przyszłość';
-      if (document.activeElement !== popVal) popVal.value = String(nabor[i]);
-      const zmieniony = nabor[i] !== naborBazowy[i];
-      popBaza.textContent = zmieniony
-        ? `${wybranyRok < ROK0 ? 'W rzeczywistości' : 'Dzisiejszy limit'}: ${fmt(naborBazowy[i])}`
-        : wybranyRok < ROK0
-          ? 'Wartość zgodna z rozporządzeniem'
-          : 'Utrzymanie dzisiejszego limitu';
-      popReset.hidden = !zmieniony;
-    }
-
-    /** Popover wisi nad słupkiem; przy bardzo wysokim słupku chowa się pod jego szczyt,
-     *  żeby nie uciec poza wykres. */
-    function ustawPozycjePopovera() {
-      if (pop.hidden) return;
-      const br = slupki[wybranyRok - ROK_MIN].getBoundingClientRect();
-      const wr = wrap.getBoundingClientRect();
-      const left = Math.max(4, Math.min(wr.width - pop.offsetWidth - 4, br.left - wr.left + br.width / 2 - pop.offsetWidth / 2));
-      // Nad słupkiem, nawet gdy trzeba lekko wyjść ponad wykres (opakowanie nie
-      // przycina). Dopiero przy naprawdę wysokim słupku popover ląduje pod jego
-      // szczytem — inaczej uciekłby poza panel.
-      const nad = br.top - wr.top - pop.offsetHeight - 10;
-      pop.style.left = `${left}px`;
-      pop.style.top = `${nad >= -80 ? nad : br.top - wr.top + 10}px`;
-    }
-
-    function otworzPopover(rok: number) {
-      wybranyRok = Math.max(ROK_MIN, Math.min(ROK_MAX, rok));
-      pop.hidden = false;
-      odswiezPola();
-      rysujSlupki();
-      ustawPozycjePopovera();
-      status.textContent = `${etykietaRoku(wybranyRok)}: ${fmt(nabor[wybranyRok - ROK_MIN])} miejsc.`;
-    }
-
-    function zamknijPopover() {
-      pop.hidden = true;
-    }
-
-    function odznaczPresety() {
-      document.querySelectorAll('.sym-preset').forEach((b) => b.setAttribute('aria-pressed', 'false'));
-    }
-
-    // — Rysowanie po wykresie. `setPointerCapture` sprawia, że ruch poza SVG nadal
-    //   trafia do nas — inaczej szybkie przeciągnięcie gubiłoby ostatnie roczniki.
-    let rysuje = false;
-    const zPikseli = (ev: PointerEvent) => {
-      const r = svgNabor.getBoundingClientRect();
-      const x = ((ev.clientX - r.left) / r.width) * WYK.szer;
-      const y = ((ev.clientY - r.top) / r.height) * WYK.wys;
-      return { rok: xNaRok(x), v: yNaNabor(y) };
-    };
-    let startX = 0;
-    let startY = 0;
-    let ruszony = false;
-    plotno.addEventListener('pointerdown', (ev: PointerEvent) => {
-      // Dotyk: samo stuknięcie otwiera popover, bez rysowania i bez zmiany wartości —
-      // dzięki temu strona pod wykresem nadal przewija się palcem.
-      if (ev.pointerType === 'touch') {
-        otworzPopover(zPikseli(ev).rok);
-        return;
-      }
-      rysuje = true;
-      ruszony = false;
-      startX = ev.clientX;
-      startY = ev.clientY;
-      plotno.setPointerCapture(ev.pointerId);
-      const { rok, v } = zPikseli(ev);
-      ustawRok(rok, v, true);
-      ustawPozycjePopovera();
-      svgNabor.focus({ preventScroll: true });
-      ev.preventDefault();
-    });
-    plotno.addEventListener('pointermove', (ev: PointerEvent) => {
-      if (!rysuje) return;
-      // Samonaprawa: jeśli przycisk puszczono poza oknem (albo zdarzenie „pointerup"
-      // przepadło), kolejny ruch przychodzi już z buttons === 0. Bez tego kursor
-      // rysowałby po wykresie do końca wizyty.
-      if (ev.buttons === 0) { rysuje = false; return; }
-      if (Math.abs(ev.clientX - startX) > 4 || Math.abs(ev.clientY - startY) > 4) ruszony = true;
-      const { rok, v } = zPikseli(ev);
-      ustawRok(rok, v, true);
-      if (!pop.hidden) ustawPozycjePopovera();
-    });
-    const koniec = (ev: PointerEvent) => {
-      if (!rysuje) return;
-      rysuje = false;
-      if (plotno.hasPointerCapture(ev.pointerId)) plotno.releasePointerCapture(ev.pointerId);
-      // Kliknięcie bez przeciągnięcia = prośba o dokładną liczbę, nie o rysowanie.
-      if (!ruszony) otworzPopover(wybranyRok);
-    };
-    plotno.addEventListener('pointerup', koniec);
-    plotno.addEventListener('pointercancel', koniec);
-    plotno.addEventListener('lostpointercapture', koniec);
-    window.addEventListener('pointerup', koniec);
-
-    // — Popover: dokładna liczba dla wybranego rocznika.
-    popVal.addEventListener('input', () => {
-      const v = Number(popVal.value);
-      if (Number.isFinite(v) && popVal.value !== '') ustawRok(wybranyRok, v);
-    });
-    pop.querySelectorAll<HTMLButtonElement>('.sym-pop-krok').forEach((b) => {
-      b.addEventListener('click', () => {
-        ustawRok(wybranyRok, nabor[wybranyRok - ROK_MIN] + Number(b.dataset.krok), true);
-        popVal.value = String(nabor[wybranyRok - ROK_MIN]);
-        ustawPozycjePopovera();
-      });
-    });
-    popReset.addEventListener('click', () => {
-      ustawRok(wybranyRok, naborBazowy[wybranyRok - ROK_MIN], true);
-      popVal.value = String(nabor[wybranyRok - ROK_MIN]);
-      ustawPozycjePopovera();
-    });
-    document.querySelector('#sym-pop-x')!.addEventListener('click', () => {
-      zamknijPopover();
-      svgNabor.focus({ preventScroll: true });
-    });
-    document.addEventListener('pointerdown', (ev) => {
-      const cel = ev.target as Node;
-      if (!pop.hidden && !pop.contains(cel) && !svgNabor.contains(cel)) zamknijPopover();
-    });
-    przewijak.addEventListener('scroll', ustawPozycjePopovera);
-    window.addEventListener('resize', ustawPozycjePopovera);
-
-    const rokZPikseli = (clientX: number) => {
-      const r = svgWynik.getBoundingClientRect();
-      const x = ((clientX - r.left) / r.width) * WYK.szer;
-      const f = (x - WYK.x0) / (WYK.x1 - WYK.x0);
-      return ROK0 + Math.round(f * (ROK_KONIEC - ROK0));
-    };
-    wPlotno.addEventListener('pointermove', (ev: PointerEvent) => pokazOdczyt(rokZPikseli(ev.clientX)));
-    wPlotno.addEventListener('pointerdown', (ev: PointerEvent) => pokazOdczyt(rokZPikseli(ev.clientX)));
-    wPlotno.addEventListener('pointerleave', schowajOdczyt);
-    wPrzewijak.addEventListener('scroll', () => { if (rokPodKursorem !== null) pokazOdczyt(rokPodKursorem); });
-
-    // — Klawiatura: jeden przystanek tabulatora zamiast 64. Strzałki w bok wybierają
-    //   rocznik, w górę i w dół zmieniają liczbę miejsc (Shift = krok 500).
-    svgNabor.addEventListener('focus', () => otworzPopover(wybranyRok));
-    svgNabor.addEventListener('keydown', (ev: KeyboardEvent) => {
-      const i = wybranyRok - ROK_MIN;
-      const krok = ev.shiftKey ? 500 : 50;
-      switch (ev.key) {
-        case 'ArrowLeft': otworzPopover(wybranyRok - 1); break;
-        case 'ArrowRight': otworzPopover(wybranyRok + 1); break;
-        case 'ArrowUp': ustawRok(wybranyRok, nabor[i] + krok, true); ustawPozycjePopovera(); break;
-        case 'ArrowDown': ustawRok(wybranyRok, nabor[i] - krok, true); ustawPozycjePopovera(); break;
-        case 'Home': otworzPopover(ROK_MIN); break;
-        case 'End': otworzPopover(ROK_MAX); break;
-        case 'Escape': zamknijPopover(); break;
-        default: return;
-      }
-      ev.preventDefault();
-    });
-    inSpec.addEventListener('input', () => {
-      ustawienia.udzialSpec = Number(inSpec.value) / 100;
-      outSpec.textContent = `${inSpec.value}%`;
-      baza = symuluj(naborBazowy, odniesienie());
-      rysujWynik();
-    });
-    document.querySelectorAll<HTMLInputElement>('input[name="sym-wiek"]').forEach((r) => {
-      r.addEventListener('change', () => {
-        ustawienia.wiekOdejscia = Number(r.value);
-        baza = symuluj(naborBazowy, odniesienie());
-        rysujWynik();
-      });
-    });
-
-    // — Losy rocznika. Zmieniają tylko scenariusz użytkownika; odniesienie zostaje
-    //   przy wartościach zmierzonych (patrz `odniesienie`).
-    const opisSuwaka = (s: HTMLInputElement) =>
-      s.dataset.skala === '100' ? `${s.value}%` : fmt(Number(s.value));
-    function zastosujWsk(s: HTMLInputElement) {
-      const pole = s.dataset.wsk as keyof Wskazniki;
-      ustawienia[pole] = Number(s.value) / Number(s.dataset.skala);
-      document.querySelector(`#sym-${pole}-out`)!.textContent = opisSuwaka(s);
-      if (s.value !== s.defaultValue) s.setAttribute('data-zmiana', 'tak');
-      else s.removeAttribute('data-zmiana');
-      wskReset.hidden = !zmienioneWsk();
-    }
-    function przywrocWsk() {
-      for (const s of suwakiWsk) {
-        s.value = s.defaultValue;
-        zastosujWsk(s);
-      }
-    }
-    for (const s of suwakiWsk) {
-      s.addEventListener('input', () => {
-        zastosujWsk(s);
-        rysujWynik();
-        const etykieta = document.querySelector(`label[for="${s.id}"]`)?.textContent?.replace(/\s+/g, ' ').trim();
-        if (etykieta) status.textContent = `${etykieta}.`;
-      });
-    }
-    wskReset.addEventListener('click', () => {
-      przywrocWsk();
-      rysujWynik();
-      status.textContent = 'Losy rocznika przywrócone do wartości zmierzonych.';
-    });
-
-    document.querySelectorAll<HTMLButtonElement>('.sym-preset').forEach((btn) => {
-      btn.setAttribute('aria-pressed', btn.dataset.preset === 'baza' ? 'true' : 'false');
-      btn.addEventListener('click', () => {
-        const p = presety.find((x) => x.id === btn.dataset.preset);
-        if (!p) return;
-        if (p.id !== 'baza') naborBazowy.forEach((v, i) => (nabor[i] = v));
-        else przywrocWsk();
-        p.zastosuj(nabor);
-        odznaczPresety();
-        btn.setAttribute('aria-pressed', 'true');
-        odswiezPola();
-        rysujSlupki();
-        rysujWynik();
-        ustawPozycjePopovera();
-        status.textContent = `Scenariusz: ${p.nazwa}. ${p.opis}`;
-      });
-    });
-
-    rysujSlupki();
-    rysujWynik();
-  }
-</script>

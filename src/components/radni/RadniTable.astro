@@ -1,0 +1,167 @@
+---
+/**
+ * Pełny zbiór /analizy/lekarze-radni/: wiersze pogrupowane po roku dochodu, każda grupa zwinięta
+ * w <details> (bez JS). Wiersz: rada, rok, dochód z praktyki, dochód z pracy łącznie, status
+ * weryfikacji z wartością z pierwotnego zbioru i link do oświadczenia.
+ * W wąskim kontenerze wiersz staje się kartą z etykietą kolumny nad komórką (jak rekordy/RecordTable).
+ * Status to neutralna etykieta bez koloru — tabela nie ocenia osób, tylko zgodność z dokumentem.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { Radny } from '@/data/lekarze-radni';
+import { RODZAJ_LABEL, STATUS_LABEL, TYP_LABEL } from '@/data/lekarze-radni';
+import { formatPL, plural, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Props extends HTMLAttributes<'div'> {
+  rows: Radny[];
+  /** opis tabeli dla czytników ekranu */
+  caption: string;
+  /** lata w kolejności grup; wiersze z innym rokiem (lub bez roku) trafiają do grupy „inne” */
+  years: readonly number[];
+}
+
+const { rows, caption, years, class: className, ...rest } = Astro.props;
+
+const COLS = { year: 'Rok', practice: 'Dochód z praktyki', total: 'Dochód z pracy łącznie', check: 'Weryfikacja', src: 'Oświadczenie' };
+const zl = (n: number) => `${formatPL(n)} zł`;
+/** kolejność w grupie: od najwyższego dochodu łącznie (albo z praktyki), wiersze bez dochodu na końcu */
+const key = (r: Radny) => r.laczny ?? r.dzialalnosc ?? -1;
+const sorted = (list: Radny[]) => [...list].sort((a, b) => key(b) - key(a) || (b.przychod ?? 0) - (a.przychod ?? 0));
+
+const groups = [
+  ...years.map((y) => ({ title: `Dochód za ${y} r.`, rows: sorted(rows.filter((r) => r.rok === y)) })),
+  { title: 'Inny rok albo rok nieznany', rows: sorted(rows.filter((r) => r.rok == null || !years.includes(r.rok))) },
+].filter((g) => g.rows.length > 0);
+
+const summaryOf = (list: Radny[]) => {
+  const ok = list.filter((r) => r.status === 'zgodne').length;
+  const fixed = list.filter((r) => r.status === 'poprawione').length;
+  const other = list.length - ok - fixed;
+  return [
+    ok && `${ok} ${plural(ok, ['zgodny', 'zgodne', 'zgodnych'])} z oświadczeniem`,
+    fixed && `${fixed} ${plural(fixed, ['poprawiony', 'poprawione', 'poprawionych'])}`,
+    other && `${other} bez potwierdzonej kwoty`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+};
+---
+<div class:list={['rd', className]} {...rest}>
+  {groups.map((g) => (
+    <details class="rd__group">
+      <summary>
+        <span class="rd__title">{g.title}</span>
+        <span class="rd__count">{g.rows.length} {plural(g.rows.length, ['wiersz', 'wiersze', 'wierszy'])}</span>
+        <span class="rd__sum">{summaryOf(g.rows)}</span>
+      </summary>
+      <div class="rd__wrap">
+        <table class="rd__table">
+          <caption class="sr-only">{caption} — {g.title.toLowerCase()}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Rada</th>
+              <th scope="col">{COLS.year}</th>
+              <th scope="col">{COLS.practice}</th>
+              <th scope="col">{COLS.total}</th>
+              <th scope="col">{COLS.check}</th>
+              <th scope="col">{COLS.src}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {g.rows.map((r) => (
+              <tr id={`radny-${r.nr}`}>
+                <th scope="row">
+                  <span class="rd__rada">{typo(r.rada)}</span>
+                  <span class="rd__meta">{TYP_LABEL[r.typ]}{r.spec && ` · ${r.spec}`}</span>
+                </th>
+                <td class="rd__year" data-label={COLS.year}>
+                  {r.rok ?? '—'}
+                  {r.zbior.rok !== r.rok && <span class="rd__note">w zbiorze: {r.zbior.rok ?? 'brak'}</span>}
+                </td>
+                <td class="rd__amount" data-label={COLS.practice}>
+                  {r.dzialalnosc != null
+                    ? <span class="rd__value">{zl(r.dzialalnosc)}</span>
+                    : <span class="rd__none">{RODZAJ_LABEL[r.rodzaj]}</span>}
+                  {r.rodzaj === 'jednaKwota' && <span class="rd__note">{typo(RODZAJ_LABEL.jednaKwota)}</span>}
+                  {r.przychod != null && <span class="rd__note">przychód {zl(r.przychod)}</span>}
+                </td>
+                <td class="rd__amount" data-label={COLS.total}>
+                  {r.laczny != null ? <span class="rd__value">{zl(r.laczny)}</span> : <span class="rd__none">—</span>}
+                  <span class="rd__note">{typo(r.forma)}</span>
+                </td>
+                <td class="rd__check" data-label={COLS.check}>
+                  <span class="rd__stage">{STATUS_LABEL[r.status]}</span>
+                  <span class="rd__note">w zbiorze: {zl(r.zbior.dochod)}</span>
+                  {r.uwaga && <span class="rd__note">{typo(r.uwaga)}</span>}
+                </td>
+                <td class="rd__src" data-label={COLS.src}>
+                  {r.link ? <a {...linkAttrs(r.link)}>BIP</a> : <span class="rd__none">brak linku</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  ))}
+</div>
+
+<style>
+  .rd { border-top: 1px solid var(--ink); }
+  .rd__group { border-bottom: 1px solid var(--line-2); }
+  .rd__group > summary {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 16px; align-items: baseline;
+    padding: 18px 0; cursor: pointer; list-style: none;
+  }
+  .rd__group > summary::-webkit-details-marker { display: none; }
+  .rd__group > summary::after { content: "+"; grid-column: 3; grid-row: 1; font: 400 1.25rem/1 var(--f-mono); color: var(--blue); }
+  .rd__group[open] > summary::after { content: "–"; }
+  .rd__title { font: 500 1.125rem/1.35 var(--f-display); letter-spacing: -0.015em; color: var(--ink); transition: color .2s; }
+  .rd__group > summary:hover .rd__title { color: var(--blue); }
+  .rd__count { grid-column: 2; grid-row: 1; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); white-space: nowrap; }
+  .rd__sum { grid-column: 1 / -1; font-size: 0.875rem; line-height: 1.45; color: var(--text-strong); }
+
+  .rd__wrap { container-type: inline-size; padding-bottom: 24px; }
+  .rd__table { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.45; font-variant-numeric: tabular-nums; }
+  /* .rd__table przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .rd__table thead th {
+    text-align: left; vertical-align: bottom; padding: 0 12px 10px 0;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .rd__table tbody th, .rd__table td { text-align: left; vertical-align: top; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); color: var(--ink-2); }
+  .rd__table tbody th { width: 22%; font-weight: 400; text-transform: none; letter-spacing: 0; }
+  .rd__rada { display: block; font: 500 0.9375rem/1.35 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .rd__meta { display: block; margin-top: 2px; font-size: 0.78125rem; line-height: 1.4; color: var(--muted); }
+  .rd__table td.rd__year { width: 7%; white-space: nowrap; }
+  .rd__table td.rd__amount { width: 19%; }
+  .rd__value { display: block; font: 500 1rem/1.3 var(--f-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+  .rd__none { display: block; color: var(--muted); }
+  .rd__note { display: block; margin-top: 3px; font-size: 0.78125rem; line-height: 1.45; color: var(--muted); }
+  .rd__stage {
+    display: inline-block; padding: 2px 7px; border: 1px solid var(--line-2);
+    font-size: 0.78125rem; line-height: 1.35; color: var(--text-strong);
+  }
+  .rd__table td.rd__src { padding-right: 0; white-space: nowrap; }
+  /* .rd__table przed selektorem — Prose koloruje linki bez klasy */
+  .rd__table .rd__src a {
+    font: 400 0.75rem/1.6 var(--f-mono); color: var(--text);
+    text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s;
+  }
+  .rd__table .rd__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  /* Wąsko: wiersz = karta, etykieta kolumny nad komórką */
+  @container (max-width: 760px) {
+    .rd__table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .rd__table, .rd__table tbody, .rd__table tr, .rd__table tbody th, .rd__table td { display: block; width: auto; }
+    .rd__table td.rd__year, .rd__table td.rd__amount { width: auto; }
+    .rd__table tr { padding: 14px 0; border-bottom: 1px solid var(--line-2); }
+    .rd__table tbody th, .rd__table td { padding: 3px 0; border: 0; }
+    .rd__table tbody th { padding-bottom: 6px; }
+    .rd__table td[data-label]::before {
+      content: attr(data-label); display: block; margin: 8px 0 2px;
+      font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    }
+    .rd__value { white-space: normal; }
+  }
+</style>

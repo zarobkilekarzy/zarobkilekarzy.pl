@@ -1,0 +1,220 @@
+---
+title: "Pieniądz za pacjenta w POZ: jawna stawka, nieznany wynik"
+seoTitle: "Stawka kapitacyjna POZ: ile za pacjenta"
+category: Analiza
+topic: pieniadz
+order: 3
+date: 2026-07-07
+updated: 2026-10-16
+summary: Stawka za pacjenta w podstawowej opiece zdrowotnej jest jawna co do grosza, a mimo to nie wiadomo, ile z niej zostaje lekarzowi. Konstrukcja tej stawki wpływa też na to, kogo lepiej zbadać na miejscu, a kogo odesłać dalej.
+description: "Stawka za pacjenta w POZ jest jawna co do grosza, ale nie wiadomo, ile z niej zostaje lekarzowi. Jej konstrukcja wpływa też na to, kogo zbadać, kogo odesłać."
+keyPoints:
+  - Lekarz POZ dostaje roczną stawkę za każdego pacjenta na liście, także za tych, którzy w ogóle nie przychodzą. Od lipca 2026 r. stawka bazowa to 232,56 zł — o 50,8% więcej niż w 2018 r.
+  - Pełna lista ok. 2500 pacjentów to rzędu 900 tys. zł rocznie przychodu z samej kapitacji. Z tej kwoty praktyka opłaca też rutynowe badania.
+  - Badanie na miejscu kosztuje praktykę, a skierowanie przenosi koszt na poradnię specjalistyczną — więc stawka może zniechęcać do diagnostyki w POZ. Ile publicznych pieniędzy zostaje konkretnemu lekarzowi, nie pokazuje nikt.
+editorial:
+  - >-
+    Kapitacja pokazuje problem jawności w pigułce. Państwo publikuje stawkę za jednego pacjenta
+    co do grosza, ale nigdzie nie sumuje, ile łącznie ze środków publicznych trafia do jednego lekarza.
+    Wiemy, ile wpływa na listę — nie wiemy, ile zostaje.
+  - >-
+    Dlatego postulujemy jawne łączne wypłaty dla każdej osoby, pod stałym identyfikatorem i bez nazwisk.
+    Nieprzejrzysty jest nie tylko wynik, ale i skutki samej konstrukcji, a tych bez danych nikt nie zmierzy.
+related:
+  - sladem-zlotowki
+  - kolejki
+  - rozliczenia-nfz
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import { AGE_WEIGHTS, LIST, RATE, RATE_HISTORY } from '@/data/poz';
+import { formatPL } from '@/lib/format';
+
+{/* Adresy przy liczbach w blokach; te same publikacje są w przypisach */}
+export const LINKS = {
+  z65: 'https://baw.nfz.gov.pl/NFZ/document/43917/Zarzadzenie-65_2026_DSOZ',
+  sprawozdanie: 'https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Rada-NFZ-przyjela-sprawozdanie-za-2025-r-Ponad-22-mld-zl-na-POZ-i-1-4-mln-bilansow-zdrowia,286203,1.html',
+  nil: 'https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne',
+  gus: 'https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/13/9/1/ambulatoryjna_opieka_zdrowotna_w_2024_r..pdf',
+};
+
+export const change = (now, before) => (now === before ? '0%' : `+${formatPL((now / before - 1) * 100, 1)}%`);
+export const weight = (w) => `×${formatPL(w, Math.max(1, String(w).split('.')[1]?.length ?? 0))}`;
+export const first = RATE_HISTORY[0];
+export const jumps = RATE_HISTORY.slice(1).map((r, i) => ({ year: r.year, ratio: r.rate / RATE_HISTORY[i].rate, label: change(r.rate, RATE_HISTORY[i].rate) }));
+export const biggest = jumps.reduce((a, b) => (b.ratio > a.ratio ? b : a));
+export const rateRows = RATE_HISTORY.map((r, i) => ({
+  label: String(r.year),
+  note: i > 0 ? change(r.rate, RATE_HISTORY[i - 1].rate) : undefined,
+  value: r.rate,
+  display: formatPL(r.rate, 2),
+  highlight: r.year === biggest.year,
+}));
+export const ageRows = AGE_WEIGHTS.map((a) => ({
+  label: a.group,
+  note: weight(a.weight),
+  value: a.weight * RATE.rate,
+  display: formatPL(a.weight * RATE.rate),
+}));
+export const listYear = LIST.patients * RATE.rate;
+export const listReal = listYear * LIST.avgWeight;
+
+Ze wszystkich pieniędzy, które NFZ przekazuje lekarzom, najłatwiej policzyć te w podstawowej opiece zdrowotnej (POZ): to jawna, roczna stawka za każdego pacjenta zapisanego na listę. A zarazem trudno o strumień mniej przejrzysty, gdy zapytać, ile z niego zostaje konkretnemu lekarzowi. Do tego sama konstrukcja stawki po cichu wpływa na to, kogo lepiej zbadać na miejscu, a kogo odesłać dalej.
+
+## Płaci się za pacjenta na liście, nie za wizytę
+
+Lekarz POZ nie dostaje pieniędzy za wizytę. Pacjent składa deklarację wyboru i trafia na tzw. aktywną listę. Od tej chwili świadczeniodawca dostaje za niego co miesiąc 1/12 rocznej stawki kapitacyjnej — także wtedy, gdy pacjent przez cały rok nie przyjdzie ani razu. Stawkę mnoży się przez współczynnik wieku: małe dziecko albo senior „waży” kilka razy więcej niż dorosły w sile wieku.
+
+Wzór z zarządzenia NFZ: **należność = liczba pacjentów na liście × 1/12 stawki rocznej × współczynnik wieku**. Stawka jest roczna, a nie miesięczna — opisy często mylą się tu dwunastokrotnie.
+
+To nie patologia, tylko świadomy wybór: kapitacja ma nagradzać opiekę nad całą populacją i profilaktykę, a nie mnożenie wizyt. Ważniejsze jest, ile ten strumień waży[^sprawozdanie][^gus] i jak rośnie.
+
+### Ile wynosi stawka i jak rosła
+
+Stawka bazowa (współczynnik 1,0) wzrosła nominalnie ze 154,20 zł w 2018 r. do 232,56 zł od 1 lipca 2026 r., czyli o 50,8% w osiem lat.[^stawki][^z65] W pierwszym półroczu 2026 r. wynosiła 226,08 zł. Największy skok przyniósł {biggest.year} r.: {biggest.label} wobec roku poprzedniego. Od 2022 r. stawkę podnoszono co roku od 1 lipca, w 2022 i 2023 r. razem z ustawowymi podwyżkami płac w ochronie zdrowia.
+
+<Figure
+  title={`Stawka za pacjenta: ${change(RATE.rate, first.rate)} od ${first.year} r., największy skok w ${biggest.year} r.`}
+  note="Ostatnia stawka bazowa obowiązująca w danym roku; przy roku — zmiana wobec poprzedniego. W latach 2018–2020 stawka rosła kilka razy w roku (w 2019 r. kolejno 156,60, 159,00 i 162,60 zł), a od 2022 r. co roku od 1 lipca; w pierwszym półroczu obowiązywała poprzednia (w 2022 r. 171,00 zł, od kwietnia 178,80 zł). Rok 2026: stawka od 1 lipca (w I półroczu 226,08 zł); z certyfikatem akredytacyjnym 234,84 zł."
+  source={{ label: 'zarządzenia Prezesa NFZ; stawka od 1 lipca 2026 r. — zarządzenie 65/2026/DSOZ', href: LINKS.z65 }}
+>
+  <BarChart
+    rows={rateRows}
+    max={250}
+    unit="zł"
+    caption={`Roczna stawka kapitacyjna lekarza POZ w latach ${first.year}–${RATE.year}: od ${formatPL(first.rate, 2)} zł do ${formatPL(RATE.rate, 2)} zł.`}
+  />
+</Figure>
+
+Wartości pochodzą z załączników nr 1 do kolejnych zarządzeń Prezesa NFZ w sprawie umów w POZ; numery i daty zarządzeń dla każdego roku zebraliśmy w przypisie.[^stawki] Stawkę z pierwszego półrocza 2026 r. wprowadziło zarządzenie 8/2026/DSOZ, a obecną, od 1 lipca 2026 r., zarządzenie 65/2026/DSOZ.[^z65]
+
+### Kto „waży” najwięcej
+
+Tę samą stawkę mnoży się przez współczynnik zależny od wieku pacjenta. Dla praktyki najmłodsi i najstarsi są kilka razy „cenniejsi” niż dorosły w sile wieku.
+
+<Figure
+  title={`Roczna stawka ${RATE.year} według wieku pacjenta: od ${formatPL(RATE.rate)} zł do ${formatPL(Math.max(...ageRows.map((r) => r.value)))} zł`}
+  note={`Stawka bazowa ${formatPL(RATE.rate, 2)} zł × współczynnik wieku, w zaokrągleniu do złotego. Pielęgniarka i położna POZ mają osobne, niższe stawki: od 1 lipca 2026 r. 56,88 i 37,80 zł rocznie (zarządzenie 65/2026/DSOZ).`}
+  source={{ label: 'zarządzenie 22/2025/DSOZ Prezesa NFZ, § 23 ust. 2' }}
+>
+  <BarChart
+    rows={ageRows}
+    max={1000}
+    unit="zł"
+    caption={`Roczna stawka za pacjenta według wieku w ${RATE.year} r.: od ${formatPL(RATE.rate)} zł (20–39 lat) do ${formatPL(4 * RATE.rate)} zł (do 2. roku życia).`}
+  />
+</Figure>
+
+## Ile publicznych pieniędzy wisi na jednej liście
+
+Limit aktywnej listy to ok. 2500 pacjentów na lekarza; większa lista wymaga zgody NFZ. Sama kapitacja lekarska z pełnej listy — bez opieki koordynowanej, budżetu powierzonego i porad rozliczanych osobno — wygląda tak:
+
+<StatRow
+  label="Kapitacja z pełnej listy"
+  items={[
+    { value: listYear, unit: 'zł/rok', desc: `${formatPL(LIST.patients)} pacjentów × ${formatPL(RATE.rate, 2)} zł przy współczynniku 1,0`, accuracy: 'est', source: 'model redakcji · stawka NFZ', href: LINKS.z65 },
+    { prefix: '~', value: Math.round(listReal / 1e4) * 10, unit: 'tys. zł/rok', desc: `przy realnym średnim współczynniku wieku listy ok. ${formatPL(LIST.avgWeight, 1)}`, accuracy: 'est', source: 'model redakcji · stawka NFZ', href: LINKS.z65 },
+    { prefix: '~', value: Math.round(listReal / 12 / 1e3), unit: 'tys. zł/mies.', desc: 'czyli miesięcznie na jedną listę', accuracy: 'est', source: 'model redakcji · stawka NFZ', href: LINKS.z65 },
+  ]}
+/>
+
+To przychód praktyki z samej kapitacji, a nie dochód lekarza. Zanim cokolwiek zostanie, praktyka musi z tej kwoty opłacić całą opiekę nad listą, łącznie z badaniami. Współczynnik 1,6 to nasz szacunek średniej dla typowej struktury wieku — dzieci i seniorzy podnoszą ją powyżej 1,0. To model, nie pomiar.
+
+## Co przychodnia opłaca z tej kwoty
+
+Kapitacja nie trafia do lekarza „na czysto”. To budżet, z którego świadczeniodawca finansuje całą opiekę nad listą. Jedna pozycja odróżnia POZ od poradni specjalistycznej i zaskakuje wielu pacjentów: koszt rutynowych badań ponosi tu sam lekarz, z kapitacji. U specjalisty badania są kontraktowane osobno, a w POZ każde zlecone badanie zmniejsza to, co zostaje.
+
+<NumberedList
+  items={[
+    { title: 'Diagnostyka podstawowa.', text: 'Badania zlecane ze stawki, a nie z osobnego budżetu: morfologia, OB, glukoza, lipidogram, próby wątrobowe, badanie moczu, EKG spoczynkowe, USG jamy brzusznej, RTG klatki piersiowej i kości. Im więcej badań, tym mniej zostaje.' },
+    { title: 'Personel.', text: 'Pielęgniarki i położne, rejestracja, administracja, księgowość.' },
+    { title: 'Lokal i sprzęt.', text: 'Czynsz, media, aparatura (EKG, USG, spirometr) i jej serwis, materiały jednorazowe, leki i szczepionki podawane w gabinecie.' },
+    { title: 'System i sprawozdawczość.', text: 'Oprogramowanie gabinetowe, e-recepta i e-skierowanie, ochrona danych osobowych, obowiązkowe raporty dla NFZ.' },
+    { title: 'Składki i podatki.', text: 'ZUS, podatek dochodowy, VAT od części zakupów.' },
+  ]}
+/>
+
+Dla ścisłości: nie wszystko idzie z kapitacji. Rozszerzoną diagnostykę — np. ferrytynę, witaminę B12 czy przeciwciała anty-HCV — opłaca osobny budżet powierzony, a badania takie jak Holter, spirometria czy USG Doppler — budżet opieki koordynowanej. Od 1 maja 2026 r. lekarz POZ może z budżetu powierzonego zlecić ponad 100 badań, podał Rynek Zdrowia.[^100-badan] Trzon, czyli rutynowe badania przy niemal każdej wizycie, nadal obciąża jednak kapitację.
+
+Wykaz badań finansowanych ze stawki zawiera załącznik nr 1 do rozporządzenia o świadczeniach gwarantowanych z zakresu POZ.[^rozporzadzenie] Podział na badania z kapitacji i z osobnych budżetów wyjaśniają Medycyna Praktyczna[^mp] i śląski oddział NFZ.[^nfz-slask]
+
+## Taniej odesłać niż zbadać
+
+Skoro badania podstawowe idą z kapitacji, konstrukcja ma skutek uboczny, którego nikt nie zaprojektował, ale który wynika z niej wprost. Wzmacnia go reguła NFZ o podziale kosztów między poziomami opieki. Kierując pacjenta do specjalisty, POZ wykonuje tylko badania potrzebne do potwierdzenia wstępnego rozpoznania. Poradnia specjalistyczna (AOS), która przejmuje pacjenta, wykonuje dalsze zlecane badania na własny koszt — tak zasady opisuje NFZ.[^nfz-skierowania]
+
+Rachunek praktyki jest prosty: badanie zlecone na miejscu to koszt z kapitacji, a skierowanie przenosi ten koszt dalej — diagnostykę pokrywa AOS, a praktyka zachowuje pełną stawkę za pacjenta. To nie zarzut złej woli ani zysk lekarza, tylko cecha konstrukcji, w której tańsza droga i droga klinicznie najlepsza potrafią się rozejść.
+
+Jest w tym gorzki paradoks. Kapitacja miała nagradzać profilaktykę, ale skoro każde badanie jest kosztem, ta sama stawka zniechęca do diagnostyki, której profilaktyka wymaga.
+
+Co z tego realnie wynika — z zaznaczeniem, czego nie da się udowodnić:
+
+- **Słabsza diagnostyka na miejscu — udokumentowane ryzyko, a nie dowód masowej praktyki.** Najszersza kontrola NIK[^nik] (lata 2012–2014) wykazała, że POZ nie wykorzystuje w pełni własnych możliwości: programem profilaktyki chorób układu krążenia obejmowano rocznie ok. 3% uprawnionych, a wynik cytologii odnotowano w mniej niż 7% kart kobiet. Lukę zaczęto realnie łatać dopiero budżetem powierzonym w 2022 r.
+- **Kolejki do specjalistów — realne, ale z wielu przyczyn.** Na poradę specjalisty czeka się średnio 4,2 miesiąca, na badanie diagnostyczne — 2,8 miesiąca;[^barometr] od 2012 r. kolejki wydłużyły się dwukrotnie. Nadmiar skierowań z POZ to jeden z czynników, obok niedoboru specjalistów i rosnącego popytu.
+- **Ucieczka do opieki płatnej — zjawisko szersze niż jeden mechanizm.** Długie kolejki popychają część pacjentów do prywatnych gabinetów. Wydatki prywatne to już ponad 20% wszystkich wydatków na zdrowie: 66,4 mld zł w 2024 r., ok. 23% wydatków bieżących.[^wydatki] Ile z tego wynika z konstrukcji POZ, policzyć się nie da.
+
+<Aside title="Łata zmniejsza bodziec, ale go nie usuwa">
+
+Państwo ten bodziec dostrzegło. Budżet powierzony — od 2022 r., a od 1 maja 2026 r. rozszerzony do ponad 100 badań — płaci za badania osobno, żeby ich zlecanie nie obciążało kapitacji, a pacjenci nie trafiali do poradni specjalistycznych tylko po badanie.[^mzdrowie] Ten budżet jest jednak limitowany. Gdy się wyczerpie, tańszą drogą znów bywa skierowanie.
+
+</Aside>
+
+Publiczne wpływy na listę da się policzyć co do grosza. Tego, co konstrukcja robi z pieniędzmi i z pacjentami — ile diagnostyki przerzuca się dalej, kto trafia do kolejki zamiast na badanie na miejscu — nie mierzy nikt.
+
+## Skala: dokąd płynie ten strumień
+
+<StatRow
+  label="POZ w liczbach"
+  items={[
+    { value: 22.64, decimals: 2, unit: 'mld zł', desc: 'wydał NFZ na POZ w 2025 r.; w planie na 2026 r. to ok. 10,5% kosztów świadczeń', accuracy: 'exact', source: 'Rada NFZ za: Rynek Zdrowia', href: LINKS.sprawozdanie },
+    { value: 12216, unit: 'specjalistów', desc: 'medycyny rodzinnej — trzon POZ (31.12.2024); świadczeń udzielają też interniści i pediatrzy', accuracy: 'exact', source: 'NIL, zestawienie nr 4', href: LINKS.nil },
+    { value: 187, unit: 'mln porad', desc: 'udzielono w POZ w 2024 r.', accuracy: 'exact', source: 'GUS, 2024', href: LINKS.gus },
+  ]}
+/>
+
+NFZ nie publikuje jednej zbiorczej liczby lekarzy POZ. Liczba specjalistów medycyny rodzinnej pochodzi z rejestru NIL;[^nil] razem z lekarzami z I stopniem specjalizacji jest ich 12 512.
+
+## Niskie wejście, wysoki pułap
+
+Do większości najlepiej płatnych dziedzin prowadzi sześć lat studiów i pięć–sześć lat rezydentury, o miejsce na której trzeba konkurować. Do POZ droga jest szersza. Według art. 6 ustawy o podstawowej opiece zdrowotnej[^ustawa] świadczeń mogą udzielać:
+
+- specjalista medycyny rodzinnej albo lekarz w trakcie tej specjalizacji,
+- lekarz z II stopniem specjalizacji z medycyny ogólnej,
+- pediatra po kursie z medycyny rodzinnej — tylko pacjentom do 18. roku życia,
+- internista albo lekarz z I stopniem specjalizacji z medycyny ogólnej — przejściowo i pod warunkiem ukończenia kursu.
+
+Obowiązek kursu dla internistów i pediatrów zacznie obowiązywać 1 stycznia 2027 r. Termin przesuwano kilka razy: pierwotnie miał to być 2017 r., potem 2024 r. Kursu nie muszą robić lekarze, którzy udzielali świadczeń POZ przez co najmniej 10 lat.
+
+Pułap przychodu jest przy tym wysoki: pełna lista przy realnym średnim współczynniku wieku to rzędu 900 tys. zł rocznie z samej kapitacji lekarskiej, przed opieką koordynowaną, budżetem powierzonym i poradami. Relatywnie dostępne wejście spotyka się więc z jednym z wyższych pułapów przychodu w systemie. Zastrzeżenie: to przychód praktyki, a nie dochód — a wielu lekarzy POZ to nie właściciele praktyk, tylko pracownicy na etacie albo kontraktowcy na zwykłych stawkach.
+
+[^sprawozdanie]: Rynek Zdrowia, [Rada NFZ przyjęła sprawozdanie za 2025 r. — ponad 22 mld zł na POZ](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Rada-NFZ-przyjela-sprawozdanie-za-2025-r-Ponad-22-mld-zl-na-POZ-i-1-4-mln-bilansow-zdrowia,286203,1.html).
+
+[^gus]: GUS, [Ambulatoryjna opieka zdrowotna w 2024 r.](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/13/9/1/ambulatoryjna_opieka_zdrowotna_w_2024_r..pdf) — liczba porad w POZ.
+
+[^stawki]: Stawka bazowa lekarza POZ według załączników nr 1 do zarządzeń Prezesa NFZ. **2018:** 147,00 zł od 1.07 ([62/2018/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-622018dsoz,6782.html) z 27.06.2018) i 154,20 zł od 1.11 ([120/2018/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-1202018dsoz,6844.html) z 29.11.2018). **2019:** 156,60 zł od 1.07 i 159,00 zł od 1.10 ([92/2019/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-922019dsoz,6972.html) z 16.07.2019 i [115/2019/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-1152019dsoz,6999.html) z 30.08.2019), 162,60 zł od 1.12 ([177/2019/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-1772019dsoz,7098.html) z 30.12.2019). **2020:** 166,20 zł od 1.04 i 168,60 zł od 1.07 (177/2019/DSOZ), 171,00 zł od 1.09 ([95/2020/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-952020dsoz,7199.html) z 1.07.2020). **2021:** 171,00 zł bez zmian ([160/2021/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-1602021dsoz,7420.html) z 30.09.2021). **2022:** 178,80 zł od 1.04 ([38/2022/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-382022dsoz,7505.html) z 29.03.2022 — kwota za źródłem wtórnym; utrzymana w [79/2022/DSOZ](https://baw.nfz.gov.pl/api/file/GetZipxAttachment/4/3997/false/preview) z 29.06.2022) i 191,88 zł od 1.07. Numeru zarządzenia z lipca 2022 r., które wprowadziło 191,88 zł, nie potwierdziliśmy (93/2022/DSOZ albo 96/2022/DSOZ); kwotę podaje [Puls Medycyny](https://pulsmedycyny.pl/nfz-podwyzsza-stawki-kapitacyjne-w-poz-1156959), a potwierdza załącznik do [zarządzenia 3/2023/DSOZ](https://www.rynekzdrowia.pl/Plik/186607.html) z 9.01.2023. **2023:** 204,36 zł od 1.07 (99/2023/DSOZ i 104/2023/DSOZ; [komunikat NFZ](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/dodatek-za-wielochorobowosc-wchodzi-do-poz-wzrosly-tez-stawki-w-opiece-koordynowanej,8436.html)). **2024:** 215,28 zł od 1.07 ([61/2024/DSOZ](https://mbrk.pl/baza-wiedzy/poz-zarzadzenie-nr-61-2024-dsoz-prezesa-narodowego-funduszu-zdrowia-z-dnia-28-czerwca-2024-r/) z 28.06.2024). **2025:** 215,28 zł w I półroczu ([22/2025/DSOZ](https://mbrk.pl/wp-content/uploads/2025/03/ZARZADZENIE-NR-222025DSOZ.pdf) z 31.03.2025 i [34/2025/DSOZ](https://mbrk.pl/wp-content/uploads/2025/05/ZARZADZENIE-NR-342025DSOZ.pdf) z 2.05.2025), 226,08 zł od 1.07 ([47/2025/DSOZ](https://mbrk.pl/wp-content/uploads/2025/07/ZA5973_1.pdf) z 30.06.2025). **2026:** 226,08 zł w I półroczu (8/2026/DSOZ) i 232,56 zł od 1.07 ([65/2026/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43917/Zarzadzenie-65_2026_DSOZ) z 14.07.2026). Zarządzenia z lat 2024–2025 linkujemy w kopiach Mazowieckiego Biura Rozliczeń Kontraktów (mbrk.pl).
+
+[^z65]: NFZ, [Zarządzenie nr 65/2026/DSOZ Prezesa NFZ z 14 lipca 2026 r.](https://baw.nfz.gov.pl/NFZ/document/43917/Zarzadzenie-65_2026_DSOZ) zmieniające zarządzenie w sprawie umów w POZ, załącznik nr 1 (stawki dla świadczeń udzielanych od 1 lipca 2026 r.).
+
+[^100-badan]: Rynek Zdrowia, [W 2026 r. ponad 100 badań na NFZ zleci lekarz rodzinny](https://www.rynekzdrowia.pl/Prawo/Pacjenci-nie-wiedza-i-traca-pieniadze-W-2026-r-ponad-100-badan-na-NFZ-zleci-lekarz-rodzinny,281292,2.html), 2026.
+
+[^rozporzadzenie]: [Rozporządzenie w sprawie świadczeń gwarantowanych z zakresu POZ](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20230001427) (Dz.U. 2023 poz. 1427), załącznik nr 1 (ISAP).
+
+[^mp]: Medycyna Praktyczna, [Diagnostyczny budżet powierzony w POZ](https://www.mp.pl/medycynarodzinna/prawo/309727,diagnostyczny-budzet-powierzony-w-poz).
+
+[^nfz-slask]: Śląski OW NFZ, [Świadczenia diagnostyki laboratoryjnej i obrazowej w POZ](https://nfz-katowice.pl/index.php/dla-swiadczeniodawcy/kontraktowanie-2026/informacje-wspolne/item/79-swiadczenia-medycznej-diagnostyki-laboratoryjnej-lub-diagnostyki-obrazowej-i-nieobrazowej-w-poz) (kontraktowanie 2026).
+
+[^nfz-skierowania]: Pomorski OW NFZ, [Zasady wystawiania skierowań — podział kosztów badań między POZ a AOS](https://www.nfz-gdansk.pl/71-podstawowa-opieka-zdrowotna/265-zasady-wystawiania-skierowan/).
+
+[^nik]: NIK, [NIK o podstawowej i specjalistycznej opiece medycznej](https://www.nik.gov.pl/aktualnosci/nik-o-podstawowej-i-specjalistycznej-opiece-medycznej.html) (kontrola z lat 2012–2014).
+
+[^barometr]: Barometr WHC 2025, za: Rynek Zdrowia, [Barometr Watch Health Care — średni czas oczekiwania na leczenie w 2025 r.](https://www.rynekzdrowia.pl/Polityka-zdrowotna/Barometr-Watch-Health-Care-sredni-czas-oczekiwania-na-leczenie-w-2025-r-to-ponad-4-miesiace,279890,14.html), 2025.
+
+[^wydatki]: [Obwieszczenie Prezesa GUS z 30 września 2026 r. w sprawie Narodowego Rachunku Zdrowia za 2024 r.](https://api.sejm.gov.pl/eli/acts/MP/2026/971/text.pdf) (M.P. 2026 poz. 971) — prywatne schematy finansowania 18 737,2 mln zł i bezpośrednie wydatki gospodarstw domowych 47 640,5 mln zł, razem 66 377,7 mln zł przy 287,6 mld zł wydatków bieżących. Wcześniejsze, wstępne szacunki GUS dawały 64,5 mld zł.
+
+[^mzdrowie]: mZdrowie, [Opieka koordynowana w POZ powinna odciążyć specjalistyczne przychodnie](https://www.mzdrowie.pl/medycyna/opieka-koordynowana-w-poz-powinna-odciazyc-specjalistyczne-przychodnie/).
+
+[^nil]: NIL, [Centralny Rejestr Lekarzy — informacje statystyczne](https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne) (zestawienie nr 4), stan na 31.12.2024.
+
+[^ustawa]: [Ustawa z 27 października 2017 r. o podstawowej opiece zdrowotnej](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20170002217) (Dz.U. 2025 poz. 515), art. 6 (ISAP).

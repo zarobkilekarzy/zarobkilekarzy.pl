@@ -1,0 +1,155 @@
+---
+/**
+ * Przykładowy tajwański rachunek z wizyty: papierowy wydruk (zawsze jasny) w układzie prawdziwego
+ * rachunku — poziomy formularz z ramkami. Numery przy kwotach otwierają dymki z objaśnieniami
+ * (ui/Popover). Gdy figura jest węższa niż 640 px, wydruk składa się w jedną kolumnę, a objaśnienia
+ * stoją listą pod nim: na telefonie widać je bez stukania i nie zasłaniają kwot.
+ * Pod spodem pasek „kto płaci za tę wizytę”. Kwoty: data/tajwan.ts → RECEIPT.
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import ReceiptRow from '@/components/tajwan/ReceiptRow.astro';
+import { LINKS, RECEIPT, TWD, type ReceiptLine } from '@/data/tajwan';
+import { formatPL, typo } from '@/lib/format';
+
+const total = RECEIPT.split.reduce((sum, part) => sum + part.amount, 0);
+const share = (amount: number) => Math.round((amount / total) * 100);
+const due = RECEIPT.due.amount;
+
+// Numery objaśnień w kolejności czytania wydruku: pozycje → ramka dopłaty → kolumna NHI → okienko
+const noted = [...RECEIPT.items, ...RECEIPT.copay.lines, ...RECEIPT.points, ...RECEIPT.counter, RECEIPT.due].filter((l) => l.note);
+const num = (line: ReceiptLine) => noted.indexOf(line) + 1 || undefined;
+---
+<Figure
+  title={`W okienku ${due} TWD, czyli ok. ${share(due)}% kwoty za wizytę. Resztę rozlicza ubezpieczyciel — i pacjent widzi ile.`}
+  note={`Dolna część w układzie prawdziwego wydruku, nagłówek i polskie podpisy są nasze. Kwoty pochodzą z rachunku z 17.09.2026; pacjent i nazwa szpitala są zmyślone. Punkty liczymy jak dolary tajwańskie (1:1). Złote po kursie NBP z ${TWD.date}.`}
+  source={{ label: 'rachunek opublikowany przez @rafaltwn', href: LINKS.receipt }}
+>
+  <div class="rcpt">
+    <div class="rcpt__paper" role="group" aria-label="Przykładowy rachunek za wizytę">
+      <div class="rcpt__head">
+        <p class="rcpt__title"><span lang="zh-Hant">醫療費用收據</span> Rachunek za świadczenia medyczne</p>
+        <dl class="rcpt__meta">
+          {RECEIPT.meta.map((m) => (
+            <div>
+              <dt><span lang="zh-Hant">{m.zh}</span> {m.pl}</dt>
+              <dd>{m.value}{m.hint && <span> ({m.hint})</span>}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <ul class="rcpt__items">
+        {RECEIPT.items.map((line) => <ReceiptRow line={line} n={num(line)} />)}
+      </ul>
+
+      <div class="rcpt__copay rcpt__box">
+        <p class="rcpt__box-head"><span lang="zh-Hant">{RECEIPT.copay.zh}</span> {RECEIPT.copay.pl}</p>
+        <ul>
+          {RECEIPT.copay.lines.map((line) => <ReceiptRow line={line} n={num(line)} />)}
+        </ul>
+      </div>
+
+      <div class="rcpt__settle">
+        <ul class="rcpt__points">
+          {RECEIPT.points.map((line) => <ReceiptRow line={line} n={num(line)} />)}
+        </ul>
+        <div class="rcpt__counter rcpt__box">
+          <ul>
+            {RECEIPT.counter.map((line) => <ReceiptRow line={line} n={num(line)} />)}
+          </ul>
+          <ul class="rcpt__due">
+            <ReceiptRow line={RECEIPT.due} n={num(RECEIPT.due)} due />
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <p class="rcpt__hint">Kliknij numer przy kwocie, żeby zobaczyć objaśnienie.</p>
+
+    <ol class="rcpt__notes">
+      {noted.map((line, i) => (
+        <li><span class="rcpt__n" aria-hidden="true">{i + 1}</span><p>{typo(line.note ?? '')}</p></li>
+      ))}
+    </ol>
+  </div>
+
+  <div class="split">
+    <p class="split__title">Kto płaci za tę wizytę</p>
+    <p class="split__bar" aria-hidden="true">
+      {RECEIPT.split.map((p) => <span class={`split__part split__part--${p.tone}`} style={`--w: ${p.amount / total}`}></span>)}
+    </p>
+    <ul class="split__legend">
+      {RECEIPT.split.map((p) => (
+        <li><span class={`split__dot split__part--${p.tone}`}></span>{p.label}: <strong>{formatPL(p.amount)}</strong> ({share(p.amount)}%)</li>
+      ))}
+    </ul>
+  </div>
+</Figure>
+
+<style>
+  /* Wydruk formularza: zawsze jasny papier (tokeny w środku biorą wartości dzienne), ramki 1 px jak na
+     prawdziwym rachunku. Pozycje i kwoty składa Plex Sans — mono zostaje w nagłówkach wersalikami
+     i etykietach pól. Układ bazowy: jedna kolumna (wąska figura); poziomy formularz od 640 px. */
+  .rcpt__paper {
+    color-scheme: light;
+    display: grid; gap: 14px;
+    padding: 16px 14px 18px; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line-2); box-shadow: var(--shadow-photo);
+    font: 400 0.8125rem/1.4 var(--f-body);
+  }
+  [lang="zh-Hant"] { font-family: var(--f-body); }
+
+  .rcpt__head { padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+  .rcpt__title { font: 500 0.75rem/1.4 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+  .rcpt__title [lang] { display: block; font-size: 1.125rem; letter-spacing: .2em; text-transform: none; color: var(--ink); }
+  .rcpt__meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-top: 14px; }
+  .rcpt__meta dt { font: 400 0.65625rem/1.4 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .rcpt__meta dt [lang] { font-size: 0.75rem; letter-spacing: 0; }
+  .rcpt__meta dd { margin-top: 2px; color: var(--ink); }
+  .rcpt__meta dd span { color: var(--muted); }
+
+  .rcpt__items { display: grid; }
+
+  /* Ramki jak na wydruku: rozbicie dopłaty i płatność w okienku */
+  .rcpt__box { padding: 8px 12px; border: 1px solid var(--ink); }
+  .rcpt__box-head { margin-bottom: 2px; font: 400 0.65625rem/1.4 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .rcpt__box-head [lang] { margin-right: 4px; font-size: 0.75rem; letter-spacing: 0; color: var(--text); }
+
+  .rcpt__settle { display: grid; gap: 10px; }
+  .rcpt__due { margin: 8px -12px -8px; padding: 10px 12px; border-top: 1px solid var(--ink); background: var(--bg-soft); }
+
+  /* Objaśnienia: na wąskim wydruku lista pod nim, na szerokim — dymki przy numerach */
+  .rcpt__hint { display: none; margin-top: 12px; font-size: 0.8125rem; color: var(--muted); }
+  .rcpt__notes { display: grid; gap: 12px; margin-top: 20px; }
+  .rcpt__notes li { display: grid; grid-template-columns: 18px 1fr; gap: 12px; align-items: start; }
+  .rcpt__notes p { font-size: 0.90625rem; line-height: 1.55; color: var(--text-strong); }
+  .rcpt__n {
+    display: inline-grid; place-items: center; width: 18px; height: 18px;
+    font: 500 0.65625rem/1 var(--f-mono); color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue);
+  }
+
+  @container (min-width: 640px) {
+    .rcpt__paper {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px clamp(28px, 5cqi, 56px); align-items: start;
+      padding: 22px clamp(20px, 3cqi, 32px) 26px; font-size: 0.84375rem;
+    }
+    .rcpt__head { grid-column: 1 / -1; }
+    /* Pola nagłówka w jednym wierszu, rozłożone na całą szerokość jak w formularzu */
+    .rcpt__meta { grid-template-columns: repeat(4, auto); justify-content: space-between; gap: 10px 24px; }
+    /* Pozycje po dwie w wierszu, kolejność jak na wydruku */
+    .rcpt__items { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: inherit; }
+    .rcpt__hint { display: block; }
+    .rcpt__notes { display: none; }
+  }
+
+  .split { margin-top: 28px; }
+  .split__title { margin-bottom: 10px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .split__bar { display: flex; height: 14px; gap: 2px; }
+  .split__part { flex: var(--w) 0 0; }
+  .split__part--blue { background: var(--blue); }
+  .split__part--ink { background: var(--chart); }
+  .split__part--muted { background: var(--line-2); }
+  .split__legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 10px; font: 400 0.84375rem/1.4 var(--f-body); color: var(--text); }
+  .split__legend strong { font-weight: 500; color: var(--ink); }
+  .split__dot { display: inline-block; width: 10px; height: 10px; margin-right: 8px; vertical-align: -1px; }
+</style>

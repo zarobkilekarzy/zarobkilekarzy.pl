@@ -1,0 +1,295 @@
+---
+/**
+ * Kreator testu: egzamin, tryb, sesja, zakres — zwykły formularz z radiami
+ * (działa klawiaturą i czytnikiem ekranu bez JS), a obok stałe podsumowanie z przyciskiem startu.
+ * Kroki to grupy ARIA (role="radiogroup"/"group" + aria-labelledby), nie <fieldset>/<legend>:
+ * Safari rysuje legend w ramce fieldsetu mimo float i psuje układ siatki kroku.
+ * Zachowanie (podsumowanie, blokady trybów, start) — client/app.ts.
+ */
+import Button from '@/components/ui/Button.astro';
+import Icon from '@/components/ui/Icon.astro';
+import type { ExamId, FieldInfo, ModeInfo, SessionInfo } from '@/lib/egzamin/types';
+import { formatPL } from '@/lib/format';
+
+interface Props {
+  exams: { id: ExamId; label: string; name: string }[];
+  modes: ModeInfo[];
+  sessions: SessionInfo[];
+  fields: Record<ExamId, FieldInfo[]>;
+  gapYears: string;
+  total: number;
+  privacy: string;
+}
+
+const { exams, modes, sessions, fields, gapYears, total, privacy } = Astro.props;
+const years = [...new Set(sessions.map((s) => s.year))];
+const latest = sessions[0].id;
+const SEASONS = [['jesien', 'jesień'], ['wiosna', 'wiosna']] as const;
+---
+<div class="resume" data-resume hidden></div>
+
+<form class="setup" data-setup novalidate>
+  <div class="setup__steps">
+    <div class="step" role="radiogroup" aria-labelledby="step-exam">
+      <p class="step__label" id="step-exam"><span class="step__n">01</span>Egzamin</p>
+      <div class="seg">
+        {exams.map((e, i) => (
+          <label class="seg__opt">
+            <input type="radio" name="exam" value={e.id} checked={i === 0} />
+            <strong>{e.label}</strong>
+            <span>{e.name}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+
+    <div class="step" role="radiogroup" aria-labelledby="step-mode">
+      <p class="step__label" id="step-mode"><span class="step__n">02</span>Tryb</p>
+      <div class="modes">
+        {modes.map((m, i) => (
+          <label class="mode">
+            <input type="radio" name="mode" value={m.id} checked={i === 0} />
+            <span class="mode__head">
+              <strong>{m.label}</strong>
+              <span class="mode__tick" aria-hidden="true"><Icon name="check" size={14} /></span>
+            </span>
+            <span class="mode__desc">{m.desc}</span>
+            <span class="mode__facts">{m.facts.map((f) => <span>{f}</span>)}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+
+    <div class="step" role="radiogroup" aria-labelledby="step-session">
+      <p class="step__label" id="step-session"><span class="step__n">03</span>Sesja</p>
+      <div class="sessions">
+        <label class="pill pill--all" data-scoped-only>
+          <input type="radio" name="session" value="all" />
+          <span>Wszystkie sesje</span>
+          <small>{formatPL(total)} pytań</small>
+        </label>
+        <ul class="years" role="list">
+          {years.map((year) => (
+            <li class="year">
+              <span class="year__n">{year}</span>
+              {SEASONS.map(([season, label]) => {
+                const s = sessions.find((x) => x.year === year && x.season === season)!;
+                return (
+                  <label class="pill">
+                    <input type="radio" name="session" value={s.id} checked={s.id === latest} aria-label={s.label} />
+                    <span>{label}</span>
+                  </label>
+                );
+              })}
+            </li>
+          ))}
+          <li class="year year--gap">
+            <span class="year__n">{gapYears}</span>
+            <span class="year__note">CEM nie publikował wtedy pytań</span>
+          </li>
+        </ul>
+        <p class="step__hint" data-hint="session" hidden>Pełny egzamin obejmuje jedną sesję — wybierz, którą.</p>
+      </div>
+    </div>
+
+    <div class="step" role="group" aria-labelledby="step-scope" data-scope>
+      <p class="step__label" id="step-scope"><span class="step__n">04</span>Zakres</p>
+      <div>
+        {Object.entries(fields).map(([exam, list], k) => (
+          <div class="chips" data-fields={exam} hidden={k > 0}>
+            <label class="chip">
+              <input type="radio" name="field" value="all" checked={k === 0} disabled={k > 0} />
+              <span>Wszystkie dziedziny</span>
+            </label>
+            {list.map((f) => (
+              <label class="chip">
+                <input type="radio" name="field" value={f.id} disabled={k > 0} />
+                <span>{f.label}</span>
+              </label>
+            ))}
+          </div>
+        ))}
+        <label class="toggle">
+          <input type="checkbox" name="shuffle" role="switch" />
+          <span class="toggle__track" aria-hidden="true"></span>
+          <span>Losowa kolejność pytań</span>
+        </label>
+        <p class="step__hint" data-hint="scope" hidden>Pełny egzamin to cała sesja we właściwej kolejności. Zakres zawęzisz w nauce i szybkim teście.</p>
+      </div>
+    </div>
+  </div>
+
+  <aside class="summary" aria-labelledby="summary-title">
+    <div class="summary__card">
+      <p class="mono-label" id="summary-title">Twój test</p>
+      <p class="summary__mode" data-sum="mode">Nauka</p>
+      <dl class="summary__list">
+        <div><dt>Sesja</dt><dd data-sum="session">LEK · jesień 2026</dd></div>
+        <div><dt>Pytania</dt><dd data-sum="count">200</dd></div>
+        <div><dt>Czas</dt><dd data-sum="time">bez limitu</dd></div>
+        <div><dt>Zakres</dt><dd data-sum="scope">wszystkie dziedziny</dd></div>
+      </dl>
+      <Button type="submit" class="summary__start" data-start>Rozpocznij</Button>
+      <p class="summary__keys">
+        <Icon name="keyboard" size={16} />
+        <span>Klawiatura: <kbd>A</kbd>–<kbd>E</kbd> odpowiedź, <kbd>←</kbd><kbd>→</kbd> pytania, <kbd>?</kbd> wszystkie skróty</span>
+      </p>
+    </div>
+    <p class="summary__privacy">{privacy} <a href="#prywatnosc">Szczegóły</a></p>
+  </aside>
+</form>
+
+<style>
+  /* ---------- Układ: kroki + przyklejone podsumowanie ---------- */
+  .setup { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: clamp(32px, 4vw, 64px); align-items: start; }
+  .setup__steps { border-bottom: 1px solid var(--line); }
+
+  .step { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 24px; padding: 28px 0; border-top: 1px solid var(--line); }
+  .step__label { display: flex; align-items: baseline; gap: 12px; font: 500 0.75rem/1.4 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+  .step__n { color: var(--blue); }
+  .step__hint { margin-top: 14px; font-size: 0.875rem; color: var(--muted); }
+  .step[data-disabled] .chips, .step[data-disabled] .toggle { opacity: .45; }
+
+  input[type="radio"], input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+
+  /* ---------- 01 Egzamin: przełącznik segmentowy ---------- */
+  .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-2); }
+  .seg__opt { position: relative; display: grid; gap: 2px; padding: 14px 18px; cursor: pointer; transition: background .2s, color .2s; }
+  .seg__opt + .seg__opt { border-left: 1px solid var(--line-2); }
+  .seg__opt strong { font: 500 1.0625rem/1.2 var(--f-display); color: var(--ink); letter-spacing: -0.01em; }
+  .seg__opt span { font-size: 0.8125rem; color: var(--muted); }
+  .seg__opt:hover { background: var(--bg-soft); }
+  .seg__opt:has(:checked) { background: var(--ink); }
+  .seg__opt:has(:checked) strong { color: var(--on-ink); }
+  .seg__opt:has(:checked) span { color: color-mix(in srgb, var(--on-ink) 65%, transparent); }
+
+  /* ---------- 02 Tryb: karty ---------- */
+  /* Karta trybu ma co najmniej 8,5rem (136 px; z „Większym tekstem” 161 px) — gdy trzy się nie mieszczą,
+     trzecia schodzi do nowego wiersza zamiast ściskać tytuł i opis */
+  .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); gap: 12px; }
+  .mode {
+    position: relative; display: flex; flex-direction: column; gap: 10px;
+    padding: 18px 18px 16px; border: 1px solid var(--line-2); cursor: pointer;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+  }
+  .mode:hover { border-color: var(--ink); }
+  .mode__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .mode__head strong { font: 500 1.1875rem/1.15 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .mode__tick { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--line-2); color: transparent; transition: background .2s, border-color .2s, color .2s; }
+  .mode__desc { font-size: 0.875rem; line-height: 1.5; color: var(--text); }
+  .mode__facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+  .mode__facts span { padding: 4px 7px; background: var(--bg-soft); font: 400 0.71875rem/1.2 var(--f-mono); color: var(--ink); }
+  .mode:has(:checked) { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); background: var(--blue-50); }
+  .mode:has(:checked) .mode__tick { background: var(--blue-fill); border-color: var(--blue-fill); color: #fff; }
+  .mode:has(:checked) .mode__facts span { background: var(--surface); }
+
+  /* ---------- 03 Sesja: macierz rok × pora ---------- */
+  .years { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; margin-top: 12px; }
+  .year { display: grid; grid-template-columns: 44px 1fr 1fr; align-items: center; gap: 6px; }
+  .year__n { font: 500 0.8125rem/1 var(--f-mono); color: var(--ink); }
+  .year--gap { grid-template-columns: auto 1fr; gap: 10px; }
+  .year--gap .year__n { color: var(--muted); }
+  .year__note { font-size: 0.78125rem; line-height: 1.3; color: var(--muted); }
+
+  .pill {
+    position: relative; display: flex; align-items: center; justify-content: center; gap: 10px;
+    height: 40px; padding: 0 12px; border: 1px solid var(--line-2); cursor: pointer;
+    font-size: 0.875rem; color: var(--ink); transition: border-color .2s, background .2s, color .2s;
+  }
+  .pill:hover { border-color: var(--ink); }
+  .pill:has(:checked) { background: var(--blue-fill); border-color: var(--blue-fill); color: #fff; }
+  .pill--all { justify-content: space-between; width: 100%; max-width: 360px; }
+  .pill--all small { font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+  .pill--all:has(:checked) small { color: rgba(255, 255, 255, .75); }
+  .pill:has(:disabled) { opacity: .4; cursor: not-allowed; border-style: dashed; }
+  .pill:has(:disabled):hover { border-color: var(--line-2); }
+
+  /* ---------- 04 Zakres: dziedziny + losowa kolejność ---------- */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { position: relative; cursor: pointer; }
+  .chip span { display: block; padding: 8px 12px; border: 1px solid var(--line-2); font-size: 0.84375rem; color: var(--ink); transition: border-color .2s, background .2s, color .2s; }
+  .chip:hover span { border-color: var(--ink); }
+  .chip:has(:checked) span { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .step[data-disabled] .chip, .step[data-disabled] .toggle { cursor: not-allowed; }
+
+  .toggle { position: relative; display: inline-flex; align-items: center; gap: 12px; margin-top: 18px; font-size: 0.90625rem; color: var(--ink); cursor: pointer; }
+  .toggle__track { position: relative; width: 38px; height: 22px; background: var(--line-2); transition: background .2s; }
+  .toggle__track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; transition: transform .25s var(--ease); } /* kolor-stały: gałka przełącznika */
+  .toggle:has(:checked) .toggle__track { background: var(--blue-fill); }
+  .toggle:has(:checked) .toggle__track::after { transform: translateX(16px); }
+
+  /* Fokus z klawiatury na ukrytych inputach — obrys na etykiecie */
+  label:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .chip:has(input:focus-visible) { outline: 0; }
+  .chip:has(input:focus-visible) span, .toggle:has(input:focus-visible) .toggle__track { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  /* ---------- Podsumowanie ---------- */
+  .summary { position: sticky; top: calc(var(--header-h) + 24px); }
+  .summary__card { padding: 24px; border: 1px solid var(--ink); background: var(--surface); }
+  .summary__mode { margin: 8px 0 18px; font: 400 2.125rem/1 var(--f-display); letter-spacing: -0.035em; color: var(--ink); }
+  .summary__list { border-top: 1px solid var(--line); margin-bottom: 22px; }
+  .summary__list div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.875rem; }
+  .summary__list dt { color: var(--muted); }
+  .summary__list dd { color: var(--ink); font-weight: 500; text-align: right; }
+  .summary :global(.summary__start) { width: 100%; }
+  .summary :global(.summary__start[aria-busy="true"]) { opacity: .7; pointer-events: none; }
+  .summary__keys { display: flex; gap: 10px; margin-top: 18px; font-size: 0.78125rem; line-height: 1.9; color: var(--muted); }
+  .summary__keys :global(svg) { margin-top: 3px; }
+  .summary__keys kbd { padding: 3px 5px; }
+  .summary__privacy { margin-top: 14px; font-size: 0.78125rem; line-height: 1.55; color: var(--muted); }
+  .summary__privacy a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ---------- Wznów / ostatni wynik (wypełnia client/app.ts) ---------- */
+  .resume { margin-bottom: 32px; }
+  .resume :global(.resume__card) {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px 32px;
+    padding: 20px 24px; border: 1px solid var(--blue); border-left-width: 4px; background: var(--blue-50);
+  }
+  .resume :global(.resume__title) { margin-top: 6px; font: 400 1.375rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .resume :global(.resume__meta) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin-top: 10px; font: 400 0.8125rem/1.3 var(--f-mono); color: var(--text); }
+  .resume :global(.resume__bar) { width: 140px; height: 4px; background: var(--blue-100); }
+  .resume :global(.resume__bar span) { display: block; height: 100%; background: var(--blue); }
+  .resume :global(.resume__actions) { display: flex; align-items: center; gap: 8px; }
+  .resume :global(.resume__drop) { padding: 0 14px; height: 52px; font-size: 0.875rem; color: var(--text); }
+  .resume :global(.resume__drop:hover) { color: var(--bad); }
+  .resume :global(.resume__card--done) { border-color: var(--line-2); background: var(--bg-soft); }
+  .resume :global(.act-resume) { display: inline-flex; align-items: center; gap: 12px; height: 52px; padding: 0 20px; background: var(--blue-fill); color: #fff; font-weight: 500; white-space: nowrap; transition: background .2s; }
+  .resume :global(.act-resume:hover) { background: var(--blue-600); }
+  .resume :global(.act-resume--ghost) { background: var(--surface); color: var(--ink); border: 1px solid var(--line-2); }
+  .resume :global(.act-resume--ghost:hover) { background: var(--surface); border-color: var(--ink); }
+
+  @media (max-width: 1180px) {
+    .years { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 1024px) {
+    .setup { grid-template-columns: minmax(0, 1fr); }
+    .step { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    /* Na wąskim ekranie podsumowanie przykleja się do dołu jako pasek startu */
+    .summary { position: sticky; top: auto; bottom: 0; z-index: 5; margin-inline: calc(-1 * var(--gutter)); }
+    .summary__card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 16px; padding: 12px var(--gutter); border: 0; border-top: 1px solid var(--ink); box-shadow: 0 -12px 24px -16px rgba(4, 11, 27, .25); }
+    .summary__card > .mono-label, .summary__keys { display: none; }
+    .summary__mode { grid-column: 1; margin: 0; font-size: 1.25rem; }
+    .summary__list { grid-column: 1; grid-row: 2; display: flex; flex-wrap: wrap; gap: 0 10px; margin: 0; border: 0; }
+    .summary__list div { justify-content: flex-start; gap: 0; padding: 0; border: 0; font-size: 0.78125rem; }
+    .summary__list dt { display: none; }
+    .summary__list dd { font-weight: 400; color: var(--text); text-align: left; }
+    .summary__list div + div::before { content: "·"; margin-right: 10px; color: var(--muted); }
+    .summary :global(.summary__start) { grid-column: 2; grid-row: 1 / 3; width: auto; }
+    .summary__privacy { padding: 0 var(--gutter) 12px; background: var(--surface); margin: 0; display: none; }
+  }
+
+  @media (max-width: 720px) {
+    .modes { grid-template-columns: minmax(0, 1fr); }
+    .mode { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 14px 16px; }
+    .mode__head { grid-column: 1 / -1; }
+    .mode__desc { grid-column: 1 / -1; font-size: 0.84375rem; }
+    .seg__opt span { display: none; }
+    .seg__opt { padding: 12px 16px; text-align: center; }
+    .years { grid-template-columns: minmax(0, 1fr); }
+    .year { grid-template-columns: 52px 1fr 1fr; }
+    .resume :global(.resume__card) { grid-template-columns: minmax(0, 1fr); }
+    .resume :global(.resume__actions) { justify-content: space-between; }
+    .summary__list div:nth-child(n + 3) { display: none; }
+  }
+</style>

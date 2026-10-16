@@ -1,0 +1,32 @@
+---
+/** Podstrona artykułu, np. /mechanizmy/fikcyjne-wizyty/ — generowana dla artykułów z treścią. */
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
+import { render } from 'astro:content';
+import ArticleLayout from '@/layouts/ArticleLayout.astro';
+import ProseLink from '@/components/article/ProseLink.astro';
+import DebtCounter from '@/components/zadluzenie/DebtCounter.astro';
+import { getPublishedArticles, sectionOf } from '@/lib/content';
+
+/** Narzędzie obok tytułu zamiast ramki „W skrócie” (slot „aside” w ArticleLayout): id artykułu → komponent */
+const ASIDES: Record<string, typeof DebtCounter> = {
+  'zadluzenie-szpitali': DebtCounter,
+};
+
+export const getStaticPaths = (async () => {
+  const articles = await getPublishedArticles();
+  return articles.map((article) => ({
+    params: { section: sectionOf(article).path, id: article.id },
+    props: { article },
+  }));
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { article } = Astro.props;
+const { Content, headings } = await render(article);
+const Aside = ASIDES[article.id];
+---
+<ArticleLayout article={article} headings={headings}>
+  {Aside && <Aside slot="aside" />}
+  <Content components={{ a: ProseLink }} />
+</ArticleLayout>

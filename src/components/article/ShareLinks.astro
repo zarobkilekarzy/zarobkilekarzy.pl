@@ -1,0 +1,57 @@
+---
+/** Udostępnianie: X, Facebook i kopiowanie linku (custom element <zl-share>). */
+interface Props {
+  url: string;
+  title: string;
+  label?: string;
+}
+
+const { url, title, label = 'Udostępnij' } = Astro.props;
+const u = encodeURIComponent(url);
+const t = encodeURIComponent(title);
+
+const targets = [
+  { name: 'X', href: `https://x.com/intent/post?url=${u}&text=${t}` },
+  { name: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${u}` },
+];
+---
+<zl-share class="share" data-url={url}>
+  <span class="share__label">{label}</span>
+  <ul>
+    {targets.map((s) => <li><a href={s.href} target="_blank" rel="noopener">{s.name}</a></li>)}
+    <li><button type="button" data-copy>Kopiuj link</button></li>
+  </ul>
+</zl-share>
+
+<script>
+  class ZlShare extends HTMLElement {
+    connectedCallback() {
+      const button = this.querySelector<HTMLButtonElement>('[data-copy]');
+      button?.addEventListener('click', async () => {
+        const label = button.textContent;
+        try {
+          await navigator.clipboard.writeText(this.dataset.url ?? location.href);
+          button.textContent = 'Skopiowano ✓';
+        } catch {
+          button.textContent = 'Nie udało się';
+        }
+        setTimeout(() => { button.textContent = label; }, 2000);
+      });
+    }
+  }
+
+  if (!customElements.get('zl-share')) customElements.define('zl-share', ZlShare);
+</script>
+
+<style>
+  zl-share { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+  .share__label { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  ul { display: flex; flex-wrap: wrap; gap: 6px; }
+  a, button {
+    display: inline-block; padding: 7px 12px;
+    border: 1px solid var(--line-2);
+    font: 400 0.8125rem/1.2 var(--f-body); color: var(--ink-2);
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  a:hover, button:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-50); }
+</style>

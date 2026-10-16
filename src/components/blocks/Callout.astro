@@ -1,0 +1,51 @@
+---
+/**
+ * Wyróżniona ramka (np. stanowisko redakcji): etykieta, tytuł, tekst
+ * i akcje w slocie "actions". Wyraźnie oddziela opinię od informacji.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Heading from '@/components/ui/Heading.astro';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'div'> {
+  label: string;
+  title: string;
+  text: string;
+}
+
+const { label, title, text, class: className, ...rest } = Astro.props;
+---
+<div class:list={['callout', className]} data-reveal {...rest}>
+  <div class="callout__copy">
+    <p class="mono-label callout__label">{label}</p>
+    <Heading class="callout__title">{typo(title)}</Heading>
+    <p class="callout__text">{typo(text)}</p>
+  </div>
+  <div class="callout__actions"><slot name="actions" /></div>
+</div>
+
+<style>
+  .callout {
+    position: relative;
+    display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px 64px; align-items: end;
+    padding: clamp(32px, 4vw, 56px);
+    border: 1px solid var(--line-2);
+    background: linear-gradient(90deg, var(--blue) 0 4px, transparent 4px), var(--surface);
+  }
+  .callout::before, .callout::after { content: ""; position: absolute; width: 7px; height: 7px; background: var(--blue); }
+  .callout::before { top: -4px; right: -4px; }
+  .callout::after { bottom: -4px; right: -4px; }
+
+  .callout__label { color: var(--blue); margin-bottom: 18px; }
+  .callout__title { font-size: clamp(1.875rem, 3.2vw, 2.75rem); margin-bottom: 20px; max-width: 18ch; }
+  .callout__text { font-size: 1rem; max-width: 56ch; }
+  .callout__actions { justify-self: end; width: 100%; max-width: 340px; }
+
+  @media (max-width: 1024px) {
+    .callout { grid-template-columns: 1fr; }
+    .callout__actions { justify-self: start; }
+  }
+  @media (max-width: 720px) {
+    .callout__actions { max-width: none; }
+  }
+</style>

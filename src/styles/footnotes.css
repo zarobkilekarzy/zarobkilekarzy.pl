@@ -1,0 +1,52 @@
+/*
+ * Przypisy: numer w tekście i zwijana lista „Przypisy”. Znaczniki daje GFM w artykułach
+ * (lib/markdown/footnotes.ts) albo lib/notes + article/NoteList na stronach spoza MDX.
+ * Style są globalne, bo numer stoi też poza Prose (np. w odpowiedziach FAQ). Bloki, które
+ * stylują linki w swojej treści (Prose, Aside, Steps, Faq), pomijają a[data-footnote-ref] i listę.
+ */
+
+sup:has(> a[data-footnote-ref]) { line-height: 0; }
+a[data-footnote-ref] {
+  padding: 0 1px; font: 500 .62em/1 var(--f-mono); color: var(--blue); text-decoration: none;
+  scroll-margin-top: calc(var(--header-h) + 96px);
+}
+a[data-footnote-ref]::before { content: "["; color: var(--muted); }
+a[data-footnote-ref]::after { content: "]"; color: var(--muted); }
+a[data-footnote-ref]:hover { text-decoration: underline; }
+
+.footnotes { scroll-margin-top: calc(var(--header-h) + 24px); }
+.footnotes__head {
+  display: flex; align-items: center; gap: 16px;
+  padding-bottom: 14px; border-bottom: 1px solid var(--ink);
+  cursor: pointer; list-style: none;
+}
+.footnotes__head::-webkit-details-marker { display: none; }
+.footnotes__head::after { content: "+"; margin-left: auto; font: 400 1.125rem/1 var(--f-mono); color: var(--blue); }
+.footnotes[open] .footnotes__head::after { content: "–"; }
+.footnotes__title {
+  display: flex; flex: none; align-items: center; gap: 10px;
+  font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  transition: color .2s;
+}
+.footnotes__head:hover .footnotes__title { color: var(--ink); }
+.footnotes__title span { padding: 2px 6px; background: var(--blue-50); color: var(--blue); }
+.footnotes__hint { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted); }
+.footnotes[open] .footnotes__hint { visibility: hidden; }
+
+.footnotes ol { counter-reset: fn; }
+.footnotes li {
+  counter-increment: fn; position: relative;
+  padding: 12px 0 12px 40px; border-bottom: 1px solid var(--line);
+  scroll-margin-top: calc(var(--header-h) + 24px); transition: background-color 1.2s;
+}
+.footnotes li::before { content: counter(fn); position: absolute; left: 0; top: 14px; font: 400 0.75rem/1 var(--f-mono); color: var(--blue); }
+/* przypis, do którego prowadził numer w tekście — krótkie wyróżnienie */
+.footnotes li:target { background: var(--blue-50); transition: none; }
+.footnotes li p { font-size: 0.90625rem; line-height: 1.6; color: var(--text); overflow-wrap: anywhere; }
+/* Link w przypisie odróżnia od tekstu podkreślenie, więc ma kontrast etykiety (--muted), nie linii */
+.footnotes a:not([class]) {
+  color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+  text-decoration-color: var(--muted);
+}
+.footnotes a:not([class]):hover { color: var(--blue); text-decoration-color: currentColor; }
+.footnotes .data-footnote-backref { margin-left: 4px; font: 400 0.8125rem/1 var(--f-mono); color: var(--blue); text-decoration: none; }

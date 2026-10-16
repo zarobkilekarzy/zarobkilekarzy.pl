@@ -1,0 +1,47 @@
+---
+/**
+ * Strona wyników /szukaj/?q=… — ta sama wyszukiwarka co w oknie ⌘K (SearchBox),
+ * ale z adresem, który można podlinkować, i z dłuższą listą wyników.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import SearchBox from '@/components/site/SearchBox.astro';
+import { getPopularSearches } from '@/lib/search/build';
+import type { SeoInput } from '@/lib/seo';
+
+const popular = await getPopularSearches();
+
+// Wyniki wyszukiwania to nie treść — poza indeksem i sitemapą, ale linki z niej się liczą
+const seo: SeoInput = { title: 'Szukaj', description: 'Przeszukaj artykuły, zestawienia danych i słowniczek serwisu.', index: false };
+---
+<BaseLayout seo={seo}>
+  <Section>
+    <div class="search-page">
+      <Eyebrow>Wyszukiwarka</Eyebrow>
+      <Heading as="h1" size="display">Szukaj w serwisie</Heading>
+      <p class="lead search-page__lead">Artykuły, zestawienia danych i pojęcia ze słowniczka. Polskie znaki można pominąć: „zadluzenie” znajdzie „zadłużenie”.</p>
+      <SearchBox id="szukaj" popular={popular} limit={30} autofocus class="search-page__box" />
+    </div>
+  </Section>
+</BaseLayout>
+
+<script>
+  import { searchPageHref } from '@/lib/search/engine';
+
+  // Zapytanie żyje w adresie (?q=): wyniki można podlinkować, a po powrocie przycisk Wstecz je odtwarza
+  const input = document.querySelector<HTMLInputElement>('#szukaj-input');
+  if (input) {
+    input.value = new URLSearchParams(location.search).get('q') ?? '';
+    input.dispatchEvent(new Event('input'));
+    input.addEventListener('input', () => history.replaceState(null, '', searchPageHref(input.value.trim())));
+  }
+</script>
+
+<style>
+  .search-page { max-width: 760px; }
+  .search-page__lead { margin-top: 20px; max-width: 60ch; }
+  .search-page__box { margin-top: 40px; border: 1px solid var(--line-2); background: var(--surface); transition: border-color .2s; }
+  .search-page__box:focus-within { border-color: var(--ink); }
+</style>

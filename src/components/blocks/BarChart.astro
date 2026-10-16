@@ -1,0 +1,102 @@
+---
+/**
+ * Poziomy wykres słupkowy w wierszach: nazwa nad słupkiem, wartość tuż za jego końcem
+ * (wspólna skala od zera; --reserve to miejsce na wartość przy najdłuższym słupku).
+ * Każdy wiersz ma podpisaną wartość, więc wykres nie ma osi.
+ * Średnia to jedna ciągła linia od podpisu nad wykresem przez wszystkie słupki; kończy się
+ * na ostatnim zwykłym wierszu — słupek porównawczy (secondary, np. „prywatnie”) nie należy do średniej.
+ * Słupki „rosną” przy przewijaniu (data-reveal="grow" → .is-armed → .is-in).
+ */
+import type { BarRow } from '@/types';
+import { formatPL, typo } from '@/lib/format';
+
+interface Props {
+  rows: BarRow[];
+  /** wartość odpowiadająca pełnej szerokości słupka */
+  max: number;
+  unit: string;
+  average?: number;
+  /** dopisek pod wykresem */
+  note?: string;
+  /** pełny opis danych dla czytników ekranu */
+  caption: string;
+}
+
+const { rows, max, unit, average, note, caption } = Astro.props;
+// miejsce na wartość za najdłuższym słupkiem: co najmniej 96px, a dla długich etykiet („243,8 mld zł”)
+// ok. 0,7rem na znak w foncie wartości + odstęp — w rem, więc rośnie razem z „Większym tekstem”
+const longest = Math.max(...rows.map((row) => row.display.length));
+---
+<figure class="bars" data-reveal="grow" style={`--max: ${max}; --chars: ${longest}${average !== undefined ? `; --avg: ${average}` : ''}`}>
+  {average !== undefined && (
+    <p class="bars__avg" aria-hidden="true"><span>{typo(`średnio ${formatPL(average, 1)} ${unit}`)}</span></p>
+  )}
+  <ol class:list={['bars__rows', { 'has-avg': average !== undefined }]} aria-hidden="true">
+    {rows.map((row, i) => (
+      <li class:list={['bars__row', { 'bars__row--hi': row.highlight, 'bars__row--secondary': row.secondary }]} style={`--v: ${row.value}; --i: ${i}`}>
+        <span class="bars__label">{typo(row.label)}{row.note && <em> {typo(row.note)}</em>}</span>
+        <span class="bars__track"><span class="bars__bar"></span><span class="bars__value">{typo(row.display)}</span></span>
+      </li>
+    ))}
+  </ol>
+  {note && <p class="bars__note">{typo(note)}</p>}
+  <figcaption class="sr-only">{caption}</figcaption>
+</figure>
+
+<style>
+  .bars {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+    --bar: 14px; --reserve: max(96px, calc(var(--chars) * 0.7rem + 12px));
+    /* pozycja wartości v na skali (w szerokości wykresu) */
+    --scale: calc(100% - var(--reserve));
+  }
+  .bars__rows { --gap: 20px; display: grid; gap: var(--gap); }
+  .bars__row { position: relative; display: grid; gap: 8px; }
+  .bars__label { font-size: 0.90625rem; line-height: 1.3; color: var(--ink); }
+  .bars__label em { font-style: normal; color: var(--muted); }
+
+  .bars__track { position: relative; display: flex; align-items: center; gap: 12px; }
+  .bars__bar {
+    flex: none; height: var(--bar);
+    width: max(2px, var(--v) / var(--max) * var(--scale));
+    background: var(--chart);
+    transform-origin: left; transition: transform 1.1s var(--ease) calc(var(--i) * 80ms);
+  }
+  .bars__row--hi .bars__bar { background: var(--blue); }
+  .bars__value { font: 400 1.25rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; transition: opacity .4s calc(var(--i) * 80ms + .7s); }
+
+  /* Słupek do porównania (np. „prywatnie”) — cieńszy, wartość drobniej */
+  .bars__row--secondary .bars__bar { height: 4px; background: var(--blue); }
+  .bars__row--secondary .bars__value { font: 400 0.875rem/1.2 var(--f-body); letter-spacing: 0; color: var(--text-strong); }
+
+  /* Średnia: podpis nad wykresem + ciągła linia. Każdy wiersz rysuje odcinek od połowy przerwy
+     nad sobą do 5 px pod słupkiem, odcinki się zazębiają; pierwszy dochodzi do kreski podpisu. */
+  .bars__avg { position: relative; height: 26px; margin-bottom: 10px; }
+  .bars__avg span {
+    position: absolute; bottom: 0; left: calc(var(--avg) / var(--max) * var(--scale));
+    padding-left: 8px; border-left: 1px solid var(--ink);
+    font: 500 0.65625rem/1.6 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); white-space: nowrap;
+  }
+  .has-avg .bars__row:not(.bars__row--secondary)::after {
+    content: ""; position: absolute; top: calc(-1 * var(--gap)); bottom: -5px;
+    left: calc(var(--avg) / var(--max) * var(--scale)); width: 1px; background: var(--ink);
+  }
+  .has-avg .bars__row:first-child::after { top: -10px; }
+  /* Nazwa nad linią — na wąskim ekranie średnia wypada w jej końcówce, tło wycina linię */
+  .has-avg .bars__label { position: relative; z-index: 1; justify-self: start; padding-right: 6px; background: var(--under); }
+
+  .bars__note { margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 0.875rem; line-height: 1.55; color: var(--text); }
+
+  /* Animacja wzrostu */
+  .bars.is-armed .bars__bar { transform: scaleX(0); }
+  .bars.is-armed .bars__value { opacity: 0; }
+  .bars.is-armed.is-in .bars__bar { transform: scaleX(1); }
+  .bars.is-armed.is-in .bars__value { opacity: 1; }
+
+  @media (max-width: 720px) {
+    .bars { --bar: 12px; --reserve: max(80px, calc(var(--chars) * 0.7rem + 12px)); }
+    .bars__rows { --gap: 16px; }
+    .bars__label { font-size: 0.875rem; }
+    .bars__value { font-size: 1.125rem; }
+  }
+</style>

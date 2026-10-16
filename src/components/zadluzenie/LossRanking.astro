@@ -1,0 +1,99 @@
+---
+/**
+ * Dziesięć szpitali z największą stratą netto (2024) — wiersze z paskiem na wspólnej skali,
+ * dopowiedzenie pod wybranymi wierszami (z linkiem do źródła albo do zestawienia w serwisie).
+ * Pod listą — przypadek odwrotny (Kalisz): zysk na papierze, zaległości wobec personelu.
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { KALISZ, LINKS, LOSSES } from '@/data/zadluzenie';
+import { formatPL, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Props {
+  title?: string;
+}
+
+const { title } = Astro.props;
+const max = LOSSES[0].loss;
+const mln = (zl: number) => formatPL(zl / 1e6, 1);
+---
+<Figure
+  title={title}
+  note="Strata netto za 2024 r. według wstępnych danych MZ. MZ nie publikuje długu pojedynczych szpitali — wyjątki znamy tylko wtedy, gdy ujawni je sam szpital albo organ, który go prowadzi."
+  source={{ label: 'Menedżer Zdrowia, „Lista wstydu” (dane MZ)', href: LINKS.listaWstydu }}
+>
+  <ol class="loss" data-reveal="grow" style={`--max: ${max}`}>
+    {LOSSES.map((r, i) => (
+      <li class="loss__row" style={`--v: ${r.loss}`}>
+        <span class="loss__rank">{String(i + 1).padStart(2, '0')}</span>
+        <p class="loss__name">{typo(r.name)} <span>{r.city}</span></p>
+        <p class="loss__value">{mln(r.loss)}<small>&nbsp;mln&nbsp;zł</small></p>
+        <span class="loss__bar" aria-hidden="true"></span>
+        {r.note && (
+          <p class="loss__note">
+            {typo(r.note)}
+            {r.links && (
+              <span class="loss__links">
+                {r.links.map((l) => <a {...linkAttrs(l.href)}>{l.label}</a>)}
+              </span>
+            )}
+          </p>
+        )}
+      </li>
+    ))}
+  </ol>
+
+  <div class="loss__flip">
+    <p class="loss__flip-label">Odwrotny przypadek</p>
+    <p class="loss__name">{typo(KALISZ.name)} <span>{KALISZ.city}</span></p>
+    <dl class="loss__pair">
+      <div><dt>wynik za 2024 r.</dt><dd class="is-ok">+{mln(KALISZ.profit)}&nbsp;mln&nbsp;zł zysku</dd></div>
+      <div><dt>zaległe pensje personelu</dt><dd class="is-bad">{mln(KALISZ.arrears)}&nbsp;mln&nbsp;zł</dd></div>
+    </dl>
+    <p class="loss__note">{typo('Sam wynik netto nie pokazuje długu wobec własnych pracowników — tego w rankingu strat nie widać.')}</p>
+    <LinkArrow href="#kalisz-jeden-szpital-cala-mechanika" class="loss__more">Cała historia niżej</LinkArrow>
+  </div>
+</Figure>
+
+<style>
+  .loss { border-top: 1px solid var(--ink); counter-reset: none; }
+  .loss__row {
+    display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: baseline; gap: 4px 12px;
+    padding: 12px 0 14px; border-bottom: 1px solid var(--line);
+  }
+  .loss__rank { font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+  .loss__name { font: 500 0.9375rem/1.35 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .loss__name span { margin-left: 4px; font: 400 0.8125rem/1.35 var(--f-body); letter-spacing: 0; color: var(--muted); }
+  .loss__value { font: 400 1.1875rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .loss__value small { font: 400 0.78125rem/1 var(--f-body); letter-spacing: 0; color: var(--muted); }
+
+  .loss__bar { grid-column: 2 / -1; position: relative; height: 8px; margin-top: 6px; }
+  .loss__bar::after {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--v) / var(--max) * 100%);
+    background: var(--chart); transform-origin: left; transition: transform 1.1s var(--ease);
+  }
+  .loss.is-armed .loss__bar::after { transform: scaleX(0); }
+  .loss.is-armed.is-in .loss__bar::after { transform: scaleX(1); }
+
+  .loss__note { grid-column: 2 / -1; margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--blue); font-size: 0.875rem; line-height: 1.55; color: var(--text-strong); }
+  .loss__links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font: 400 0.75rem/1.4 var(--f-mono); }
+  .loss__links a { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s; }
+  .loss__links a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  .loss__flip { display: grid; gap: 10px; margin-top: 20px; padding: 20px 22px; background: var(--bg-soft); border-left: 2px solid var(--ink); }
+  .loss__flip .loss__note { margin-top: 0; padding-left: 0; border-left: 0; }
+  .loss__more { justify-self: start; }
+  .loss__flip-label { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .loss__pair { display: flex; flex-wrap: wrap; gap: 8px 40px; }
+  .loss__pair dt { font: 400 0.71875rem/1.3 var(--f-mono); color: var(--muted); }
+  .loss__pair dd { margin-top: 4px; font: 400 1.375rem/1.1 var(--f-display); letter-spacing: -0.03em; }
+  .loss__pair .is-ok { color: var(--ok); }
+  .loss__pair .is-bad { color: var(--bad); }
+
+  @container (max-width: 520px) {
+    .loss__row { grid-template-columns: 26px minmax(0, 1fr); }
+    .loss__value { grid-column: 2; }
+    .loss__name span { display: block; margin: 2px 0 0; }
+  }
+</style>

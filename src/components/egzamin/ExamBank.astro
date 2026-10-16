@@ -1,0 +1,93 @@
+---
+/**
+ * Przeglądarka bazy pytań — filtry nad listą; lista i rozwinięcia: client/bank.ts.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import type { ExamId, SessionInfo } from '@/lib/egzamin/types';
+
+interface Props {
+  exams: { id: ExamId; label: string }[];
+  sessions: SessionInfo[];
+}
+
+const { exams, sessions } = Astro.props;
+---
+<div class="bank" data-bank>
+  <form class="filters" data-bank-form role="search" aria-label="Filtry bazy pytań">
+    <label class="f f--search">
+      <span class="f__label">Szukaj w treści</span>
+      <span class="f__input">
+        <Icon name="search" size={18} />
+        <input type="search" name="q" placeholder="np. paracetamol, odma, zgoda pacjenta" autocomplete="off" />
+      </span>
+    </label>
+    <label class="f">
+      <span class="f__label">Egzamin</span>
+      <select name="exam">{exams.map((e) => <option value={e.id}>{e.label}</option>)}</select>
+    </label>
+    <label class="f">
+      <span class="f__label">Sesja</span>
+      <select name="session">
+        {sessions.map((s, i) => <option value={s.id} selected={i === 0}>{s.label}</option>)}
+        <option value="all">wszystkie sesje</option>
+      </select>
+    </label>
+    <label class="f">
+      <span class="f__label">Dziedzina</span>
+      <select name="field"><option value="all">Wszystkie dziedziny</option></select>
+    </label>
+    <label class="f">
+      <span class="f__label">Pochodzenie</span>
+      <select name="origin">
+        <option value="all">wszystkie</option>
+        <option value="base">z jawnej bazy</option>
+        <option value="fresh">nowe</option>
+      </select>
+    </label>
+    <label class="check">
+      <input type="checkbox" name="notes" />
+      <span>tylko z moją notatką</span>
+    </label>
+  </form>
+
+  <div class="bank__head">
+    <p class="bank__count" data-bank-count aria-live="polite">Wczytywanie…</p>
+    <p class="bank__hint">Kliknij pytanie, żeby zobaczyć klucz i to, jak odpowiadała sala.</p>
+  </div>
+  <div data-bank-list></div>
+  <button type="button" class="bank__more" data-bank-more hidden>Pokaż kolejne</button>
+</div>
+
+<style>
+  .filters { display: grid; grid-template-columns: minmax(0, 2fr) repeat(4, minmax(0, 1fr)); gap: 12px; align-items: end; padding: 20px; background: var(--bg-soft); border: 1px solid var(--line); }
+  .f { display: grid; gap: 6px; min-width: 0; }
+  .f__label { font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .f select, .f__input { height: 44px; border: 1px solid var(--line-2); background: var(--surface); font-size: 0.90625rem; color: var(--ink); }
+  /* własny wygląd pól — Safari bez appearance: none rysuje zaokrąglony natywny select */
+  .f select {
+    width: 100%; padding: 0 32px 0 10px; border-radius: 0; -webkit-appearance: none; appearance: none;
+    background: var(--surface) var(--select-arrow) no-repeat right 12px center;
+  }
+  .f__input { display: flex; align-items: center; gap: 10px; padding: 0 12px; color: var(--muted); }
+  .f__input input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 0; background: none; color: var(--ink); -webkit-appearance: none; appearance: none; }
+  .f__input input:focus { outline: 0; }
+  .f__input:focus-within, .f select:focus { border-color: var(--blue); outline: 0; box-shadow: inset 0 0 0 1px var(--blue); }
+  .check { grid-column: 1 / -1; display: inline-flex; align-items: center; gap: 10px; font-size: 0.875rem; color: var(--ink); cursor: pointer; justify-self: start; }
+  .check input { width: 18px; height: 18px; accent-color: var(--blue); }
+
+  .bank__head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px 24px; margin: 28px 0 12px; }
+  .bank__count { font: 400 1.625rem/1.1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .bank__hint { font-size: 0.84375rem; color: var(--muted); }
+  .bank :global(.bank__empty) { padding: 32px 0; color: var(--muted); }
+  .bank__more { margin-top: 20px; height: 48px; padding: 0 20px; border: 1px solid var(--line-2); font-weight: 500; color: var(--ink); }
+  .bank__more:hover { border-color: var(--ink); }
+  .bank :global(.lq-row__st--none) { visibility: hidden; }
+
+  @media (max-width: 1024px) {
+    .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .f--search { grid-column: 1 / -1; }
+  }
+  @media (max-width: 720px) {
+    .filters { padding: 16px; margin-inline: calc(-1 * var(--gutter)); border-inline: 0; }
+  }
+</style>

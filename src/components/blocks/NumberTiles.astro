@@ -1,0 +1,62 @@
+---
+/**
+ * Siatka kluczowych liczb, z których każda prowadzi do zestawienia.
+ * Liczba kolumn zależy od szerokości kontenera (container queries).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import type { KeyNumber } from '@/types';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'div'> {
+  items: KeyNumber[];
+  /** przypis pod siatką */
+  note?: string;
+}
+
+const { items, note, class: className, ...rest } = Astro.props;
+---
+<div class:list={['tiles-wrap', className]} {...rest}>
+  <ul class="tiles">
+    {items.map((n) => (
+      <li class="tile" data-reveal>
+        <a href={n.href}>
+          <p class="tile__value"><span>{n.value}</span><small>{typo(n.unit)}</small></p>
+          <p class="tile__desc">{typo(n.desc)}</p>
+          <p class="tile__target">{typo(n.target)}<Icon name="arrow" size={14} /></p>
+        </a>
+      </li>
+    ))}
+  </ul>
+  {note && <p class="tiles__note">{typo(note)}</p>}
+</div>
+
+<style>
+  .tiles-wrap { container-type: inline-size; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--ink); border-left: 1px solid var(--line); }
+  .tile { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .tile a { display: flex; flex-direction: column; height: 100%; padding: 28px 24px 22px; transition: background-color .2s; }
+  .tile__value {
+    display: flex; align-items: baseline; gap: 8px;
+    font: 300 clamp(2.25rem, 3.4vw, 3rem)/1 var(--f-display); letter-spacing: -0.045em; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .tile__value span { white-space: nowrap; }
+  .tile__value small { max-width: 10ch; font: 400 0.875rem/1.2 var(--f-body); letter-spacing: 0; color: var(--text); }
+  .tile__desc { margin: 16px 0 20px; font-size: 0.875rem; line-height: 1.55; }
+  .tile__target {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto;
+    padding-top: 14px; border-top: 1px solid var(--line);
+    font: 400 0.75rem/1.35 var(--f-mono); color: var(--muted); transition: color .2s;
+  }
+  .tile a:hover { background: var(--blue-50); }
+  .tiles__note { margin-top: 18px; font: 400 0.84375rem/1.5 var(--f-body); color: var(--text); }
+  .tile a:hover .tile__target { color: var(--blue); }
+
+
+  @container (max-width: 900px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  @container (max-width: 480px) {
+    .tiles { grid-template-columns: 1fr; }
+    .tile a { padding: 22px 16px 18px; }
+  }
+</style>

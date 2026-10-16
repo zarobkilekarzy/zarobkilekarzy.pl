@@ -1,0 +1,29 @@
+---
+/**
+ * Blok „Stanowisko redakcji” z wezwaniem do działania — wspólny dla strony głównej i artykułów.
+ * Pod przyciskami: bieżący etap projektu ustawy (src/data/projekt-ustawy.ts), żeby status był
+ * w każdym miejscu ten sam.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Callout from '@/components/blocks/Callout.astro';
+import Actions from '@/components/layout/Actions.astro';
+import Button from '@/components/ui/Button.astro';
+import { postulat } from '@/data/postulat';
+import { currentStage, projekt } from '@/data/projekt-ustawy';
+
+// `title` to treść bloku, a nie atrybut HTML — nie przyjmujemy go z zewnątrz
+type Props = Omit<HTMLAttributes<'div'>, 'title'>;
+const props = Astro.props;
+---
+<Callout label={postulat.label} title={postulat.title} text={postulat.text} {...props}>
+  <Actions slot="actions" stack="always" gap="sm">
+    <Button href={postulat.primary.href}>{postulat.primary.label}</Button>
+    <Button href={postulat.secondary.href} variant="ghost" icon="doc">{postulat.secondary.label}</Button>
+    <p class="cta-status"><span class="cta-status__dot" aria-hidden="true"></span>Etap: {currentStage.label.toLowerCase()} · wersja {projekt.version}</p>
+  </Actions>
+</Callout>
+
+<style>
+  .cta-status { display: flex; align-items: center; gap: 8px; margin-top: 8px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .cta-status__dot { flex: none; width: 7px; height: 7px; background: var(--amber); }
+</style>

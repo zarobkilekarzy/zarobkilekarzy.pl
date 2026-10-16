@@ -1,0 +1,71 @@
+---
+/**
+ * Kluczowe liczby obok siebie: duża wartość z mniejszą jednostką, krótki podpis pod spodem.
+ * Wartości stoją na jednej linii bez względu na długość podpisów (podpisy wyrównane do góry).
+ * Rozmiar i układ wynikają z szerokości kontenera (container query), więc blok działa
+ * w kolumnie bocznej nagłówka i na pełną szerokość; w bardzo wąskim miejscu przechodzi w wiersze.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'div'> {
+  /** np. { value: '56', unit: '%', label: 'próg zdania' } */
+  items: { value: string; unit?: string; label: string }[];
+}
+
+const { items, class: className, ...rest } = Astro.props;
+// Symbol (%, ‰, °) przylega do liczby jak w polskim zapisie „56%”; słowo (pytań, h) stoi po odstępie
+const isSymbol = (unit: string) => /^[%‰°]/.test(unit);
+---
+<div class:list={['facts', className]} {...rest}>
+  <dl class="facts__list" style={`--n: ${items.length}`}>
+    {items.map((f) => (
+      <div class="facts__item">
+        <dt class="facts__label">{typo(f.label)}</dt>
+        <dd class="facts__value">{f.value}{f.unit && <span class:list={['facts__unit', { 'facts__unit--symbol': isSymbol(f.unit) }]}>{f.unit}</span>}</dd>
+      </div>
+    ))}
+  </dl>
+</div>
+
+<style>
+  /* kontener zapytań to opakowanie — element nie może odpytywać własnej szerokości */
+  .facts { container-type: inline-size; }
+  .facts__list {
+    display: grid;
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    row-gap: 10px;
+    border-top: 2px solid var(--ink);
+  }
+  /* Wiersze wartości i podpisów są wspólne dla kolumn (subgrid): gdy jedna wartość się zawinie,
+     podpisy i tak zaczynają się na tej samej wysokości. Wartość nad podpisem wizualnie,
+     choć w HTML dt (podpis) idzie pierwszy. */
+  .facts__item { grid-row: span 2; display: grid; grid-template-rows: subgrid; align-content: start; padding: 18px 16px 0 0; min-width: 0; }
+  .facts__item + .facts__item { padding-left: 16px; border-left: 1px solid var(--line); }
+
+  .facts__value {
+    grid-row: 1;
+    align-self: start;
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px;
+    font: 400 2.75rem/1 var(--f-display);
+    font-size: clamp(1.875rem, calc(32cqi / var(--n)), 3.5rem);
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .facts__unit { font-size: max(0.9375rem, .36em); letter-spacing: -0.01em; color: var(--text); }
+  .facts__unit--symbol { margin-left: -5px; }
+  .facts__label { grid-row: 2; max-width: 20ch; font-size: 0.8125rem; line-height: 1.4; color: var(--text); text-wrap: balance; }
+
+  /* Wąski kontener: liczba i podpis w jednym wierszu, pozycje jedna pod drugą */
+  @container (max-width: 300px) {
+    /* kolumna liczb wspólna dla wierszy (subgrid), więc podpisy zaczynają się w jednej linii */
+    .facts__list { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: none; row-gap: 0; column-gap: 14px; }
+    .facts__item { grid-row: auto; grid-column: 1 / -1; grid-template-rows: none; grid-template-columns: subgrid; align-items: baseline; padding: 12px 0; }
+    .facts__value { grid-row: 1; grid-column: 1; }
+    .facts__label { grid-row: 1; grid-column: 2; }
+    .facts__item + .facts__item { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+    .facts__value { font-size: 2rem; }
+  }
+</style>

@@ -1,0 +1,22 @@
+---
+/**
+ * Nagłówek w stylu systemu: znak końcowy w kolorze akcentu.
+ * Poziom semantyczny (`as`) i rozmiar wizualny (`size`) są niezależne.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'h2'> {
+  as?: 'h1' | 'h2' | 'h3';
+  size?: 'display' | 'h2';
+  /** znak kończący, np. „.” lub „?”; pusty = brak */
+  punct?: string;
+  tone?: 'dark' | 'light';
+}
+
+const { as: Tag = 'h2', size = 'h2', punct = '.', tone = 'dark', class: className, ...rest } = Astro.props;
+---
+<Tag class:list={[size, { 'heading--light': tone === 'light' }, className]} {...rest}><slot />{punct && <span class="dot">{punct}</span>}</Tag>
+
+<style>
+  .heading--light { color: #fff; } /* kolor-stały: wariant tylko na tło zawsze ciemne lub kobaltowe */
+</style>

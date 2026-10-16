@@ -1,0 +1,104 @@
+---
+/**
+ * /postulat/ — problem: każda placówka zna tylko swoją część wynagrodzenia.
+ * Pod tekstem wyliczenie: odsetek w jednej placówce → szacunek po zsumowaniu → liczba lekarzy;
+ * każda liczba z etykietą dokładności i źródłem (src/data/postulat.ts → problem.finding).
+ */
+import Section from '@/components/layout/Section.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Icon from '@/components/ui/Icon.astro';
+import Flag from '@/components/ui/Flag.astro';
+import { problem } from '@/data/postulat';
+import { typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+const { steps, result } = problem.finding;
+---
+<Section id="problem" tone="soft" aria-labelledby="problem-title">
+  <div class="problem">
+    <div>
+      <Eyebrow>Problem</Eyebrow>
+      <Heading id="problem-title" class="problem__title">{typo(problem.title)}</Heading>
+    </div>
+    <div class="problem__body">
+      {problem.paragraphs.map((p) => <p class="problem__text">{typo(p)}</p>)}
+
+      <figure class="calc" aria-label="Ilu lekarzy zarabia ponad 100 tys. zł miesięcznie">
+        <ol class="calc__steps">
+          {steps.map((step) => (
+            <li class="calc__step">
+              <p class="calc__value">
+                {step.prefix && <span class="calc__prefix">{step.prefix}</span>}{step.value}
+              </p>
+              <p class="calc__label">{typo(step.label)}</p>
+              <p class="calc__src">
+                <Flag accuracy={step.accuracy} />
+                <a {...linkAttrs(step.source.href)}>{step.source.label}<Icon name="arrow-ne" size={10} /></a>
+              </p>
+            </li>
+          ))}
+        </ol>
+        <figcaption class="calc__result">
+          {typo(result.text)}{' '}
+          <a {...linkAttrs(result.source.href)}>{result.source.label}<Icon name="arrow-ne" size={10} /></a>
+        </figcaption>
+      </figure>
+
+      <aside class="problem__contracts" aria-labelledby="cru-title">
+        <p class="problem__contracts-title" id="cru-title">{typo(problem.contracts.title)}</p>
+        <p>
+          {typo(problem.contracts.text)}{' '}
+          <a {...linkAttrs(problem.contracts.source.href)}>{problem.contracts.source.label}<Icon name="arrow-ne" size={10} /></a>
+        </p>
+      </aside>
+    </div>
+  </div>
+</Section>
+
+<style>
+  .problem { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px clamp(40px, 6vw, 96px); align-items: start; }
+  .problem__title { margin-top: 0; max-width: 14ch; }
+  .problem__body { display: grid; gap: 32px; padding-top: 8px; }
+  .problem__text { font-size: 1.125rem; line-height: 1.7; color: var(--ink-2); max-width: 54ch; }
+
+  .calc { margin: 0; border-top: 1px solid var(--ink); }
+  .calc__steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .calc__step { position: relative; display: grid; align-content: start; gap: 10px; padding: 24px 24px 20px 0; }
+  .calc__step + .calc__step { padding-left: 32px; border-left: 1px solid var(--line-2); }
+  /* grot między krokami: wynik z jednej placówki → suma z wielu */
+  .calc__step + .calc__step::before {
+    content: ""; position: absolute; left: -7px; top: 40px; width: 12px; height: 12px;
+    border-top: 1px solid var(--line-2); border-right: 1px solid var(--line-2); background: var(--bg-soft); transform: rotate(45deg);
+  }
+  .calc__value { font: 300 clamp(2.75rem, 4.4vw, 3.75rem)/1 var(--f-display); letter-spacing: -0.045em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .calc__step:last-child .calc__value { color: var(--blue); }
+  .calc__prefix { margin-right: 4px; color: var(--muted); }
+  .calc__label { font-size: 0.90625rem; line-height: 1.55; max-width: 30ch; color: var(--text); }
+  .calc__src { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+
+  /* zwykły tekst w linii (nie flex), żeby strzałka szła za ostatnim słowem, gdy etykieta się łamie */
+  .calc a :global(.icon) { display: inline-block; margin-left: 4px; vertical-align: 0; }
+  .calc a { font: 400 0.71875rem/1.3 var(--f-mono); letter-spacing: 0; color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s; }
+  .calc a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  .problem__contracts { padding: 20px 24px; border-left: 3px solid var(--ink); background: var(--surface); }
+  .problem__contracts-title { margin-bottom: 6px; font: 500 1.0625rem/1.3 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .problem__contracts p:not(.problem__contracts-title) { font-size: 0.96875rem; line-height: 1.65; color: var(--ink-2); max-width: 60ch; }
+  .problem__contracts a { font: 400 0.71875rem/1.3 var(--f-mono); color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; white-space: nowrap; }
+  .problem__contracts a :global(.icon) { display: inline-block; margin-left: 4px; vertical-align: 0; }
+  .problem__contracts a:hover { color: var(--blue); }
+  .calc__result { padding-top: 20px; border-top: 1px solid var(--line-2); font: 400 1.375rem/1.4 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .calc__result a { vertical-align: 3px; }
+
+  @media (max-width: 1024px) {
+    .problem { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .problem__text { font-size: 1.03125rem; }
+    .calc__step { padding-right: 16px; }
+    .calc__step + .calc__step { padding-left: 20px; }
+    .calc__result { font-size: 1.1875rem; }
+    .problem__contracts { padding: 18px 20px; }
+  }
+</style>

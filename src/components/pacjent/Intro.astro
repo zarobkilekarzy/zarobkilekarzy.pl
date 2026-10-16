@@ -1,0 +1,32 @@
+---
+/**
+ * Nagłówek sekcji strony pacjenta: etykieta, tytuł h2 i krótki wstęp.
+ * Rozmiary w rem — rosną razem z przełącznikiem „Większy tekst” i ustawieniami przeglądarki.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import { typo } from '@/lib/format';
+
+interface Props extends Omit<HTMLAttributes<'header'>, 'title'> {
+  eyebrow: string;
+  title: string;
+  /** id nagłówka — do aria-labelledby sekcji */
+  id: string;
+  lead?: string;
+  punct?: string;
+}
+
+const { eyebrow, title, id, lead, punct, class: className, ...rest } = Astro.props;
+---
+<header class:list={['intro', className]} {...rest}>
+  <Eyebrow>{eyebrow}</Eyebrow>
+  <Heading id={id} punct={punct} class="intro__title">{typo(title)}</Heading>
+  {lead && <p class="intro__lead">{typo(lead)}</p>}
+  <slot />
+</header>
+
+<style>
+  .intro :global(.intro__title) { font-size: clamp(2rem, 3.4vw, 3rem); }
+  .intro__lead { margin-top: 1.25rem; max-width: 36em; font-size: 1.0625rem; line-height: 1.65; color: var(--text); }
+</style>

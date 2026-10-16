@@ -1,0 +1,185 @@
+---
+/**
+ * Licznik długu szpitali „na żywo” — obok tytułu artykułu (slot `aside` w ArticleLayout), na węższych
+ * ekranach pod nim. Układ komórek zależy od szerokości panelu (container queries).
+ * Serwer renderuje stan z chwili buildu, więc bez JS strona też pokazuje liczby; <zl-debt-counter>
+ * przelicza je z lib/zadluzenie/model.ts i odświeża cyfry ok. 12 razy na sekundę
+ * (przy prefers-reduced-motion — raz, przy wczytaniu).
+ *
+ * Czytnik ekranu nie dostaje migających cyfr: liczba jest aria-hidden, a jej zaokrąglony
+ * odpowiednik w zdaniu sr-only odświeża się razem z wartościami pomocniczymi.
+ */
+import { DEBT, POPULATION } from '@/data/zadluzenie';
+import { mld, pct, perSecond, valueAt, YEAR_MS } from '@/lib/zadluzenie/model';
+import { formatDate, formatPL, typo } from '@/lib/format';
+
+const { params: p, last, overdueRate, lowSpan } = DEBT;
+const now = Date.now();
+const value = valueAt(p, now);
+const [int, frac] = formatPL(value, 2).split(',');
+const sec = perSecond(p, now);
+const lastDate = formatDate(new Date(last.end));
+---
+<section class="debt" id="licznik" aria-labelledby="licznik-title">
+  <zl-debt-counter class="debt__panel" data-params={JSON.stringify(p)}>
+    <div class="debt__top">
+      <p class="debt__live"><span class="debt__pulse" aria-hidden="true"></span>Na żywo · szacunek</p>
+      <a class="debt__how" href="#jak-liczymy">Jak to liczymy</a>
+    </div>
+
+    <h2 class="debt__label" id="licznik-title">Dług publicznych szpitali w tej chwili</h2>
+    <p class="debt__value" aria-hidden="true"><span data-d="int">{int}</span><span class="debt__frac" data-d="frac">,{frac}&nbsp;zł</span></p>
+    <p class="sr-only" data-d="sr">Około {mld(value)} mld zł według stanu na {formatDate(new Date(now))}.</p>
+    <p class="debt__rate">
+      rośnie o <strong data-d="sec">{formatPL(sec)}&nbsp;zł</strong> na sekundę,
+      czyli ok. <strong data-d="day">{formatPL((sec * 86400) / 1e6)}&nbsp;mln&nbsp;zł</strong> na dobę
+    </p>
+
+    <dl class="debt__cells">
+      <div class="debt__cell">
+        <dt>Za 12 miesięcy</dt>
+        <dd data-d="year">{mld(valueAt(p, now + YEAR_MS, p.low), 0)}–{mld(valueAt(p, now + YEAR_MS), 0)}&nbsp;mld&nbsp;zł</dd>
+        <p>{typo(`w tempie z ostatniego roku (+${pct(p.rate)}%) albo wolniej, jak średnio w latach ${lowSpan} (+${pct(p.low)}%)`)}</p>
+      </div>
+      <div class="debt__cell">
+        <dt>Na mieszkańca</dt>
+        <dd data-d="capita">{formatPL(value / p.population)}&nbsp;zł</dd>
+        <p>{typo(`${formatPL(POPULATION.value / 1e6, 2)} mln mieszkańców (GUS, ${POPULATION.date})`)}</p>
+      </div>
+      <div class="debt__cell">
+        <dt>Przeterminowane</dt>
+        <dd>{mld(last.overdue, 2)}&nbsp;mld&nbsp;zł</dd>
+        <p>{typo(`zobowiązania wymagalne SPZOZ na ${lastDate} — o ${pct(overdueRate, 0)}% więcej niż rok wcześniej`)}</p>
+      </div>
+      <div class="debt__cell">
+        <dt>Ostatni odczyt</dt>
+        <dd>{mld(last.total)}&nbsp;mld&nbsp;zł</dd>
+        <p>
+          {typo(`${lastDate}: SPZOZ ${mld(last.spzoz)} mld zł (MZ) + spółki i instytuty ok. ${mld(last.others ?? 0)} mld zł. Od tego dnia doliczyliśmy`)}{' '}
+          <span data-d="since">{mld(value - last.total)}&nbsp;mld&nbsp;zł</span>
+        </p>
+      </div>
+    </dl>
+  </zl-debt-counter>
+</section>
+
+<script>
+  import { mld, perSecond, valueAt, YEAR_MS, type DebtParams } from '@/lib/zadluzenie/model';
+  import { formatDate, formatPL } from '@/lib/format';
+
+  const NB = ' ';
+
+  class DebtCounter extends HTMLElement {
+    #frame = 0;
+    #timer = 0;
+
+    connectedCallback() {
+      const p: DebtParams = JSON.parse(this.dataset.params ?? '{}');
+      const slot = (key: string) => this.querySelector<HTMLElement>(`[data-d="${key}"]`);
+      const [int, frac, sr, sec, day, year, capita, since] =
+        ['int', 'frac', 'sr', 'sec', 'day', 'year', 'capita', 'since'].map(slot);
+      const set = (el: HTMLElement | null, text: string) => { if (el && el.textContent !== text) el.textContent = text; };
+
+      const digits = () => {
+        const [i, f] = formatPL(valueAt(p, Date.now()), 2).split(',');
+        set(int, i);
+        set(frac, `,${f}${NB}zł`);
+      };
+      // Wartości pomocnicze zmieniają się wolno — raz na sekundę wystarczy
+      const rest = () => {
+        const now = Date.now();
+        const v = valueAt(p, now);
+        const s = perSecond(p, now);
+        set(sec, `${formatPL(s)}${NB}zł`);
+        set(day, `${formatPL((s * 86400) / 1e6)}${NB}mln${NB}zł`);
+        set(year, `${mld(valueAt(p, now + YEAR_MS, p.low), 0)}–${mld(valueAt(p, now + YEAR_MS), 0)}${NB}mld${NB}zł`);
+        set(capita, `${formatPL(v / p.population)}${NB}zł`);
+        set(since, `${mld(v - p.base)}${NB}mld${NB}zł`);
+        set(sr, `Około ${mld(v)} mld zł według stanu na ${formatDate(new Date(now))}.`);
+      };
+
+      digits();
+      rest();
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      let last = 0;
+      const loop = (t: number) => {
+        if (t - last > 80) { digits(); last = t; }
+        this.#frame = requestAnimationFrame(loop);
+      };
+      this.#frame = requestAnimationFrame(loop);
+      this.#timer = window.setInterval(rest, 1000);
+    }
+
+    disconnectedCallback() {
+      cancelAnimationFrame(this.#frame);
+      clearInterval(this.#timer);
+    }
+  }
+
+  customElements.define('zl-debt-counter', DebtCounter);
+</script>
+
+<style>
+  /* Panel zawsze ciemny: lokalny schemat „dark”, więc tokeny w środku przyjmują wartości nocne */
+  .debt__panel {
+    display: block; position: relative; container-type: inline-size;
+    color-scheme: dark;
+    padding: clamp(22px, 3vw, 36px) clamp(20px, 3vw, 36px) 0;
+    background: var(--inverse); color: var(--text);
+    border: 1px solid var(--line);
+  }
+  .debt__panel::before { content: ""; position: absolute; top: -4px; left: -4px; width: 7px; height: 7px; background: var(--bad); }
+
+  .debt__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; }
+  .debt__live { display: flex; align-items: center; gap: 10px; font: 500 0.71875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--bad); }
+  .debt__pulse { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+  .debt__pulse::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--bad);
+    animation: debtPulse 1.6s var(--ease) infinite;
+  }
+  @keyframes debtPulse { from { transform: scale(1); opacity: .7; } to { transform: scale(3); opacity: 0; } }
+  .debt__how { font: 400 0.78125rem/1.3 var(--f-mono); color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s; }
+  .debt__how:hover { color: var(--ink); text-decoration-color: currentColor; }
+
+  .debt__label { margin-top: clamp(20px, 2.4vw, 32px); font: 400 clamp(1.0625rem, 1.5vw, 1.1875rem)/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--text-strong); }
+  /* liczba ma ok. 7,8 em szerokości — 12cqi mieści ją w panelu od telefonu po pełną szerokość */
+  .debt__value {
+    margin-top: 10px;
+    font: 300 clamp(1.75rem, 12cqi, 5.5rem)/1 var(--f-display);
+    letter-spacing: -0.045em; font-variant-numeric: tabular-nums;
+    color: var(--ink); white-space: nowrap;
+  }
+  .debt__frac { font-size: .5em; letter-spacing: -0.02em; color: var(--muted); }
+  .debt__rate { margin-top: 18px; font-size: 0.9375rem; line-height: 1.55; color: var(--text); }
+  .debt__rate strong { font-weight: 500; color: var(--bad); font-variant-numeric: tabular-nums; }
+
+  .debt__cells {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: clamp(24px, 3vw, 36px) calc(-1 * clamp(20px, 3vw, 36px)) 0;
+    border-top: 1px solid var(--line-2);
+  }
+  .debt__cell { padding: 18px clamp(20px, 3vw, 36px) 20px; }
+  .debt__cell + .debt__cell { border-left: 1px solid var(--line-2); }
+  .debt__cell dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .debt__cell dd { margin-top: 8px; font: 400 clamp(1.375rem, 2vw, 1.625rem)/1.1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .debt__cell p { margin-top: 8px; font-size: 0.8125rem; line-height: 1.5; color: var(--text); }
+
+  @container (max-width: 860px) {
+    .debt__cells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .debt__cell:nth-child(3) { border-left: 0; }
+    .debt__cell:nth-child(n+3) { border-top: 1px solid var(--line-2); }
+  }
+  /* Telefon: jedna kolumna, etykieta i kwota w jednym wierszu — panel nie rośnie ponad ekran */
+  @container (max-width: 460px) {
+    .debt__cells { grid-template-columns: minmax(0, 1fr); }
+    .debt__cell + .debt__cell { border-left: 0; border-top: 1px solid var(--line-2); }
+    .debt__cell { display: grid; grid-template-columns: auto auto; justify-content: space-between; align-items: baseline; gap: 0 12px; padding-block: 14px 16px; }
+    .debt__cell dd { margin-top: 0; font-size: 1.3125rem; text-align: right; }
+    .debt__cell p { grid-column: 1 / -1; margin-top: 6px; font-size: 0.78125rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .debt__pulse::after { animation: none; }
+  }
+</style>

@@ -1,0 +1,31 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import Icon from './Icon.astro';
+import { linkAttrs } from '@/lib/links';
+
+interface Props extends HTMLAttributes<'a'> {
+  href: string;
+  tone?: 'dark' | 'light';
+}
+
+const { href, tone = 'dark', class: className, ...rest } = Astro.props;
+---
+<a class:list={['link-arrow', `link-arrow--${tone}`, className]} {...linkAttrs(href)} {...rest}><slot /><Icon name="arrow" size={16} class="link-arrow__icon" /></a>
+
+<style>
+  .link-arrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font: 500 0.9375rem/1.2 var(--f-body);
+    color: var(--ink);
+    padding-block: 6px;
+    background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat;
+    transition: color .2s, opacity .2s;
+  }
+  .link-arrow__icon { transition: transform .3s var(--ease); }
+  .link-arrow:hover { color: var(--blue); }
+  .link-arrow:hover .link-arrow__icon { transform: translateX(3px); }
+  /* kolor-stały: początek — wariant tylko na tło zawsze ciemne lub kobaltowe */
+  .link-arrow--light { color: #fff; }
+  .link-arrow--light:hover { color: #fff; opacity: .85; }
+  /* kolor-stały: koniec */
+</style>

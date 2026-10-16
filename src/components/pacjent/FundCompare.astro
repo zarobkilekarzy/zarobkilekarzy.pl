@@ -1,0 +1,123 @@
+---
+/**
+ * Szkoda w szpitalu: Fundusz Kompensacyjny czy sąd. Najważniejsza decyzja na stronie,
+ * więc obie drogi stoją obok siebie, a haczyk (przyjęcie = rezygnacja z sądu) jest
+ * nad tabelą, nie pod nią. Niżej: warunki Funduszu, jak złożyć wniosek, uwagi.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import type { CompareRow } from '@/lib/pacjent/types';
+import { inline, sentence } from '@/lib/inline';
+import { typo } from '@/lib/format';
+
+interface Props {
+  compare: CompareRow[];
+  heads: [string, string];
+  catchBox: { title: string; text: string };
+  conditions: { title: string; text: string }[];
+  how: string[];
+  notes: string[];
+  amountsNote: string;
+}
+
+const { compare, heads, catchBox, conditions, how, notes, amountsNote } = Astro.props;
+---
+<div class="fund">
+  <aside class="fund__catch" aria-labelledby="catch-title">
+    <Icon name="alert" size={26} class="fund__catch-icon" />
+    <div>
+      <p class="fund__catch-label">Przeczytaj, zanim podpiszesz</p>
+      <h3 class="fund__catch-title" id="catch-title">{typo(catchBox.title)}</h3>
+      <p set:html={inline(catchBox.text)} />
+    </div>
+  </aside>
+
+  <div class="fund__table-wrap">
+    <table class="fund__table">
+      <caption class="sr-only">Porównanie: {heads[0]} i {heads[1]}</caption>
+      <thead>
+        <tr><th scope="col">{heads[0]}</th><th scope="col">{heads[1]}</th></tr>
+      </thead>
+      {compare.map((row) => (
+        <tbody>
+          <tr><th scope="rowgroup" colspan="2">{row.label}</th></tr>
+          <tr><td>{typo(row.a)}</td><td>{typo(row.b)}</td></tr>
+        </tbody>
+      ))}
+    </table>
+    <p class="fund__amounts">{typo(amountsNote)}</p>
+  </div>
+
+  <div class="fund__cols">
+    <section aria-labelledby="cond-title">
+      <h3 class="fund__h" id="cond-title">Fundusz rozpatrzy sprawę, gdy spełnione są wszystkie cztery warunki</h3>
+      <ol class="fund__cond">
+        {conditions.map((c) => (
+          <li>
+            <Icon name="check" size={20} />
+            <p><strong>{typo(sentence(c.title))}</strong> {typo(c.text)}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+    <section aria-labelledby="how-title">
+      <h3 class="fund__h" id="how-title">Jak złożyć wniosek i co dalej</h3>
+      <ul class="fund__how">
+        {how.map((h) => <li set:html={inline(h)} />)}
+      </ul>
+      <ul class="fund__notes">
+        {notes.map((n) => <li>{typo(n)}</li>)}
+      </ul>
+    </section>
+  </div>
+</div>
+
+<style>
+  .fund { display: grid; gap: clamp(2rem, 4vw, 3rem); }
+
+  .fund__catch {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1.25rem;
+    padding: 1.5rem 1.75rem; background: var(--amber-bg); border: 1px solid light-dark(#EBCB85, #5A4614); border-left: 4px solid var(--amber);
+  }
+  .fund__catch :global(.fund__catch-icon) { color: var(--amber); margin-top: 0.125rem; }
+  .fund__catch-label { font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+  .fund__catch-title { margin: 0.375rem 0 0.625rem; font: 500 1.375rem/1.25 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .fund__catch p:last-child { font-size: 1.0625rem; line-height: 1.6; color: var(--ink-2); max-width: 46em; }
+  .fund__catch :global(strong) { color: var(--ink); font-weight: 600; }
+
+  .fund__table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .fund__table thead th {
+    padding: 0 1rem 0.875rem 0; text-align: left; vertical-align: bottom;
+    font: 500 1.25rem/1.2 var(--f-display); letter-spacing: -0.015em; color: var(--ink);
+    border-bottom: 1px solid var(--ink);
+  }
+  .fund__table thead th + th, .fund__table td + td { padding-left: 1.5rem; border-left: 1px solid var(--line-2); }
+  .fund__table tbody th {
+    padding: 1rem 0 0.25rem; text-align: left;
+    font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text);
+  }
+  .fund__table td { padding: 0 1rem 1rem 0; vertical-align: top; font-size: 1rem; line-height: 1.55; color: var(--ink-2); border-bottom: 1px solid var(--line-2); }
+  .fund__amounts { margin-top: 0.75rem; font-size: 0.875rem; line-height: 1.5; color: var(--text); }
+
+  .fund__cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem clamp(40px, 5vw, 80px); }
+  .fund__h { padding-bottom: 0.75rem; border-bottom: 1px solid var(--ink); font: 500 1.125rem/1.35 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+
+  .fund__cond li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.75rem; padding: 0.875rem 0; border-bottom: 1px solid var(--line-2); }
+  .fund__cond :global(svg) { color: var(--blue); margin-top: 0.125rem; }
+  .fund__cond p, .fund__how li { font-size: 1rem; line-height: 1.6; color: var(--ink-2); }
+  .fund__cond strong, .fund__how :global(strong) { color: var(--ink); font-weight: 600; }
+
+  .fund__how li { padding: 0.875rem 0; border-bottom: 1px solid var(--line-2); }
+  .fund__notes { display: grid; gap: 0.625rem; margin-top: 1.25rem; padding: 1rem 1.25rem; background: var(--bg-soft); }
+  .fund__notes li { position: relative; padding-left: 1rem; font-size: 0.9375rem; line-height: 1.55; color: var(--text); }
+  .fund__notes li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 5px; height: 5px; background: var(--text); }
+
+  @media (max-width: 1024px) {
+    .fund__cols { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .fund__catch { grid-template-columns: minmax(0, 1fr); gap: 0.5rem; padding: 1.25rem; }
+    .fund__table thead th { font-size: 1rem; }
+    .fund__table thead th + th, .fund__table td + td { padding-left: 0.75rem; }
+    .fund__table td { padding-right: 0.5rem; font-size: 0.9375rem; }
+  }
+</style>

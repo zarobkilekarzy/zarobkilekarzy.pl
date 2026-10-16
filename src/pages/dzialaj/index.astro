@@ -1,0 +1,241 @@
+---
+/**
+ * /dzialaj/ — co czytelnik może zrobić, od najprostszego (karty), i narzędzie „Napisz do polityka” (#napisz).
+ * Treści: src/data/dzialaj.ts; etap projektu: src/data/projekt-ustawy.ts; adresaci: src/data/adresaci.ts.
+ * Stary adres narzędzia /dzialaj/napisz/ przekierowuje tutaj (src/data/seo/redirects.ts).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import StatusTrack from '@/components/blocks/StatusTrack.astro';
+import Button from '@/components/ui/Button.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import WriteTool from '@/components/dzialaj/WriteTool.astro';
+import { actions, dzialajPage, share, writeTool, writeToolOn } from '@/data/dzialaj';
+import { adresaci, stanNa } from '@/data/adresaci';
+import { currentStage, projekt, stages } from '@/data/projekt-ustawy';
+import { contact } from '@/data/o-serwisie';
+import { newsletterOn } from '@/data/newsletter';
+import { projektPdfPages } from '@/lib/projekt/download';
+import { formatDate, typo } from '@/lib/format';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: dzialajPage.title }];
+const seo: SeoInput = { title: dzialajPage.docTitle, description: dzialajPage.description, breadcrumbs: crumbs };
+
+const pdfPages = await projektPdfPages();
+// Dopisek dla prawników ma sens tylko, dopóki projekt przechodzi weryfikację prawną
+const legalReview = /weryfikacja prawna/i.test(currentStage.label);
+
+const shareUrl = new URL(share.path, Astro.site ?? 'https://zarobkilekarzy.pl').href;
+const u = encodeURIComponent(shareUrl);
+const shareTargets = [
+  { label: 'Udostępnij na X', href: `https://x.com/intent/post?text=${encodeURIComponent(share.text)}&url=${u}` },
+  { label: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${u}` },
+];
+
+const cards = [
+  'share', 'write', 'read', 'data', 'ask', 'support', ...(newsletterOn ? ['newsletter'] : []),
+] as const;
+const num = (key: (typeof cards)[number]) => String(cards.indexOf(key) + 1).padStart(2, '0');
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="act-top">
+    <PageHeader title={dzialajPage.title} lead={dzialajPage.lead} eyebrow={dzialajPage.eyebrow} crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Etap projektu', value: currentStage.label },
+          { label: 'Wersja', value: projekt.version },
+          { label: 'Adresy', value: `stan na ${formatDate(stanNa)}` },
+        ]}
+      />
+      <div slot="aside" class="act-route">
+        <p class="mono-label">Droga projektu do Sejmu</p>
+        <StatusTrack stages={stages} label="Etapy projektu ustawy" compact class="act-route__track" />
+        <LinkArrow href="/postulat/#droga">Co oznacza każdy etap</LinkArrow>
+      </div>
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom" id="co-mozesz" aria-labelledby="co-mozesz-title">
+    <h2 class="sr-only" id="co-mozesz-title">Co możesz zrobić</h2>
+    <ol class="acts">
+      <li class="act">
+        <p class="act__n">{num('share')}</p>
+        <h3 class="act__title">{actions.share.title}</h3>
+        <p class="act__text">{typo(actions.share.text)}</p>
+        <div class="act__links act__links--share">
+          {shareTargets.map((t) => (
+            <a class="act__chip" href={t.href} target="_blank" rel="noopener">{t.label}<span class="sr-only"> (otwiera się w nowej karcie)</span></a>
+          ))}
+          <button type="button" class="act__chip" data-copy-link={shareUrl} aria-describedby="act-share-status" hidden>Kopiuj link</button>
+        </div>
+        <p class="act__url"><span>{shareUrl.replace(/^https:\/\//, '')}</span><span class="act__status" id="act-share-status" role="status" aria-live="polite"></span></p>
+      </li>
+
+      {writeToolOn ? (
+        <li class="act act--main">
+          <p class="act__n">{num('write')}</p>
+          <h3 class="act__title">{actions.write.title}</h3>
+          <p class="act__text">{typo(actions.write.text)}</p>
+          <div class="act__links">
+            <Button href="#napisz" icon="mail">{actions.write.cta}</Button>
+          </div>
+          <p class="act__note">{adresaci.length} adresów · stan na {formatDate(stanNa)}</p>
+        </li>
+      ) : (
+        <li class="act act--off" id="napisz" aria-disabled="true">
+          <p class="act__n">{num('write')} <span class="act__soon">{actions.write.soonBadge}</span></p>
+          <h3 class="act__title">{actions.write.title}</h3>
+          <p class="act__text">{typo(actions.write.soon)}</p>
+        </li>
+      )}
+
+      <li class="act">
+        <p class="act__n">{num('read')}</p>
+        <h3 class="act__title">{actions.read.title}</h3>
+        <p class="act__text">{typo(actions.read.text)}</p>
+        {legalReview && <p class="act__text act__text--small">{typo(actions.read.legal)}</p>}
+        <div class="act__links act__links--col">
+          <LinkArrow href={projekt.href}>Przeczytaj projekt</LinkArrow>
+          <LinkArrow href={projekt.pdf.href}>PDF ({pdfPages})</LinkArrow>
+          {legalReview && currentStage.href && <LinkArrow href={currentStage.href}>Załącznik B: pytania prawne</LinkArrow>}
+        </div>
+      </li>
+
+      <li class="act">
+        <p class="act__n">{num('data')}</p>
+        <h3 class="act__title">{actions.data.title}</h3>
+        <p class="act__text">{typo(actions.data.text)}</p>
+        <ul class="act__list">
+          {actions.data.wanted.map((w) => <li>{typo(w)}</li>)}
+        </ul>
+        <div class="act__links">
+          <LinkArrow href={`mailto:${contact.email}`}>{contact.email}</LinkArrow>
+        </div>
+      </li>
+
+      <li class="act">
+        <p class="act__n">{num('ask')}</p>
+        <h3 class="act__title">{actions.ask.title}</h3>
+        <p class="act__text">{typo(actions.ask.text)}</p>
+        <div class="act__links">
+          <LinkArrow href={actions.ask.link.href}>{actions.ask.link.label}</LinkArrow>
+        </div>
+      </li>
+
+      <li class="act">
+        <p class="act__n">{num('support')}</p>
+        <h3 class="act__title">{actions.support.title}</h3>
+        <p class="act__text">{typo(actions.support.text)}</p>
+        <div class="act__links">
+          <LinkArrow href={actions.support.link.href} target="_blank" rel="noopener">{actions.support.link.label}</LinkArrow>
+        </div>
+      </li>
+
+      {newsletterOn && (
+        <li class="act">
+          <p class="act__n">{num('newsletter')}</p>
+          <h3 class="act__title">{actions.newsletter.title}</h3>
+          <p class="act__text">{typo(actions.newsletter.text)}</p>
+          <div class="act__links">
+            <LinkArrow href="#newsletter-email">{actions.newsletter.cta}</LinkArrow>
+          </div>
+        </li>
+      )}
+    </ol>
+  </Section>
+
+  {writeToolOn && (
+  <Section tone="soft" id="napisz" aria-labelledby="napisz-title">
+    <SectionHead eyebrow={writeTool.eyebrow} title={writeTool.title} id="napisz-title" aside={writeTool.aside} />
+    <WriteTool />
+
+    <div class="act-notes">
+      <section aria-labelledby="skad-adresy">
+        <h3 id="skad-adresy" class="act-notes__title">{writeTool.sourcesTitle}</h3>
+        <p>{typo(writeTool.sources)} {typo(`Lista: ${adresaci.length} adresów, stan na ${formatDate(stanNa)}. Jeśli adres przestał działać albo ktoś zmienił funkcję, napisz na`)} <a href={`mailto:${contact.email}`}>{contact.email}</a>.</p>
+      </section>
+      <section aria-labelledby="prywatnosc-listu">
+        <h3 id="prywatnosc-listu" class="act-notes__title">{writeTool.privacyTitle}</h3>
+        <p>{typo(writeTool.privacy)} Więcej w <a href="/prywatnosc/">polityce prywatności</a>.</p>
+      </section>
+    </div>
+  </Section>
+  )}
+</BaseLayout>
+
+<script>
+  import { copyText } from '@/scripts/clipboard';
+
+  // „Kopiuj link” w karcie „Udostępnij” — bez JS adres stoi pod przyciskami zwykłym tekstem
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy-link]')) {
+    const out = document.getElementById(button.getAttribute('aria-describedby') ?? '');
+    button.hidden = false;
+    button.addEventListener('click', async () => {
+      const ok = await copyText(button.dataset.copyLink ?? location.href);
+      if (out) out.textContent = ok ? 'Skopiowano link' : 'Nie udało się skopiować — zaznacz adres obok';
+    });
+  }
+</script>
+
+<style>
+  .act-top { padding-top: clamp(32px, 4vw, 56px); }
+  .act-route { display: grid; gap: 16px; align-content: start; justify-items: start; }
+  .act-route__track { justify-self: stretch; margin-block: 4px; }
+
+  /* ---------- Karty działań ---------- */
+  .acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; counter-reset: none; }
+  .act {
+    display: flex; flex-direction: column; padding: clamp(22px, 2.4vw, 32px);
+    border: 1px solid var(--line-2); background: var(--surface);
+  }
+  .act--main { background: linear-gradient(90deg, var(--blue) 0 4px, transparent 4px), var(--surface); }
+  .act__n { font: 500 0.75rem/1 var(--f-mono); letter-spacing: .06em; color: var(--blue); }
+  .act__title { margin-top: 16px; font: 400 clamp(1.375rem, 2vw, 1.625rem)/1.15 var(--f-display); letter-spacing: -0.025em; color: var(--ink); }
+  .act__text { margin-top: 12px; font-size: 0.96875rem; line-height: 1.6; color: var(--text-strong); }
+  .act__text--small { font-size: 0.90625rem; color: var(--text); }
+  .act__list { margin-top: 10px; display: grid; gap: 6px; }
+  .act__list li { position: relative; padding-left: 16px; font-size: 0.90625rem; line-height: 1.55; color: var(--text); }
+  .act__list li::before { content: ''; position: absolute; left: 0; top: .7em; width: 6px; height: 1px; background: var(--muted); }
+  .act__links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-top: auto; padding-top: 24px; }
+  .act__links--col { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .act__links--share { gap: 8px; }
+  .act__chip {
+    display: inline-flex; align-items: center; height: 40px; padding: 0 14px;
+    border: 1px solid var(--line-2); background: transparent;
+    font: 500 0.875rem/1 var(--f-body); color: var(--ink);
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .act__chip:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-50); }
+  .act__url { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 12px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+  .act__status { color: var(--ok); }
+  .act__note { margin-top: 14px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  /* narzędzie wyłączone (writeToolOn = false): karta wyszarzona, bez przycisku */
+  .act--off { background: var(--bg-soft); border-style: dashed; }
+  .act--off .act__n, .act--off .act__title, .act--off .act__text { color: var(--muted); }
+  .act__soon { margin-left: 8px; padding: 2px 6px; border: 1px solid var(--line-2); font: 500 0.6875rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); vertical-align: 1px; }
+
+  /* ---------- Pod narzędziem ---------- */
+  .act-notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px clamp(32px, 4vw, 64px); margin-top: clamp(40px, 5vw, 64px); padding-top: 24px; border-top: 1px solid var(--line-2); }
+  .act-notes__title { font: 500 1.0625rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); margin-bottom: 8px; }
+  .act-notes p { font-size: 0.9375rem; line-height: 1.65; color: var(--text); max-width: 62ch; }
+  .act-notes a { color: var(--blue); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .act-notes a:hover { text-decoration-thickness: 2px; }
+
+  /* pięć kart w trzech kolumnach: ostatnia zajmuje dwa miejsca zamiast zostawiać dziurę */
+  @media (min-width: 1025px) {
+    .act:last-child:nth-child(3n + 2) { grid-column: span 2; }
+  }
+  @media (max-width: 1024px) {
+    .acts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 1024px) and (min-width: 721px) {
+    .act:last-child:nth-child(odd) { grid-column: span 2; }
+  }
+  @media (max-width: 720px) {
+    .acts, .act-notes { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

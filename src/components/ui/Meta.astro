@@ -1,0 +1,28 @@
+---
+/** Kategoria + data (+ opcjonalny dopisek) nad tytułem materiału. */
+import type { Category } from '@/types';
+import { formatDate, isoDate } from '@/lib/format';
+
+interface Props {
+  category: Category;
+  date?: Date;
+  extra?: string;
+}
+
+/** Kategorie wyróżnione kolorem tekstu zamiast akcentu (akty prawne). */
+const NEUTRAL: Category[] = ['Projekt ustawy'];
+
+const { category, date, extra } = Astro.props;
+---
+<p class="meta">
+  <span class:list={['meta__cat', { 'meta__cat--neutral': NEUTRAL.includes(category) }]}>{category}</span>
+  {date && <time datetime={isoDate(date)}>{formatDate(date)}</time>}
+  {extra && <span>{extra}</span>}
+</p>
+
+<style>
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font: 400 0.75rem/1.2 var(--f-mono); color: var(--muted); letter-spacing: .02em; }
+  .meta__cat { color: var(--blue); font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
+  .meta__cat--neutral { color: var(--ink); }
+  .meta__cat::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 8px; background: currentColor; vertical-align: 1px; }
+</style>

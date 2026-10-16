@@ -1,0 +1,93 @@
+---
+/**
+ * Tekst projektu ustawy w układzie aktu prawnego. Każdy dodawany ustęp ma kotwicę (#ust-5)
+ * i przycisk „§”, który kopiuje link do cytatu — adres wskazuje ustęp, a nie stronę.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { bill } from '@/data/projekt-ustawy';
+import { typo } from '@/lib/format';
+
+type Props = HTMLAttributes<'div'>;
+const { class: className, ...rest } = Astro.props;
+const [kind, date, subject] = bill.heading;
+---
+<div class:list={['bill', className]} {...rest}>
+  <header class="bill__head">
+    <p class="bill__kind">{kind}</p>
+    <p>{date}</p>
+    <p class="bill__subject">{subject}</p>
+  </header>
+
+  {bill.articles.map((art) => (
+    <section class="bill__art" id={art.id}>
+      <p><strong>{art.label}</strong> {typo(art.text)}</p>
+      {art.points?.map((point) => (
+        <div class="bill__point">
+          <p><span class="bill__pl">{point.label}</span> {typo(point.intro)}</p>
+          {point.units.map((unit, i) => (
+            <p class="bill__unit" id={unit.id}>
+              <a class="bill__cite" href={`#${unit.id}`} data-cite aria-label={`Kopiuj link do ust. ${unit.label.replace(/\.$/, '')}`}>§</a>
+              {i === 0 && '„'}<strong>{unit.label}</strong> {typo(unit.text)}{i === point.units.length - 1 && `”${point.end}`}
+            </p>
+          ))}
+        </div>
+      ))}
+    </section>
+  ))}
+</div>
+
+<script>
+  // „§” przy ustępie: adres z kotwicą trafia do schowka i do paska adresu
+  document.addEventListener('click', async (e) => {
+    const link = (e.target as Element).closest<HTMLAnchorElement>('a[data-cite]');
+    if (!link) return;
+    e.preventDefault();
+    history.replaceState(null, '', link.hash);
+    try {
+      await navigator.clipboard.writeText(location.href);
+      link.dataset.copied = '';
+      setTimeout(() => delete link.dataset.copied, 1600);
+    } catch {
+      // bez dostępu do schowka zostaje adres w pasku przeglądarki
+    }
+  });
+</script>
+
+<style>
+  /* Tekst ustawy to tekst do czytania — szerokość jak akapity w Prose (--measure), nie jak ilustracje */
+  .bill { max-width: var(--measure, none); padding: clamp(24px, 4vw, 48px); border: 1px solid var(--line-2); background: var(--surface); font-size: 1rem; line-height: 1.75; color: var(--ink-2); }
+  .bill__head { margin-bottom: 32px; text-align: center; }
+  .bill__kind { font: 500 0.8125rem/1.4 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
+  .bill__subject { margin-top: 4px; font-weight: 600; color: var(--ink); }
+
+  .bill__art { scroll-margin-top: calc(var(--header-h) + 24px); }
+  .bill__art + .bill__art { margin-top: 24px; }
+  .bill strong { color: var(--ink); font-weight: 600; }
+  .bill__point { margin-top: 16px; padding-left: 1.5em; }
+  .bill__pl { color: var(--ink); }
+
+  .bill__unit {
+    position: relative; margin-top: 12px; padding: 8px 12px 8px 2em;
+    scroll-margin-top: calc(var(--header-h) + 24px);
+    transition: background-color 1.2s;
+  }
+  /* ustęp, do którego prowadził link — krótkie wyróżnienie */
+  .bill__unit:target { background: var(--blue-50); transition: none; }
+
+  .bill__cite {
+    position: absolute; left: 0; top: 8px; width: 1.5em;
+    font: 500 0.875rem/1.75 var(--f-mono); color: var(--line-2); text-align: center;
+    transition: color .2s;
+  }
+  .bill__unit:hover .bill__cite, .bill__cite:focus-visible { color: var(--blue); }
+  .bill__cite[data-copied]::after {
+    content: "Skopiowano link"; position: absolute; left: 0; bottom: 100%; white-space: nowrap;
+    padding: 4px 8px; background: var(--inverse-2); color: #fff; font-size: 0.6875rem; line-height: 1.3;
+  }
+
+  @media (max-width: 720px) {
+    .bill { font-size: 0.96875rem; }
+    .bill__point { padding-left: 0; }
+    .bill__cite { color: var(--muted); }
+  }
+</style>

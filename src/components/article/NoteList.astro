@@ -1,0 +1,35 @@
+---
+/**
+ * Lista „Przypisy” na stronie spoza MDX (lib/notes) — te same znaczniki, które wtyczka
+ * lib/markdown/footnotes.ts składa z przypisów GFM, więc wygląda i działa jak w artykułach.
+ * Jedna lista na stronę (id „przypisy” i „footnote-label”).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { inline } from '@/lib/inline';
+import { noteId, noteRefId, type Notes } from '@/lib/notes';
+import { FOOTNOTES_HINT } from '@/lib/markdown/footnotes';
+
+interface Props extends HTMLAttributes<'details'> {
+  notes: Notes;
+}
+
+const { notes, class: className, ...rest } = Astro.props;
+---
+{notes.length > 0 && (
+  <details class:list={['footnotes', className]} id="przypisy" {...rest}>
+    <summary class="footnotes__head">
+      <span class="footnotes__title" id="footnote-label" role="heading" aria-level="2">Przypisy <span>{notes.length}</span></span>
+      <span class="footnotes__hint">{FOOTNOTES_HINT}</span>
+    </summary>
+    <ol>
+      {notes.map((note) => (
+        <li id={noteId(note.id)}>
+          <p>
+            <Fragment set:html={inline(note.text)} />{' '}
+            <a data-footnote-backref aria-label={`Wróć do miejsca w tekście (przypis ${note.n})`} class="data-footnote-backref" href={`#${noteRefId(note.id)}`}>↩</a>
+          </p>
+        </li>
+      ))}
+    </ol>
+  </details>
+)}

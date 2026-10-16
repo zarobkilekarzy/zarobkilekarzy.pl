@@ -1,0 +1,95 @@
+---
+/**
+ * Spis treści z nagłówków h2 artykułu. Na szerokim ekranie przyklejony z boku
+ * i podświetla bieżącą sekcję; na wąskim — rozwijany (<details>) nad treścią.
+ */
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+  title?: string;
+}
+
+const { headings, title = 'W tym artykule' } = Astro.props;
+const items = headings.filter((h) => h.depth === 2);
+---
+{items.length > 0 && (
+  <zl-toc class="toc">
+    <details open>
+      <summary class="toc__title">{title}</summary>
+      <ol>
+        {items.map((h) => (
+          <li><a href={`#${h.slug}`}>{h.text}</a></li>
+        ))}
+      </ol>
+    </details>
+  </zl-toc>
+)}
+
+<script>
+  // Podświetla w spisie sekcję, której nagłówek ostatnio minął górę ekranu
+  class ZlToc extends HTMLElement {
+    connectedCallback() {
+      const links = [...this.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')];
+      const targets = links
+        .map((a) => document.getElementById(decodeURIComponent(a.hash.slice(1))))
+        .filter((el): el is HTMLElement => Boolean(el));
+      if (!targets.length) return;
+
+      const setActive = () => {
+        const offset = window.innerHeight * 0.25;
+        let current = 0;
+        targets.forEach((el, i) => {
+          if (el.getBoundingClientRect().top <= offset) current = i;
+        });
+        links.forEach((a, i) => a.toggleAttribute('aria-current', i === current));
+      };
+
+      let ticking = false;
+      window.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => { setActive(); ticking = false; });
+      }, { passive: true });
+      setActive();
+
+      // Na wąskim ekranie spis jest zwinięty domyślnie
+      const details = this.querySelector('details');
+      if (details && window.matchMedia('(max-width: 1024px)').matches) details.open = false;
+    }
+  }
+
+  if (!customElements.get('zl-toc')) customElements.define('zl-toc', ZlToc);
+</script>
+
+<style>
+  zl-toc { display: block; }
+  .toc__title {
+    list-style: none; cursor: default;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    padding-bottom: 14px; border-bottom: 1px solid var(--ink);
+  }
+  .toc__title::-webkit-details-marker { display: none; }
+  ol { counter-reset: toc; }
+  li { counter-increment: toc; border-bottom: 1px solid var(--line); }
+  a {
+    position: relative; display: grid; grid-template-columns: 28px 1fr; gap: 4px;
+    padding: 12px 0; font-size: 0.875rem; line-height: 1.4; color: var(--text);
+    transition: color .2s;
+  }
+  a::before { content: counter(toc, decimal-leading-zero); font: 400 0.6875rem/1.9 var(--f-mono); color: var(--muted); }
+  a::after { content: ""; position: absolute; left: -16px; top: 12px; bottom: 12px; width: 2px; background: var(--blue); opacity: 0; transition: opacity .2s; }
+  a:hover { color: var(--blue); }
+  a[aria-current] { color: var(--ink); font-weight: 500; }
+  a[aria-current]::before { color: var(--blue); }
+  a[aria-current]::after { opacity: 1; }
+
+  @media (max-width: 1024px) {
+    .toc { border: 1px solid var(--line-2); padding: 14px 18px; }
+    .toc__title { cursor: pointer; padding-bottom: 0; border-bottom: 0; display: flex; justify-content: space-between; }
+    .toc__title::after { content: "+"; font-size: 1rem; color: var(--blue); }
+    details[open] .toc__title::after { content: "–"; }
+    details[open] .toc__title { padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+    a::after { display: none; }
+  }
+</style>

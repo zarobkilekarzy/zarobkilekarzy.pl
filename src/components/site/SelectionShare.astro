@@ -1,0 +1,147 @@
+---
+/**
+ * Link do zaznaczonego fragmentu. Po zaznaczeniu tekstu w treści strony (<main>) przy zaznaczeniu
+ * pojawia się pasek „Kopiuj link” / „Udostępnij”. Link prowadzi do sekcji i niesie dyrektywę fragmentu
+ * tekstu (#sekcja:~:text=…): odbiorca widzi ten fragment podkreślony (::target-text w styles/base.css),
+ * a gdy tekst zdążył się zmienić — trafia przynajmniej do właściwej sekcji.
+ * Generator dyrektywy: scripts/text-fragment.ts; kotwica sekcji: scripts/anchors.ts.
+ * Obszar bez paska (np. interaktywne narzędzie): atrybut data-no-share.
+ */
+import Icon from '@/components/ui/Icon.astro';
+---
+<zl-selection-share class="qs" role="toolbar" aria-label="Zaznaczony fragment" hidden>
+  <button type="button" class="qs__btn" data-copy>
+    <Icon name="link" size={16} /><span data-label>Kopiuj link</span>
+  </button>
+  <button type="button" class="qs__btn" data-share hidden>
+    <Icon name="share" size={16} /><span>Udostępnij</span>
+  </button>
+</zl-selection-share>
+
+<script>
+  import { anchorBefore, pageUrl } from '@/scripts/anchors';
+  import { textDirective } from '@/scripts/text-fragment';
+  import { announce, copyText } from '@/scripts/clipboard';
+
+  const EXCLUDE = 'input, textarea, select, [contenteditable], dialog, [data-no-share]';
+  const QUOTE_MAX = 280;
+
+  class ZlSelectionShare extends HTMLElement {
+    #url = '';
+    #quote = '';
+    #timer = 0;
+    #pointerDown = false;
+
+    connectedCallback() {
+      const copy = this.querySelector<HTMLButtonElement>('[data-copy]')!;
+      const label = copy.querySelector<HTMLElement>('[data-label]')!;
+      const share = this.querySelector<HTMLButtonElement>('[data-share]')!;
+      share.hidden = !('share' in navigator);
+
+      // Klik w pasek nie może zgubić zaznaczenia ani zabrać fokusu
+      this.addEventListener('pointerdown', (e) => e.preventDefault());
+
+      copy.addEventListener('click', async () => {
+        const ok = await copyText(this.#url);
+        label.textContent = ok ? 'Skopiowano ✓' : 'Nie udało się';
+        announce(ok ? 'Link do zaznaczonego fragmentu skopiowany' : 'Nie udało się skopiować linku');
+        setTimeout(() => {
+          label.textContent = 'Kopiuj link';
+          this.hide();
+        }, 1400);
+      });
+
+      share.addEventListener('click', async () => {
+        const quote = this.#quote.length > QUOTE_MAX ? `${this.#quote.slice(0, QUOTE_MAX).trimEnd()}…` : this.#quote;
+        try {
+          await navigator.share({ title: document.title, text: `„${quote}”`, url: this.#url });
+          this.hide();
+        } catch { /* okno udostępniania zamknięte */ }
+      });
+
+      // Myszą: pasek po puszczeniu przycisku. Klawiaturą i palcem (uchwyty zaznaczenia): po zmianie zaznaczenia.
+      document.addEventListener('pointerdown', (e) => {
+        if (this.contains(e.target as Node)) return;
+        this.#pointerDown = true;
+        this.hide();
+      });
+      const release = () => { this.#pointerDown = false; this.schedule(); };
+      document.addEventListener('pointerup', release);
+      document.addEventListener('pointercancel', release);
+      document.addEventListener('selectionchange', () => {
+        if (getSelection()?.isCollapsed) this.hide();
+        else if (!this.#pointerDown) this.schedule();
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.hide(); });
+      window.addEventListener('resize', () => this.hide());
+    }
+
+    schedule() {
+      clearTimeout(this.#timer);
+      this.#timer = window.setTimeout(() => this.update(), 180);
+    }
+
+    hide() {
+      clearTimeout(this.#timer);
+      this.hidden = true;
+    }
+
+    update() {
+      const selection = getSelection();
+      const root = document.querySelector('main');
+      if (!selection || selection.isCollapsed || !selection.rangeCount || !root) return this.hide();
+      const range = selection.getRangeAt(0);
+      const host = range.commonAncestorContainer;
+      const el = host instanceof Element ? host : host.parentElement;
+      if (!el || !root.contains(el) || el.closest(EXCLUDE)) return this.hide();
+
+      const directive = textDirective(selection, root);
+      if (!directive) return this.hide();
+      this.#url = pageUrl(anchorBefore(range.startContainer), directive);
+      this.#quote = selection.toString().replace(/\s+/g, ' ').trim();
+      this.place(range.getBoundingClientRect());
+    }
+
+    /** Nad zaznaczeniem (myszą) albo pod nim (palcem — nad zaznaczeniem jest menu systemu). */
+    place(box: DOMRect) {
+      if (!box.width && !box.height) return this.hide();
+      this.hidden = false;
+      const { width, height } = this.getBoundingClientRect();
+      const gap = 10;
+      const header = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 0;
+      const touch = matchMedia('(pointer: coarse)').matches;
+      let top = touch ? box.bottom + gap * 2 : box.top - height - gap;
+      if (top < header + gap) top = box.bottom + gap;
+      top = Math.min(top, innerHeight - height - gap);
+      const left = Math.min(Math.max(box.left + box.width / 2 - width / 2, gap), innerWidth - width - gap);
+      this.style.top = `${top + scrollY}px`;
+      this.style.left = `${left + scrollX}px`;
+    }
+  }
+
+  if (!customElements.get('zl-selection-share')) customElements.define('zl-selection-share', ZlSelectionShare);
+</script>
+
+<style>
+  /* Pływający pasek na --inverse-2 — w obu motywach ciemny, tekst zawsze biały */
+  .qs {
+    position: absolute; z-index: 60; display: flex;
+    background: var(--inverse-2); color: #fff; /* kolor-stały: pasek na --inverse-2 */
+    box-shadow: 0 10px 28px rgba(4, 11, 27, .25);
+  }
+  .qs::before {
+    content: ""; position: absolute; top: -3px; left: -3px; width: 6px; height: 6px; background: var(--blue-fill);
+  }
+  .qs__btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px;
+    font: 500 0.8125rem/1.2 var(--f-body); color: inherit; white-space: nowrap;
+    transition: background .15s;
+  }
+  .qs__btn + .qs__btn { border-left: 1px solid rgba(255, 255, 255, .16); }
+  .qs__btn:hover { background: rgba(255, 255, 255, .1); }
+  .qs__btn:focus-visible { outline-color: #fff; outline-offset: -3px; } /* kolor-stały: fokus na ciemnym pasku */
+
+  @media (pointer: coarse) {
+    .qs__btn { padding: 13px 16px; font-size: 0.875rem; }
+  }
+</style>

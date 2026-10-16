@@ -1,0 +1,30 @@
+---
+/**
+ * Grupa przycisków i linków.
+ * stack="mobile" — przyciski na pełną szerokość na telefonie
+ * stack="always" — zawsze w kolumnie (np. obok tekstu w ramce)
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'div'> {
+  stack?: 'none' | 'mobile' | 'always';
+  gap?: 'sm' | 'lg';
+}
+
+const { stack = 'none', gap = 'lg', class: className, ...rest } = Astro.props;
+---
+<div class:list={['actions', `actions--${stack}`, `actions--gap-${gap}`, className]} {...rest}><slot /></div>
+
+<style>
+  .actions { display: flex; flex-wrap: wrap; align-items: center; }
+  .actions--gap-lg { gap: 20px 32px; }
+  .actions--gap-sm { gap: 12px; }
+
+  .actions--always { flex-direction: column; align-items: stretch; max-width: 340px; width: 100%; }
+  .actions--always > :global(.link-arrow) { align-self: flex-start; margin-top: 8px; }
+
+  @media (max-width: 720px) {
+    .actions--mobile > :global(.btn) { width: 100%; }
+    .actions--always { max-width: none; }
+  }
+</style>

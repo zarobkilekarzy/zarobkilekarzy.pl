@@ -1,0 +1,95 @@
+---
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import Card from '@/components/ui/Card.astro';
+import Flag from '@/components/ui/Flag.astro';
+import Counter from '@/components/ui/Counter.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import RatioDots from '@/components/blocks/RatioDots.astro';
+import MiniStats from '@/components/blocks/MiniStats.astro';
+import LinkIndex from '@/components/blocks/LinkIndex.astro';
+import { waitingTimes } from '@/data/home';
+import { HEADLINE } from '@/data/zarobki-ujawnione-listy';
+import { formatPL } from '@/lib/format';
+import { dataSections } from '@/data/navigation';
+import { withTargets } from '@/lib/content';
+
+// Adresy i tytuły zestawień z kolekcji; `label` skraca tytuł w spisie
+const dataLinks = (await withTargets(dataSections)).map(({ label, target, ...link }) => ({ ...link, label: label ?? target }));
+---
+<Section id="dane" aria-labelledby="dane-title">
+  <SectionHead
+    eyebrow="Dane"
+    title="Liczby, które warto znać"
+    id="dane-title"
+    aside="Wybrane wskaźniki z naszych działów danych. Każdy wykres prowadzi do pełnego zestawienia z metodologią i linkami do źródeł."
+  />
+
+  <div class="bento">
+    <Card class="bento__chart" label="Czas oczekiwania · NFZ" title="Ile miesięcy czeka pacjent na wizytę u specjalisty">
+      <BarChart
+        {...waitingTimes}
+        unit="mies."
+        caption="Średni czas oczekiwania na poradę specjalisty w ramach NFZ: neurochirurg 13,1 miesiąca, endokrynolog 12,9, gastroenterolog 9,9, kardiolog 4,6, okulista 3,0. Średnia dla wszystkich specjalności: 4,2 miesiąca."
+      />
+      <Fragment slot="footer">
+        <p class="source"><Flag accuracy="exact" />Źródło: Barometr Fundacji Watch Health Care 2025</p>
+        <LinkArrow href="/dane/kolejki/">Pieniądze a kolejka</LinkArrow>
+      </Fragment>
+    </Card>
+
+    <Card class="bento__side" label={`Jawne listy płac · ${HEADLINE.listsLabel}`} title={`${HEADLINE.over500kPct}% rozliczeń przekracza 500 tys. zł rocznie`}>
+      <RatioDots total={HEADLINE.over500kOneIn} class="ratio" />
+      <MiniStats
+        items={[
+          { label: 'Rozliczeń', value: formatPL(HEADLINE.positions) },
+          { label: 'Mediana', value: `~${HEADLINE.medianK} tys. zł` },
+          { label: 'Ponad 1 mln zł', value: formatPL(HEADLINE.over1m) },
+        ]}
+      />
+    </Card>
+
+    <Card class="bento__side" tone="blue" label="Rekordowe rozliczenia">
+      <p class="record"><Counter value={316079} /><small>zł / mies.</small></p>
+      <p class="record__text">Najwyższy udokumentowany kontrakt — w&nbsp;regionie, którego szpitale mają 1,4&nbsp;mld&nbsp;zł długu. Bez nazwisk, z&nbsp;dokumentów.</p>
+      <LinkArrow href="/dane/rekordy/" tone="light" class="record__link">Wszystkie rekordy</LinkArrow>
+    </Card>
+  </div>
+
+  <LinkIndex title="Działy danych" links={dataLinks} class="data-sections" />
+  <LinkArrow href="/dane/" class="data-all">Wszystkie zestawienia danych</LinkArrow>
+</Section>
+
+<style>
+  .bento { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: auto auto; gap: 24px; }
+  .bento__chart { grid-column: span 7; grid-row: span 2; }
+  .bento__side { grid-column: span 5; }
+
+  .source { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .ratio { margin-bottom: 28px; }
+
+  .record {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+    margin: 18px 0 16px;
+    font: 300 clamp(3rem, 5vw, 4.25rem)/1 var(--f-display); letter-spacing: -0.05em; color: #fff; /* kolor-stały: w karcie tone="blue" (--blue-fill) */
+    font-variant-numeric: tabular-nums;
+  }
+  .record small { font: 400 0.9375rem/1 var(--f-body); letter-spacing: 0; color: rgba(255, 255, 255, .8); }
+  .record__text { font-size: 0.9375rem; line-height: 1.6; max-width: 40ch; margin-bottom: 24px; }
+  .record__link { margin-top: auto; align-self: flex-start; }
+
+  .data-sections { margin-top: 56px; }
+  .data-all { margin-top: 28px; }
+
+  @media (max-width: 1024px) {
+    .bento { grid-template-columns: 1fr 1fr; }
+    .bento__chart { grid-column: 1 / -1; grid-row: auto; }
+    .bento__side { grid-column: span 1; }
+  }
+
+  @media (max-width: 720px) {
+    .bento { grid-template-columns: 1fr; gap: 16px; }
+    .bento__side { grid-column: auto; }
+  }
+</style>

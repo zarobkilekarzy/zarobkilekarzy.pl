@@ -1,0 +1,64 @@
+---
+/**
+ * Dwie listy obok siebie: „tak” (ptaszek) i „nie” (krzyżyk) — np. co jest jawne, a co chronione.
+ * Każda kolumna ma tytuł i krótkie uzasadnienie; poniżej 720 px — jedna pod drugą.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import { typo } from '@/lib/format';
+
+interface Column {
+  title: string;
+  note?: string;
+  items: string[];
+}
+
+interface Props extends HTMLAttributes<'div'> {
+  yes: Column;
+  no: Column;
+}
+
+const { yes, no, class: className, ...rest } = Astro.props;
+const columns = [
+  { ...yes, tone: 'yes', icon: 'check' },
+  { ...no, tone: 'no', icon: 'close' },
+] as const;
+---
+<div class:list={['two', className]} {...rest}>
+  {columns.map((col) => (
+    <section class:list={['two__col', `two__col--${col.tone}`]} data-reveal>
+      <header class="two__head">
+        <h3>{typo(col.title)}</h3>
+        {col.note && <p>{typo(col.note)}</p>}
+      </header>
+      <ul>
+        {col.items.map((item) => (
+          <li><Icon name={col.icon} size={16} class="two__icon" />{typo(item)}</li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</div>
+
+<style>
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--line-2); }
+  .two__col { padding: clamp(24px, 3vw, 36px); }
+  .two__col + .two__col { border-left: 1px solid var(--line-2); }
+  .two__col--yes { background: linear-gradient(var(--blue) 0 0) 0 0 / 100% 3px no-repeat, var(--surface); }
+  .two__col--no { background: linear-gradient(var(--ink) 0 0) 0 0 / 100% 3px no-repeat, var(--bg-soft); }
+
+  .two__head { padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  h3 { font: 500 1.375rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .two__head p { margin-top: 4px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+
+  li { display: grid; grid-template-columns: 16px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 0.96875rem; line-height: 1.5; color: var(--ink-2); }
+  li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .two__icon { margin-top: 3px; }
+  .two__col--yes .two__icon { color: var(--blue); }
+  .two__col--no .two__icon { color: var(--muted); }
+
+  @media (max-width: 720px) {
+    .two { grid-template-columns: minmax(0, 1fr); }
+    .two__col + .two__col { border-left: 0; border-top: 1px solid var(--line-2); }
+  }
+</style>

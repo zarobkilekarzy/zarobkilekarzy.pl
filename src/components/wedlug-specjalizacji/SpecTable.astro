@@ -1,0 +1,175 @@
+---
+/**
+ * Zestawienie 29 dziedzin w dwóch grupach (poza listą priorytetów / priorytetowe). Pensja rezydenta
+ * jest wspólna dla całej grupy, więc stoi w nagłówku grupy, a nie w każdym wierszu. Kolumny: stawka
+ * z ogłoszeń, miejsca rezydenckie i pozarezydenckie, kandydaci na miejsce. Każda kolumna ma inne
+ * źródło — lista źródeł z linkami jest pod tabelą (podpis Figure ma tylko jeden link).
+ * Dane: data/wedlug-specjalizacji.ts. W wąskim kontenerze wiersz = nazwa + cztery liczby pod nią.
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import {
+  LINKS,
+  OFFERS_2023,
+  PAY_ACT,
+  PRIORITY_FIELDS,
+  RESIDENT_PAY,
+  SPECIALTIES,
+  type Specialty,
+} from '@/data/wedlug-specjalizacji';
+import { formatPL, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Props {
+  /** teza tabeli — zdanie nad nią */
+  title?: string;
+}
+
+const { title } = Astro.props;
+
+const zl = (n: number) => `${formatPL(n, 2)} zł`;
+const other = SPECIALTIES.filter((s) => !s.priority);
+const priority = SPECIALTIES.filter((s) => s.priority);
+
+const groups = [
+  {
+    name: 'Poza listą priorytetów',
+    count: `${other.length} dziedzin`,
+    pay: `rezydent: ${zl(RESIDENT_PAY.other.first)}, po dwóch latach ${zl(RESIDENT_PAY.other.later)}`,
+    rows: other,
+  },
+  {
+    name: 'Dziedziny priorytetowe',
+    count: `${priority.length} z ${PRIORITY_FIELDS.length}`,
+    pay: `rezydent: ${zl(RESIDENT_PAY.priority.first)}, po dwóch latach ${zl(RESIDENT_PAY.priority.later)}`,
+    rows: priority,
+  },
+];
+
+/** Krótkie etykiety komórek — widać je tylko w wąskim układzie, nad liczbą */
+const COLS = {
+  rate: 'Stawka zł/h',
+  rez: 'Rezyd.',
+  nonRez: 'Pozarez.',
+  candidates: 'Kandydaci',
+};
+
+const rate = (s: Specialty) => (s.rate === undefined ? '—' : formatPL(s.rate));
+const candidates = (s: Specialty) =>
+  s.candidates === undefined ? '—' : s.candidates === 'below-1' ? '< 1' : formatPL(s.candidates, 2);
+
+const sources = [
+  { what: 'pensja', label: `rozporządzenie MZ, ${PAY_ACT.label}`, href: PAY_ACT.href },
+  { what: 'stawki', label: `raport „Lekarze – oferty pracy” za ${OFFERS_2023.year} r., s. 19`, href: LINKS.offers2023 },
+  { what: 'miejsca', label: 'CMKP, wykaz na sesję jesień 2025 (28.08.2025)', href: LINKS.cmkpPlaces },
+  { what: 'kandydaci', label: 'zestawienie dyrektora CMKP za: Beauty Razem, 10.12.2025', href: LINKS.candidates },
+];
+---
+<Figure
+  title={title}
+  note={`Pensja rezydenta to płaca zasadnicza brutto od ${PAY_ACT.from} w pierwszych dwóch latach rezydentury. Stawka 2023 to średnia stawka godzinowa brutto (zł/h) z ${formatPL(OFFERS_2023.offers)} ogłoszeń o pracę z 2023 r. — oferta, nie wypłata; kreska oznacza, że dziedziny nie ma w raporcie, a choroby płuc, otorynolaryngologia, położnictwo i chirurgia ogólna to w nim wiersze „pulmonologia”, „laryngologia”, „ginekologia” i „chirurgia”. Miejsca to suma 16 województw w sesji jesień 2025; rezydenckie razem z doktoranckimi. Kandydaci na miejsce to liczba lekarzy, którzy wpisali dziedzinę jako pierwszy wybór, podzielona przez wszystkie miejsca w tej dziedzinie — rezydenckie i pozarezydenckie (tylko dziedziny z ponad 10 miejscami). CMKP podało dziesięć najbardziej obleganych dziedzin i dziesięć, w których miejsc było więcej niż chętnych (< 1); kreska — wartości nie opublikowano.`}
+>
+  <table class="spec">
+    <caption class="sr-only">
+      Pensja rezydenta, stawka z ogłoszeń z 2023 r., miejsca rezydenckie i pozarezydenckie oraz kandydaci na
+      miejsce w sesji jesień 2025 — {SPECIALTIES.length} dziedzin w dwóch grupach.
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Dziedzina</th>
+        <th scope="col">Stawka z ogłoszeń<span class="spec__sub">2023, zł/h</span></th>
+        <th scope="col">Miejsca rezydenckie<span class="spec__sub">jesień 2025</span></th>
+        <th scope="col">Pozarezydenckie<span class="spec__sub">jesień 2025</span></th>
+        <th scope="col">Kandydaci na miejsce<span class="spec__sub">jesień 2025</span></th>
+      </tr>
+    </thead>
+    {groups.map((g) => (
+      <tbody>
+        <tr class="spec__group">
+          <th scope="rowgroup" colspan="5">
+            <span class="spec__group-name">{g.name}<span class="spec__count"> · {g.count}</span></span>
+            <span class="spec__pay">{typo(g.pay)}</span>
+          </th>
+        </tr>
+        {g.rows.map((s) => (
+          <tr>
+            <th scope="row">{typo(s.name)}</th>
+            <td data-label={COLS.rate}>{rate(s)}</td>
+            <td data-label={COLS.rez}>{formatPL(s.rez)}</td>
+            <td data-label={COLS.nonRez}>{formatPL(s.nonRez)}</td>
+            <td
+              data-label={COLS.candidates}
+              class:list={['spec__cand', { 'is-high': typeof s.candidates === 'number' }]}
+            >
+              {candidates(s)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    ))}
+  </table>
+  <p class="spec__src">
+    Źródła:{' '}
+    {sources.map((src, i) => (
+      <>
+        {src.what} — <a class="spec__link" {...linkAttrs(src.href)}>{typo(src.label)}</a>{i < sources.length - 1 ? '; ' : '.'}
+      </>
+    ))}
+  </p>
+</Figure>
+
+<style>
+  .spec { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  /* .spec przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .spec thead th {
+    padding: 0 12px 10px 0; text-align: right; vertical-align: bottom;
+    font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .spec thead th:first-child { text-align: left; width: 34%; }
+  .spec__sub { display: block; margin-top: 2px; letter-spacing: .02em; text-transform: none; }
+
+  .spec tbody th, .spec td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+  .spec tbody th { text-align: left; font: 500 0.90625rem/1.35 var(--f-display); letter-spacing: -0.01em; text-transform: none; color: var(--ink); }
+  .spec td { text-align: right; font-size: 0.875rem; color: var(--text-strong); white-space: nowrap; }
+
+  /* Nagłówek grupy: nazwa (mono, kobalt) i pensja rezydenta tej grupy */
+  .spec .spec__group th {
+    padding: 28px 0 10px; border-bottom: 1px solid var(--line-2);
+    font: 400 0.84375rem/1.5 var(--f-body); letter-spacing: 0; color: var(--text);
+  }
+  .spec tbody:first-of-type .spec__group th { padding-top: 18px; }
+  .spec__group-name {
+    display: block; margin-bottom: 2px;
+    font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--blue);
+  }
+  .spec__count { color: var(--muted); }
+  .spec__pay { color: var(--ink); }
+
+  .spec td.spec__cand { color: var(--muted); }
+  .spec td.spec__cand.is-high { font-weight: 600; color: var(--ink); }
+  .spec tbody:last-of-type tr:last-child > * { border-bottom: 0; }
+
+  .spec__src { margin-top: 14px; font: 400 0.75rem/1.6 var(--f-mono); color: var(--muted); }
+  /* .spec__src przed selektorem — Prose koloruje linki bez klasy */
+  .spec__src .spec__link { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s; }
+  .spec__src .spec__link:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  /* Wąsko: nazwa dziedziny w pierwszym wierszu, cztery liczby z etykietami pod nią */
+  @container (max-width: 600px) {
+    .spec thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .spec, .spec tbody { display: block; }
+    .spec .spec__group, .spec .spec__group th { display: block; }
+    .spec tbody tr:not(.spec__group) {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px 10px;
+      padding: 12px 0; border-bottom: 1px solid var(--line);
+    }
+    .spec tbody th, .spec td { padding: 0; border: 0; }
+    .spec tbody tr:not(.spec__group) th { grid-column: 1 / -1; padding-bottom: 6px; }
+    .spec td { text-align: left; }
+    .spec td[data-label]::before {
+      content: attr(data-label); display: block; margin-bottom: 2px;
+      font: 500 0.625rem/1.3 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+    }
+    .spec tbody:last-of-type tr:last-child { border-bottom: 0; }
+  }
+</style>

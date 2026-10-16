@@ -1,0 +1,55 @@
+---
+/**
+ * Etykieta nakładana na zdjęcie (prawy dolny róg najbliższego kontenera z position).
+ * - blue:  ikona + pogrubiona wartość w tekście
+ * - light: ikona + tekst (jasna)
+ * - stat:  duża wartość + opis + przypis (np. podstawa prawna)
+ */
+import Icon from './Icon.astro';
+import type { IconName } from '@/icons';
+import { typo } from '@/lib/format';
+
+interface Props {
+  variant?: 'blue' | 'light' | 'stat';
+  icon?: IconName;
+  value?: string;
+  label: string;
+  note?: string;
+}
+
+const { variant = 'blue', icon, value, label, note } = Astro.props;
+const big = variant === 'stat';
+---
+<span class:list={['badge', `badge--${variant}`]}>
+  {icon && <Icon name={icon} size={variant === 'light' ? 16 : 20} class="badge__icon" />}
+  {big && value && <strong class="badge__value">{typo(value)}</strong>}
+  <span class="badge__label">
+    {!big && value && <><strong>{typo(value)}</strong>{' '}</>}{typo(label)}{note && <em class="badge__note">{typo(note)}</em>}
+  </span>
+</span>
+
+<style>
+  .badge {
+    position: absolute; z-index: 4; right: 0; bottom: 0;
+    display: inline-flex; align-items: center; gap: 10px;
+    margin: 0 12px 12px 0;
+    padding: 12px 16px;
+    background: var(--blue-fill); color: #fff;
+    font: 400 0.875rem/1.2 var(--f-body);
+  }
+  .badge__label strong { font-weight: 600; }
+
+  .badge--light { background: var(--surface); color: var(--ink); border: 1px solid var(--line); font-size: 0.8125rem; padding: 9px 12px; }
+  .badge--light .badge__icon { color: var(--blue); }
+
+  .badge--stat { gap: 16px; padding: 16px 20px 16px 18px; max-width: 330px; }
+  .badge__value { font: 300 2.5rem/1 var(--f-display); letter-spacing: -0.04em; }
+  .badge--stat .badge__label { font-size: 0.875rem; line-height: 1.35; }
+  .badge__note { display: block; margin-top: 4px; font: 400 0.6875rem/1.3 var(--f-mono); font-style: normal; letter-spacing: .03em; opacity: .75; }
+
+  @media (max-width: 720px) {
+    .badge { margin: 0 8px 8px 0; padding: 10px 12px; font-size: 0.8125rem; }
+    .badge--stat { max-width: calc(100% - 16px); }
+    .badge__value { font-size: 2rem; }
+  }
+</style>

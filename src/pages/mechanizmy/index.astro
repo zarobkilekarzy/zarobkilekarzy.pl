@@ -1,0 +1,57 @@
+---
+/**
+ * /mechanizmy/ — działy jako pytania czytelnika (układ „Przewodnik”): zdjęcie z liczbą,
+ * krótka odpowiedź i mechanizmy działu, na końcu to, co je łączy.
+ * Mechanizmy to wpisy kolekcji `articles` z polem `topic`; pytania i zdjęcia — src/data/mechanizmy.ts.
+ */
+import IndexLayout from '@/layouts/IndexLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import QuestionBands from '@/components/blocks/QuestionBands.astro';
+import { mechanizmyPage, mechanismTopics } from '@/data/mechanizmy';
+import { site } from '@/data/navigation';
+import { countArticles, getTopicGroups } from '@/lib/content';
+import { typo } from '@/lib/format';
+import { MECHANISM_TOPICS } from '@/types';
+
+const groups = await getTopicGroups(MECHANISM_TOPICS, mechanismTopics);
+---
+<IndexLayout
+  title={mechanizmyPage.title}
+  docTitle="Mechanizmy: system wynagrodzeń lekarzy"
+  lead={mechanizmyPage.lead}
+  description={mechanizmyPage.description}
+  eyebrow={mechanizmyPage.eyebrow}
+  meta={[
+    { label: 'Mechanizmy', value: countArticles(groups) },
+    { label: 'Pytania', value: groups.length },
+    { label: 'Aktualizacja', value: site.updated },
+  ]}
+  jump={{ title: 'Cztery pytania', items: groups.map((g) => ({ label: g.info.question, href: `#${g.topic}`, count: g.articles.length })) }}
+  articles={groups.flatMap((g) => g.articles)}
+>
+  <Section space="bottom">
+    <QuestionBands groups={groups} listLabel="Mechanizmy w tym temacie" />
+  </Section>
+
+  <Section tone="soft" aria-labelledby="mianownik-title">
+    <div class="common">
+      <div>
+        <Eyebrow>Co je łączy</Eyebrow>
+        <Heading id="mianownik-title" class="common__title">{typo(mechanizmyPage.common.title)}</Heading>
+      </div>
+      <p class="common__text">{typo(mechanizmyPage.common.text)}</p>
+    </div>
+  </Section>
+</IndexLayout>
+
+<style>
+  .common { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(40px, 6vw, 96px); align-items: end; }
+  .common__title { margin-top: 18px; max-width: 16ch; }
+  .common__text { font-size: 1.125rem; line-height: 1.7; max-width: 48ch; color: var(--ink-2); }
+
+  @media (max-width: 1024px) {
+    .common { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

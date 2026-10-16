@@ -1,0 +1,60 @@
+---
+/**
+ * Kotwice nagłówków: każdy nagłówek sekcji w <main> dostaje na końcu ikonę linku — widoczną po najechaniu
+ * (na ekranach dotykowych stale, przygaszoną). Klik kopiuje adres sekcji i wpisuje go w pasek adresu,
+ * bez przeskoku strony. Pod jaki adres prowadzi ikona — reguła w scripts/anchors.ts; id nagłówków
+ * z Markdownu nadaje lib/markdown/heading-ids.ts. Bez JS sekcje dalej mają swoje #id, tylko bez ikony.
+ * Renderowany raz w BaseLayout; nowe komponenty nie robią nic poza nadaniem nagłówkowi (lub sekcji) id.
+ */
+---
+<script>
+  import { HEADINGS, anchorFor } from '@/scripts/anchors';
+  import { announce, copyText } from '@/scripts/clipboard';
+
+  for (const h of document.querySelectorAll<HTMLElement>(HEADINGS)) {
+    const id = anchorFor(h);
+    if (!id || !document.getElementById(id)) continue;
+    const a = document.createElement('a');
+    a.className = 'h-anchor';
+    a.href = `#${id}`;
+    a.setAttribute('aria-label', 'Kopiuj link do tej sekcji');
+    a.innerHTML = '<svg aria-hidden="true"><use href="#i-link"></use></svg>';
+    h.append(a);
+  }
+
+  document.addEventListener('click', async (event) => {
+    const a = (event.target as Element | null)?.closest<HTMLAnchorElement>('a.h-anchor');
+    // Cmd/Ctrl/Shift+klik zostaje przy przeglądarce (nowa karta, okno)
+    if (!a || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    history.replaceState(history.state, '', a.hash);
+    const ok = await copyText(a.href);
+    a.dataset.copied = ok ? 'Skopiowano link' : 'Link jest w pasku adresu';
+    announce(ok ? 'Link do sekcji skopiowany' : 'Link do sekcji jest w pasku adresu');
+    setTimeout(() => delete a.dataset.copied, 1800);
+  });
+</script>
+
+<style is:global>
+  /* Ikona wstawiana skryptem do cudzych nagłówków — stąd styl globalny; kolor i rozmiar dziedziczy z nagłówka */
+  .h-anchor {
+    position: relative; margin-left: .28em; padding: .1em; color: inherit;
+    opacity: 0; transition: opacity .15s;
+  }
+  /* Łącznik wyrazów (U+2060) w CSS, nie w DOM: ikona nie przeskakuje sama do nowej linii,
+     a tekst nagłówka zostaje czysty dla linków do fragmentu, kopiowania i czytników ekranu.
+     Dlatego <a> jest inline, nie inline-flex — łącznik musi stać w tym samym wierszu tekstu co ikona. */
+  .h-anchor::before { content: "\2060"; }
+  .h-anchor svg { display: inline-block; vertical-align: middle; width: max(16px, .52em); height: max(16px, .52em); }
+  :is(h2, h3):hover > .h-anchor, .h-anchor:focus-visible { opacity: .5; }
+  :is(h2, h3) > .h-anchor:is(:hover, [data-copied]) { opacity: 1; }
+  @media (hover: none) { .h-anchor { opacity: .35; } }
+
+  .h-anchor[data-copied]::after {
+    content: attr(data-copied);
+    position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%);
+    padding: 6px 9px; background: var(--inverse-2); color: #fff; /* kolor-stały: dymek na --inverse-2 */
+    font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .04em; text-transform: none; white-space: nowrap;
+    pointer-events: none;
+  }
+</style>

@@ -1,0 +1,77 @@
+---
+/**
+ * „W jakiej jesteś sytuacji?” — wejścia według tego, co się dzieje, a nie według
+ * rozdziałów ustawy. Każde prowadzi kotwicą do sekcji strony.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import type { Entry } from '@/lib/pacjent/types';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'nav'> {
+  title: string;
+  items: Entry[];
+}
+
+const { title, items, class: className, ...rest } = Astro.props;
+---
+<nav class:list={['entries', className]} aria-labelledby="entries-title" {...rest}>
+  <h2 class="entries__title" id="entries-title">{title}</h2>
+  <ul>
+    {items.map((item) => (
+      <li>
+        <a href={item.href}>
+          <span class="entries__icon"><Icon name={item.icon} size={22} /></span>
+          <span class="entries__name">{typo(item.title)}</span>
+          <span class="entries__text">{typo(item.text)}</span>
+          <Icon name="arrow" size={18} class="entries__arrow" style="transform: rotate(90deg)" />
+        </a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  .entries__title {
+    padding-bottom: 0.75rem; border-bottom: 1px solid var(--ink);
+    font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text);
+  }
+  ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  li + li { border-left: 1px solid var(--line-2); }
+  a {
+    position: relative;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr; gap: 0.5rem 0.75rem;
+    height: 100%; padding: 1.25rem 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--line-2);
+    transition: background .2s var(--ease);
+  }
+  li:first-child a { padding-left: 0; }
+  .entries__icon { grid-column: 1; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; margin-bottom: 0.5rem; background: var(--blue-50); color: var(--blue); transition: background .2s, color .2s; }
+  .entries__name { grid-column: 1 / -1; font: 500 1.1875rem/1.25 var(--f-display); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance; }
+  .entries__text { grid-column: 1 / -1; font-size: 0.9375rem; line-height: 1.5; color: var(--text); }
+  :global(.entries__arrow) { grid-column: 2; grid-row: 1; align-self: start; color: var(--blue); transition: translate .25s var(--ease); }
+
+  a:hover .entries__icon { background: var(--blue-fill); color: #fff; }
+  a:hover .entries__name { color: var(--blue-700); }
+  a:hover :global(.entries__arrow) { translate: 0 3px; }
+
+  @media (max-width: 1024px) {
+    ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    li:nth-child(odd) { border-left: 0; }
+    li:nth-child(odd) a { padding-left: 0; }
+  }
+
+  /* Telefon: zwarte wiersze — ikona, nazwa i opis obok siebie, cel dotyku na całą szerokość */
+  @media (max-width: 720px) {
+    ul { grid-template-columns: minmax(0, 1fr); }
+    li + li { border-left: 0; }
+    a, li:first-child a, li:nth-child(odd) a {
+      grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto;
+      gap: 0.125rem 0.875rem; padding: 1rem 0;
+    }
+    .entries__icon { grid-row: 1 / span 2; align-self: center; margin: 0; }
+    .entries__name { grid-column: 2; font-size: 1.0625rem; }
+    .entries__text { grid-column: 2; font-size: 0.875rem; }
+    :global(.entries__arrow) { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+  }
+</style>

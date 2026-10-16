@@ -1,0 +1,76 @@
+---
+/**
+ * Przełącznik trybu nocnego. Domyślnie strona idzie za ustawieniem systemu;
+ * kliknięcie zapisuje wybór w localStorage ('zl-theme') i ustawia <html data-theme>.
+ * Wybór zgodny z systemem kasuje zapis — strona znów podąża za systemem.
+ * Motyw przed pierwszym malowaniem ustawia skrypt w <head> (layouts/BaseLayout.astro).
+ */
+import Icon from '@/components/ui/Icon.astro';
+---
+<button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Tryb nocny" title="Tryb nocny">
+  <Icon name="moon" size={18} class="theme-toggle__moon" />
+  <Icon name="sun" size={18} class="theme-toggle__sun" />
+</button>
+
+<script>
+  const KEY = 'zl-theme';
+  const root = document.documentElement;
+  const system = window.matchMedia('(prefers-color-scheme: dark)');
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]');
+
+  const isDark = () => (root.dataset.theme ? root.dataset.theme === 'dark' : system.matches);
+  const sync = () => buttons.forEach((b) => b.setAttribute('aria-pressed', String(isDark())));
+
+  const store = (value: string | null) => {
+    try {
+      if (value) localStorage.setItem(KEY, value);
+      else localStorage.removeItem(KEY);
+    } catch { /* tryb prywatny / zablokowany storage — motyw działa do końca wizyty */ }
+  };
+
+  const apply = (dark: boolean) => {
+    if (dark === system.matches) {
+      delete root.dataset.theme;
+      store(null);
+    } else {
+      root.dataset.theme = dark ? 'dark' : 'light';
+      store(root.dataset.theme);
+    }
+    sync();
+  };
+
+  const toggle = () => {
+    // Na czas zmiany wyłączamy przejścia komponentów, żeby wszystko zmieniło się naraz
+    root.setAttribute('data-theme-switching', '');
+    apply(!isDark());
+    setTimeout(() => root.removeAttribute('data-theme-switching'), 50);
+  };
+
+  buttons.forEach((b) => b.addEventListener('click', toggle));
+  system.addEventListener('change', sync);
+  sync();
+</script>
+
+<style>
+  .theme-toggle {
+    display: grid; place-items: center;
+    width: 40px; height: 40px;
+    border: 1px solid var(--line-2);
+    color: var(--ink);
+    transition: border-color .2s, color .2s;
+  }
+  .theme-toggle:hover { border-color: var(--ink); }
+  /* Ikonę wybiera CSS z tego samego stanu co tokeny (data-theme albo system), a nie aria-pressed:
+     skrypt modułowy rusza po pierwszym malowaniu, więc w nocy na każdej podstronie mignąłby księżyc */
+  .theme-toggle__sun { display: none; }
+  :global(:root[data-theme="dark"]) .theme-toggle__moon { display: none; }
+  :global(:root[data-theme="dark"]) .theme-toggle__sun { display: block; }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme="light"])) .theme-toggle__moon { display: none; }
+    :global(:root:not([data-theme="light"])) .theme-toggle__sun { display: block; }
+  }
+
+  @media (max-width: 1024px) {
+    .theme-toggle { width: 44px; height: 44px; }
+  }
+</style>

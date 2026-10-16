@@ -1,0 +1,21 @@
+---
+/** Proporcja „1 na N” jako rząd kwadratów (dekoracyjna — sens niesie tytuł obok). */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'div'> {
+  total: number;
+  /** indeks wyróżnionego kwadratu (od 0) */
+  hit?: number;
+}
+
+const { total, hit = Math.floor(total / 2), class: className, ...rest } = Astro.props;
+---
+<div class:list={['ratio', className]} style={`--n: ${total}`} aria-hidden="true" {...rest}>
+  {Array.from({ length: total }, (_, i) => <span class:list={{ 'is-hit': i === hit }}></span>)}
+</div>
+
+<style>
+  .ratio { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 6px; }
+  .ratio span { aspect-ratio: 1; border: 1px solid var(--line-2); background: var(--bg-soft); }
+  .ratio .is-hit { background: var(--blue); border-color: var(--blue); }
+</style>

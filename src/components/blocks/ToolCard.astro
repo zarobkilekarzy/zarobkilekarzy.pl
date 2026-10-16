@@ -1,0 +1,41 @@
+---
+/** Karta narzędzia/usługi z ikoną i wezwaniem do działania. */
+import Icon from '@/components/ui/Icon.astro';
+import type { Tool } from '@/types';
+import { typo } from '@/lib/format';
+
+interface Props {
+  tool: Tool;
+  cta?: string;
+}
+
+const { tool, cta = 'Otwórz' } = Astro.props;
+---
+<a class="tool" href={tool.href} data-reveal>
+  <span class="tool__icon"><Icon name={tool.icon} /></span>
+  <p class="mono-label">{tool.label}</p>
+  <h3 class="tool__title">{typo(tool.title)}</h3>
+  <p class="tool__desc">{typo(tool.desc)}</p>
+  <span class="tool__go">{cta}<Icon name="arrow" size={16} class="tool__go-icon" /></span>
+</a>
+
+<style>
+  .tool {
+    position: relative; display: flex; flex-direction: column;
+    padding: 32px; border: 1px solid var(--line-2);
+    transition: border-color .3s, background .3s;
+  }
+  .tool__icon { display: grid; place-items: center; width: 48px; height: 48px; background: var(--blue-50); color: var(--blue); margin-bottom: 28px; transition: background .3s, color .3s; }
+  .tool__title { font: 400 1.625rem/1.15 var(--f-display); letter-spacing: -0.025em; color: var(--ink); margin: 10px 0 10px; }
+  .tool__desc { font-size: 0.9375rem; line-height: 1.6; margin-bottom: 24px; }
+  .tool__go { margin-top: auto; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9375rem; color: var(--ink); }
+  .tool__go-icon { transition: transform .3s var(--ease); }
+  .tool:hover { border-color: var(--ink); }
+  .tool:hover .tool__icon { background: var(--blue-fill); color: #fff; }
+  .tool:hover .tool__go { color: var(--blue); }
+  .tool:hover .tool__go-icon { transform: translateX(3px); }
+
+  @media (max-width: 720px) {
+    .tool { padding: 24px 20px; }
+  }
+</style>

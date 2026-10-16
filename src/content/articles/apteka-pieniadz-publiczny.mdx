@@ -1,0 +1,235 @@
+---
+title: "Apteka i recepta: pieniądz publiczny i prywatny"
+seoTitle: "Refundacja leków, apteki i receptomaty"
+category: Analiza
+topic: pieniadz
+order: 5
+stat: { value: "30,0", unit: "mld zł refundacji NFZ w 2025 r." }
+date: 2026-07-07
+updated: 2026-10-16
+summary: "W 2025 r. NFZ wydał na refundację 30 mld zł. Przez apteki przeszło z tego niespełna 16 mld zł, reszta poszła głównie na programy lekowe i chemioterapię. Receptomaty to przede wszystkim pieniądze pacjentów, a pieniądze publiczne wyłudzano przy receptach na leki recepturowe."
+description: "Refundacja leków w 2025 r.: 30 mld zł, z czego 15,8 mld zł przez apteki. Ile dopłacają pacjenci, czym są receptomaty i gdzie wyłudzano pieniądze NFZ."
+keyPoints:
+  - "Całkowity budżet NFZ na refundację wyniósł 25,5 mld zł w 2024 r. i 30,0 mld zł w 2025 r. Przez apteki ogólnodostępne przeszło z tego 13,6 i 15,8 mld zł. Resztę stanowią głównie programy lekowe i chemioterapia, które pacjent dostaje w szpitalu albo poradni."
+  - "Według GUS leki na receptę sprzedane w aptekach w 2025 r. były warte 33,4 mld zł. NFZ pokrył z tego 15,3 mld zł (45,9%), a pacjenci zapłacili 18,1 mld zł."
+  - "Receptomaty to głównie pieniądz prywatny. W 2023 r. leki kupione na ich recepty były warte 275 mln zł, a leki refundowane stanowiły 1,33% tej kwoty. Problemem jest bezpieczeństwo pacjentów: do sierpnia 2026 r. Rzecznik Praw Pacjenta wydał 72 decyzje wobec takich serwisów."
+  - "Pieniądze NFZ wyłudzano przy receptach na leki recepturowe. W sprawie ujawnionej w lipcu 2025 r. straty Funduszu wynoszą co najmniej 82 mln zł, a zarzuty usłyszało 21 osób."
+related:
+  - budzet-nfz
+  - rozliczenia-nfz
+  - fikcyjne-wizyty
+  - poz-pieniadz-za-pacjenta
+  - rozklad-wynagrodzen
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import TwoLists from '@/components/blocks/TwoLists.astro';
+import {
+  CONTROLS_Q2_2024, CONTROL_ERROR_SHARE, CONTROL_UNDUE_SHARE, GUS_2025, GUS_VS_DEF_2025, LINKS, NFZ_COSTS_2025,
+  OINTMENT_GROWTH, PLAN_SHARE_2025, RECEPTOMATY, RECEPTOMATY_GROWTH, RECEPTOMATY_REFUNDED_2023, RECEPTURA, REFUND_TABLE,
+  RPP, fmt, refundChannel, refundGrowth, refundItem, refundPlan, refundRows, refundTotal,
+} from '@/data/apteka-pieniadz-publiczny';
+import { formatPL } from '@/lib/format';
+
+export const rows2025 = refundRows('2025');
+
+Recepta uruchamia dwa strumienie pieniędzy naraz. Część ceny leku płaci Narodowy Fundusz Zdrowia w ramach refundacji, resztę pacjent przy kasie apteki. W tej analizie rozdzielamy te strumienie i podajemy ich wielkość według NFZ i GUS. Opisujemy też dwa zjawiska, które często wrzuca się do jednego worka. Receptomaty, czyli serwisy wystawiające recepty na podstawie ankiety, zarabiają głównie na pieniądzach pacjentów. Pieniądze publiczne wyłudzano natomiast przy receptach na leki recepturowe, przygotowywane w aptece.
+
+## Ile wynosi refundacja
+
+NFZ co miesiąc publikuje komunikat o wykonaniu „całkowitego budżetu na refundację”. To koszty Funduszu na refundowane leki, środki spożywcze specjalnego przeznaczenia żywieniowego i wyroby medyczne. W 2024 r. wyniosły one {fmt(refundTotal('2024'), 2)} mld zł, czyli {formatPL(refundTotal('2024') / refundPlan('2024') * 100, 2)}% planu.[^def2024] W 2025 r. było to {fmt(refundTotal('2025'), 2)} mld zł, o {formatPL(refundGrowth, 1)}% więcej niż rok wcześniej (nasz rachunek).[^def2025] Od stycznia do sierpnia 2026 r. Fundusz wydał na refundację {fmt(refundTotal('2026'), 2)} mld zł.[^def2026]
+
+Plan budżetu refundacyjnego na 2025 r. ({fmt(refundPlan('2025'))} mld zł) stanowił ok. {formatPL(PLAN_SHARE_2025)}% kosztów ogółem w ostatecznym planie finansowym NFZ ({fmt(NFZ_COSTS_2025)} mld zł). To nasz rachunek.[^def2025] Plan NFZ opisujemy w zestawieniu [Budżet NFZ](/dane/budzet-nfz/).
+
+Nie cała ta kwota przechodzi przez apteki. Największa pozycja to leki w programach lekowych, a do tego dochodzą chemioterapia i ratunkowy dostęp do technologii lekowych (RDTL). Pacjent dostaje je zwykle w szpitalu albo w poradni, czyli w podmiocie leczniczym. Przez apteki ogólnodostępne przechodzi refundacja leków na receptę, bezpłatne leki dla osób od 65 lat i dzieci do 18 lat (od września 2023 r.; wcześniej bezpłatne leki przysługiwały osobom od 75 lat)[^bezplatne] oraz bezpłatne leki dla kobiet w ciąży. W 2025 r. było to razem {fmt(refundChannel('2025', 'apteka'))} mld zł, a w 2024 r. {fmt(refundChannel('2024', 'apteka'))} mld zł.[^def2024][^def2025]
+
+<Figure
+  title={`W 2025 r. przez apteki przeszło ${fmt(refundChannel('2025', 'apteka'))} z ${fmt(refundTotal('2025'))} mld zł refundacji. Największą pozycją są programy lekowe.`}
+  note="Pozycje komunikatu NFZ „DEF”, koszty za styczeń–grudzień 2025 r. Wyróżnione pozycje są realizowane w aptekach ogólnodostępnych; komunikat nie dzieli kosztów na kanały, podział wynika z rodzaju pozycji. Trzy najmniejsze pozycje apteczne pokazujemy razem."
+  source={{ label: 'NFZ, Komunikat DEF za 2025 r.', href: LINKS.def2025 }}
+>
+  <BarChart
+    rows={rows2025}
+    max={14}
+    unit="mld zł"
+    caption={`Koszty refundacji NFZ w 2025 r., mld zł: ${rows2025.map((r) => `${r.label} — ${r.display}`).join('; ')}.`}
+  />
+</Figure>
+
+Tabela pokazuje wszystkie pozycje komunikatu w trzech okresach. Pozycje sumują się do całkowitego budżetu na refundację co do grosza. Rezerwa (pozycja 5) we wszystkich trzech okresach wynosiła zero, więc jej nie pokazujemy.
+
+<Figure
+  title="Całkowity budżet NFZ na refundację: wszystkie pozycje"
+  note="Koszty narastająco, mld zł. 2024 i 2025: cały rok; 2026: styczeń–sierpień."
+  source={{ label: 'NFZ, komunikaty DEF za 2024, 2025 i I–VIII 2026 r.', href: LINKS.def2026 }}
+>
+  <Comparison table={REFUND_TABLE} />
+</Figure>
+
+Projekt ustawy o receptach, który Ministerstwo Zdrowia skierowało do prekonsultacji 30 kwietnia 2026 r., przewiduje, że część leków z programów lekowych pacjent będzie mógł odbierać w aptece, na receptę oznaczoną „Rp PL”.[^dzp] Gdyby te przepisy weszły w życie, podział między aptekę a szpital by się zmienił.
+
+## Co widać przy kasie apteki
+
+GUS liczy co innego: wartość leków na receptę sprzedanych w aptekach i punktach aptecznych, według danych z Systemu Informacji Medycznej. W 2025 r. była to kwota {fmt(GUS_2025.sales)} mld zł, o {fmt(GUS_2025.salesGrowth)}% więcej niż rok wcześniej. Apteki zrealizowały {fmt(GUS_2025.prescriptions)} mln recept, z czego {fmt(GUS_2025.eShare)}% stanowiły e-recepty.[^gus]
+
+<StatRow
+  label="Leki na receptę w aptekach, 2025"
+  items={[
+    { value: GUS_2025.sales, decimals: 1, unit: 'mld zł', desc: 'wartość sprzedaży leków na receptę, refundowanych i pełnopłatnych', accuracy: 'exact', source: 'GUS, 25.06.2026', href: LINKS.gus },
+    { value: GUS_2025.refund, decimals: 1, unit: 'mld zł', desc: `pokrył NFZ — ${fmt(GUS_2025.refundShare)}% wartości sprzedaży (w 2022 r. ${fmt(GUS_2025.refundShare2022)}%)`, accuracy: 'exact', source: 'GUS, 25.06.2026', href: LINKS.gus },
+    { value: GUS_2025.patients, decimals: 1, unit: 'mld zł', desc: 'zapłacili pacjenci: dopłaty do leków refundowanych i pełne ceny leków nierefundowanych', accuracy: 'exact', source: 'GUS, 25.06.2026', href: LINKS.gus },
+  ]}
+/>
+
+Kwota, którą zapłacili pacjenci, obejmuje zarówno dopłaty do leków refundowanych, jak i pełne ceny leków, których NFZ nie refunduje, a które wymagają recepty. GUS w swojej informacji tych dwóch części nie rozdziela.[^gus]
+
+Refundacja w danych GUS ({fmt(GUS_2025.refund)} mld zł) jest o ok. {fmt(GUS_VS_DEF_2025, 2)} mld zł niższa niż suma dwóch aptecznych pozycji komunikatu NFZ: refundacji leków na receptę i bezpłatnych leków dla osób od 65 lat i dzieci.[^gus][^def2025] Źródła tej różnicy nie wyjaśniają, dlatego obu zestawień nie łączymy.
+
+Często cytowana kwota „niemal 60 mld zł” to wartość całego rynku aptecznego w 2025 r. według firmy analitycznej PEX. Obejmuje ona także leki i produkty sprzedawane bez recepty, liczone w cenach detalicznych.[^pex] To inna miara niż dane GUS, więc tych liczb nie dodajemy ani nie odejmujemy od siebie.
+
+## Receptomaty: głównie pieniądz prywatny
+
+Receptomat to serwis, w którym pacjent wypełnia ankietę, a lekarz wystawia na tej podstawie receptę, bez badania i bez rozmowy w czasie rzeczywistym. Według raportu zespołu powołanego przez ministra zdrowia 19 września 2023 r. liczba takich firm wzrosła z {RECEPTOMATY.firms[2019]} w 2019 r. do {RECEPTOMATY.firms[2023]} w 2023 r. Wystawiły one w 2023 r. {formatPL(RECEPTOMATY.prescriptions[2023])} recept dla {formatPL(RECEPTOMATY.people[2023])} osób.[^mz-raport]
+
+<StatRow
+  label="Receptomaty w 2019 i 2023 r."
+  items={[
+    { value: RECEPTOMATY.value[2023] / 1e6, decimals: 1, unit: 'mln zł', desc: `wartość leków kupionych na recepty z receptomatów w 2023 r.; w 2019 r. ${fmt(RECEPTOMATY.value[2019] / 1e6)} mln zł`, accuracy: 'exact', source: 'MZ, raport zespołu, 2024', href: LINKS.mzRaport },
+    { value: RECEPTOMATY.refundedShare[2023], decimals: 2, unit: '%', desc: `tej wartości przypadało na leki refundowane; w 2019 r. ${formatPL(RECEPTOMATY.refundedShare[2019], 2)}%`, accuracy: 'exact', source: 'MZ, raport zespołu, 2024', href: LINKS.mzRaport },
+    { value: RECEPTOMATY.prescriptions[2023] / 1e6, decimals: 2, unit: 'mln recept', desc: `w 2023 r., dla ${formatPL(RECEPTOMATY.people[2023])} osób; ${RECEPTOMATY.firms[2023]} firm`, accuracy: 'exact', source: 'MZ, raport zespołu, 2024', href: LINKS.mzRaport },
+  ]}
+/>
+
+Wartość leków z tych recept wzrosła między 2019 a 2023 r. {formatPL(RECEPTOMATY_GROWTH, 1)} raza. Jednocześnie udział leków refundowanych spadł z {formatPL(RECEPTOMATY.refundedShare[2019], 2)}% do {formatPL(RECEPTOMATY.refundedShare[2023], 2)}%. Autorzy raportu wnioskują, że użytkownicy receptomatów szukają głównie leków, których NFZ nie refunduje.[^mz-raport] Leki refundowane z tych recept były w 2023 r. warte ok. {fmt(RECEPTOMATY_REFUNDED_2023)} mln zł. To nasz rachunek i górna granica kosztu dla NFZ, bo część tej kwoty dopłacili pacjenci. To ułamek procenta refundacji wypłacanej przez apteki.
+
+Problem z receptomatami dotyczy więc przede wszystkim bezpieczeństwa pacjentów, a nie budżetu NFZ. Raport zespołu wskazuje recepty na leki psychotropowe i opioidy wystawiane bez rzetelnego zbadania pacjenta.[^mz-raport]
+
+### Co już zrobiono
+
+- **Od 2023 r.** Rzecznik Praw Pacjenta prowadzi postępowania wobec receptomatów jako praktyk naruszających zbiorowe prawa pacjentów.[^rpp] W tym samym roku minister zdrowia powołał zespół do spraw preskrypcji i realizacji recept, który opisał zjawisko w raporcie z 2024 r.[^mz-raport]
+- **Od 7 listopada 2024 r.** fentanylu, morfiny, oksykodonu i konopi innych niż włókniste nie wolno przepisać po samej teleporadzie. Lekarz musi osobiście zbadać pacjenta. Wyjątkiem jest kontynuacja leczenia u lekarza podstawowej opieki zdrowotnej.[^prawo-zakaz] Zakaz obejmuje te wskazane preparaty, a nie wszystkie leki psychotropowe.
+- **20 lutego 2025 r.** reporterka programu „Uwaga!” TVN pokazała, że receptę na fentanyl wystawioną na dane ówczesnej minister zdrowia dało się dostać w kilka minut, bez badania.[^fentanyl] Było to ponad trzy miesiące po wejściu zakazu.
+- **Sądy administracyjne** podtrzymują stanowisko Rzecznika: ankieta internetowa, nawet uzupełniona wymianą wiadomości tekstowych, nie jest badaniem pacjenta.[^wsa]
+
+<StatRow
+  label={`Rzecznik Praw Pacjenta wobec receptomatów, stan na ${RPP.asOf}`}
+  items={[
+    { value: RPP.decisions, unit: 'decyzji', desc: 'nakazujących zaprzestanie praktyk naruszających zbiorowe prawa pacjentów', accuracy: 'exact', source: 'RPP, 27.08.2026', href: LINKS.rpp },
+    { prefix: '~', value: RPP.fines, decimals: 1, unit: 'mln zł', desc: 'kar za niewykonanie tych decyzji', accuracy: 'est', source: 'RPP, 27.08.2026', href: LINKS.rpp },
+    { value: RPP.complaints, unit: 'skarg', desc: `do sądu administracyjnego; zapadło ${RPP.judgments} wyroków i żaden nie uchylił decyzji Rzecznika`, accuracy: 'exact', source: 'RPP, 27.08.2026', href: LINKS.rpp },
+  ]}
+/>
+
+Rzecznik skierował też ok. {RPP.professional} zawiadomień do rzeczników odpowiedzialności zawodowej lekarzy i {RPP.prosecutor} spraw do prokuratury.[^rpp]
+
+### Co jest dopiero w planach
+
+- **Kontakt w czasie rzeczywistym.** W odpowiedzi na interpelację poselską z 29 lipca 2026 r. Ministerstwo Zdrowia zapowiedziało standard teleporady: jeśli teleporada kończy się receptą, ma się odbywać przez połączenie audio albo audio-wideo. Formularz albo ankieta nie będą mogły być jedyną podstawą recepty.[^mz-interp] Termin wejścia w życie nie jest znany.
+- **Ustawa o receptach.** Projekt w prekonsultacjach od 30 kwietnia 2026 r. przewiduje m.in. limit refundacji do 60 dni kuracji przy jednym wydaniu leku. System Informacji Medycznej miałby sumować leki wydane pacjentowi niezależnie od tego, ilu lekarzy wystawiło recepty, i prowadzić rejestr ostrzeżeń o nadużyciach.[^dzp]
+- **Nowelizacja ustawy o prawach pacjenta** (nazywana „lex szarlatan”) miała wzmocnić instrumenty Rzecznika. Prezydent jej nie podpisał i 20 sierpnia 2026 r. zapowiedział skierowanie do Trybunału Konstytucyjnego w trybie kontroli prewencyjnej.[^szarlatan] Przepisy nie obowiązują, a Rzecznik działa na dotychczasowych zasadach.[^rpp]
+
+## Leki recepturowe: tu chodziło o pieniądz publiczny
+
+Lek recepturowy, na przykład maść, przygotowuje farmaceuta w aptece według recepty, a NFZ może go refundować. W lipcu 2025 r. Fundusz, Centralne Biuro Śledcze Policji i Prokuratura Okręgowa w Zielonej Górze poinformowały o rozbiciu grup, które według śledczych wyłudzały w ten sposób refundację. W latach 2022–2024 miało to być blisko {RECEPTURA.prescriptions} tys. recept z nieprawdziwymi informacjami o potrzebie przygotowania leku recepturowego. Straty NFZ wynoszą według Funduszu co najmniej {RECEPTURA.loss} mln zł. Zarzuty usłyszało {RECEPTURA.charged} osób, wśród nich lekarze, właściciele i pracownicy aptek oraz przedsiębiorcy.[^nfz-receptura] To zarzuty, a nie wyroki.
+
+Sprawę wykryła analiza danych o refundacji. W jednej przychodni podstawowej opieki zdrowotnej refundacja maści na odleżyny wzrosła z {formatPL(RECEPTURA.ointment2019 / 1000)} tys. zł w 2019 r. do {fmt(RECEPTURA.ointment2022 / 1e6)} mln zł w 2022 r., czyli ok. {formatPL(OINTMENT_GROWTH)}-krotnie. W lutym 2023 r. przychodnia wystawiła ponad {RECEPTURA.febPrescriptions} recept na tę maść, co stanowiło {RECEPTURA.febShare}% takich recept w całym kraju.[^nfz-receptura] NFZ potrafi więc zestawić recepty jednej placówki z danymi z całego kraju. Regularnie publikowanych zestawień tego rodzaju nie znaleźliśmy; wyniki takich analiz znamy z komunikatów po zatrzymaniach.
+
+Osobno serwis mgr.farm opisał zawiadomienie, które NFZ złożył 27 marca 2024 r. Chodziło o wyłudzenie ponad 60 mln zł refundacji za leki recepturowe w latach 2022–2023. Na jedną aptekę przypadało 6,19 mln zł. Recepty dla domów pomocy społecznej z całej Polski miał wystawiać jeden lekarz, a apteka miała wykazywać produkcję ponad swoje możliwości kadrowe. Według tego opisu mechanizm wykorzystywał też różnicę w VAT: surowce kupowano z 23-procentowym podatkiem, a gotowy lek sprzedawano z 8-procentowym. Zawiadomienie trafiło do prokuratury okręgowej, która połączyła je z wcześniej prowadzonym śledztwem.[^mgrfarm] Sprawa jest w toku. Ze źródeł nie wynika, czy to część sprawy z lipca 2025 r., dlatego kwot obu spraw nie sumujemy.
+
+Projekt ustawy o receptach przewiduje, że przygotowywanie leków recepturowych przestanie być obowiązkiem każdej apteki i będzie mogło się skupić w wyspecjalizowanych aptekach.[^dzp]
+
+## Kontrole aptek
+
+NFZ kontroluje apteki i wystawiających recepty. W II kwartale 2024 r. przeprowadził {CONTROLS_Q2_2024.total} kontroli i czynności sprawdzających. Z tego {CONTROLS_Q2_2024.pharmacies} dotyczyło realizacji recept w aptekach, {CONTROLS_Q2_2024.prescribing} wystawiania recept na leki refundowane, a {CONTROLS_Q2_2024.contracts} wykonania umów. W aptekach sprawdzono {formatPL(CONTROLS_Q2_2024.checked)} zrealizowanych recept. Błędy znaleziono w {formatPL(CONTROLS_Q2_2024.withErrors)} z nich ({formatPL(CONTROL_ERROR_SHARE)}%), a {formatPL(CONTROLS_Q2_2024.undueRefund)} ({formatPL(CONTROL_UNDUE_SHARE)}%) zakwestionowano jako nienależną refundację. Przy lekach recepturowych kontrolerzy wskazywali zawyżone koszty surowców. Kary nałożone na apteki wyniosły {fmt(CONTROLS_Q2_2024.fines / 1e6, 2)} mln zł.[^kontrole] W I kwartale 2023 r., w 64 kontrolach aptek, błędy dotyczyły 24% sprawdzonych recept.[^rz-2023]
+
+<Aside title="Uczciwie: czego ten odsetek nie mówi">
+
+Kontrola nie jest losową próbą. NFZ sam wybiera apteki i recepty do sprawdzenia, często tam, gdzie spodziewa się problemów, więc odsetek błędów wśród skontrolowanych nie mierzy skali nieprawidłowości w całym systemie. Błąd może też być uchybieniem formalnym, a nie wyłudzeniem. To samo zastrzeżenie dotyczy kontroli szpitali, które opisujemy w tekście [Rozliczenia NFZ](/mechanizmy/rozliczenia-nfz/).
+
+</Aside>
+
+<Aside title="Odwrócony łańcuch dystrybucji">
+
+Odwrócony łańcuch dystrybucji to wywóz za granicę leków przeznaczonych dla polskich pacjentów: zamiast trafić do pacjenta, lek wraca z apteki do hurtu i jest sprzedawany tam, gdzie ceny są wyższe. Skutkiem są braki leków w aptekach. Główny Inspektorat Farmaceutyczny pisał, że skalę zjawiska trudno wiarygodnie określić.[^gif]
+
+</Aside>
+
+## Recepta na lek przyjmowany stale
+
+Pacjent leczony przewlekle nie musi chodzić do lekarza po każdą receptę. Ustawa o zawodach lekarza i lekarza dentysty pozwala wystawić receptę niezbędną do kontynuacji leczenia bez badania, jeśli uzasadnia to stan zdrowia opisany w dokumentacji medycznej. Prośbę o taką receptę można złożyć osobiście, telefonicznie, elektronicznie albo na piśmie.[^prawo-kontynuacja] Wypisywanie recept i dokumentacja zajmują jednak czas lekarza. Według kontroli NIK z 2021 r. dokumentacja i czynności administracyjne pochłaniają blisko jedną trzecią czasu porady lekarskiej.[^nik]
+
+Projekt ustawy o receptach ma ten proces zmienić. Lekarz mógłby wystawić e-receptę na leczenie do 360 dni, a farmaceuta, pielęgniarka i położna receptę kontynuowaną na leczenie do 120 dni, na podstawie danych z Internetowego Konta Pacjenta. Lekarz mógłby zablokować kontynuację terapii przez farmaceutę. Kolejne części recepty pacjent odbierałby po upływie trzech czwartych okresu stosowania leku.[^dzp] To nadal projekt. Dziś NFZ finansuje w aptekach pilotaż usług farmaceuty w zakresie zdrowia reprodukcyjnego, przedłużony do 30 czerwca 2028 r.[^pilotaz]
+
+## Czego nie twierdzimy
+
+<TwoLists
+  yes={{
+    title: 'Dane pokazują',
+    items: [
+      'Ile NFZ wydaje na refundację i jaka część przechodzi przez apteki',
+      'Ile za leki na receptę zapłacili pacjenci',
+      'Że receptomaty to głównie sprzedaż leków nierefundowanych',
+      'Że przy lekach recepturowych 21 osób usłyszało zarzuty w sprawie, w której NFZ szacuje straty na co najmniej 82 mln zł',
+    ],
+  }}
+  no={{
+    title: 'Dane nie pokazują',
+    items: [
+      'Że apteki jako całość nadużywają refundacji',
+      'Że receptomaty drenują budżet NFZ',
+      'Czy osoby z zarzutami są winne — sprawy są w toku',
+      'Jaka część wszystkich recept jest realizowana z błędami',
+    ],
+  }}
+/>
+
+## Co mogłoby być jawne
+
+NFZ publikuje sumy: ile wydał na refundację i na jakie pozycje. Recepta niesie jednak więcej informacji — kto ją wystawił, gdzie ją zrealizowano i ile dopłacił Fundusz. Sprawa leków recepturowych pokazuje, że z takich danych da się wyczytać anomalię, gdy ktoś je zestawi. Proponujemy, by łączne wypłaty z publicznych pieniędzy dla każdej osoby były jawne pod stałym identyfikatorem, bez nazwisk. Szczegóły opisujemy w [postulacie](/postulat/). Co wiemy dziś o wynagrodzeniach lekarzy i czego nie wiemy, pokazuje zestawienie [Rozkład wynagrodzeń](/dane/rozklad-wynagrodzen/), a jak NFZ płaci przychodniom — analiza [POZ: pieniądz za pacjenta](/analizy/poz-pieniadz-za-pacjenta/).
+
+[^def2024]: NFZ, [Komunikat DEF](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/komunikat-def,8808.html), 25.07.2025 — wykonanie całkowitego budżetu na refundację za styczeń–grudzień 2024 r., tys. zł: razem 25 538 247,60 (plan 26 213 488, 97,42%).
+
+[^def2025]: NFZ, [Komunikat DEF](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/komunkat-def,8972.html), 01.07.2026 — wykonanie całkowitego budżetu na refundację za styczeń–grudzień 2025 r., tys. zł: razem 30 038 673,16 (plan 31 013 210, 96,86%).
+
+[^def2026]: NFZ, [Komunikat DEF](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/komunikat-def,9024.html), 02.10.2026 — wykonanie za styczeń–sierpień 2026 r., tys. zł: razem 20 473 321,41 (62,51% planu 32 753 310).
+
+[^bezplatne]: Rzecznik Praw Obywatelskich, [Kolejny problem z receptami na darmowe leki dla dzieci i seniorów. Odpowiedź MZ](https://bip.brpo.gov.pl/pl/content/rpo-dzieci-seniorzy-darmowe-leki-mz-odpowiedz), 20.09.2023, z odpowiedzią Ministerstwa Zdrowia z października 2023 r.; Ministerstwo Zdrowia, [odpowiedź na interpelację nr 18028 w sprawie programu bezpłatnych leków dla seniorów](https://sejm.gov.pl/sejm10.nsf/interpelacjaTresc.xsp?key=DXDJBR), 26.08.2026.
+
+[^dzp]: DZP, [Alert prawny: projekt ustawy o receptach](https://www.dzp.pl/files/shares/Alerty/2026%2005%2005%20Alert%20prawny%20dot.%20ustawy%20o%20receptach_zg.pdf), 05.05.2026 — omówienie projektu przekazanego do prekonsultacji 30.04.2026.
+
+[^gus]: GUS, [Sprzedaż leków na receptę w 2025 r.](https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/sprzedaz-lekow-na-recepte-w-2025-r-,29,4.html), informacja sygnalna, 25.06.2026 — dane Systemu Informacji Medycznej.
+
+[^pex]: Monitor Zdrowotny OSOZ, [Statystyki, luty 2026](https://api.kamsoft.pl/app-params/promos/000000/OSOZ_Polska_Luty_2026_Statystyki.pdf), s. 2 — podsumowanie rynku aptecznego w 2025 r. według PEX.
+
+[^mz-raport]: Ministerstwo Zdrowia, [Raport Zespołu ds. preskrypcji i realizacji recept](https://www.gov.pl/attachment/ef0cc14f-47c4-4af0-8073-c86a45a680ac), 2024 — zespół powołany zarządzeniem Ministra Zdrowia z 19.09.2023 (s. 7); receptomaty s. 40–42.
+
+[^rpp]: Rzecznik Praw Pacjenta, [Rzecznik Praw Pacjenta reaguje na nadużycia w receptomatach](https://www.gov.pl/web/rpp/rzecznik-praw-pacjenta-reaguje-na-naduzycia-w-receptomatach), 27.08.2026 — dane na 25.08.2026.
+
+[^prawo-zakaz]: Prawo.pl, [Recepty bez wizyt lekarskich](https://www.prawo.pl/zdrowie/recepty-bez-wizyt-lekarskich,1537984.html), 06.02.2026.
+
+[^fentanyl]: Poradnik Zdrowie, [Recepta na fentanyl wystawiona na minister zdrowia](https://www.poradnikzdrowie.pl/aktualnosci/recepta-na-fentanyl-wystawiona-na-minister-zdrowia-to-skandal-ze-system-tego-nie-wychwycil-aa-UAve-6Y8o-yL3q.html), 20.02.2025.
+
+[^wsa]: Rzecznik Praw Pacjenta, [WSA po raz kolejny potwierdził stanowisko Rzecznika w sprawie tzw. receptomatów](https://www.gov.pl/web/rpp/wsa-po-raz-kolejny-potwierdzil-stanowisko-rzecznika-praw-pacjenta-w-sprawie-tzw-receptomatow-ankieta-internetowa-nawet-polaczona-z-wymiana-informacji-droga-tekstowa-nie-jest-badaniem), 07.08.2026.
+
+[^mz-interp]: Sejm RP, [odpowiedź Ministerstwa Zdrowia na interpelację nr 18219 w sprawie uregulowania działalności tzw. receptomatów](https://sejm.gov.pl/sejm10.nsf/interpelacjaTresc.xsp?key=DWLHPB), 29.07.2026.
+
+[^szarlatan]: XYZ, [„Lex szarlatan” bez podpisu. Ustawa trafi do TK](https://xyz.pl/?p=240623), 20.08.2026.
+
+[^nfz-receptura]: NFZ, [Skoordynowana akcja organów ścigania i Narodowego Funduszu Zdrowia. Rozbito grupy przestępcze, które wyłudzały środki z NFZ](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/skoordynowana-akcja-organow-scigania-i-narodowego-funduszu-zdrowia-rozbito-grupy-przestepcze-ktore-wyludzaly-srodki-z-nfz,8812.html), 30.07.2025; także [Prokuratura Okręgowa w Zielonej Górze](https://www.gov.pl/web/po-zielona-gora/prokuratura-okregowa-w-zielonej-gorze-i-cbsp-uderzaja-w-mafie-refundacyjne--trzy-grupy-przestepcze-rozbite-straty-nfz-to-ponad-82-miliony-zlotych).
+
+[^mgrfarm]: mgr.farm, [Apteka czy fabryka pustych faktur? Kulisy procederu wyłudzania refundacji i VAT na lekach recepturowych](https://mgr.farm/aktualnosci/apteka-czy-fabryka-pustych-faktur-kulisy-procederu-wyludzania-refundacji-i-vat-na-lekach-recepturowych/), 16.04.2026.
+
+[^kontrole]: Prawo.pl, [Prawie połowa recept zrealizowana z błędami. Posypały się kary](https://www.prawo.pl/zdrowie/prawie-polowa-recept-zawierala-bledy-kontrola-nfz,528905.html), 06.09.2024 — kontrole NFZ w II kw. 2024 r.
+
+[^rz-2023]: Rynek Zdrowia, [NFZ skontrolował recepty. Posypały się kary](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/NFZ-skontrolowal-recepty-Posypaly-sie-kary-srednio-prawie-13-tys-zl-na-apteke,246913,1.html), 21.06.2023 — kontrole aptek w I kw. 2023 r.
+
+[^gif]: Główny Inspektorat Farmaceutyczny, [Odwrócony łańcuch — pytania i odpowiedzi](https://archiwum.gif.gov.pl/pl/aktualnosci/731,Odwrocony-lancuch-pytania-i-odpowiedzi.html) (archiwum serwisu GIF).
+
+[^prawo-kontynuacja]: Prawo.pl, [W jaki sposób pacjent może zamówić receptę w ramach kontynuacji](https://www.prawo.pl/zdrowie/w-jaki-sposob-pacjent-moze-zamowic-recepte-w-ramach-kontynuacji,371780.html), 14.02.2019 — art. 42 ust. 2 ustawy o zawodach lekarza i lekarza dentysty.
+
+[^nik]: NIK, [Obciążenia medyków pracami administracyjnymi](https://www.nik.gov.pl/aktualnosci/obciazenia-medykow-pracami-administracyjnymi.html), 28.09.2021.
+
+[^pilotaz]: NFZ, [Komunikat w sprawie przedłużenia pilotażu usług farmaceuty w zakresie zdrowia reprodukcyjnego](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/komunikat-w-sprawie-przedluzenia-pilotazu-uslug-farmaceuty-w-zakresie-zdrowia-reprodukcyjnego,8966.html), 30.06.2026.

@@ -1,0 +1,141 @@
+---
+/**
+ * Limit przyjęć na kierunek lekarski rok po roku: limit ogółem z paskiem (część po polsku
+ * i pula w języku obcym na wspólnej skali), pula w języku obcym, jej udział i rozporządzenie,
+ * z którego pochodzi wiersz. Jedna ilustracja zamiast wykresu i osobnej tabeli.
+ * W wąskim kontenerze pasek znika, a z oznaczenia aktu zostaje sama pozycja (rok = rok naboru).
+ * Nowelizacje z tego samego naboru (`amendments`) stoją po znaku + — suma w wierszu je obejmuje.
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import { FIRST, LATEST, LIMITS, SUM, share } from '@/data/english-division';
+import { formatPL } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Props {
+  /** teza tabeli — zdanie nad nią */
+  title?: string;
+}
+
+const { title } = Astro.props;
+const max = Math.max(...LIMITS.map((r) => r.total));
+---
+<Figure
+  title={title}
+  note={`Limit to górna granica przyjęć ustalona w rozporządzeniu Ministra Zdrowia, a nie liczba przyjętych ani absolwentów. Liczymy wersję końcową: rozporządzenie razem z nowelizacjami z tego samego naboru, które w części lat dodawały miejsca po polsku (w tabeli po znaku +). Limit ogółem to suma czterech kolumn załącznika: studiów stacjonarnych po polsku (z odrębną pulą dla cudzoziemców), niestacjonarnych po polsku i studiów w języku innym niż polski. * Akt z 2015 r. ma w PDF rozjechany układ kolumn — sumy sprawdziliśmy ponownie w warstwie tekstowej dokumentu.`}
+  source={{ label: `rozporządzenia MZ w sprawie limitu przyjęć, zał. nr 1 — obliczenia własne; ostatni rok: Dz.U. ${LATEST.act.label}`, href: LATEST.act.href }}
+>
+  <p class="lim__legend" aria-hidden="true">
+    <span class="lim__key lim__key--pl"></span>miejsca po polsku
+    <span class="lim__key lim__key--fx"></span>w języku obcym
+  </p>
+  <table class="lim" data-reveal="grow" style={`--max: ${max}`}>
+    <caption class="sr-only">
+      Limit przyjęć na kierunek lekarski w latach {FIRST.year}–{LATEST.year}: ogółem od {formatPL(FIRST.total)} do {formatPL(LATEST.total)} miejsc, w tym w języku obcym od {formatPL(FIRST.foreign)} do {formatPL(LATEST.foreign)}.
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Rok akad.</th>
+        <th scope="col">Limit ogółem<span class="lim__sub">wersja końcowa, z nowelizacjami</span></th>
+        <th scope="col">W języku obcym</th>
+        <th scope="col">Udział</th>
+        <th scope="col">Dz.U.</th>
+      </tr>
+    </thead>
+    <tbody>
+      {LIMITS.map((r, i) => (
+        <tr style={`--v: ${r.total}; --fx: ${r.foreign}; --i: ${i}`}>
+          <th scope="row">{r.year}{r.flag && <span class="lim__flag" aria-label="zastrzeżenie w podpisie">*</span>}</th>
+          <td class="lim__total">
+            <span class="lim__v">{formatPL(r.total)}</span>
+            <span class="lim__bar" aria-hidden="true"><span></span></span>
+          </td>
+          <td class="lim__fx">{formatPL(r.foreign)}</td>
+          <td>{share(r.foreign, r.total)}</td>
+          <td class="lim__act">
+            <a {...linkAttrs(r.act.href)}><span class="lim__act-year">{r.act.year}, </span>poz. {r.act.pos}</a>
+            {r.amendments?.map((m) => (
+              <><span class="lim__plus"> + </span><a {...linkAttrs(m.href)} aria-label={`nowelizacja: Dz.U. ${m.label}`}>{m.pos}</a></>
+            ))}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row">Razem</th>
+        <td class="lim__total"><span class="lim__v">{formatPL(SUM.total)}</span></td>
+        <td class="lim__fx">{formatPL(SUM.foreign)}</td>
+        <td>{share(SUM.foreign, SUM.total)}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+</Figure>
+
+<style>
+  .lim__legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-bottom: 12px; font: 400 0.8125rem/1.4 var(--f-body); color: var(--text); }
+  .lim__key { display: inline-block; width: 10px; height: 10px; }
+  .lim__key--fx { margin-left: 12px; background: var(--blue); }
+  .lim__key--pl { background: var(--chart); }
+
+  .lim { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  /* .lim przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .lim thead th {
+    padding: 0 12px 10px 0; text-align: right; vertical-align: bottom;
+    font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .lim thead th:first-child, .lim thead th:nth-child(2), .lim thead th:last-child { text-align: left; }
+  .lim thead th:nth-child(2) { width: 46%; }
+  .lim__sub { display: block; margin-top: 2px; letter-spacing: .02em; text-transform: none; }
+
+  .lim tbody th, .lim tbody td, .lim tfoot th, .lim tfoot td {
+    padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); vertical-align: middle; text-align: right;
+  }
+  .lim tbody th, .lim tfoot th { text-align: left; font: 500 0.90625rem/1.3 var(--f-display); letter-spacing: -0.01em; text-transform: none; color: var(--ink); white-space: nowrap; }
+  .lim td { font-size: 0.875rem; color: var(--text); }
+  .lim .lim__fx { color: var(--ink); font-weight: 500; }
+  .lim__flag { margin-left: 2px; color: var(--muted); }
+
+  /* .lim tbody/tfoot przed td — reguła musi przeważyć ogólne style komórek wyżej i w wersji wąskiej */
+  .lim :is(tbody, tfoot) td.lim__total { display: grid; grid-template-columns: 3.5rem 1fr; align-items: center; gap: 12px; text-align: left; }
+  .lim__v { color: var(--ink); text-align: right; }
+
+  /* Pasek: limit ogółem na wspólnej skali; pula w języku obcym to końcowy odcinek w kobalcie */
+  .lim__bar { position: relative; height: 10px; }
+  .lim__bar::before, .lim__bar span {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 0;
+    transform-origin: left; transition: transform 1.1s var(--ease) calc(var(--i) * 40ms);
+  }
+  .lim__bar::before { width: calc(var(--v) / var(--max) * 100%); background: var(--chart); }
+  .lim__bar span {
+    left: calc((var(--v) - var(--fx)) / var(--max) * 100%);
+    width: calc(var(--fx) / var(--max) * 100%);
+    background: var(--blue); box-shadow: -2px 0 0 var(--bg);
+  }
+  .lim.is-armed .lim__bar::before, .lim.is-armed .lim__bar span { transform: scaleX(0); }
+  .lim.is-armed.is-in .lim__bar::before, .lim.is-armed.is-in .lim__bar span { transform: scaleX(1); }
+  /* odcinek obcojęzyczny rośnie od własnego początku — po polskim */
+  .lim__bar span { transition-delay: calc(var(--i) * 40ms + 0.5s); }
+
+  .lim__act { text-align: left; white-space: nowrap; }
+  /* .lim przed selektorem — Prose koloruje linki bez klasy */
+  .lim .lim__act a { font: 400 0.75rem/1.3 var(--f-mono); color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s; }
+  .lim .lim__act a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .lim__plus { font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted); }
+
+  .lim tfoot th, .lim tfoot td { border-top: 1px solid var(--ink); border-bottom: 0; }
+  .lim tbody tr:last-child > * { border-bottom: 0; }
+  .lim tfoot td { color: var(--ink); font-weight: 500; }
+
+  /* Wąsko: bez paska, z oznaczenia aktu zostaje pozycja; kolumny ściśnięte */
+  @container (max-width: 560px) {
+    .lim thead th:nth-child(2) { width: auto; }
+    .lim :is(tbody, tfoot) td.lim__total { display: table-cell; text-align: right; }
+    .lim__bar, .lim__act-year, .lim__sub { display: none; }
+    .lim thead th, .lim tbody th, .lim tbody td, .lim tfoot th, .lim tfoot td { padding-right: 8px; }
+    .lim tbody th, .lim tfoot th { font-size: 0.8125rem; }
+    .lim td { font-size: 0.8125rem; }
+    .lim thead th { letter-spacing: .03em; }
+  }
+</style>

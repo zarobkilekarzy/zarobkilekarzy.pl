@@ -1,0 +1,46 @@
+---
+/**
+ * Nagłówek strony działu (np. /dane/): okruszki, etykieta, tytuł i lead.
+ * Slot domyślny — pod leadem (metadane, legenda), slot "aside" — prawa kolumna.
+ */
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import { typo } from '@/lib/format';
+
+interface Props {
+  title: string;
+  lead: string;
+  crumbs: { label: string; href?: string }[];
+  eyebrow?: string;
+}
+
+const { title, lead, crumbs, eyebrow } = Astro.props;
+const hasAside = Astro.slots.has('aside');
+---
+<header class="phead">
+  <Breadcrumbs items={crumbs} />
+  <div class:list={['phead__grid', { 'phead__grid--aside': hasAside }]}>
+    <div>
+      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+      <Heading as="h1" size="display" class="phead__title">{typo(title)}</Heading>
+      <p class="lead phead__lead">{typo(lead)}</p>
+      <slot />
+    </div>
+    {hasAside && <div class="phead__aside"><slot name="aside" /></div>}
+  </div>
+</header>
+
+<style>
+  .phead__grid { display: grid; gap: 40px clamp(40px, 6vw, 96px); align-items: end; margin-top: 40px; }
+  .phead__grid--aside { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+  .phead__title { font-size: clamp(3rem, 6vw, 5.5rem); margin-bottom: 24px; }
+  .phead__lead { font-size: 1.1875rem; max-width: 40em; }
+
+  @media (max-width: 1024px) {
+    .phead__grid--aside { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .phead__lead { font-size: 1.0625rem; }
+  }
+</style>

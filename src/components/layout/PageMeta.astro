@@ -1,0 +1,41 @@
+---
+/** Rząd metadanych strony (liczba materiałów, działy, data). Slot — np. legenda pod spodem. */
+import { formatDate, isoDate } from '@/lib/format';
+
+interface Props {
+  items: { label: string; value: string | number | Date }[];
+}
+
+const { items } = Astro.props;
+---
+<div class="pmeta">
+  <div class="pmeta__row">
+    <dl>
+      {items.map(({ label, value }) => (
+        <div>
+          <dt>{label}</dt>
+          <dd>{value instanceof Date ? <time datetime={isoDate(value)}>{formatDate(value)}</time> : value}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+  <slot />
+</div>
+
+<style>
+  /* Separator przed każdą pozycją, a dl wysunięty w lewo o odstęp + kreskę: kreska na początku
+     każdego wiersza znika pod overflow, więc po zawinięciu (wąski ekran, „Większy tekst”)
+     nowy wiersz nie zaczyna się od kreski i wcięcia */
+  .pmeta { margin-top: 32px; }
+  .pmeta__row { overflow: hidden; }
+  dl { display: flex; flex-wrap: wrap; margin-left: -29px; border-top: 1px solid var(--line); }
+  dl > div { padding: 14px 28px 0; border-left: 1px solid var(--line); }
+  dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  dd { font: 400 1.0625rem/1.2 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+
+  /* Dłuższe wartości nie mieszczą się w rzędzie — siatka 2×2 bez pionowych separatorów (jak w ArticleHeader) */
+  @media (max-width: 720px) {
+    dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; margin-left: 0; }
+    dl > div { padding: 14px 0 0; border-left: 0; }
+  }
+</style>

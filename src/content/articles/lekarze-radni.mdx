@@ -1,0 +1,212 @@
+---
+title: "Lekarze-radni: roczne dochody jawne z mocy prawa"
+seoTitle: "Lekarze-radni: dochody z oświadczeń"
+category: Analiza
+topic: pieniadz
+order: 7
+date: 2026-08-14
+updated: 2026-10-15
+stat: { value: "632,6", unit: "tys. zł — mediana dochodu z pracy za 2025 r. (113 sprawdzonych oświadczeń)" }
+summary: "Oświadczenia majątkowe radnych to rzadkie miejsce, w którym widać roczny dochód lekarza z praktyki, etatu i umów naraz. Sprawdziliśmy w oryginałach 183 oświadczenia zebrane przez użytkownika X @tomo9000p: za 2025 r. mediana dochodu z pracy to ok. 633 tys. zł, a co ósma osoba przekroczyła milion."
+description: "Oświadczenia majątkowe lekarzy-radnych sprawdzone w oryginałach: mediana dochodu z pracy za 2025 r. ok. 633 tys. zł. Co widać, czego nie i co poprawiliśmy."
+keyPoints:
+  - Radny składa co roku oświadczenie majątkowe, w którym podaje dochód z każdego tytułu osobno, a jego jawna część trafia do BIP. Dlatego u lekarza, który jest radnym, widać naraz praktykę, etat i umowy. U lekarza, który nie pełni funkcji w samorządzie, takiej sumy nie widać nigdzie.
+  - Za 2025 r. mediana dochodu z pracy w 113 potwierdzonych oświadczeniach wyniosła ok. 633 tys. zł, a 14 osób wykazało co najmniej milion. Sama praktyka daje medianę ok. 500 tys. zł — u wielu radnych dużą część dochodu stanowią etat i umowy.
+  - Zbiór zebrany społecznie miał błąd w co czwartym wierszu, najczęściej przychód wpisany jako dochód albo zły rok. 46 wierszy poprawiliśmy na podstawie oświadczeń, a 9 kwot nie dało się potwierdzić — te nie wchodzą do statystyk.
+  - To nie jest obraz typowego lekarza. Radni to osoby, które kandydowały i wygrały wybory, w większości z własną praktyką. Zbiór pokazuje, jak szeroki jest rozrzut dochodów, a nie ile zarabia przeciętny lekarz.
+editorial:
+  - >-
+    Lekarze-radni od lat pokazują swoje roczne dochody i nikt nie uważa tego za nadmierną ingerencję.
+    Jawność ta jest jednak przypadkowa: obejmuje tego, kto akurat wygrał wybory, rozsypana jest po
+    setkach biuletynów, często w skanach odręcznie wypełnionych formularzy, i pokazuje więcej, niż
+    potrzeba — z imieniem, nazwiskiem i majątkiem.
+  - >-
+    Postulujemy narzędzie węższe, ale obejmujące wszystkich: jawne łączne wypłaty z publicznych
+    pieniędzy dla każdej osoby, pod stałym identyfikatorem, bez nazwisk. Wtedy kwota radnego byłaby
+    jednym punktem na pełnym rozkładzie, a nie wyjątkiem.
+related:
+  - brak-jawnosci
+  - zarobki-dyrektorow-szpitali
+  - rekordy
+  - kontrakt-vs-etat
+  - rozklad-wynagrodzen
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import TwoLists from '@/components/blocks/TwoLists.astro';
+import RadniTable from '@/components/radni/RadniTable.astro';
+import XProfile from '@/components/blocks/XProfile.astro';
+import tomoAvatar from '@/assets/people/tomo9000p.jpg';
+import nicoboguAvatar from '@/assets/people/nicobogu.jpg';
+import { formatPL, plural } from '@/lib/format';
+import { RADNI, STATS, STATUS, BLEDY, RODZAJ, WIERSZY, Z_BLEDEM, POZA_LATAMI, PRAKTYKA, STARE, ZBIOR, LATA, MAX_PRZYCHOD, statsTable, rozklad, statusTable, bledyTable } from '@/data/lekarze-radni';
+
+export const L25 = STATS.laczny[2025];
+export const L24 = STATS.laczny[2024];
+export const D25 = STATS.dzialalnosc[2025];
+export const tys = (n) => formatPL(n / 1000, 1);
+export const mln = (n) => formatPL(n / 1_000_000, 2);
+export const osob = (n) => `${n} ${plural(n, ['osoba', 'osoby', 'osób'])}`;
+export const rozklad25 = rozklad(2025);
+export const ZBIOR_SRC = { label: `oświadczenia majątkowe w BIP; zestawienie i sprawdzenie redakcji, ${ZBIOR.sprawdzono}`, href: '#zbior' };
+
+Lekarz, który zostaje radnym gminy, powiatu albo województwa, co roku składa oświadczenie majątkowe. Wpisuje w nim dochód z każdego tytułu osobno: z praktyki, z etatu w szpitalu, z umów, ze spółki. Jawna część oświadczenia trafia do Biuletynu Informacji Publicznej.[^oswiadczenia] U radnego widać więc naraz to, czego u innych lekarzy nie sumuje nikt — dochód z wielu miejsc pracy w jednym roku.
+
+Użytkownik serwisu X Tomo (@tomo9000p) zebrał {ZBIOR.wierszy} takie oświadczenia. Każdą kwotę porównaliśmy z oświadczeniem w BIP. Zbiór okazał się w dużej części błędny, więc liczby poniżej pochodzą z poprawionych wierszy, osobno za 2025 i 2024 r.[^zbior] Nie podajemy nazwisk: interesuje nas mechanizm, a nie osoby.
+
+<StatRow
+  label="Lekarze-radni w liczbach"
+  items={[
+    { prefix: '~', value: Math.round(L25.mediana / 100) / 10, decimals: 1, unit: 'tys. zł', desc: `mediana rocznego dochodu z pracy za 2025 r. — z ${L25.n} oświadczeń, których kwotę potwierdziliśmy`, accuracy: 'exact', source: ZBIOR_SRC.label, href: ZBIOR_SRC.href },
+    { value: L25.od1mln, unit: `z ${L25.n}`, desc: 'radnych-lekarzy wykazało za 2025 r. co najmniej milion złotych dochodu z pracy', accuracy: 'exact', source: ZBIOR_SRC.label, href: ZBIOR_SRC.href },
+    { value: STATUS.poprawione, unit: `z ${WIERSZY}`, desc: 'wierszy zbioru trzeba było poprawić po porównaniu z oświadczeniem — kwotę, rok albo przychód wpisany jako dochód', accuracy: 'exact', source: ZBIOR_SRC.label, href: ZBIOR_SRC.href },
+  ]}
+/>
+
+## Dlaczego dochód radnego jest jawny
+
+Obowiązek wynika z trzech ustaw samorządowych: o samorządzie gminnym (art. 24h i 24i), powiatowym (art. 25c i 25d) i województwa (art. 27c i 27d). Radny składa oświadczenie co roku do 30 kwietnia, według stanu na koniec poprzedniego roku. Informacje z niego są jawne, z wyjątkiem adresu i położenia nieruchomości.[^oswiadczenia] Dochód w oświadczeniu złożonym w 2026 r. dotyczy więc 2025 r. — i tak liczymy rok w zbiorze.
+
+Te same przepisy obejmują m.in. kierowników jednostek samorządu, w tym dyrektorów szpitali samorządowych. Ich oświadczenia opisujemy w analizie [Ile zarabiają dyrektorzy szpitali](/analizy/zarobki-dyrektorow-szpitali/). Lekarz, który nie jest radnym ani dyrektorem, oświadczenia nie składa. Jego dochodów z kilku placówek nie sumuje żadne publiczne źródło — ten mechanizm opisujemy w tekście [Brak jawności](/mechanizmy/brak-jawnosci/).
+
+## Co widać w oświadczeniach
+
+Za 2025 r. zbiór ma {L25.wierszy} wierszy, a kwotę dochodu z pracy potwierdziliśmy w {L25.n} z nich. Mediana wynosi {formatPL(L25.mediana)} zł. Liczba osób z dochodem od 500 tys. zł: {L25.od500}, od miliona: {L25.od1mln}. Najwyższy dochód to {formatPL(L25.max)} zł.[^zbior] Tę samą najwyższą kwotę za 2025 r. podała Rzeczpospolita we własnej analizie oświadczeń radnych.[^rp]
+
+Za 2024 r. zbiór jest mniejszy: z {L24.wierszy} wierszy kwotę potwierdziliśmy w {L24.n}. Mediana to {formatPL(L24.mediana)} zł, a liczba osób z dochodem od miliona: {L24.od1mln}.[^zbior] Lat nie łączymy, bo to dochody z różnych okresów, a część osób jest w zbiorze tylko w jednym z nich.
+
+<Figure
+  title={`Dochód z pracy: mediana ${tys(L25.mediana)} tys. zł za 2025 r. i ${tys(L24.mediana)} tys. zł za 2024 r.`}
+  note="Dochód z pracy to suma odnotowanych tytułów: praktyka, etat, umowy, zarząd i dywidenda ze spółki. Bez diety radnego, emerytury, najmu i dochodów małżonka — to dolna granica. W statystyce są tylko wiersze, których kwotę i rok potwierdza oświadczenie. „Jedna kwota” oznacza, że przy praktyce oświadczenie podaje jedną liczbę w rubryce „przychód i dochód” i nie wiadomo, czy to przychód, czy dochód."
+  source={ZBIOR_SRC}
+>
+  <Comparison table={statsTable('laczny')} />
+</Figure>
+
+Większość potwierdzonych dochodów za 2025 r. mieści się między 250 tys. a milionem złotych. Powyżej miliona rozkład szybko rzednie: najwyższa kwota, {mln(L25.max)} mln zł, jest jedyną powyżej półtora miliona.[^zbior]
+
+<Figure
+  title={`Za 2025 r. ${L25.od1mln} z ${L25.n} radnych-lekarzy wykazało co najmniej milion złotych dochodu z pracy`}
+  note="Liczba osób w każdym przedziale rocznego dochodu z pracy za 2025 r.; tylko wiersze z potwierdzoną kwotą."
+  source={ZBIOR_SRC}
+>
+  <BarChart
+    rows={rozklad25}
+    max={Math.max(...rozklad25.map((r) => r.value))}
+    unit="osób"
+    caption={`Rozkład dochodu z pracy za 2025 r., ${L25.n} oświadczeń: ${rozklad25.map((r) => `${r.label}: ${r.value}`).join(', ')}.`}
+  />
+</Figure>
+
+## Praktyka to nie wszystko
+
+Pierwotny zbiór miał jedną kolumnę „dochód”, opisaną jako dochód z działalności leczniczej. W {BLEDY.suma} wierszach była to jednak suma kilku tytułów: praktyki, etatu w szpitalu, spółki i umów.[^zbior] Rozdzieliliśmy je. Dochód z samej praktyki — z jednoosobowej działalności, gabinetu albo spółki lekarzy — wygląda inaczej niż dochód z pracy łącznie.
+
+<Figure
+  title={`Sama praktyka: mediana ${tys(D25.mediana)} tys. zł za 2025 r.`}
+  note="Dochód z własnej praktyki lub działalności leczniczej (jednoosobowa działalność, gabinet, spółka cywilna, jawna albo partnerska). Bez wierszy, w których oświadczenie podaje przy praktyce tylko przychód, i bez radnych, którzy praktyki nie prowadzą."
+  source={ZBIOR_SRC}
+>
+  <Comparison table={statsTable('dzialalnosc')} />
+</Figure>
+
+W {PRAKTYKA.ponizejPolowy} z {PRAKTYKA.zObiema} potwierdzonych wierszy, w których znamy obie kwoty, praktyka to mniej niż połowa dochodu z pracy. Resztę daje etat albo umowy w szpitalach. Kolejnych {PRAKTYKA.bezPraktyki} radnych praktyki nie prowadzi wcale: ich dochód to etat, umowy albo dywidenda z własnej spółki medycznej.[^zbior] Ten sam lekarz bywa więc jednocześnie przedsiębiorcą i pracownikiem kilku placówek. Co z tego wynika dla jawności, opisujemy w tekście [Kontrakt czy etat](/mechanizmy/kontrakt-vs-etat/).
+
+### Przychód to nie dochód
+
+Przychód to wpływy praktyki przed odjęciem kosztów: pensji personelu, czynszu, sprzętu. Bywa wielokrotnie wyższy od dochodu. W zbiorze najwyższy przychód z praktyki, {mln(MAX_PRZYCHOD.przychod)} mln zł, dał {formatPL(MAX_PRZYCHOD.dzialalnosc)} zł dochodu.[^zbior] Dlatego statystyki liczymy wyłącznie na dochodzie.
+
+W {RODZAJ.tylkoPrzychod} oświadczeniach przy praktyce jest tylko przychód — zwykle u lekarzy rozliczanych ryczałtem, którzy dochodu nie wyliczają. Pierwotny zbiór wpisywał wtedy przychód jako dochód. My zostawiamy dochód pusty i te wiersze nie wchodzą do statystyk. W kolejnych {RODZAJ.jednaKwota} oświadczeniach przy praktyce stoi jedna kwota w rubryce „przychód i dochód”. Liczymy ją jako dochód, ale w tabelach podajemy, ilu wierszy to dotyczy.[^zbior]
+
+## Czego oświadczenia nie pokazują
+
+<TwoLists
+  yes={{
+    title: 'Co widać',
+    note: 'Oświadczenie majątkowe radnego za dany rok.',
+    items: [
+      'dochód z każdego tytułu osobno: praktyka, etat, umowy, spółki',
+      'przychód z praktyki, jeśli radny go poda',
+      'dietę radnego, emeryturę i najem — jako osobne pozycje',
+      'rok, którego dotyczy dochód (data złożenia minus jeden)',
+    ],
+  }}
+  no={{
+    title: 'Czego nie widać',
+    note: 'Formularz nie pyta o to wprost.',
+    items: [
+      'ile z dochodu to pieniądze z NFZ, a ile prywatne wizyty',
+      'ile godzin i w ilu placówkach przepracowano',
+      'dochodu z praktyki, gdy oświadczenie podaje tylko przychód',
+      'dochodów lekarzy, którzy nie są radnymi ani dyrektorami',
+    ],
+  }}
+/>
+
+Formularz jest wypełniany ręcznie i każdy wypełnia go inaczej. Ta sama kwota trafia raz do rubryki o działalności, raz do „innych dochodów”. Zdarza się oświadczenie sprzeczne wewnętrznie albo z rokiem w treści innym niż data złożenia.[^zbior] Porównywanie oświadczeń wymaga więc przeczytania każdego z osobna.
+
+## Dlaczego to nie jest obraz typowego lekarza
+
+Zbiór jest wyselekcjonowany. Radni to lekarze, którzy kandydowali i wygrali wybory, w większości z własną praktyką. Zbiór zebrała jedna osoba i nie wiemy, jaka część wszystkich radnych-lekarzy do niego trafiła. Nie obejmuje też lekarzy pracujących wyłącznie na etacie, którzy funkcji w samorządzie nie pełnią.
+
+Wynik zależy od tego, kogo zbiór obejmuje. Serwis Co w Zdrowiu przeanalizował inny zbiór — 160 oświadczeń radnych-lekarzy — i otrzymał medianę ok. 285 tys. zł oraz najwyższy dochód 4,9 mln zł.[^cowzdrowiu] Żadna z tych median nie mówi, ile zarabia przeciętny lekarz w Polsce. Mówią tylko, jak szeroki jest rozrzut dochodów wśród osób, których dochód akurat widać.
+
+Pojedyncze najwyższe rozliczenia lekarzy z innych źródeł — list płac, kontroli, odpowiedzi szpitali — zbieramy w [Rekordowych rozliczeniach](/dane/rekordy/). Osób z tego zbioru tam nie powtarzamy.
+
+## Jak sprawdziliśmy zbiór
+
+Oświadczenia zebrał Tomo (@tomo9000p), a w analizie pomógł nicolabo (@nicobogu); każdą kwotę sprawdziliśmy w oświadczeniu.[^zbior] Otworzyliśmy oświadczenie pod linkiem z każdego wiersza, a gdy link prowadził do listy, odszukaliśmy plik radnego w BIP. Większość plików to skany odręcznie wypełnionych formularzy, więc kwoty odczytywaliśmy z obrazu strony. Rok liczyliśmy od daty złożenia: oświadczenie z kwietnia 2026 r. dotyczy 2025 r. Trzech oświadczeń nie znaleźliśmy — zbiór nie miał do nich działającego linku.
+
+<XProfile name="Tomo" handle="tomo9000p" avatar={tomoAvatar} eyebrow="Zebranie danych" width="md">
+  Zebrał oświadczenia majątkowe lekarzy-radnych, na których opiera się ta analiza. Dziękujemy!
+</XProfile>
+
+<XProfile name="nicolabo" handle="nicobogu" avatar={nicoboguAvatar} eyebrow="Pomoc w analizie" link={{ label: 'Hospitalizacje w Polsce', href: 'https://hospitalizacje-nfz.pages.dev/' }} width="md">
+  Pomógł w analizie zbioru. Dziękujemy!
+</XProfile>
+
+<Figure
+  title={`${STATUS.zgodne} z ${WIERSZY} wierszy zgadzało się z oświadczeniem, ${STATUS.poprawione} poprawiliśmy`}
+  note={`Opublikowane wiersze: ${WIERSZY}. Do statystyk wchodzą tylko wiersze zgodne i poprawione, za 2024 lub 2025 r.; ${POZA_LATAMI} wiersze mają inny rok albo rok nieznany.`}
+  source={ZBIOR_SRC}
+>
+  <Comparison table={statusTable} />
+</Figure>
+
+Błędy nie były losowe. Powtarzało się kilka typów, a jeden wiersz mógł mieć ich kilka. Poza samym nazwaniem sumy tytułów „dochodem z praktyki” błąd miało {Z_BLEDEM} wierszy, czyli co czwarty.[^zbior]
+
+<Figure
+  title="Najczęstszy błąd: suma kilku tytułów albo przychód zamiast dochodu"
+  note="Liczba wierszy z danym typem błędu; jeden wiersz może mieć kilka."
+  source={ZBIOR_SRC}
+>
+  <Comparison table={bledyTable} />
+</Figure>
+
+Z zestawienia wyłączyliśmy dwa wiersze. Jeden dotyczył małżonki radnego, a nie radnej — wyłączył go już autor zbioru. Drugi dotyczył osoby, wobec której toczy się postępowanie karne: wiersze osób z postępowaniami w toku wyłączamy. Nazwisk nie publikujemy, a specjalność podajemy za autorem zbioru, bo oświadczenia jej nie zawierają. Każdy wiersz w tabeli niżej linkuje do oświadczenia w BIP, gdzie kwotę można sprawdzić.
+
+Wcześniejsza wersja tej strony traktowała {STARE.wierszy} oświadczenia jako jedną grupę i podawała medianę ok. 633 tys. zł oraz {osob(STARE.od1mln)} z dochodem od miliona wzwyż. Te liczby mieszały lata 2024 i 2025, przychód z dochodem oraz sumy różnych tytułów z dochodem z praktyki. Po poprawkach liczba osób z dochodem z pracy od miliona to {L25.od1mln} za 2025 r. i {L24.od1mln} za 2024 r. Mediana dochodu z pracy za 2025 r. wyszła taka sama jak dawna mediana całego zbioru, ale to zbieg okoliczności: liczona jest z innych wierszy i z innej definicji, a mediana samej praktyki za 2025 r. to {tys(D25.mediana)} tys. zł.[^zbior]
+
+Widzisz błąd w wierszu? Napisz na [sprostowania@zarobkilekarzy.pl](mailto:sprostowania@zarobkilekarzy.pl) — poprawimy go po sprawdzeniu w oświadczeniu.
+
+## Pełny zbiór
+
+Wiersze pogrupowane po roku dochodu, w każdej grupie od najwyższego dochodu z pracy. Przy każdym wierszu podajemy kwotę z pierwotnego zbioru i status sprawdzenia.
+
+<RadniTable id="zbior" rows={RADNI} years={LATA} caption="Oświadczenia majątkowe radnych-lekarzy: dochód z praktyki, dochód z pracy łącznie, status sprawdzenia i link do oświadczenia" />
+
+## Co z tego wynika
+
+Oświadczenia radnych pokazują, że roczny dochód lekarza z wielu miejsc pracy da się zebrać w jednym dokumencie i opublikować. Robi się to jednak tylko dla osób, które pełnią funkcję w samorządzie, w formie, której nie da się porównać bez czytania każdego skanu. Dla pozostałych lekarzy takiej sumy nie ma w żadnym publicznym źródle.
+
+Postulujemy, by łączne wypłaty z publicznych pieniędzy dla każdej osoby pracującej w placówkach z umową z NFZ były jawne pod stałym identyfikatorem, bez nazwisk. Szczegóły opisujemy na stronie [postulatu](/postulat/).
+
+[^oswiadczenia]: Obowiązek i jawność oświadczeń majątkowych: [ustawa o samorządzie gminnym](https://api.sejm.gov.pl/eli/acts/DU/2026/662/text.pdf) (t.j. Dz.U. 2026 poz. 662), art. 24h i 24i; [ustawa o samorządzie powiatowym](https://api.sejm.gov.pl/eli/acts/DU/2025/1684/text.pdf) (t.j. Dz.U. 2025 poz. 1684), art. 25c i 25d; [ustawa o samorządzie województwa](https://api.sejm.gov.pl/eli/acts/DU/2026/720/text.pdf) (t.j. Dz.U. 2026 poz. 720), art. 27c i 27d.
+
+[^zbior]: Zestawienie redakcji z oświadczeń majątkowych radnych będących lekarzami, publikowanych w BIP jednostek samorządu. Zbiór zebrany przez użytkownika X @tomo9000p (stan 14.08.2026), każdy wiersz porównany z oświadczeniem 15.10.2026; link do oświadczenia przy każdym wierszu w [pełnym zbiorze](#zbior).
+
+[^rp]: Rzeczpospolita, [Ponad milion złotych za rok pracy dla lekarza radnego w Polsce. Wyniki analizy](https://www.rp.pl/polityka/art44928601-ponad-milion-zlotych-za-rok-pracy-dla-lekarza-radnego-w-polsce-wyniki-analizy) — najwyższy dochód: 2,15 mln zł (oświadczenie za 2025 r.).
+
+[^cowzdrowiu]: Co w Zdrowiu, [Ile zarabiają lekarze-radni? Rekord to 4,9 mln zł](https://cowzdrowiu.pl/aktualnosci/post/ile-zarabiaja-lekarze-radni-rekord-to-49-mln-zl) — analiza 160 oświadczeń majątkowych radnych-lekarzy (inny zbiór niż nasz).

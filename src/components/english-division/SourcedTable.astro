@@ -1,0 +1,84 @@
+---
+/**
+ * Tabela, w której każdy wiersz ma własne źródło (strona uczelni, załącznik zarządzenia) —
+ * ostatnia kolumna to link. Wygląd jak blocks/Comparison: pierwsza kolumna nazywa wiersz,
+ * a w wąskim kontenerze wiersz staje się kartą z etykietą kolumny nad komórką.
+ * Tabelę obejmuje Figure (teza, uwagi); podpis Figure nie ma wtedy jednego źródła.
+ */
+import { typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Row {
+  cells: string[];
+  /** źródło wiersza; brak = wiersz wyliczony z pozostałych (np. relacja) */
+  source?: { label: string; href: string };
+}
+
+interface Props {
+  /** nagłówki kolumn bez kolumny źródła */
+  columns: string[];
+  rows: Row[];
+  /** nagłówek kolumny źródła */
+  sourceLabel?: string;
+  /** opis tabeli dla czytników ekranu */
+  caption: string;
+}
+
+const { columns, rows, sourceLabel = 'Źródło', caption } = Astro.props;
+---
+<div class="st-wrap">
+  <table class="st">
+    <caption class="sr-only">{caption}</caption>
+    <thead>
+      <tr>
+        {columns.map((c) => <th scope="col">{typo(c)}</th>)}
+        <th scope="col">{sourceLabel}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row) => (
+        <tr>
+          {row.cells.map((cell, i) =>
+            i === 0 ? (
+              <th scope="row">{typo(cell)}</th>
+            ) : (
+              <td data-label={columns[i]}>{typo(cell)}</td>
+            ),
+          )}
+          <td class="st__src" data-label={sourceLabel}>
+            {row.source ? <a {...linkAttrs(row.source.href)}>{typo(row.source.label)}</a> : '—'}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .st-wrap { container-type: inline-size; }
+  .st { width: 100%; border-collapse: collapse; font-size: 0.9375rem; line-height: 1.5; font-variant-numeric: tabular-nums; }
+  /* .st przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .st thead th {
+    text-align: left; vertical-align: bottom; padding: 0 16px 10px 0;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .st tbody th, .st td { text-align: left; vertical-align: top; padding: 12px 16px 12px 0; border-bottom: 1px solid var(--line); }
+  .st tbody th { font: 500 0.9375rem/1.4 var(--f-display); letter-spacing: -0.01em; text-transform: none; color: var(--ink); width: 30%; }
+  .st td { color: var(--ink-2); }
+  /* .st przed selektorem — Prose koloruje linki bez klasy */
+  .st .st__src a { font: 400 0.75rem/1.5 var(--f-mono); color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s; }
+  .st .st__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .st td.st__src { color: var(--muted); white-space: nowrap; }
+
+  /* Wąsko: wiersz = karta, etykieta kolumny nad komórką */
+  @container (max-width: 640px) {
+    .st thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .st, .st tbody, .st tr, .st tbody th, .st td { display: block; width: auto; }
+    .st tr { padding: 14px 0; border-bottom: 1px solid var(--line-2); }
+    .st tbody th, .st td { padding: 4px 0; border: 0; }
+    .st tbody th { padding-bottom: 6px; font-size: 1rem; }
+    .st td[data-label]::before { content: attr(data-label); display: block; margin: 6px 0 2px; font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .st td.st__src { white-space: normal; }
+  }
+</style>

@@ -1,0 +1,28 @@
+---
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import ArticleFeature from '@/components/blocks/ArticleFeature.astro';
+import ArticleList from '@/components/blocks/ArticleList.astro';
+import { getLatest } from '@/lib/content';
+
+const { featured, rest } = await getLatest(5);
+---
+<Section id="nowe" space="bottom" aria-labelledby="nowe-title">
+  <SectionHead eyebrow="Nowe i zaktualizowane" title="Co nowego w przewodniku" id="nowe-title" layout="row">
+    <LinkArrow slot="action" href="/analizy/">Wszystkie analizy</LinkArrow>
+  </SectionHead>
+
+  <div class="latest">
+    {featured && <ArticleFeature article={featured} />}
+    <ArticleList articles={rest} />
+  </div>
+</Section>
+
+<style>
+  .latest { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(40px, 5vw, 80px); align-items: start; }
+
+  @media (max-width: 1024px) {
+    .latest { grid-template-columns: 1fr; }
+  }
+</style>

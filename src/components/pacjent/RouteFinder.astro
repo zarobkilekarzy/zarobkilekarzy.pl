@@ -1,0 +1,123 @@
+---
+/**
+ * „Co się stało?” — sytuacja pacjenta → właściwy adres. Cel widać już na zwiniętym
+ * wierszu (bo często tylko o to chodzi), a po rozwinięciu: jak, termin, koszt i przyciski
+ * (telefon, e-mail, formularz). Kotwica #id otwiera wiersz.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import type { Route } from '@/lib/pacjent/types';
+import { inline, type Resolve } from '@/lib/inline';
+import { pad2, typo } from '@/lib/format';
+import { isExternal, linkAttrs } from '@/lib/links';
+
+interface Props extends HTMLAttributes<'ol'> {
+  routes: Route[];
+  resolve?: Resolve;
+}
+
+const { routes, resolve, class: className, ...rest } = Astro.props;
+---
+<ol class:list={['routes', className]} {...rest}>
+  {routes.map((r, i) => (
+    <li>
+      <details class="route" id={r.id}>
+        <summary>
+          <span class="route__num" aria-hidden="true">{pad2(i + 1)}</span>
+          <span class="route__head">
+            <span class="route__situation">{typo(r.situation)}</span>
+            <span class="route__examples">{typo(r.examples)}</span>
+            <span class="route__to"><span class="sr-only">Dokąd: </span>{typo(r.to)}</span>
+          </span>
+          <span class="route__toggle" aria-hidden="true"></span>
+        </summary>
+        <div class="route__body">
+          <dl>
+            {r.facts.map((f) => (
+              <div class:list={{ 'is-urgent': f.urgent }}>
+                <dt>{f.label}</dt>
+                <dd set:html={inline(f.text, resolve)} />
+              </div>
+            ))}
+          </dl>
+          {r.actions && (
+            <ul class="route__actions">
+              {r.actions.map((a) => {
+                const icon = a.icon ?? (isExternal(a.href) ? 'arrow-ne' : 'arrow');
+                return (
+                  <li>
+                    <a {...linkAttrs(a.href)}>
+                      <Icon name={icon} size={18} />
+                      <span>{a.label}</span>
+                      {isExternal(a.href) && <span class="sr-only"> (otwiera się w nowej karcie)</span>}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </details>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .routes { border-top: 1px solid var(--ink); }
+  .routes > li { border-bottom: 1px solid var(--line-2); }
+
+  .route { scroll-margin-top: calc(var(--header-h) + 16px); }
+  summary {
+    display: grid; grid-template-columns: 2.5rem minmax(0, 1fr) auto; gap: 1rem;
+    padding: 1.25rem 0; cursor: pointer; list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  .route__num { padding-top: 0.25rem; font: 400 0.8125rem/1 var(--f-mono); color: var(--text); }
+  .route__head { display: grid; gap: 0.3rem; }
+  .route__situation { font: 500 1.25rem/1.3 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .route__examples { font-size: 0.9375rem; line-height: 1.5; color: var(--text); max-width: 46em; }
+  .route__to {
+    display: inline-flex; align-items: baseline; gap: 0.5rem; margin-top: 0.25rem;
+    font: 500 0.9375rem/1.35 var(--f-body); color: var(--blue-700);
+  }
+  .route__to::before { content: "→"; }
+
+  .route__toggle { position: relative; width: 2.25rem; height: 2.25rem; border: 1px solid var(--line-2); transition: background .2s, border-color .2s; }
+  .route__toggle::before, .route__toggle::after { content: ""; position: absolute; left: 50%; top: 50%; width: 0.75rem; height: 1.5px; background: var(--ink); translate: -50% -50%; transition: rotate .25s var(--ease); }
+  .route__toggle::after { rotate: 90deg; }
+  summary:hover .route__toggle { border-color: var(--ink); }
+  summary:hover .route__situation { color: var(--blue-700); }
+  .route[open] .route__toggle { background: var(--ink); border-color: var(--ink); }
+  .route[open] .route__toggle::before, .route[open] .route__toggle::after { background: var(--on-ink); }
+  .route[open] .route__toggle::after { rotate: 0deg; }
+  .route:target summary { background: linear-gradient(90deg, var(--blue-50), transparent 70%); }
+
+  .route__body { padding: 0 3.25rem 1.5rem 3.5rem; }
+  dl { display: grid; gap: 0; border-top: 1px solid var(--line); }
+  dl > div { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: 1rem; padding: 0.875rem 0; border-bottom: 1px solid var(--line); }
+  dt { font: 500 0.75rem/1.6 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text); }
+  dd { font-size: 1rem; line-height: 1.6; color: var(--ink-2); max-width: 44em; }
+  dd :global(strong) { color: var(--ink); font-weight: 600; }
+  dd :global(a) { color: var(--blue-700); text-decoration: underline; text-underline-offset: 3px; }
+  .is-urgent { background: linear-gradient(90deg, var(--amber-bg), transparent 85%); }
+  .is-urgent dt { color: var(--amber); padding-left: 0.625rem; border-left: 2px solid var(--amber); }
+
+  .route__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+  .route__actions a {
+    display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1rem;
+    border: 1px solid var(--ink); font: 500 0.9375rem/1.2 var(--f-body); color: var(--ink);
+    transition: background .2s, color .2s;
+  }
+  .route__actions a:hover { background: var(--ink); color: var(--on-ink); }
+  .route__actions li:first-child a { background: var(--blue-fill); border-color: var(--blue-fill); color: #fff; }
+  .route__actions li:first-child a:hover { background: var(--blue-600); }
+
+  @media (max-width: 720px) {
+    summary { grid-template-columns: minmax(0, 1fr) auto; gap: 0.75rem; padding: 1rem 0; }
+    .route__num { display: none; }
+    .route__situation { font-size: 1.125rem; }
+    .route__body { padding: 0 0 1.25rem; }
+    dl > div { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; }
+    .route__actions a { flex: 1 1 100%; justify-content: center; }
+  }
+</style>

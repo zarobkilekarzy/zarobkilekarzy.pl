@@ -1,0 +1,66 @@
+---
+/**
+ * Przycisk z białym kwadratem i ikoną (wzór z referencji).
+ * Z `href` renderuje <a> (zewnętrzne adresy otwierają się w nowej karcie), bez — <button>.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from './Icon.astro';
+import type { IconName } from '@/icons';
+import { isExternal, linkAttrs } from '@/lib/links';
+
+interface Props extends Omit<HTMLAttributes<'a'>, 'type'> {
+  href?: string;
+  icon?: IconName;
+  variant?: 'primary' | 'ghost';
+  type?: 'button' | 'submit';
+}
+
+const { href, icon: iconProp, variant = 'primary', type = 'button', class: className, ...rest } = Astro.props;
+const icon = iconProp ?? (href && isExternal(href) ? 'arrow-ne' : 'arrow');
+const Tag = href ? 'a' : 'button';
+const attrs = href ? linkAttrs(href) : { type };
+---
+<Tag class:list={['btn', `btn--${variant}`, className]} {...attrs} {...rest}>
+  <span class="btn__icon"><Icon name={icon} class="btn__glyph" /></span>
+  <span class="btn__label"><slot /></span>
+</Tag>
+
+<style>
+  .btn {
+    --btn-bg: var(--blue-fill);
+    --btn-fg: #fff;
+    --btn-box: #fff;
+    --btn-box-fg: var(--blue-fill);
+    position: relative;
+    display: inline-flex; align-items: center; gap: 16px;
+    height: 52px;
+    padding: 4px 22px 4px 4px;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    font: 500 0.9375rem/1 var(--f-body);
+    letter-spacing: -0.005em;
+    border: 1px solid var(--btn-bg);
+    transition: background .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease);
+    white-space: nowrap;
+  }
+  .btn__icon {
+    display: grid; place-items: center;
+    width: 44px; height: 44px; flex: none;
+    background: var(--btn-box); color: var(--btn-box-fg);
+    overflow: hidden;
+    transition: background .25s var(--ease), color .25s var(--ease);
+  }
+  .btn__glyph { transition: transform .35s var(--ease); }
+  .btn:hover { --btn-bg: var(--blue-600); }
+  .btn:hover .btn__glyph { transform: translateX(3px); }
+  .btn:active { transform: translateY(1px); }
+
+  .btn--ghost {
+    --btn-bg: transparent;
+    --btn-fg: var(--ink);
+    --btn-box: var(--blue-50);
+    --btn-box-fg: var(--blue);
+    border-color: var(--line-2);
+  }
+  .btn--ghost:hover { --btn-bg: transparent; border-color: var(--ink); --btn-box: var(--blue-fill); --btn-box-fg: #fff; }
+</style>

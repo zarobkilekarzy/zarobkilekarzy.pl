@@ -1,0 +1,74 @@
+---
+/** Karta zestawienia: forma i dział, liczba z karty (albo ikona formy), tytuł i lead. */
+import Icon from '@/components/ui/Icon.astro';
+import Tag from '@/components/ui/Tag.astro';
+import type { IconName } from '@/icons';
+import type { DataFormat } from '@/types';
+import { articleHref, type Article } from '@/lib/content';
+import { typo } from '@/lib/format';
+
+interface Props {
+  article: Article;
+  /** nazwa działu nad tytułem */
+  topic?: string;
+  tone?: 'default' | 'blue';
+}
+
+const ICONS: Record<DataFormat, IconName> = {
+  Wykresy: 'chart',
+  Tabela: 'db',
+  Ranking: 'chart',
+  Wyszukiwarka: 'search',
+  Infografika: 'chart',
+  Test: 'check',
+  Porównanie: 'doc',
+};
+
+const { article, topic, tone = 'default' } = Astro.props;
+const { title, summary, format, stat } = article.data;
+---
+<a class:list={['dcard', `dcard--${tone}`]} href={articleHref(article)}>
+  <div class="dcard__body">
+    <p class="dcard__meta">
+      {format && <Tag tone={tone === 'blue' ? 'light' : 'line'}>{format}</Tag>}
+      {topic && <span>{typo(topic)}</span>}
+    </p>
+    {stat
+      ? <p class="dcard__stat"><b>{stat.value}</b><small>{typo(stat.unit)}</small></p>
+      : format && <span class="dcard__icon"><Icon name={ICONS[format]} size={22} /></span>}
+    <h3 class="dcard__title">{typo(title)}</h3>
+    <p class="dcard__desc">{typo(summary)}</p>
+    <Icon name="arrow-ne" class="dcard__arrow" />
+  </div>
+</a>
+
+<style>
+  .dcard { position: relative; display: grid; height: 100%; border: 1px solid var(--line-2); background: var(--surface); transition: border-color .2s, box-shadow .3s var(--ease); }
+  .dcard:hover { border-color: var(--blue); box-shadow: 0 24px 40px -32px rgba(4, 11, 27, .45); }
+  .dcard__body { display: flex; flex-direction: column; padding: 24px 24px 26px; }
+
+  .dcard__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font: 400 0.71875rem/1.3 var(--f-mono); color: var(--muted); }
+  .dcard__stat { display: flex; align-items: baseline; gap: 10px; margin: 32px 0 20px; }
+  .dcard__stat b { white-space: nowrap; font: 300 clamp(2.5rem, 3.6vw, 3.25rem)/1 var(--f-display); letter-spacing: -0.045em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .dcard__stat small { max-width: 18ch; font: 400 0.8125rem/1.3 var(--f-body); color: var(--text); }
+  .dcard__icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 32px 0 20px; background: var(--blue-50); color: var(--blue); }
+
+  .dcard__title { margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line); font: 500 1.25rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); padding-right: 28px; transition: color .2s; }
+  .dcard__desc { margin-top: 8px; font-size: 0.90625rem; line-height: 1.55; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .dcard__arrow { position: absolute; right: 22px; top: 24px; color: var(--line-2); transition: color .2s, transform .3s var(--ease); }
+  .dcard:hover .dcard__title { color: var(--blue); }
+  .dcard:hover .dcard__arrow { color: var(--blue); transform: translate(2px, -2px); }
+
+  /* kolor-stały: początek — biel na kobalcie --blue-fill */
+  .dcard--blue { background: var(--blue-fill); border-color: var(--blue-fill); color: rgba(255, 255, 255, .86); }
+  .dcard--blue:hover { background: var(--blue-600); border-color: var(--blue-600); }
+  .dcard--blue .dcard__meta, .dcard--blue .dcard__arrow { color: rgba(255, 255, 255, .75); }
+  .dcard--blue .dcard__icon { background: rgba(255, 255, 255, .14); color: #fff; }
+  .dcard--blue .dcard__title, .dcard--blue:hover .dcard__title { color: #fff; border-top-color: rgba(255, 255, 255, .3); }
+  .dcard--blue:hover .dcard__arrow { color: #fff; }
+  /* kolor-stały: koniec */
+
+  @media (max-width: 720px) {
+    .dcard__body { padding: 20px 18px 22px; }
+  }
+</style>

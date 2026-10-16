@@ -1,0 +1,171 @@
+---
+title: "Zadłużenie szpitali: pensje wypłacane na kredyt"
+seoTitle: "Zadłużenie szpitali: pensje na kredyt"
+category: Dane
+topic: finanse
+order: 2
+format: Wykresy
+stat: { value: "40,8", unit: mld zł długu }
+date: 2026-07-06
+updated: 2026-10-16
+summary: Publiczne szpitale są winne ponad 40 mld zł, a ich dług rośnie najszybciej od ponad dwudziestu lat. Idzie głównie na bieżące wydatki, przede wszystkim pensje — to wynagrodzenia wypłacane na kredyt, który spłacamy z publicznych pieniędzy.
+description: "Ile są winne publiczne szpitale, jak szybko rośnie ich dług i na co idzie: głównie na bieżące wydatki, przede wszystkim pensje wypłacane na kredyt."
+editorial:
+  - >-
+    Dług szpitali to pieniądz publiczny, którego nikt nie widzi na bieżąco. Ministerstwo podaje
+    sumy raz na kwartał i tylko według województw, a dług konkretnego szpitala wychodzi na jaw
+    zwykle wtedy, gdy zmienia się dyrekcja albo do drzwi puka komornik.
+  - >-
+    Skoro większość tych pieniędzy finansuje wynagrodzenia, warto wiedzieć, jak są rozdzielane.
+    Dlatego postulujemy jawne łączne wypłaty z publicznych pieniędzy dla każdej osoby — pod stałym
+    identyfikatorem, bez nazwisk. Zdecydowana większość lekarzy i placówek rozlicza się uczciwie;
+    jawność chroni także ich.
+related:
+  - budzet-nfz
+  - zarobki-dyrektorow-szpitali
+  - rekordy
+og:
+  stat:
+    value: "40,8"
+    unit: mld zł
+    label: Dług publicznych szpitali
+    desc: na 30.06.2026; sam dług SPZOZ urósł w rok o 25,7%
+    accuracy: est
+    source: MZ, Rynek Zdrowia
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import DebtChart from '@/components/zadluzenie/DebtChart.astro';
+import RegionTable from '@/components/zadluzenie/RegionTable.astro';
+import LossRanking from '@/components/zadluzenie/LossRanking.astro';
+import { DEBT, LINKS, LOSSES, OTHER_HOSPITALS, POPULATION } from '@/data/zadluzenie';
+import { mld, pct } from '@/lib/zadluzenie/model';
+import { formatDate, formatPL } from '@/lib/format';
+
+export const quarter = (label) => label.replace(' ', ' kw. ');
+
+Licznik nad tym tekstem to szacunek, a nie odczyt — rejestru, który pokazywałby dług szpitali na bieżąco, po prostu nie ma. Ministerstwo Zdrowia podaje zobowiązania raz na kwartał, z kilkumiesięcznym opóźnieniem. Ostatnie dane dotyczą {formatDate(new Date(DEBT.last.end))}; wszystko, co później, to nasza ekstrapolacja — i tylko na rok do przodu.
+
+## Dług rośnie coraz szybciej
+
+Przez lata zobowiązania szpitali działających jako samodzielne publiczne zakłady opieki zdrowotnej (SPZOZ) prawie stały w miejscu: od 2010 do 2017 r. wahały się wokół 10–12 mld zł. Od 2018 r. rosną co roku, a od 2025 r. — coraz szybciej. Według stanu na {formatDate(new Date(DEBT.last.end))} wynosiły {mld(DEBT.last.spzoz)} mld zł, o {pct(DEBT.rate)}% więcej niż rok wcześniej. Tak szybkiego wzrostu w kwartalnych danych MZ nie było od 2004 r.[^mz]
+
+Jeszcze szybciej przybywa zobowiązań wymagalnych, czyli takich, których termin zapłaty już minął: w rok o {pct(DEBT.overdueRate, 0)}%, do {mld(DEBT.last.overdue, 2)} mld zł. Do tego dochodzi dług szpitali, które działają jako spółki albo instytuty badawcze. Razem z nimi publiczne szpitale były tego dnia winne ok. {mld(DEBT.last.total)} mld zł.
+
+<DebtChart />
+
+## Jak liczymy
+
+- **Punkt wyjścia** to ostatni kwartał w danych MZ — {quarter(DEBT.last.label)}: zobowiązania wszystkich SPZOZ, {mld(DEBT.last.spzoz)} mld zł. Do tego doliczamy szpitale-spółki i instytuty. Ich dług MZ podało tylko raz, za koniec 2025 r. ({mld(OTHER_HOSPITALS.companies * 1e6)} i {mld(OTHER_HOSPITALS.institutes * 1e6)} mld zł), więc zakładamy, że od tamtej pory rósł w tym samym tempie co dług SPZOZ. Razem: {mld(DEBT.last.total)} mld zł.
+- **Tempo licznika** to wzrost długu SPZOZ w ostatnich czterech kwartałach: {pct(DEBT.rate)}% w skali roku, składane w sposób ciągły. Licznik zakłada więc, że nic się nie zmienia — ani nie przyspiesza, ani nie zwalnia.
+- **Wolniejszy wariant** to średnie roczne tempo z lat {DEBT.lowSpan}: {pct(DEBT.low)}%. Wyznacza dolną granicę projekcji na wykresie i w liczniku.
+- **Tylko rok do przodu.** Dłuższa ekstrapolacja zależałaby od decyzji, których jeszcze nikt nie podjął: kolejnych podwyżek płac, wyceny świadczeń, ewentualnego oddłużenia. Dane z ostatnich kwartałów mówią coś realnego o najbliższych 12 miesiącach — o następnych dziesięciu latach już nie.
+- **Na mieszkańca** dzielimy szacunek przez {formatPL(POPULATION.value / 1e6, 2)} mln osób — wstępne dane GUS na {POPULATION.date}.[^ludnosc]
+
+Gdy MZ opublikuje kolejny kwartał, podmieniamy punkt wyjścia i tempo. Licznik może wtedy skoczyć w górę albo w dół — to korekta szacunku, a nie zdarzenie w szpitalach.
+
+Jedno zastrzeżenie co do zakresu. Według Rynku Zdrowia MZ policzyło, że na koniec 2025 r. 562 publiczne szpitale były winne {formatPL(OTHER_HOSPITALS.hospitalsTotal / 1000)} mld zł, w tym szpitale-SPZOZ {formatPL(OTHER_HOSPITALS.hospitalsSpzoz / 1000)} mld zł.[^szpitale-2025] Kwartalny szereg MZ obejmuje wszystkie SPZOZ, także te, które szpitalami nie są, i na ten sam dzień pokazuje {mld(DEBT.quarters.find((q) => q.label === OTHER_HOSPITALS.quarter).spzoz)} mld zł. Różnicę zostawiamy w liczniku, bo tylko ten szereg jest aktualizowany co kwartał.
+
+## Na co idą te pieniądze
+
+Dług szpitali nie finansuje nowych budynków ani sprzętu. Według Rzeczpospolitej zobowiązania pokrywają bieżącą działalność,[^rzeczpospolita] a w niej najwięcej kosztują ludzie: w wielu szpitalach wynagrodzenia to 70–80% kosztów.[^egospodarka] W maju 2026 r. ministra zdrowia mówiła o placówkach, w których na pensje idzie nawet 106% budżetu.[^106-proc]
+
+Co roku 1 lipca te koszty rosną o ustawowe podwyżki. Według rekomendacji AOTMiT z 2026 r. wydatki NFZ wzrosną z tego powodu o 9,25 mld zł w ciągu 12 miesięcy (do końca 2026 r. ok. 4,5 mld zł),[^podwyzki-2026] a część, której nie pokrywają wyższe stawki NFZ, wprost powiększa dług.
+
+Zadłużony szpital traci zdolność kredytową, więc na spłatę przeterminowanych zobowiązań pożycza od firm finansowych.[^pozyczki] Tak zamyka się koło: część bieżących pensji jest wypłacana z długu, który i tak trzeba spłacić z publicznych pieniędzy — z dotacji samorządów albo programów oddłużenia. Płacimy więc dwa razy: za pracę i za odsetki od tego, że zabrakło na nią pieniędzy.
+
+## Skala w liczbach
+
+Krajowa suma ukrywa, jak powszechny jest problem. Dług nie jest wyjątkiem w kilku źle zarządzanych placówkach — stał się zwykłym sposobem finansowania szpitala.[^majatek]
+
+<StatRow
+  label="Skala zadłużenia szpitali"
+  items={[
+    { value: 298, unit: 'szpitali', desc: 'ma zobowiązania przeterminowane — ponad połowa (53%) publicznych', accuracy: 'exact', source: 'Rzeczpospolita', href: LINKS.rzeczpospolita },
+    { value: 91, unit: '%', desc: 'szpitali powiatowych zamknęło 2025 r. stratą na podstawowej działalności — na plusie było 19 z 207', accuracy: 'exact', source: 'Menedżer Zdrowia', href: LINKS.powiatowe },
+    { prefix: '~', value: 50, unit: '%', desc: 'zbadanych szpitali ma dług większy niż wartość całego majątku', accuracy: 'est', source: 'Rynek Zdrowia', href: LINKS.majatek },
+    { value: 344, unit: 'mln zł', desc: 'odsetek zapłaciły w 2025 r. same szpitale powiatowe — koszty finansowe były 7 razy wyższe niż przychody finansowe', accuracy: 'exact', source: 'Menedżer Zdrowia', href: LINKS.powiatowe },
+  ]}
+/>
+
+Oddłużenie publicznych szpitali pochłonie w ciągu dekady od 5,5 do 10 mld zł publicznych pieniędzy — tak szacuje raport, który opisał Prawo.pl.[^oddluzenie]
+
+Liczby dotyczą różnych grup: straty i odsetki — szpitali powiatowych z próby Menedżera Zdrowia,[^powiatowe] zobowiązania przeterminowane — wszystkich publicznych.[^rzeczpospolita] Obraz jest jednak spójny: dług to stała część finansów szpitali, a nie wypadek przy pracy.
+
+## Gdzie jest dług: województwa
+
+MZ pokazuje dług tylko w sumach — według województwa, w którym siedzibę ma podmiot tworzący szpital (najczęściej samorząd), i osobno dla szpitali resortowych. Najwięcej winne są szpitale na Mazowszu. Najszybciej w 2025 r. dług rósł jednak w szpitalach MON i w województwie łódzkim, z którego pochodzą też cztery szpitale z pierwszej dziesiątki strat.
+
+<RegionTable title="Mazowsze ma największy dług, ale w 2025 r. najszybciej przybywało go w szpitalach MON i w Łódzkiem." />
+
+## Które szpitale? „Lista wstydu”
+
+Długu pojedynczych szpitali MZ nie publikuje.[^czestochowa] Widać za to ich roczny wynik. Poniżej dziesięć placówek z największą stratą netto za 2024 r. według wstępnych danych MZ, zebranych przez Menedżera Zdrowia.[^lista-wstydu]
+
+<LossRanking title={`Dziesięć szpitali straciło w 2024 r. łącznie ${formatPL(LOSSES.reduce((s, r) => s + r.loss, 0) / 1e6)} mln zł. Cztery z nich są z województwa łódzkiego.`} />
+
+Przy Bełchatowie warto się zatrzymać: szpital z czwartą największą stratą w kraju płaci jedne z najwyższych udokumentowanych stawek, a wiemy o tym tylko dlatego, że akurat on je ujawnił. Ile podobnych zestawień kryją szpitale, które stawek nie publikują, nie wiadomo.
+
+## Kalisz: jeden szpital, cała mechanika
+
+Dług brzmi abstrakcyjnie, dopóki nie zejdzie się do jednej placówki. Wojewódzki Szpital Zespolony w Kaliszu pokazuje cały mechanizm naraz: ten sam publiczny pieniądz i dwie skrajnie różne strony.
+
+<StatRow
+  label="Kalisz: zaległości wobec personelu i koszt kontraktów"
+  items={[
+    { prefix: '~', value: 37, unit: 'mln zł', desc: 'zaległych wynagrodzeń personelu, głównie pielęgniarek — wyrównania za lata zaniżonych stawek i błędnego zaszeregowania', accuracy: 'est', source: 'abcZdrowie', href: LINKS.kaliszZalegle },
+    { prefix: '~', value: 10, unit: 'mln zł rocznie', desc: 'tyle według doniesień mediów kosztowały rocznie kontrakty czterech specjalistów', accuracy: 'est', source: 'Calisia.pl', href: LINKS.kaliszKontrakty },
+  ]}
+/>
+
+Zaległości wobec pielęgniarek wyszły na jaw dopiero po zmianie dyrekcji w lipcu 2025 r. — w analizie nowego kierownictwa i kontroli urzędu marszałkowskiego; wcześniejsze dokumenty ich nie pokazywały.[^kalisz-zalegle] Kontrola wykazała nieprawidłowości z czasów poprzedniego kierownictwa, a sprawą zajęła się prokuratura.[^kalisz24] Ostatnie umowy z czterema lekarzami podpisano kilka dni przed zmianą dyrekcji, pod koniec czerwca 2025 r.[^kalisz-kontrakty] Za 2024 r. szpital wykazał zysk netto ok. 2,2 mln zł: sam wynik nie pokazuje długu wobec własnych pracowników.
+
+W tym samym czasie:
+
+- NFZ zalegał szpitalowi ponad 4 mln zł za wykonane świadczenia;[^kalisz24]
+- oddział urologii zawieszono od 1 sierpnia 2025 r., bo zabrakło lekarzy. Wznowienie zapowiadano na czerwiec 2026 r.,[^urologia] ale do niego nie doszło; dyrekcja chce uruchomić oddział jeszcze w 2026 r., zależnie od tempa prac budowlanych.[^urologia-2026] Według Latarnika Kaliskiego zawieszenie przedłużono do końca listopada, a szpital ogłosił przetarg na remont oddziału; 9 października 2026 r. oddział nadal nie działał.[^urologia-latarnik]
+
+Pielęgniarki mówiły mediom, że latami nie dostawały należnych pieniędzy, gdy kilku specjalistów zarabiało miliony.[^fronda]
+
+To nie jest opowieść o chciwych lekarzach: kontrakty były legalne. Chodzi o podział pieniędzy. W jednym szpitalu kilka umów kosztowało w rok tyle, ile latami zalegano setkom pielęgniarek, a oddział zamknięto nie dlatego, że pieniędzy nie było, tylko dlatego, że rozdzielano je bez kontroli z zewnątrz. Skalę tego zestawienia poznano dopiero wtedy, gdy nowa dyrekcja policzyła je ręcznie. Jawne łączne wypłaty — pod stałym identyfikatorem, bez nazwisk — pokazywałyby taki obraz w każdym szpitalu od razu. Tego dotyczy [nasz postulat](/postulat/).
+
+Opisujemy placówkę i role, nie osoby.
+
+[^mz]: Ministerstwo Zdrowia, [Zobowiązania ogółem i wymagalne SPZOZ](https://www.gov.pl/web/zdrowie/zadluzenie-spzoz) — dane kwartalne do II kw. 2026 r., także według województw; stan strony z 02.10.2026.
+
+[^ludnosc]: Interia (dane GUS), [Liczba ludności Polski na koniec czerwca 2026 r. — wstępne dane GUS](https://biznes.interia.pl/gospodarka/news-w-rok-ubylo-159-tys-osob-w-polsce-zmiany-demograficzne-juz-p,nId,23518504).
+
+[^szpitale-2025]: Rynek Zdrowia, [Szpitale toną w długach. Zadłużenie sięga blisko 40 mld zł](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Szpitale-tona-w-dlugach-Zadluzenie-siega-blisko-40-mld-zl,286396,1.html), 08.07.2026.
+
+[^rzeczpospolita]: Rzeczpospolita, [Rośnie zadłużenie publicznych szpitali. To już 34 mld złotych](https://www.rp.pl/ochrona-zdrowia/art44638431-rosnie-zadluzenie-publicznych-szpitali-to-juz-34-mld-zlotych).
+
+[^egospodarka]: eGospodarka, [Szpitale pod ścianą. Od 1 lipca rosną pensje medyków, a zadłużenie już dławi placówki](https://www.egospodarka.pl/197895,Szpitale-pod-sciana-Od-1-lipca-rosna-pensje-medykow-a-zadluzenie-juz-dlawi-placowki,1,24,1.html).
+
+[^106-proc]: Rynek Zdrowia, [Ministra zdrowia — w niektórych szpitalach pensje pochłaniają 106 proc. budżetu](https://www.rynekzdrowia.pl/Polityka-zdrowotna/Ministra-zdrowia-w-niektorych-szpitalach-pensje-pochlaniaja-106-proc-budzetu-Resort-chce-limitu,284133,14.html), 05.2026.
+
+[^podwyzki-2026]: Menedżer Zdrowia, [Na podwyżki NFZ ma wydać ponad 9 mld zł — rekomendacje AOTMiT na 2026 r.](https://www.termedia.pl/mz/Na-podwyzki-NFZ-ma-wydac-ponad-9-mld-zl-AOTMiT-publikuje-rekomendacje,68001.html)
+
+[^pozyczki]: Polityka Zdrowotna, [Zadłużenie szpitali — zobowiązania wymagalne i pożyczki na ich spłatę](https://politykazdrowotna.com/artykul/zadluzenie-szpitali-n2230555).
+
+[^majatek]: Rynek Zdrowia, [W połowie zbadanych szpitali dług przekracza wartość majątku](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Az-trudno-uwierzyc-W-polowie-zbadanych-szpitali-dlug-przekracza-wartosc-majatku,283326,1.html).
+
+[^oddluzenie]: Prawo.pl, [Jak oddłużyć polskie szpitale — raport „Zdrowie ponad długi”](https://www.prawo.pl/zdrowie/jak-oddluzyc-polskie-szpitale-raport-zdrowie-ponad-dlugi,1543437.html).
+
+[^powiatowe]: Menedżer Zdrowia, [Finanse szpitali powiatowych — systematyczne narastanie strat](https://www.termedia.pl/mz/Finanse-szpitali-powiatowych-systematyczne-narastanie-strat-,66853.html).
+
+[^czestochowa]: Wyjątek opisany w tabeli niżej — dług szpitala NMP w Częstochowie ujawnił marszałek województwa śląskiego: Dziennik.pl, [Szpital NMP w Częstochowie wśród najbardziej zadłużonych w Polsce](https://zdrowie.dziennik.pl/aktualnosci/artykuly/599197,parkitka-szpital-czestochowa-lekarze-dyzury.html); Życie Częstochowy, [85 mln zł długu, zajęcia komornicze i plan ratunkowy — dyrekcja szpitala na Parkitce](https://zycieczestochowy.pl/85-mln-zl-dlugu-zajecia-komornicze-i-plan-ratunkowy-dyrekcja-szpitala-na-parkitce-rozmawiala-z-mediami/); [interpelacja poselska z danymi marszałka](https://x.com/JerzyPolaczek/status/2074742367060394337) (wpis na X).
+
+[^lista-wstydu]: Menedżer Zdrowia, [„Lista wstydu” — szpitale z największą stratą netto za 2024 r.](https://www.termedia.pl/mz/Lista-wstydu-,63573.html)
+
+[^kalisz-zalegle]: abcZdrowie, [Szpital w Kaliszu z 37 mln zł długu. Nowy dyrektor ujawnia skalę zaniedbań](https://portal.abczdrowie.pl/szpital-w-kaliszu-z-37-mln-zl-dlugu-nowy-dyrektor-ujawnia-skale-zaniedban/7183447202130688a).
+
+[^kalisz24]: kalisz24.info, [40 mln zł długu, milionowe kontrakty lekarzy i zaległości NFZ](https://kalisz24.info.pl/40-mln-zl-dlugu-milionowe-kontrakty-lekarzy-i-zaleglosci-narodowego-funduszu-zdrowia/).
+
+[^kalisz-kontrakty]: Calisia.pl, [Zadłużenie szpitala, wynagrodzenia lekarzy i zaległości NFZ — wyjaśnienia dyrektora szpitala w Kaliszu](https://calisia.pl/zadluzenie-szpitala-wysokie-wynagrodzenia-lekarzy-i-milionowe-zaleglosci-nfz-mamy-oficjalne-wyjasnienia-dyrektora-placowki,74768).
+
+[^urologia]: ESKA Kalisz, [Co dalej z urologią w szpitalu w Kaliszu — zawieszenie i plan odbudowy oddziału](https://kalisz.eska.pl/kalisz-co-dalej-z-urologia-w-szpitalu-jest-realna-mozliwosc-odbudowy-oddzialu-aa-pkvj-q84o-oRkB.html).
+
+[^urologia-2026]: Calisia.pl, [Kiedy wróci urologia w Kaliszu? Dyrektor chce otworzyć oddział jeszcze w tym roku](https://calisia.pl/kiedy-wroci-urologia-w-kaliszu-dyrektor-chce-otworzyc-oddzial-jeszcze-w-tym-roku,79862), 02.10.2026.
+
+[^urologia-latarnik]: Latarnik Kaliski, [Przełom w kaliskiej urologii. „Odnowię ten oddział w rozmiarach, jakich szpital nigdy nie posiadał”](https://latarnikkaliski.pl/przelom-w-kaliskiej-urologii-odnowie-ten-oddzial-w-rozmiarach-jakich-szpital-nigdy-nie-posiadal/), 09.10.2026 — źródło wtórne; termin zawieszenia do końca listopada podaje tylko ten portal.
+
+[^fronda]: Fronda, [Miliony dla lekarzy, a szpital tonie w długach](https://www.fronda.pl/a/Miliony-dla-lekarzy-a-szpital-tonie-w-dlugach,249058.html).

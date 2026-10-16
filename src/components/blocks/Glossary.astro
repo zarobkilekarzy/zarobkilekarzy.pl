@@ -1,0 +1,65 @@
+---
+/** Słowniczek w formie zakładek: pojęcie, rozwinięcie skrótu, definicja; link do pełnego słownika. */
+import type { HTMLAttributes } from 'astro/types';
+import Tabs from './Tabs.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import type { Term } from '@/types';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'aside'> {
+  terms: Term[];
+  title?: string;
+  /** link do pełnego słownika */
+  moreHref?: string;
+  moreLabel?: string;
+}
+
+const { terms, title = 'Słowniczek', moreHref, moreLabel = 'Cały słownik', id = 'slowniczek', class: className, ...rest } = Astro.props;
+const tabId = (t: Term) => `${id}-tab-${t.id}`;
+const panelId = (t: Term) => `${id}-panel-${t.id}`;
+---
+<aside class:list={['glossary', className]} id={id} aria-labelledby={`${id}-title`} data-reveal {...rest}>
+  <header class="glossary__head">
+    <p class="mono-label" id={`${id}-title`}>{title}</p>
+    {moreHref && <LinkArrow href={moreHref}>{moreLabel}</LinkArrow>}
+  </header>
+  <Tabs>
+    <div class="glossary__tabs" role="tablist" aria-label="Pojęcia">
+      {terms.map((t, i) => (
+        <button type="button" role="tab" id={tabId(t)} aria-controls={panelId(t)} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? undefined : -1}>{t.tab}</button>
+      ))}
+    </div>
+    <div class="glossary__panels">
+      {terms.map((t, i) => (
+        <div class="glossary__panel" role="tabpanel" id={panelId(t)} aria-labelledby={tabId(t)} hidden={i !== 0}>
+          <p class="glossary__term">{t.term}</p>
+          <p class="glossary__full">{t.full}</p>
+          <p class="glossary__def">{typo(t.def)}</p>
+        </div>
+      ))}
+    </div>
+  </Tabs>
+</aside>
+
+<style>
+  .glossary { background: var(--surface); border: 1px solid var(--line-2); padding: 32px; }
+  .glossary__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .glossary__tabs { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+  .glossary__tabs button {
+    padding: 9px 12px;
+    border: 1px solid var(--line-2);
+    font-size: 0.84375rem; color: var(--ink-2);
+    transition: all .2s;
+  }
+  .glossary__tabs button:hover { border-color: var(--ink); }
+  .glossary__tabs button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .glossary__panels { padding-top: 28px; min-height: 230px; }
+  .glossary__panel { animation: fadeUp .45s var(--ease); }
+  .glossary__term { font: 300 clamp(2.5rem, 4vw, 3.5rem)/1 var(--f-display); letter-spacing: -0.045em; color: var(--blue); }
+  .glossary__full { font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 12px 0 18px; }
+  .glossary__def { font-size: 1rem; line-height: 1.65; color: var(--text); max-width: 52ch; }
+
+  @media (max-width: 720px) {
+    .glossary { padding: 24px 20px; }
+  }
+</style>

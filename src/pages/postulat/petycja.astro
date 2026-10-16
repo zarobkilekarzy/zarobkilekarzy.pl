@@ -1,0 +1,189 @@
+---
+/**
+ * /postulat/petycja/ — archiwum petycji z lipca 2026 r.: pierwsza forma postulatu (rejestr imienny po PWZ).
+ * Bez formularza wysyłki; zostają treść, różnice wobec obecnego postulatu i stan odpowiedzi urzędów.
+ * Stare adresy /petycja/… przekierowuje astro.config.mjs (redirects).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import Actions from '@/components/layout/Actions.astro';
+import Button from '@/components/ui/Button.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Icon from '@/components/ui/Icon.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import PetitionText from '@/components/postulat/PetitionText.astro';
+import { evolution } from '@/data/postulat';
+import { answers, petycja, relatedAnswer as related } from '@/data/petycja';
+import { projekt } from '@/data/projekt-ustawy';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { formatDate, isoDate, typo } from '@/lib/format';
+
+const title = 'Petycja o jawny rejestr wynagrodzeń';
+const lead =
+  'Pierwsza forma naszego postulatu: petycja do Ministra Zdrowia i Senatu o jawny rejestr imienny, po numerze PWZ. Akcja wysyłania jest zamknięta — dziś postulujemy publikację bez nazwisk.';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Postulat', href: '/postulat/' }, { label: 'Petycja' }];
+const description =
+  'Archiwum: petycja do Ministra Zdrowia i Senatu o imienny rejestr wynagrodzeń po numerze PWZ. Akcja jest zamknięta — dziś postulujemy publikację bez nazwisk.';
+const seo: SeoInput = { title: 'Petycja o jawny rejestr płac (archiwum)', description, breadcrumbs: crumbs };
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="pet-top">
+    <PageHeader
+      title={title}
+      lead={lead}
+      eyebrow="Archiwum"
+      crumbs={crumbs}
+    >
+      <PageMeta
+        items={[
+          { label: 'Start akcji', value: petycja.launched },
+          { label: 'Adresaci', value: 'MZ i Senat' },
+          { label: 'Termin odpowiedzi MZ', value: petycja.deadline },
+        ]}
+      />
+      <aside slot="aside" class="pet-note" aria-labelledby="pet-note-title">
+        <p class="pet-note__label" id="pet-note-title">To jest archiwum</p>
+        <p>{typo('Petycja dotyczyła wcześniejszej wersji postulatu. Obecny postulat i projekt ustawy zakładają publikację wynagrodzeń pod stałym identyfikatorem, bez imion, nazwisk i numerów PWZ.')}</p>
+        <Actions stack="always" gap="sm">
+          <Button href="/postulat/">Obecny postulat</Button>
+          <Button href={projekt.href} variant="ghost" icon="doc">Projekt ustawy</Button>
+        </Actions>
+      </aside>
+    </PageHeader>
+  </Section>
+
+  <Section tone="soft" aria-labelledby="zmiana-title">
+    <SectionHead
+      eyebrow="Co się zmieniło"
+      title="Petycja a postulat dziś"
+      id="zmiana-title"
+      aside="Cel jest ten sam: łączne wynagrodzenie jednej osoby z publicznej ochrony zdrowia ma być widoczne. Zmieniło się to, czy widać przy nim nazwisko."
+    />
+    <Comparison table={evolution} />
+    <LinkArrow href="/postulat/#bez-nazwisk" class="pet-why">Dlaczego bez nazwisk</LinkArrow>
+  </Section>
+
+  <Section id="tresc" aria-labelledby="tresc-title">
+    <div class="pet-body">
+      <div class="pet-body__side">
+        <Eyebrow>Dokument</Eyebrow>
+        <Heading id="tresc-title">Treść petycji</Heading>
+        <p>{typo('Dokładnie ta treść trafiała do urzędów — e-mailem, przez gov.pl albo pocztą. Wnoszący uzupełniał imię, nazwisko i miejscowość.')}</p>
+        <ul class="pet-pdfs" aria-label="Archiwalne wzory do druku">
+          {petycja.pdfs.map((pdf) => (
+            <li><a href={pdf.href} download><Icon name="doc" size={16} /><span>{pdf.label}</span><small>PDF · {pdf.pages} strony</small></a></li>
+          ))}
+        </ul>
+      </div>
+      <PetitionText />
+    </div>
+  </Section>
+
+  <Section id="odpowiedzi" tone="soft" aria-labelledby="odpowiedzi-title">
+    <SectionHead eyebrow="Stan" title="Odpowiedzi urzędów" id="odpowiedzi-title" />
+    {answers.length > 0 ? (
+      <ol class="pet-answers">
+        {answers.map((a) => (
+          <li>
+            <p class="pet-answers__meta"><time datetime={isoDate(a.date)}>{formatDate(a.date)}</time> · {a.from}</p>
+            <p>{typo(a.text)}</p>
+            {a.href && <LinkArrow href={a.href}>Pełna odpowiedź</LinkArrow>}
+          </li>
+        ))}
+      </ol>
+    ) : (
+      <div class="pet-pending">
+        <p>
+          {typo(`Ustawowy termin odpowiedzi Ministerstwa Zdrowia to 3 miesiące od złożenia petycji — dla wysłanych ${formatDate(petycja.launched)} mijał ${formatDate(petycja.deadline)}. Urząd może go przesunąć, łącząc petycje w tej samej sprawie albo przedłużając termin o najwyżej 3 miesiące (art. 10 i 11 ustawy o petycjach).`)}
+        </p>
+        <p class="pet-check">
+          <span>Stan na <time datetime={isoDate(petycja.registryCheck.date)}>{formatDate(petycja.registryCheck.date)}</time></span>
+          {typo(petycja.registryCheck.text)}
+        </p>
+        <p>{typo('Każdą oficjalną odpowiedź opublikujemy tutaj, także odmowną.')}</p>
+        <Actions gap="lg">
+          <LinkArrow href={petycja.registry.href}>{petycja.registry.label}</LinkArrow>
+          <LinkArrow href={petycja.law.href}>{petycja.law.label}</LinkArrow>
+        </Actions>
+      </div>
+    )}
+
+    {/* Cudza petycja w zbliżonej sprawie — wyraźnie oddzielona od odpowiedzi na naszą */}
+    <article class="pet-related" aria-labelledby="related-answer-title">
+      <header class="pet-related__head">
+        <p class="pet-related__label">Nie nasza petycja · stanowisko resortu</p>
+        <h3 id="related-answer-title">{typo(related.title)}</h3>
+        <p class="pet-related__petition">{typo(related.petition)}. {typo(related.petitionNote)}</p>
+      </header>
+      <p class="pet-answers__meta">
+        <time datetime={isoDate(related.date)}>{formatDate(related.date)}</time> · {related.from} · {related.sign}
+      </p>
+      {related.summary.map((p) => <p>{typo(p)}</p>)}
+      <p class="pet-related__comment"><strong>Nasz komentarz:</strong> {typo(related.comment)}</p>
+      <Actions gap="lg" class="pet-related__actions">
+        <a class="pet-related__pdf" href={related.pdf.href} download>
+          <Icon name="doc" size={16} /><span>Odpowiedź MZ (PDF, {related.pdf.pages} strona)</span>
+        </a>
+        <LinkArrow href={related.source.href}>{related.source.label}</LinkArrow>
+      </Actions>
+    </article>
+  </Section>
+</BaseLayout>
+
+<style>
+  .pet-top { padding-top: clamp(32px, 4vw, 56px); }
+
+  .pet-note { position: relative; display: grid; gap: 16px; padding: 28px; border: 1px solid var(--line-2); background: linear-gradient(90deg, var(--amber) 0 4px, transparent 4px), var(--amber-bg); }
+  .pet-note__label { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+  .pet-note p:not(.pet-note__label) { font-size: 0.96875rem; line-height: 1.6; color: var(--ink-2); }
+
+  .pet-why { margin-top: 28px; }
+
+  .pet-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 32px clamp(40px, 6vw, 96px); align-items: start; }
+  .pet-body__side { position: sticky; top: calc(var(--header-h) + 32px); }
+  .pet-body__side p { margin-top: 20px; font-size: 0.96875rem; line-height: 1.65; max-width: 36ch; }
+
+  .pet-pdfs { display: grid; margin-top: 24px; border-top: 1px solid var(--line-2); }
+  .pet-pdfs a {
+    display: grid; grid-template-columns: 16px 1fr; gap: 2px 12px; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid var(--line-2); color: var(--ink); transition: color .2s;
+  }
+  .pet-pdfs a :global(.icon) { color: var(--blue); }
+  .pet-pdfs span { font-size: 0.9375rem; font-weight: 500; }
+  .pet-pdfs small { grid-column: 2; font: 400 0.71875rem/1.3 var(--f-mono); color: var(--muted); }
+  .pet-pdfs a:hover { color: var(--blue); }
+  .pet-pending { display: grid; gap: 16px; max-width: 68ch; }
+
+  .pet-related {
+    display: grid; gap: 14px; max-width: 76ch; margin-top: clamp(48px, 6vw, 72px);
+    padding: clamp(24px, 3vw, 36px); border: 1px solid var(--line-2); background: var(--surface);
+  }
+  .pet-related__head { display: grid; gap: 8px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+  .pet-related__label { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .pet-related h3 { font: 400 clamp(1.5rem, 2.4vw, 1.875rem)/1.15 var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .pet-related__petition { font-size: 0.90625rem; line-height: 1.6; color: var(--text); }
+  .pet-related > p:not([class]) { font-size: 1rem; line-height: 1.7; color: var(--ink-2); }
+  .pet-related .pet-related__comment { font-size: 0.96875rem; line-height: 1.65; color: var(--ink-2); padding: 14px 18px; border-left: 3px solid var(--blue); background: var(--blue-50); }
+  .pet-related__comment strong { color: var(--ink); }
+  .pet-related__actions { margin-top: 8px; }
+  .pet-related__pdf { display: inline-flex; align-items: center; gap: 10px; font-size: 0.9375rem; font-weight: 500; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; transition: color .2s; }
+  .pet-related__pdf :global(.icon) { color: var(--blue); }
+  .pet-related__pdf:hover { color: var(--blue); }
+  .pet-pending .pet-check { padding: 14px 18px; border-left: 3px solid var(--amber); background: var(--amber-bg); }
+  .pet-check span { display: block; margin-bottom: 4px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--amber); }
+  .pet-pending p { font-size: 1.03125rem; line-height: 1.7; color: var(--ink-2); }
+  .pet-answers { display: grid; gap: 24px; }
+  .pet-answers li { display: grid; gap: 8px; padding-top: 20px; border-top: 1px solid var(--line-2); }
+  .pet-answers__meta { font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+
+  @media (max-width: 1024px) {
+    .pet-body { grid-template-columns: minmax(0, 1fr); }
+    .pet-body__side { position: static; }
+  }
+</style>

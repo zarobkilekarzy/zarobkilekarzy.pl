@@ -1,0 +1,72 @@
+---
+/**
+ * Rachunek „od miejsca na studiach do prawa wykonywania zawodu” krok po kroku — jak w księdze:
+ * liczba startowa, kroki ze znakiem (wcięte), sumy pośrednie pod kreską, wynik w kobalcie.
+ * Zostaje tabelą także na wąskim ekranie (dwie kolumny mieszczą się w 320 px).
+ * Statycznie, bez JS. Dane i arytmetyka: data/odsiew-na-medycynie.ts (LEDGER).
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import { LEDGER, LEDGER_TOTALS, LINKS } from '@/data/odsiew-na-medycynie';
+import { formatPL, typo } from '@/lib/format';
+
+const isTotal = (kind?: string) => kind === 'subtotal' || kind === 'result';
+// border-collapse rysuje jedną linię między wierszami — kreskę nad sumą daje dolna krawędź wiersza nad nią
+const rows = LEDGER.map((row, i) => ({ ...row, beforeTotal: isTotal(LEDGER[i + 1]?.kind) }));
+const thousands = (n: number) => `${formatPL(n / 1000, 1)} tys.`;
+const { limit, pwz, reached } = LEDGER_TOTALS;
+---
+<Figure
+  title={`Z ${thousands(limit)} miejsc na studiach do prawa wykonywania zawodu dochodzi ${thousands(pwz)} lekarzy — ok. ${formatPL(reached)}%`}
+  note="Przyjęci w latach 2015–2019 to w przybliżeniu lekarze, którzy w 2026 r. mają 26–30 lat (izba liczy wiek rocznikami, start studiów w wieku 19 lat). To dopasowanie roczników, a nie śledzenie tych samych osób. Limity: suma pięciu rozporządzeń MZ; Polacy na I semestrze i absolwenci: POL-on; lekarze z PWZ: zestawienie NIL według wieku, stan na 30.06.2026."
+  source={{ label: 'MZ BASiW (POL-on), rozporządzenia MZ o limitach przyjęć, NIL; obliczenia własne', href: LINKS.mz }}
+>
+  <table class="ledger">
+    <thead>
+      <tr><th scope="col">Krok rachunku</th><th scope="col">Liczba</th></tr>
+    </thead>
+    <tbody>
+      {rows.map((row) => (
+        <tr class:list={[`ledger__${row.kind}`, { 'ledger__before-total': row.beforeTotal }]}>
+          <th scope="row">{typo(row.label)}{row.note && <span>{typo(row.note)}</span>}</th>
+          <td>{row.value}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</Figure>
+
+<style>
+  .ledger { width: 100%; border-collapse: collapse; }
+  /* .ledger przed selektorem — tabela stoi w Prose, która stylizuje th/td potomków */
+  .ledger thead th {
+    padding: 0 0 10px; text-align: left; vertical-align: bottom;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+  }
+  .ledger thead th:last-child { text-align: right; }
+
+  .ledger tbody th, .ledger tbody td {
+    padding: 12px 0; vertical-align: baseline; border-bottom: 1px solid var(--line); color: var(--text-strong);
+  }
+  .ledger tbody th {
+    padding-right: 16px; text-align: left; text-transform: none; letter-spacing: 0;
+    font: 400 0.9375rem/1.45 var(--f-body);
+  }
+  .ledger tbody th span { display: block; margin-top: 2px; font: 400 0.8125rem/1.4 var(--f-body); color: var(--muted); }
+  .ledger tbody td {
+    text-align: right; white-space: nowrap;
+    font: 400 1.125rem/1.2 var(--f-display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  }
+
+  /* Kroki wcięte — czyta się je jako ruch od sumy nad nimi */
+  .ledger tbody .ledger__step th { padding-left: 20px; }
+
+  /* Start, sumy pośrednie i wynik pełnym atramentem; nad sumą kreska */
+  .ledger tbody .ledger__start th, .ledger tbody .ledger__start td,
+  .ledger tbody .ledger__subtotal th, .ledger tbody .ledger__subtotal td,
+  .ledger tbody .ledger__result th, .ledger tbody .ledger__result td { color: var(--ink); }
+  .ledger tbody .ledger__start th, .ledger tbody .ledger__subtotal th, .ledger tbody .ledger__result th { font-weight: 500; }
+  .ledger tbody .ledger__before-total th, .ledger tbody .ledger__before-total td,
+  .ledger tbody .ledger__result th, .ledger tbody .ledger__result td { border-bottom-color: var(--ink); }
+  .ledger tbody .ledger__result td { color: var(--blue); font-size: 1.375rem; }
+</style>

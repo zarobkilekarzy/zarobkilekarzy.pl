@@ -1,0 +1,157 @@
+---
+/**
+ * Pole wyszukiwania z listą wyników (wzorzec ARIA combobox): okno ⌘K (SearchDialog) i strona /szukaj/.
+ * Zachowanie daje custom element <zl-search>, więc każda instancja działa niezależnie.
+ * Steruje się nim tak jak użytkownik: ustaw wartość pola i wyślij zdarzenie `input`.
+ * Enter „klika” wskazany wynik, więc rodzic reaguje na klawiaturę i mysz tak samo.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import SearchResult from '@/components/site/SearchResult.astro';
+import { searchPageHref } from '@/lib/search/engine';
+import type { SearchHit } from '@/types';
+
+interface Props extends HTMLAttributes<'div'> {
+  /** przedrostek identyfikatorów pola, listy i opcji — unikalny na stronie */
+  id: string;
+  /** pozycje pokazywane przed wpisaniem zapytania */
+  popular: SearchHit[];
+  /** ile wyników pokazać */
+  limit?: number;
+}
+
+const { id, popular, limit = 8, autofocus, class: className, ...rest } = Astro.props;
+---
+<zl-search id={id} class:list={['search-box', className]} data-limit={limit} {...rest}>
+  <form class="search-box__field" role="search" action={searchPageHref()} method="get">
+    <Icon name="search" class="search-box__icon" />
+    <label class="sr-only" for={`${id}-input`}>Szukaj w serwisie</label>
+    <input
+      id={`${id}-input`}
+      name="q"
+      type="search"
+      role="combobox"
+      aria-expanded="true"
+      aria-controls={`${id}-results`}
+      aria-autocomplete="list"
+      placeholder="Szukaj: stawki, rezydentura, prawa pacjenta…"
+      autocomplete="off"
+      spellcheck="false"
+      autofocus={autofocus}
+    />
+    <slot name="end" />
+  </form>
+  <p class="mono-label search-box__label" aria-live="polite" data-label>Popularne</p>
+  <ul id={`${id}-results`} class="search-box__results" role="listbox" aria-label="Wyniki" data-results>
+    {popular.map((hit) => <SearchResult {...hit} />)}
+  </ul>
+  <template><SearchResult title="" category="" href="" /></template>
+  <p class="search-box__empty" data-empty hidden>Nic nie znaleźliśmy. Spróbuj innego słowa albo zajrzyj do <a href="/slownik/">słownika pojęć</a>.</p>
+</zl-search>
+
+<script>
+  import type { SearchHit } from '@/types';
+  import { loadSearch, prefetchSearch } from '@/lib/search/engine';
+  import { markMatches, words } from '@/lib/search/text';
+
+  /** Tekst z podświetlonymi słowami zapytania, jako węzły DOM (bez innerHTML). */
+  const highlighted = (text: string, roots: string[]) =>
+    markMatches(text, roots).map((part) =>
+      part.match ? Object.assign(document.createElement('mark'), { textContent: part.text }) : document.createTextNode(part.text),
+    );
+
+  class ZlSearch extends HTMLElement {
+    connectedCallback() {
+      const find = <T extends Element>(selector: string) => this.querySelector<T>(selector)!;
+      const input = find<HTMLInputElement>('input');
+      const list = find<HTMLUListElement>('[data-results]');
+      const label = find<HTMLElement>('[data-label]');
+      const empty = find<HTMLElement>('[data-empty]');
+      const rowTemplate = find<HTMLTemplateElement>('template');
+      const limit = Number(this.dataset.limit) || undefined;
+      const popular = [...list.children];
+      const options = () => [...list.querySelectorAll<HTMLAnchorElement>('[role="option"]')];
+      let active = 0;
+
+      /** Wiersz wyniku sklonowany z szablonu: markup ma tylko SearchResult.astro. */
+      const row = ({ title, category, href, section }: SearchHit, roots: string[]) => {
+        const item = rowTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement;
+        item.querySelector('a')!.href = href;
+        item.querySelector('[data-hit-title]')!.replaceChildren(...highlighted(title, roots));
+        item.querySelector('[data-hit-category]')!.textContent = category;
+        const context = item.querySelector<HTMLElement>('[data-hit-section]')!;
+        context.hidden = !section;
+        context.replaceChildren(...highlighted(section ?? '', roots));
+        return item;
+      };
+
+      const setActive = (i: number) => {
+        const all = options();
+        active = all.length ? (i + all.length) % all.length : 0;
+        all.forEach((option, j) => option.setAttribute('aria-selected', String(j === active)));
+        if (all.length) {
+          input.setAttribute('aria-activedescendant', all[active].id);
+          all[active].scrollIntoView({ block: 'nearest' });
+        } else {
+          input.removeAttribute('aria-activedescendant');
+        }
+      };
+
+      /** Nagłówek i wiersze listy; `noResults` pokazuje podpowiedź pod pustą listą. */
+      const show = (heading: string, rows: Element[] = [], noResults = false) => {
+        list.replaceChildren(...rows);
+        label.textContent = heading;
+        empty.hidden = !noResults;
+        options().forEach((option, i) => (option.id = `${this.id}-option-${i}`));
+        setActive(0);
+      };
+
+      const render = async () => {
+        const query = input.value.trim();
+        // Pierwsza litera albo samo „się” to jeszcze nie zapytanie
+        if (!words(query).length) return show('Popularne', popular);
+        // Poprzednie wiersze znikają od razu, żeby Enter w trakcie wczytywania nie otworzył nieaktualnego wyniku
+        show('Szukam…');
+        try {
+          const search = await loadSearch();
+          if (query !== input.value.trim()) return; // w międzyczasie wpisano coś innego
+          const { roots, hits } = search(query, limit);
+          show(`Wyniki (${hits.length})`, hits.map((hit) => row(hit, roots)), hits.length === 0);
+        } catch {
+          show('Wyszukiwarka jest chwilowo niedostępna');
+        }
+      };
+
+      input.addEventListener('input', render);
+      input.addEventListener('focus', prefetchSearch, { once: true });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setActive(active + 1); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); setActive(active - 1); }
+      });
+      find('form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        options()[active]?.click();
+      });
+      // Pole może mieć już wartość (przywrócony formularz, ?q= na stronie wyników)
+      render();
+    }
+  }
+
+  if (!customElements.get('zl-search')) customElements.define('zl-search', ZlSearch);
+</script>
+
+<style>
+  .search-box { display: block; }
+  .search-box__field { display: flex; align-items: center; gap: 14px; padding: 0 16px 0 20px; border-bottom: 1px solid var(--line); }
+  .search-box__icon { color: var(--blue); }
+  .search-box__field input {
+    flex: 1; min-width: 0; height: 64px; border: 0; outline: none;
+    font: 400 1.1875rem/1 var(--f-display); letter-spacing: -0.01em; color: var(--ink); background: transparent;
+  }
+  .search-box__field input::-webkit-search-cancel-button { display: none; }
+  .search-box__label { padding: 16px 20px 8px; }
+  /* Wysokość listy ustawia rodzic: okno ją ogranicza, strona wyników nie */
+  .search-box__results { padding: 0 8px 12px; overflow-y: auto; max-height: var(--search-results-height, none); }
+  .search-box__empty { padding: 8px 20px 24px; font-size: 0.90625rem; }
+  .search-box__empty a { color: var(--blue); text-decoration: underline; }
+</style>

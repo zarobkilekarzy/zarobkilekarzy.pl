@@ -1,0 +1,187 @@
+---
+/**
+ * Formularz zapisu na newsletter (custom element <zl-newsletter>).
+ * Wysyła `POST endpoint` z JSON-em `{ email, source }` i pokazuje wynik według kodu odpowiedzi
+ * (kontrakt: src/data/newsletter.ts i docs/newsletter.md). Ustawienia i teksty przychodzą w propsach.
+ *
+ * Bez JS formularz nic nie wysyła (endpoint przyjmuje JSON) — przycisk wtedy nie ma skutku ubocznego.
+ * Pole-pułapka `company` jest niewidoczne dla ludzi; wypełnione przez bota kończy się udanym
+ * „zapisem” bez wysyłki.
+ */
+import Button from '@/components/ui/Button.astro';
+
+interface Messages {
+  sending: string;
+  pending: string;
+  subscribed: string;
+  already: string;
+  invalid: string;
+  rejected: string;
+  tooMany: string;
+  error: string;
+}
+
+interface Props {
+  endpoint: string;
+  messages: Messages;
+  /** zdanie pod polem (co robimy z adresem); link do polityki prywatności dokłada komponent */
+  note: string;
+  privacyHref?: string;
+  doubleOptIn?: boolean;
+  timeoutMs?: number;
+  id?: string;
+  placeholder?: string;
+  submitLabel?: string;
+}
+
+const {
+  endpoint,
+  messages,
+  note,
+  privacyHref = '/prywatnosc/',
+  doubleOptIn = true,
+  timeoutMs = 10_000,
+  id = 'newsletter',
+  placeholder = 'twoj@email.pl',
+  submitLabel = 'Zapisz się',
+} = Astro.props;
+---
+<zl-newsletter
+  data-endpoint={endpoint}
+  data-timeout={timeoutMs}
+  data-double-opt-in={doubleOptIn ? '' : undefined}
+  data-messages={JSON.stringify(messages)}
+>
+  <form class="nl" novalidate>
+    <label class="sr-only" for={`${id}-email`}>Adres e-mail</label>
+    <input
+      id={`${id}-email`} type="email" name="email" placeholder={placeholder}
+      autocomplete="email" inputmode="email" spellcheck="false" required maxlength="254"
+      aria-describedby={`${id}-note ${id}-msg`}
+    />
+    <Button type="submit" class="nl__submit">{submitLabel}</Button>
+    <div class="nl__trap" aria-hidden="true">
+      <label for={`${id}-company`}>Nie wypełniaj tego pola</label>
+      <input id={`${id}-company`} type="text" name="company" tabindex="-1" autocomplete="off" />
+    </div>
+    <p class="nl__msg" id={`${id}-msg`} role="status" aria-live="polite" data-msg></p>
+    <p class="nl__note" id={`${id}-note`}>{note} <a href={privacyHref}>Polityka prywatności</a>.</p>
+  </form>
+</zl-newsletter>
+
+<script>
+  type Key = 'sending' | 'pending' | 'subscribed' | 'already' | 'invalid' | 'rejected' | 'tooMany' | 'error';
+  type Tone = 'ok' | 'err' | 'wait';
+
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  class ZlNewsletter extends HTMLElement {
+    #busy = false;
+
+    connectedCallback() {
+      const form = this.querySelector('form');
+      const msg = this.querySelector<HTMLElement>('[data-msg]');
+      const endpoint = this.dataset.endpoint;
+      if (!form || !msg || !endpoint) return;
+
+      const text: Record<Key, string> = JSON.parse(this.dataset.messages ?? '{}');
+      const timeout = Number(this.dataset.timeout) || 10_000;
+      const doubleOptIn = this.hasAttribute('data-double-opt-in');
+      const input = form.elements.namedItem('email') as HTMLInputElement;
+      const trap = form.elements.namedItem('company') as HTMLInputElement;
+      const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+
+      const show = (key: Key, tone: Tone) => {
+        msg.textContent = text[key] ?? '';
+        msg.dataset.tone = tone;
+        input.setAttribute('aria-invalid', String(key === 'invalid' || key === 'rejected'));
+      };
+      const busy = (on: boolean) => {
+        this.#busy = on;
+        form.setAttribute('aria-busy', String(on));
+        if (button) button.disabled = on;
+      };
+
+      input.addEventListener('input', () => {
+        if (input.getAttribute('aria-invalid') === 'true') input.setAttribute('aria-invalid', 'false');
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (this.#busy) return;
+        const email = input.value.trim();
+        if (!EMAIL.test(email)) {
+          show('invalid', 'err');
+          input.focus();
+          return;
+        }
+        const done = doubleOptIn ? 'pending' : 'subscribed';
+        // bot wypełnił pułapkę — udajemy sukces, nic nie wysyłamy
+        if (trap?.value) {
+          show(done, 'ok');
+          form.reset();
+          return;
+        }
+
+        busy(true);
+        show('sending', 'wait');
+        const abort = new AbortController();
+        const timer = setTimeout(() => abort.abort(), timeout);
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ email, source: location.pathname }),
+            signal: abort.signal,
+          });
+          if (res.ok) {
+            show(done, 'ok');
+            form.reset();
+          } else if (res.status === 409) show('already', 'ok');
+          else if (res.status === 400 || res.status === 422) show('rejected', 'err');
+          else if (res.status === 429) show('tooMany', 'err');
+          else show('error', 'err');
+        } catch {
+          show('error', 'err');
+        } finally {
+          clearTimeout(timer);
+          busy(false);
+        }
+      });
+    }
+  }
+
+  if (!customElements.get('zl-newsletter')) customElements.define('zl-newsletter', ZlNewsletter);
+</script>
+
+<style>
+  zl-newsletter { display: block; }
+  .nl { display: flex; flex-wrap: wrap; }
+  /* kolor-stały: początek — formularz jest tylko w stopce (tło --inverse, zawsze ciemne) */
+  input {
+    flex: 1 1 220px; min-width: 0; height: 52px; padding: 0 18px;
+    background: transparent; border: 1px solid rgba(255, 255, 255, .25); border-right: 0;
+    color: #fff; font-size: 0.96875rem;
+    transition: border-color .2s;
+  }
+  input::placeholder { color: rgba(255, 255, 255, .55); }
+  input:focus { outline: none; border-color: var(--blue); }
+  input[aria-invalid='true'] { border-color: #FFB4AB; }
+  .nl__submit { flex: none; }
+  .nl__submit:disabled { opacity: .6; cursor: progress; }
+  .nl__msg { flex-basis: 100%; min-height: 1.5em; margin-top: 12px; font: 400 0.875rem/1.45 var(--f-body); }
+  .nl__msg[data-tone='ok'] { color: #8FE3B8; }
+  .nl__msg[data-tone='err'] { color: #FFB4AB; }
+  .nl__msg[data-tone='wait'] { color: rgba(255, 255, 255, .7); }
+  .nl__note { flex-basis: 100%; margin-top: 4px; font-size: 0.8125rem; line-height: 1.5; color: rgba(255, 255, 255, .55); }
+  .nl__note a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+  .nl__note a:hover { color: #fff; }
+  /* kolor-stały: koniec */
+  /* pole-pułapka: poza ekranem, ale nie display:none (część botów omija ukryte pola) */
+  .nl__trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+  @media (max-width: 720px) {
+    input { border-right: 1px solid rgba(255, 255, 255, .25); flex-basis: 100%; }
+    .nl__submit { margin-top: 8px; }
+  }
+</style>

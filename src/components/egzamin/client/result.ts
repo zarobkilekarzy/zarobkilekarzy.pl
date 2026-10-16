@@ -2,7 +2,8 @@
  * Podsumowanie testu → HTML. Czysty render z wyniku i sesji; zachowanie (filtry przeglądu,
  * rozwijanie, akcje) podpina app.ts przez atrybuty data-*.
  */
-import { percentile, statusOf } from '@/lib/egzamin/engine';
+import { isCounted, percentile, statusOf } from '@/lib/egzamin/engine';
+import { MIN_RESULTS, comparable, type GroupStats } from '@/lib/egzamin/stats';
 import type { ExamSession } from '@/lib/egzamin/session';
 import { notes } from '@/lib/egzamin/storage';
 import type { FieldScore, TestResult } from '@/lib/egzamin/types';
@@ -15,7 +16,6 @@ export interface ResultContext {
   session: ExamSession;
   result: TestResult;
   fieldLabel: (id: string) => string;
-  distribution: number[];
   /** próg zdania jako ułamek (0,56) */
   threshold: number;
 }
@@ -113,7 +113,7 @@ function origin({ result: r }: ResultContext, threshold: number) {
   if (!r.byOrigin) {
     return `<section class="r-card" aria-labelledby="r-origin">
       <h3 class="r-h" id="r-origin">Pytania z bazy i nowe</h3>
-      <p class="r-note">Podział jest dostępny tylko dla sesji od 2022 r. — dla starszych nie da się ustalić, które pytania były w bazie opublikowanej przed egzaminem.</p>
+      <p class="r-note">Dla tej sesji nie da się ustalić, które pytania były w bazie opublikowanej przed egzaminem. Podział pokazujemy tylko tam, gdzie treść sesji udało się porównać z wcześniejszą bazą CEM.</p>
     </section>`;
   }
   return `<section class="r-card" aria-labelledby="r-origin">
@@ -126,19 +126,61 @@ function origin({ result: r }: ResultContext, threshold: number) {
   </section>`;
 }
 
-function compare({ session, result: r, distribution }: ResultContext) {
+/** Porównanie z innymi: szkielet od razu, treść (compareBody) po odpowiedzi /api/egzamin. */
+function compare({ session, result: r }: ResultContext) {
   if (session.mode.instant || r.max === 0) return '';
-  const you = share(r.points, r.max);
-  const p = percentile(you, distribution);
-  const top = Math.max(...distribution);
+  const body = session.state.agent
+    ? '<p class="r-note">W tym teście odpowiadał asystent AI (przez window.lek), więc wynik nie trafia do statystyk użytkowników strony.</p>'
+    : !comparable(session.state)
+      ? '<p class="r-note">Test zawężony do dziedziny nie trafia do porównania — jego wynik nie jest porównywalny z testami z całej sesji.</p>'
+      : '<p class="r-note">Wczytywanie wyników innych użytkowników…</p>';
   return `<section class="r-card" aria-labelledby="r-compare">
-    <h3 class="r-h" id="r-compare">Na tle innych <small>dane przykładowe</small></h3>
-    <p class="r-big">Twój wynik jest wyższy niż <b>≈ ${pct(p.share * 100, 0)}</b> wyników.</p>
+    <h3 class="r-h" id="r-compare">Na tle użytkowników strony <small data-compare-n></small></h3>
+    <div data-compare aria-live="polite">${body}</div>
+  </section>`;
+}
+
+const NOTE = 'Statystyka z ukończonych testów na tej stronie, nie z prawdziwego egzaminu. Wynik każdego testu trafia tu anonimowo: sesja, tryb, punkty i czas — bez adresu IP i identyfikatorów.';
+
+/** Treść porównania z rzeczywistych wyników grupy (ten sam tryb i sesja). */
+export function compareBody(r: TestResult, g: GroupStats | null) {
+  if (!g) return `<p class="r-note">Nie udało się wczytać wyników innych użytkowników.</p>`;
+  if (g.total < MIN_RESULTS) {
+    return `<p class="r-note">Zbieramy wyniki — rozkład pokażemy, gdy w tym trybie i sesji będzie ich co najmniej ${MIN_RESULTS}.${g.added ? ' Twój wynik został dodany anonimowo.' : ''}</p>`;
+  }
+  const you = share(r.points, r.max);
+  const p = percentile(you, g.bins);
+  const top = Math.max(...g.bins, 1);
+  return `<p class="r-big">Twój wynik jest wyższy niż <b>≈ ${pct(p.share * 100, 0)}</b> wyników.</p>
     <div class="r-hist" role="img" aria-label="Rozkład ${formatPL(p.total)} wyników; Twój w przedziale ${p.bin * 10}–${p.bin === 9 ? 100 : p.bin * 10 + 9}%">
-      ${distribution.map((n, i) => `<span class="${i === p.bin ? 'is-you' : ''}" style="--h:${n / top}" title="${i * 10}–${i === 9 ? 100 : i * 10 + 9}%: ${n}"></span>`).join('')}
+      ${g.bins.map((n, i) => `<span class="${i === p.bin ? 'is-you' : ''}" style="--h:${n / top}" title="${i * 10}–${i === 9 ? 100 : i * 10 + 9}%: ${n}"></span>`).join('')}
     </div>
     <div class="r-hist__axis"><span>0%</span><span>50%</span><span>100%</span></div>
-    <p class="r-note">${formatPL(p.total)} ukończonych testów w tym trybie i sesji. Zbieramy anonimowo tylko wynik: sesję, tryb, punkty i czas.</p>
+    <dl class="r-tiles r-tiles--compare">
+      <div><dt>Zdało (≥ 56%)</dt><dd>${pct(g.passed * 100, 0)}</dd></div>
+      <div><dt>Średni wynik</dt><dd>${pct(g.mean * 100, 0)}</dd></div>
+    </dl>
+    <p class="r-note">${NOTE}</p>`;
+}
+
+/** Obrazek z wynikiem rysuje app.ts (share-image.ts) po wstawieniu tej sekcji. */
+function shareCard({ result: r }: ResultContext) {
+  if (r.max === 0) return '';
+  return `<section class="r-card" aria-labelledby="r-share" data-share>
+    <h3 class="r-h" id="r-share">Udostępnij wynik <small>obrazek powstaje w tej przeglądarce</small></h3>
+    <div class="r-share">
+      <div class="r-share__frame"><img class="r-share__img" data-share-img alt="Obrazek z Twoim wynikiem" width="1200" height="630" hidden /></div>
+      <div class="r-share__side">
+        <div class="r-share__acts">
+          <button type="button" class="r-btn r-btn--primary" data-act="share-native" hidden>${icon('arrow-ne')}Udostępnij…</button>
+          <a class="r-btn" data-share-x href="https://x.com/" target="_blank" rel="noopener noreferrer">Udostępnij na X</a>
+          <a class="r-btn" data-share-fb href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer">Facebook</a>
+          <button type="button" class="r-btn" data-act="share-download">Pobierz obrazek</button>
+          <button type="button" class="r-btn" data-act="share-copy">Kopiuj tekst</button>
+        </div>
+        <p class="r-note">Obrazek pokazuje tylko wynik — bez żadnych danych o Tobie. X i Facebook nie dołączają obrazka z linku: pobierz go i dodaj do posta.</p>
+      </div>
+    </div>
   </section>`;
 }
 
@@ -193,7 +235,7 @@ export function reviewRow(ctx: ResultContext, i: number) {
   const s = statusOf(session.state, q, i, true);
   const st = { correct: icon('check', 14), wrong: icon('close', 14), blank: '', void: '', answered: '' }[s];
   const L = 'ABCDE';
-  const room = q.stats ? `${formatPL(q.stats[q.correct], 0)}% sali` : '';
+  const room = q.stats && isCounted(q) ? `${formatPL(q.stats[q.correct], 0)}% sali` : '';
   const marks = [session.isFlagged(i) ? icon('flag', 14) : '', notes.has(q.id) ? `<span class="is-note">${icon('pencil', 14)}</span>` : ''].join('');
   return `<details class="lq-row" data-review="${i}">
     <summary><span class="lq-row__sum">
@@ -205,7 +247,7 @@ export function reviewRow(ctx: ResultContext, i: number) {
       </span>
       <span class="lq-row__side">
         ${marks ? `<span class="lq-row__marks">${marks}</span>` : ''}
-        <span>Ty: <b>${a === undefined ? '—' : L[a]}</b> · klucz: <b>${L[q.correct]}</b></span>
+        <span>Ty: <b>${a === undefined ? '—' : L[a]}</b> · klucz: <b>${L[q.correct] ?? '—'}</b></span>
         ${room ? `<span>${room}</span>` : ''}
       </span>
     </span></summary>
@@ -218,6 +260,7 @@ export function result(ctx: ResultContext, filter: ReviewFilter) {
   const wrong = reviewCounts(ctx.session).wrong;
   return `${hero(ctx)}
     <div class="r-grid">${fields(ctx, threshold)}<div>${origin(ctx, threshold)}${compare(ctx)}</div></div>
+    ${shareCard(ctx)}
     <section class="r-card" aria-labelledby="r-review">
       <h3 class="r-h" id="r-review">Przegląd odpowiedzi <small>kliknij pytanie, żeby zobaczyć klucz i statystykę sali</small></h3>
       <div class="r-filters" data-review-filters role="group" aria-label="Pokaż">${reviewFilters(ctx.session, filter)}</div>

@@ -6,13 +6,15 @@
 import { createLekApi } from '@/lib/egzamin/api';
 import { createTest, isCounted, selectQuestions, statusOf, type Status } from '@/lib/egzamin/engine';
 import { ExamSession, type Change } from '@/lib/egzamin/session';
-import { loadPool } from '@/lib/egzamin/source';
+import { loadByIds, loadSessions } from '@/lib/egzamin/source';
 import { notes, prefs, testStore } from '@/lib/egzamin/storage';
+import { MIN_RESULTS, comparable, groupStats } from '@/lib/egzamin/stats';
 import type { ExamId, ExamQuestion, FieldInfo, ModeInfo, SessionInfo, TestConfig, TestState } from '@/lib/egzamin/types';
 import { formatPL, plural } from '@/lib/format';
 import * as R from './render';
 import { initBank } from './bank';
 import * as Res from './result';
+import { canvasFile, drawShareImage } from './share-image';
 
 export interface ClientConfig {
   rules: { questions: number; minutes: number; threshold: number };
@@ -20,9 +22,6 @@ export interface ClientConfig {
   exams: { id: ExamId; label: string; name: string }[];
   sessions: SessionInfo[];
   fields: Record<ExamId, FieldInfo[]>;
-  distribution: number[];
-  /** adres banku pytań z miejscem na egzamin: /egzamin/{exam}.json */
-  bankUrl: string;
 }
 
 declare global {
@@ -108,8 +107,9 @@ class ZlExam extends HTMLElement {
     return id === 'all' ? 'wszystkie sesje' : (this.cfg.sessions.find((s) => s.id === id)?.label ?? id);
   }
   private examLabel(id: ExamId) { return this.cfg.exams.find((e) => e.id === id)?.label ?? id.toUpperCase(); }
-  private fieldLabel = (id: string) =>
-    Object.values(this.cfg.fields).flat().find((f) => f.id === id)?.label ?? id;
+  /** Nazwa dziedziny w egzaminie testu (LEK i LDEK mają część wspólnych id, np. „rat”, o różnych nazwach). */
+  private fieldLabel = (id: string, exam: ExamId = this.session?.state.config.exam ?? this.exam) =>
+    this.cfg.fields[exam].find((f) => f.id === id)?.label ?? id;
 
   private readConfig(): TestConfig {
     return {
@@ -137,10 +137,10 @@ class ZlExam extends HTMLElement {
       e.preventDefault();
       void this.start(this.readConfig());
     });
-    // Pytania pobieramy, zanim padnie „Rozpocznij” (plik jest mały, a start ma być natychmiastowy)
+    // Wybraną sesję pobieramy, zanim padnie „Rozpocznij” (plik jest mały, a start ma być natychmiastowy)
     const warm = () => {
-      const exam = this.exam;
-      void loadPool(exam, this.cfg.bankUrl, this.cfg.sessions).then((p) => { this.pools.set(exam, p); this.syncSetup(); }, () => {});
+      const session = this.value('session');
+      if (session !== 'all') void loadSessions(this.exam, [session], this.cfg.sessions).catch(() => {});
       initBank(this.q('[data-bank]'), this.cfg, this.fieldLabel, (id) => this.sessionLabel(id));
     };
     // Safari nie ma requestIdleCallback
@@ -176,11 +176,11 @@ class ZlExam extends HTMLElement {
     const count = this.countFor(config, mode);
     const time = mode.minutesPerQuestion && count ? this.formatMinutes(count * mode.minutesPerQuestion) : 'bez limitu';
     const scopeText = !mode.scoped ? 'cała sesja'
-      : `${config.field === 'all' ? 'wszystkie dziedziny' : this.fieldLabel(config.field)}${config.shuffle ? ', losowo' : ''}`;
+      : `${config.field === 'all' ? 'wszystkie dziedziny' : this.fieldLabel(config.field, config.exam)}${config.shuffle ? ', losowo' : ''}`;
 
     this.setSum('mode', mode.label);
     this.setSum('session', `${this.examLabel(config.exam)} · ${this.sessionLabel(config.session)}`);
-    this.setSum('count', count === null ? '…' : `${formatPL(count)} ${plural(count, ['pytanie', 'pytania', 'pytań'])}`);
+    this.setSum('count', `${formatPL(count)} ${plural(count, ['pytanie', 'pytania', 'pytań'])}`);
     this.setSum('time', time);
     this.setSum('scope', scopeText);
   }
@@ -190,22 +190,12 @@ class ZlExam extends HTMLElement {
     if (el) el.textContent = text;
   }
 
-  /** Liczba pytań testu — dokładna, gdy bank jest już w pamięci; inaczej z liczb sesji. */
-  private countFor(config: TestConfig, mode: ModeInfo): number | null {
+  /** Liczba pytań testu — z liczb sesji i dziedzin policzonych w buildzie (bez pobierania pytań). */
+  private countFor(config: TestConfig, mode: ModeInfo): number {
     const sessions = config.session === 'all' && mode.scoped ? this.cfg.sessions : this.cfg.sessions.filter((s) => s.id === config.session);
-    const total = sessions.reduce((n, s) => n + s.count, 0);
-    if (config.field !== 'all' && mode.scoped) return this.cachedCount(config, mode);
+    const byField = config.field !== 'all' && mode.scoped;
+    const total = sessions.reduce((n, s) => n + (byField ? (s.fieldCounts[config.exam]?.[config.field] ?? 0) : s.count), 0);
     return mode.size ? Math.min(mode.size, total) : total;
-  }
-
-  private pools = new Map<ExamId, ExamQuestion[]>();
-  private cachedCount(config: TestConfig, mode: ModeInfo) {
-    const pool = this.pools.get(config.exam);
-    if (!pool) {
-      void loadPool(config.exam, this.cfg.bankUrl, this.cfg.sessions).then((p) => { this.pools.set(config.exam, p); this.syncSetup(); }, () => {});
-      return null;
-    }
-    return selectQuestions(pool, config, mode).length;
   }
 
   private formatMinutes(min: number) {
@@ -262,9 +252,10 @@ class ZlExam extends HTMLElement {
     const button = this.form.querySelector<HTMLElement>('[data-start]');
     button?.setAttribute('aria-busy', 'true');
     try {
-      const pool = await loadPool(config.exam, this.cfg.bankUrl, this.cfg.sessions);
-      this.pools.set(config.exam, pool);
       const mode = this.modeOf(config.mode);
+      const pool = config.ids
+        ? await loadByIds(config.exam, config.ids, this.cfg.sessions)
+        : await loadSessions(config.exam, config.session === 'all' && mode.scoped ? 'all' : [config.session], this.cfg.sessions);
       const questions = selectQuestions(pool, config, mode);
       if (questions.length === 0) throw new Error('Brak pytań w tym zakresie.');
       const state = createTest(questions, config, mode);
@@ -284,7 +275,16 @@ class ZlExam extends HTMLElement {
   private async resumeStored() {
     const state = testStore.load();
     if (!state) return;
-    const pool = await loadPool(state.config.exam, this.cfg.bankUrl, this.cfg.sessions);
+    let pool: ExamQuestion[];
+    try {
+      pool = await loadByIds(state.config.exam, state.ids, this.cfg.sessions);
+    } catch {
+      // Brak sieci to nie powód, żeby kasować zapisany test — zostaje do następnej próby
+      this.renderResume();
+      const meta = this.ui.resume.querySelector('.resume__meta');
+      meta?.insertAdjacentHTML('afterend', '<p class="resume__error" role="alert">Nie udało się wczytać pytań. Sprawdź połączenie i spróbuj ponownie.</p>');
+      return;
+    }
     const byId = new Map(pool.map((q) => [q.id, q]));
     const questions = state.ids.map((id) => byId.get(id)).filter((q): q is ExamQuestion => Boolean(q));
     if (questions.length !== state.ids.length) { testStore.clear(); this.renderResume(); return; }
@@ -438,7 +438,10 @@ class ZlExam extends HTMLElement {
         return void (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen());
       case 'new': return this.newTest();
       case 'retry': return void this.retryWrong();
-      case 'share': return this.share();
+      case 'share': return this.q('[data-share]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      case 'share-native': return this.shareNative();
+      case 'share-download': return this.shareDownload();
+      case 'share-copy': return this.shareCopy(t.closest<HTMLElement>('[data-act]')!);
     }
   }
 
@@ -706,7 +709,7 @@ class ZlExam extends HTMLElement {
 
   private resultContext(): Res.ResultContext {
     const s = this.session!;
-    return { session: s, result: s.result(), fieldLabel: this.fieldLabel, distribution: this.cfg.distribution, threshold: this.cfg.rules.threshold };
+    return { session: s, result: s.result(), fieldLabel: this.fieldLabel, threshold: this.cfg.rules.threshold };
   }
 
   private showResult() {
@@ -722,6 +725,21 @@ class ZlExam extends HTMLElement {
     this.ui['res-body'].querySelector<HTMLElement>('.r-score')?.setAttribute('tabindex', '-1');
     this.ui['res-body'].querySelector<HTMLElement>('.r-score')?.focus({ preventScroll: true });
     this.renderResume();
+    void this.renderShare();
+    void this.renderCompare();
+  }
+
+  /** Porównanie z innymi użytkownikami: zapis wyniku (raz na test) i rozkład grupy z /api/egzamin. */
+  private async renderCompare() {
+    const s = this.session!;
+    const box = this.q('[data-compare]');
+    if (!box || !s.finished || s.mode.instant || s.state.agent || !comparable(s.state)) return;
+    const r = s.result();
+    const stats = await groupStats(s.state, r, this.q('[data-turnstile]'), () => s.save()).catch(() => null);
+    if (this.session !== s || !box.isConnected) return; // w międzyczasie ruszył nowy test
+    box.innerHTML = Res.compareBody(r, stats);
+    const n = this.q('[data-compare-n]');
+    if (n) n.textContent = stats && stats.total >= MIN_RESULTS ? `${formatPL(stats.total)} ${plural(stats.total, ['wynik', 'wyniki', 'wyników'])}` : '';
   }
 
   private renderReview() {
@@ -763,13 +781,79 @@ class ZlExam extends HTMLElement {
     await this.start({ ...s.state.config, mode: 'nauka', shuffle: false, ids });
   }
 
-  private share() {
+  /* ======================================================================
+     Udostępnianie wyniku: obrazek (canvas), tekst, X, Facebook
+     ====================================================================== */
+
+  private shareImage: { url: string; file: File | null; text: string; name: string } | null = null;
+
+  private shareText(withLink = true) {
     const s = this.session!;
     const r = s.result();
-    const url = `${location.origin}/egzamin/`;
-    const text = `Mój wynik w teście LEK (${s.mode.label.toLowerCase()}, ${this.sessionLabel(s.state.config.session)}): ${r.points}/${r.max} pkt. Sprawdź się na pytaniach z jawnej bazy CEM:`;
-    if (navigator.share) void navigator.share({ text, url }).catch(() => {});
-    else window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank', 'noopener');
+    const share = r.max ? (r.points / r.max) * 100 : 0;
+    const passed = r.passed ? 'przekroczony' : 'nieprzekroczony';
+    return `Mój wynik ${this.examLabel(s.state.config.exam)} (${this.sessionLabel(s.state.config.session)}, ${s.mode.label.toLowerCase()}): `
+      + `${r.points}/${r.max} pkt — ${formatPL(share, 1)}%, próg 56% ${passed}${s.state.agent ? ' (z asystentem AI)' : ''}. `
+      + `Sprawdź się na pytaniach z jawnej bazy CEM${withLink ? `: ${location.origin}/egzamin/` : ':'}`;
+  }
+
+  private async renderShare() {
+    const s = this.session!;
+    const box = this.q('[data-share]');
+    if (!box) return;
+    this.shareImage = null;
+    const r = s.result();
+    const exam = s.state.config.exam;
+    const canvas = await drawShareImage({
+      eyebrow: `${this.examLabel(exam)} · ${this.sessionLabel(s.state.config.session)} · ${s.mode.label}`,
+      headline: `Mój wynik z ${{ egzamin: 'próbnego egzaminu', szybki: 'szybkiego testu', nauka: 'nauki na pytaniach' }[s.mode.id]} ${this.examLabel(exam)}`,
+      result: r,
+      threshold: this.cfg.rules.threshold,
+      exam: s.mode.id === 'egzamin',
+      fields: r.byField.map((f) => ({
+        label: this.fieldLabel(f.field, exam),
+        share: f.max ? f.points / f.max : 0,
+        average: f.max ? f.average / f.max : null,
+      })),
+      agent: Boolean(s.state.agent),
+    });
+    if (this.session !== s) return; // w międzyczasie ruszył nowy test
+    const name = `wynik-${exam}.png`;
+    const file = await canvasFile(canvas, name);
+    this.shareImage = { url: canvas.toDataURL('image/png'), file, text: this.shareText(), name };
+    const img = box.querySelector<HTMLImageElement>('[data-share-img]')!;
+    img.src = this.shareImage.url;
+    img.hidden = false;
+    const page = `${location.origin}/egzamin/`;
+    box.querySelector<HTMLAnchorElement>('[data-share-x]')!.href =
+      `https://x.com/intent/post?text=${encodeURIComponent(this.shareText(false))}&url=${encodeURIComponent(page)}`;
+    box.querySelector<HTMLAnchorElement>('[data-share-fb]')!.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(page)}`;
+    box.querySelector<HTMLElement>('[data-act="share-native"]')!.hidden = !(file && navigator.canShare?.({ files: [file] }));
+  }
+
+  private shareNative() {
+    const img = this.shareImage;
+    if (img?.file) void navigator.share({ files: [img.file], text: img.text }).catch(() => {});
+  }
+
+  private shareDownload() {
+    if (!this.shareImage) return;
+    const a = document.createElement('a');
+    a.href = this.shareImage.url;
+    a.download = this.shareImage.name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+  }
+
+  private shareCopy(button: HTMLElement) {
+    if (!this.shareImage) return;
+    void navigator.clipboard?.writeText(this.shareImage.text).then(() => {
+      const label = button.textContent;
+      button.textContent = 'Skopiowano';
+      button.classList.add('is-done');
+      setTimeout(() => { button.textContent = label; button.classList.remove('is-done'); }, 1800);
+    }, () => {});
   }
 }
 

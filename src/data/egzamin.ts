@@ -2,8 +2,9 @@
  * Moduł „Egzamin LEK”: egzaminy, tryby, sesje, dziedziny i treści strony /egzamin/.
  * Pytania przychodzą osobno (lib/egzamin/source.ts) — tu jest tylko to, co zna build i kreator.
  */
-import type { ExamId, FieldInfo, ModeInfo, QuestionBody, SessionInfo } from '@/lib/egzamin/types';
-import { demoQuestions } from './egzamin-demo';
+import { cemFields, cemQuestions, cemSessionCodes, cemSessions } from '@/lib/egzamin/cem';
+import { isCounted } from '@/lib/egzamin/engine';
+import type { ExamId, ExamQuestion, FieldInfo, ModeInfo, SessionInfo } from '@/lib/egzamin/types';
 
 /** Zasady egzaminu z rozporządzenia MZ (Dz.U. 2021 poz. 828). */
 export const RULES = { questions: 200, minutes: 240, threshold: 0.56 } as const;
@@ -43,52 +44,22 @@ export const EXAMS: { id: ExamId; label: string; name: string }[] = [
   { id: 'ldek', label: 'LDEK', name: 'Lekarsko-Dentystyczny Egzamin Końcowy' },
 ];
 
-/** Lata z opublikowanymi pytaniami. W latach 2016–2020 CEM nie ujawniał pytań. */
-const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2015, 2014, 2013];
-
-export const SESSIONS: SessionInfo[] = YEARS.flatMap((year) => [
-  { id: `${year}-jesien`, label: `jesień ${year}`, year, season: 'jesien' as const, count: RULES.questions },
-  { id: `${year}-wiosna`, label: `wiosna ${year}`, year, season: 'wiosna' as const, count: RULES.questions },
-]);
+/** Sesje z jawnej bazy CEM (src/data/egzamin-lek, normalizator). W latach 2016–2020 CEM nie ujawniał pytań. */
+export const SESSIONS: SessionInfo[] = cemSessions();
 
 export const GAP_YEARS = '2016–2020';
 
-export const FIELDS: Record<ExamId, FieldInfo[]> = {
-  lek: [
-    { id: 'interna', label: 'Choroby wewnętrzne', short: 'Interna' },
-    { id: 'pediatria', label: 'Pediatria', short: 'Pediatria' },
-    { id: 'chirurgia', label: 'Chirurgia', short: 'Chirurgia' },
-    { id: 'ginekologia', label: 'Położnictwo i ginekologia', short: 'Ginekologia' },
-    { id: 'ratunkowa', label: 'Medycyna ratunkowa i intensywna terapia', short: 'Ratunkowa' },
-    { id: 'rodzinna', label: 'Medycyna rodzinna', short: 'Rodzinna' },
-    { id: 'psychiatria', label: 'Psychiatria', short: 'Psychiatria' },
-    { id: 'bioetyka', label: 'Bioetyka i prawo medyczne', short: 'Bioetyka' },
-    { id: 'zdrowie-publiczne', label: 'Zdrowie publiczne', short: 'Zdr. publiczne' },
-    { id: 'orzecznictwo', label: 'Orzecznictwo lekarskie', short: 'Orzecznictwo' },
-  ],
-  ldek: [
-    { id: 'zachowawcza', label: 'Stomatologia zachowawcza z endodoncją', short: 'Zachowawcza' },
-    { id: 'protetyka', label: 'Protetyka stomatologiczna', short: 'Protetyka' },
-    { id: 'chirurgia-stom', label: 'Chirurgia stomatologiczna', short: 'Chirurgia' },
-    { id: 'dziecieca', label: 'Stomatologia dziecięca', short: 'Dziecięca' },
-    { id: 'ortodoncja', label: 'Ortodoncja', short: 'Ortodoncja' },
-    { id: 'periodontologia', label: 'Periodontologia', short: 'Periodontologia' },
-  ],
-};
+export const FIELDS: Record<ExamId, FieldInfo[]> = { lek: cemFields('lek'), ldek: cemFields('ldek') };
 
 /** Liczby bazy w nagłówku strony (stan jawnej bazy CEM). */
+const ALL_QUESTIONS = (['lek', 'ldek'] as const).flatMap((exam) => cemSessionCodes(exam).flatMap(cemQuestions));
+
 export const BANK = {
-  questions: 3600,
-  withStats: 3528,
+  questions: ALL_QUESTIONS.length,
+  withStats: ALL_QUESTIONS.filter((q) => isCounted(q) && q.stats).length,
   sessions: SESSIONS.length,
   fields: FIELDS.lek.length,
 };
-
-/**
- * Rozkład wyników innych użytkowników (10 przedziałów po 10 pp.) — porównanie w podsumowaniu.
- * DEMO: liczby przykładowe; w produkcji przychodzą z anonimowej zbiórki wyników.
- */
-export const DEMO_DISTRIBUTION = [2, 4, 9, 21, 48, 96, 131, 102, 41, 6];
 
 /** Pochodzenie pytań vs skuteczność zdających — obliczenia redakcji na wskaźnikach trudności CEM. */
 export const ORIGIN_TABLE = {
@@ -119,11 +90,11 @@ export const egzaminSources = [
 ];
 
 /**
- * Pytanie przykładowe na stronie głównej — z tego samego banku co test, więc wygląda
- * i działa jak tryb nauki. Brak pytania w banku zatrzymuje build.
+ * Pytanie na stronie głównej — z tej samej bazy co test, więc wygląda i działa jak tryb nauki.
+ * Prawdziwe pytanie CEM (LEK jesień 2026, nr 4); brak go w danych zatrzymuje build.
  */
-export const sampleQuestion: QuestionBody = (() => {
-  const q = demoQuestions.find((x) => x.exam === 'lek' && x.text.startsWith('Odtrutką stosowaną w zatruciu paracetamolem'));
-  if (!q) throw new Error('[egzamin] brak pytania przykładowego w data/egzamin-demo.ts');
+export const sampleQuestion: ExamQuestion = (() => {
+  const q = ALL_QUESTIONS.find((x) => x.id === '20262:4');
+  if (!q || !isCounted(q)) throw new Error('[egzamin] brak pytania 20262:4 w src/data/egzamin-lek');
   return q;
 })();

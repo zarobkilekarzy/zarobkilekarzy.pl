@@ -3,7 +3,7 @@
  * nad tym samym bankiem co test. Wiersz i rozwinięcie — wspólne znaczniki z przeglądem wyniku.
  */
 import { difficultyLevel, difficultyOf } from '@/lib/egzamin/engine';
-import { loadPool } from '@/lib/egzamin/source';
+import { loadSessions } from '@/lib/egzamin/source';
 import { notes } from '@/lib/egzamin/storage';
 import type { ExamId, ExamQuestion } from '@/lib/egzamin/types';
 import { fold, formatPL, plural } from '@/lib/format';
@@ -12,7 +12,7 @@ import * as R from './render';
 
 const PAGE = 20;
 
-export function initBank(root: HTMLElement, cfg: ClientConfig, fieldLabel: (id: string) => string, sessionLabel: (id: string) => string) {
+export function initBank(root: HTMLElement, cfg: ClientConfig, fieldLabel: (id: string, exam: ExamId) => string, sessionLabel: (id: string) => string) {
   const form = root.querySelector<HTMLFormElement>('[data-bank-form]')!;
   const list = root.querySelector<HTMLElement>('[data-bank-list]')!;
   const count = root.querySelector<HTMLElement>('[data-bank-count]')!;
@@ -21,6 +21,8 @@ export function initBank(root: HTMLElement, cfg: ClientConfig, fieldLabel: (id: 
   let shown = PAGE;
   let rows: ExamQuestion[] = [];
   let searchTimer = 0;
+  /** numer ostatniego wywołania apply — wolniejsze, wcześniejsze pobranie nie nadpisze nowszej listy */
+  let request = 0;
 
   const val = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).value;
 
@@ -38,7 +40,7 @@ export function initBank(root: HTMLElement, cfg: ClientConfig, fieldLabel: (id: 
         <span class="lq-row__nr">${q.nr}</span>
         <span class="lq-row__st lq-row__st--${q.flags?.includes('invalidated') ? 'void' : 'none'}" aria-hidden="true"></span>
         <span class="lq-row__main">
-          <span class="lq-row__field">${R.esc(fieldLabel(q.field))} · ${R.esc(sessionLabel(q.session))}</span>
+          <span class="lq-row__field">${q.field ? `${R.esc(fieldLabel(q.field, q.exam))} · ` : ''}${R.esc(sessionLabel(q.session))}</span>
           <span class="lq-row__text">${R.txt(q.text)}</span>
         </span>
         <span class="lq-row__side">${mark}${level ? `<span title="Wskaźnik trudności ${formatPL(d!, 2)}"><span class="lq-diff__dots" data-level="${level.level}"><i></i><i></i><i></i><i></i></span></span><span><b>${formatPL(q.stats![q.correct], 0)}%</b> poprawnych</span>` : '<span>bez statystyki</span>'}</span>
@@ -54,10 +56,18 @@ export function initBank(root: HTMLElement, cfg: ClientConfig, fieldLabel: (id: 
   };
 
   const apply = async () => {
+    const mine = ++request;
     const exam = val('exam') as ExamId;
     count.textContent = 'Wczytywanie…';
-    const pool = await loadPool(exam, cfg.bankUrl, cfg.sessions);
     const session = val('session'), field = val('field'), origin = val('origin');
+    let pool: ExamQuestion[];
+    try {
+      pool = await loadSessions(exam, session === 'all' ? 'all' : [session], cfg.sessions);
+    } catch {
+      if (mine === request) count.textContent = 'Nie udało się wczytać pytań — spróbuj ponownie';
+      return;
+    }
+    if (mine !== request) return;
     const onlyNotes = (form.elements.namedItem('notes') as HTMLInputElement).checked;
     const terms = fold(val('q')).split(/\s+/).filter(Boolean);
     const saved = notes.all();
@@ -90,7 +100,7 @@ export function initBank(root: HTMLElement, cfg: ClientConfig, fieldLabel: (id: 
     if (!el.open || !body || body.childElementCount) return;
     const q = rows.find((x) => x.id === el.dataset.bankRow)!;
     body.innerHTML = R.question({
-      q, sessionLabel: `${q.exam.toUpperCase()} ${sessionLabel(q.session)}`, fieldLabel: fieldLabel(q.field), reveal: true, interactive: false,
+      q, sessionLabel: `${q.exam.toUpperCase()} ${sessionLabel(q.session)}`, fieldLabel: q.field ? fieldLabel(q.field, q.exam) : '', reveal: true, interactive: false,
     }) + R.feedback(q, undefined, true) + R.note(notes.get(q.id), false);
   }, true);
 

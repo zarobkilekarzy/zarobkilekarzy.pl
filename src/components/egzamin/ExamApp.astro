@@ -2,7 +2,7 @@
 /**
  * Moduł „Egzamin LEK”: zakładki „Rozwiąż test” i „Przeglądaj bazę pytań” + okno testu.
  * Konfiguracja trafia do przeglądarki jako JSON (komponenty klienta nie importują src/data),
- * a pytania — osobnym plikiem /egzamin/<egzamin>.json pobieranym przed startem.
+ * a pytania — osobnymi plikami sesji /egzamin/dane/<kod>.json pobieranymi przed startem.
  */
 import Tabs from '@/components/blocks/Tabs.astro';
 import ExamSetup from './ExamSetup.astro';
@@ -18,14 +18,13 @@ interface Props {
   modes: ModeInfo[];
   sessions: SessionInfo[];
   fields: Record<ExamId, FieldInfo[]>;
-  distribution: number[];
   gapYears: string;
   total: number;
   privacy: string;
 }
 
-const { rules, exams, modes, sessions, fields, distribution, gapYears, total, privacy } = Astro.props;
-const config: ClientConfig = { rules, exams, modes, sessions, fields, distribution, bankUrl: '/egzamin/{exam}.json' };
+const { rules, exams, modes, sessions, fields, gapYears, total, privacy } = Astro.props;
+const config: ClientConfig = { rules, exams, modes, sessions, fields };
 // JSON w <script>: „<” zamienione, żeby treść nie mogła zamknąć znacznika
 const json = JSON.stringify(config).replace(/</g, '\\u003c');
 ---

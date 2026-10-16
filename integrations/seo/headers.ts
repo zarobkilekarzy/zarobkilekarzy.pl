@@ -12,11 +12,14 @@ import { newsletter, newsletterOn } from '../../src/data/newsletter';
  * małe skrypty i atrybuty `style` w HTML. Z zewnątrz tylko Cloudflare Web Analytics (beacon
  * wpięty ręcznie w Analytics.astro): skrypt z static.cloudflareinsights.com, raport do
  * cloudflareinsights.com. Endpoint newslettera dochodzi do connect-src sam, gdy blok jest włączony.
+ * Cloudflare Turnstile (challenges.cloudflare.com: skrypt, ramka, zapytania) — niewidoczny widżet
+ * przy zapisie wyniku egzaminu do statystyk (src/lib/egzamin/stats.ts).
  * HSTS celowo nie tutaj — ustawione strefowo w panelu Cloudflare (jedno źródło nagłówka).
  * Pułapka: `astro preview` nie nakłada `_headers` — CSP sprawdza `npm run preview:cf`.
  */
 export function contentSecurityPolicy(): string {
-  const connect = ["'self'", 'https://cloudflareinsights.com'];
+  const TURNSTILE = 'https://challenges.cloudflare.com';
+  const connect = ["'self'", TURNSTILE, 'https://cloudflareinsights.com'];
   if (newsletterOn) connect.push(new URL(newsletter.endpoint).origin);
   return [
     "default-src 'self'",
@@ -25,19 +28,23 @@ export function contentSecurityPolicy(): string {
     "frame-ancestors 'none'",
     "form-action 'self'",
     "img-src 'self' data:",
-    "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+    `script-src 'self' 'unsafe-inline' ${TURNSTILE} https://static.cloudflareinsights.com`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
     `connect-src ${connect.join(' ')}`,
+    `frame-src ${TURNSTILE}`,
     "manifest-src 'self'",
     'upgrade-insecure-requests',
   ].join('; ');
 }
 
 export function headersFile(files: Iterable<string>): string {
-  const json = [...files].filter((f) => f.endsWith('.json')).sort();
+  const json = [...files].filter((f) => f.endsWith('.json') && !f.startsWith('/egzamin/dane/')).sort();
   const rules: string[][] = [
     ['/_astro/*', 'Cache-Control: public, max-age=31536000, immutable'],
+    // Pliki sesji egzaminu: moduł pobiera je z ?v=<hash treści>, więc zmiana danych = nowy adres.
+    // Jedna reguła na katalog zamiast reguły na plik — każda nowa sesja CEM nie zużywa limitu.
+    ['/egzamin/dane/*', 'Cache-Control: public, max-age=31536000, immutable', 'X-Robots-Tag: noindex'],
     [
       '/*',
       `Content-Security-Policy: ${contentSecurityPolicy()}`,

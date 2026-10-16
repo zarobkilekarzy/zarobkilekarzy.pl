@@ -17,7 +17,7 @@ export interface LekHost {
 }
 
 const OPIS =
-  'Moduł egzaminacyjny LEK/LDEK (zarobkilekarzy.pl, wersja demonstracyjna). Wszystkie funkcje zwracają Promise. ' +
+  'Moduł egzaminacyjny LEK/LDEK na jawnej bazie CEM (zarobkilekarzy.pl). Wszystkie funkcje zwracają Promise. ' +
   'Start: await rozpocznij(tryb, sesja, { egzamin, dziedzina, losowo }) — tryby: nauka, szybki, egzamin; sesje: sesje(). ' +
   'Pytania partiami: pytania(od, do); odpowiedzi partiami: odpowiedzi({ nr: litera }); pojedynczo: pytanie(nr), odpowiedz(litera, nr). ' +
   'Numery 1–N w kolejności testu. Na koniec zakoncz(), potem wynik(). Odpowiadaj z własnej wiedzy.';
@@ -55,7 +55,7 @@ export function createLekApi(host: LekHost) {
       twojaOdpowiedz: answer === undefined ? null : LETTERS[answer],
       oznaczone: s.isFlagged(i),
       ...(reveal && {
-        prawidlowa: LETTERS[q.correct],
+        prawidlowa: LETTERS[q.correct] ?? null,
         statystyka: q.stats && Object.fromEntries(LETTERS.map((l, k) => [l, q.stats![k]])),
       }),
     };

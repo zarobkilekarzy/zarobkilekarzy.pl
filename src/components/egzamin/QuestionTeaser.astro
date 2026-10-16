@@ -13,8 +13,10 @@ import './question.css';
 interface Props {
   question: QuestionBody;
   fieldLabel: string;
-  /** etykieta karty, np. „Zdaj LEK · pytanie przykładowe” */
+  /** etykieta karty, np. „Zdaj LEK · pytanie z jawnej bazy CEM” */
   label: string;
+  /** skąd pytanie, w miejscu „sesja · nr”, np. „LEK jesień 2026 · nr 4” */
+  source: string;
   /** parametry egzaminu obok etykiety: 200 pytań, 4 h, próg 56% */
   facts?: { value: string; label: string }[];
   note?: string;
@@ -22,10 +24,10 @@ interface Props {
   id?: string;
 }
 
-const { question: body, fieldLabel, label, facts = [], note, cta, id = 'lq-teaser' } = Astro.props;
-// Pytanie spoza sesji: bez numeru i bez znacznika pochodzenia
+const { question: body, fieldLabel, label, source, facts = [], note, cta, id = 'lq-teaser' } = Astro.props;
+// Pytanie poza testem: bez znacznika pochodzenia, źródło w podpisie
 const q: ExamQuestion = { ...body, id, session: '', nr: 0, inBase: null };
-const view: QuestionView = { q, sessionLabel: '', source: 'pytanie przykładowe', fieldLabel, reveal: false, interactive: true, headingId: `${id}-text` };
+const view: QuestionView = { q, sessionLabel: '', source, fieldLabel, reveal: false, interactive: true, headingId: `${id}-text` };
 ---
 <zl-question-teaser class="teaser" data-view={JSON.stringify(view)}>
   <header class="teaser__head">

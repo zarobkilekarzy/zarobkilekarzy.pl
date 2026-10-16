@@ -1,48 +1,40 @@
 /**
  * Źródło pytań — jedyne miejsce, które wie, skąd przychodzą pytania.
- * DEMO: plik /egzamin/<egzamin>.json ma kilkadziesiąt przykładowych pytań, a `expandDemo`
- * rozkłada je powtarzalnie na 200 numerów każdej sesji, żeby UI pracował w pełnej skali.
- * Produkcja: ten sam kontrakt (`loadPool`), ale pliki sesji z jawnej bazy CEM, bez rozkładania.
+ * Każda sesja to osobny plik z jawnej bazy CEM (/egzamin/dane/<kod>.json?v=<hash>, ok. 30 kB
+ * po kompresji), pobierany przy pierwszej potrzebie: test z jednej sesji nie ciągnie całej bazy.
  */
-import { hash, seeded, shuffle } from './engine';
-import type { ExamId, ExamQuestion, QuestionBody, SessionInfo } from './types';
+import { codeOfQuestion, parseSessionCode } from './ids';
+import type { ExamId, ExamQuestion, SessionInfo } from './types';
 
-/** Od tej sesji da się ustalić, czy pytanie było w jawnej bazie przed egzaminem. */
-const ORIGIN_KNOWN_FROM = 2022;
+const cache = new Map<string, Promise<ExamQuestion[]>>();
 
-export function expandDemo(bodies: QuestionBody[], sessions: SessionInfo[], exam: ExamId): ExamQuestion[] {
-  const own = bodies.filter((b) => b.exam === exam);
-  if (own.length === 0) return [];
-  return sessions.flatMap((s) => {
-    const order = shuffle(own, seeded(hash(`${exam}:${s.id}`)));
-    return Array.from({ length: s.count }, (_, i) => {
-      const body = order[i % order.length];
-      return {
-        ...body,
-        id: `${exam}-${s.id}-${i + 1}`,
-        session: s.id,
-        nr: i + 1,
-        inBase: s.year >= ORIGIN_KNOWN_FROM ? body.inBase : null,
-      };
-    });
-  });
-}
-
-const cache = new Map<ExamId, Promise<ExamQuestion[]>>();
-
-/** Wszystkie pytania egzaminu — pobierane raz, przy pierwszej potrzebie. */
-export function loadPool(exam: ExamId, url: string, sessions: SessionInfo[]): Promise<ExamQuestion[]> {
-  let pending = cache.get(exam);
+function loadFile(url: string): Promise<ExamQuestion[]> {
+  let pending = cache.get(url);
   if (!pending) {
-    pending = fetch(url.replace('{exam}', exam))
+    pending = fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json() as Promise<{ questions: QuestionBody[] }>;
+        return r.json() as Promise<{ questions: ExamQuestion[] }>;
       })
-      .then(({ questions }) => expandDemo(questions, sessions, exam));
+      .then(({ questions }) => questions);
     // Nieudane pobranie nie zostaje w pamięci — kolejna próba pyta sieć jeszcze raz
-    pending.catch(() => cache.delete(exam));
-    cache.set(exam, pending);
+    pending.catch(() => cache.delete(url));
+    cache.set(url, pending);
   }
   return pending;
+}
+
+/** Pytania wskazanych sesji jednego egzaminu (`'all'` = wszystkie sesje), w kolejności listy sesji. */
+export async function loadSessions(exam: ExamId, ids: string[] | 'all', sessions: SessionInfo[]): Promise<ExamQuestion[]> {
+  const urls = sessions
+    .filter((s) => ids === 'all' || ids.includes(s.id))
+    .map((s) => s.files[exam])
+    .filter((u): u is string => Boolean(u));
+  return (await Promise.all(urls.map(loadFile))).flat();
+}
+
+/** Pytania o podanych id (np. wznowiony test, powtórka błędnych) — pobiera tylko ich sesje. */
+export function loadByIds(exam: ExamId, ids: string[], sessions: SessionInfo[]) {
+  const wanted = new Set(ids.map((id) => parseSessionCode(codeOfQuestion(id))?.session).filter(Boolean) as string[]);
+  return loadSessions(exam, [...wanted], sessions);
 }

@@ -10,7 +10,8 @@ export const LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
 export const isCounted = (q: ExamQuestion) => !q.flags?.includes('invalidated');
 
 /** Wskaźnik trudności CEM: odsetek poprawnych odpowiedzi na egzaminie (0,9 = łatwe, 0,3 = bardzo trudne). */
-export const difficultyOf = (q: ExamQuestion) => (q.stats ? q.stats[q.correct] / 100 : null);
+export const difficultyOf = (q: ExamQuestion) =>
+  !isCounted(q) ? null : (q.difficulty ?? (q.stats ? q.stats[q.correct] / 100 : null));
 
 export function difficultyLevel(d: number): { level: 1 | 2 | 3 | 4; label: string } {
   if (d >= 0.85) return { level: 1, label: 'łatwe' };
@@ -53,9 +54,11 @@ export function selectQuestions(pool: ExamQuestion[], config: TestConfig, mode: 
     (q) =>
       q.exam === config.exam &&
       (allSessions || q.session === config.session) &&
-      (!mode.scoped || config.field === 'all' || q.field === config.field),
+      (!mode.scoped || config.field === 'all' || q.field === config.field) &&
+      (!mode.size || isCounted(q)),
   );
-  // Szybki test to zawsze losowa próbka
+  // Szybki test to zawsze losowa próbka — z pytań liczonych do wyniku, bo unieważnione tylko
+  // zmniejszałyby próbkę (i jej maksimum: statystyki przyjmują szybki test z 20 punktów)
   const ordered = config.shuffle || mode.size ? shuffle(list, random) : list;
   return mode.size ? ordered.slice(0, mode.size) : ordered;
 }
@@ -120,8 +123,11 @@ export function scoreTest(s: TestState, questions: ExamQuestion[], threshold: nu
     if (a === undefined) blank++;
     else if (!ok) wrong++;
 
-    const f = byField.get(q.field) ?? emptyScore(q.field);
-    byField.set(q.field, { ...f, points: f.points + ok, max: f.max + 1, average: f.average + avg });
+    // Sesje sprzed 2021 r. nie mają podziału na dziedziny
+    if (q.field) {
+      const f = byField.get(q.field) ?? emptyScore(q.field);
+      byField.set(q.field, { ...f, points: f.points + ok, max: f.max + 1, average: f.average + avg });
+    }
 
     if (q.inBase !== null) {
       known++;

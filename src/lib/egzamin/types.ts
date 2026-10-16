@@ -15,10 +15,10 @@ export type QuestionFlag =
   /** przy pobieraniu z CEM mógł wypaść fragment od znaku „<” */
   | 'truncated';
 
-/** Treść pytania bez osadzenia w sesji — tak wygląda wpis bazy przykładowej. */
+/** Treść pytania bez osadzenia w sesji. */
 export interface QuestionBody {
   exam: ExamId;
-  /** id dziedziny (zob. FIELDS w data/egzamin.ts) */
+  /** id dziedziny (zob. FIELDS w data/egzamin.ts); '' = sesja sprzed 2021 r., bez podziału na dziedziny */
   field: string;
   /** treść pytania; przy pytaniach wielokrotnego wyboru — wstęp przed listą twierdzeń */
   text: string;
@@ -28,10 +28,12 @@ export interface QuestionBody {
   tail?: string;
   /** dokładnie 5 odpowiedzi A–E */
   answers: [string, string, string, string, string];
-  /** indeks prawidłowej odpowiedzi 0–4 */
+  /** indeks prawidłowej odpowiedzi 0–4; -1 = pytanie unieważnione (bez klucza) */
   correct: number;
   /** odsetek zdających, którzy wybrali A–E (reszta to brak odpowiedzi); null = brak statystyki */
   stats: [number, number, number, number, number] | null;
+  /** wskaźnik trudności CEM (odsetek poprawnych w całej sali); brak = liczony ze `stats` */
+  difficulty?: number | null;
   /** czy pytanie było w jawnej bazie CEM przed egzaminem; null = nie da się ustalić (starsze sesje) */
   inBase: boolean | null;
   flags?: QuestionFlag[];
@@ -39,7 +41,7 @@ export interface QuestionBody {
 
 /** Pytanie osadzone w sesji — jednostka, na której pracuje silnik. */
 export interface ExamQuestion extends QuestionBody {
-  /** stabilny identyfikator (notatki, postęp): `${exam}-${session}-${nr}` */
+  /** stabilny identyfikator (notatki, postęp): kod sesji CEM i numer, np. `20262:15`, `ldek-20262:15` (lib/egzamin/ids.ts) */
   id: string;
   session: string;
   /** numer pytania w sesji (1–200) */
@@ -54,6 +56,10 @@ export interface SessionInfo {
   year: number;
   season: 'wiosna' | 'jesien';
   count: number;
+  /** plik pytań sesji per egzamin: /egzamin/dane/<kod>.json?v=<hash> */
+  files: Partial<Record<ExamId, string>>;
+  /** liczba pytań w każdej dziedzinie (puste dla sesji bez podziału na dziedziny) */
+  fieldCounts: Partial<Record<ExamId, Record<string, number>>>;
 }
 
 export interface FieldInfo {
@@ -112,6 +118,10 @@ export interface TestState {
   finishedAt: number | null;
   /** test rozwiązywał asystent AI przez window.lek — nie trafia do statystyk */
   agent?: boolean;
+  /** wynik przekazany (albo celowo pominięty) do anonimowych statystyk — lib/egzamin/stats.ts */
+  sent?: boolean;
+  /** test nieporównywalny z innymi mimo `field: 'all'` (np. zakres kilku dziedzin z pierwszej wersji modułu) */
+  incomparable?: boolean;
 }
 
 export interface FieldScore {

@@ -67,7 +67,7 @@ function meta(v: QuestionView) {
     v.hasNote ? `<span class="lq-mini lq-mini--note">${icon('pencil', 14)}notatka</span>` : '',
   ].join('');
   return `<div class="lq-meta">
-    <span class="lq-field">${esc(v.fieldLabel)}</span>
+    ${v.fieldLabel ? `<span class="lq-field">${esc(v.fieldLabel)}</span>` : ''}
     <span class="lq-src">${esc(v.source ?? `${v.sessionLabel} · nr ${q.nr}`)}</span>
     ${origin ? `<span class="lq-badge ${origin[0]}" title="${origin[2]}">${origin[1]}</span>` : ''}
     ${marks ? `<span class="lq-meta__end">${marks}</span>` : ''}

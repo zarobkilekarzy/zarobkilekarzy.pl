@@ -1,8 +1,9 @@
 ---
 /**
  * /media/ — materiały medialne: wszystkie infografiki do pobrania w jednej siatce (blocks/Infographics
- * z kilku zestawów, każda z linkiem do strony, z której pochodzi) i zasady wykorzystania.
- * Treść: src/data/media.ts; zestawy grafik: src/lib/infografiki/zestawy.ts.
+ * z kilku zestawów, każda z linkiem do strony, z której pochodzi), pliki CSV z danymi, pakiet logo
+ * i zasady wykorzystania. Treść: src/data/media.ts; zestawy grafik: src/lib/infografiki/zestawy.ts;
+ * pliki: src/lib/media/ (dane.ts, logo.ts).
  */
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Section from '@/components/layout/Section.astro';
@@ -11,11 +12,15 @@ import PageMeta from '@/components/layout/PageMeta.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
 import Prose from '@/components/article/Prose.astro';
 import Infographics from '@/components/blocks/Infographics.astro';
+import Icon from '@/components/ui/Icon.astro';
 import { mediaPage } from '@/data/media';
 import { contact } from '@/data/o-serwisie';
 import { identity } from '@/data/seo/identity';
 import { infographicSets } from '@/lib/infografiki/zestawy';
 import { infographicsLead } from '@/lib/infografiki/render';
+import { DATASETS, datasetSize, datasetUrl } from '@/lib/media/dane';
+import { LOGOS, LOGO_FORMATS, logoUrl } from '@/lib/media/logo';
+import { plural, typo } from '@/lib/format';
 import type { Crumb, SeoInput } from '@/lib/seo';
 
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: mediaPage.title }];
@@ -29,6 +34,7 @@ const mail = `mailto:${contact.email}`;
       <PageMeta
         items={[
           { label: 'Infografiki', value: count },
+          { label: 'Pliki danych', value: DATASETS.length },
           { label: 'Licencja', value: 'CC BY 4.0' },
           { label: 'Aktualizacja', value: mediaPage.updated },
         ]}
@@ -41,10 +47,62 @@ const mail = `mailto:${contact.email}`;
     <Infographics set={mediaPage.sets} lead={false} source />
   </Section>
 
+  <Section space="bottom" aria-labelledby="dane">
+    <SectionHead eyebrow="CSV" title={mediaPage.data.title} id="dane" aside={mediaPage.data.lead} />
+    <ul class="files">
+      {DATASETS.map((d) => (
+        <li class="file">
+          <p class="file__title">{typo(d.title)}</p>
+          <p class="file__desc">{typo(d.desc)}</p>
+          <p class="file__meta">
+            {d.rows.length} {plural(d.rows.length, ['wiersz', 'wiersze', 'wierszy'])} · {d.columns.length} {plural(d.columns.length, ['kolumna', 'kolumny', 'kolumn'])}
+            <span class="file__source">Źródło: {typo(d.source)}</span>
+          </p>
+          <p class="file__links">
+            <a class="file__dl" href={datasetUrl(d)} download={`zarobkilekarzy-${d.slug}.csv`} aria-label={`Pobierz CSV: ${d.title}, ${datasetSize(d)}`}>
+              <Icon name="db" size={18} />
+              <span>CSV · {datasetSize(d)}</span>
+            </a>
+            <a class="file__page" href={d.route}>{typo(d.page)}</a>
+          </p>
+        </li>
+      ))}
+    </ul>
+  </Section>
+
+  <Section space="bottom" aria-labelledby="logo">
+    <SectionHead eyebrow="Identyfikacja" title={mediaPage.logo.title} id="logo" aside={mediaPage.logo.lead} />
+    <ul class="logos">
+      {LOGOS.map((logo) => (
+        <li class="logo">
+          {/* podgląd na stałym tle (biel / granat) niezależnie od motywu strony — tak, jak logo ma wyglądać u odbiorcy */}
+          <div class:list={['logo__tile', `logo__tile--${logo.background}`]}>
+            <img src={logoUrl(logo, 'svg')} alt={logo.label} loading="lazy" decoding="async" />
+          </div>
+          <p class="file__title">{logo.label}</p>
+          <p class="file__links">
+            {LOGO_FORMATS.map((format) => (
+              <a class="file__dl" href={logoUrl(logo, format)} download aria-label={`Pobierz ${format.toUpperCase()}: ${logo.label}`}>
+                <Icon name="doc" size={18} />
+                <span>{format.toUpperCase()}</span>
+              </a>
+            ))}
+          </p>
+        </li>
+      ))}
+    </ul>
+    <div class="logo-rules">
+      <p class="file__meta">Przy używaniu logo prosimy:</p>
+      <ul>
+        {mediaPage.logo.rules.map((rule) => <li>{typo(rule)}</li>)}
+      </ul>
+    </div>
+  </Section>
+
   <Section space="bottom" aria-labelledby="zasady">
     <Prose>
       <h2 id="zasady">Zasady wykorzystania</h2>
-      <p>Grafiki i teksty serwisu są na licencji <a href={identity.license}>CC BY 4.0</a>. Możesz je publikować, także w mediach komercyjnych, jeśli podasz źródło: zarobkilekarzy.pl z linkiem do strony, z której pochodzi grafika. Jeśli coś zmieniasz, zaznacz to.</p>
+      <p>Grafiki, dane i teksty serwisu są na licencji <a href={identity.license}>CC BY 4.0</a>. Możesz je publikować, także w mediach komercyjnych, jeśli podasz źródło: zarobkilekarzy.pl z linkiem do strony, z której pochodzi grafika. Jeśli coś zmieniasz, zaznacz to.</p>
       <p>Pytania, prośby o inne zestawienie albo zgłoszenie błędu: <a href={mail}>{contact.email}</a>.</p>
     </Prose>
   </Section>
@@ -52,4 +110,33 @@ const mail = `mailto:${contact.email}`;
 
 <style>
   .media-top { padding-top: clamp(32px, 4vw, 56px); }
+
+  /* Pliki CSV i logo: ten sam język co lista infografik (blocks/Infographics) — linia z góry, mono w metadanych */
+  .files { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 32px 24px; margin-top: 24px; padding: 0; list-style: none; }
+  .file, .logo { display: flex; flex-direction: column; padding-top: 12px; border-top: 1px solid var(--ink); }
+  .file__title { font: 500 1rem/1.35 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .file__desc { margin-top: 6px; font: 400 0.875rem/1.5 var(--f-body); color: var(--text); }
+  .file__meta { margin-top: 8px; font: 400 0.75rem/1.55 var(--f-mono); color: var(--muted); }
+  /* źródło zawsze od nowej linii, nie doklejone za kropką do liczby wierszy */
+  .file__source { display: block; margin-top: 4px; }
+  .file__links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: auto; padding-top: 12px; font: 400 0.75rem/1.55 var(--f-mono); }
+  .file__links a.file__dl { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px 4px 6px; border: 1px solid var(--line-2); color: var(--text-strong); text-decoration: none; transition: color .2s, border-color .2s; }
+  .file__links a.file__dl :global(.icon) { color: var(--blue); }
+  .file__links a.file__dl:hover { color: var(--blue); border-color: var(--blue); }
+  .file__links a.file__dl:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .file__page { font: 400 0.8125rem/1.45 var(--f-body); color: var(--muted); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .file__page:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  .logos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 32px 24px; margin-top: 24px; padding: 0; list-style: none; }
+  .logo { border-top: 0; padding-top: 0; }
+  .logo .file__title { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--ink); }
+  .logo__tile { display: flex; align-items: center; justify-content: center; height: 140px; padding: 24px; border: 1px solid var(--line); }
+  /* stałe tła podglądu: logo na jasne tło pokazujemy na bieli, logo na ciemne — na granacie, w obu motywach strony */
+  .logo__tile--jasne { background: #fff; }
+  .logo__tile--ciemne { background: #0a0f1c; }
+  .logo__tile img { display: block; max-width: 100%; max-height: 56px; height: auto; }
+  .logo-rules { margin-top: 32px; max-width: 46rem; }
+  .logo-rules ul { margin-top: 8px; padding-left: 1.2em; list-style: disc; font: 400 0.9375rem/1.6 var(--f-body); color: var(--text); }
+  .logo-rules li::marker { color: var(--muted); }
+  .logo-rules li + li { margin-top: 4px; }
 </style>

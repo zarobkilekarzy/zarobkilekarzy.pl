@@ -10,7 +10,10 @@ import { EXAMS_2025, passRate } from '@/data/zdawalnosc-egzaminow';
 import { LATEST } from '@/data/english-division';
 import { dayRows } from '@/data/ciecie-limitow-na-medycyne';
 import { BUDGET, CURRENT, DRAFT_2027, GAP_2027, budget, formatMld } from '@/data/budzet-nfz';
-import { MEDIAN_WAGES, OUT_OF_POCKET, TO, WHC_EDITIONS, WHC_LATEST, contribution } from '@/data/kolejki';
+import { MEDIAN_WAGES, OUT_OF_POCKET, SPECIALISTS_2025, TO, WHC_EDITIONS, WHC_LATEST, contribution } from '@/data/kolejki';
+import { SPZOZ_QUARTERS } from '@/data/zadluzenie';
+import { AGE_BASE, AGE_LADDER } from '@/data/pielegniarstwo-w-polsce';
+import { FIRST_YEAR as STUDENTS_FIRST_YEAR, LINKS as ODSIEW_LINKS, funnelRows } from '@/data/odsiew-na-medycynie';
 import { DEFAULTS, LIMIT_TODAY, PRESETS, REGISTER_TOTAL, YEAR0, YEAR_MIN, seats, simulate } from '@/lib/podaz/model';
 import { formatPL } from '@/lib/format';
 import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment } from './render';
@@ -211,6 +214,12 @@ const lastOop = OUT_OF_POCKET.at(-1)!;
 const yearly = (n: number) => formatPL(Math.round(n));
 const queueLatestYear = Number(WHC_LATEST.label.slice(-4));
 
+// najdłuższe kolejki i dwie częste poradnie, na końcu średnia ze wszystkich 41 (Barometr WHC)
+const specialistRows: ComparisonRow[] = [
+  ...SPECIALISTS_2025.rows.map((r) => ({ label: r.label, value: r.value, display: formatPL(r.value, 1) })),
+  { label: 'Średnio', sub: '41 rodzajów poradni', value: SPECIALISTS_2025.average, display: formatPL(SPECIALISTS_2025.average, 1), highlight: true },
+];
+
 const kolejki: InfographicSet = {
   route: '/dane/kolejki/',
   page: 'Dane: Pieniądze a kolejka',
@@ -272,6 +281,152 @@ const kolejki: InfographicSet = {
       sources: 'Źródła: plany NFZ, GUS, Barometr WHC, Rada Fiskalna · składka przy medianie płac: rachunek własny',
       alt: `Infografika, wykres indeksowy (${BASE_YEAR} = 100), lata ${SINCE}–${DRAFT_YEAR}. Od ${BASE_YEAR} r.: koszty w planie NFZ ${pct(budget(TO).costs, budget(BASE_YEAR).costs)} (z ${formatMld(budget(BASE_YEAR).costs)} do ${formatMld(budget(TO).costs)} mld zł w ${TO} r.), składka zdrowotna przy medianie płac ${pct(lastMedian.median, medianOf(BASE_YEAR))} (do ${yearly(contribution(lastMedian.median))} zł rocznie w ${lastMedian.year} r.), wydatki gospodarstw domowych na leczenie z własnej kieszeni ${pct(lastOop.value, oopOf(BASE_YEAR))} (do ${formatMld(lastOop.value)} mld zł w ${lastOop.year} r.), a średni czas oczekiwania na świadczenie według Barometru WHC ${pct(WHC_LATEST.single, whcOf(BASE_YEAR).single)} (z ${formatPL(whcOf(BASE_YEAR).single, 1)} do ${formatPL(WHC_LATEST.single, 1)} mies.). Projekt planu NFZ na ${DRAFT_YEAR} r.: ${formatMld(DRAFT_2027.total)} mld zł; Rada Fiskalna szacuje, że zabraknie ok. ${GAP_2027.value} mld zł.`,
     },
+    {
+      id: 'kolejki-do-specjalistow',
+      title: 'Ile miesięcy czeka się na specjalistę',
+      measure: `średni czas oczekiwania na poradę · Barometr WHC ${WHC_LATEST.label}`,
+      unit: 'mies.',
+      rows: specialistRows,
+      sources: `Źródło: Fundacja Watch Health Care, Barometr WHC ${WHC_LATEST.label}`,
+      alt: `Infografika: średni czas oczekiwania na poradę specjalisty według Barometru WHC (${WHC_LATEST.label}): ${SPECIALISTS_2025.rows.map((r) => `${r.label.toLowerCase()} ${formatPL(r.value, 1)} mies.`).join(', ')}; średnio w 41 rodzajach poradni ${formatPL(SPECIALISTS_2025.average, 1)} mies. Źródło: Fundacja Watch Health Care.`,
+    },
+  ],
+};
+
+/* ---------- Zadłużenie: zobowiązania SPZOZ kwartał po kwartale ---------- */
+
+const DEBT_FROM = 2020;
+const debtQuarters = SPZOZ_QUARTERS.filter(([label]) => Number(label.split(' ')[1]) >= DEBT_FROM);
+const ROMAN = ['I', 'II', 'III', 'IV'];
+/** „III 2024” → 2024,625 (środek kwartału na osi lat) */
+const quarterX = (label: string) => {
+  const [q, y] = label.split(' ');
+  return Number(y) + (ROMAN.indexOf(q) + 0.5) / 4;
+};
+const quarterName = (label: string) => label.replace(' ', ' kw. ');
+const [debtFirst, debtLast] = [debtQuarters[0], debtQuarters.at(-1)!];
+const yearAgo = SPZOZ_QUARTERS[SPZOZ_QUARTERS.length - 5];
+const debtGrowth = (debtLast[1] / yearAgo[1] - 1) * 100;
+const bn = (mln: number) => formatPL(mln / 1000, 1);
+
+const zadluzenie: InfographicSet = {
+  route: '/dane/zadluzenie-szpitali/',
+  page: 'Dane: Zadłużenie szpitali — pensje wypłacane na kredyt',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'dlug-spzoz',
+      title: `Długi publicznych placówek: ${formatPL(debtLast[1] / debtFirst[1], 1)} raza więcej niż w ${DEBT_FROM} r.`,
+      measure: `zobowiązania wszystkich SPZOZ, mld zł · ${quarterName(debtFirst[0])} – ${quarterName(debtLast[0])}`,
+      chart: {
+        xMin: DEBT_FROM,
+        xMax: Number(debtLast[0].split(' ')[1]) + 0.5,
+        yMin: 0,
+        yMax: 40,
+        yTicks: [0, 10, 20, 30],
+        xTicks: Array.from({ length: Number(debtLast[0].split(' ')[1]) - DEBT_FROM + 1 }, (_, k) => ({ x: DEBT_FROM + k + 0.5, label: String(DEBT_FROM + k) })),
+        series: [
+          {
+            label: 'Zobowiązania ogółem',
+            tone: 'blue',
+            points: debtQuarters.map(([label, total]) => ({ x: quarterX(label), v: total / 1000 })),
+            value: bn(debtLast[1]),
+            unit: 'mld zł',
+            detail: `z ${bn(debtFirst[1])} mld zł w ${quarterName(debtFirst[0])}`,
+          },
+          {
+            label: 'W tym wymagalne',
+            tone: 'red',
+            points: debtQuarters.map(([label, , overdue]) => ({ x: quarterX(label), v: overdue / 1000 })),
+            value: bn(debtLast[2]),
+            unit: 'mld zł',
+            detail: `po terminie płatności; z ${bn(debtFirst[2])} mld zł`,
+          },
+        ],
+        note: { x: quarterX(debtLast[0]), v: debtLast[1] / 1000, lines: ['w ciągu ostatniego roku', `+${formatPL(debtGrowth, 1)}%`] },
+      },
+      sources: 'Źródło: Ministerstwo Zdrowia, zobowiązania ogółem i wymagalne SPZOZ (dane kwartalne)',
+      alt: `Infografika, wykres: zobowiązania wszystkich samodzielnych publicznych zakładów opieki zdrowotnej (SPZOZ) wzrosły z ${bn(debtFirst[1])} mld zł w ${quarterName(debtFirst[0])} do ${bn(debtLast[1])} mld zł w ${quarterName(debtLast[0])}, w ciągu ostatniego roku o ${formatPL(debtGrowth, 1)}%. Zobowiązania wymagalne, czyli po terminie płatności, wzrosły z ${bn(debtFirst[2])} do ${bn(debtLast[2])} mld zł. Źródło: Ministerstwo Zdrowia.`,
+    },
+  ],
+};
+
+/* ---------- Pielęgniarstwo: wiek zarejestrowanych pielęgniarek ---------- */
+
+const agePct = (groups: string[]) => Math.round(AGE_LADDER.filter((g) => groups.includes(g.group)).reduce((n, g) => n + g.pct, 0) * 10) / 10;
+const nursesOld = agePct(['71 lat i więcej', '61–70 lat']);
+const nursesMid = agePct(['51–60 lat', '41–50 lat']);
+const nursesYoung = agePct(['31–40 lat', '20–30 lat']);
+const nurses71 = AGE_LADDER.find((g) => g.group === '71 lat i więcej')!.pct;
+
+const pielegniarstwo: InfographicSet = {
+  route: '/analizy/pielegniarstwo-w-polsce/',
+  page: 'Analiza: Pielęgniarstwo w Polsce — drabina wieku',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'wiek-pielegniarek',
+      title: 'Co trzecia pielęgniarka ma ponad 60 lat',
+      measure: `zarejestrowane pielęgniarki według wieku · ${AGE_BASE.date} · razem ${formatPL(AGE_BASE.nurses)}`,
+      split: {
+        unit: '%',
+        bars: [
+          {
+            segments: [
+              { label: '61 lat i więcej', sub: `w tym ${formatPL(nurses71, 1)}% powyżej 70 lat`, value: nursesOld, display: formatPL(nursesOld, 1), tone: 'blue' },
+              { label: '41–60 lat', value: nursesMid, display: formatPL(nursesMid, 1), tone: 'slate' },
+              { label: 'do 40 lat', value: nursesYoung, display: formatPL(nursesYoung, 1), tone: 'soft' },
+            ],
+          },
+        ],
+      },
+      sources: 'Źródło: Naczelna Izba Pielęgniarek i Położnych, raport o stanie pielęgniarstwa (2023)',
+      alt: `Infografika: wiek pielęgniarek zarejestrowanych w Centralnym Rejestrze Pielęgniarek i Położnych (${AGE_BASE.date}, razem ${formatPL(AGE_BASE.nurses)}): ${formatPL(nursesOld, 1)}% ma 61 lat i więcej (w tym ${formatPL(nurses71, 1)}% powyżej 70 lat), ${formatPL(nursesMid, 1)}% — 41–60 lat, ${formatPL(nursesYoung, 1)}% — do 40 lat. Źródło: Naczelna Izba Pielęgniarek i Położnych.`,
+    },
+  ],
+};
+
+/* ---------- Od studiów do NFZ: na 100 rozpoczynających (analiza o odsiewie) ---------- */
+
+/*
+ * Kroki z wykresu w artykule (funnelRows, na 100 Polaków), poprzedzone krokiem „w tym Polacy”: udział
+ * Polaków wśród studentów I semestru tego samego rocznika 2018/19 (POL-on, narodowość). Kolejne kroki
+ * to te same proporcje przyłożone do tego udziału. Na grafice liczby całkowite — to zestawienie
+ * proporcji z kilku roczników, a nie śledzenie jednej grupy osób.
+ */
+const fy2018 = STUDENTS_FIRST_YEAR.find((r) => r.year === '2018/19')!;
+const firstAll = fy2018.pl.first + fy2018.foreign.first;
+const plShare = fy2018.pl.first / firstAll;
+// w artykule kroki 4–5 mają w dopisku sam odsetek (kontekst daje krok 3); na grafice dopisujemy, czego dotyczy
+const funnelSub = (note?: string) => {
+  const text = note?.replace(/^·\s*/, '');
+  return text && /^[\d,]+%$/.test(text) ? `${text} absolwentów po 6 latach` : text;
+};
+const funnel: ComparisonRow[] = [
+  { label: 'Zaczyna studia', sub: `${formatPL(firstAll)} osób na I semestrze 2018/19`, value: 100, display: '100' },
+  {
+    label: 'W tym Polacy',
+    sub: `${formatPL(Math.round((1 - plShare) * 100))} na 100 to cudzoziemcy, wielu studiuje po angielsku`,
+    value: plShare * 100,
+    display: formatPL(Math.round(plShare * 100)),
+  },
+  ...funnelRows.slice(1).map((r) => ({ label: r.label, sub: funnelSub(r.note), value: r.value * plShare, display: formatPL(Math.round(r.value * plShare)) })),
+].map((r, i, all) => ({ ...r, highlight: i === all.length - 1 }));
+const funnelEnd = funnel.at(-1)!.display;
+
+const odsiew: InfographicSet = {
+  route: '/analizy/odsiew-na-medycynie/',
+  page: 'Analiza: Kto odpada z medycyny, a kto wyjeżdża',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'od-studiow-do-nfz',
+      title: `Od studiów do NFZ: ze 100 osób ok. ${funnelEnd}`,
+      measure: 'na 100 osób, które zaczynają kierunek lekarski',
+      rows: funnel,
+      sources: 'Źródło: MZ BASiW (POL-on, ZUS, NFZ), obliczenia własne · proporcje z kilku roczników',
+      alt: `Infografika: na 100 osób, które zaczynają kierunek lekarski (I semestr 2018/19, ${formatPL(firstAll)} osób), ${funnel.slice(1).map((r) => `${r.display} — ${r.label.toLowerCase()}`).join(', ')}. Pozostali na starcie to cudzoziemcy, z których wielu studiuje po angielsku. Kroki 1–3: studenci I semestru 2018/19 i absolwenci-Polacy 2023/24; dalsze kroki — losy rocznika 2016/17 w 2023 r. To zestawienie proporcji z kilku roczników, a nie śledzenie jednej grupy osób. Źródło: Ministerstwo Zdrowia, Baza Analiz Systemowych i Wdrożeniowych (${ODSIEW_LINKS.mz}).`,
+    },
   ],
 };
 
@@ -281,4 +436,7 @@ export const infographicSets: Record<string, InfographicSet> = {
   'english-division': englishDivision,
   'symulator-podazy-lekarzy': symulator,
   kolejki,
+  'zadluzenie-szpitali': zadluzenie,
+  'pielegniarstwo-w-polsce': pielegniarstwo,
+  'odsiew-na-medycynie': odsiew,
 };

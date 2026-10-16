@@ -7,12 +7,10 @@ import { headingIds } from './src/lib/markdown/heading-ids';
 import { footnotes } from './src/lib/markdown/footnotes';
 import { typography } from './src/lib/markdown/typography';
 import seo, { astroRedirects } from './integrations/seo';
+import { fontFamilies, localVariants } from './src/lib/fonts';
 
 // SEO: _redirects, sitemap z faktów HTML i audyt po buildzie
 const seoIntegration = seo();
-
-// Wspólne ustawienia fontów: polskie znaki są w podzbiorze latin-ext
-const subsets = /** @type {[string, ...string[]]} */ (['latin', 'latin-ext']);
 
 // https://docs.astro.build/en/reference/configuration-reference/
 export default defineConfig({
@@ -20,6 +18,10 @@ export default defineConfig({
   site: 'https://zarobkilekarzy.pl',
   // Strony zawsze z ukośnikiem na końcu (jak na produkcji: /dane → 308 → /dane/); endpointy z rozszerzeniem bez zmian
   trailingSlash: 'always',
+
+  // CSS w <style> zamiast <link>: ~10 KB (≈3 KB po kompresji) na stronę, bez trzech żądań
+  // blokujących pierwsze malowanie — na telefonie FCP 1,5 → 1,4 s (Lighthouse). CSP ma style-src 'unsafe-inline'.
+  build: { inlineStylesheets: 'always' },
 
   // Stare adresy → nowe: rejestr w src/data/seo/redirects.ts (w buildzie także dist/_redirects z 301)
   redirects: astroRedirects(),
@@ -59,34 +61,12 @@ export default defineConfig({
     },
   },
 
-  // Fonty pobierane w czasie budowania i serwowane lokalnie (Fonts API, stabilne od Astro 6)
-  fonts: [
-    {
-      provider: fontProviders.fontsource(),
-      name: 'Inter Tight',
-      cssVariable: '--font-inter-tight',
-      weights: ['300 500'],
-      styles: ['normal'],
-      subsets,
-      fallbacks: ['Helvetica Neue', 'Arial', 'sans-serif'],
-    },
-    {
-      provider: fontProviders.fontsource(),
-      name: 'IBM Plex Sans',
-      cssVariable: '--font-plex-sans',
-      weights: ['400 600'],
-      styles: ['normal'],
-      subsets,
-      fallbacks: ['Helvetica Neue', 'Arial', 'sans-serif'],
-    },
-    {
-      provider: fontProviders.fontsource(),
-      name: 'IBM Plex Mono',
-      cssVariable: '--font-plex-mono',
-      weights: [400, 500],
-      styles: ['normal'],
-      subsets,
-      fallbacks: ['Menlo', 'monospace'],
-    },
-  ],
+  // Fonty serwowane z naszej domeny: przycięte pliki w src/assets/fonts, definicje i powód w src/lib/fonts.ts
+  fonts: fontFamilies.map((family) => ({
+    provider: fontProviders.local(),
+    name: family.name,
+    cssVariable: family.cssVariable,
+    fallbacks: family.fallbacks,
+    options: { variants: localVariants(family) },
+  })),
 });

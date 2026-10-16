@@ -3,7 +3,8 @@
  * Szkielet każdej strony: <head> (SEO, fonty), nagłówek, stopka, wyszukiwarka.
  * To tu konfiguracja serwisu trafia do komponentów — one same nie importują danych.
  */
-import { Font } from 'astro:assets';
+import { Font, fontData } from 'astro:assets';
+import { fontFamilies } from '../lib/fonts';
 
 import '@/styles/tokens.css';
 import '@/styles/base.css';
@@ -73,13 +74,14 @@ const popularSearches = await getPopularSearches();
     </script>
     <meta name="generator" content={Astro.generator} />
 
-    {/* Fonty pobierane w czasie budowania i serwowane z naszej domeny (bez Google Fonts).
-        Preload wszystkich plików: polskie litery (poza „ó”) są w podzbiorze latin-ext, a Plex Mono składa
-        etykiety na każdej stronie. Plik bez preloadu dochodzi po pierwszej klatce — polskie znaki
-        i etykiety rysowały się fontem zastępczym i mrugały przy każdym wejściu na podstronę */}
-    <Font cssVariable="--font-inter-tight" preload />
-    <Font cssVariable="--font-plex-sans" preload />
-    <Font cssVariable="--font-plex-mono" preload />
+    {/* Fonty z naszej domeny (bez Google Fonts). Preload tylko plików z pierwszego ekranu (latin + polskie
+        litery) — który to plik, mówi src/lib/fonts.ts; fontData trzyma pliki w kolejności wariantów */}
+    {fontFamilies.map(({ cssVariable }) => <Font cssVariable={cssVariable} />)}
+    {fontFamilies.flatMap(({ cssVariable, variants }) =>
+      fontData[cssVariable]
+        .filter((_, i) => variants[i]?.preload)
+        .map(({ src }) => <link rel="preload" href={src[0].url} as="font" type="font/woff2" crossorigin />),
+    )}
 
     <Analytics />
     {/* Jeden graf danych strukturalnych strony (lib/seo/schema) */}

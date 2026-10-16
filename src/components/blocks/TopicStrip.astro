@@ -8,6 +8,17 @@ interface Props {
   topics: Topic[];
 }
 const { topics } = Astro.props;
+
+// Zdjęcie poziome wypełnia kafel (cover), więc rysuje się na max(szerokość kafla, wysokość × proporcje).
+// Wysokości i kolumny jak w <style> niżej — przy zmianie układu poprawić oba miejsca.
+const sizes = ({ width, height }: { width: number; height: number }) => {
+  const r = (width / height).toFixed(3);
+  return [
+    `(min-width: 1025px) max(25vw, clamp(360px, 34vw, 500px) * ${r})`,
+    `(min-width: 721px) max(50vw, clamp(360px, 34vw, 500px) * ${r})`,
+    `max(100vw, 400px * ${r})`,
+  ].join(', ');
+};
 ---
 <ul class="strip">
   {topics.map((t, i) => (
@@ -19,7 +30,7 @@ const { topics } = Astro.props;
           alt=""
           position={t.position}
           widths={[480, 720, 960, 1280]}
-          sizes="(min-width: 1025px) 620px, (min-width: 721px) 50vw, 500px"
+          sizes={sizes(t.image)}
           fill
         />
         <div class="strip__label">

@@ -28,7 +28,7 @@ export const projekt = {
    */
   pdf: { href: `/projekt-nowelizacji/projekt-nowelizacji-art27a-v${version}.pdf` },
   disclaimer:
-    'Dokument nie jest projektem ustawy w rozumieniu Regulaminu Sejmu. Wersja 0.3 służy weryfikacji prawnej przed publikacją; miejsca oznaczone [?] wymagają sprawdzenia. Treść może się zmienić w całości.',
+    'Dokument nie jest projektem ustawy w rozumieniu Regulaminu Sejmu. Wersja 0.3 służy weryfikacji prawnej i dopracowaniu treści; miejsca oznaczone [?] wymagają sprawdzenia. Treść może się zmienić w całości.',
 };
 
 /** Droga projektu do Sejmu (art. 32 i 34 Regulaminu Sejmu). */
@@ -112,7 +112,7 @@ export const path = {
 /** Nota o statusie dokumentu. */
 export const statusNote = [
   'Niniejszy dokument jest obywatelskim projektem roboczym inicjatywy zarobkilekarzy.pl. Nie jest projektem ustawy w rozumieniu Regulaminu Sejmu; staje się nim dopiero po wniesieniu przez uprawniony podmiot.',
-  'Wersja 0.3 służy weryfikacji prawnej przed jakąkolwiek publiczną promocją. Pytania do osoby weryfikującej zawiera Załącznik B.',
+  'Wersja 0.3 służy weryfikacji prawnej i dopracowaniu treści przed wniesieniem projektu i szukaniem poparcia. Pytania do osoby weryfikującej zawiera Załącznik B.',
   'Projekt nie zmienia żadnego z obowiązujących przepisów art. 27a ustawy o działalności leczniczej w brzmieniu nadanym ustawą z dnia 19 czerwca 2026 r. (Dz. U. poz. 972). Dodaje do niego dwa punkty: stały kwartalny obowiązek przekazywania tych samych danych (ust. 1a) oraz ich publikację w postaci spseudonimizowanej wraz z sankcją za niewykonanie obowiązku (ust. 5–7).',
 ];
 

@@ -178,11 +178,12 @@ const splitBadge = (text: string): [string | undefined, string] => {
 };
 
 /* ---------- Atomy ---------- */
-export const logo = () =>
-  h('div', { style: { alignItems: 'center', fontFamily: DISPLAY, fontWeight: 500, fontSize: 26, letterSpacing: '-0.03em', color: C.ink } },
-    h('img', { src: iconUri('logo', C.blue), width: 30, height: 30, style: { marginRight: 14 } }),
+/** Logo; kolory domyślnie dzienne — ciemne infografiki podają nocne (lib/infografiki/render.ts). */
+export const logo = (c: Pick<typeof C, 'ink' | 'muted' | 'blue'> = C) =>
+  h('div', { style: { alignItems: 'center', fontFamily: DISPLAY, fontWeight: 500, fontSize: 26, letterSpacing: '-0.03em', color: c.ink } },
+    h('img', { src: iconUri('logo', c.blue), width: 30, height: 30, style: { marginRight: 14 } }),
     'zarobkilekarzy',
-    h('span', { style: { color: C.muted } }, '.pl'));
+    h('span', { style: { color: c.muted } }, '.pl'));
 
 const eyebrow = (text: string) =>
   h('div', { style: { alignItems: 'center', fontFamily: MONO, fontWeight: 500, fontSize: 16, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.blue } },

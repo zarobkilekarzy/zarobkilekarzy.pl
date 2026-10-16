@@ -1,51 +1,72 @@
 ---
 /**
  * Infografiki do pobrania: podgląd pionowej wersji i linki do obu formatów (pion 1080×1350,
- * poziom 1200×675). PNG-i generuje build (pages/infografiki/, szablon lib/infografiki/render.ts),
+ * poziom 1200×675) w wersji jasnej i ciemnej. PNG-i generuje build (pages/infografiki/, szablon lib/infografiki/render.ts),
  * a treść i liczby — zestaw z lib/infografiki/zestawy.ts, liczony z modułu danych strony.
  *
  *   <Infographics set="odpowiedzialnosc-zawodowa-lekarzy" />
+ *   <Infographics set={['egzamin', 'odpowiedzialnosc-zawodowa-lekarzy']} lead={false} source />  (/media/)
  *
- * Grafiki są zawsze jasne (jak obrazki OG), więc w trybie nocnym podgląd dostaje ramkę 1 px,
- * żeby biała karta nie zlewała się z tłem bez granicy.
+ * Podgląd to zawsze wersja jasna, więc w trybie nocnym dostaje ramkę 1 px, żeby biała karta
+ * nie zlewała się z tłem bez granicy.
  */
-import { FORMATS, infographicUrl, type FormatKey } from '@/lib/infografiki/render';
+import { FORMATS, THEMES, infographicUrl, infographicsLead, type FormatKey, type InfographicSet, type ThemeKey } from '@/lib/infografiki/render';
 import { infographicSets } from '@/lib/infografiki/zestawy';
 import { typo } from '@/lib/format';
 import Icon from '@/components/ui/Icon.astro';
 import type { IconName } from '@/icons';
 
 interface Props {
-  /** klucz zestawu = ostatni człon trasy strony */
-  set: string;
+  /** klucz zestawu = ostatni człon trasy strony; kilka kluczy = jedna siatka (strona /media/) */
+  set: string | string[];
+  /** akapit o formatach nad siatką; strona zbiorcza pisze go raz u góry */
+  lead?: boolean;
+  /** link do strony, z której pochodzi grafika (poza tą stroną) */
+  source?: boolean;
 }
 
-const set = infographicSets[Astro.props.set];
-if (!set) throw new Error(`[infografiki] nieznany zestaw „${Astro.props.set}”`);
+const { lead = true, source = false } = Astro.props;
+const sets = [Astro.props.set].flat().map((key) => {
+  const set = infographicSets[key];
+  if (!set) throw new Error(`[infografiki] nieznany zestaw „${key}”`);
+  return set;
+});
+const entries = sets.flatMap((set) => set.items.map((item) => ({ set, item })));
 const formats = Object.keys(FORMATS) as FormatKey[];
+const themes = Object.keys(THEMES) as ThemeKey[];
 const formatIcon: Record<FormatKey, IconName> = { pion: 'format-pion', poziom: 'format-poziom' };
-const fileName = (id: string, f: FormatKey) => `${set.filePrefix}-${id}-${FORMATS[f].width}x${FORMATS[f].height}.png`;
+// nazwa pliku = adres z przedrostkiem serwisu, np. zarobkilekarzy-zdawalnosc-…-1080x1350-ciemny.png
+const fileName = (set: InfographicSet, id: string, f: FormatKey, t: ThemeKey) =>
+  `${set.filePrefix}-${infographicUrl(set, id, f, t).split('/').pop()}`;
+const orientation = (f: FormatKey) => (FORMATS[f].label === 'pion' ? 'pionowo' : 'poziomo');
 ---
 <div class="ig">
-  <p class="ig__lead">
-    {typo(`${set.items.length > 1 ? 'Grafiki' : 'Grafika'} do udostępnienia w dwóch formatach: pionowym ${FORMATS.pion.width}×${FORMATS.pion.height} (${FORMATS.pion.use}) i poziomym ${FORMATS.poziom.width}×${FORMATS.poziom.height} (${FORMATS.poziom.use}). Źródła, adres strony i kod QR do niej są na grafice.`)}
-  </p>
+  {lead && (
+    <p class="ig__lead">
+      {typo(infographicsLead(entries.length))}
+    </p>
+  )}
   <ul class="ig__grid">
-    {set.items.map((item) => (
+    {entries.map(({ set, item }) => (
       <li class="ig__item">
         <a class="ig__thumb" href={infographicUrl(set, item.id, 'pion')} target="_blank" rel="noopener">
           <img src={infographicUrl(set, item.id, 'pion')} width={FORMATS.pion.width} height={FORMATS.pion.height} alt={item.alt} loading="lazy" decoding="async" />
         </a>
         <p class="ig__title">{typo(item.title.replace(/\n/g, ' '))}</p>
-        <p class="ig__dl">
-          <span class="ig__dl-label">Pobierz PNG</span>
-          {formats.map((f) => (
-            <a class="ig__fmt" href={infographicUrl(set, item.id, f)} download={fileName(item.id, f)} aria-label={`Pobierz PNG, ${FORMATS[f].label === 'pion' ? 'pionowo' : 'poziomo'}, ${FORMATS[f].width}×${FORMATS[f].height}`} title={`${FORMATS[f].label === 'pion' ? 'Pionowo' : 'Poziomo'} — ${FORMATS[f].use}`}>
-              <Icon name={formatIcon[f]} size={18} />
-              <span>{FORMATS[f].width}×{FORMATS[f].height}</span>
-            </a>
+        {source && <p class="ig__source"><a href={set.route}>{typo(set.page)}</a></p>}
+        <div class="ig__dl">
+          {themes.map((t) => (
+            <p class="ig__dl-row">
+              <span class="ig__dl-label">PNG · {THEMES[t].label}</span>
+              {formats.map((f) => (
+                <a class="ig__fmt" href={infographicUrl(set, item.id, f, t)} download={fileName(set, item.id, f, t)} aria-label={`Pobierz PNG, wersja ${THEMES[t].label}, ${orientation(f)}, ${FORMATS[f].width}×${FORMATS[f].height}`} title={`${orientation(f)[0].toUpperCase()}${orientation(f).slice(1)}, wersja ${THEMES[t].label} — ${FORMATS[f].use}`}>
+                  <Icon name={formatIcon[f]} size={18} />
+                  <span>{FORMATS[f].width}×{FORMATS[f].height}</span>
+                </a>
+              ))}
+            </p>
           ))}
-        </p>
+        </div>
       </li>
     ))}
   </ul>
@@ -63,7 +84,11 @@ const fileName = (id: string, f: FormatKey) => `${set.filePrefix}-${id}-${FORMAT
     margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ink);
     font: 500 1rem/1.35 var(--f-display); letter-spacing: -0.015em; color: var(--ink);
   }
-  .ig__dl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; font: 400 0.75rem/1.55 var(--f-mono); }
+  .ig__source { margin-top: 6px; font: 400 0.8125rem/1.45 var(--f-body); }
+  .ig__source a { color: var(--muted); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .ig__source a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .ig__dl { display: flex; flex-direction: column; gap: 12px; margin-top: auto; padding-top: 12px; font: 400 0.75rem/1.55 var(--f-mono); }
+  .ig__dl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .ig__dl-label { color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
   /* Format pliku pokazuje ikona kadru (pion / poziom); wymiary obok, pełny opis w aria-label */
   .ig__dl-label { flex-basis: 100%; }

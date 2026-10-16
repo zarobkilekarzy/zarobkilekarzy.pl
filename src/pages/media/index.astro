@@ -1,0 +1,55 @@
+---
+/**
+ * /media/ — materiały medialne: wszystkie infografiki do pobrania w jednej siatce (blocks/Infographics
+ * z kilku zestawów, każda z linkiem do strony, z której pochodzi) i zasady wykorzystania.
+ * Treść: src/data/media.ts; zestawy grafik: src/lib/infografiki/zestawy.ts.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import Prose from '@/components/article/Prose.astro';
+import Infographics from '@/components/blocks/Infographics.astro';
+import { mediaPage } from '@/data/media';
+import { contact } from '@/data/o-serwisie';
+import { identity } from '@/data/seo/identity';
+import { infographicSets } from '@/lib/infografiki/zestawy';
+import { infographicsLead } from '@/lib/infografiki/render';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: mediaPage.title }];
+const seo: SeoInput = { title: mediaPage.docTitle, description: mediaPage.description, breadcrumbs: crumbs };
+const count = mediaPage.sets.reduce((n, key) => n + (infographicSets[key]?.items.length ?? 0), 0);
+const mail = `mailto:${contact.email}`;
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="media-top">
+    <PageHeader title={mediaPage.title} lead={mediaPage.lead} eyebrow="O serwisie" crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Infografiki', value: count },
+          { label: 'Licencja', value: 'CC BY 4.0' },
+          { label: 'Aktualizacja', value: mediaPage.updated },
+        ]}
+      />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom" aria-labelledby="infografiki">
+    <SectionHead eyebrow="Do pobrania" title="Infografiki" id="infografiki" aside={infographicsLead(count)} />
+    <Infographics set={mediaPage.sets} lead={false} source />
+  </Section>
+
+  <Section space="bottom" aria-labelledby="zasady">
+    <Prose>
+      <h2 id="zasady">Zasady wykorzystania</h2>
+      <p>Grafiki i teksty serwisu są na licencji <a href={identity.license}>CC BY 4.0</a>. Możesz je publikować, także w mediach komercyjnych, jeśli podasz źródło: zarobkilekarzy.pl z linkiem do strony, z której pochodzi grafika. Jeśli coś zmieniasz, zaznacz to.</p>
+      <p>Pytania, prośby o inne zestawienie albo zgłoszenie błędu: <a href={mail}>{contact.email}</a>.</p>
+    </Prose>
+  </Section>
+</BaseLayout>
+
+<style>
+  .media-top { padding-top: clamp(32px, 4vw, 56px); }
+</style>

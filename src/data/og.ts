@@ -105,6 +105,12 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Po co powstał serwis, na jakich zasadach dobieramy źródła i jak zgłosić błąd.',
     footer: { text: 'Mechanizmy, nie nazwiska' },
   },
+  '/media/': {
+    eyebrow: 'O serwisie',
+    title: 'Materiały\nmedialne',
+    lead: 'Infografiki do pobrania: źródła, adres strony i kod QR na każdej grafice.',
+    footer: { text: 'Licencja CC BY 4.0' },
+  },
   '/prywatnosc/': {
     eyebrow: 'O serwisie',
     title: 'Polityka\nprywatności',

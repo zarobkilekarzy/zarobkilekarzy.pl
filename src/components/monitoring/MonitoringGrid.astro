@@ -3,10 +3,17 @@
  * Przeglądarka monitoringu „Ile zarabiają lekarze?” — datagrid z konfiguracją z ./grid.ts.
  * Dane dostaje przez propsy (strona czyta je z lib/monitoring), a przeglądarka pobiera
  * ten sam zbiór z `src` (publiczny plik JSON).
+ * Okno „Grafika do udostępnienia” (przycisk w szczegółach wiersza z listą płac): grafikę rysuje
+ * przeglądarka (./grafika), sterowanie w ./share — oba ładowane dopiero po kliknięciu.
  */
 import type { HTMLAttributes } from 'astro/types';
 import Datagrid from '@/components/datagrid/Datagrid.astro';
+import Button from '@/components/ui/Button.astro';
+import Icon from '@/components/ui/Icon.astro';
+import type { IconName } from '@/icons';
+import { typo } from '@/lib/format';
 import type { MonitoringDoc } from '@/lib/monitoring';
+import { FORMATS, type FormatKey, type ThemeKey } from './grafika';
 import { grid } from './grid';
 
 interface Props extends HTMLAttributes<'div'> {
@@ -15,15 +22,124 @@ interface Props extends HTMLAttributes<'div'> {
 }
 
 const { doc, src, ...rest } = Astro.props;
+
+const formats: { key: FormatKey; label: string; icon: IconName }[] = [
+  { key: 'pion', label: 'Pion', icon: 'format-pion' },
+  { key: 'poziom', label: 'Poziom', icon: 'format-poziom' },
+];
+const themes: { key: ThemeKey; label: string; icon: IconName }[] = [
+  { key: 'jasny', label: 'Jasna', icon: 'sun' },
+  { key: 'ciemny', label: 'Ciemna', icon: 'moon' },
+];
 ---
 <Datagrid tag="zl-monitoring" config={grid} json={doc} src={src} {...rest} />
+
+<dialog class="mon-share" data-mon-share-dialog aria-labelledby="mon-share-title mon-share-name">
+  <header class="mon-share__head">
+    <div>
+      <p class="mon-share__eyebrow" id="mon-share-title">Grafika do udostępnienia</p>
+      <p class="mon-share__name" id="mon-share-name" data-share-name></p>
+    </div>
+    <button type="button" class="mon-share__close" data-share-close aria-label="Zamknij"><Icon name="close" /></button>
+  </header>
+  <div class="mon-share__body">
+    <div class="mon-share__preview" data-share-preview>
+      <canvas data-share-canvas role="img" width={FORMATS.pion.width} height={FORMATS.pion.height}></canvas>
+    </div>
+    <div class="mon-share__side">
+      <fieldset class="mon-share__opts">
+        <legend>Format</legend>
+        {formats.map((f, i) => (
+          <label class="mon-share__opt">
+            <input type="radio" name="format" value={f.key} checked={i === 0} />
+            <Icon name={f.icon} size={18} />
+            <span>{f.label} <small>{FORMATS[f.key].width}×{FORMATS[f.key].height}</small></span>
+          </label>
+        ))}
+      </fieldset>
+      <fieldset class="mon-share__opts">
+        <legend>Wersja</legend>
+        {themes.map((t, i) => (
+          <label class="mon-share__opt">
+            <input type="radio" name="wersja" value={t.key} checked={i === 0} />
+            <Icon name={t.icon} size={18} />
+            <span>{t.label}</span>
+          </label>
+        ))}
+      </fieldset>
+      <div class="mon-share__actions">
+        <Button data-share-download>Pobierz PNG</Button>
+        <Button variant="ghost" icon="share" data-share-native hidden>Udostępnij</Button>
+      </div>
+      <p class="mon-share__note">
+        {typo('Grafika powstaje w Twojej przeglądarce — nic nie trafia na serwer. Kwoty wyłuskano z korespondencji automatycznie, więc zanim udostępnisz, sprawdź je w')}{'\u00A0'}<a data-share-source href={doc.source.url} target="_blank" rel="noopener">sprawie u źródła</a>.
+      </p>
+    </div>
+  </div>
+</dialog>
 
 <script>
   import { defineDatagrid } from '@/components/datagrid/element';
   import { grid } from './grid';
 
   defineDatagrid('zl-monitoring', grid);
+
+  // Grafika do udostępnienia: rysowanie i okno ładują się dopiero po kliknięciu przycisku
+  document.addEventListener('click', (e) => {
+    const button = (e.target as Element).closest<HTMLElement>('[data-mon-share]');
+    if (button) void import('./share').then(({ openShare }) => openShare(button));
+  });
 </script>
+
+<style>
+  .mon-share {
+    width: min(960px, calc(100% - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 0;
+    border: 1px solid var(--line-2); background: var(--surface); color: var(--text);
+    box-shadow: 0 40px 80px -20px rgba(4, 11, 27, .35);
+  }
+  .mon-share::backdrop { background: rgba(4, 11, 27, .5); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  .mon-share[open] { display: flex; flex-direction: column; animation: fadeUp .3s var(--ease); }
+
+  .mon-share__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 20px 16px 24px; border-bottom: 1px solid var(--line); }
+  .mon-share__eyebrow { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+  .mon-share__name { margin-top: 6px; font: 400 1.25rem/1.25 var(--f-display); letter-spacing: -0.015em; color: var(--ink); text-wrap: pretty; }
+  .mon-share__close { display: grid; place-items: center; width: 36px; height: 36px; flex: none; color: var(--text); border: 1px solid transparent; }
+  .mon-share__close:hover { color: var(--blue); border-color: var(--line); }
+
+  .mon-share__body { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px 32px; padding: 24px; overflow: auto; }
+  .mon-share__preview { display: grid; place-items: center; padding: 16px; background: var(--bg-soft); transition: opacity .2s; }
+  .mon-share__preview[aria-busy="true"] { opacity: .55; }
+  /* obie proporcje mieszczą się w oknie: wysokość ograniczona, szerokość z proporcji płótna */
+  .mon-share__preview canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: min(58dvh, 560px); border: 1px solid var(--line); }
+
+  .mon-share__side { display: flex; flex-direction: column; gap: 22px; }
+  .mon-share__opts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; }
+  .mon-share__opts legend { margin-bottom: 10px; padding: 0; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .mon-share__opt {
+    position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px 9px 10px;
+    border: 1px solid var(--line-2); font: 500 0.875rem/1 var(--f-body); color: var(--text-strong); cursor: pointer;
+    transition: color .2s, border-color .2s, background .2s;
+  }
+  .mon-share__opt small { margin-left: 4px; font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+  .mon-share__opt :global(.icon) { color: var(--blue); }
+  .mon-share__opt:hover { border-color: var(--blue); }
+  .mon-share__opt:has(input:checked) { border-color: var(--blue); background: var(--blue-50); color: var(--ink); box-shadow: inset 0 0 0 1px var(--blue); }
+  .mon-share__opt:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .mon-share__opt input { position: absolute; opacity: 0; pointer-events: none; }
+
+  .mon-share__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .mon-share__actions :global(.btn:disabled) { opacity: .5; cursor: progress; }
+  .mon-share__note { font-size: 0.8125rem; line-height: 1.55; color: var(--muted); }
+  .mon-share__note a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 720px) {
+    .mon-share { width: 100%; max-width: 100%; max-height: 100dvh; height: 100dvh; border: 0; }
+    .mon-share__body { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+    .mon-share__head { padding: 16px 12px 12px 16px; }
+    .mon-share__preview { padding: 10px; }
+    .mon-share__preview canvas { max-height: 52dvh; }
+  }
+</style>
 
 <style is:global>
   /* Odcienie odpowiedzi: pasek przy wierszu, segmenty rozkładu, legenda */
@@ -65,6 +181,14 @@ const { doc, src, ...rest } = Astro.props;
   .mon-detail__iqr b { font-weight: 600; color: var(--ink); }
   .mon-detail__note { margin-top: 12px; font-size: 0.78125rem; line-height: 1.5; color: var(--muted); }
   .mon-detail > .mon-detail__note { grid-column: 1 / -1; margin-top: -8px; }
+  .mon-detail__share { grid-column: 1 / -1; margin-top: -12px; }
+  .mon-share-btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px 8px 10px; border: 1px solid var(--line-2);
+    font: 500 0.75rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-strong);
+    transition: color .2s, border-color .2s;
+  }
+  .mon-share-btn .icon { color: var(--blue); }
+  .mon-share-btn:hover { color: var(--blue); border-color: var(--blue); }
 
   .mon-h { display: grid; gap: 6px; }
   .mon-h li { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 3.2em 3em; align-items: center; gap: 12px; font-size: 0.84375rem; }

@@ -26,6 +26,8 @@ export interface Stats {
   high: boolean[];
   /** wartości wśród placówek z listą płac, rosnąco — tło dla szczegółów wiersza */
   dist: Record<Metric, number[]>;
+  /** kto zebrał dane — stopka grafiki do udostępnienia */
+  source: MonitoringDoc['source'];
 }
 
 /* ---------- słowniki ---------- */
@@ -188,6 +190,7 @@ function detail(row: Row, ctx: RenderContext<Stats>): Html {
       <div><dt>Źródło</dt><dd><a href="${esc(row.url)}" target="_blank" rel="noopener">Sprawa #${row.id} w serwisie fedrowanie ↗</a></dd></div>
     </dl>
     <p class="mon-detail__note">Kwoty wypłacone przez tę jedną placówkę w ${s.year} r. Lekarz pracujący w kilku miejscach ma tu tylko część dochodu. Pokazujemy liczebności przedziałów — pojedynczych kwot nie publikujemy.</p>
+    <p class="mon-detail__share"><button type="button" class="mon-share-btn" data-mon-share="${row.id}" aria-haspopup="dialog"><svg class="icon" width="16" height="16" aria-hidden="true"><use href="#i-share"/></svg>Grafika do udostępnienia</button></p>
   </div>`;
 }
 
@@ -215,7 +218,7 @@ export const grid: GridConfig<Row, Stats> = {
     const dist = Object.fromEntries(METRICS.map((m) => [m, lists.map((p) => p[m]).sort((a, b) => a - b)])) as Stats['dist'];
     const labels = bucketLabels(doc.buckets);
     const high = labels.map((_, i) => i > 0 && doc.buckets[i - 1] >= 500_000);
-    return { rows, data: { year: doc.year, labels, high, dist } };
+    return { rows, data: { year: doc.year, labels, high, dist, source: doc.source } };
   },
   key: (row) => String(row.id),
   noun: ['placówka', 'placówki', 'placówek'],

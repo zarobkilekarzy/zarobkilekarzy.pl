@@ -4,6 +4,8 @@
  * strona główna → /og/index.png. Strony niczego nie wpinają — BaseLayout liczy adres ze ścieżki.
  */
 import { createHash } from 'node:crypto';
+import type { ImageMetadata } from 'astro';
+import { raw } from '@/lib/images';
 import { getPublishedArticles } from '@/lib/content';
 import { ogPages } from '@/data/og';
 import { articleOg, pageOg, type OgEntry } from './presets';
@@ -26,7 +28,15 @@ export const getOgEntries = () => (import.meta.env.PROD ? (cached ??= collect())
 export const ogSlug = (route: string) => route.replace(/^\/|\/$/g, '') || 'index';
 
 /** Krótki skrót treści obrazka — zmiana treści zmienia adres, więc platformy pobiorą nowy obrazek. */
-const version = (entry: OgEntry) => createHash('sha1').update(JSON.stringify(entry)).digest('hex').slice(0, 8);
+// Zdjęcia do hasha przez raw(): zwykły JSON.stringify czyta pola obrazka i Astro kopiuje oryginał do dist (lib/images)
+const imageSafe = (_key: string, value: unknown) => {
+  if (value && typeof value === 'object' && 'src' in value && 'format' in value) {
+    const { src, width, height, format } = raw(value as ImageMetadata);
+    return { src, width, height, format };
+  }
+  return value;
+};
+const version = (entry: OgEntry) => createHash('sha1').update(JSON.stringify(entry, imageSafe)).digest('hex').slice(0, 8);
 
 export const ogUrl = (entry: OgEntry) => `/og/${ogSlug(entry.route)}.png?v=${version(entry)}`;
 

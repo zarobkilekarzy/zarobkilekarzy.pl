@@ -16,6 +16,7 @@ import sharp, { type Sharp } from 'sharp';
 import tokensCss from '@/styles/tokens.css?raw';
 import { icons, type IconName } from '@/icons';
 import { typo } from '@/lib/format';
+import { raw } from '@/lib/images';
 import type { Accuracy, OgStat } from '@/types';
 import { OG_HEIGHT, OG_WIDTH, type OgEntry, type OgMedia, type OgSpec } from './presets';
 
@@ -79,7 +80,7 @@ export const loadFonts = () =>
 const assets = import.meta.glob<ImageMetadata>('/src/assets/**/*.{jpg,jpeg,png,webp,avif}', { eager: true, import: 'default' });
 
 function sourceFile(img: ImageMetadata): string {
-  const key = Object.keys(assets).find((k) => assets[k].src === img.src);
+  const key = Object.keys(assets).find((k) => raw(assets[k]).src === img.src);
   if (!key) throw new Error(`[og] obrazek spoza src/assets: ${img.src}`);
   return path.join(process.cwd(), key);
 }
@@ -87,7 +88,8 @@ function sourceFile(img: ImageMetadata): string {
 const photoCache = new Map<string, Promise<string>>();
 
 /** Kadr jak object-fit: cover + object-position, w skali szarości jak na stronie (ui/Photo). */
-function photoUri(img: ImageMetadata, position: string): Promise<string> {
+function photoUri(tracked: ImageMetadata, position: string): Promise<string> {
+  const img = raw(tracked);
   const key = `${img.src}|${position}`;
   if (!photoCache.has(key)) {
     photoCache.set(key, (async () => {

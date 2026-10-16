@@ -129,5 +129,10 @@ export const legacyUrls: readonly string[] = [
 /** Adresy świadomie usunięte: adres → powód (np. „treść scalona z …, bez odpowiednika”). */
 export const removedUrls: Readonly<Record<string, string>> = {
   '/gra/': 'gra „Drugi licznik” — decyzja redakcji z 15.10.2026: nie przenosimy do v2',
+  // adresy podglądu sprzed publikacji (noindex, poza sitemapą) — decyzja redakcji z 16.10.2026
+  '/preview/tajwan-ochrona-zdrowia/': 'podgląd sprzed publikacji, strona jest pod /analizy/',
+  '/preview/kanada-lekarze-ustawa-specjalna/': 'podgląd sprzed publikacji, strona jest pod /analizy/',
+  '/preview/projekt-nowelizacji/': 'podgląd sprzed publikacji, projekt jest pod /postulat/projekt-ustawy/',
+  '/preview/projekt-nowelizacji-art27a-v0.3.pdf': 'podgląd sprzed publikacji, PDF jest przy projekcie',
   // /artykuly/* nie jest usunięte: przekierowania 301 na /analizy/ w redirects.ts
 };

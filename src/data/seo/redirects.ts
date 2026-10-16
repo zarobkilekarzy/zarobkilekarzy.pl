@@ -44,14 +44,6 @@ const allRedirects: Redirect[] = [
   // Przeniesione z dotychczasowej strony (łańcuchy spłaszczone do obecnych adresów)
   { from: '/dane/polska-na-tle-ue/', to: '/analizy/zarobki-lekarzy-polska-sasiedzi/', note: `${LIVE}: scalone z analizą regionalną` },
   { from: '/analizy/zarobki-lekarzy-niemcy-polska/', to: '/analizy/zarobki-lekarzy-polska-sasiedzi/', note: `${LIVE}: zmiana adresu analizy` },
-  { from: '/preview/tajwan-ochrona-zdrowia/', to: '/analizy/tajwan-ochrona-zdrowia/', note: `${LIVE}: podgląd przed publikacją` },
-  { from: '/preview/kanada-lekarze-ustawa-specjalna/', to: '/analizy/kanada-lekarze-ustawa-specjalna/', note: `${LIVE}: podgląd przed publikacją` },
-  { from: '/preview/projekt-nowelizacji/', to: '/postulat/projekt-ustawy/', note: `${LIVE}: podgląd projektu` },
-  {
-    from: '/preview/projekt-nowelizacji-art27a-v0.3.pdf',
-    to: '/projekt-nowelizacji/projekt-nowelizacji-art27a-v0.3.pdf',
-    note: `${LIVE}: PDF projektu z okresu podglądu`,
-  },
 
   // Scalenia po audycie treści (15.10.2026) — zdublowane strony live.
   // Cele bez strony w v2 (rozkład, według specjalizacji, dlaczego brakuje) audyt pokaże, dopóki nie zostaną przeniesione.

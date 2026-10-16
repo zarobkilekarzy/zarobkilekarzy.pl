@@ -90,7 +90,7 @@ export const searchExtras: SearchDoc[] = [
     category: 'Postulat',
     href: dzialajPage.href,
     summary: dzialajPage.lead,
-    keywords: ['działaj', 'poparcie projektu', 'udostępnij', ...(writeToolOn ? ['napisz do posła', 'napisz do polityka', 'list do posła', 'senator'] : [])],
+    keywords: ['działaj', 'poparcie projektu', 'udostępnij', 'infografiki', ...(writeToolOn ? ['napisz do posła', 'napisz do polityka', 'list do posła', 'senator'] : [])],
     sections: writeToolOn ? [{ title: 'Napisz do polityka', anchor: 'napisz' }] : [],
   },
   { id: 'petycja', title: 'Petycja o jawny rejestr wynagrodzeń (archiwum)', category: 'Postulat', href: '/postulat/petycja/', keywords: ['petycja', 'PWZ'] },

@@ -7,6 +7,7 @@
  * których nie chronimy (to publiczne adresy służbowe); list ma jeden szablon, krótki i rzeczowy.
  */
 import { currentStage, projekt, stages } from '@/data/projekt-ustawy';
+import { mediaPage } from '@/data/media';
 import type { LetterTemplate } from '@/lib/dzialaj/letter';
 
 /**
@@ -43,7 +44,8 @@ export const share = {
 export const actions = {
   share: {
     title: 'Udostępnij postulat',
-    text: 'Najszybsza pomoc: pokaż postulat znajomym. Wpis na X jest gotowy i neutralny, przed publikacją możesz go zmienić.',
+    text: 'Najszybsza pomoc: pokaż postulat znajomym. Wpis na X jest gotowy i neutralny, przed publikacją możesz go zmienić. Możesz dołączyć do niego infografikę — liczby i źródła są na grafice.',
+    media: { label: 'Infografiki do pobrania', href: mediaPage.href },
   },
   write: {
     title: 'Napisz do polityka',

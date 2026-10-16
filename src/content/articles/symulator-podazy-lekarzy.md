@@ -9,5 +9,6 @@ summary: Zmieniaj limity przyjęć na studia i zobacz, ilu lekarzy będzie prakt
 href: /analizy/symulator-podazy-lekarzy/
 date: 2026-09-01
 # 16.10.2026: limity z LIMITS (wersje końcowe rozporządzeń), limit dziś 2026/27
+# 16.10.2026: zgony wg tablic GUS 2025, grupa 71+ ubywa tylko przez zgony, warianty NIL dosłownie
 updated: 2026-10-16
 ---

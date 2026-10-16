@@ -14,8 +14,8 @@ import NoteRef from '@/components/article/NoteRef.astro';
 import NoteList from '@/components/article/NoteList.astro';
 import SupplySimulator from '@/components/podaz/SupplySimulator.astro';
 import {
-  DEFAULTS, GUS_WITH_PATIENTS, LIMIT_TODAY, LIMIT_TODAY_LABEL, MEASURED, seats, NIL_BASE, OVER_70, REGISTER_DATE, REGISTER_TOTAL,
-  SPEC_YEARS, STUDY_YEARS, YEAR_END,
+  BASE_INTAKE, DEFAULTS, GUS_WITH_PATIENTS, LIMIT_TODAY, LIMIT_TODAY_LABEL, MEASURED, seats, NIL_BASE, NIL_VARIANTS, OVER_70, OVER_70_TO,
+  REGISTER_DATE, REGISTER_PREV_TOTAL, REGISTER_TOTAL, SPEC_YEARS, STUDY_YEARS, YEAR_END, simulate,
 } from '@/lib/podaz/model';
 import { thousands } from '@/lib/podaz/charts';
 import { articleHref, getArticle, isPublished } from '@/lib/content';
@@ -51,11 +51,18 @@ const odsiew = await related('odsiew-na-medycynie');
 const ciecie = await related('ciecie-limitow-na-medycyne');
 const specjalizacje = await related('wedlug-specjalizacji');
 
+// Kalibracja odejść: przyrost rejestru w 2025 r. wobec przyrostu modelu w pierwszym roku
+const registerGrowth = REGISTER_TOTAL - REGISTER_PREV_TOTAL;
+const [y0, y1] = simulate(BASE_INTAKE);
+const modelGrowth = y1.doctors - y0.doctors;
+
 // Źródła opisu modelu — przypisy (lib/notes) w kolejności, w jakiej stoją w tekście
 const notes = defineNotes({
   nil: `NIL, [Centralny Rejestr Lekarzy — informacje statystyczne](https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne): lekarze wykonujący zawód według grup wieku, stan na ${REGISTER_DATE}.`,
   mz: 'Ministerstwo Zdrowia, BASiW, [„Studenci i absolwenci kierunków medycznych”](https://basiw.mz.gov.pl/mapy-informacje/mapa-2022-2026/analizy/kadry-medyczne/studenci-i-absolwenci-kierunkow-medycznych/) (POL-on, ZUS): odsiew w trakcie studiów i absolwenci bez pracy w Polsce.',
   cem: 'Centrum Egzaminów Medycznych, [statystyki LEK](https://www.cem.edu.pl/lep_s.php): lekarze z dyplomem zagranicznym zdający egzamin.',
+  gusLife: 'GUS, [Trwanie życia w 2025 r.](https://stat.gov.pl/obszary-tematyczne/ludnosc/trwanie-zycia/trwanie-zycia-w-2025-r-,2,20.html), tablica A: prawdopodobieństwo zgonu według wieku i płci. Model waży je udziałem mężczyzn wśród lekarzy wykonujących zawód (40%).',
+  nilPrev: `NIL, [zestawienie liczbowe lekarzy według wieku, stan na 31.12.2024](https://nil.org.pl/uploaded_files/1737380333_zestawienie-nr-3-31122024.pdf): ${formatPL(REGISTER_PREV_TOTAL)} lekarzy wykonujących zawód (bez lekarzy dentystów) — ta sama definicja co w punkcie startu modelu.`,
   gus: 'GUS, [Zasoby kadrowe w wybranych zawodach medycznych na podstawie źródeł administracyjnych w 2024 r.](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/28/4/1/zasoby_kadrowe_w_wybranych_zawodach_medycznych_na_podstawie_zrodel_administracyjnych_w_2024_r..pdf), dane za 2024 r.',
   ccomptes: 'Cour des comptes, [L’accès aux études de santé](https://www.ccomptes.fr/sites/default/files/2024-12/20241211-Lacces-aux-%C3%A9tudes-de-sante.pdf), grudzień 2024.',
 });
@@ -107,12 +114,13 @@ const meta = [
               {typo(`Z każdego przyszłego rocznika odpada ${Math.round((1 - MEASURED.graduate) * 100)}% przyjętych, a ${Math.round(MEASURED.abroad * 100)}% absolwentów nie pracuje w Polsce; co roku dochodzi ${formatPL(MEASURED.inflow)} lekarzy z dyplomem zagranicznym. Dane:`)}{' '}
               {typo('aplikacja MZ „Studenci i absolwenci kierunków medycznych”')}<NoteRef notes={notes} id="mz" /> i {typo('statystyki LEK z CEM')}<NoteRef notes={notes} id="cem" />{odsiew && <>, zestawione w <a href={odsiew}>analizie o odsiewie</a></>}.
             </li>
-            <li><strong>Odejmuje odchodzących.</strong> {typo(`Po osiągnięciu wybranego wieku (domyślnie ${DEFAULTS.retireAge} lat) rocznik wygasa przez pięć lat. Dotyczy to też ${thousands(OVER_70)} osób powyżej 70 lat, które rejestr wciąż liczy jako wykonujące zawód.`)}</li>
+            <li><strong>Odejmuje odchodzących.</strong> {typo(`W każdym wieku odejmuje zgony według tablic trwania życia GUS.`)}<NoteRef notes={notes} id="gusLife" /> {typo(`Po osiągnięciu wybranego wieku (domyślnie ${DEFAULTS.retireAge} lat) rocznik dodatkowo wygasa przez pięć lat.`)}</li>
+            <li><strong>Zostawia pracujących po siedemdziesiątce.</strong> {typo(`Rejestr wciąż liczy jako wykonujące zawód ${thousands(OVER_70)} osób powyżej 70 lat. Model rozkłada je równo na wiek 71–${OVER_70_TO} i odejmuje z tej grupy tylko zgony. Gdyby lekarze po siedemdziesiątce masowo odchodzili, rejestr prawie by nie rósł, a w 2025 r. przybyło w nim ${formatPL(registerGrowth)} lekarzy.`)}<NoteRef notes={notes} id="nilPrev" /> {typo(`Model z tą regułą daje w pierwszym roku ${formatPL(modelGrowth)} lekarzy więcej.`)}</li>
           </ol>
 
           <h3>Czego model nie robi</h3>
           <ul>
-            <li><strong>Nie prognozuje losów rocznika.</strong> {typo('Odsiew, wyjazdy i napływ to trzy stałe liczby. Kto kończy studia z opóźnieniem, w modelu przepada, a wyjazdy są zmierzone tylko w pierwszych sześciu latach po dyplomie. Obie krzywe liczone są tak samo, więc różnica między nimi zostaje wiarygodna.')}</li>
+            <li><strong>Nie prognozuje losów rocznika.</strong> {typo('Odsiew, wyjazdy i napływ to trzy stałe liczby. Kto kończy studia z opóźnieniem, w modelu przepada, a wyjazdy są zmierzone tylko w pierwszych sześciu latach po dyplomie. W trakcie kariery model odejmuje tylko zgony, bo danych o zmianie zawodu i późniejszych wyjazdach nikt nie publikuje. Obie krzywe liczone są tak samo, więc różnica między nimi zostaje wiarygodna.')}</li>
             <li><strong>Nie liczy etatów ani godzin.</strong> {typo(`Lekarz w modelu to osoba w rejestrze. Z pacjentem pracuje ${formatPL(GUS_WITH_PATIENTS)} z nich`)}<NoteRef notes={notes} id="gus" /> — stąd kropkowana linia na wykresie.</li>
             <li><strong>Nie rozróżnia dziedzin ani regionów.</strong> {typo('Braki są specjalizacyjne i lokalne, a model daje jedną liczbę na cały kraj.')}{specjalizacje && <> Miejsca specjalizacyjne mają własne wąskie gardło — pokazujemy je w zestawieniu <a href={`${specjalizacje}#miejsca-specjalizacyjne`}>według specjalizacji</a>.</>}</li>
             <li><strong>Nie zna popytu.</strong> {typo('Pokazuje podaż, a nie potrzeby starzejącego się społeczeństwa. Francuski trybunał obrachunkowy po pół wieku regulowania liczby lekarzy stwierdził, że wspólnej metody liczenia potrzeb wciąż nie ma.')}<NoteRef notes={notes} id="ccomptes" /></li>
@@ -123,7 +131,7 @@ const meta = [
         <p class="about__sources">
           {typo(`Nabór to miejsca na studiach lekarskich po polsku (stacjonarne, niestacjonarne i pula dla cudzoziemców); studia anglojęzyczne są poza modelem, bo zostaje po nich w Polsce mniej niż 1% absolwentów. Lata 2012–${LIMIT_TODAY_LABEL.slice(0, 4)} to dokładne limity z rozporządzeń MZ w wersji końcowej, po nowelizacjach (ta sama tabela co w analizie o English Division), 1987–2011 — punkty kontrolne (1987: ${formatPL(6000)}, 1990: ${formatPL(3300)}, 2003: ${formatPL(2090)}) z latami pośrednimi interpolowanymi.`)}
           {ciecie && <> Szerzej w analizie <a href={ciecie}>o cięciu limitów</a>.</>}
-          {' '}{typo(`Warianty cięcia A–C to analiza zespołu ekspertów NIL z czerwca 2024 r., przeliczona proporcjonalnie z ${formatPL(NIL_BASE)} miejsc z projektu rozporządzenia na 2024/25 na dzisiejszy limit ${formatPL(LIMIT_TODAY)}.`)}
+          {' '}{typo(`Warianty cięcia A–C to analiza zespołu ekspertów NIL z czerwca 2024 r. Liczby miejsc (${formatPL(NIL_VARIANTS.a)} i ${formatPL(NIL_VARIANTS.bFloor)} rocznie, cięcie o ${formatPL(NIL_VARIANTS.cCut)}) bierzemy z niej wprost, choć zespół liczył je od ${formatPL(NIL_BASE)} miejsc z projektu rozporządzenia na 2024/25, a dziś limit wynosi ${formatPL(LIMIT_TODAY)}.`)}
         </p>
 
         <NoteList notes={notes} class="about__notes" />

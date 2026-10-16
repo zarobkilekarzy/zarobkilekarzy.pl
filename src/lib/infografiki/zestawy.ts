@@ -147,7 +147,7 @@ const englishDivision: InfographicSet = {
 /* ---------- Symulator podaży: nabór jak dziś i dwa warianty zespołu NIL ---------- */
 
 const HORIZON = 2050;
-// losy rocznika jak w symulatorze (DEFAULTS = wartości zmierzone): odsiew na studiach, wyjazdy, napływ z zagranicy, emerytury
+// losy rocznika jak w symulatorze (DEFAULTS = wartości zmierzone): odsiew na studiach, wyjazdy, napływ z zagranicy, emerytury, zgony
 const scenario = (id: string) => {
   const intake = PRESETS.find((p) => p.id === id)!.intake();
   const points = simulate(intake, DEFAULTS).filter((p) => p.year <= HORIZON);
@@ -184,8 +184,8 @@ const symulator: InfographicSet = {
         ],
         note: { x: HORIZON, v: base.doctors / 1000, lines: [`w ${HORIZON} r. wariant A wobec naboru jak dziś:`, `o ${thousands(base.doctors - nilA.doctors)} tys. lekarzy mniej`] },
       },
-      sources: `Model: rejestr NIL, limity MZ, warianty NIL · napływ ${formatPL(DEFAULTS.inflow)}/rok, odejścia od ${DEFAULTS.retireAge} lat`,
-      alt: `Infografika, wykres: projekcja liczby lekarzy wykonujących zawód do ${HORIZON} r. Dziś ${formatPL(REGISTER_TOTAL)} według rejestru NIL — tylu jest dzisiaj, za mało. W ${HORIZON} r.: przy naborze jak dziś (${seats(LIMIT_TODAY)} po polsku rocznie) ok. ${thousands(base.doctors)} tys., w wariancie B zespołu NIL ok. ${thousands(nilB.doctors)} tys., w wariancie A ok. ${thousands(nilA.doctors)} tys., czyli o ${thousands(base.doctors - nilA.doctors)} tys. mniej niż przy naborze jak dziś. Model zarobkilekarzy.pl uwzględnia odsiew na studiach (kończy ${formatPL(DEFAULTS.graduate * 100)}%), wyjazdy (${formatPL(DEFAULTS.abroad * 100)}%), napływ lekarzy z dyplomem zagranicznym (${formatPL(DEFAULTS.inflow)} rocznie) i odejścia od ${DEFAULTS.retireAge} lat.`,
+      sources: `Model: rejestr NIL, limity MZ, warianty NIL, zgony GUS · napływ ${formatPL(DEFAULTS.inflow)}/rok, praca do ${DEFAULTS.retireAge} lat`,
+      alt: `Infografika, wykres: projekcja liczby lekarzy wykonujących zawód do ${HORIZON} r. Dziś ${formatPL(REGISTER_TOTAL)} według rejestru NIL — tylu jest dzisiaj, za mało. W ${HORIZON} r.: przy naborze jak dziś (${seats(LIMIT_TODAY)} po polsku rocznie) ok. ${thousands(base.doctors)} tys., w wariancie B zespołu NIL ok. ${thousands(nilB.doctors)} tys., w wariancie A ok. ${thousands(nilA.doctors)} tys., czyli o ${thousands(base.doctors - nilA.doctors)} tys. mniej niż przy naborze jak dziś. Model zarobkilekarzy.pl uwzględnia odsiew na studiach (kończy ${formatPL(DEFAULTS.graduate * 100)}%), wyjazdy (${formatPL(DEFAULTS.abroad * 100)}%), napływ lekarzy z dyplomem zagranicznym (${formatPL(DEFAULTS.inflow)} rocznie), pracę do ${DEFAULTS.retireAge} lat i zgony według tablic trwania życia GUS.`,
     },
   ],
 };

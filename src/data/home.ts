@@ -4,7 +4,7 @@
  * Treści współdzielone (artykuły, słowniczek) żyją w kolekcjach — src/content.
  */
 import type { BarRow, Link, PathCard, Stat, TextItem, Tool, Topic } from '@/types';
-import { HEADLINE } from '@/data/zarobki-ujawnione-listy';
+import { LINKS } from '@/data/rekordy';
 import { CURRENT, formatMld } from '@/data/budzet-nfz';
 import { monitoring } from '@/lib/monitoring';
 import { formatPL, plural } from '@/lib/format';
@@ -23,13 +23,12 @@ export const heroPopular: Link[] = [
 
 export const keyNumbers: Stat[] = [
   {
-    prefix: '~',
-    value: HEADLINE.medianK,
-    unit: 'tys. zł',
-    desc: 'mediana rocznego rozliczenia lekarza w placówkach, które ujawniły pełne listy płac',
-    accuracy: 'est',
-    source: `${HEADLINE.listsLabel} · ${HEADLINE.positionsLabel}`,
-    href: '/dane/zarobki-ujawnione-listy/',
+    value: 316079,
+    unit: 'zł / mies.',
+    desc: 'najwyższy jawny kontrakt lekarza — szpitale wojewódzkie Mazowsza, 2025 r.',
+    accuracy: 'exact',
+    source: 'Rynek Zdrowia',
+    href: LINKS.rzMazowsze,
   },
   {
     prefix: '~',

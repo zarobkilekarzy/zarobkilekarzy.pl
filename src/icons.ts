@@ -37,7 +37,7 @@ export const icons = {
   share: `<path d="M12 15V3.5M7.5 8 12 3.5 16.5 8" ${stroke} stroke-linecap="square"/><path d="M8.5 11H5v9.5h14V11h-3.5" ${stroke}/>`,
   moon: `<path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z" ${stroke} stroke-linejoin="round"/>`,
   sun: `<circle cx="12" cy="12" r="4" ${stroke}/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M5.28 5.28l1.77 1.77M16.95 16.95l1.77 1.77M5.28 18.72l1.77-1.77M16.95 7.05l1.77-1.77" ${stroke}/>`,
-  // Znak „Puls” (docs/logo-propozycje, wariant A) — stałe kolory w obu trybach: kobalt i biały zapis EKG
+  // Znak „Puls” — stałe kolory w obu trybach: kobalt i biały zapis EKG
   // od krawędzi do krawędzi, ostre łączenia. Ta sama geometria: public/favicon.svg, lib/seo/icon-maskable.svg.
   logo: `<rect width="24" height="24" fill="#2664EC"/><path d="M0 14H7.5L10 5.5 13.5 18.5 15.5 14H24" fill="none" stroke="#fff" stroke-width="2" stroke-miterlimit="5"/>`,
 } as const;

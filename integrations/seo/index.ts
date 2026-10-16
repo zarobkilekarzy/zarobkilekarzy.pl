@@ -1,5 +1,5 @@
 /**
- * Integracja SEO (zob. docs/seo-system.md):
+ * Integracja SEO:
  * - zapisuje dist/_redirects z rejestru przekierowań (301 na krawędzi Cloudflare)
  *   i dist/_headers (cache, nagłówki bezpieczeństwa, noindex dla plików JSON),
  * - daje `serialize` dla @astrojs/sitemap (mapa z faktów HTML: noindex wypada, lastmod z grafu),

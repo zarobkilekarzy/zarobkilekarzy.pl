@@ -2,7 +2,7 @@
  * Szablon obrazka OG (rodzina A „Okładka”, 1200×630): logo, etykieta, tytuł, lead, stopka
  * i media po prawej (zdjęcie / karta liczby / brak). Satori → SVG (tekst jako krzywe) → sharp → PNG.
  *
- * Pułapki Satori (docs/og-system.md, §6):
+ * Pułapki Satori:
  * - fonty: statyczne WOFF z @fontsource (pliki z Fonts API Astro są zmienne),
  * - podzbiór latin-ext musi być osobną rodziną („… Ext”) w jawnym stosie, inaczej giną ł/ż/ą/ę,
  * - div z więcej niż jednym dzieckiem wymaga display: flex, a wymiary liczymy jako border-box (robi to h()).

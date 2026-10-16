@@ -5,7 +5,7 @@ import { getFeedItems } from '@/lib/seo/feeds';
 
 /**
  * Kanał RSS: nowe i zaktualizowane materiały serwisu (z datą), od najświeższych.
- * Uwaga: na dotychczasowej stronie /rss.xml był kanałem „bazy źródeł” (linki do prasy) — zob. docs/seo-system.md § 12.
+ * Uwaga: na dotychczasowej stronie /rss.xml był kanałem „bazy źródeł” (linki do prasy).
  */
 export const GET: APIRoute = async ({ site }) => {
   const items = (await getFeedItems())

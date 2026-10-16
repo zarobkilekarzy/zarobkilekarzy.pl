@@ -5,8 +5,8 @@
  *
  * Skąd dane: zbiór zebrał społecznie jeden z czytelników (stan 14.08.2026; w research.db tabela
  * `radni_lekarze`, 184 wiersze, z czego 1 to małżonka radnego, a nie radna). Redakcja otworzyła
- * każde dostępne oświadczenie i porównała je ze zbiorem (15.10.2026; raporty weryfikacji w scratchpadzie
- * sesji: weryfikacja/lekarze-radni.md i radni-czesc-1…4.md). `nr` = pozycja w tamtych raportach
+ * każde dostępne oświadczenie i porównała je ze zbiorem (15.10.2026; raporty weryfikacji
+ * poza repozytorium). `nr` = pozycja w tamtych raportach
  * (zbiór posortowany malejąco po dochodzie, bez małżonki).
  *
  * Wyłączone: 1 wiersz osoby, wobec której toczy się postępowanie karne (zasada serwisu: wiersze

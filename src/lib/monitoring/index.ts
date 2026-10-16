@@ -4,7 +4,7 @@
  * Plik src/data/monitoring-watchdog.json generuje skrypt spoza serwisu. Ten moduł to jego
  * kontrakt: schemat sprawdzany przy każdym buildzie (zła dana = czytelny błąd zamiast cichej
  * pomyłki na stronie) i jedyne miejsce, z którego strony czytają te dane.
- * Opis pól dla autora skryptu: docs/monitoring-json.md.
+ * Opis pól dla autora skryptu: schemat poniżej.
  *
  * Kod przeglądarki importuje stąd wyłącznie typy (`import type`), więc zod i JSON nie trafiają do bundla;
  * listy kodów (województwa, odpowiedzi) są w ./codes, który można importować wszędzie.
@@ -96,7 +96,7 @@ function load(): MonitoringDoc {
   const result = monitoringSchema.safeParse(JSON.parse(raw));
   if (!result.success) {
     throw new Error(
-      `src/data/monitoring-watchdog.json nie spełnia kontraktu (docs/monitoring-json.md):\n${z.prettifyError(result.error)}`,
+      `src/data/monitoring-watchdog.json nie spełnia kontraktu (schemat w src/lib/monitoring):\n${z.prettifyError(result.error)}`,
     );
   }
   return result.data;

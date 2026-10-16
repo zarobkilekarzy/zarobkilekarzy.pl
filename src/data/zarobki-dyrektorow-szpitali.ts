@@ -5,7 +5,7 @@
  * (components/dyrektorzy/CaseTable) i LINKS dla bloków w artykule.
  *
  * Bez nazwisk: wiersz to miejscowość i funkcja. Kwoty brutto za rok, tak jak podały źródła.
- * Sprawdzone 15.10.2026 (tabela weryfikacji: scratchpad/weryfikacja/zarobki-dyrektorow-szpitali.md).
+ * Sprawdzone 15.10.2026.
  * Celowo pominięte: Wrocław (źródło kwoty niedostępne, HTTP 403) i Garwolin (sprawa przed sądem pracy).
  */
 import { formatPL } from '@/lib/format';

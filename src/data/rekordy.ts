@@ -9,8 +9,8 @@
  * - próg ze źródła zostaje progiem („ponad”, „prawie”), nigdy nie zamienia się w dokładną kwotę;
  * - każdy wiersz ma źródła i pole `status` z datą najnowszej informacji (stan na 16.10.2026).
  *
- * Sprawdzone 15.10.2026 (tabela 88 twierdzeń + druga weryfikacja: scratchpad/weryfikacja/rekordy.md).
- * Aktualizacja 16.10.2026 (raporty: docs/weryfikacja-rekordy-2026-10-16/): nowe wiersze Dolny Śląsk, Lubuskie, Podkarpacie, Warmia i Mazury, Ostróda, Warsaw Medical
+ * Sprawdzone 15.10.2026 (tabela 88 twierdzeń + druga weryfikacja).
+ * Aktualizacja 16.10.2026: nowe wiersze Dolny Śląsk, Lubuskie, Podkarpacie, Warmia i Mazury, Ostróda, Warsaw Medical
  * Center, Zamość, Sosnowiec, Wadowice; tabela województw (REGIONS_TABLE); statusy spraw bez zmian.
  * Celowo pominięte (brak drugiego źródła): Kraków (Dietl, 2,3 mln zł — tylko materiał Radia Kraków i przedruki),
  * Żary, Jastrzębie-Zdrój, Płock, Bydgoszcz, Sandomierz i Kutno (półrocze 2025, zestawienie posła — mogą to być spółki,

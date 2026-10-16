@@ -1,7 +1,6 @@
 /**
  * Model SEO: co strona mówi o sobie (SeoInput) i co z tego wylicza lib/seo (ResolvedSeo).
  * Strony i layouty podają fakty; znaczniki, szablon tytułu i graf schema.org buduje lib/seo.
- * Zob. docs/seo-system.md.
  */
 
 /** Okruszek nawigacji; ostatni (bieżąca strona) nie ma adresu. */

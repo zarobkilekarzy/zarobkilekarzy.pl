@@ -155,7 +155,7 @@ src/
   - Dział może wskazywać stronę niezależnie od kategorii (np. analiza „Polska na tle sąsiadów” jest w spisie /dane/).
   - Id wpisu = ostatni segment adresu. Nie zmieniaj go po publikacji.
 - **Pojęcie:** dopisz wpis w `src/content/glossary.yaml` (opis pól w nagłówku pliku). Strona `/slownik/` sortuje hasła alfabetycznie i daje każdemu kotwicę `#<id>` — id nie zmieniaj po publikacji. Definicja: 1–3 zdania, bez ocen i bez kwot, które się starzeją (kwota zostaje w tekście z `more`). Każde hasło ma `more` (id artykułu, opcjonalnie `anchor`, albo `{ href, label }`) i `sources` (podstawa prawna albo źródło: `{ label, href }`) — źródło to link pod hasłem, jak podpis `Figure`, a nie przypis. `home: n` wstawia hasło do modułu na stronie głównej (6–8 haseł).
-- **Dane monitoringu płac:** podmień `src/data/monitoring-watchdog.json` (generuje go skrypt; kontrakt w [`docs/monitoring-json.md`](docs/monitoring-json.md)). Build sprawdzi plik i przeliczy stronę, publiczny JSON i obrazek OG.
+- **Dane monitoringu płac:** podmień `src/data/monitoring-watchdog.json` (generuje go skrypt; kontrakt: schemat w `src/lib/monitoring`). Build sprawdzi plik i przeliczy stronę, publiczny JSON i obrazek OG.
 - **Linki artykułów** wylicza tylko `articleHref()`: opublikowane prowadzą do podstrony, zapowiedzi do `href` z frontmattera.
 
 ### Tabela danych (datagrid)
@@ -227,7 +227,7 @@ Inter Tight, IBM Plex Sans i IBM Plex Mono przez **Fonts API** Astro (provider F
 
 **Preload wszystkich 8 plików** (`<Font … preload />` w `BaseLayout`). Polskie litery poza „ó” są w podzbiorze latin-ext, a ten jest potrzebny na każdej stronie. Plik bez preloadu przeglądarka zamawia dopiero po znalezieniu znaku w tekście, czyli po pierwszej klatce. Wtedy ł, ą, ę, ż rysują się fontem zastępczym, przesuwają resztę linii i podmieniają się chwilę później: przy każdym wejściu na podstronę mrugały same polskie znaki, a z nimi etykiety w Plex Mono. Najmocniej widać to na `astro dev`, który wysyła fonty z `no-store`, i przy pierwszej wizycie na produkcji. Preload nie dokłada bajtów, bo wszystkie pliki i tak są pobierane na każdej stronie. Zmienia tylko kolejność.
 
-Każdy font ma jedną rolę. Na stronie nie ma fontu szeryfowego, a wzorem jest czysta groteska z `protocol.webp`:
+Każdy font ma jedną rolę. Na stronie nie ma fontu szeryfowego, a wzorem jest czysta groteska:
 
 - **Inter Tight** (`--f-display`) składa nagłówki, tytuły kart i duże liczby.
 - **IBM Plex Sans** (`--f-body`) składa każdy tekst do czytania: akapity, uwagi pod ilustracjami, podpisy tabel, legendy, wiersze tabel i list oraz jednostki obok dużych liczb (`<small>`).
@@ -237,7 +237,7 @@ Plex Mono ma szeryfy typu slab (widać je na „i”, „l”, „r”). W krót
 
 ## Tryb nocny
 
-Strona ma tryb nocny „granat nocny”. Domyślnie idzie za ustawieniem systemu, a przełącznik w nagłówku (`site/ThemeToggle.astro`) zapisuje wybór w `localStorage` (`zl-theme`) i ustawia `<html data-theme="light|dark">`. Skrypt w `<head>` (`BaseLayout`) nakłada zapisany motyw przed pierwszym malowaniem, więc strona nie miga. Wybór zgodny z systemem kasuje zapis. Porównanie dzień/noc: [`docs/tryb-nocny/plansza.png`](docs/tryb-nocny/plansza.png).
+Strona ma tryb nocny „granat nocny”. Domyślnie idzie za ustawieniem systemu, a przełącznik w nagłówku (`site/ThemeToggle.astro`) zapisuje wybór w `localStorage` (`zl-theme`) i ustawia `<html data-theme="light|dark">`. Skrypt w `<head>` (`BaseLayout`) nakłada zapisany motyw przed pierwszym malowaniem, więc strona nie miga. Wybór zgodny z systemem kasuje zapis.
 
 Każdy kolor w `tokens.css` to para `light-dark(dzień, noc)`. Komponenty używają tokenów, więc działają w obu trybach bez własnych reguł. Zasady dla nowych komponentów:
 
@@ -263,7 +263,7 @@ Tych zasad pilnuje `npm run check:colors` (`scripts/check-colors.mjs`): białe t
 
 ## Wykresy
 
-Wykresy mówią tym samym językiem co reszta strony: atrament to tekst i linie 1 px, nie pola. Porównanie przed i po przejściu na te zasady (2026-10-15): `docs/wykresy-v2/przed-po.png`.
+Wykresy mówią tym samym językiem co reszta strony: atrament to tekst i linie 1 px, nie pola.
 
 - **Kolor niesie rolę, nie dekorację.** `--chart` to dane bez wyróżnienia (jasny łupek), `--chart-soft` to drugi segment słupka albo historia, `--blue` to jedyny akcent: to, o czym jest teza nad wykresem. `--chart-proj` z krawędzią `--blue` to szacunek, nie dane. Czerwień (`--bad`) tylko tam, gdzie znaczy „źle” (np. wzrost szybszy niż w kraju), nie dla adnotacji.
 - **Bez szyn i kreskowania.** Słupek stoi sam, bez szarego toru pod spodem. Projekcja to blade wypełnienie, nie wzór.
@@ -275,7 +275,7 @@ Wykresy mówią tym samym językiem co reszta strony: atrament to tekst i linie 
 
 ## Obrazki OG
 
-Każda strona dostaje obrazek 1200×630 generowany przy buildzie (`lib/og`: Satori → sharp → PNG). `BaseLayout` sam wylicza adres ze ścieżki strony i dodaje `og:image` oraz `twitter:card`. Pełna specyfikacja: [`docs/og-system.md`](docs/og-system.md).
+Każda strona dostaje obrazek 1200×630 generowany przy buildzie (`lib/og`: Satori → sharp → PNG). `BaseLayout` sam wylicza adres ze ścieżki strony i dodaje `og:image` oraz `twitter:card`.
 
 - **Artykuł** ma obrazek automatycznie: etykieta sekcji, tytuł, pierwsze zdanie `summary`, okładka (jeśli jest) i stopka ze źródłami i datą.
 - **Nadpisanie** to pole `og` we frontmatterze, gdzie każde pole jest opcjonalne. Przykłady: `title` (z `\n` do ręcznego łamania), `lead: false`, `stat` (karta liczby), `photo` + `position`, `badge`, `media: none`. Gotowa grafika to `image`, która omija generator. Literówka w nazwie pola zatrzymuje build.
@@ -285,7 +285,7 @@ Każda strona dostaje obrazek 1200×630 generowany przy buildzie (`lib/og`: Sato
 
 ## SEO
 
-Pełny opis i decyzje: [`docs/seo-system.md`](docs/seo-system.md). Zasada: strona mówi, czym jest; `lib/seo` decyduje, jak to opisać.
+Zasada: strona mówi, czym jest; `lib/seo` decyduje, jak to opisać.
 
 - **Strona** przekazuje do `BaseLayout` prop `seo` (`SeoInput` z `lib/seo/types.ts`): tytuł **bez** nazwy serwisu (szablon „ | zarobkilekarzy.pl” dopisuje `lib/seo/meta.ts`), opis, okruszki (te same co w `PageHeader`), rodzaj strony (`CollectionPage`, `FAQPage`) i byty (`article`, `dataset`, `termSet` — słownik pojęć jako DefinedTermSet). Artykuły i strony-indeksy mają to z layoutów. Stare `title`/`description` działają, ale build ostrzega `[seo]`.
 - **Dane strukturalne:** jeden graf JSON-LD w `<head>` (`lib/seo/schema`): Organization, WebSite, WebPage, obrazek OG, BreadcrumbList i Article/Dataset, połączone przez `@id`. Nie dodawaj własnych `<script type="application/ld+json">`.

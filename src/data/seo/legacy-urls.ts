@@ -129,11 +129,5 @@ export const legacyUrls: readonly string[] = [
 /** Adresy świadomie usunięte: adres → powód (np. „treść scalona z …, bez odpowiednika”). */
 export const removedUrls: Readonly<Record<string, string>> = {
   '/gra/': 'gra „Drugi licznik” — decyzja redakcji z 15.10.2026: nie przenosimy do v2',
-  // baza linków prasowych z paginacją i kategoriami — decyzja redakcji z 16.10.2026: nie przenosimy do v2
-  // (źródła są teraz przypisami w analizach)
-  ...Object.fromEntries(
-    legacyUrls
-      .filter((url) => url.startsWith('/artykuly/'))
-      .map((url) => [url, 'baza linków prasowych — decyzja redakcji z 16.10.2026: nie przenosimy do v2']),
-  ),
+  // /artykuly/* nie jest usunięte: przekierowania 301 na /analizy/ w redirects.ts
 };

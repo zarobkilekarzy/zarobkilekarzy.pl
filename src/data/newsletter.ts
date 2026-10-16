@@ -8,7 +8,7 @@
  *   400 / 422 — usługa odrzuciła adres,
  *   429 — za dużo prób,
  *   inny kod, brak odpowiedzi w `timeoutMs` albo błąd sieci — błąd ogólny.
- * Endpoint musi zezwalać na CORS z domeny serwisu. Kontrakt: docs/newsletter.md.
+ * Endpoint musi zezwalać na CORS z domeny serwisu.
  *
  * Gdy newsletter ruszy, uzupełnij `provider` — /prywatnosc/ wypisze wtedy, kto przechowuje adresy.
  */

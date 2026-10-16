@@ -1,4 +1,4 @@
-/** Moduł SEO serwisu — zob. docs/seo-system.md. */
+/** Moduł SEO serwisu. */
 export { fullTitle, resolveSeo, TITLE_SEPARATOR } from './meta';
 export { ROBOTS_INDEX, ROBOTS_NOINDEX, robotsTxt } from './robots';
 export { absoluteUrl, isFilePath, withSlash } from './urls';

@@ -199,7 +199,7 @@ export interface SearchIndex {
   postings: number[][];
 }
 
-/* ---------- Obrazki Open Graph (docs/og-system.md) ---------- */
+/* ---------- Obrazki Open Graph ---------- */
 
 /** Karta liczby na obrazku OG (wariant `stat`). Wartość jako tekst: „~633”, „34”, „4,2”. */
 export interface OgStat {

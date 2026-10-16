@@ -3,7 +3,7 @@
  * z monitoringu „Ile zarabiają lekarze?” (Sieć Obywatelska Watchdog Polska).
  *
  * Jedno źródło prawdy: wszystko liczy się z tego samego pliku co przeglądarka /dane/monitoring-watchdog/
- * (src/data/monitoring-watchdog.json, kontrakt w lib/monitoring i docs/monitoring-json.md). Po podmianie
+ * (src/data/monitoring-watchdog.json, kontrakt w lib/monitoring). Po podmianie
  * pliku liczby w treści artykułu, wykresy i tabela przeliczą się same. Ręcznie trzeba poprawić tylko
  * frontmatter artykułu: `updated`, `stat`, `summary`, `description` i `keyPoints`.
  *
@@ -38,7 +38,7 @@ export const DATA = {
 } as const;
 
 /**
- * Kryterium pełnej listy w eksporcie (docs/monitoring-json.md → „Lista płac”). Artykuł je cytuje,
+ * Kryterium pełnej listy w eksporcie (lib/monitoring → „Lista płac”). Artykuł je cytuje,
  * więc gdy skrypt zmieni kryterium, build zatrzyma się tutaj, zamiast pokazać nieaktualny opis metody.
  */
 export const LIST_CRITERION = { minPositions: 10, minMedian: 60_000 } as const;

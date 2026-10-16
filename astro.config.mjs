@@ -8,7 +8,7 @@ import { footnotes } from './src/lib/markdown/footnotes';
 import { typography } from './src/lib/markdown/typography';
 import seo, { astroRedirects } from './integrations/seo';
 
-// SEO: _redirects, sitemap z faktów HTML i audyt po buildzie — zob. docs/seo-system.md
+// SEO: _redirects, sitemap z faktów HTML i audyt po buildzie
 const seoIntegration = seo();
 
 // Wspólne ustawienia fontów: polskie znaki są w podzbiorze latin-ext

@@ -52,10 +52,10 @@ const articles = defineCollection({
       stat: z.object({ value: z.string(), unit: z.string() }).optional(),
       /** kolejność w dziale (mniejsza = wyżej); bez niej — alfabetycznie, na końcu */
       order: z.number().optional(),
-      /** obrazek OG: nadpisania presetu artykułu — zob. docs/og-system.md */
+      /** obrazek OG: nadpisania presetu artykułu */
       og: ogSchema({ image }),
       /**
-       * SEO — zob. docs/seo-system.md. `seoTitle`: tytuł w wynikach wyszukiwania, gdy tytuł H1 jest
+       * SEO. `seoTitle`: tytuł w wynikach wyszukiwania, gdy tytuł H1 jest
        * za długi (audyt ostrzega > 60 znaków z nazwą serwisu) albo nie zawiera frazy, której ludzie szukają.
        */
       seoTitle: z.string().optional(),

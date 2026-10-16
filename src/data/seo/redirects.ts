@@ -3,8 +3,10 @@
  * (build zapisuje dist/_redirects dla Cloudflare: 301 na krawędzi, przed plikami).
  * Adres strony zawsze z ukośnikiem na końcu; wariant bez ukośnika dopisuje generator.
  * Cel ma być stroną albo plikiem, a nie kolejnym przekierowaniem — audyt w buildzie wyłapie łańcuch,
- * cel, którego nie ma, i źródło przykryte istniejącą stroną. Zob. docs/seo-system.md § 7.
+ * cel, którego nie ma, i źródło przykryte istniejącą stroną.
  */
+
+import { legacyUrls } from './legacy-urls';
 
 export interface Redirect {
   from: string;
@@ -18,6 +20,7 @@ export interface Redirect {
 const PETYCJA = 'petycja to dziś archiwum pod /postulat/ (redesign v2)';
 const LIVE = 'historia z public/_redirects dotychczasowej strony';
 const MERGE = 'scalone po audycie treści';
+const ARTYKULY = 'baza linków prasowych nie przeszła do v2 (decyzja redakcji z 16.10.2026); źródła są przypisami w analizach';
 
 export const redirects: Redirect[] = [
   // Misja: /postulat/ z podstronami (redesign v2)
@@ -43,7 +46,7 @@ export const redirects: Redirect[] = [
     note: `${LIVE}: PDF projektu z okresu podglądu`,
   },
 
-  // Scalenia po audycie treści (docs/audyt-tresci-starej-strony.md, 15.10.2026) — zdublowane strony live.
+  // Scalenia po audycie treści (15.10.2026) — zdublowane strony live.
   // Cele bez strony w v2 (rozkład, według specjalizacji, dlaczego brakuje) audyt pokaże, dopóki nie zostaną przeniesione.
   { from: '/analizy/monitor-reformy-zdrowia/', to: '/mechanizmy/wieloetatowosc/', note: 'monitor reformy usunięty decyzją redakcji z 16.10.2026; najbliższy temat: limit etatów i kontraktów' },
   { from: '/analizy/jedno-pwz/', to: '/dane/rozklad-wynagrodzen/', note: `${MERGE}: „luka pomiaru” to sedno rozkładu wynagrodzeń` },
@@ -53,4 +56,9 @@ export const redirects: Redirect[] = [
   { from: '/dane/patologia-w-liczbach/', to: '/dane/', note: `${MERGE}: kompilacja liczb z innych zestawień, rolę przejął hub` },
   { from: '/mechanizmy/dyzury-i-gotowosc/', to: '/mechanizmy/wieloetatowosc/', note: `${MERGE}: gotowość (art. 98) to sekcja wieloetatowości` },
   { from: '/mechanizmy/samorzad-nil/', to: '/analizy/odpowiedzialnosc-zawodowa-lekarzy/', note: `${MERGE}: ustrój samorządu to sekcja „Kto sądzi lekarzy”` },
+
+  // Baza linków prasowych (/artykuly/ z paginacją i kategoriami): każdy adres ze starej sitemapy → hub analiz
+  ...legacyUrls
+    .filter((url) => url.startsWith('/artykuly/'))
+    .map((url): Redirect => ({ from: url, to: '/analizy/', note: ARTYKULY })),
 ];

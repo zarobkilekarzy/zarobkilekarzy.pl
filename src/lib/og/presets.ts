@@ -1,6 +1,6 @@
 /**
  * Presety obrazków OG: dane strony → specyfikacja do renderu.
- * Kaskada (docs/og-system.md): preset typu strony ← nadpisanie `og` ← własny plik `og.image`.
+ * Kaskada: preset typu strony ← nadpisanie `og` ← własny plik `og.image`.
  * Nowy typ strony = nowa funkcja presetu; szablon (render.ts) i endpoint zostają bez zmian.
  */
 import type { ImageMetadata } from 'astro';

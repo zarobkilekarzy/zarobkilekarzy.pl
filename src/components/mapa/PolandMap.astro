@@ -7,7 +7,7 @@
  *
  * Interaktywna (domyślnie): przełącznik trybów, gdy warstw jest więcej niż jedna, dymki po najechaniu
  * lub dotknięciu (klik przypina dymek z linkiem; najechane koło rośnie i pulsuje), podświetlenie
- * województwa z rankingu. Treść dymków przychodzi z /mapy/<zestaw>.json (pages/mapy/[set].json.ts)
+ * województwa z rankingu, wyszukiwarka punktów (PointLayer.search) przypinająca dymek wybranego. Treść dymków przychodzi z /mapy/<zestaw>.json (pages/mapy/[set].json.ts)
  * przy pierwszym ruchu nad mapą. Warstwa na żywo (PointLayer.live) startuje z szarymi punktami
  * i „Wczytuję…”, a skrypt sam wczytuje dane, barwi koła i wypełnia panel.
  * `interactive={false}`: pierwsza wybrana warstwa z legendą, bez przełącznika, dymków i danych
@@ -15,6 +15,7 @@
  */
 import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
+import Icon from '@/components/ui/Icon.astro';
 import { formatPL, typo } from '@/lib/format';
 import { placePoints, radius, R_MISSING, toneOf, toneOfClass } from '@/lib/mapa/layout';
 import { mapSets, type MapSetId } from '@/lib/mapa/sets';
@@ -46,6 +47,9 @@ const active = activeLayer(layers, initial ?? layers[0].id);
 const descId = uid('mapa');
 const svg = renderMapSvg(layers, { theme: 'css', active: active.id, descId });
 const toggle = interactive && layers.length > 1;
+// wyszukiwarka: pierwsza warstwa punktowa, która jej chce (szuka w punktach tej warstwy)
+const searchLayer = interactive ? layers.find((l): l is PointLayer => l.kind === 'points' && !!l.search) : undefined;
+const searchId = uid('mapa-szukaj');
 
 const f1 = (v: number) => Math.round(v * 10) / 10;
 /** miejsca punktów przed rozsunięciem — warstwa na żywo układa koła od nowa w przeglądarce */
@@ -81,7 +85,7 @@ const sizeMax = (l: MapLayer) => (l.kind === 'points' && l.size ? radius(Math.ma
 const isLive = (l: MapLayer) => l.kind === 'points' && !!l.live;
 ---
 <zl-map class:list={['pm', className]} data-active={active.id} data-kind={active.kind} data-tips={interactive ? tipsUrl(set) : undefined}>
-  {(heading || toggle) && (
+  {(heading || toggle || searchLayer) && (
     <div class="pm-head">
       {heading && (
         <div>
@@ -92,6 +96,28 @@ const isLive = (l: MapLayer) => l.kind === 'points' && !!l.live;
       {toggle && (
         <div class="pm-seg" role="group" aria-label="Co pokazać na mapie">
           {layers.map((l) => <button type="button" data-layer={l.id} aria-pressed={l.id === active.id ? 'true' : 'false'}>{l.label}</button>)}
+        </div>
+      )}
+      {searchLayer?.search && (
+        <div class="pm-search" data-layer={searchLayer.id} data-empty={searchLayer.search.empty}>
+          <label class="pm-search__label" for={searchId}>{searchLayer.search.label}</label>
+          <div class="pm-search__box">
+            <Icon name="search" size={18} class="pm-search__icon" />
+            <input
+              id={searchId}
+              class="pm-search__input"
+              type="search"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls={`${searchId}-lista`}
+              placeholder={searchLayer.search.placeholder}
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <ul id={`${searchId}-lista`} class="pm-search__list" role="listbox" aria-label={searchLayer.search.label} hidden />
+          </div>
+          <p class="pm-search__status sr-only" aria-live="polite" />
         </div>
       )}
     </div>
@@ -189,6 +215,20 @@ const isLive = (l: MapLayer) => l.kind === 'points' && !!l.live;
   zl-map { display: block; }
 
   .pm-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px 40px; margin-bottom: clamp(28px, 3vw, 40px); }
+  .pm-search { position: relative; z-index: 4; width: min(360px, 100%); }
+  .pm-search__label { display: block; margin-bottom: 8px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .pm-search__box { position: relative; }
+  .pm-search__icon { position: absolute; left: 14px; top: 50%; translate: 0 -50%; color: var(--muted); pointer-events: none; }
+  .pm-search__input { width: 100%; padding: 12px 14px 12px 42px; border: 1px solid var(--line-2); border-radius: 0; background: var(--surface); font: 400 0.9375rem/1.3 var(--f-body); color: var(--text-strong); }
+  .pm-search__input::placeholder { color: var(--muted); }
+  .pm-search__input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .pm-search__list { position: absolute; left: 0; right: 0; top: calc(100% + 4px); max-height: min(360px, 60vh); overflow-y: auto; border: 1px solid var(--line-2); background: var(--surface); box-shadow: 0 20px 40px -16px light-dark(rgba(4, 11, 27, .18), rgba(4, 11, 27, .5)); } /* kolor-stały: cień jak w dymku mapy */
+  .pm-search__list li { display: grid; gap: 1px; padding: 9px 14px; border-top: 1px solid var(--line); cursor: pointer; }
+  .pm-search__list li:first-child { border-top: 0; }
+  .pm-search__list li[aria-selected="true"], .pm-search__list li:hover { background: var(--bg-soft); }
+  .pm-search__name { font-size: 0.875rem; line-height: 1.35; color: var(--text-strong); }
+  .pm-search__meta { font-size: 0.8125rem; line-height: 1.35; color: var(--muted); }
+  .pm-search__empty { cursor: default !important; font-size: 0.875rem; color: var(--muted); }
   .pm-seg { display: inline-flex; border: 1px solid var(--line-2); background: var(--surface); }
   .pm-seg button { padding: 12px 22px; border: 0; background: none; font: 500 0.9375rem/1 var(--f-body); color: var(--text-strong); cursor: pointer; }
   .pm-seg button + button { border-left: 1px solid var(--line-2); }
@@ -308,6 +348,7 @@ const isLive = (l: MapLayer) => l.kind === 'points' && !!l.live;
     .pm-body { grid-template-columns: 1fr; }
   }
   @media (max-width: 520px) {
+    .pm-search { width: 100%; }
     .pm-seg { width: 100%; }
     .pm-seg button { flex: 1; }
     .pm-val { font-size: 21px; }

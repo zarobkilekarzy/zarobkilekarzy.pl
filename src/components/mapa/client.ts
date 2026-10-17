@@ -4,8 +4,9 @@
  * nich, interactive={false}, zostaje statyczna), a treść dymków w pliku z `data-tips`, pobieranym
  * przy pierwszym ruchu nad mapą. Warstwa na żywo (PointLayer.live) od razu wczytuje swój plik,
  * przepuszcza go przez adapter (lib/mapa/live), barwi koła, układa je od nowa i wypełnia panel.
+ * Wyszukiwarka (PointLayer.search) szuka po tytule i podpisie dymków i przypina dymek wybranego punktu.
  */
-import { formatPL } from '@/lib/format';
+import { fold, formatPL, plural } from '@/lib/format';
 import { liveAdapters, type LiveResult } from '@/lib/mapa/live';
 import { drawOrder, R_MISSING, radius, relax, type RelaxNode } from '@/lib/mapa/relax';
 import { toneOf } from '@/lib/mapa/scale';
@@ -33,6 +34,8 @@ type Target = { point: number } | { region: string };
 
 /** zasięg trafienia poza krawędzią koła, w px ekranu */
 const REACH = { mouse: 7, touch: 14 };
+/** najwięcej podpowiedzi wyszukiwarki */
+const SEARCH_MAX = 8;
 /** powiększenie najechanego koła — to samo co w stylach (.pm-pt.is-on) */
 const GROW = 1.4;
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -61,6 +64,9 @@ class PolandMap extends HTMLElement {
   private ring: SVGCircleElement | null = null;
   /** koła warstw punktowych: [indeks punktu, x, y, r] — czytane z DOM przy pierwszym użyciu */
   private hits = new Map<string, [number, number, number, number][]>();
+  /** wyszukiwarka: podpowiedzi na ekranie i zaznaczona (strzałkami) */
+  private found: { i: number; title: string; meta: string }[] = [];
+  private cursor = -1;
 
   connectedCallback() {
     const raw = this.querySelector('.pm-data');
@@ -85,7 +91,7 @@ class PolandMap extends HTMLElement {
     });
     document.addEventListener('click', (e) => {
       const t = e.target as Element;
-      if (this.pinned && !this.fig.contains(t) && !t.closest?.('.pm-top')) this.close(true);
+      if (this.pinned && !this.fig.contains(t) && !t.closest?.('.pm-top, .pm-search')) this.close(true);
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.close(true); });
 
@@ -94,6 +100,7 @@ class PolandMap extends HTMLElement {
       li.addEventListener('pointerleave', () => this.close());
     });
 
+    this.setupSearch();
     for (const l of this.layers.values()) if (l.live) void this.live(l);
   }
 
@@ -224,6 +231,117 @@ class PolandMap extends HTMLElement {
       }),
     );
     box.hidden = !top.length;
+  }
+
+  /* ---------- wyszukiwarka ---------- */
+
+  private setupSearch() {
+    const box = this.querySelector<HTMLElement>('.pm-search');
+    if (!box) return;
+    const input = box.querySelector<HTMLInputElement>('input')!;
+    const list = box.querySelector<HTMLUListElement>('[role="listbox"]')!;
+    const status = box.querySelector('.pm-search__status');
+    const layerId = box.dataset.layer!;
+
+    const close = () => {
+      list.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+      this.cursor = -1;
+    };
+    const mark = (k: number) => {
+      this.cursor = k;
+      list.querySelectorAll('[role="option"]').forEach((li, n) => li.setAttribute('aria-selected', String(n === k)));
+      const li = list.querySelector<HTMLElement>(`[role="option"]:nth-child(${k + 1})`);
+      if (li) {
+        input.setAttribute('aria-activedescendant', li.id);
+        li.scrollIntoView({ block: 'nearest' });
+      } else input.removeAttribute('aria-activedescendant');
+    };
+    const choose = (k: number) => {
+      const hit = this.found[k];
+      if (!hit) return;
+      input.value = hit.title;
+      close();
+      this.pick(layerId, hit.i);
+    };
+    const render = async () => {
+      const q = fold(input.value.trim());
+      if (q.length < 2) return close();
+      await this.load();
+      const tips = this.tips?.[layerId];
+      if (!Array.isArray(tips)) return close();
+      const words = q.split(/\s+/);
+      // kolejność: miejscowość z podpisu (do „·”) zaczyna się od zapytania, potem zapytanie zaczyna
+      // dowolne słowo (nazwa, ulica), potem trafienie w środku słowa; w grupie alfabetycznie
+      const starts = (text: string) => text.split(/[\s·,.()„”"-]+/).some((part) => part.startsWith(words[0]));
+      this.found = tips
+        .map((t, i) => {
+          const meta = t.meta ?? '';
+          const key = fold(`${t.title} ${meta}`);
+          const place = fold(meta.split(' · ')[0]);
+          return { i, title: t.title, meta, key, rank: place.startsWith(words[0]) ? 2 : starts(key) ? 1 : 0 };
+        })
+        .filter((t) => words.every((w) => t.key.includes(w)))
+        .sort((a, b) => b.rank - a.rank || a.title.localeCompare(b.title, 'pl'))
+        .slice(0, SEARCH_MAX);
+      list.replaceChildren(
+        ...(this.found.length
+          ? this.found.map((t, n) => {
+              const li = el('li');
+              li.id = `${list.id}-${n}`;
+              li.setAttribute('role', 'option');
+              li.setAttribute('aria-selected', 'false');
+              li.append(el('span', t.title, 'pm-search__name'), el('span', t.meta, 'pm-search__meta'));
+              // pointerdown zamiast click: pole nie traci fokusu, zanim wybór się wykona
+              li.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                choose(n);
+              });
+              return li;
+            })
+          : [el('li', box.dataset.empty ?? '', 'pm-search__empty')]),
+      );
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      this.cursor = -1;
+      if (status) status.textContent = this.found.length ? `${this.found.length} ${plural(this.found.length, ['wynik', 'wyniki', 'wyników'])}` : box.dataset.empty ?? '';
+    };
+
+    input.addEventListener('input', () => void render());
+    input.addEventListener('focus', () => void (input.value.trim().length >= 2 ? render() : this.load()));
+    input.addEventListener('blur', close);
+    input.addEventListener('keydown', (e) => {
+      const n = this.found.length;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        if (list.hidden) return void render();
+        e.preventDefault();
+        if (n) mark(e.key === 'ArrowDown' ? (this.cursor + 1) % n : (this.cursor - 1 + n) % n);
+      } else if (e.key === 'Enter') {
+        if (list.hidden || !n) return;
+        e.preventDefault();
+        choose(this.cursor < 0 ? 0 : this.cursor);
+      } else if (e.key === 'Escape') {
+        if (!list.hidden) {
+          e.stopPropagation();
+          close();
+        } else input.value = '';
+      }
+    });
+  }
+
+  /**
+   * Wybór z wyszukiwarki: warstwa, przypięty dymek z pulsowaniem, a gdy dymka nie widać — przewinięcie
+   * do niego (html ma scroll-padding-top na wysokość nagłówka, więc dymek nie chowa się pod nim).
+   */
+  private pick(layerId: string, i: number) {
+    if (this.active.id !== layerId) this.show(layerId);
+    this.pin({ point: i });
+    requestAnimationFrame(() => {
+      const box = this.tip.getBoundingClientRect();
+      const header = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+      if (box.top < header || box.bottom > window.innerHeight) this.tip.scrollIntoView({ block: 'nearest' });
+    });
   }
 
   /* ---------- trafienie, dymek, podświetlenie ---------- */

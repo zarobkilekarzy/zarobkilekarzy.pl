@@ -64,6 +64,7 @@ const queues: PointLayer = {
   missing: { label: 'brak pomiaru czasu', count: 0 },
   live: { url, adapter: 'sor', pending: 'Wczytuję stan kolejek…' },
   top: { title: 'Najdłużej ponad normą' },
+  search: { label: 'Znajdź SOR', placeholder: 'Miasto albo nazwa szpitala', empty: 'Nie ma SOR w takim mieście ani o takiej nazwie.' },
   note: typo(
     'Kolor to najgorszy wynik w kategoriach żółtej, zielonej i niebieskiej: czas z systemu TOPSOR wobec normy. Czasy są <b>średnie i przybliżone</b>, a portal je ucina — „powyżej 2 godzin” przy normie 60 minut to na pewno ponad dwukrotność. ' +
       'W kategorii czerwonej portal zawsze podaje „natychmiast”, w pomarańczowej „poniżej 10 minut” — to tekst normy, nie pomiar, więc te kategorie nie wpływają na kolor.',

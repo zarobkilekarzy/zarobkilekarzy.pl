@@ -125,6 +125,8 @@ export interface PointLayer extends LayerBase {
   live?: { url: string; adapter: LiveAdapterId; pending: string };
   /** lista wyróżnionych punktów pod legendą (np. najdłuższe kolejki); przy warstwie na żywo wypełnia ją adapter */
   top?: { title: string };
+  /** wyszukiwarka nad mapą: szuka po tytule i podpisie dymków, wybór przypina dymek i podświetla punkt */
+  search?: { label: string; placeholder: string; empty: string };
 }
 
 /** Promień koła z wielkości: max(min, base + k·√wielkość). */

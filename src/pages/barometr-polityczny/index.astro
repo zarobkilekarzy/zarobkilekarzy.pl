@@ -1,0 +1,128 @@
+---
+/**
+ * /barometr-polityczny/ — polityka zdrowotna partii według tych samych obszarów.
+ * Na start: wstęp, obszary (zarazem pytania do partii), zasady i zaproszenie z adresem.
+ * Partie (i NIL, oznaczona jako „nie partia”) — sekcja #partie; opisy dojdą w kartach. Treść: src/data/barometr-polityczny.ts.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import Actions from '@/components/layout/Actions.astro';
+import Prose from '@/components/article/Prose.astro';
+import JumpList from '@/components/blocks/JumpList.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import CheckList from '@/components/blocks/CheckList.astro';
+import Callout from '@/components/blocks/Callout.astro';
+import Button from '@/components/ui/Button.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import PartyList from '@/components/barometr/PartyList.astro';
+import { answerDeadline, answerTime, barometrAreas, barometrContact, barometrExample, barometrPage, barometrParties, barometrRules, barometrSchedule, barometrToSend } from '@/data/barometr-polityczny';
+import { formatDate } from '@/lib/format';
+import { CURRENT, CURRENT_PLAN, formatMld } from '@/data/budzet-nfz';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const page = barometrPage;
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: page.title }];
+const seo: SeoInput = { title: page.seoTitle, description: page.description, social: { title: page.docTitle }, breadcrumbs: crumbs, index: !page.draft };
+// ile partii dostało już pytania — do nagłówka; dopóki żadna, piszemy to wprost
+const sent = barometrParties.filter((p) => p.status && p.status.stage !== 'niewyslane').length;
+const questions = sent === 0 ? `wyślemy ${formatDate(barometrSchedule.sendOn)}` : `wysłane do ${sent} z ${barometrParties.length}`;
+// treść zaproszenia: data wysyłki i termin z danych, żeby nie rozjechały się z kartami
+const invite = `Pytania z sześciu obszarów wyślemy do wszystkich z listy tego samego dnia — ${formatDate(barometrSchedule.sendOn)}. Na odpowiedź każdy ma ${answerTime}, do ${formatDate(answerDeadline)}; spóźnioną odpowiedź też opublikujemy. Program można przysłać wcześniej, z oficjalnego adresu partii albo jej biura prasowego. Danych osoby kontaktowej nie publikujemy.`;
+const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(barometrContact.subject)}`;
+
+const jump = [
+  { label: 'Po co barometr', href: '#po-co' },
+  { label: 'Partie', href: '#partie', count: barometrParties.length },
+  { label: 'O co pytamy', href: '#obszary', count: barometrAreas.length },
+  { label: 'Zasady', href: '#zasady' },
+  { label: 'Zaproszenie dla partii', href: '#zaproszenie' },
+];
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="bar-top">
+    <PageHeader title={page.title} lead={page.lead} eyebrow={page.eyebrow} crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Partie', value: barometrParties.length },
+          { label: 'Opisy', value: 0 },
+          { label: 'Pytania do partii', value: questions },
+          { label: 'Kontakt', value: barometrContact.email },
+          { label: 'Aktualizacja', value: page.updated },
+        ]}
+      />
+      <JumpList slot="aside" title="Na tej stronie" items={jump} />
+    </PageHeader>
+  </Section>
+
+  <Section id="po-co" space="bottom" aria-label="Po co barometr">
+    <Prose>
+      <p>Plan finansowy NFZ na {CURRENT.year} r. przewiduje <strong>{formatMld(CURRENT.costs)} mld zł</strong> kosztów (<a href={CURRENT_PLAN.href}>zarządzenie Prezesa NFZ nr {CURRENT_PLAN.ordinance}</a>, <a href="/dane/budzet-nfz/">więcej o budżecie NFZ</a>). To publiczne pieniądze, a zasady ich podziału — między szpitale, przychodnie, leki i wynagrodzenia — wyznaczają ustawy i rozporządzenia. Decyduje o nich polityczna większość w Sejmie i rząd.</p>
+      <p>Programy partii mówią o zdrowiu w różnych miejscach, różnym językiem i z różną szczegółowością, więc trudno postawić je obok siebie. Barometr ma to ułatwić: zestawić stanowiska partii w jednym miejscu, według tych samych sześciu obszarów, tak żeby dało się je porównać — i sprawdzić, na ile są policzone.</p>
+      <p>Opisujemy programy i decyzje, nie osoby — bez nazwisk polityków, <a href="/o-projekcie/#zasady">jak w całym serwisie</a>. Nie wskazujemy, na kogo głosować. Pokazujemy, co kto proponuje i co z tego da się sprawdzić w dokumentach.</p>
+      <p>Jeden z obszarów dotyczy sprawy, którą serwis zajmuje się od początku: jawności łącznych wynagrodzeń z publicznych pieniędzy. Mamy w niej własne stanowisko i nie ukrywamy go — opisujemy je osobno, w <a href="/postulat/">postulacie</a>. W barometrze pytamy o nią wszystkie partie tak samo jak o resztę.</p>
+    </Prose>
+  </Section>
+
+  <Section id="partie" aria-labelledby="partie-title">
+    <SectionHead
+      eyebrow="Partie"
+      title="Partie w Sejmie"
+      id="partie-title"
+      aside="Każda partia dostanie własną podstronę z opisem według tych samych sześciu obszarów. Na końcu listy Naczelna Izba Lekarska: to nie partia, tylko samorząd zawodowy lekarzy, ale jej stanowisko opiszemy na tych samych zasadach."
+    />
+    <PartyList />
+  </Section>
+
+  <Section id="obszary" tone="soft" aria-labelledby="obszary-title">
+    <SectionHead
+      eyebrow="O co pytamy"
+      title="Sześć obszarów, te same dla każdej partii"
+      id="obszary-title"
+      aside="Według nich opiszemy każdą partię. To zarazem pytania, na które prosimy partie o odpowiedź."
+    />
+    <NumberedList items={barometrAreas} />
+  </Section>
+
+  <Section id="zasady" aria-labelledby="zasady-title">
+    <SectionHead
+      eyebrow="Zasady"
+      title="Jak publikujemy stanowiska partii"
+      id="zasady-title"
+      aside="Barometr opisuje partie, ale nie jest partyjny: te same reguły obowiązują każdą z nich."
+    />
+    <NumberedList items={barometrRules} layout="columns" />
+  </Section>
+
+  <Section id="zaproszenie" tone="soft" aria-label="Zaproszenie dla partii">
+    <Callout
+      label="Zaproszenie dla partii"
+      title="Każda partia może przedstawić tu swój program"
+      text={invite}
+    >
+      <Actions slot="actions" stack="always" gap="sm">
+        <Button href={mail} icon="mail">Wyślij program</Button>
+        <p class="bar-mail">{barometrContact.email}</p>
+        <LinkArrow href={barometrExample.href}>Jak będzie wyglądał opis partii</LinkArrow>
+      </Actions>
+    </Callout>
+
+    <div class="bar-send">
+      <h3 class="mono-label bar-send__title">Co warto przesłać</h3>
+      <CheckList items={barometrToSend} />
+    </div>
+  </Section>
+
+</BaseLayout>
+
+<style>
+  .bar-top { padding-top: clamp(32px, 4vw, 56px); }
+
+  .bar-mail { font: 500 0.9375rem/1.4 var(--f-mono); color: var(--ink); overflow-wrap: anywhere; }
+
+  .bar-send { margin-top: clamp(40px, 5vw, 64px); }
+  .bar-send__title { color: var(--muted); margin-bottom: 16px; }
+
+</style>

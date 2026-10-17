@@ -129,6 +129,13 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Najważniejsze pojęcia z ochrony zdrowia w kilku zdaniach. Przy każdym haśle podstawa prawna albo źródło.',
     footer: { text: 'Definicje bez ocen, ze źródłem' },
   },
+  // bez liczby partii i dat wysyłki — na OG nic, co się zmienia (X trzyma obrazek w pamięci)
+  '/barometr-polityczny/': {
+    eyebrow: 'Barometr polityczny',
+    title: 'Co partie proponują\nw ochronie zdrowia',
+    lead: 'Te same pytania dla każdej partii. Odpowiedzi publikujemy bez zmian w treści, z dokumentami wskazanymi przez partię.',
+    footer: { text: 'Pieniądz publiczny, nie polityka' },
+  },
   '/program/': {
     eyebrow: 'Szerszy program',
     title: 'Co poza jawnością\nwynagrodzeń',

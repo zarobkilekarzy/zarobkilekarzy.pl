@@ -1,19 +1,22 @@
 /**
- * /media/ — materiały medialne: infografiki do pobrania ze wszystkich zestawów
+ * /media/ — materiały medialne: film (src/data/film.ts), infografiki do pobrania ze wszystkich zestawów
  * (lib/infografiki/zestawy.ts), pliki CSV z danymi (lib/media/dane.ts) i pakiet logo
  * (lib/media/logo.ts). Kolejność infografik na stronie = kolejność kluczy w `sets`.
  */
 export const mediaPage = {
   href: '/media/',
   title: 'Materiały medialne',
-  docTitle: 'Materiały medialne: infografiki, dane i logo do pobrania',
+  docTitle: 'Materiały medialne: film, infografiki, dane i logo do pobrania',
   /** <title> — docTitle jest za długi dla wyszukiwarki; docTitle zostaje w udostępnianiu */
-  seoTitle: 'Materiały medialne: infografiki i dane',
-  lead: 'Infografiki, dane i logo do artykułu, posta albo prezentacji. Liczby pochodzą z tych samych danych co teksty w serwisie, a źródła, adres strony i kod QR do niej są na każdej grafice.',
-  description: 'Infografiki zarobkilekarzy.pl w formatach pionowym i poziomym, dane w plikach CSV i logo do pobrania, ze źródłami. Licencja CC BY 4.0.',
-  updated: '16.10.2026',
+  seoTitle: 'Materiały medialne: film i infografiki',
+  lead: 'Film, infografiki, dane i logo do artykułu, posta albo prezentacji. Liczby pochodzą z tych samych danych co teksty w serwisie, a źródła, adres strony i kod QR do niej są na każdej grafice.',
+  description: 'Film zarobkilekarzy.pl, infografiki w formatach pionowym i poziomym, dane w plikach CSV i logo do pobrania, ze źródłami. Licencja CC BY 4.0.',
+  updated: '17.10.2026',
   /** klucze zestawów infografik, od najnowszego */
   sets: ['odsiew-na-medycynie', 'pielegniarstwo-w-polsce', 'zadluzenie-szpitali', 'kolejki', 'english-division', 'symulator-podazy-lekarzy', 'egzamin', 'odpowiedzialnosc-zawodowa-lekarzy'],
+  film: {
+    lead: 'Brak odczytu: 40 sekund w formacie 16:9, z dźwiękiem monitora pracy serca. Pasuje do posta na X albo Facebooku i do prezentacji. Źródło każdej liczby jest w stopce kadru i w napisach pod filmem.',
+  },
   data: {
     title: 'Dane do pobrania',
     lead: 'Pliki CSV z tych samych modułów danych co teksty i infografiki. Separator to średnik, liczby mają przecinek dziesiętny, kodowanie UTF-8 — plik otwiera się od razu w polskim Excelu. Źródło pierwotne jest w każdym wierszu albo w opisie pliku.',

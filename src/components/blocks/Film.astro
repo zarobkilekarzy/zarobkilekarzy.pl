@@ -1,0 +1,60 @@
+---
+/**
+ * Film z okładką i rozwijanymi napisami ze źródłami (dane: src/data/film.ts).
+ * Bez autoodtwarzania: film ma dźwięk, a plik (kilka MB) pobiera się dopiero po kliknięciu.
+ */
+import { film } from '@/data/film';
+import { typo } from '@/lib/format';
+
+interface Props {
+  /** prefiks id — komponent może stać na stronie raz, ale id opisu musi być unikalne w serwisie */
+  id: string;
+}
+
+const { id } = Astro.props;
+const descId = `${id}-napisy`;
+---
+<figure class="film">
+  <video class="film__video" controls preload="none" playsinline poster={film.poster} width={film.width} height={film.height} aria-describedby={descId}>
+    <source src={film.hls} type="application/vnd.apple.mpegurl" />
+    <source src={film.src} type="video/mp4" />
+    <a href={film.src} download={film.download}>Pobierz film (MP4, {film.size})</a>
+  </video>
+  <details class="film__napisy" id={descId}>
+    <summary>Co jest w filmie: napisy i źródła</summary>
+    <ol>
+      {film.transcript.map((b) => (
+        <li>
+          <p>{typo(b.text)}</p>
+          {b.sources.length > 0 && (
+            <p class="film__src">{b.sources.length > 1 ? 'Źródła' : 'Źródło'}: {b.sources.map((s, i) => <Fragment>{i > 0 && ', '}<a href={s.href}>{typo(s.label)}</a></Fragment>)}</p>
+          )}
+          {b.more && <p class="film__src"><a href={b.more.href}>{typo(b.more.label)}</a></p>}
+        </li>
+      ))}
+    </ol>
+  </details>
+</figure>
+
+<style>
+  .film { margin: 0; }
+  .film__video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--inverse); border: 1px solid var(--line); }
+
+  .film__napisy { border-bottom: 1px solid var(--line); }
+  .film__napisy summary {
+    display: flex; align-items: center; padding: 14px 0; cursor: pointer; list-style: none;
+    font: 500 0.71875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text);
+  }
+  .film__napisy summary::-webkit-details-marker { display: none; }
+  .film__napisy summary::after { content: "+"; margin-left: auto; font: 400 1.125rem/1 var(--f-mono); color: var(--blue); }
+  .film__napisy[open] summary::after { content: "–"; }
+  .film__napisy summary:hover { color: var(--ink); }
+
+  .film__napisy ol { display: grid; gap: 20px; margin: 4px 0 28px; padding: 0; list-style: none; counter-reset: ujecie; }
+  .film__napisy li { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); counter-increment: ujecie; }
+  .film__napisy li::before { content: counter(ujecie, decimal-leading-zero); grid-row: span 3; font: 500 0.75rem/1.9 var(--f-mono); color: var(--blue); }
+  .film__napisy li p { grid-column: 2; max-width: 72ch; margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--text-strong); }
+  .film__napisy .film__src { margin-top: 4px; font: 400 0.8125rem/1.45 var(--f-body); color: var(--muted); }
+  .film__src a { color: var(--muted); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .film__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
+</style>

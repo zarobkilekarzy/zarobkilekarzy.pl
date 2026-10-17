@@ -1,0 +1,224 @@
+---
+/**
+ * /barometr-polityczny/<id>/ — opis jednej partii: sześć obszarów, w każdym stanowisko partii w nadesłanym
+ * brzmieniu, dokumenty WSKAZANE PRZEZ PARTIĘ i „Czy podano” (koszt, źródło pieniędzy, termin).
+ * Głosowań ani dokumentów dobieranych przez redakcję nie pokazujemy (wariant A, decyzja redakcji 17.10.2026).
+ * Ten sam szablon dla każdej partii; wzór na fikcyjnej partii to `barometrExample` (zawsze noindex).
+ * Dane: src/data/barometr-polityczny.ts → barometrProfiles.
+ */
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
+import { Image } from 'astro:assets';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import JumpList from '@/components/blocks/JumpList.astro';
+import StatusTrack from '@/components/blocks/StatusTrack.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Icon from '@/components/ui/Icon.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { answerLength, barometrAreas, barometrChecks, barometrContact, barometrPage, barometrProfiles } from '@/data/barometr-polityczny';
+import { formatDate, formatPL, isoDate, pad2, plural, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+import type { Stage } from '@/types';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+export const getStaticPaths = (() =>
+  barometrProfiles.map((profile) => ({ params: { id: profile.id }, props: { profile } }))) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+const { profile } = Astro.props;
+
+const areas = barometrAreas.map((area, i) => ({
+  ...area,
+  n: i + 1,
+  name: area.title.replace(/\.$/, ''),
+  entry: profile.areas.find((e) => e.area === area.id),
+}));
+
+/** długość odpowiedzi w znakach ze spacjami (bez podziałów akapitów) — ta sama miara co limit */
+const length = (answer: string[]) => {
+  const n = answerLength(answer);
+  return `${formatPL(n)} ${plural(n, ['znak', 'znaki', 'znaków'])} ze spacjami`;
+};
+
+// podstronę ma tylko partia, która odpowiedziała — oba pierwsze etapy są więc za nami
+const { status } = profile;
+const stages: Stage[] = [
+  { label: 'Pytania wysłane', state: 'done', date: status.sent },
+  { label: 'Odpowiedź partii', state: 'done', date: status.answered },
+  { label: 'Opis opublikowany', state: 'current', date: profile.example ? undefined : profile.updated },
+  { label: 'Poprawki partii', note: 'w każdej chwili, każda zmiana z datą', state: 'next' },
+];
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: barometrPage.title, href: barometrPage.href }, { label: profile.name }];
+const seo: SeoInput = {
+  title: `${profile.name} — polityka zdrowotna`,
+  description: `${profile.name}: stanowisko w sześciu obszarach polityki zdrowotnej, dokumenty wskazane przez partię i to, czy przy propozycjach podano koszt, źródło pieniędzy i termin.`,
+  breadcrumbs: crumbs,
+  index: !(profile.example || barometrPage.draft),
+};
+const lead = 'Stanowisko partii w sześciu obszarach polityki zdrowotnej — w nadesłanym brzmieniu, z dokumentami, które partia wskazała.';
+const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(`Barometr polityczny — poprawka: ${profile.name}`)}`;
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="bp-top">
+    <PageHeader title={profile.name} lead={lead} eyebrow={barometrPage.title} crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Źródło opisu', value: 'odpowiedź partii' },
+          { label: 'W Sejmie', value: profile.club },
+          { label: 'Aktualizacja', value: profile.updated },
+        ]}
+      />
+      <div slot="aside" class="bp-aside">
+        <div class="bp-logo">
+          {profile.example ? (
+            <span class="bp-site-logo" role="img" aria-label="Logo zarobkilekarzy.pl w miejscu logo partii">
+              <svg class="bp-site-logo__mark" aria-hidden="true"><use href="#i-logo" /></svg>
+              <span class="bp-site-logo__word" aria-hidden="true">zarobkilekarzy<span>.pl</span></span>
+            </span>
+          ) : profile.logo ? (
+            <Image src={profile.logo} height={88} densities={[1, 2]} alt={`Logo: ${profile.name}`} />
+          ) : (
+            <span class="bp-logo__empty">Logo partii</span>
+          )}
+        </div>
+        <JumpList title="Obszary" items={areas.map((a) => ({ label: a.name, href: `#${a.id}` }))} />
+      </div>
+    </PageHeader>
+  </Section>
+
+  {profile.example && (
+    <Section space="bottom" aria-label="To wzór">
+      <Aside variant="note" title="To wzór, a nie prawdziwa partia">
+        <p>Partia Przykładowa nie istnieje. Ta strona pokazuje, jak będzie wyglądał opis każdej partii w barometrze: te same obszary, te same warstwy i ten sam układ. Teksty w ramkach opisują, co znajdzie się w danym miejscu, a w miejscu logo partii stoi logo serwisu.</p>
+      </Aside>
+    </Section>
+  )}
+
+  <Section space="bottom" aria-label="Kontakt z partią">
+    <StatusTrack stages={stages} label="Kontakt z partią" />
+    <p class="bp-how">W każdym obszarze stanowisko partii w nadesłanym brzmieniu i dokumenty, które partia wskazała na jego poparcie — każdy z linkiem. Sami dokumentów nie dobieramy. Sprawdzamy tylko, czy przy propozycjach podano koszt, źródło pieniędzy i termin; nie oceniamy, czy propozycja jest dobra.</p>
+  </Section>
+
+  {areas.map((a, i) => (
+    <Section id={a.id} tone={i % 2 ? 'default' : 'soft'} aria-labelledby={`${a.id}-title`}>
+      <SectionHead eyebrow={`Obszar ${pad2(a.n)}`} title={a.name} id={`${a.id}-title`} aside={a.text} />
+      {a.entry?.answer ? (
+        <div class="bp-area">
+          <div class="bp-answer">
+            <p class="mono-label bp-label">Stanowisko partii</p>
+            <blockquote class="bp-quote">{a.entry.answer.map((p) => <p>{typo(p)}</p>)}</blockquote>
+            <p class="bp-note">Odpowiedź w nadesłanym brzmieniu, bez zmian w treści · {length(a.entry.answer)}</p>
+          </div>
+
+          <div class="bp-side">
+            <p class="mono-label bp-label">Dokumenty wskazane przez partię</p>
+            {a.entry.documents.length ? (
+              <ul class="bp-docs">
+                {a.entry.documents.map((d) => (
+                  <li>
+                    <span class="bp-docs__kind">{d.kind}{d.date && <> · <time datetime={isoDate(d.date)}>{formatDate(d.date)}</time></>}</span>
+                    {d.href ? <a {...linkAttrs(d.href)}>{typo(d.title)}</a> : <span>{typo(d.title)}</span>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="bp-missing">Partia nie wskazała dokumentów w tej sprawie.</p>
+            )}
+
+            {a.entry.checks && (
+              <>
+                <p class="mono-label bp-label">Czy podano</p>
+                <ul class="bp-checks">
+                  {barometrChecks.map((c) => {
+                    const ok = a.entry!.checks![c.key];
+                    return (
+                      <li class:list={['bp-check', { 'bp-check--no': !ok }]}>
+                        <Icon name={ok ? 'check' : 'close'} size={16} />
+                        <span>{c.label}</span>
+                        <span class="bp-check__val">{ok ? 'podano' : 'nie podano'}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        <p class="bp-missing bp-missing--area">Partia nie odniosła się do tego obszaru.</p>
+      )}
+    </Section>
+  ))}
+
+  <Section id="zmiany" aria-labelledby="zmiany-title">
+    <SectionHead eyebrow="Historia" title="Zmiany w opisie" id="zmiany-title" aside="Partia może w każdej chwili uzupełnić albo sprostować swój opis. Każdą zmianę oznaczamy tu datą." />
+    <ol class="bp-changes">
+      {profile.changes.map((c) => (
+        <li><time datetime={isoDate(c.date)}>{formatDate(c.date)}</time><span>{typo(c.text)}</span></li>
+      ))}
+    </ol>
+    <p class="bp-fix">Poprawka albo uzupełnienie: <a href={mail}>{barometrContact.email}</a></p>
+    <LinkArrow href={barometrPage.href}>Wszystkie partie w barometrze</LinkArrow>
+  </Section>
+</BaseLayout>
+
+<style>
+  .bp-top { padding-top: clamp(32px, 4vw, 56px); }
+
+  .bp-aside { display: grid; gap: 24px; }
+  .bp-logo { display: grid; place-items: center; height: 136px; padding: 16px; background: #fff; border: 1px solid var(--line-2); } /* kolor-stały: logotypy partii mają własne, często ciemne kolory — zawsze na białym, jak na kartach listy */
+  .bp-logo :global(img) { display: block; max-width: 100%; height: auto; max-height: 88px; width: auto; }
+  /* wzór: logo serwisu na zawsze białym polu — napis w kolorach jasnego motywu, inaczej w nocnym by zniknął */
+  .bp-site-logo { display: inline-flex; align-items: center; gap: 14px; }
+  .bp-site-logo__mark { width: 40px; height: 40px; }
+  .bp-site-logo__word { font: 500 1.75rem/1 var(--f-display); letter-spacing: -0.03em; color: #040b1b; } /* kolor-stały: --ink jasnego motywu na białym polu logo */
+  .bp-site-logo__word span { color: #666e80; } /* kolor-stały: --muted jasnego motywu na białym polu logo */
+  .bp-logo__empty { font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: #6b7280; padding: 24px 32px; border: 1px dashed #c7ccd4; } /* kolor-stały: napis na zawsze białym polu logo */
+
+  .bp-how { margin-top: 32px; max-width: 72ch; font-size: 1rem; line-height: 1.65; color: var(--ink-2); }
+
+  .bp-area { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px clamp(32px, 5vw, 72px); align-items: start; }
+  .bp-label { color: var(--muted); margin-bottom: 14px; }
+  .bp-side .bp-label:not(:first-child) { margin-top: 32px; }
+
+  .bp-quote { padding-left: 24px; border-left: 2px solid var(--blue); }
+  .bp-quote p { font: 400 1.1875rem/1.55 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .bp-quote p + p { margin-top: 14px; }
+  .bp-note { margin-top: 14px; padding-left: 26px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .bp-missing--area { max-width: 72ch; }
+  .bp-missing { padding: 16px 20px; border: 1px dashed var(--line-2); font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
+
+  .bp-docs { border-top: 1px solid var(--line-2); }
+  .bp-docs li { display: grid; gap: 4px; padding: 14px 0; border-bottom: 1px solid var(--line-2); font-size: 0.9375rem; line-height: 1.5; color: var(--ink); }
+  .bp-docs__kind { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .bp-docs a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--muted); }
+  .bp-docs a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  .bp-checks { border-top: 1px solid var(--line-2); }
+  .bp-check { display: grid; grid-template-columns: 16px 1fr auto; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: 0.9375rem; color: var(--ink); }
+  .bp-check :global(.icon) { color: var(--ok); }
+  .bp-check--no :global(.icon) { color: var(--muted); }
+  .bp-check__val { font: 400 0.75rem/1.4 var(--f-mono); color: var(--ok); }
+  .bp-check--no .bp-check__val { color: var(--muted); }
+
+  .bp-changes { border-top: 1px solid var(--line-2); max-width: 72ch; }
+  .bp-changes li { display: grid; grid-template-columns: 120px 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line-2); font-size: 0.9375rem; color: var(--ink); }
+  .bp-changes time { font: 400 0.8125rem/1.5 var(--f-mono); color: var(--muted); }
+  .bp-fix { margin: 24px 0 16px; font-size: 0.9375rem; color: var(--ink-2); }
+  .bp-fix a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--muted); }
+
+  @media (max-width: 900px) {
+    .bp-area { grid-template-columns: minmax(0, 1fr); }
+  }
+  /* telefon: odpowiedź do 1 500 znaków nie może zajmować kilku ekranów — mniejszy krój i węższe wcięcie */
+  @media (max-width: 720px) {
+    .bp-quote { padding-left: 16px; }
+    .bp-quote p { font-size: 1.03125rem; line-height: 1.55; }
+    .bp-quote p + p { margin-top: 12px; }
+    .bp-note { padding-left: 18px; }
+  }
+</style>

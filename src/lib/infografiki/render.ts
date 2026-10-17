@@ -2,7 +2,7 @@
  * Szablon infografik do pobrania: PORÓWNANIE LICZB jako główny element. Wiersz = podmiot
  * (nazwa + kto decyduje), duża liczba i pasek we wspólnej skali od zera; wyróżniony wiersz
  * (zwykle Polska) w kobalcie, reszta w łupku — jak blocks/BarChart. Kontekstu minimum: tytuł,
- * jedna linia miary i okresu, w stopce adres strony, źródła w jednej linii i kod QR do strony.
+ * jedna linia miary i okresu, w stopce adres strony, „Obserwuj na X”, źródła w jednej linii i kod QR do strony.
  *
  * Język wizualny z obrazków OG (lib/og/render.ts: fonty, logo, kolory z tokens.css): Inter Tight,
  * linie 1 px. Dwa formaty z jednej treści: pion 1080×1350 (Instagram, Facebook, X) i poziom
@@ -28,7 +28,7 @@ import { geo } from '@/lib/mapa/geo';
 import { radius, R_MISSING, toneOfClass } from '@/lib/mapa/layout';
 import { mapSets, type MapSetId } from '@/lib/mapa/sets';
 import { regionTones, renderMapSvg, staticColors } from '@/lib/mapa/svg';
-import { BODY, DISPLAY, MONO, h, loadFonts, logo, type Node } from '@/lib/og/render';
+import { BODY, DISPLAY, MONO, followX, h, loadFonts, logo, type Node } from '@/lib/og/render';
 
 export type FormatKey = 'pion' | 'poziom';
 
@@ -272,7 +272,7 @@ function layout(set: InfographicSet, i: Infographic, rows: ComparisonRow[], f: F
   return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column' } }, ...rows.map(row)));
 }
 
-/** Rama wspólna dla wszystkich stylów: logo, tytuł i miara — treść — adres strony, źródła i kod QR. */
+/** Rama wspólna dla wszystkich stylów: logo, tytuł i miara — treść — adres strony, „Obserwuj na X”, źródła i kod QR. */
 function frame(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey, body: Node): Node {
   const { width, height } = FORMATS[f];
   const C = THEMES[theme].colors;
@@ -294,6 +294,7 @@ function frame(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKe
     h('div', { style: { alignItems: 'center', justifyContent: 'space-between', paddingTop: pion ? 20 : 12, borderTop: `1px solid ${C.ink}`, fontFamily: MONO } },
       h('div', { style: { flexDirection: 'column', paddingRight: 24 } },
         h('span', { style: { fontSize: g.url, color: C.ink } }, pageUrl.replace(/^https:\/\/|\/$/g, '')),
+        followX(C, g.src + 2, { marginTop: pion ? 8 : 5 }),
         h('span', { style: { marginTop: pion ? 8 : 5, fontSize: g.src, lineHeight: 1.4, color: C.muted } }, typo(i.sources))),
       qr(pageUrl, night ? g.qr - 2 * Math.round(g.qr / 12) : g.qr, night)));
 }

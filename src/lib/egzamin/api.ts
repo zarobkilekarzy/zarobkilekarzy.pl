@@ -20,7 +20,10 @@ const OPIS =
   'Moduł egzaminacyjny LEK/LDEK na jawnej bazie CEM (zarobkilekarzy.pl). Wszystkie funkcje zwracają Promise. ' +
   'Start: await rozpocznij(tryb, sesja, { egzamin, dziedzina, losowo }) — tryby: nauka, szybki, egzamin; sesje: sesje(). ' +
   'Pytania partiami: pytania(od, do); odpowiedzi partiami: odpowiedzi({ nr: litera }); pojedynczo: pytanie(nr), odpowiedz(litera, nr). ' +
-  'Numery 1–N w kolejności testu. Na koniec zakoncz(), potem wynik(). Odpowiadaj z własnej wiedzy.';
+  'Numery 1–N w kolejności testu. Pytania unieważnione przez CEM (uniewaznione: true) pomija się: odpowiedzi() je odrzuca, bezOdpowiedzi() ich nie zwraca. Na koniec zakoncz(), potem wynik(). Odpowiadaj z własnej wiedzy.';
+
+/** Zakończenie treści prawie każdego pytania z twierdzeniami — agentowi nic nie mówi. */
+const STANDARD_TAIL = 'Prawidłowa odpowiedź to:';
 
 export function createLekApi(host: LekHost) {
   const active = () => {
@@ -49,7 +52,7 @@ export function createLekApi(host: LekHost) {
       dziedzina: host.fields[q.exam].find((f) => f.id === q.field)?.label ?? q.field,
       tresc: q.text,
       ...(q.items && { twierdzenia: q.items.map((t, k) => `${k + 1}) ${t}`) }),
-      ...(q.tail && { dopisek: q.tail }),
+      ...(q.tail && q.tail !== STANDARD_TAIL && { dopisek: q.tail }),
       odpowiedzi: Object.fromEntries(LETTERS.map((l, k) => [l, q.answers[k]])),
       uniewaznione: !isCounted(q),
       twojaOdpowiedz: answer === undefined ? null : LETTERS[answer],
@@ -124,7 +127,10 @@ export function createLekApi(host: LekHost) {
         procent: r.max ? Math.round((r.points / r.max) * 1000) / 10 : 0,
         przecietnyZdajacy: Math.round(r.average * 10) / 10,
         bledne: r.wrong, bezOdpowiedzi: r.blank, uniewaznione: r.invalidated,
-        wedlugDziedzin: r.byField.map((f) => ({ dziedzina: f.field, punkty: f.points, maksimum: f.max })),
+        wedlugDziedzin: r.byField.map((f) => ({
+          dziedzina: host.fields[s.state.config.exam].find((x) => x.id === f.field)?.label ?? f.field,
+          id: f.field, punkty: f.points, maksimum: f.max,
+        })),
       };
     },
   };

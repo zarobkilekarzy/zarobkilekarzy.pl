@@ -3,6 +3,8 @@
  * Rama ilustracji w treści artykułu (tabela z paskami, rachunek, wzór dokumentu):
  * tytuł z tezą ilustracji, treść ze slotu i podpis — uwagi oraz źródło.
  * Źródło z `href` jest linkiem, więc liczby na ilustracji mają pokrycie tak jak w StatRow.
+ * Kilka źródeł (tablica) — każde w osobnej linii. Źródło z `links` to podpis i po nim kilka linków
+ * (np. kolejne roczniki jednego sprawozdania).
  *
  *   <Figure title="Dopłata rośnie z poziomem placówki" source={{ label: 'NHI Annual Report', href }}>
  *     …ilustracja…
@@ -13,30 +15,36 @@ import Icon from '@/components/ui/Icon.astro';
 import { linkAttrs } from '@/lib/links';
 import { typo } from '@/lib/format';
 
+interface Source { label: string; href?: string; links?: { label: string; href: string }[] }
+
 interface Props extends HTMLAttributes<'figure'> {
   /** teza ilustracji — jedno zdanie nad nią (nie atrybut HTML) */
   title?: string;
   /** dopowiedzenie pod ilustracją: założenia, kurs, uproszczenia */
   note?: string;
-  source?: { label: string; href?: string };
+  source?: Source | Source[];
 }
 
 const { title, note, source, class: className, ...rest } = Astro.props;
+const sources = source ? [source].flat() : [];
 ---
 <figure class:list={['fig', className]} {...rest}>
   {title && <p class="fig__title">{typo(title)}</p>}
   <slot />
-  {(note || source) && (
+  {(note || sources.length > 0) && (
     <figcaption class="fig__caption">
       {note && <span>{typo(note)}</span>}
-      {source && (
+      {sources.map((source) => (
         <span class="fig__source">
           Źródło:{' '}
           {source.href
             ? <a {...linkAttrs(source.href)}>{typo(source.label)}<Icon name="arrow-ne" size={10} /></a>
             : typo(source.label)}
+          {source.links?.map((l, i) => (
+            <>{i === 0 ? ': ' : ', '}<a {...linkAttrs(l.href)}>{typo(l.label)}<Icon name="arrow-ne" size={10} /></a></>
+          ))}
         </span>
-      )}
+      ))}
     </figcaption>
   )}
 </figure>

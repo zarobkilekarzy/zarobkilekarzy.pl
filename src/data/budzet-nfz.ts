@@ -230,6 +230,45 @@ export const COST_CHART = {
     `${DRAFT_2027.year} — projekt planu z lipca 2026 r., ${mld(DRAFT_2027.total)} mld zł.`,
 };
 
+/**
+ * Dotacja z budżetu państwa w przychodach Funduszu Ubezpieczeń Społecznych (ZUS), mld zł — TYLKO
+ * do porównania skali w animacji SubsidyChart (na końcu animacji znika). Pozycja „Dotacja z budżetu
+ * państwa” (dotacja uzupełniająca, budżet: rozdz. 75303); bez jednorazowych 12 mld zł w 2020 r.,
+ * Funduszu Przeciwdziałania COVID-19, wpłat z OFE i świadczeń zleconych. 2020–2025 — wykonanie
+ * (kwoty co do tysiąca zgodne ze sprawozdaniami z wykonania budżetu państwa), 2026 — plan finansowy
+ * FUS z ustawy budżetowej. Inna miara niż seria NFZ (plan ostateczny) — nie zestawiać w tekście.
+ */
+export const FUS_SUBSIDY = [
+  { year: 2020, value: 33.522023, status: 'wykonanie' },
+  { year: 2021, value: 34.990124, status: 'wykonanie' },
+  { year: 2022, value: 38.663292, status: 'wykonanie' },
+  { year: 2023, value: 51.652297, status: 'wykonanie' },
+  { year: 2024, value: 64.701864, status: 'wykonanie' },
+  { year: 2025, value: 64.371392, status: 'wykonanie' },
+  { year: 2026, value: 90.752553, status: 'plan' },
+] as const;
+
+/** Dokumenty ZUS z kwotami FUS_SUBSIDY (rok albo lata, które podaje dokument). */
+export const FUS_LINKS = [
+  { label: '2020', href: 'https://www.zus.pl/documents/10182/24154/Informacja+o+sytuacji+finansowej+FUS+w+2020.pdf/8afb3f68-15f7-7e67-4447-8d704884a39d' },
+  { label: '2021–2022', href: 'https://www.zus.pl/documents/10182/2422424/Podsumowanie+sytuacji+finansowej+FUS+w+2022+r.pdf/6946e97b-4539-1950-1446-63c8e3a99cc3?t=1682518877597' },
+  { label: '2023–2024', href: 'https://www.zus.pl/documents/10182/2422424/Podsumowanie+sytuacji+finansowej+FUS+w+2024+r.pdf/3bb6c4e1-739f-85b4-b535-6bf39ab4a4ad?t=1744359675854' },
+  { label: '2025', href: 'https://www.zus.pl/documents/10182/2422424/Informacja+o+sytuacji+finansowej_FUS_2025.pdf/bab2b080-7ca9-d069-d0ac-7f6f6ecf52db?t=1777013693126' },
+  { label: 'plan na 2026', href: 'https://www.zus.pl/documents/10182/2422424/Plan+finansowy+FUS+na+2026__WCAG.pdf/8208edf3-fe3d-6993-2cd0-402386035bd3?t=1761749350296' },
+];
+
+/** Animowany wykres dotacji (SubsidyChart): dotacja podmiotowa w planach od 2020 r., rok w toku = plan aktualny. */
+const SUBSIDY_YEARS = BUDGET.filter((r): r is BudgetYear & { subsidy: number } => r.subsidy !== null);
+export const SUBSIDY_CHART = {
+  name: { full: 'Narodowy Fundusz Zdrowia', short: 'NFZ' },
+  compare: { name: { full: 'Fundusz Ubezpieczeń Społecznych', short: 'FUS (ZUS)' }, values: FUS_SUBSIDY.map((r) => r.value) },
+  unit: 'mld zł',
+  bars: SUBSIDY_YEARS.map((r) => ({ year: r.year, value: r.subsidy, note: r.status === 'current' ? 'plan w toku' : undefined })),
+  caption:
+    `Wykres słupkowy. Dotacja podmiotowa z budżetu państwa w planie finansowym NFZ, mld zł: ` +
+    `${SUBSIDY_YEARS.map((r) => `${r.year} — ${mld(r.subsidy)}${r.status === 'current' ? ' (plan aktualny, rok w toku)' : ''}`).join('; ')}.`,
+};
+
 /** Tabela (Comparison): wszystkie kolumny serii; zmiana r/r tylko w obrębie kolumny kosztów. */
 export const BUDGET_TABLE = {
   caption: 'Mld zł. Plan — ostateczny plan finansowy NFZ; 2026 — plan aktualny, rok w toku. Wykonanie — koszty działalności operacyjnej ze sprawozdania finansowego.',

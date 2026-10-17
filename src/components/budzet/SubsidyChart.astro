@@ -1,0 +1,314 @@
+---
+/**
+ * Animowany wykres słupkowy kwot rok po roku (dotacja z budżetu państwa dla NFZ).
+ * Po przewinięciu do wykresu animacja ma dwa akty:
+ * 1. duże słupki na środku płynnie przechodzą od roku do roku — wysokość i kwota nad nimi liczą się
+ *    w locie, a duży rok po lewej przeskakuje. Obok głównej serii może stać seria porównawcza
+ *    (`compare`, np. dotacja dla FUS) we wspólnej skali — tylko dla wyczucia rzędu wielkości;
+ * 2. po ostatnim roku seria porównawcza gaśnie, skala przechodzi na samą serię główną, jej słupek
+ *    zjeżdża na swoje miejsce, obok wyrastają słupki pozostałych lat, a rok wraca w róg wykresu.
+ *
+ * Serwer renderuje stan końcowy, więc bez JS (i przy prefers-reduced-motion) wykres jest od razu
+ * pełny, bez serii porównawczej. Skala stała w każdym akcie; każdy słupek ma podpis, więc bez osi
+ * (README → Wykresy). Czytnik ekranu dostaje opis z `caption`, nie migające liczby.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import { formatPL, typo } from '@/lib/format';
+
+interface Bar {
+  year: number;
+  value: number;
+  /** podpis pod rokiem, np. „plan w toku” */
+  note?: string;
+}
+
+interface Name { full: string; short: string }
+
+interface Props extends HTMLAttributes<'div'> {
+  bars: Bar[];
+  /** nazwa serii głównej pod słupkiem w akcie 1: pełna i krótka (na wąskim ekranie) */
+  name: Name;
+  /** seria porównawcza tylko do aktu 1 — wartości dla tych samych lat co `bars` */
+  compare?: { name: Name; values: number[] };
+  /** jednostka pod dużym rokiem, np. „mld zł” */
+  unit: string;
+  /** pełny opis danych dla czytników ekranu */
+  caption: string;
+}
+
+const { bars, name, compare, unit, caption, class: className, ...rest } = Astro.props;
+const max = Math.max(...bars.map((b) => b.value));
+const label = (v: number) => (v === 0 ? '0' : formatPL(v, 1));
+const last = bars.at(-1)!;
+const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null };
+---
+<zl-subsidy-chart class:list={['sub', className]} data-series={JSON.stringify(data)} {...rest}>
+  <div class="sub__plot" aria-hidden="true">
+    <p class="sub__now">
+      <span class="sub__year" data-year>{last.year}</span>
+      <span class="sub__unit" data-unit>{unit}{last.note && ` · ${last.note}`}</span>
+    </p>
+    {/* słupki aktu 1; poza siatką kolumn, widoczne tylko w trakcie animacji */}
+    {compare && (
+      <div class="sub__hero sub__hero--ref" data-hero="compare" style="--k: 0">
+        <span class="sub__val">0</span>
+        <span class="sub__bar"></span>
+        <span class="sub__tag"><span class="sub__full">{compare.name.full}</span><span class="sub__short">{compare.name.short}</span></span>
+      </div>
+    )}
+    <div class="sub__hero" data-hero="main" style="--k: 0">
+      <span class="sub__val">0</span>
+      <span class="sub__bar"></span>
+      <span class="sub__tag"><span class="sub__full">{name.full}</span><span class="sub__short">{name.short}</span></span>
+    </div>
+    {bars.map((b, i) => (
+      <div class:list={['sub__col', { 'is-last': i === bars.length - 1 }]} style={`--k: ${(b.value / max).toFixed(4)}; --i: ${i}`}>
+        <span class="sub__val" data-label={label(b.value)}>{label(b.value)}</span>
+        <span class="sub__bar"></span>
+      </div>
+    ))}
+  </div>
+  <div class="sub__years" aria-hidden="true">
+    {bars.map((b) => (
+      <span class="sub__x">
+        {b.year}
+        {b.note && <small>{typo(b.note)}</small>}
+      </span>
+    ))}
+  </div>
+  <button type="button" class="sub__replay" hidden>
+    <Icon name="refresh" size={12} />Zrestartuj animację
+  </button>
+  <p class="sr-only">{caption}</p>
+</zl-subsidy-chart>
+
+<script>
+  import { formatPL } from '@/lib/format';
+
+  /** akt 1: przejście z roku na rok, ms */
+  const STEP = 750;
+  /** pauza na pierwszym i ostatnim roku, ms */
+  const HOLD = 700;
+  /** akt 2: przejście w wykres (z opóźnieniami kolejnych słupków), ms */
+  const MORPH = 1600;
+  const ease = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
+  const label = (v: number) => (v === 0 ? '0' : formatPL(v, 1));
+
+  class SubsidyChart extends HTMLElement {
+    #frame = 0;
+    #timers: number[] = [];
+    #observer?: IntersectionObserver;
+
+    connectedCallback() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const { main, compare }: { main: number[]; compare: number[] | null } = JSON.parse(this.dataset.series ?? '{}');
+      const n = main.length;
+      const top = Math.max(...main);
+      // akt 1 ma wspólną skalę obu serii, akt 2 — samej serii głównej
+      const soloTop = Math.max(top, ...(compare ?? []));
+      const plot = this.querySelector<HTMLElement>('.sub__plot')!;
+      const now = this.querySelector<HTMLElement>('.sub__now')!;
+      const heroes = [
+        ...(compare ? [{ el: this.querySelector<HTMLElement>('[data-hero="compare"]')!, values: compare }] : []),
+        { el: this.querySelector<HTMLElement>('[data-hero="main"]')!, values: main },
+      ].map((h) => ({ ...h, val: h.el.querySelector<HTMLElement>('.sub__val')! }));
+      const hero = heroes.at(-1)!.el;
+      const cols = [...this.querySelectorAll<HTMLElement>('.sub__col')];
+      const lastBar = cols[n - 1].querySelector<HTMLElement>('.sub__bar')!;
+      const year = this.querySelector<HTMLElement>('[data-year]')!;
+      const replay = this.querySelector<HTMLButtonElement>('.sub__replay')!;
+      const xs = [...this.querySelectorAll<HTMLElement>('.sub__x')];
+      const years = xs.map((x) => x.firstChild?.textContent?.trim() ?? '');
+      // pod dużym rokiem jednostka, a przy roku z dopiskiem (np. „plan w toku”) — także dopisek
+      const unitEl = this.querySelector<HTMLElement>('[data-unit]')!;
+      const unit = unitEl.textContent!.split(' · ')[0];
+      const units = xs.map((x) => { const note = x.querySelector('small')?.textContent; return note ? `${unit} · ${note}` : unit; });
+
+      const later = (ms: number, fn: () => void) => this.#timers.push(window.setTimeout(fn, ms));
+      const set = (el: HTMLElement, text: string) => { if (el.textContent !== text) el.textContent = text; };
+
+      /** słupki aktu 1 obok siebie, na środku pola na prawo od dużego roku */
+      const center = () => {
+        const W = plot.clientWidth;
+        const p = plot.getBoundingClientRect();
+        const left = now.getBoundingClientRect().right - p.left + 16;
+        const w = Math.min(W * 0.2, 120);
+        const gap = w * 0.3;
+        const group = heroes.length * w + (heroes.length - 1) * gap;
+        const x0 = Math.max(left, left + (W - left - group) / 2);
+        heroes.forEach((h, i) => {
+          h.el.style.left = `${x0 + i * (w + gap)}px`;
+          h.el.style.width = `${w}px`;
+        });
+      };
+
+      /** stan aktu 1 w punkcie `pos` osi czasu (0 = pierwszy rok, n − 1 = ostatni) */
+      const show = (pos: number) => {
+        const s = Math.min(Math.floor(pos), n - 2);
+        const e = ease(pos - s);
+        heroes.forEach((h) => {
+          const v = h.values[s] + (h.values[s + 1] - h.values[s]) * e;
+          h.el.style.setProperty('--k', (v / soloTop).toFixed(4));
+          set(h.val, e === 0 ? label(h.values[s]) : e === 1 ? label(h.values[s + 1]) : formatPL(v, 1));
+        });
+        const y = pos - s < 0.5 ? s : s + 1;
+        set(year, years[y]);
+        set(unitEl, units[y]);
+      };
+
+      const solo = () => {
+        this.classList.remove('is-morph');
+        this.classList.add('is-solo');
+        cols.forEach((c) => c.style.setProperty('--k', '0'));
+        show(0);
+        center();
+      };
+
+      // Akt 2: seria porównawcza gaśnie, główny słupek zjeżdża na miejsce ostatniego roku
+      // i rośnie do skali samej serii, reszta wyrasta obok, rok wraca w róg
+      const morph = () => {
+        this.classList.remove('is-solo');
+        this.classList.add('is-morph');
+        void hero.offsetWidth; // przejście liczy się od bieżącego położenia
+        const p = plot.getBoundingClientRect();
+        const b = lastBar.getBoundingClientRect();
+        hero.style.left = `${b.left - p.left}px`;
+        hero.style.width = `${b.width}px`;
+        hero.style.setProperty('--k', String(main[n - 1] / top));
+        if (compare) heroes[0].el.style.setProperty('--k', '0');
+        cols.forEach((c, j) => c.style.setProperty('--k', String(main[j] / top)));
+        later(MORPH, () => this.classList.remove('is-morph'));
+      };
+
+      const play = () => {
+        this.#halt();
+        solo();
+        let start = 0;
+        // rok w rogu przeskakuje w połowie przejścia między latami
+        const frame = (t: number) => {
+          if (!start) start = t;
+          const pos = Math.max(0, t - start - HOLD) / STEP;
+          if (pos >= n - 1) {
+            show(n - 1);
+            later(HOLD, morph);
+            return;
+          }
+          show(pos);
+          this.#frame = requestAnimationFrame(frame);
+        };
+        this.#frame = requestAnimationFrame(frame);
+      };
+
+      solo();
+      // przycisk działa w każdej chwili, także w trakcie animacji; bez JS i animacji go nie ma
+      replay.hidden = false;
+      replay.addEventListener('click', play);
+      this.#observer = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) { this.#observer?.disconnect(); play(); }
+      }, { threshold: 0.6 });
+      this.#observer.observe(this);
+    }
+
+    #halt() {
+      cancelAnimationFrame(this.#frame);
+      this.#timers.forEach(clearTimeout);
+      this.#timers = [];
+    }
+
+    disconnectedCallback() {
+      this.#halt();
+      this.#observer?.disconnect();
+    }
+  }
+
+  customElements.define('zl-subsidy-chart', SubsidyChart);
+</script>
+
+<style>
+  .sub {
+    display: block; --h: clamp(220px, 48cqi, 320px); --label: 1.75rem;
+    --move: 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  /* Obszar słupków: kolumny równej szerokości, linia bazowa 1 px */
+  .sub__plot {
+    position: relative; height: var(--h); margin-top: 16px;
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    border-bottom: 1px solid var(--line-2);
+  }
+
+  /* Duży rok w lewym górnym rogu — tam, gdzie słupki z lat 2020–2023 zostawiają puste pole */
+  .sub__now {
+    position: absolute; z-index: 1; top: 0; left: 0; display: grid; gap: 4px; margin: 0; pointer-events: none;
+    transform-origin: 0 0;
+  }
+  .sub__year { font: 600 clamp(2.25rem, 9cqi, 3.5rem)/0.9 var(--f-display); letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .sub__unit { font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+
+  .sub__col { position: relative; }
+  .sub__bar {
+    position: absolute; bottom: 0; left: 50%; translate: -50% 0;
+    width: min(64%, 64px); height: calc(var(--k) * (100% - var(--label)));
+    background: var(--blue);
+  }
+  .sub__val {
+    position: absolute; left: 50%; translate: -50% 0; bottom: calc(var(--k) * (100% - var(--label)) + 6px);
+    text-align: center; white-space: nowrap;
+    font: 600 clamp(0.875rem, 3cqi, 1.25rem)/1 var(--f-display); letter-spacing: -0.02em; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Akt 1: duże słupki obok siebie, większe liczby nad nimi, nazwy serii pod linią bazową;
+     duży rok po lewej, w połowie wysokości; kolumny i lata schowane */
+  .sub__hero { display: none; position: absolute; top: 0; bottom: 0; }
+  .sub__hero .sub__bar { width: 100%; }
+  .sub__hero--ref .sub__bar { background: var(--chart); }
+  /* Nazwy serii pod słupkami — duże, pełne (jak na wzorze); na wąskim ekranie skróty */
+  .sub__tag {
+    position: absolute; top: calc(100% + 10px); left: 50%; translate: -50% 0; width: 150%;
+    text-align: center; text-wrap: balance;
+    font: 500 clamp(0.8125rem, 2.4cqi, 1rem)/1.25 var(--f-body); color: var(--text-strong);
+  }
+  .sub__short { display: none; }
+  @container (max-width: 480px) {
+    .sub__full { display: none; }
+    .sub__short { display: inline; }
+  }
+  .sub.is-solo .sub__hero .sub__val { font-size: clamp(1.25rem, 5cqi, 2rem); }
+  .sub.is-solo .sub__now { translate: 0 calc(var(--h) / 2 - 75%); scale: 1.5; /* 75% = połowa wysokości po skali ×1,5 */ }
+  .sub:is(.is-solo, .is-morph) .sub__hero { display: block; }
+  .sub.is-solo .sub__years,
+  .sub.is-solo .sub__col .sub__val,
+  .sub.is-morph .sub__tag,
+  .sub.is-morph .sub__hero--ref { opacity: 0; }
+
+  /* Akt 2: słupek zjeżdża na miejsce ostatniego roku (ostatnia kolumna czeka schowana pod nim),
+     a pozostałe wyrastają po kolei; podpisy i lata pojawiają się za nimi */
+  .sub.is-morph .sub__now { transition: translate var(--move), scale var(--move); }
+  .sub.is-morph .sub__hero { transition: left var(--move), width var(--move), opacity 0.4s; }
+  .sub.is-morph .sub__hero :is(.sub__bar, .sub__val) { transition: height var(--move), bottom var(--move), font-size var(--move); }
+  .sub.is-morph .sub__tag { scale: 0.7; transition: opacity 0.35s, scale 0.35s; }
+  .sub.is-morph .sub__col.is-last { visibility: hidden; }
+  .sub.is-morph .sub__col :is(.sub__bar, .sub__val) {
+    transition: height 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), bottom 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.4s;
+    transition-delay: calc(var(--i) * 70ms + 300ms);
+  }
+  .sub.is-morph .sub__years { transition: opacity 0.4s 0.3s; }
+
+  .sub__years { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding-top: 8px; }
+  .sub__x {
+    display: grid; justify-items: center; gap: 2px;
+    font: 400 0.6875rem/1.2 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .sub__x small { font-size: 0.5625rem; text-align: center; }
+
+  .sub__replay {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 4px 0;
+    background: none; border: 0; cursor: pointer;
+    font: 400 0.6875rem/1 var(--f-mono); color: var(--muted);
+  }
+  .sub__replay[hidden] { display: none; }
+  .sub__replay:hover { color: var(--blue); }
+</style>

@@ -66,9 +66,16 @@ export const answerLimitLabel = `${formatPL(ANSWER_LIMIT)} ${plural(ANSWER_LIMIT
 /** długość odpowiedzi tą samą miarą co limit */
 export const answerLength = (answer: string[]) => answer.join('').length;
 
+/** Część obszaru (kadry: lekarze, pielęgniarki, inne zawody) — osobna odpowiedź z tym samym limitem. */
+export interface BarometrAreaPart extends TextItem {
+  id: string;
+}
+
 /** Obszar opisu: `id` = kotwica sekcji na podstronie partii (stała — linkują do niej inne strony). */
 export interface BarometrArea extends TextItem {
   id: string;
+  /** części obszaru; każda to osobna odpowiedź (decyzja redakcji 17.10.2026 — kadry w trzech częściach) */
+  parts?: BarometrAreaPart[];
 }
 
 /** Obszary opisu — te same dla każdej partii; to zarazem pytania, które wysyłamy partiom. */
@@ -81,7 +88,12 @@ export const barometrAreas: BarometrArea[] = [
   {
     id: 'kadry',
     title: 'Kadry.',
-    text: 'Jak zapewnić lekarzy, pielęgniarki i inne zawody medyczne: kształcenie, liczba miejsc na studiach, specjalizacje.',
+    text: 'Jak zapewnić kadry ochrony zdrowia. Odpowiedź w trzech częściach:',
+    parts: [
+      { id: 'lekarze', title: 'Lekarze', text: 'kształcenie, liczba miejsc na studiach, specjalizacje.' },
+      { id: 'pielegniarki', title: 'Pielęgniarki', text: 'kształcenie, liczba miejsc na studiach, specjalizacje.' },
+      { id: 'inne-zawody', title: 'Inne zawody medyczne', text: 'ratownicy medyczni, fizjoterapeuci, diagności laboratoryjni i inni: kształcenie, liczba miejsc na studiach.' },
+    ],
   },
   {
     id: 'wynagrodzenia',
@@ -109,7 +121,7 @@ export const barometrAreas: BarometrArea[] = [
 export const barometrRules: TextItem[] = [
   {
     title: 'Te same pytania dla wszystkich',
-    text: `Każda partia dostaje ten sam zestaw obszarów i tyle samo miejsca: do ${answerLimitLabel} na obszar. Dłuższą odpowiedź odsyłamy do skrócenia — pełną wersję partia może dołączyć jako dokument. Opisy układamy alfabetycznie.`,
+    text: `Każda partia dostaje ten sam zestaw obszarów i tyle samo miejsca: do ${answerLimitLabel} na każdą odpowiedź. Dłuższą odpowiedź odsyłamy do skrócenia — pełną wersję partia może dołączyć jako dokument. Opisy układamy alfabetycznie.`,
   },
   {
     title: 'Słowa partii, nie nasz wybór',
@@ -133,7 +145,7 @@ export const barometrToSend: TextItem[] = [
   },
   {
     title: 'Odpowiedzi w sześciu obszarach',
-    text: `Do ${answerLimitLabel} na każdy obszar z listy powyżej. Obszar, w którym partia nie ma stanowiska, można pominąć. Prosimy bez nazwisk — opisujemy programy, nie osoby.`,
+    text: `Do ${answerLimitLabel} na każdy obszar z listy powyżej, a w kadrach — osobno na lekarzy, pielęgniarki i inne zawody medyczne. Obszar albo część, w której partia nie ma stanowiska, można pominąć. Prosimy bez nazwisk — opisujemy programy, nie osoby.`,
   },
   {
     title: 'Koszt, źródło pieniędzy, termin',
@@ -234,6 +246,8 @@ export interface BarometrDocument {
 export interface BarometrAreaEntry {
   /** id obszaru z barometrAreas */
   area: string;
+  /** id części obszaru (kadry: lekarze, pielegniarki, inne-zawody); brak = obszar bez części */
+  part?: string;
   /** odpowiedź partii w nadesłanym brzmieniu (akapity); brak = partia nie odniosła się do obszaru */
   answer?: string[];
   /** dokumenty wskazane przez partię; puste = partia żadnego nie wskazała */
@@ -295,12 +309,22 @@ export const barometrExample: BarometrProfile = {
       ],
       checks: { cost: true, funding: true, deadline: false },
     },
+    // kadry w trzech częściach: pełna odpowiedź, odpowiedź bez dokumentów i część pominięta
     {
       area: 'kadry',
-      answer: ['Tu odpowiedź partii o kształceniu i zatrudnianiu kadr medycznych: liczbie miejsc na studiach, specjalizacjach i warunkach pracy.'],
+      part: 'lekarze',
+      answer: ['Tu odpowiedź partii o lekarzach: kształceniu, liczbie miejsc na studiach i specjalizacjach.'],
       documents: [{ kind: 'Poprawka', title: 'Poprawka, którą partia wskazała: do jakiej ustawy, z linkiem do druku' }],
       checks: { cost: false, funding: false, deadline: true },
     },
+    {
+      area: 'kadry',
+      part: 'pielegniarki',
+      answer: ['Tu odpowiedź partii o pielęgniarkach: kształceniu, liczbie miejsc na studiach i specjalizacjach.'],
+      documents: [],
+      checks: { cost: true, funding: true, deadline: false },
+    },
+    { area: 'kadry', part: 'inne-zawody', documents: [] },
     {
       area: 'wynagrodzenia',
       answer: ['Tu odpowiedź partii o zasadach wynagradzania z publicznych pieniędzy, w tym o jawności łącznych kwot.'],
@@ -335,7 +359,8 @@ for (const profile of barometrProfiles) {
   for (const entry of profile.areas) {
     const n = entry.answer ? answerLength(entry.answer) : 0;
     if (n > ANSWER_LIMIT) {
-      throw new Error(`Barometr: odpowiedź „${profile.name}” w obszarze „${entry.area}” ma ${n} znaków (limit ${ANSWER_LIMIT}) — odesłać partii do skrócenia`);
+      const where = entry.part ? `${entry.area}/${entry.part}` : entry.area;
+      throw new Error(`Barometr: odpowiedź „${profile.name}” w „${where}” ma ${n} znaków (limit ${ANSWER_LIMIT}) — odesłać partii do skrócenia`);
     }
   }
 }

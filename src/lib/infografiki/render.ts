@@ -318,7 +318,9 @@ function chartLayout(set: InfographicSet, i: Infographic, c: LineChart, f: Forma
   const inner = FORMATS[f].width - 2 * g.padX;
   const W = pion ? inner : inner - cg.legendW - cg.gap;
   const H = cg.chartH;
-  const color = (s: ChartSeries) => ({ blue: C.blue, amber: C.amber, slate: C.bar, red: C.bad })[s.tone];
+  // liczba nad wykresem w kolorze swojej linii; szarość łupku = --muted, bo jaśniejsze --chart
+  // nie ma kontrastu tekstu (2,3:1 na białym)
+  const color = (s: ChartSeries) => ({ blue: C.blue, amber: C.amber, slate: C.muted, red: C.bad })[s.tone];
   // przy czterech seriach liczby nad wykresem mniejsze, żeby zmieściły się w rzędzie (pion) i kolumnie (poziom)
   const valueSize = c.series.length > 3 ? cg.valueDense : cg.value;
 
@@ -387,7 +389,7 @@ function chartLayout(set: InfographicSet, i: Infographic, c: LineChart, f: Forma
       h('div', { style: { alignItems: 'center', fontFamily: MONO, fontSize: cg.label, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.ink } },
         h('div', { style: { width: pion ? 28 : 20, height: cg.stroke, marginRight: 10, background: color(s), flexShrink: 0 } }),
         typo(s.label)),
-      h('div', { style: { marginTop: pion ? 12 : 6, alignItems: 'baseline', fontFamily: DISPLAY, fontWeight: 300, fontSize: valueSize, lineHeight: 1, letterSpacing: '-0.05em', color: s.tone === 'slate' ? C.ink : color(s) } },
+      h('div', { style: { marginTop: pion ? 12 : 6, alignItems: 'baseline', fontFamily: DISPLAY, fontWeight: 300, fontSize: valueSize, lineHeight: 1, letterSpacing: '-0.05em', color: color(s) } },
         s.value,
         s.unit && h('span', { style: { marginLeft: 8, fontSize: Math.round(valueSize * UNIT_SCALE), letterSpacing: '-0.02em' } }, s.unit)),
       h('div', { style: { marginTop: pion ? 10 : 6, fontFamily: MONO, fontSize: cg.detail, lineHeight: 1.35, color: C.muted } }, typo(s.detail)));

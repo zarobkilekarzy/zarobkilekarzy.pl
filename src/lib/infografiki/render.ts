@@ -96,6 +96,11 @@ export interface LineChart {
   series: ChartSeries[];
   /** dopisek przy punkcie (np. ostatnim punkcie projektu), kolejne linie w kolejnych wierszach */
   note?: { x: number; v: number; lines: string[] };
+  /**
+   * Różnica między końcami dwóch linii: klamra na prawo od kropek (od `from` do `to` w punkcie `x`)
+   * i podpis obok niej — pierwsza linia w kolorze alarmu. Wymaga zapasu na osi: xMax wyraźnie za `x`.
+   */
+  gap?: { x: number; from: number; to: number; lines: string[] };
   /** kropki przy każdym punkcie (pomiary) albo tylko na końcu linii (projekcja rok po roku) */
   markers?: 'all' | 'last';
   /** poziom odniesienia (np. stan dzisiejszy): przerywana linia przez cały wykres, podpis nad nią po prawej */
@@ -363,6 +368,14 @@ function chartLayout(set: InfographicSet, i: Infographic, c: LineChart, f: Forma
         : `<circle cx="${r1(sx(p.x))}" cy="${r1(sy(p.v))}" r="${r1(r)}" fill="${col}"/>`);
     }
   }
+  // klamra różnicy: pionowa kreska z wąsami do obu kropek, na prawo od ich obwódek
+  const gapX = c.gap ? r1(sx(c.gap.x) + cg.dot * 3.4) : 0;
+  if (c.gap) {
+    const [y1, y2] = [r1(sy(c.gap.from)), r1(sy(c.gap.to))];
+    const tickW = r1(cg.dot * 1.6);
+    const sw = r1(cg.stroke * 0.45);
+    svg.push(`<path d="M${r1(gapX - tickW)} ${y1}H${gapX}V${y2}H${r1(gapX - tickW)}" fill="none" stroke="${C.bad}" stroke-width="${sw}"/>`);
+  }
   const lines = `data:image/svg+xml;base64,${Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${svg.join('')}</svg>`).toString('base64')}`;
 
   // podpisy jako elementy Satori (krój Plex Mono), linie i kropki jako obrazek SVG pod nimi
@@ -375,6 +388,14 @@ function chartLayout(set: InfographicSet, i: Infographic, c: LineChart, f: Forma
       ...c.note.lines.map((text, k) =>
         h('span', { style: k === 0 ? { fontFamily: BODY, fontSize: cg.note, color: C.ink } : { fontFamily: BODY, fontSize: cg.noteSub, color: C.bad } }, typo(text))));
   })();
+  const gapLabel = c.gap && (() => {
+    const lh = 1.25;
+    const height = Math.round(cg.note * lh + (c.gap!.lines.length - 1) * cg.noteSub * lh);
+    const leftX = Math.round(gapX + 12);
+    return h('div', { style: { position: 'absolute', left: leftX, width: W - leftX, top: Math.round(sy((c.gap.from + c.gap.to) / 2) - height / 2), flexDirection: 'column', lineHeight: lh } },
+      ...c.gap.lines.map((text, k) =>
+        h('span', { style: k === 0 ? { fontFamily: BODY, fontSize: cg.note, color: C.bad } : { fontFamily: BODY, fontSize: cg.noteSub, color: C.ink } }, typo(text))));
+  })();
   const chart = h('div', { style: { position: 'relative', width: W, height: H, flexShrink: 0 } },
     h('img', { src: lines, width: W, height: H, style: { position: 'absolute', left: 0, top: 0 } }),
     ...c.yTicks.map((t) => tick(String(t), { left: 0, width: left - 12, top: Math.round(sy(t) - cg.tick / 2), justifyContent: 'flex-end' })),
@@ -382,7 +403,8 @@ function chartLayout(set: InfographicSet, i: Infographic, c: LineChart, f: Forma
     c.baseline && h('div', { style: { position: 'absolute', right: 14, top: Math.round(sy(c.baseline.v) - cg.note * 1.3 - 8), fontFamily: BODY, fontSize: cg.note, lineHeight: 1.3, color: C.ink } },
       typo(c.baseline.label),
       c.baseline.accent && h('span', { style: { marginLeft: '0.3em', color: C.bad } }, typo(c.baseline.accent))),
-    note);
+    note,
+    gapLabel);
 
   const legendItem = (s: ChartSeries) =>
     h('div', { style: { flexDirection: 'column', flexGrow: 1, flexBasis: 0, paddingTop: pion ? 18 : 12, paddingRight: 16, borderTop: `1px solid ${C.line}` } },

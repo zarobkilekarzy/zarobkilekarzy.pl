@@ -178,7 +178,7 @@ const symulator: InfographicSet = {
       measure: `lekarze wykonujący zawód, w tys. · studia kończy ${formatPL(DEFAULTS.graduate * 100)}%, ${formatPL(DEFAULTS.abroad * 100)}% wyjeżdża`,
       chart: {
         xMin: YEAR0,
-        xMax: HORIZON,
+        xMax: HORIZON + 9,
         yMin: 150,
         yMax: 290,
         yTicks: [160, 200, 240, 280],
@@ -186,14 +186,15 @@ const symulator: InfographicSet = {
         markers: 'last',
         baseline: { v: REGISTER_TOTAL / 1000, label: `${formatPL(REGISTER_TOTAL)} — tylu jest dzisiaj.`, accent: 'Za mało.' },
         series: [
-          { label: 'Nabór jak dziś', tone: 'blue', points: line(base), value: thousands(base.doctors), unit: 'tys.', detail: `${seats(LIMIT_TODAY)} rocznie` },
-          { label: 'Wariant B zespołu NIL', tone: 'amber', points: line(nilB), value: thousands(nilB.doctors), unit: 'tys.', detail: `−9% rocznie, do ${seats(Math.min(...from2027(nilB)))}` },
-          { label: 'Wariant A zespołu NIL', tone: 'red', points: line(nilA), value: thousands(nilA.doctors), unit: 'tys.', detail: `od 2027 r. ${seats(from2027(nilA)[0])} rocznie` },
+          { label: 'Limity bez zmian', tone: 'blue', points: line(base), value: thousands(base.doctors), unit: 'tys.', detail: `${seats(LIMIT_TODAY)} rocznie, jak dziś` },
+          { label: 'Cięcie: wariant B NIL', tone: 'amber', points: line(nilB), value: thousands(nilB.doctors), unit: 'tys.', detail: `−9% rocznie, do ${seats(Math.min(...from2027(nilB)))}` },
+          { label: 'Cięcie: wariant A NIL', tone: 'red', points: line(nilA), value: thousands(nilA.doctors), unit: 'tys.', detail: `od 2027 r. ${seats(from2027(nilA)[0])} rocznie` },
         ],
-        note: { x: HORIZON, v: base.doctors / 1000, lines: [`w ${HORIZON} r. wariant A wobec naboru jak dziś:`, `o ${thousands(base.doctors - nilA.doctors)} tys. lekarzy mniej`] },
+        // klamra między końcem linii bez cięcia a wariantem A — podpis po prawej, w zapasie osi za rokiem HORIZON
+        gap: { x: HORIZON, from: base.doctors / 1000, to: nilA.doctors / 1000, lines: [`${thousands(base.doctors - nilA.doctors)} tys. lekarzy mniej`, 'po cięciu limitów (wariant A)'] },
       },
       sources: `Model: rejestr NIL, limity MZ, warianty NIL, zgony GUS · napływ ${formatPL(DEFAULTS.inflow)}/rok, praca do ${DEFAULTS.retireAge} lat`,
-      alt: `Infografika, wykres: projekcja liczby lekarzy wykonujących zawód do ${HORIZON} r. Dziś ${formatPL(REGISTER_TOTAL)} według rejestru NIL — tylu jest dzisiaj, za mało. W ${HORIZON} r.: przy naborze jak dziś (${seats(LIMIT_TODAY)} po polsku rocznie) ok. ${thousands(base.doctors)} tys., w wariancie B zespołu NIL ok. ${thousands(nilB.doctors)} tys., w wariancie A ok. ${thousands(nilA.doctors)} tys., czyli o ${thousands(base.doctors - nilA.doctors)} tys. mniej niż przy naborze jak dziś. Model zarobkilekarzy.pl uwzględnia odsiew na studiach (kończy ${formatPL(DEFAULTS.graduate * 100)}%), wyjazdy (${formatPL(DEFAULTS.abroad * 100)}%), napływ lekarzy z dyplomem zagranicznym (${formatPL(DEFAULTS.inflow)} rocznie), pracę do ${DEFAULTS.retireAge} lat i zgony według tablic trwania życia GUS.`,
+      alt: `Infografika, wykres: projekcja liczby lekarzy wykonujących zawód do ${HORIZON} r. Dziś ${formatPL(REGISTER_TOTAL)} według rejestru NIL — tylu jest dzisiaj, za mało. W ${HORIZON} r.: przy limitach przyjęć bez zmian (${seats(LIMIT_TODAY)} po polsku rocznie, jak dziś) ok. ${thousands(base.doctors)} tys., po cięciu limitów w wariancie B zespołu NIL ok. ${thousands(nilB.doctors)} tys., w wariancie A ok. ${thousands(nilA.doctors)} tys., czyli o ${thousands(base.doctors - nilA.doctors)} tys. mniej niż bez cięcia. Model zarobkilekarzy.pl uwzględnia odsiew na studiach (kończy ${formatPL(DEFAULTS.graduate * 100)}%), wyjazdy (${formatPL(DEFAULTS.abroad * 100)}%), napływ lekarzy z dyplomem zagranicznym (${formatPL(DEFAULTS.inflow)} rocznie), pracę do ${DEFAULTS.retireAge} lat i zgony według tablic trwania życia GUS.`,
     },
   ],
 };

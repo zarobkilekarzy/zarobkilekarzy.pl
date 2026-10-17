@@ -143,7 +143,8 @@ export type RevocationYear = { year: number } & Record<CountryKey, number>;
 /**
  * Prawomocne odebrania prawa wykonywania zawodu lekarzom, w roku uprawomocnienia.
  * PL: pozbawienia PWZ — orzeczenia OSL niezaskarżone (sekcja 8.9, suma kolumn izb) + utrzymane lub
- *     orzeczone przez NSL w apelacji (sekcja 8.11); zbiory rozłączne. Suma 2010–2025 = 20.
+ *     orzeczone przez NSL w apelacji (sekcja 8.11); zakładamy, że zbiory są rozłączne (sprawozdania bez sygnatur; oba niezerowe w tym
+ *     samym roku tylko w 2016 i 2024, więc w najgorszym razie suma o 2 mniejsza). Suma 2010–2025 = 20.
  *     2019: 1 z NSL 8.11. 2021 i 2022: po 1 w kolumnach izb OSL 8.9, mimo SUMA = 0 w pliku.
  *     2025: 0, bez Koszalina; orzeczenia I instancji z 2025 r. (7) mogą się uprawomocnić później.
  * NO: tilbakekall av autorisasjon eller lisens, leger (Helsetilsynet; 2012 pierwotnie 29, później 30 — bierzemy 29;

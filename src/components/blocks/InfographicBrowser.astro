@@ -1,0 +1,234 @@
+---
+/**
+ * Przeglądarka infografik (strona /media/): po lewej spis grafik z miniaturami, po prawej duży podgląd z wyborem formatu (pion / poziom) i wersji (jasna / ciemna) oraz
+ * pobieraniem właśnie oglądanego pliku; pod podglądem link do strony, z której grafika pochodzi. Zaznaczona grafika trafia do adresu (#ig-<zestaw>-<id>), więc
+ * można podać link do konkretnej.
+ *
+ *   <InfographicBrowser sets={mediaPage.sets} />
+ *
+ * Bez JS: podgląd pokazuje pierwszą grafikę, a pozycje spisu i przyciski formatów to zwykłe linki
+ * do plików PNG.
+ */
+import { FORMATS, THEMES, infographicUrl, type FormatKey, type InfographicSet, type ThemeKey } from '@/lib/infografiki/render';
+import { infographicSets } from '@/lib/infografiki/zestawy';
+import { typo } from '@/lib/format';
+import Icon from '@/components/ui/Icon.astro';
+import type { IconName } from '@/icons';
+
+interface Props {
+  /** klucze zestawów w kolejności spisu */
+  sets: string[];
+}
+
+const formats = Object.keys(FORMATS) as FormatKey[];
+const themes = Object.keys(THEMES) as ThemeKey[];
+const formatIcon: Record<FormatKey, IconName> = { pion: 'format-pion', poziom: 'format-poziom' };
+const themeIcon: Record<ThemeKey, IconName> = { jasny: 'sun', ciemny: 'moon' };
+const orientation = (f: FormatKey) => (f === 'pion' ? 'Pion' : 'Poziom');
+// nazwa pliku = adres z przedrostkiem serwisu, jak w blocks/Infographics
+const fileName = (set: InfographicSet, id: string, f: FormatKey, t: ThemeKey) =>
+  `${set.filePrefix}-${infographicUrl(set, id, f, t).split('/').pop()}`;
+
+const entries = Astro.props.sets.flatMap((key) => {
+  const set = infographicSets[key];
+  if (!set) throw new Error(`[infografiki] nieznany zestaw „${key}”`);
+  return set.items.map((item) => ({
+      key: `ig-${key}-${item.id}`,
+      title: [item.title, item.titleAccent].filter(Boolean).join(' ').replace(/\n/g, ' '),
+      alt: item.alt,
+      page: set.page,
+      route: set.route,
+      // url i nazwa pliku dla każdej pary format × wersja: { pion: { jasny: […], ciemny: […] }, poziom: … }
+      files: Object.fromEntries(formats.map((f) => [f, Object.fromEntries(themes.map((t) => [t, [infographicUrl(set, item.id, f, t), fileName(set, item.id, f, t)]]))])),
+  }));
+});
+const first = entries[0];
+const sizeLabel = (f: FormatKey) => `${FORMATS[f].width}×${FORMATS[f].height}`;
+---
+<zl-ig-browser class="igb">
+  <nav class="igb__nav" aria-label="Spis infografik">
+    <ul>
+      {entries.map((e) => (
+        <li>
+          <a class="igb__item" href={e.files.pion.jasny[0]} data-key={e.key} aria-current={e === first ? 'true' : undefined}>
+            {/* miniatura to zawsze jasny pion — rozpoznawalna niezależnie od wybranego wariantu */}
+            <img class="igb__thumb" src={e.files.pion.jasny[0]} width={FORMATS.pion.width} height={FORMATS.pion.height} alt="" loading="lazy" decoding="async" />
+            <span>{typo(e.title)}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+
+  <div class="igb__view">
+    <div class="igb__bar">
+      <div class="igb__switch" role="group" aria-label="Format">
+        {formats.map((f) => (
+          <button type="button" class="igb__opt" data-format={f} aria-pressed={f === 'pion' ? 'true' : 'false'} title={FORMATS[f].use}>
+            <Icon name={formatIcon[f]} size={18} />
+            <span>{orientation(f)} <span class="igb__dim">{sizeLabel(f)}</span></span>
+          </button>
+        ))}
+      </div>
+      <div class="igb__switch" role="group" aria-label="Wersja">
+        {themes.map((t) => (
+          <button type="button" class="igb__opt" data-theme-key={t} aria-pressed={t === 'jasny' ? 'true' : 'false'}>
+            <Icon name={themeIcon[t]} size={18} />
+            <span>{THEMES[t].label[0].toUpperCase() + THEMES[t].label.slice(1)}</span>
+          </button>
+        ))}
+      </div>
+      <a class="igb__dl" href={first.files.pion.jasny[0]} download={first.files.pion.jasny[1]} data-download>
+        <Icon name="arrow" size={18} />
+        <span>Pobierz PNG</span>
+      </a>
+    </div>
+
+    <figure class="igb__figure">
+      <a class="igb__frame" href={first.files.pion.jasny[0]} target="_blank" rel="noopener" data-open aria-label="Otwórz plik PNG w pełnym rozmiarze w nowej karcie">
+        <img src={first.files.pion.jasny[0]} width={FORMATS.pion.width} height={FORMATS.pion.height} alt={first.alt} decoding="async" data-img />
+      </a>
+      <figcaption class="igb__caption">
+        <span class="igb__title" data-title>{typo(first.title)}</span>
+        <a class="igb__source" href={first.route} data-route>{typo(first.page)}</a>
+      </figcaption>
+    </figure>
+  </div>
+
+  <script type="application/json" data-entries set:html={JSON.stringify(entries).replace(/</g, '\\u003c')} />
+</zl-ig-browser>
+
+<script>
+  type Format = 'pion' | 'poziom';
+  type Theme = 'jasny' | 'ciemny';
+  interface Entry { key: string; title: string; alt: string; page: string; route: string; files: Record<Format, Record<Theme, [string, string]>> }
+
+  const SIZE: Record<Format, [number, number]> = { pion: [1080, 1350], poziom: [1200, 675] };
+
+  class ZlIgBrowser extends HTMLElement {
+    connectedCallback() {
+      const entries: Entry[] = JSON.parse(this.querySelector('[data-entries]')?.textContent ?? '[]');
+      if (!entries.length) return;
+      const items = [...this.querySelectorAll<HTMLAnchorElement>('.igb__item')];
+      const formatBtns = [...this.querySelectorAll<HTMLButtonElement>('[data-format]')];
+      const themeBtns = [...this.querySelectorAll<HTMLButtonElement>('[data-theme-key]')];
+      const img = this.querySelector<HTMLImageElement>('[data-img]')!;
+      const open = this.querySelector<HTMLAnchorElement>('[data-open]')!;
+      const download = this.querySelector<HTMLAnchorElement>('[data-download]')!;
+      const title = this.querySelector<HTMLElement>('[data-title]')!;
+      const route = this.querySelector<HTMLAnchorElement>('[data-route]')!;
+      const view = this.querySelector<HTMLElement>('.igb__view')!;
+
+      let current = entries[0];
+      let format: Format = 'pion';
+      let theme: Theme = 'jasny';
+
+      const render = () => {
+        const [url, file] = current.files[format][theme];
+        img.src = url;
+        img.alt = current.alt;
+        [img.width, img.height] = SIZE[format];
+        open.href = url;
+        download.href = url;
+        download.download = file;
+        title.textContent = current.title;
+        route.href = current.route;
+        route.textContent = current.page;
+        this.dataset.format = format;
+        items.forEach((a) => (a.dataset.key === current.key ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current')));
+        formatBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.format === format)));
+        themeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeKey === theme)));
+      };
+
+      const select = (key: string, scroll: boolean) => {
+        const next = entries.find((e) => e.key === key);
+        if (!next) return;
+        current = next;
+        render();
+        history.replaceState(null, '', `#${key}`);
+        // na wąskim ekranie podgląd jest pod spisem — przewiń do niego
+        if (scroll && view.getBoundingClientRect().top > window.innerHeight * 0.5) view.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+
+      items.forEach((a) =>
+        a.addEventListener('click', (e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+          e.preventDefault();
+          select(a.dataset.key!, true);
+        }),
+      );
+      formatBtns.forEach((b) => b.addEventListener('click', () => { format = b.dataset.format as Format; render(); }));
+      themeBtns.forEach((b) => b.addEventListener('click', () => { theme = b.dataset.themeKey as Theme; render(); }));
+
+      // grafika z adresu (#ig-…), np. z linku udostępnionego dalej
+      const fromHash = decodeURIComponent(location.hash.slice(1));
+      if (entries.some((e) => e.key === fromHash)) {
+        current = entries.find((e) => e.key === fromHash)!;
+        render();
+        this.scrollIntoView({ block: 'start' }); // scroll-padding-top uwzględnia nagłówek
+      }
+    }
+  }
+
+  if (!customElements.get('zl-ig-browser')) customElements.define('zl-ig-browser', ZlIgBrowser);
+</script>
+
+<style>
+  .igb { display: grid; grid-template-columns: minmax(220px, 320px) minmax(0, 1fr); gap: 40px; margin-top: 24px; align-items: start; }
+
+  /* Spis: miniatura i tytuł grafiki */
+  .igb__nav ul { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ink); }
+  .igb__item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 12px 10px 11px; border-bottom: 1px solid var(--line); border-left: 3px solid transparent;
+    font: 500 0.9375rem/1.35 var(--f-display); letter-spacing: -0.01em; color: var(--text-strong); text-decoration: none;
+    transition: color .2s, background-color .2s, border-color .2s;
+  }
+  .igb__item:hover { color: var(--blue); }
+  .igb__thumb { flex: none; width: 48px; height: auto; border: 1px solid var(--line); transition: border-color .2s; }
+  .igb__item:hover .igb__thumb, .igb__item[aria-current='true'] .igb__thumb { border-color: var(--blue); }
+  .igb__item[aria-current='true'] { color: var(--blue); background: var(--blue-50); border-left-color: var(--blue); }
+  .igb__item:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+
+  /* Podgląd: przyklejony przy przewijaniu długiego spisu */
+  .igb__view { position: sticky; top: calc(var(--header-h) + 24px); display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .igb__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; font: 400 0.75rem/1.55 var(--f-mono); }
+  .igb__switch { display: inline-flex; border: 1px solid var(--line-2); }
+  .igb__opt {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 8px; border: 0; background: none;
+    font: inherit; color: var(--text-strong); cursor: pointer; transition: color .2s, background-color .2s;
+  }
+  .igb__opt + .igb__opt { border-left: 1px solid var(--line-2); }
+  .igb__opt :global(.icon) { color: var(--muted); }
+  .igb__opt:hover { color: var(--blue); }
+  .igb__opt[aria-pressed='true'] { background: var(--blue-50); color: var(--blue); }
+  .igb__opt[aria-pressed='true'] :global(.icon) { color: var(--blue); }
+  .igb__opt:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .igb__dim { color: var(--muted); }
+  .igb__dl {
+    display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 6px 12px 6px 10px;
+    background: var(--blue); color: var(--bg); text-decoration: none; transition: opacity .2s;
+  }
+  .igb__dl :global(.icon) { transform: rotate(90deg); }
+  .igb__dl:hover { opacity: .88; }
+  .igb__dl:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .igb__figure { margin: 0; }
+  /* ramka 1 px: biała grafika nie zlewa się z tłem w trybie nocnym, ciemna — w dziennym */
+  .igb__frame { display: flex; justify-content: center; padding: 16px; border: 1px solid var(--line); background: var(--surface); line-height: 0; }
+  .igb__frame:hover { border-color: var(--blue); }
+  .igb__frame:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .igb__frame img { display: block; width: auto; max-width: 100%; height: auto; max-height: calc(100vh - var(--header-h) - 200px); border: 1px solid var(--line); }
+  .igb[data-format='poziom'] .igb__frame img { width: 100%; max-height: none; }
+  .igb__caption { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; }
+  .igb__title { font: 500 1rem/1.35 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .igb__source { width: fit-content; font: 400 0.8125rem/1.45 var(--f-body); color: var(--muted); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .igb__source:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  @media (max-width: 860px) {
+    .igb { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+    /* długi spis nie spycha podglądu o kilka ekranów */
+    .igb__nav { max-height: 46vh; overflow-y: auto; padding-right: 4px; }
+    .igb__view { position: static; }
+    .igb__dl { margin-left: 0; }
+  }
+</style>

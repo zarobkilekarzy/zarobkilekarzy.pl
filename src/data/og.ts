@@ -5,8 +5,8 @@
  */
 import type { OgPage } from '@/types';
 import { site } from '@/data/navigation';
-import { formatDate, formatPL } from '@/lib/format';
-import { monitoring } from '@/lib/monitoring';
+import { formatDate, formatPL, plural } from '@/lib/format';
+import { monitoring, type Response } from '@/lib/monitoring';
 import { currentStage, projekt } from '@/data/projekt-ustawy';
 import { adresaci } from '@/data/adresaci';
 import { writeToolOn } from '@/data/dzialaj';
@@ -16,6 +16,10 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 
 import heroImg from '@/assets/img/hero-pokoj-lekarski.jpg';
+
+// odpowiedzi placówek na wniosek o płace (monitoring Watchdog Polska)
+const answered = (...r: Response[]) => monitoring.facilities.filter((f) => r.includes(f.response)).length;
+const fullLists = monitoring.facilities.filter((f) => f.payroll).length;
 
 export const ogPages: Record<string, OgPage> = {
   '/': {
@@ -46,16 +50,16 @@ export const ogPages: Record<string, OgPage> = {
   '/dane/monitoring-watchdog/': {
     eyebrow: 'Dane · przeglądarka monitoringu',
     title: 'Kto ujawnił\npłace lekarzy,\na kto milczy',
-    media: 'stat',
-    stat: {
-      value: formatPL(monitoring.facilities.filter((f) => f.response === 'disclosed').length),
-      unit: `z ${formatPL(monitoring.facilities.length)}`,
-      label: 'placówek ujawniło dane',
-      desc: `${formatPL(monitoring.facilities.filter((f) => f.response === 'refused').length)} odmówiło, ${formatPL(monitoring.facilities.filter((f) => f.response === 'silence').length)} nie odpowiedziało`,
-      accuracy: 'exact',
-      source: `Watchdog Polska, płace za ${monitoring.year} r.`,
+    bars: {
+      head: `Odpowiedzi ${formatPL(monitoring.facilities.length)} placówek`,
+      rows: [
+        { label: 'Ujawniły dane', value: answered('disclosed'), sub: `w tym ${formatPL(fullLists)} ${plural(fullLists, ['pełna lista', 'pełne listy', 'pełnych list'])} płac`, marked: true },
+        { label: 'Odmówiły', value: answered('refused') },
+        { label: 'Nie odpowiedziały', value: answered('silence') },
+        { label: 'Inna odpowiedź, bez danych', value: answered('other', 'receipt', 'forwarded', 'unknown') },
+      ],
     },
-    footer: { text: `Przeglądarka · stan na ${formatDate(new Date(monitoring.updated))}`, flags: true },
+    footer: { text: `Watchdog Polska, płace za ${monitoring.year} r.` },
   },
   '/mechanizmy/': {
     eyebrow: 'Mechanizmy',

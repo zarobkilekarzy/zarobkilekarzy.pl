@@ -1,6 +1,6 @@
 /**
  * Szablon obrazka OG (rodzina A „Okładka”, 1200×630): logo, etykieta, tytuł, lead, stopka
- * i media po prawej (zdjęcie / karta liczby / mapa / brak). Satori → SVG (tekst jako krzywe) → sharp → PNG.
+ * i media po prawej (zdjęcie / karta liczby / mapa / wykres / brak). Satori → SVG (tekst jako krzywe) → sharp → PNG.
  *
  * Pułapki Satori:
  * - fonty: statyczne WOFF z @fontsource (pliki z Fonts API Astro są zmienne),
@@ -16,11 +16,12 @@ import sharp, { type Sharp } from 'sharp';
 import tokensCss from '@/styles/tokens.css?raw';
 import { icons, type IconName } from '@/icons';
 import { site } from '@/data/navigation';
-import { typo } from '@/lib/format';
+import { formatPL, typo } from '@/lib/format';
 import { raw } from '@/lib/images';
 import { geo } from '@/lib/mapa/geo';
 import { toneOfClass } from '@/lib/mapa/layout';
 import { renderMapSvg, staticColors } from '@/lib/mapa/svg';
+import { tokenColor } from '@/lib/tokens';
 import type { Accuracy, OgStat } from '@/types';
 import { OG_HEIGHT, OG_WIDTH, type OgEntry, type OgMedia, type OgSpec } from './presets';
 
@@ -263,16 +264,30 @@ function stat(s: OgStat) {
 function map(m: Extract<OgMedia, { kind: 'map' }>) {
   const theme = m.theme ?? 'jasny';
   const src = `data:image/svg+xml;base64,${Buffer.from(renderMapSvg([m.layer], { theme, active: m.layer.id, labels: false })).toString('base64')}`;
-  const { seq, base } = staticColors(theme === 'ciemny');
-  const dot = (color: string) =>
-    theme === 'ciemny'
-      ? h('div', { style: { alignItems: 'center', justifyContent: 'center', width: 22, height: 22, marginRight: 9, borderRadius: '50%', background: base } },
-          h('div', { style: { width: 12, height: 12, borderRadius: '50%', background: color } }))
-      : h('div', { style: { width: 14, height: 14, marginRight: 9, borderRadius: '50%', background: color } });
+  const { seq, base, missing } = staticColors(theme === 'ciemny');
+  const color = (cls: number | null) => (cls == null ? missing : seq[toneOfClass(cls, m.layer.scale)]);
+  const dot = (classes: (number | null)[]) =>
+    h('div', { style: { alignItems: 'center', height: 22, marginRight: 9, padding: theme === 'ciemny' ? '0 5px' : 0, borderRadius: 11, background: theme === 'ciemny' ? base : 'transparent' } },
+      ...classes.map((cls, i) => h('div', { style: { width: 12, height: 12, marginLeft: i ? 3 : 0, borderRadius: '50%', background: color(cls) } })));
   return h('div', { style: { flexDirection: 'column', justifyContent: 'center', flexShrink: 0, width: MEDIA_W, height: MEDIA_H } },
     h('img', { src, width: MEDIA_W, height: Math.round((MEDIA_W * geo.height) / geo.width) }),
     m.legend && h('div', { style: { flexWrap: 'wrap', gap: '8px 22px', marginTop: 20, fontFamily: BODY, fontSize: 16, color: C.text } },
-      ...m.legend.map(([cls, label]) => h('div', { style: { alignItems: 'center' } }, dot(seq[toneOfClass(cls, m.layer.scale)]), typo(label)))));
+      ...m.legend.map(([cls, label]) => h('div', { style: { alignItems: 'center' } }, dot(Array.isArray(cls) ? cls : [cls]), typo(label)))));
+}
+
+/** Wiersze z paskami we wspólnej skali od zera, jak w infografikach: wyróżniony wiersz w kobalcie, reszta w łupku. */
+function bars(b: Extract<OgMedia, { kind: 'bars' }>) {
+  const max = Math.max(...b.rows.map((r) => r.value));
+  return h('div', { style: { flexDirection: 'column', justifyContent: 'center', flexShrink: 0, width: MEDIA_W, height: MEDIA_H } },
+    b.head && h('div', { style: { paddingBottom: 14, borderBottom: `1px solid ${C.line}`, fontFamily: MONO, fontWeight: 500, fontSize: 15, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted } }, typo(b.head)),
+    ...b.rows.map((r) =>
+      h('div', { style: { flexDirection: 'column', paddingTop: 26 } },
+        h('div', { style: { alignItems: 'flex-end', justifyContent: 'space-between' } },
+          h('div', { style: { flexDirection: 'column', paddingBottom: 4 } },
+            h('span', { style: { fontSize: 20, lineHeight: 1.25, color: C.ink } }, typo(r.label)),
+            r.sub && h('span', { style: { marginTop: 4, fontFamily: MONO, fontWeight: 500, fontSize: 13, letterSpacing: '0.06em', textTransform: 'uppercase', color: r.marked ? C.blue : C.muted } }, typo(r.sub))),
+          h('span', { style: { fontFamily: DISPLAY, fontWeight: 300, fontSize: 56, lineHeight: 0.9, letterSpacing: '-0.045em', color: r.marked ? C.blue : C.ink } }, formatPL(r.value))),
+        h('div', { style: { width: Math.max(2, Math.round((r.value / max) * MEDIA_W)), height: 14, marginTop: 12, background: r.marked ? C.blue : tokenColor('chart', false) } }))));
 }
 
 /* ---------- Szablon ---------- */
@@ -293,7 +308,7 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
           ...titleLines(title)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
       spec.footer && footer(spec.footer, wide)),
-    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : null);
+    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : null);
 }
 
 /** PNG 1200×630 z paletą 8-bit: zdjęcia B&W + kolory marki mieszczą się w niej bez widocznej straty. */

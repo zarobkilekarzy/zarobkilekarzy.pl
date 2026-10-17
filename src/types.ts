@@ -237,8 +237,13 @@ export interface OgPage extends OgOverride {
   title: string;
   footer?: { text: string; flags?: boolean };
   badgeIcon?: IconName;
-  /** mapa w miejscu zdjęcia: warstwa z lib/mapa, legenda [klasa skali, podpis] i barwy (ciemna = kontrast z białą kartą) */
-  map?: { layer: MapLayer; legend?: [number, string][]; theme?: 'jasny' | 'ciemny' };
+  /**
+   * mapa w miejscu zdjęcia: warstwa z lib/mapa, barwy (ciemna = kontrast z białą kartą) i legenda
+   * [klasa skali | kilka klas obok siebie | null = szary punkt bez wartości, podpis]
+   */
+  map?: { layer: MapLayer; legend?: [number | number[] | null, string][]; theme?: 'jasny' | 'ciemny' };
+  /** wykres w miejscu zdjęcia: wiersze z paskami we wspólnej skali od zera, `marked` = wiersz w kobalcie */
+  bars?: { head?: string; rows: { label: string; value: number; sub?: string; marked?: boolean }[] };
 }
 
 /** Etap drogi (np. projektu ustawy): zakończony, bieżący albo przed nami. */

@@ -15,7 +15,7 @@ export const mediaPage = {
   /** klucze zestawów infografik, od najnowszego */
   sets: ['odsiew-na-medycynie', 'pielegniarstwo-w-polsce', 'zadluzenie-szpitali', 'kolejki', 'english-division', 'symulator-podazy-lekarzy', 'egzamin', 'odpowiedzialnosc-zawodowa-lekarzy'],
   film: {
-    lead: 'Brak odczytu: 40 sekund w formacie 16:9, z dźwiękiem monitora pracy serca. Pasuje do posta na X albo Facebooku i do prezentacji. Źródło każdej liczby jest w stopce kadru i w napisach pod filmem.',
+    lead: 'Brak odczytu: 49 sekund w formacie 16:9, z lektorem i dźwiękiem monitora pracy serca. Pasuje do posta na X albo Facebooku i do prezentacji. Źródło każdej liczby jest w stopce kadru i w napisach pod filmem.',
   },
   data: {
     title: 'Dane do pobrania',

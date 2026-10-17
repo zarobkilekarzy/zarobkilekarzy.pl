@@ -1,13 +1,14 @@
 /**
- * Film „Brak odczytu” (ok. 40 s) — strona główna (components/home/Film.astro) i /media/.
+ * Film „Brak odczytu” (49 s, z lektorem) — strona główna (components/home/Film.astro) i /media/.
  * Pliki leżą w public/film/: MP4 (Chrome, Firefox, pobieranie), ten sam film pocięty na HLS
  * w hls/ (Safari, także na iOS) i okładka. HLS jest potrzebny, bo statyczne pliki Workera
  * ignorują nagłówek Range, a Safari bez odpowiedzi 206 nie odtwarza MP4 — kawałki HLS pobiera
  * w całości. Odtwarzacz podaje HLS jako pierwsze źródło; przeglądarki bez HLS biorą MP4.
- * `transcript` to napisy z filmu ujęcie po ujęciu ze źródłami:
- * opis dla czytników ekranu i miejsce, gdzie każda liczba z filmu ma link — stopki w kadrze są
- * za drobne, żeby je przeczytać na telefonie. Tekst trzyma stan z filmu (monitoring: 12.10.2026),
- * więc nie liczy się z bieżących danych — po zmianie filmu poprawić go ręcznie.
+ * `transcript` to słowa lektora (liczby cyframi) pogrupowane po tematach, ze źródłami, a `note` —
+ * zastrzeżenia, które w filmie stoją w stopce kadru: opis dla czytników ekranu i miejsce, gdzie
+ * każda liczba ma link (stopki w kadrze są za drobne, żeby je przeczytać na telefonie). Tekst
+ * trzyma stan z filmu (monitoring: 12.10.2026), więc nie liczy się z bieżących danych — po zmianie
+ * filmu albo lektora (social/film-brak-odczytu/lektor.mjs) poprawić go ręcznie.
  */
 import { LINKS as REKORDY } from '@/data/rekordy';
 import { LINKS as ROZKLAD } from '@/data/rozklad-wynagrodzen';
@@ -20,7 +21,10 @@ export interface FilmSource {
 }
 
 export interface FilmBeat {
+  /** słowa lektora */
   text: string;
+  /** zastrzeżenie albo doprecyzowanie spoza lektora (w filmie: stopka kadru) */
+  note?: string;
   sources: FilmSource[];
   /** strona serwisu, na której temat jest opisany szerzej */
   more?: FilmSource;
@@ -44,32 +48,28 @@ export const film = {
   download: 'zarobkilekarzy-brak-odczytu.mp4',
   width: 1920,
   height: 1080,
-  seconds: 40,
-  size: '4,6 MB',
+  seconds: 49,
+  size: '5,7 MB',
   transcript: [
     {
-      text: 'Jeden lekarz, 2025 r.: ponad 1,6 mln zł w jeden rok. Rezydent bez ukończonej specjalizacji, cztery publiczne szpitale naraz. W jednym z nich średnio 331 godzin w miesiącu, a pełny etat to ok. 168. Sprawę badają prokuratura i izba lekarska.',
+      text: '1,6 mln zł w jeden rok. Tyle zarobił rezydent bez specjalizacji. W czterech szpitalach naraz. W jednym z nich rozliczał ponad 300 godzin miesięcznie.',
+      note: 'Dane za 2025 r. W tym jednym szpitalu średnio 331 godzin w miesiącu; pełny etat to ok. 168. Sprawę badają prokuratura i izba lekarska.',
       sources: REZYDENT,
       more: { label: 'Cała sprawa: wieloetatowość', href: '/mechanizmy/wieloetatowosc/' },
     },
     {
-      text: 'Żaden rejestr tego nie zsumował: AOTMiT nie ma danych łączonych dla jednej osoby między placówkami.',
+      text: 'I żaden rejestr tego nie zsumował.',
+      note: 'AOTMiT nie ma danych łączonych dla jednej osoby między placówkami.',
       sources: [{ label: 'Rynek Zdrowia, wywiad z prezesem AOTMiT', href: ROZKLAD.wywiad }],
     },
     {
-      text: 'Najwyższy kontrakt w szpitalach wojewódzkich Mazowsza w 2025 r.: 316 079 zł miesięcznie (umowa została rozwiązana). To 3,1 raza tyle co najwyższa pensja na etacie, 101 384 zł.',
+      text: 'Najwyższy kontrakt w szpitalach wojewódzkich Mazowsza: 316 tys. zł miesięcznie. Ponad trzy razy więcej niż najwyższa pensja na etacie.',
+      note: 'Dane za 2025 r.: kontrakt 316 079 zł (umowa została rozwiązana), najwyższa pensja na etacie 101 384 zł.',
       sources: [{ label: 'Rynek Zdrowia', href: REKORDY.rzMazowsze }],
     },
     {
-      text: 'Szpital powiatowy, 2024 r.: faktury jednego lekarza na 11 577 godzin, a rok ma 8760. Czas pracy ewidencjonuje się tylko pracownikom na etacie. Śledztwo dotyczy byłego prezesa spółki prowadzącej szpital, nie lekarza; jest zawieszone, nikt nie usłyszał zarzutów.',
-      sources: [
-        { label: 'Dziennik Elbląski', href: REKORDY.deBraniewo },
-        { label: 'Prokuratura', href: REKORDY.prokElblag },
-        { label: 'TVN24', href: REKORDY.tvnBraniewo },
-      ],
-    },
-    {
-      text: 'Ilu lekarzy dostaje ponad 100 tys. zł miesięcznie? Gdy liczyć każdy szpital osobno: ok. 560. Po zsumowaniu wszystkich miejsc pracy, według szacunku prezesa AOTMiT: 7–14 tys. Dokładnej liczby nie zna nikt.',
+      text: 'Ilu lekarzy zarabia ponad 100 tys. zł miesięcznie? Licząc każdy szpital osobno, około 560. Po zsumowaniu: szacunkowo od 7 do 14 tys. Dokładnej liczby nie zna nikt.',
+      note: 'Szacunek prezesa AOTMiT: 5–10% lekarzy; liczbę osób wyliczył Rynek Zdrowia przy 140 tys. aktywnych lekarzy.',
       sources: [
         { label: 'Rynek Zdrowia, wywiad z prezesem AOTMiT', href: ROZKLAD.wywiad },
         { label: 'Rynek Zdrowia, przeliczenie na osoby', href: ROZKLAD.milion },
@@ -77,16 +77,18 @@ export const film = {
       more: { label: 'Rozkład wynagrodzeń', href: '/dane/rozklad-wynagrodzen/' },
     },
     {
-      text: 'Sieć Obywatelska Watchdog Polska zapytała 1358 placówek o płace lekarzy za 2025 r. Dane ujawniło 175, odmówiło 359, nie odpowiedziało 469 (stan na 12.10.2026).',
+      text: 'O płace zapytano ponad 1300 placówek. Dane ujawniło 175.',
+      note: 'Pytała Sieć Obywatelska Watchdog Polska, o płace lekarzy za 2025 r.: 1358 placówek, 359 odmówiło, 469 nie odpowiedziało (stan na 12.10.2026).',
       sources: [{ label: 'Watchdog Polska, monitoring „Ile zarabiają lekarze?”', href: monitoring.source.url }],
       more: { label: 'Przeglądarka monitoringu', href: '/dane/monitoring-watchdog/' },
     },
     {
-      text: 'GUS co roku łączy dane jednej osoby z rejestru lekarzy, ZUS i umów NFZ. Brakuje tylko kwoty.',
+      text: 'Tymczasem państwo co roku łączy dane lekarzy z kilku rejestrów. Brakuje tylko kwoty.',
+      note: 'GUS łączy rejestr lekarzy z danymi ZUS i umowami NFZ — wie, kto i gdzie pracuje, ale nie zbiera kwot.',
       sources: [{ label: 'GUS, zasoby kadrowe w zawodach medycznych', href: BRAKI.gus2024 }],
     },
     {
-      text: 'Jawne kwoty, chronione nazwiska.',
+      text: 'Jawne kwoty. Chronione nazwiska.',
       sources: [],
       more: { label: 'Postulat', href: '/postulat/' },
     },

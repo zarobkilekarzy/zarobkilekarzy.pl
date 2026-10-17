@@ -9,6 +9,7 @@
  */
 import { Image } from 'astro:assets';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Popover from '@/components/ui/Popover.astro';
 import { NOT_SENT, barometrExample, barometrOthers, barometrParties, barometrSejm, statusLabel, statusLegend } from '@/data/barometr-polityczny';
 import { raw } from '@/lib/images';
 import { formatDate, typo } from '@/lib/format';
@@ -44,7 +45,17 @@ const parties = [...barometrParties, ...barometrOthers].map((party) => {
       <div class="party__logo">
         <Image src={p.logo} width={p.w} height={p.h} densities={[1, 2]} alt={`Logo: ${p.name}`} />
       </div>
-      {p.notParty && <p class="party__tag">Nie partia</p>}
+      {p.notParty && (
+        <div class="party__tagrow">
+          <p class="party__tag">Nie partia</p>
+          {p.about && (
+            <Popover variant="hint" label={`${p.about.heading}: wyjaśnienie`} heading={p.about.heading} placement="bottom">
+              {typo(p.about.text)}
+              <span class="party__src">Źródło: <a href={p.about.source.href}>{p.about.source.label}</a></span>
+            </Popover>
+          )}
+        </div>
+      )}
       <h3 class="party__name">{typo(p.name)}</h3>
       <p class="party__club">{typo(p.club)}</p>
       <p class="party__status"><span class:list={['dot', `dot--${p.status.stage}`]} aria-hidden="true"></span>{statusLabel(p.status)}</p>
@@ -63,7 +74,10 @@ const parties = [...barometrParties, ...barometrOthers].map((party) => {
   .party__logo img { display: block; max-width: 100%; height: auto; }
 
   .party--other { border-style: dashed; }
-  .party__tag { align-self: flex-start; margin: 16px 20px -6px; padding: 3px 8px; border: 1px solid var(--line-2); font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+  .party__tagrow { display: flex; align-items: center; gap: 8px; margin: 16px 20px -6px; }
+  .party__src { display: block; margin-top: 8px; }
+  .party__src a { text-decoration: underline; text-underline-offset: 3px; }
+  .party__tag { align-self: flex-start; margin: 0; padding: 3px 8px; border: 1px solid var(--line-2); font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
   .party__name { margin: 18px 20px 6px; font: 500 1.0625rem/1.3 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
   .party__club { margin: 0 20px; font-size: 0.84375rem; line-height: 1.5; color: var(--muted); }
   .party__status { display: flex; align-items: center; gap: 8px; margin: auto 20px 0; padding: 16px 0 18px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }

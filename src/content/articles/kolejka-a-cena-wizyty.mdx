@@ -1,0 +1,414 @@
+---
+title: Dłuższa kolejka, droższa wizyta
+category: Analiza
+topic: pieniadz
+order: 4
+stat: { value: "231,52 zł", unit: "przeciętna prywatna wizyta u specjalisty w 2025 r." }
+date: 2026-10-17
+summary: "Prywatna wizyta u specjalisty kosztuje średnio 231,52 zł, 2,6 raza więcej niż w 2015 r. Publicznych pieniędzy jest coraz więcej, a kolejka się nie skraca — więc kto może, płaci, żeby ją ominąć."
+description: "Prywatna wizyta u specjalisty kosztuje średnio 231,52 zł, 2,6 raza więcej niż w 2015 r. Jak budżet NFZ, kolejka i prywatny cennik zależą od siebie."
+keyPoints:
+  - "Prywatna wizyta u specjalisty kosztuje średnio 231,52 zł, 2,6 raza więcej niż w 2015 r. Tyle mniej więcej wzrosła płaca minimalna, a ceny ogółem — o 57%."
+  - "NFZ płaci coraz więcej za podobną liczbę wizyt: w latach 2022–2024 koszty poradni specjalistycznych wzrosły o 55,6%, liczba świadczeń o 13,7%."
+  - "Prywatna wizyta to najprostszy sposób na ominięcie kolejki — tak płacenie tłumaczy 79% płacących. Z własnej kieszeni wydali w 2024 r. 47,6 mld zł."
+  - "Ci sami lekarze pracują w obu sektorach. Ile godzin dają której kolejce, nie sprawdza nikt."
+editorial:
+  - >-
+    Kolejka do specjalisty nie jest tylko problemem organizacji pracy przychodni. Jest też ceną, którą
+    pacjent płaci za to, że nie widzi, za co płaci NFZ. Gdy publiczne pieniądze rosną szybciej niż liczba
+    wizyt, a ten sam lekarz pracuje w przychodni z umową z NFZ i w gabinecie obok, pacjent nie ma jak
+    sprawdzić, ile godzin trafia do której kolejki.
+  - >-
+    Dlatego postulujemy jawne dane pseudonimizowane: łączne wypłaty z publicznych pieniędzy dla każdej
+    osoby, ze wszystkich miejsc pracy, pod stałym identyfikatorem zamiast nazwiska. Nie chodzi o zakaz pracy
+    prywatnej, tylko o to, by było widać, co za publiczne pieniądze kupujemy.
+related:
+  - kolejki
+  - wieloetatowosc
+  - wycena-swiadczen
+  - dlaczego-brakuje-lekarzy
+---
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import ColumnChart from '@/components/blocks/ColumnChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import Verdict from '@/components/blocks/Verdict.astro';
+import IndexChart from '@/components/budzet/IndexChart.astro';
+import SubsidyChart from '@/components/budzet/SubsidyChart.astro';
+import { budget } from '@/data/budzet-nfz';
+import { LINKS as C, ageRows, BEFORE, BOTTOM, gapOlder } from '@/data/ciecie-limitow-na-medycyne';
+import { GROWTH as Q, LINKS as K, MIN_WAGE, WHC_BASE, WHC_EDITIONS, WHC_LATEST, priceLevel } from '@/data/kolejki';
+import { formatPL } from '@/lib/format';
+
+export const LINKS = {
+  bdl: 'https://bdl.stat.gov.pl/api/v1/data/by-variable/5076?unit-level=0&format=json',
+  gusIx: 'https://stat.gov.pl/download/gfx/portalinformacyjny/pl/defaultaktualnosci/5464/2/179/1/wskazniki_cen_towarow_i_uslug_konsumpcyjnych_we_wrzesniu_2026_r_tablice.xlsx',
+  nfz2024: 'https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/dzialalnosc_nfz/sprawozdania_z_dzialalnosci_nfz/zalacznik_do_uchwaly_nr_15-sig.pdf',
+  cbos2025: 'https://www.cbos.pl/SPISKOM.POL/2025/K_069_25.PDF',
+  nrz2024: 'https://api.sejm.gov.pl/eli/acts/MP/2026/971/text.pdf',
+};
+
+{/* Narodowy Rachunek Zdrowia za 2024 r. (M.P. 2026 poz. 971), mld zł; ludność — mianownik wskaźników GUS za 2024 r. */}
+export const OOP_2024 = 47.6405;
+export const OOP_2023 = 38.6332;
+export const PRIVATE_2024 = 66.3777;
+export const POPULATION_2024 = 37_489_087;
+export const oopPerPerson = Math.round((OOP_2024 * 1e9) / POPULATION_2024 / 10) * 10;
+
+{/* Przeciętna cena wizyty u lekarza specjalisty, zł — GUS BDL, zmienna 5076 („Przeciętne ceny detaliczne towarów i usług konsumpcyjnych”) */}
+export const VISIT = [
+  { year: 2015, value: 89.19 }, { year: 2016, value: 92.77 }, { year: 2017, value: 98.28 },
+  { year: 2018, value: 103.97 }, { year: 2019, value: 112.45 }, { year: 2020, value: 126.37 },
+  { year: 2021, value: 138.02 }, { year: 2022, value: 163.96 }, { year: 2023, value: 188.81 },
+  { year: 2024, value: 209.4 }, { year: 2025, value: 231.52 },
+];
+export const visit = (y) => VISIT.find((v) => v.year === y).value;
+
+{/* Wizyta, płaca minimalna (od stycznia) i ceny ogółem jako krotność poziomu z 2015 r. — animowane słupki jak dotacja na /dane/budzet-nfz/ */}
+export const wage = (y) => MIN_WAGE.find((m) => m.year === y).value;
+export const mid = (y) => y + 0.5;
+export const YEARS = VISIT.map((v) => v.year);
+export const x = (n, d = 1) => `×${formatPL(n, d)}`;
+
+{/* Ten sam zestaw jako zwykły wykres indeksowy — animacja słupków kończy się na nim */}
+export const GROWTH_LINES = {
+  base: 2015, xMin: 2015, xMax: 2026, yMin: 80, yMax: 300, ticks: [100, 150, 200, 250, 300], years: YEARS,
+  series: [
+    { id: 'wage', label: 'Płaca minimalna', tone: 'data', end: x(wage(2025) / wage(2015)), labelShift: -1, points: YEARS.map((y) => ({ x: mid(y), v: (wage(y) / wage(2015)) * 100 })) },
+    { id: 'visit', label: 'Wizyta u specjalisty', tone: 'accent', end: x(visit(2025) / visit(2015)), labelShift: 1, points: YEARS.map((y) => ({ x: mid(y), v: (visit(y) / visit(2015)) * 100 })) },
+    { id: 'prices', label: 'Ceny ogółem', tone: 'ref', end: x(priceLevel(2025)), points: YEARS.map((y) => ({ x: mid(y), v: priceLevel(y) * 100 })) },
+  ],
+  caption: 'Indeksy, 2015 = 100, lata 2015–2025: przeciętna cena wizyty u lekarza specjalisty według GUS, płaca minimalna od stycznia i poziom cen ogółem.',
+};
+
+{/* Budżet NFZ, kolejka (Barometr WHC) i cena prywatnej wizyty — wspólny indeks 2015 = 100 */}
+export const CORR_CHART = {
+  base: 2015, xMin: 2015, xMax: 2026, yMin: 80, yMax: 340, ticks: [100, 150, 200, 250, 300], years: YEARS,
+  series: [
+    { id: 'budget', label: 'Budżet NFZ', tone: 'data', end: x(Q.budget), points: YEARS.map((y) => ({ x: mid(y), v: (budget(y).costs / budget(2015).costs) * 100 })) },
+    { id: 'visit', label: 'Prywatna wizyta', tone: 'accent', end: x(visit(2025) / visit(2015)), points: YEARS.map((y) => ({ x: mid(y), v: (visit(y) / visit(2015)) * 100 })) },
+    { id: 'queue', label: 'Kolejka (WHC)', tone: 'data', end: `+${formatPL(Q.queue)}%`, markers: true, points: WHC_EDITIONS.map((e) => ({ x: e.x, v: (e.single / WHC_BASE) * 100, gapBefore: e.label === 'IX 2021' })) },
+  ],
+  caption:
+    `Indeksy, 2015 = 100. Koszty w ostatecznym planie finansowym NFZ: ${formatPL(Q.budget, 2)} raza więcej w 2025 r. niż w 2015 r. ` +
+    `Przeciętna cena wizyty u lekarza specjalisty według GUS: z ${formatPL(visit(2015), 2)} do ${formatPL(visit(2025), 2)} zł. ` +
+    `Średni czas oczekiwania na świadczenie według Barometru WHC: z ${formatPL(WHC_BASE, 1)} do ${formatPL(WHC_LATEST.single, 1)} mies.; w 2020 r. badania nie było.`,
+};
+
+export const GROWTH_CHART = {
+  name: { full: 'Wizyta u specjalisty', short: 'Wizyta' },
+  compare: [
+    { name: { full: 'Ceny ogółem', short: 'Ceny' }, values: VISIT.map((v) => priceLevel(v.year)) },
+    { name: { full: 'Płaca minimalna', short: 'Płaca min.' }, values: VISIT.map((v) => wage(v.year) / wage(2015)) },
+  ],
+  unit: '2015 = 1',
+  bars: VISIT.map((v) => ({ year: v.year, value: v.value / visit(2015) })),
+  caption:
+    'Wykres słupkowy, krotność poziomu z 2015 r. ' +
+    VISIT.map((v) => `${v.year}: wizyta u specjalisty ${formatPL(v.value / visit(2015), 2)}, płaca minimalna ${formatPL(wage(v.year) / wage(2015), 2)}, ceny ogółem ${formatPL(priceLevel(v.year), 2)}`).join('; ') + '.',
+};
+
+{/* AOS w sprawozdaniu NFZ za 2024 r., tab. II.19 (koszty realizacji, tys. zł) i II.20 (pacjenci, świadczenia) — jedna definicja dla trzech lat */}
+export const AOS = [
+  { year: 2022, cost: 11_509_062.82, patients: 16_757_984, services: 83_402_081 },
+  { year: 2023, cost: 15_381_121.07, patients: 17_554_469, services: 89_861_581 },
+  { year: 2024, cost: 17_906_878.53, patients: 18_121_943, services: 94_862_561 },
+];
+export const perService = (r) => (r.cost * 1000) / r.services;
+export const pct = (a, b) => (b / a - 1) * 100;
+export const A0 = AOS[0];
+export const WHC_2022 = WHC_EDITIONS.find((e) => e.label === 'XI 2022');
+export const WHC_2024 = WHC_EDITIONS.find((e) => e.label === 'X/XI 2024');
+export const A2 = AOS.at(-1);
+
+export const AOS_TABLE = {
+  columns: ['Rok', 'Koszty realizacji', 'Świadczenia', 'Pacjenci', 'Koszt na świadczenie (nasz rachunek)'],
+  rows: [
+    ...AOS.map((r) => ({ cells: [String(r.year), `${formatPL(r.cost / 1e6, 2)} mld zł`, `${formatPL(r.services / 1e6, 1)} mln`, `${formatPL(r.patients / 1e6, 1)} mln`, `${formatPL(perService(r))} zł`] })),
+    { cells: ['Zmiana 2022–2024', `+${formatPL(pct(A0.cost, A2.cost), 1)}%`, `+${formatPL(pct(A0.services, A2.services), 1)}%`, `+${formatPL(pct(A0.patients, A2.patients), 1)}%`, `+${formatPL(pct(perService(A0), perService(A2)), 1)}%`], marked: true },
+  ],
+};
+
+Za wizytę u specjalisty w ramach NFZ się nie płaci, ale się na nią czeka: jesienią 2025 r. średnio 4,2 miesiąca.[^whc] Kto nie chce czekać, płaci w gabinecie obok. Ten rachunek rośnie szybciej niż ceny ogółem. W marcu 2026 r. ceny w dziale „zdrowie” były o 4,7% wyższe niż rok wcześniej, o czym pisała Polityka Zdrowotna, a pozaszpitalnych usług leczniczych — o 7,0%. Inflacja wynosiła wtedy 3,0%.[^pz][^gus-iii] Ten tekst opisuje, jak publiczne pieniądze, kolejka i prywatny cennik zależą od siebie i czego o tym związku nie wiadomo.
+
+<StatRow
+  label="Prywatna wizyta, publiczne pieniądze"
+  items={[
+    { value: visit(2025), decimals: 2, unit: 'zł', desc: `przeciętna cena wizyty u lekarza specjalisty w 2025 r., wobec ${formatPL(visit(2015), 2)} zł w 2015 r.`, accuracy: 'exact', source: 'GUS, Bank Danych Lokalnych', href: LINKS.bdl },
+    { value: pct(A0.cost, A2.cost), decimals: 1, unit: '%', desc: `o tyle wzrosły koszty NFZ na ambulatoryjną opiekę specjalistyczną w latach 2022–2024; liczba świadczeń — o ${formatPL(pct(A0.services, A2.services), 1)}%`, accuracy: 'exact', source: 'NFZ, sprawozdanie za 2024 r.', href: LINKS.nfz2024 },
+    { value: OOP_2024, decimals: 1, unit: 'mld zł', desc: 'wydali pacjenci na leczenie z własnej kieszeni w 2024 r., o 23% więcej niż rok wcześniej', accuracy: 'exact', source: 'GUS, Narodowy Rachunek Zdrowia za 2024 r.', href: LINKS.nrz2024 },
+  ]}
+/>
+
+## Pieniądze, kolejka i cena rosną razem
+
+<Figure
+  title={`Od 2015 r. budżet NFZ wzrósł ${formatPL(Q.budget, 1)} raza, prywatna wizyta zdrożała ${formatPL(visit(2025) / visit(2015), 1)} raza, a kolejka wydłużyła się o ${formatPL(Q.queue)}%.`}
+  note="Indeksy, 2015 = 100. Budżet: koszty w ostatecznym planie finansowym NFZ. Prywatna wizyta: przeciętna cena wizyty u lekarza specjalisty w notowaniach GUS. Kolejka: średni czas oczekiwania na pojedyncze świadczenie w Barometrze WHC; każda kropka to jedna edycja, w 2020 r. badania nie było (odcinek przerywany)."
+  source={[
+    { label: 'NFZ, plany finansowe', href: 'https://www.nfz.gov.pl/bip/finanse-nfz/' },
+    { label: 'GUS, Bank Danych Lokalnych — wizyta u lekarza specjalisty', href: LINKS.bdl },
+    { label: 'Fundacja Watch Health Care, Barometr WHC', href: K.whc2025 },
+  ]}
+>
+  <IndexChart {...CORR_CHART} animate />
+</Figure>
+
+Przez dziesięć lat wszystkie trzy linie szły w górę. Budżet NFZ rósł co roku, cena prywatnej wizyty też — najszybciej w latach 2022–2023, gdy inflacja była najwyższa. Kolejka wydłużała się wolniej i nierówno: w 2021 r. była krótsza niż przed pandemią, potem znów się wydłużyła i od 2024 r. jest najdłuższa w historii Barometru.[^nfz-plany][^bdl][^whc]
+
+Wykres pokazuje, że te trzy rzeczy dzieją się jednocześnie. Sam nie dowodzi, która wywołuje którą — trzy rosnące linie wyglądałyby podobnie, gdyby każda miała własną przyczynę. Dalsze części tekstu pokazują, co je łączy: za co płaci NFZ, kto i dlaczego płaci prywatnie, i dlaczego lekarzy, o których godziny konkurują oba systemy, jest mało.
+
+## Wizyta za 231,52 zł
+
+GUS co roku podaje przeciętną cenę wizyty u lekarza specjalisty z notowań cen detalicznych. To cena, którą płaci pacjent: wizyta w ramach NFZ nie ma ceny, więc w tych notowaniach jej nie ma. W 2015 r. przeciętna wizyta kosztowała {formatPL(visit(2015), 2)} zł, w 2025 r. — {formatPL(visit(2025), 2)} zł, czyli {formatPL(visit(2025) / visit(2015), 1)} raza więcej.[^bdl] Ceny ogółem wzrosły w tym czasie o ok. 57%,[^gus-cpi] więc po odliczeniu inflacji wizyta jest droższa o ok. 66% (nasz rachunek). Najszybciej drożała w latach 2022–2023: o 18,8% i 15,2% rocznie.
+
+<Figure
+  title={`Przeciętna wizyta u specjalisty kosztowała w 2025 r. ${formatPL(visit(2025), 2)} zł — ${formatPL(visit(2025) / visit(2015), 1)} raza więcej niż w 2015 r.`}
+  note="Przeciętne ceny detaliczne towarów i usług konsumpcyjnych, pozycja „wizyta u lekarza specjalisty”, Polska, zł. Średnia roczna z notowań GUS."
+  source={{ label: 'GUS, Bank Danych Lokalnych', href: LINKS.bdl }}
+>
+  <BarChart
+    rows={VISIT.map((v) => ({ label: String(v.year), value: v.value, display: `${formatPL(v.value, 2)} zł`, highlight: v.year === 2025 }))}
+    max={250}
+    unit="zł"
+    caption={`Przeciętna cena wizyty u lekarza specjalisty według GUS, zł: ${VISIT.map((v) => `${v.year} — ${formatPL(v.value, 2)}`).join('; ')}.`}
+  />
+</Figure>
+
+Średnia nie mówi, ile za tę cenę dostaje się czasu lekarza. W październiku 2026 r. twórca internetowy opisał w mediach społecznościowych prywatną wizytę za 280 zł: według jego relacji lekarz spojrzał na jeden wynik badania krwi, zalecił witaminę D i po ok. dwóch minutach zakończył konsultację. Wpis z paragonem opisał Onet.[^onet] To relacja jednej osoby, nie pomiar. Pokazuje jednak, że cena prywatnej wizyty jest stała, a jej długość zależy od lekarza i nikt jej nie mierzy.
+
+Ta seria kończy się na 2025 r. Nowsze są wskaźniki cen. We wrześniu 2026 r. pozaszpitalne usługi lecznicze i rehabilitacyjne — bez stomatologii — były droższe o 7,9% niż rok wcześniej, a ceny ogółem o 4,1%.[^gus-ix] Leki i usługi szpitalne drożeją wolniej, więc cały dział „zdrowie” rósł o 4,6%.
+
+Szybki wzrost ceny wizyty nie musi oznaczać, że ktoś na niej zarabia nieproporcjonalnie. Wizyta to przede wszystkim godzina pracy lekarza i rejestracji, a usługi, które składają się głównie z pracy, drożeją zwykle w tempie płac, a nie cen towarów. Płaca minimalna wzrosła od 2015 do 2025 r. z {formatPL(wage(2015))} do {formatPL(wage(2025))} zł, czyli {formatPL(wage(2025) / wage(2015), 1)} raza — mniej więcej tyle samo co cena wizyty.[^placa] Pytanie brzmi więc nie tylko „dlaczego tak drogo”, ale też: dlaczego pacjenci coraz częściej płacą, skoro na publiczną ochronę zdrowia idzie coraz więcej pieniędzy.
+
+<Figure
+  title={`W 2015 r. wizyta u specjalisty kosztowała ${formatPL(visit(2015), 2)} zł, a płaca minimalna wynosiła ${formatPL(wage(2015))} zł. W 2025 r. obie były ok. ${formatPL(visit(2025) / visit(2015), 1)}–${formatPL(wage(2025) / wage(2015), 1)} raza wyższe, a ceny ogółem — ${formatPL(priceLevel(2025), 1)} raza.`}
+  note="Krotność poziomu z 2015 r. Wizyta: przeciętna cena wizyty u lekarza specjalisty w notowaniach GUS. Płaca minimalna: stawka od stycznia; w 2023 i 2024 r. od lipca obowiązywała druga, wyższa. Ceny ogółem: iloczyn średniorocznych wskaźników cen towarów i usług konsumpcyjnych (nasz rachunek)."
+  source={[
+    { label: 'GUS, Bank Danych Lokalnych — wizyta u lekarza specjalisty', href: LINKS.bdl },
+    { label: 'GUS, roczne wskaźniki cen towarów i usług konsumpcyjnych', href: K.gusCpi },
+    { label: 'Rozporządzenia Rady Ministrów w sprawie minimalnego wynagrodzenia', href: K.minWage2021 },
+  ]}
+>
+  <SubsidyChart {...GROWTH_CHART} step={250} flow>
+    <IndexChart {...GROWTH_LINES} animate />
+  </SubsidyChart>
+</Figure>
+
+## Więcej pieniędzy, niewiele więcej wizyt
+
+Koszty w planie NFZ wzrosły w latach 2015–2025 ponad trzykrotnie, a po odliczeniu inflacji mniej więcej dwukrotnie. Średni czas oczekiwania na świadczenie wydłużył się w tym czasie o ok. 43% — pokazujemy to w zestawieniu [Pieniądze a kolejka](/dane/kolejki/). Co za te pieniądze kupiono, widać w sprawozdaniach NFZ. Najdłuższe porównanie w jednej, niezmienionej definicji obejmuje ambulatoryjną opiekę specjalistyczną, czyli poradnie specjalistyczne i badania takie jak tomografia czy rezonans, w latach 2022–2024.[^nfz2024]
+
+<Figure
+  title={`W latach 2022–2024 koszty poradni specjalistycznych wzrosły o ${formatPL(pct(A0.cost, A2.cost), 1)}%, a liczba świadczeń o ${formatPL(pct(A0.services, A2.services), 1)}%.`}
+  note="Ambulatoryjna opieka specjalistyczna z umową z NFZ, z ryczałtem szpitali sieci. Świadczenia: porady w poradniach, porady w kompleksowej opiece i badania kosztochłonne. Pacjenci: unikalne osoby. Koszt na świadczenie to koszty podzielone przez liczbę świadczeń — nasz rachunek."
+  source={{ label: 'NFZ, sprawozdanie z działalności za 2024 r., tab. II.19 i II.20', href: LINKS.nfz2024 }}
+>
+  <Comparison table={AOS_TABLE} />
+</Figure>
+
+<Verdict
+  title="Dokładanie pieniędzy nie skraca kolejek"
+  steps={[
+    { value: `+${formatPL(pct(A0.cost, A2.cost), 1)}%`, desc: 'pieniędzy NFZ na poradnie specjalistyczne, 2022–2024' },
+    { value: `+${formatPL(pct(A0.services, A2.services), 1)}%`, desc: 'świadczeń w tych poradniach w tym samym czasie' },
+    { value: `+${formatPL(pct(WHC_2022.single, WHC_2024.single))}%`, desc: `czasu oczekiwania na świadczenie: z ${formatPL(WHC_2022.single, 1)} do ${formatPL(WHC_2024.single, 1)} mies. (Barometr WHC)` },
+  ]}
+  text={`Pieniądze rosły ok. ${formatPL(pct(A0.cost, A2.cost) / pct(A0.services, A2.services))} razy szybciej niż liczba świadczeń, a czekanie się wydłużyło. Dopóki dodatkowe pieniądze nie kupują dodatkowych godzin pracy specjalistów, kolejka się nie skraca.`}
+/>
+
+Liczby pochodzą ze sprawozdania NFZ za 2024 r. i z Barometru WHC: w listopadzie 2022 r. na świadczenie czekało się średnio {formatPL(WHC_2022.single, 1)} mies., jesienią 2024 r. — {formatPL(WHC_2024.single, 1)} mies.[^nfz2024][^whc]
+
+Przeciętne świadczenie kosztowało NFZ w 2024 r. {formatPL(perService(A2))} zł, o {formatPL(pct(perService(A0), perService(A2)))}% więcej niż dwa lata wcześniej. Ceny ogółem wzrosły w tym czasie o ok. 15%, więc nawet po odliczeniu inflacji świadczenie podrożało o ok. 19% (nasz rachunek). Mniej więcej dwie trzecie wzrostu kosztów to wyższy koszt jednego świadczenia, jedna trzecia — więcej świadczeń. Część wzrostu to droższa diagnostyka i podwyżki dla pracowników z ustawy o minimalnych wynagrodzeniach, część — wyższe stawki za godzinę pracy lekarzy. Sprawozdanie NFZ tych składników nie rozdziela.
+
+NFZ sam przyznaje, że pieniądze nie skróciły kolejek. W lutym 2025 r. Fundusz podał, że wydatki na poradnie specjalistyczne wzrosły z 6,2 mld zł w 2018 r. do 18,2 mld zł w 2024 r., a liczba świadczeń „tylko nieznacznie”. Wiceprezes NFZ ocenił, że zniesienie limitów w 2021 r. nie przyniosło oczekiwanego efektu w postaci skrócenia kolejek.[^nfz-aos] Najwyższa Izba Kontroli opisała to samo w poradniach dla dzieci: mimo wzrostu nakładów i cen jednostkowych dostępność się pogorszyła, a mediana czasu oczekiwania od końca 2020 r. do połowy 2024 r. wzrosła w 32 z 36 rodzajów poradni.[^nik]
+
+Pieniądze mogą skracać kolejki. Według badań porównawczych OECD kraje, którym się to udało, zwiększały nakłady trwale, a nie jednorazowo.[^siciliani] Warunek jest jednak taki, że pieniądze kupują więcej godzin pracy. Gdy liczba godzin rośnie wolniej niż budżet, dodatkowe pieniądze idą w cenę godziny. Przy stałej puli pieniędzy liczba godzin jest odwrotnie proporcjonalna do stawki — to arytmetyka, nie hipoteza. Dlaczego lekarzy przybywa powoli, opisujemy w analizie [Dlaczego brakuje lekarzy](/analizy/dlaczego-brakuje-lekarzy/), a jak NFZ ustala ceny świadczeń — w tekście [Wycena świadczeń](/mechanizmy/wycena-swiadczen/).
+
+## Mniej miejsc na studiach, droższa godzina
+
+Pieniądze kupują cenę zamiast godzin, bo godzin specjalistów nie da się szybko dokupić. Na ich liczbę wciąż wpływa decyzja sprzed trzech dekad. Według Rynku Zdrowia liczbę miejsc na pierwszym roku medycyny zmniejszano z ponad {formatPL(BEFORE)} w 1987 r. do {formatPL(BOTTOM)} na studiach dziennych w 2003 r.[^rz2019] Te liczby znamy tylko z prasy — piszemy o tym w analizie [Cięcie limitów na medycynę](/analizy/ciecie-limitow-na-medycyne/).
+
+<Figure
+  title={`Lekarzy w wieku 46–50 lat, którzy zaczynali studia po cięciu limitów, jest o ${gapOlder}% mniej niż lekarzy w wieku 56–60 lat.`}
+  note="Tys. lekarzy (bez lekarzy dentystów) wykonujących zawód, według wieku, stan na 31.12.2025. Rok rozpoczęcia studiów — przybliżenie z rocznika. Linia przerywana: liczba lekarzy w wieku 56–60 lat, którzy zaczynali studia przed cięciem."
+  source={{ label: 'NIL, Centralny Rejestr Lekarzy, zestawienie nr 3', href: C.crl }}
+>
+  <ColumnChart
+    columns={ageRows.map((r) => ({ label: r.label.replace(' lat', ''), sub: r.note.replace('· studia od ok. ', 'studia '), value: r.value, display: formatPL(r.value / 1000, 1) }))}
+    max={21000}
+    gap={{ from: 3, to: 5, label: 'Luka', sub: 'studia ok. 1990–2004' }}
+    ref={{ index: 6, label: `−${gapOlder}% wobec 56–60 lat` }}
+    caption={`Wykres kolumnowy. Lekarze wykonujący zawód według wieku, stan na 31.12.2025: ${ageRows.map((r) => `${r.label} — ${r.display}`).join('; ')}. Najmniej jest lekarzy w wieku 41–55 lat, którzy zaczynali studia w latach cięcia limitów; w wieku 46–50 lat o ${gapOlder}% mniej niż w wieku 56–60 lat.`}
+  />
+</Figure>
+
+Roczniki przyjęte przy najniższych limitach to dziś lekarze w środku kariery, w wieku, w którym specjalista ma największe doświadczenie i najczęściej prowadzi własną praktykę.[^crl] Gdy ich brakuje, o tę samą, mniejszą pulę godzin konkurują przychodnie z umową z NFZ, szpitale i prywatne gabinety. Zgodnie z prostą arytmetyką rynku cena godziny rośnie po obu stronach: NFZ płaci więcej za podobną liczbę wizyt, a pacjent więcej za wizytę prywatną.
+
+Limity przyjęć od lat znów rosną: w roku 2025/26 kierunek lekarski miał 10 504 miejsca.[^limity] Od przyjęcia na studia do tytułu specjalisty mija jednak 12–13 lat, więc roczniki z ostatnich naborów zostaną specjalistami mniej więcej w latach 2034–2038. Ministerstwo Zdrowia i zespół działający przy Naczelnej Izbie Lekarskiej przewidują, że wtedy lekarzy może być więcej, niż potrzeba. Obie prognozy opisujemy w analizie [Dlaczego brakuje lekarzy](/analizy/dlaczego-brakuje-lekarzy/). Do tego czasu niedobór specjalistów z roczników po cięciu jest jednym z powodów, dla których dodatkowe pieniądze podnoszą cenę godziny szybciej niż liczbę wizyt.
+
+## Prywatna wizyta zamiast kolejki
+
+Najprostszy sposób na ominięcie kolejki jest legalny: zapłacić. Pacjent, który nie chce czekać na termin w poradni z umową z NFZ, umawia się do prywatnego gabinetu na najbliższy wolny termin, często u tego samego specjalisty. Tak korzystanie z płatnej opieki tłumaczy większość płacących, o czym niżej.
+
+Skrajny przykład opisał we wrześniu 2026 r. „Głos Wielkopolski”. 52-latka z Piły ze sztywniejącymi po złamaniu palcami dostała w poznańskim szpitalu klinicznym skierowanie na rekonstrukcję oznaczone jako pilne. W rejestracji usłyszała termin: 1 października 2035 r., miejsce 3214 na liście 6738 osób. Na pilną rehabilitację, jak mówi, miałaby czekać do trzech lat. Szpital sprawy nie skomentował.[^gw] Wielkopolski oddział NFZ wyjaśniał w Polsat News, że termin zależy od wskazań medycznych i zasobów placówki, a w Polsce jest ok. 20 chirurgów ręki z międzynarodowym egzaminem specjalizacyjnym. Na zabiegi, które nie zagrażają życiu, czeka się według Funduszu średnio 1,5–2 roku.[^polsat] Przy tak małej liczbie specjalistów dodatkowe pieniądze same nie zwiększą liczby zabiegów — mogą najwyżej podnieść cenę godziny tych, którzy są.
+
+Kto czeka za długo, idzie prywatnie — jeśli go stać. CBOS pyta o to regularnie. W czerwcu 2025 r. 40% dorosłych było w półroczu przed badaniem u lekarza specjalisty poza NFZ, płacąc samemu albo w ramach dodatkowego ubezpieczenia. W 2018 r. było to 29%. Z wizyt u specjalisty w ramach NFZ korzystało w obu latach po 40%.[^cbos2025] Publicznych wizyt nie ubyło, ale prywatnych przybyło.
+
+O powody CBOS pytał ostatnio w 2023 r. Wśród osób, które korzystały z płatnej opieki, 79% wskazało krótszy czas oczekiwania — to zdecydowanie najczęstszy powód. Pozostałe powody były wyraźnie rzadsze: 27% badanych liczyło na lepszych specjalistów, 19% na sprawniejszą obsługę.[^cbos2023]
+
+Popyt, który kolejka wypycha z systemu publicznego, trafia do prywatnych gabinetów. Pacjent, któremu poradnia z umową z NFZ proponuje endokrynologa za rok — średnio 12,9 mies. według Barometru WHC — nie porównuje cen długo.[^whc] To nie musi oznaczać zmowy ani nieuczciwości: przy niedoborze specjalistów i pilnej potrzebie cenę wyznacza to, ile pacjenci są gotowi zapłacić, żeby nie czekać.
+
+## Ile płacimy z własnej kieszeni
+
+Prywatne wizyty, leki, stomatologia i badania, za które pacjent płaci sam, GUS liczy w Narodowym Rachunku Zdrowia. W 2024 r. gospodarstwa domowe wydały w ten sposób {formatPL(OOP_2024, 1)} mld zł, o {formatPL(pct(OOP_2023, OOP_2024))}% więcej niż rok wcześniej.[^nrz2024] Na jednego mieszkańca to ok. {formatPL(oopPerPerson)} zł rocznie (nasz rachunek: kwota GUS podzielona przez {formatPL(POPULATION_2024 / 1e6, 1)} mln mieszkańców).[^ludnosc] Razem z abonamentami medycznymi i dobrowolnymi ubezpieczeniami wydatki prywatne na zdrowie wyniosły {formatPL(PRIVATE_2024, 1)} mld zł.[^nrz2024]
+
+Dla skali: z własnej kieszeni pacjenci wydali w 2024 r. {formatPL(OOP_2024 / (A2.cost / 1e6), 1)} raza więcej, niż NFZ wydał na wszystkie poradnie specjalistyczne i badania w nich ({formatPL(A2.cost / 1e6, 1)} mld zł).[^nfz2024] Kwota GUS obejmuje wszystko, za co płacą pacjenci, także leki i dentystę, więc nie jest to cena samej kolejki do specjalisty. Pokazuje jednak, że obok publicznego systemu działa drugi, finansowany bezpośrednio przez chorych. Jak te wydatki zmieniały się od 2020 r., pokazujemy w zestawieniu [Pieniądze a kolejka](/dane/kolejki/#ile-placimy-sami).
+
+## Ci sami lekarze po obu stronach
+
+Publiczna i prywatna kolejka nie mają osobnych lekarzy. Lekarz, który przyjmuje w poradni z umową z NFZ, może po godzinach przyjmować w prywatnym gabinecie, i wielu tak pracuje. Samorząd lekarski zbadał to wiosną 2026 r. w ankiecie wśród 2243 lekarzy i lekarzy dentystów. Próba nie była losowa, więc wynik nie mówi o wszystkich lekarzach, ale pokazuje skalę zjawiska.[^nil]
+
+- 30,8% respondentów pracowało wyłącznie przy świadczeniach finansowanych publicznie,
+- 31,0% głównie publicznie i sporadycznie prywatnie,
+- 18,5% publicznie i prywatnie w podobnym zakresie,
+- 5,4% głównie prywatnie, a 11,9% wyłącznie prywatnie.
+
+Razem ok. 55% łączy oba sektory. Pytani o problemy takiego łączenia, respondenci najczęściej wskazywali dopisywanie pacjentów poza przejrzystą kolejnością (41,4%), ryzyko korzystania z publicznych zasobów na rzecz pracy prywatnej (35,4%) i przenoszenie pacjentów z kolejki publicznej do wizyt prywatnych (27,3%).[^nil] To opinie samych lekarzy o ryzykach, nie pomiar tego, jak często się zdarzają.
+
+## Bilet przez gabinet
+
+Prywatna wizyta może też skracać drogę do leczenia, za które płaci NFZ. Gdy lekarz przyjmuje prywatnie i pracuje w szpitalu, płatna konsultacja może stać się biletem na oddział — szybszym niż lista oczekujących. Ta droga ma cztery kroki i większość z nich jest legalna:
+
+<NumberedList
+  items={[
+    { title: 'Płatna konsultacja.', text: `Pacjent idzie prywatnie do specjalisty, który pracuje też w szpitalu z umową z NFZ. Przeciętna wizyta kosztowała w 2025 r. ${formatPL(visit(2025), 2)} zł.` },
+    { title: 'Skierowanie do szpitala.', text: 'Na leczenie szpitalne może skierować każdy lekarz, także w prywatnym gabinecie. Do poradni specjalistycznej z umową z NFZ potrzebne jest skierowanie od lekarza ubezpieczenia zdrowotnego, ale do szpitala już nie.' },
+    { title: 'Kategoria i termin.', text: 'O tym, czy przypadek jest pilny, czy stabilny, i jaki termin dostanie pacjent, decyduje szpital — ten, w którym pracuje lekarz z gabinetu.' },
+    { title: 'Szybciej na oddział.', text: 'Jeśli pacjent z gabinetu dostaje termin przed osobami z listy, a nie uzasadnia tego jego stan zdrowia, omija kolejkę. To jedyny krok, który jest nieprawidłowością — i ten, którego nikt dziś nie widzi.' },
+  ]}
+/>
+
+Podstawą są przepisy ustawy o świadczeniach: skierowanie do szpitala może wystawić „lekarz”, a do poradni specjalistycznej — „lekarz ubezpieczenia zdrowotnego”.[^art57] Szpital ma przyjmować według kolejności zgłoszenia, z uwzględnieniem kategorii medycznej, którą sam ustala.[^art20] Jak często pacjenci z gabinetu dostają termin szybciej, niż uzasadnia to ich stan, nie wiadomo: nikt nie zestawia płatnych wizyt z przyjęciami finansowanymi przez NFZ. W ankiecie samorządu lekarskiego dopisywanie pacjentów poza przejrzystą kolejnością było najczęściej wskazywanym problemem łączenia pracy publicznej i prywatnej (41,4%).[^nil]
+
+Znane są pojedyncze kontrole. W czerwcu 2026 r. NFZ nałożył 289 tys. zł kary na klinikę jednego z warszawskich szpitali uniwersyteckich. Według ustaleń kontroli 70% pacjentów przyjęto niezgodnie z kolejnością, a 10 osób z pominięciem listy oczekujących. Kontrolę poprzedziło anonimowe pismo pracowników, według którego poza kolejką trafiali głównie pacjenci z prywatnego gabinetu jednego z lekarzy. Tego NFZ nie potwierdził. Szpital nie zgadza się z wynikami kontroli i twierdzi, że przyjmował pacjentów według kryteriów medycznych.[^interia] NIK w kontroli poradni dla dzieci opisała z kolei placówkę, która przyjmowała pacjentów prywatnie w godzinach, w których zgodnie z umową z NFZ powinna przyjmować pacjentów publicznych.[^nik]
+
+Rząd chce dać Funduszowi narzędzie do sprawdzania takich przypadków. W projekcie nowelizacji ustawy o świadczeniach, który w lipcu 2026 r. trafił do konsultacji, placówki łączące umowę z NFZ z płatnymi usługami mają przekazywać Funduszowi dane o tych usługach. NFZ mógłby wtedy sprawdzić, czy pacjenci przyjęci poza kolejnością nie byli wcześniej prywatnie u tych samych lekarzy. Prezes NFZ przyznał, że dziś Fundusz nie ma narzędzi do badania powiązań między pracą w publicznym systemie a prywatną praktyką lekarzy.[^gp-kontrole]
+
+## Zakazać łączenia?
+
+Ekonomiści zdrowia nazywają pracę lekarza w obu sektorach konfliktem interesów: im dłuższa publiczna kolejka, tym chętniej pacjent, którego na to stać, idzie prywatnie, często do tego samego lekarza.[^siciliani] Najprostsza odpowiedź to zakazać lekarzowi z kontraktem NFZ przyjmowania prywatnie. Dowody nie są jednak jednoznaczne. Model teoretyczny z 1997 r. pokazuje, że gdy lekarzom wolno przyjmować prywatnie, publiczna kolejka może się wydłużać.[^iversen] Przegląd badań z 2011 r. stwierdza jednak, że dowodów empirycznych jest mało i wskazują w różne strony.[^socha] Praca w dwóch sektorach może też dawać pacjentom więcej godzin lekarza, niż dałby sam system publiczny.
+
+Wśród lekarzy zakaz ma małe poparcie. W ankiecie samorządu lekarskiego pełny zakaz łączenia pracy publicznej i prywatnej poparło 15,1% respondentów (bez odpowiedzi „trudno powiedzieć”). Zakaz przyjmowania prywatnie w tym samym zakresie, w którym lekarz pracuje dla NFZ, poparło 22,9%, a 67,7% było przeciw. Najwięcej poparcia — 71,9% — zebrało pełne rozdzielenie kolejek, grafików i rozliczeń publicznych i prywatnych, ale niemal tyle samo respondentów (68,9%) popierało pozostawienie obecnej swobody bez nowych ograniczeń.[^nil]
+
+<Figure
+  title="Lekarze popierają rozdzielenie kolejek, nie zakaz pracy prywatnej"
+  note="Ankieta internetowa NIL „Perspektywa 27”, 29.04–4.05.2026, lekarze i lekarze dentyści, próba nielosowa (N = 2243). Odsetek popierających wśród odpowiedzi innych niż „trudno powiedzieć”; zakaz w tym samym zakresie — wśród wszystkich odpowiedzi."
+  source={{ label: 'Naczelna Izba Lekarska, raport „Perspektywa 27”', href: 'https://nil.org.pl/uploaded_files/art_1778144361_perspektywa-27-final.pdf' }}
+>
+  <BarChart
+    rows={[
+      { label: 'Rozdzielenie kolejek, grafików i rozliczeń', value: 71.9, display: '71,9%', highlight: true },
+      { label: 'Ograniczenia tylko przy realnym konflikcie interesów', value: 69.9, display: '69,9%' },
+      { label: 'Bez nowych ograniczeń, obecna swoboda', value: 68.9, display: '68,9%' },
+      { label: 'Jawne zgłaszanie miejsc pracy publicznej i prywatnej', value: 51.9, display: '51,9%' },
+      { label: 'Zakaz prywatnie w tym samym zakresie co w NFZ', value: 22.9, display: '22,9%' },
+      { label: 'Pełny zakaz łączenia pracy publicznej i prywatnej', value: 15.1, display: '15,1%' },
+    ]}
+    max={100}
+    unit="%"
+    caption="Poparcie lekarzy dla wariantów regulacji pracy w dwóch sektorach: rozdzielenie kolejek, grafików i rozliczeń 71,9%; ograniczenia tylko przy realnym konflikcie interesów 69,9%; bez nowych ograniczeń 68,9%; jawne zgłaszanie miejsc pracy 51,9%; zakaz prywatnie w tym samym zakresie co w NFZ 22,9%; pełny zakaz łączenia 15,1%."
+  />
+</Figure>
+
+Jako ryzyka zbyt ostrego rozdzielenia lekarze wskazywali odpływ części lekarzy do pracy prywatnej (74,8%) i dłuższe kolejki w systemie publicznym (58,9%). Jednocześnie 56,8% uznało, że przy przewidywalnych i atrakcyjnych warunkach wybrałoby pracę wyłącznie przy świadczeniach publicznych — najczęściej pod warunkiem gwarantowanego wysokiego wynagrodzenia (67,1%).[^nil] Prezydium Naczelnej Rady Lekarskiej ocenia negatywnie rządowy projekt, który ogranicza łączny czas pracy lekarzy: według samorządu sztywne ograniczenia przy niedoborze kadr zmniejszą liczbę świadczeń w NFZ i zwiększą liczbę świadczeń wyłącznie prywatnych. Samorząd deklaruje zarazem poparcie dla przejrzystości umów.[^nrl]
+
+Inne kraje wybierają różne drogi. Irlandia od marca 2023 r. zatrudnia nowych konsultantów w publicznej służbie zdrowia tylko na kontraktach „wyłącznie publicznych” — to krok w stronę stopniowego wycofania praktyki prywatnej ze szpitali publicznych.[^irl] Wielka Brytania pracy prywatnej nie zakazuje, ale od 2003 r. reguluje ją w kontrakcie konsultantów NHS. Praca dla NHS ma pierwszeństwo, a zasady obejmują ujawnianie praktyki prywatnej, układanie grafików, przenoszenie pacjentów między NHS a sektorem prywatnym i zarządzanie listami oczekujących. Ich przestrzeganie jest warunkiem awansu płacowego.[^nhs]
+
+Z dostępnych danych nie wynika, że sam zakaz skróciłby kolejki — przy niedoborze specjalistów mógłby je wydłużyć, gdyby część lekarzy wybrała gabinet. Brytyjski kontrakt pokazuje inną drogę: nie zakazywać, tylko wiedzieć, kto, gdzie i ile pracuje oraz kto trafia na listę z gabinetu. Tej wiedzy w Polsce dziś brakuje.
+
+## Pętla
+
+Z tych danych da się złożyć mechanizm, w którym trzy trendy wzmacniają się nawzajem. To hipoteza: dane ją uprawdopodabniają, ale żadne z dostępnych źródeł jej nie dowodzi.
+
+<NumberedList
+  items={[
+    { title: 'Pieniądze idą w cenę godziny.', text: 'Specjalistów z roczników po cięciu limitów przyjęć jest mało, a budżet NFZ rośnie szybciej niż liczba godzin ich pracy, więc za podobną liczbę świadczeń płaci coraz więcej. W poradniach specjalistycznych w latach 2022–2024: +55,6% kosztów, +13,7% świadczeń.' },
+    { title: 'Kolejka się nie skraca.', text: 'Średni czas oczekiwania na świadczenie wynosi 4,2 miesiąca i jest najdłuższy w historii pomiarów Barometru WHC.' },
+    { title: 'Popyt przenosi się do gabinetów.', text: 'Prywatna wizyta staje się sposobem na ominięcie kolejki: coraz więcej pacjentów płaci, a 79% z nich robi to, żeby nie czekać. Przeciętna prywatna wizyta kosztuje 2,6 raza więcej niż w 2015 r.' },
+    { title: 'Prywatna stawka podnosi publiczną.', text: 'Przychodnia z umową z NFZ i prywatny gabinet konkurują o godziny tych samych specjalistów. Im lepiej płaci gabinet, tym więcej musi zapłacić przychodnia, żeby lekarz nie przeniósł do niego swoich godzin — i pętla zaczyna się od nowa.' },
+  ]}
+/>
+
+<Aside title="Czego te dane nie pokazują" variant="note">
+Nikt nie mierzy, ile godzin jeden lekarz przepracowuje w ramach NFZ, a ile prywatnie, ani ile zarabia łącznie ze wszystkich miejsc pracy. Dlatego nie da się sprawdzić ostatniego ogniwa pętli: czy wyższa stawka w gabinecie rzeczywiście podnosi koszt godziny w przychodni z umową z NFZ i odciąga od niej godziny. Kolejki wydłużają też przyczyny niezależne od pieniędzy: zaległości po pandemii, starzenie się pacjentów, więcej skierowań na badania i wizyty kontrolne, które zajmują terminy nowym pacjentom.
+</Aside>
+
+Rząd przygotował projekt, który ogranicza łączny czas pracy jednej osoby w placówkach z umową z NFZ. Opisujemy go w tekście o [wieloetatowości](/mechanizmy/wieloetatowosc/). Nawet przy takim limicie bez danych o godzinach i wypłatach jednej osoby ze wszystkich miejsc pracy nie da się sprawdzić, czy publiczne pieniądze kupują więcej wizyt, czy tylko droższe.
+
+[^whc]: Fundacja Watch Health Care, [Barometr WHC — raport z IX/X 2025](https://www.korektorzdrowia.pl/wp-content/uploads/barometr-whc-2025.pdf) — rys. 2: średni czas oczekiwania na pojedyncze świadczenie we wszystkich edycjach (m.in. 3,6 mies. w XI 2022, 4,2 mies. w X/XI 2024); średni czas oczekiwania na pojedyncze świadczenie i na poradę specjalisty: po 4,2 mies.; endokrynolog 12,9 mies.
+
+[^pz]: Polityka Zdrowotna, [Zdrowie drożeje najbardziej — nowe dane GUS](https://politykazdrowotna.com/artykul/zdrowie-drozeje-najbardziej-n2260121), 16.04.2026.
+
+[^gus-iii]: GUS, [Wskaźniki cen towarów i usług konsumpcyjnych w marcu 2026 r.](https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-w-marcu-2026-r-,2,173.html), 15.04.2026 — tablice: zdrowie 104,7, usługi lecznicze i rehabilitacyjne pozaszpitalne (COICOP 06231) 107,0, ogółem 103,0 (marzec 2025 = 100).
+
+[^bdl]: GUS, Bank Danych Lokalnych, [przeciętne ceny detaliczne towarów i usług konsumpcyjnych — „wizyta u lekarza specjalisty”](https://bdl.stat.gov.pl/api/v1/data/by-variable/5076?unit-level=0&format=json) (zmienna 5076), Polska, lata 1999–2025. Zmiany roczne i krotność — nasz rachunek.
+
+[^gus-cpi]: GUS, [Roczne wskaźniki cen towarów i usług konsumpcyjnych](https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/) — poziom cen w 2025 r. wobec 2015 r. i w 2024 r. wobec 2022 r. to iloczyn wskaźników średniorocznych (nasz rachunek).
+
+[^gus-ix]: GUS, [Wskaźniki cen towarów i usług konsumpcyjnych we wrześniu 2026 r. — tablice](https://stat.gov.pl/download/gfx/portalinformacyjny/pl/defaultaktualnosci/5464/2/179/1/wskazniki_cen_towarow_i_uslug_konsumpcyjnych_we_wrzesniu_2026_r_tablice.xlsx), 14.10.2026 — wrzesień 2025 = 100: ogółem 104,1; zdrowie 104,6; usługi lecznicze i rehabilitacyjne pozaszpitalne (COICOP 06231) 107,9.
+
+[^placa]: Rozporządzenia Rady Ministrów w sprawie wysokości minimalnego wynagrodzenia za pracę; stawki od stycznia z lat 2015–2026 zestawiamy w tabeli [Pieniądze a kolejka](/dane/kolejki/), np. [na 2021 r.](https://eli.gov.pl/eli/DU/2020/1596/ogl/pol/pdf) (Dz.U. 2020 poz. 1596).
+
+[^nfz2024]: NFZ, [Sprawozdanie z działalności Narodowego Funduszu Zdrowia za 2024 rok](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/dzialalnosc_nfz/sprawozdania_z_dzialalnosci_nfz/zalacznik_do_uchwaly_nr_15-sig.pdf) — tab. II.19 (wartość i wykonanie umów w AOS, z ryczałtem PSZ) i II.20 (liczba pacjentów i świadczeń w AOS) za lata 2022–2024.
+
+[^nfz-aos]: NFZ, [Szybciej dostaniesz się do lekarza specjalisty. NFZ pokazał projekt zmian w ambulatoryjnej opiece specjalistycznej](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/szybciej-dostaniesz-sie-do-lekarza-specjalisty-nfz-pokazal-projekt-zmian-w-ambulatoryjnej-opiece-specjalistycznej,8732.html), 17.02.2025.
+
+[^nik]: NIK, [Ambulatoryjna opieka specjalistyczna dla dzieci finansowana ze środków publicznych](https://www.nik.gov.pl/kontrole/wyniki-kontroli-nik/pobierz,kzd~p_24_047_202409041156571725443817~01,typ,k.pdf), 2025 (nr ewid. 6/2025/P/24/047/KZD) — synteza wyników kontroli, s. 9; wizyty prywatne w godzinach z harmonogramu umowy z NFZ — ustalenia dla jednej z kontrolowanych placówek.
+
+[^siciliani]: L. Siciliani, M. Borowitz, V. Moran (red.), *Waiting Time Policies in the Health Sector: What Works?*, OECD 2013; współautor tego raportu omówił jego wnioski przed komisją zdrowia Zgromadzenia Irlandii Północnej: [zapis posiedzenia z 26.02.2014](https://www.niassembly.gov.uk/globalassets/documents/official-reports/health/2013-2014/140226_reviewofwaitingtimesprofsiciliani.pdf) — skuteczne polityki szły w parze ze znaczącym i trwałym wzrostem zasobów; podwójna rola lekarzy rodzi konflikt interesów.
+
+[^iversen]: T. Iversen, [The effect of a private sector on the waiting time in a national health service](https://ideas.repec.org/a/eee/jhecon/v16y1997i4p381-396.html), *Journal of Health Economics* 16(4), 1997, s. 381–396.
+
+[^socha]: K. Z. Socha, M. Bech, [Physician dual practice: a review of literature](https://ideas.repec.org/a/eee/hepoli/v102y2011i1p1-7.html), *Health Policy* 102(1), 2011, s. 1–7.
+
+[^onet]: Onet, [Nie krył oburzenia po prywatnej wizycie. „Czas trwania dwie minuty”. Tyle zapłacił](https://kobieta.onet.pl/wiadomosci/poszedl-prywatnie-do-lekarza-tyle-zaplacil-za-dwuminutowa-wizyte/pn0gf86), 13.10.2026 — relacja pacjenta z mediów społecznościowych; artykuł nie podaje specjalności lekarza ani placówki.
+
+[^gw]: Głos Wielkopolski, [„Za 9 lat ta operacja nie będzie mi już potrzebna”. Pani Agnieszka na zabieg „na cito” u Degi w Poznaniu ma czekać aż do 2035 roku](https://gloswielkopolski.pl/za-9-lat-ta-operacja-nie-bedzie-mi-juz-potrzebna-pani-agnieszka-na-zabieg-na-cito-u-degi-w-poznaniu-ma-czekac-az-do-2035-roku/ar/c14p2-29386235), 28.09.2026; sprawę opisał też m.in. [Bezprawnik](https://bezprawnik.pl/dostala-skierowanie-na-cito-operacje-ma-zaplanowana-na-2035-rok/), 30.09.2026.
+
+[^polsat]: Polsat News, [Ma niesprawną rękę i skierowanie „na cito”. Termin operacji? Za 9 lat](https://www.polsatnews.pl/wiadomosc/2026-09-29/ma-niesprawna-reke-i-skierowanie-na-juz-przezyla-szok-gdy-zobaczyla-termin-zabiegu/), 29.09.2026 — wyjaśnienia Wielkopolskiego Oddziału Wojewódzkiego NFZ; centrala NFZ zapowiedziała sprawdzenie przypadku.
+
+[^ludnosc]: GUS, [Zasoby kadrowe w wybranych zawodach medycznych na podstawie źródeł administracyjnych w 2024 r.](https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/zasoby-kadrowe-w-wybranych-zawodach-medycznych-na-podstawie-zrodel-administracyjnych-w-2024-r-,28,4.html) — liczba ludności przyjęta jako mianownik wskaźników (37 489 087).
+
+[^interia]: Interia, [Nawet 70 proc. pacjentów przyjętych poza kolejką. Klinika z karą od NFZ](https://wydarzenia.interia.pl/mazowieckie/news-nawet-70-proc-pacjentow-przyjetych-poza-kolejka-klinika-z-ka,nId,23503408), 22.06.2026 — za portalem Rynek Zdrowia; kara 289 tys. zł, wcześniejsza kara 50 tys. zł z 2022 r.; stanowisko szpitala.
+
+[^gp-kontrole]: Gazeta Prawna (za PAP), [Kontrola NFZ w prywatnych gabinetach i szpitalach. Nowe uprawnienia Funduszu i zmiana przepisów](https://www.gazetaprawna.pl/wiadomosci/kraj/artykuly/11281904,kontrole-nfz-bez-zapowiedzi-limit-czasu-pracy-lekarzy-320-godzin-nowelizacja-2026.html), 28.07.2026 — projekt nowelizacji ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych skierowany do konsultacji publicznych.
+
+[^art20]: [Ustawa z 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (t.j. Dz.U. 2025 poz. 1461), art. 20 ust. 1 i ust. 2 pkt 1–2.
+
+[^nfz-plany]: NFZ, Biuletyn Informacji Publicznej, [Finanse NFZ — plany finansowe](https://www.nfz.gov.pl/bip/finanse-nfz/) — koszty ogółem w ostatecznych planach finansowych na lata 2015–2025; seria jak w zestawieniu [Budżet NFZ](/dane/budzet-nfz/).
+
+[^rz2019]: Rynek Zdrowia, [„Limity przyjęć na medycynę wyraźnie rosną. Czy odbudujemy lekarskie kadry?”](https://www.rynekzdrowia.pl/Nauka/Limity-przyjec-na-medycyne-wyraznie-rosna-Czy-odbudujemy-lekarskie-kadry,198210,9.html), 16.09.2019 — miejsca na I roku: ponad 6 000 w 1987 r.; 2 090 miejsc na studiach dziennych w 2003 r. (bez wskazania źródła pierwotnego).
+
+[^crl]: Naczelna Izba Lekarska, [Zestawienie liczbowe lekarzy i lekarzy dentystów według wieku, płci i tytułu zawodowego, stan na 31.12.2025](https://nil.org.pl/uploaded_files/1768208069_31122025-zestawienie-nr-3.pdf) — lekarze wykonujący zawód według wieku; odsetki — obliczenia własne.
+
+[^limity]: Rozporządzenie Ministra Zdrowia w sprawie limitu przyjęć na kierunki lekarski i lekarsko-dentystyczny, [Dz.U. 2025 poz. 1086](https://api.sejm.gov.pl/eli/acts/DU/2025/1086/text.pdf), zał. nr 1 — 10 504 miejsca na kierunku lekarskim w roku 2025/26, w tym 1 888 w języku obcym; wersje rozporządzeń z poprzednich lat zestawiamy w analizie [Dlaczego brakuje lekarzy](/analizy/dlaczego-brakuje-lekarzy/).
+
+[^art57]: [Ustawa z 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (t.j. Dz.U. 2025 poz. 1461), art. 57 ust. 1 (poradnie specjalistyczne — skierowanie lekarza ubezpieczenia zdrowotnego) i art. 58 (leczenie szpitalne — skierowanie lekarza, lekarza dentysty lub felczera).
+
+[^nrl]: Naczelna Izba Lekarska, [Stanowisko nr 17/26/P-X Prezydium Naczelnej Rady Lekarskiej z 11 sierpnia 2026 r.](https://nil.org.pl/articleToPdf/9353) w sprawie projektu ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych oraz niektórych innych ustaw.
+
+[^irl]: Komisja Europejska, [Entry into operation of the Sláintecare Consultant Contract](https://reforms-investments.ec.europa.eu/projects/entry-operation-slaintecare-consultant-contract_en) — kontrakt „Public Only” wdrożony 8.03.2023 r., jedyny dostępny dla nowych i zastępowanych stanowisk w HSE; obecni konsultanci mogą na niego przejść.
+
+[^nhs]: NHS Employers, [Consultant contract: framework](https://www.nhsemployers.org/system/files/2021-06/framework-agreement-consultants.pdf) (umowa ramowa departamentów zdrowia Wielkiej Brytanii, BMA i NHS Confederation; kontrakt od 1.04.2003 r.), cz. 7 „Private practice”.
+
+[^cbos2025]: CBOS, [Korzystanie ze świadczeń i ubezpieczeń zdrowotnych](https://www.cbos.pl/SPISKOM.POL/2025/K_069_25.PDF), komunikat z badań nr 69/2025 — tab. 3 (w ramach NFZ) i tab. 4 (poza NFZ), pomiary 2018–2025.
+
+[^cbos2023]: CBOS, [komunikat z badań nr 101/2023](https://cbos.pl/SPISKOM.POL/2023/K_101_23.PDF) — motywy korzystania z niepublicznej opieki zdrowotnej wśród 62% badanych, którzy z niej korzystali.
+
+[^nrz2024]: [Obwieszczenie Prezesa GUS z 30 września 2026 r. w sprawie Narodowego Rachunku Zdrowia za 2024 r.](https://api.sejm.gov.pl/eli/acts/MP/2026/971/text.pdf) (M.P. 2026 poz. 971) — bezpośrednie wydatki gospodarstw domowych 47 640,5 mln zł (w 2023 r. 38 633,2 mln zł), wydatki prywatne ogółem 66 377,7 mln zł.
+
+[^nil]: Naczelna Izba Lekarska, Ośrodek Badań i Analiz, [Raport z badania „Perspektywa 27”. Opinie lekarzy i lekarzy dentystów o rozdzieleniu aktywności zawodowej między świadczenia finansowane publicznie i prywatne](https://nil.org.pl/uploaded_files/art_1778144361_perspektywa-27-final.pdf), 2026 — badanie internetowe 29.04–4.05.2026, N = 2243; model pracy klinicznej (tab. 1) i problemy łączenia sektorów (rozdz. 5.4, pytanie wielokrotnego wyboru).

@@ -1,0 +1,135 @@
+---
+/**
+ * Pionowy wykres słupkowy (kolumny) ze wspólną skalą od zera. Każda kolumna ma wartość nad sobą,
+ * więc wykres nie ma osi (README → Wykresy). Pod kolumną etykieta i opcjonalny dopisek (`sub`,
+ * chowany w wąskim kontenerze).
+ *
+ * `gap` zaznacza lukę: tło pod kolumnami od `from` do `to` (indeksy), kolumny w akcencie (--blue)
+ * i podpis na górze pola. `ref` rysuje przerywaną linię na wysokości wybranej kolumny — od początku
+ * luki do tej kolumny — żeby było widać, ile do niej brakuje.
+ * Kolumny „rosną” przy przewijaniu (data-reveal="grow" → .is-armed → .is-in, scripts/reveal.ts).
+ */
+import { typo } from '@/lib/format';
+
+interface Column {
+  label: string;
+  /** dopisek pod etykietą, np. „studia ok. 1995–99” */
+  sub?: string;
+  value: number;
+  /** podpis nad kolumną */
+  display: string;
+}
+
+interface Props {
+  columns: Column[];
+  /** wartość odpowiadająca pełnej wysokości pola */
+  max: number;
+  gap?: { from: number; to: number; label: string; sub?: string };
+  ref?: { index: number; label: string };
+  /** pełny opis danych dla czytników ekranu */
+  caption: string;
+}
+
+const { columns, max, gap, ref, caption } = Astro.props;
+const n = columns.length;
+const k = (v: number) => (v / max).toFixed(4);
+const inGap = (i: number) => gap !== undefined && i >= gap.from && i <= gap.to;
+---
+<figure class="cc" data-reveal="grow" style={`--n: ${n}`}>
+  <div class="cc__plot" aria-hidden="true">
+    {gap && (
+      <div class="cc__gap" style={`--from: ${gap.from}; --span: ${gap.to - gap.from + 1}`}>
+        <span class="cc__gap-label">{typo(gap.label)}</span>
+        {gap.sub && <span class="cc__gap-sub">{typo(gap.sub)}</span>}
+      </div>
+    )}
+    {ref && gap && (
+      <div class="cc__ref" style={`--k: ${k(columns[ref.index].value)}; --from: ${gap.from}; --to: ${ref.index + 0.5}`}>
+        <span class="cc__ref-label">{typo(ref.label)}</span>
+      </div>
+    )}
+    {columns.map((c, i) => (
+      <div class:list={['cc__col', { 'is-gap': inGap(i) }]} style={`--k: ${k(c.value)}; --i: ${i}`}>
+        <span class="cc__val">{c.display}</span>
+        <span class="cc__bar"></span>
+      </div>
+    ))}
+  </div>
+  <div class="cc__axis" aria-hidden="true">
+    {columns.map((c, i) => (
+      <span class:list={['cc__x', { 'is-gap': inGap(i) }]}>
+        {c.label}
+        {c.sub && <small>{typo(c.sub)}</small>}
+      </span>
+    ))}
+  </div>
+  <figcaption class="sr-only">{caption}</figcaption>
+</figure>
+
+<style>
+  .cc { container-type: inline-size; margin: 0; --h: clamp(240px, 46cqi, 320px); --label: 1.6rem; }
+
+  .cc__plot {
+    position: relative; height: var(--h); margin-top: 8px;
+    display: grid; grid-template-columns: repeat(var(--n), 1fr);
+    border-bottom: 1px solid var(--line-2);
+  }
+
+  /* Pole luki: tło pod kolumnami, podpis u góry */
+  .cc__gap {
+    position: absolute; top: 0; bottom: 0;
+    left: calc(var(--from) / var(--n) * 100%); width: calc(var(--span) / var(--n) * 100%);
+    display: grid; align-content: start; justify-items: center; gap: 2px; padding: 8px 4px 0;
+    background: var(--blue-50); text-align: center;
+  }
+  .cc__gap-label { font: 600 clamp(0.75rem, 2.4cqi, 0.9375rem)/1.2 var(--f-body); color: var(--ink); }
+  .cc__gap-sub { font: 400 0.6875rem/1.3 var(--f-mono); color: var(--muted); }
+
+  /* Linia odniesienia: od początku luki do środka wybranej kolumny */
+  .cc__ref {
+    position: absolute; z-index: 1;
+    bottom: calc(var(--k) * (100% - var(--label)));
+    left: calc(var(--from) / var(--n) * 100%); width: calc((var(--to) - var(--from)) / var(--n) * 100%);
+    border-top: 1.5px dashed var(--ink);
+  }
+  .cc__ref-label {
+    position: absolute; left: 4px; bottom: 3px; white-space: nowrap;
+    font: 400 0.6875rem/1 var(--f-mono); color: var(--ink);
+  }
+
+  .cc__col { position: relative; z-index: 1; }
+  .cc__bar {
+    position: absolute; bottom: 0; left: 50%; translate: -50% 0;
+    width: min(70%, 56px); height: calc(var(--k) * (100% - var(--label)));
+    background: var(--chart); transform-origin: bottom;
+    transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i) * 50ms);
+  }
+  .cc__col.is-gap .cc__bar { background: var(--blue); }
+  .cc__val {
+    position: absolute; left: 50%; translate: -50% 0; bottom: calc(var(--k) * (100% - var(--label)) + 5px);
+    white-space: nowrap; font: 600 clamp(0.75rem, 2.6cqi, 1.0625rem)/1 var(--f-display); letter-spacing: -0.01em;
+    color: var(--ink); font-variant-numeric: tabular-nums;
+    transition: opacity 0.4s calc(var(--i) * 50ms + 0.4s);
+  }
+
+  .cc__axis { display: grid; grid-template-columns: repeat(var(--n), 1fr); padding-top: 8px; }
+  .cc__x {
+    display: grid; justify-items: center; gap: 2px; text-align: center;
+    font: 400 clamp(0.625rem, 2cqi, 0.75rem)/1.2 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .cc__x.is-gap { color: var(--ink); }
+  .cc__x small { font-size: 0.5625rem; }
+  @container (max-width: 560px) {
+    .cc__x small { display: none; }
+    .cc__ref-label { font-size: 0.5625rem; }
+  }
+
+  /* Animacja wzrostu */
+  .cc.is-armed .cc__bar { transform: scaleY(0); }
+  .cc.is-armed .cc__val { opacity: 0; }
+  .cc.is-armed.is-in .cc__bar { transform: scaleY(1); }
+  .cc.is-armed.is-in .cc__val { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .cc__bar, .cc__val { transition: none; }
+  }
+</style>

@@ -3,10 +3,15 @@
  * Animowany wykres słupkowy kwot rok po roku (dotacja z budżetu państwa dla NFZ).
  * Po przewinięciu do wykresu animacja ma dwa akty:
  * 1. duże słupki na środku płynnie przechodzą od roku do roku — wysokość i kwota nad nimi liczą się
- *    w locie, a duży rok po lewej przeskakuje. Obok głównej serii może stać seria porównawcza
- *    (`compare`, np. dotacja dla FUS) we wspólnej skali — tylko dla wyczucia rzędu wielkości;
- * 2. po ostatnim roku seria porównawcza gaśnie, skala przechodzi na samą serię główną, jej słupek
+ *    w locie, a duży rok po lewej przeskakuje. Obok głównej serii mogą stać serie porównawcze
+ *    (`compare`, np. dotacja dla FUS — jedna albo lista) we wspólnej skali;
+ * 2. po ostatnim roku serie porównawcze gasną, skala przechodzi na samą serię główną, jej słupek
  *    zjeżdża na swoje miejsce, obok wyrastają słupki pozostałych lat, a rok wraca w róg wykresu.
+ *    Gdy komponent dostaje zawartość (slot, np. IndexChart z tymi samymi seriami), aktu 2 nie ma:
+ *    po ostatnim roku duże słupki gasną, a na ich miejscu pojawia się ten zwykły wykres całego okresu.
+ *    Bez JS i przy prefers-reduced-motion widać od razu tylko ten wykres.
+ * `step` — czas przejścia z roku na rok (ms); mniej = szybciej. `flow` — płynny przebieg bez zatrzymania
+ * na każdym roku: słupki ruszają od razu i zwalniają tylko pod koniec całej sekwencji.
  *
  * Serwer renderuje stan końcowy, więc bez JS (i przy prefers-reduced-motion) wykres jest od razu
  * pełny, bez serii porównawczej. Skala stała w każdym akcie; każdy słupek ma podpis, więc bez osi
@@ -24,39 +29,46 @@ interface Bar {
 }
 
 interface Name { full: string; short: string }
+interface Compare { name: Name; values: number[] }
 
 interface Props extends HTMLAttributes<'div'> {
   bars: Bar[];
   /** nazwa serii głównej pod słupkiem w akcie 1: pełna i krótka (na wąskim ekranie) */
   name: Name;
-  /** seria porównawcza tylko do aktu 1 — wartości dla tych samych lat co `bars` */
-  compare?: { name: Name; values: number[] };
+  /** serie porównawcze aktu 1 (stoją na lewo od głównej) — wartości dla tych samych lat co `bars` */
+  compare?: Compare | Compare[];
+  /** przejście z roku na rok w akcie 1, ms */
+  step?: number;
+  /** płynny przebieg przez wszystkie lata zamiast zatrzymań na każdym roku */
+  flow?: boolean;
   /** jednostka pod dużym rokiem, np. „mld zł” */
   unit: string;
   /** pełny opis danych dla czytników ekranu */
   caption: string;
 }
 
-const { bars, name, compare, unit, caption, class: className, ...rest } = Astro.props;
+const { bars, name, compare, step = 750, flow = false, unit, caption, class: className, ...rest } = Astro.props;
+const then = Astro.slots.has('default');
+const refs = compare ? [compare].flat() : [];
 const max = Math.max(...bars.map((b) => b.value));
 const label = (v: number) => (v === 0 ? '0' : formatPL(v, 1));
 const last = bars.at(-1)!;
-const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null };
+const data = { main: bars.map((b) => b.value), compare: refs.length ? refs.map((c) => c.values) : null, step, flow, then };
 ---
-<zl-subsidy-chart class:list={['sub', className]} data-series={JSON.stringify(data)} {...rest}>
+<zl-subsidy-chart class:list={['sub', { 'sub--then': then }, className]} data-series={JSON.stringify(data)} {...rest}>
   <div class="sub__plot" aria-hidden="true">
     <p class="sub__now">
       <span class="sub__year" data-year>{last.year}</span>
       <span class="sub__unit" data-unit>{unit}{last.note && ` · ${last.note}`}</span>
     </p>
     {/* słupki aktu 1; poza siatką kolumn, widoczne tylko w trakcie animacji */}
-    {compare && (
-      <div class="sub__hero sub__hero--ref" data-hero="compare" style="--k: 0">
+    {refs.map((c, j) => (
+      <div class:list={['sub__hero sub__hero--ref', { 'sub__hero--soft': j < refs.length - 1 }]} data-hero="compare" style="--k: 0">
         <span class="sub__val">0</span>
         <span class="sub__bar"></span>
-        <span class="sub__tag"><span class="sub__full">{compare.name.full}</span><span class="sub__short">{compare.name.short}</span></span>
+        <span class="sub__tag"><span class="sub__full">{c.name.full}</span><span class="sub__short">{c.name.short}</span></span>
       </div>
-    )}
+    ))}
     <div class="sub__hero" data-hero="main" style="--k: 0">
       <span class="sub__val">0</span>
       <span class="sub__bar"></span>
@@ -77,6 +89,7 @@ const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null 
       </span>
     ))}
   </div>
+  {then && <div class="sub__then"><slot /></div>}
   <button type="button" class="sub__replay" hidden>
     <Icon name="refresh" size={12} />Zrestartuj animację
   </button>
@@ -86,13 +99,14 @@ const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null 
 <script>
   import { formatPL } from '@/lib/format';
 
-  /** akt 1: przejście z roku na rok, ms */
-  const STEP = 750;
-  /** pauza na pierwszym i ostatnim roku, ms */
-  const HOLD = 700;
+  /** pauza na pierwszym i ostatnim roku, ms (przy `flow` krótsza) */
+  const HOLD_STEP = 700;
+  const HOLD_FLOW = 300;
   /** akt 2: przejście w wykres (z opóźnieniami kolejnych słupków), ms */
   const MORPH = 1600;
   const ease = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
+  /** tryb `flow`: od razu w ruchu, łagodne hamowanie na ostatnich latach */
+  const easeOut = (t: number) => Math.sin((Math.PI * t) / 2);
   const label = (v: number) => (v === 0 ? '0' : formatPL(v, 1));
 
   class SubsidyChart extends HTMLElement {
@@ -103,15 +117,18 @@ const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null 
     connectedCallback() {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-      const { main, compare }: { main: number[]; compare: number[] | null } = JSON.parse(this.dataset.series ?? '{}');
+      const { main, compare, step: STEP, flow, then }: { main: number[]; compare: number[][] | null; step: number; flow: boolean; then: boolean } =
+        JSON.parse(this.dataset.series ?? '{}');
+      const HOLD = flow ? HOLD_FLOW : HOLD_STEP;
       const n = main.length;
       const top = Math.max(...main);
-      // akt 1 ma wspólną skalę obu serii, akt 2 — samej serii głównej
-      const soloTop = Math.max(top, ...(compare ?? []));
+      // akt 1 ma wspólną skalę wszystkich serii, akt 2 — samej serii głównej
+      const soloTop = Math.max(top, ...(compare ?? []).flat());
       const plot = this.querySelector<HTMLElement>('.sub__plot')!;
       const now = this.querySelector<HTMLElement>('.sub__now')!;
+      const refEls = [...this.querySelectorAll<HTMLElement>('[data-hero="compare"]')];
       const heroes = [
-        ...(compare ? [{ el: this.querySelector<HTMLElement>('[data-hero="compare"]')!, values: compare }] : []),
+        ...(compare ?? []).map((values, j) => ({ el: refEls[j], values })),
         { el: this.querySelector<HTMLElement>('[data-hero="main"]')!, values: main },
       ].map((h) => ({ ...h, val: h.el.querySelector<HTMLElement>('.sub__val')! }));
       const hero = heroes.at(-1)!.el;
@@ -134,7 +151,8 @@ const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null 
         const W = plot.clientWidth;
         const p = plot.getBoundingClientRect();
         const left = now.getBoundingClientRect().right - p.left + 16;
-        const w = Math.min(W * 0.2, 120);
+        // przy kilku seriach słupki zwężają się, żeby grupa zmieściła się na prawo od roku
+        const w = Math.min(W * 0.2, 120, (W - left) / (heroes.length * 1.3 - 0.3));
         const gap = w * 0.3;
         const group = heroes.length * w + (heroes.length - 1) * gap;
         const x0 = Math.max(left, left + (W - left - group) / 2);
@@ -147,7 +165,7 @@ const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null 
       /** stan aktu 1 w punkcie `pos` osi czasu (0 = pierwszy rok, n − 1 = ostatni) */
       const show = (pos: number) => {
         const s = Math.min(Math.floor(pos), n - 2);
-        const e = ease(pos - s);
+        const e = flow ? pos - s : ease(pos - s);
         heroes.forEach((h) => {
           const v = h.values[s] + (h.values[s + 1] - h.values[s]) * e;
           h.el.style.setProperty('--k', (v / soloTop).toFixed(4));
@@ -159,7 +177,7 @@ const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null 
       };
 
       const solo = () => {
-        this.classList.remove('is-morph');
+        this.classList.remove('is-morph', 'is-then');
         this.classList.add('is-solo');
         cols.forEach((c) => c.style.setProperty('--k', '0'));
         show(0);
@@ -177,7 +195,7 @@ const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null 
         hero.style.left = `${b.left - p.left}px`;
         hero.style.width = `${b.width}px`;
         hero.style.setProperty('--k', String(main[n - 1] / top));
-        if (compare) heroes[0].el.style.setProperty('--k', '0');
+        heroes.slice(0, -1).forEach((h) => h.el.style.setProperty('--k', '0'));
         cols.forEach((c, j) => c.style.setProperty('--k', String(main[j] / top)));
         later(MORPH, () => this.classList.remove('is-morph'));
       };
@@ -189,10 +207,12 @@ const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null 
         // rok w rogu przeskakuje w połowie przejścia między latami
         const frame = (t: number) => {
           if (!start) start = t;
-          const pos = Math.max(0, t - start - HOLD) / STEP;
+          const linear = Math.max(0, t - start - HOLD) / STEP;
+          // flow: jedna łagodna krzywa przez wszystkie lata, bez przystanków
+          const pos = flow ? easeOut(Math.min(1, linear / (n - 1))) * (n - 1) : linear;
           if (pos >= n - 1) {
             show(n - 1);
-            later(HOLD, morph);
+            later(HOLD, then ? () => { this.classList.remove('is-solo'); this.classList.add('is-then'); } : morph);
             return;
           }
           show(pos);
@@ -265,6 +285,8 @@ const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null 
   .sub__hero { display: none; position: absolute; top: 0; bottom: 0; }
   .sub__hero .sub__bar { width: 100%; }
   .sub__hero--ref .sub__bar { background: var(--chart); }
+  /* jaśniejsza seria odniesienia — z obrysem, bo samo --chart-soft ginie na jasnym tle */
+  .sub__hero--soft .sub__bar { background: var(--chart-soft); box-shadow: inset 0 0 0 1px var(--chart); }
   /* Nazwy serii pod słupkami — duże, pełne (jak na wzorze); na wąskim ekranie skróty */
   .sub__tag {
     position: absolute; top: calc(100% + 10px); left: 50%; translate: -50% 0; width: 150%;
@@ -303,6 +325,15 @@ const data = { main: bars.map((b) => b.value), compare: compare?.values ?? null 
     font: 400 0.6875rem/1.2 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums;
   }
   .sub__x small { font-size: 0.5625rem; text-align: center; }
+
+  /* Zakończenie zwykłym wykresem (slot): bez JS widać tylko jego; w trakcie animacji go nie ma,
+     po ostatnim roku słupki ustępują mu miejsca */
+  .sub--then .sub__years,
+  .sub--then .sub__plot { display: none; }
+  .sub--then.is-solo .sub__plot { display: grid; }
+  .sub--then.is-solo .sub__then { display: none; }
+  .sub--then.is-then .sub__then { animation: sub-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  @keyframes sub-in { from { opacity: 0; translate: 0 8px; } }
 
   .sub__replay {
     display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 4px 0;

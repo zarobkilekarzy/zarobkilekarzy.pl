@@ -53,22 +53,40 @@ export const cemVersion = (code: string) =>
 /**
  * Pytania typu „Prawidłowa odpowiedź to:” mają twierdzenia wpisane w treść:
  * „wstęp: 1) …; 2) …; 3) …. Prawidłowa odpowiedź to:” → text + items + tail.
- * Tylko przy kolejnej numeracji od 1) i co najmniej dwóch twierdzeniach — inaczej treść zostaje w całości.
+ * Tylko przy numeracji 1)…n) i co najmniej dwóch twierdzeniach — inaczej treść zostaje w całości.
+ * Twierdzenia z dwóch kolumn arkusza normalizator czyta wierszami („1) …; 4) …; 2) …; 5) …”) —
+ * gdy numery są permutacją 1…n, układamy je po numerze. Inaczej „n)” nie na swoim miejscu
+ * należy do tekstu twierdzenia („zmiany LSIL (CIN 1) ustępują”).
  */
 export function splitItems(t: string): { text: string; items?: string[]; tail?: string } {
   const parts = t.split(/\s(?=\d{1,2}\)\s)/);
   if (parts.length < 3) return { text: t };
-  const items: string[] = [];
   let tail: string | undefined;
+  const found: { n: number; text: string }[] = [];
   for (const [i, part] of parts.slice(1).entries()) {
     const m = part.match(/^(\d{1,2})\)\s([\s\S]*)$/);
-    if (!m || Number(m[1]) !== i + 1) return { text: t };
+    if (!m) return { text: t };
     let item = m[2];
     if (i === parts.length - 2) {
       const mm = item.match(/^(.*?[.;])\s+(Prawidłowa odpowiedź to:.*)$/);
       if (mm) { item = mm[1]; tail = mm[2]; }
     }
-    items.push(item);
+    found.push({ n: Number(m[1]), text: item });
+  }
+  const sorted = [...found].sort((a, b) => a.n - b.n);
+  let items: string[];
+  if (sorted.every((x, k) => x.n === k + 1)) {
+    const moved = sorted.some((x, k) => x !== found[k]);
+    // Po przestawieniu wyrównujemy interpunkcję: „;” między twierdzeniami, „.” na końcu
+    items = sorted.map((x, k) => (moved ? x.text.replace(/[.;]$/, k === sorted.length - 1 ? '.' : ';') : x.text));
+  } else {
+    items = [];
+    for (const x of found) {
+      if (x.n === items.length + 1) items.push(x.text);
+      else if (items.length) items[items.length - 1] += ` ${x.n}) ${x.text}`;
+      else return { text: t };
+    }
+    if (items.length < 2) return { text: t };
   }
   return { text: parts[0], items, ...(tail && { tail }) };
 }

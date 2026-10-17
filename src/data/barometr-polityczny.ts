@@ -167,7 +167,9 @@ export interface BarometrParty {
   club: string;
   logo: ImageMetadata;
   /** true = nie partia (np. samorząd zawodowy) — karta z wyraźnym oznaczeniem, na końcu listy */
-  notParty?: boolean;  /** etap kontaktu; brak = pytań jeszcze nie wysłano */
+  notParty?: boolean;
+  /** objaśnienie w dymku „?” przy etykiecie „Nie partia”: dlaczego jest na liście, ze źródłem */
+  about?: { heading: string; text: string; source: { label: string; href: string } };  /** etap kontaktu; brak = pytań jeszcze nie wysłano */
   status?: BarometrStatus;
 }
 
@@ -224,7 +226,19 @@ export const barometrParties: BarometrParty[] = (
 
 /** Uczestnicy sporu o politykę zdrowotną, którzy nie są partiami — za partiami, z oznaczeniem „nie partia”. */
 export const barometrOthers: BarometrParty[] = [
-  { id: 'nil', name: 'Naczelna Izba Lekarska', club: 'Samorząd zawodowy lekarzy i lekarzy dentystów', logo: nilLogo, notParty: true },
+  {
+    id: 'nil',
+    name: 'Naczelna Izba Lekarska',
+    club: 'Samorząd zawodowy lekarzy i lekarzy dentystów',
+    logo: nilLogo,
+    notParty: true,
+    // słowami ustawy (art. 5 pkt 14–16), nie „lobbuje” — lobbing ma w prawie węższe znaczenie
+    about: {
+      heading: 'Dlaczego NIL jest na liście',
+      text: 'Naczelna Izba Lekarska nie jest partią, tylko samorządem zawodowym lekarzy. Z mocy ustawy występuje w obronie interesów lekarzy, zajmuje stanowisko w sprawach polityki zdrowotnej państwa i opiniuje projekty przepisów o ochronie zdrowia — dlatego dostaje te same pytania co partie.',
+      source: { label: 'ustawa o izbach lekarskich, art. 5 pkt 14–16', href: 'https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20210001342' },
+    },
+  },
 ];
 
 /* ---------- Opis partii (podstrona /barometr-polityczny/<id>/) ---------- */

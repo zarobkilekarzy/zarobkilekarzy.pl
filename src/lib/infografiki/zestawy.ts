@@ -1,6 +1,6 @@
 /**
  * Zestawy infografik do pobrania (szablon: ./render.ts, endpoint: pages/infografiki/,
- * sekcja na stronie: blocks/Infographics). Klucz = ostatni człon trasy strony.
+ * sekcja na dole strony: blocks/InfographicsSection — artykuły z ArticleLayout). Klucz = ostatni człon trasy strony.
  *
  * Liczby wyłącznie z modułów danych stron — te same funkcje, z których liczy tekst artykułu,
  * więc aktualizacja danych zmienia grafiki w następnym buildzie.
@@ -15,6 +15,8 @@ import { SPZOZ_QUARTERS } from '@/data/zadluzenie';
 import { AGE_BASE, AGE_LADDER } from '@/data/pielegniarstwo-w-polsce';
 import { FIRST_YEAR as STUDENTS_FIRST_YEAR, LINKS as ODSIEW_LINKS, funnelRows } from '@/data/odsiew-na-medycynie';
 import { DEFAULTS, LIMIT_TODAY, PRESETS, REGISTER_TOTAL, YEAR0, YEAR_MIN, seats, simulate } from '@/lib/podaz/model';
+import { AOS_FIRST, AOS_LAST, LINKS as WIZYTA_LINKS, NIL_N, NO_CLINICAL, WHC_2022, WHC_2024, WORK_MODEL, combined, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
+import { BEAN } from '@/data/ai-w-medycynie-2026';
 import { formatPL } from '@/lib/format';
 import { monitoring } from '@/lib/monitoring';
 import { monitoringMap, opennessP } from '@/lib/monitoring/map';
@@ -461,6 +463,79 @@ const monitoringMaps: InfographicSet = {
   ],
 };
 
+/* ---------- Wizyty prywatne: pieniądze, świadczenia i czekanie; lekarze w dwóch sektorach ---------- */
+
+// zmiany jak w tekście analizy: AOS z jednym miejscem po przecinku (dokładne kwoty NFZ), kolejka w całych
+// procentach — Barometr WHC podaje miesiące z jednym miejscem, więc dziesiąte części procentu byłyby pozorne
+const aosCost = change(AOS_FIRST.cost, AOS_LAST.cost);
+const aosServices = change(AOS_FIRST.services, AOS_LAST.services);
+const queueGrowth = change(WHC_2022.single, WHC_2024.single);
+const aosRows: ComparisonRow[] = [
+  { label: 'Pieniądze NFZ', sub: `z ${formatPL(AOS_FIRST.cost / 1e6, 1)} do ${formatPL(AOS_LAST.cost / 1e6, 1)} mld zł`, value: aosCost, display: `+${formatPL(aosCost, 1)}`, highlight: true },
+  { label: 'Świadczenia', sub: `z ${formatPL(AOS_FIRST.services / 1e6, 1)} do ${formatPL(AOS_LAST.services / 1e6, 1)} mln`, value: aosServices, display: `+${formatPL(aosServices, 1)}` },
+  { label: 'Czas oczekiwania', sub: `z ${formatPL(WHC_2022.single, 1)} do ${formatPL(WHC_2024.single, 1)} mies.`, value: queueGrowth, display: `+${formatPL(queueGrowth)}` },
+];
+
+const shareIn = (n: number) => `${formatPL(n, 1)}%`;
+const wizytyPrywatne: InfographicSet = {
+  route: '/analizy/wizyty-prywatne-kolejka-cena/',
+  page: 'Analiza: Wizyty prywatne — im dłuższa kolejka, tym drożej',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'pieniadze-a-swiadczenia',
+      title: 'Dokładanie pieniędzy nie skraca kolejek',
+      measure: `poradnie specjalistyczne z umową z NFZ · zmiana ${AOS_FIRST.year}–${AOS_LAST.year}`,
+      unit: '%',
+      rows: aosRows,
+      sources: `Źródła: NFZ, sprawozdanie za ${AOS_LAST.year} r. (tab. II.19–20), Barometr WHC · świadczenia: porady i badania`,
+      alt: `Infografika: w latach ${AOS_FIRST.year}–${AOS_LAST.year} koszty NFZ na ambulatoryjną opiekę specjalistyczną wzrosły o ${formatPL(aosCost, 1)}% (z ${formatPL(AOS_FIRST.cost / 1e6, 1)} do ${formatPL(AOS_LAST.cost / 1e6, 1)} mld zł), liczba świadczeń o ${formatPL(aosServices, 1)}% (z ${formatPL(AOS_FIRST.services / 1e6, 1)} do ${formatPL(AOS_LAST.services / 1e6, 1)} mln), a średni czas oczekiwania na świadczenie według Barometru WHC o ${formatPL(queueGrowth)}% (z ${formatPL(WHC_2022.single, 1)} do ${formatPL(WHC_2024.single, 1)} mies.). Źródła: NFZ, sprawozdanie z działalności za ${AOS_LAST.year} r. (${WIZYTA_LINKS.nfz2024}); Fundacja Watch Health Care, Barometr WHC.`,
+    },
+    {
+      id: 'lekarze-w-obu-sektorach',
+      title: 'Ponad połowa ankietowanych lekarzy pracuje w obu sektorach',
+      measure: `ankieta NIL „Perspektywa 27” · 2026 · ${formatPL(NIL_N)} lekarzy i dentystów`,
+      split: {
+        unit: '%',
+        bars: [
+          {
+            segments: [
+              { label: 'Tylko publicznie', sub: 'świadczenia z NFZ', value: WORK_MODEL.publicOnly, display: formatPL(WORK_MODEL.publicOnly, 1), share: shareIn(WORK_MODEL.publicOnly), tone: 'slate' },
+              { label: 'Publicznie i prywatnie', sub: `w tym ${formatPL(WORK_MODEL.both, 1)}% po równo`, value: combined, display: formatPL(combined, 1), share: shareIn(combined), tone: 'blue' },
+              { label: 'Tylko prywatnie', value: WORK_MODEL.privateOnly, display: formatPL(WORK_MODEL.privateOnly, 1), share: shareIn(WORK_MODEL.privateOnly), tone: 'slate' },
+              { label: 'Bez pracy klinicznej', value: NO_CLINICAL, display: formatPL(NO_CLINICAL, 1), tone: 'soft' },
+            ],
+          },
+        ],
+      },
+      sources: 'Źródło: Naczelna Izba Lekarska, „Perspektywa 27” (V 2026) · ankieta internetowa, próba nielosowa',
+      alt: `Infografika: model pracy klinicznej w ankiecie Naczelnej Izby Lekarskiej „Perspektywa 27” (29.04–4.05.2026, ${formatPL(NIL_N)} lekarzy i lekarzy dentystów, próba nielosowa): ${formatPL(WORK_MODEL.publicOnly, 1)}% pracowało wyłącznie przy świadczeniach finansowanych publicznie, ${formatPL(combined, 1)}% łączyło pracę publiczną i prywatną (${formatPL(WORK_MODEL.mostlyPublic, 1)}% głównie publicznie, ${formatPL(WORK_MODEL.both, 1)}% w podobnym zakresie, ${formatPL(WORK_MODEL.mostlyPrivate, 1)}% głównie prywatnie), ${formatPL(WORK_MODEL.privateOnly, 1)}% wyłącznie prywatnie, a ${formatPL(NO_CLINICAL, 1)}% nie wykonywało pracy klinicznej. Źródło: ${WIZYTA_LINKS.nil}.`,
+    },
+  ],
+};
+
+/* ---------- AI w medycynie: model sam a ludzie, którzy z niego korzystają ---------- */
+
+const ai: InfographicSet = {
+  route: '/analizy/ai-w-medycynie-2026/',
+  page: 'Analiza: Sztuczna inteligencja w medycynie — stan na 2026',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'model-a-pacjent',
+      title: 'Sam model trafia częściej niż człowiek, który go używa',
+      measure: 'trafne wskazanie choroby z opisu objawów · odsetek przypadków',
+      unit: '%',
+      rows: [
+        { label: 'Sam model językowy', sub: 'GPT-4o, Llama 3, Command R+', value: BEAN.modelAlone, display: formatPL(BEAN.modelAlone, 1) },
+        { label: 'Osoby korzystające z modelu', sub: `${formatPL(BEAN.participants)} uczestników badania`, value: BEAN.withModelBelow, display: `<${formatPL(BEAN.withModelBelow, 1)}`, highlight: true },
+      ],
+      sources: 'Źródło: Bean i in., Nature Medicine 32 (2026), Uniwersytet Oksfordzki · scenariusze, nie prawdziwi pacjenci',
+      alt: `Infografika: w badaniu Uniwersytetu Oksfordzkiego (Nature Medicine, 2026) same modele językowe (GPT-4o, Llama 3, Command R+) wskazywały właściwą chorobę na podstawie opisu objawów w ${formatPL(BEAN.modelAlone, 1)}% przypadków, a ${formatPL(BEAN.participants)} uczestników badania, którzy z nich korzystali — w mniej niż ${formatPL(BEAN.withModelBelow, 1)}%. Źródło: A. M. Bean i in., ${BEAN.href}.`,
+    },
+  ],
+};
+
 export const infographicSets: Record<string, InfographicSet> = {
   egzamin,
   'odpowiedzialnosc-zawodowa-lekarzy': odpowiedzialnosc,
@@ -471,4 +546,6 @@ export const infographicSets: Record<string, InfographicSet> = {
   'pielegniarstwo-w-polsce': pielegniarstwo,
   'odsiew-na-medycynie': odsiew,
   'monitoring-watchdog': monitoringMaps,
+  'wizyty-prywatne-kolejka-cena': wizytyPrywatne,
+  'ai-w-medycynie-2026': ai,
 };

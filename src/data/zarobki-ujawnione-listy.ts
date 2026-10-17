@@ -220,8 +220,7 @@ export const HEADLINE = {
   positions: POSITIONS,
   /** „11 030 rozliczeń” */
   positionsLabel: `${formatPL(POSITIONS)} ${plural(POSITIONS, ['rozliczenie', 'rozliczenia', 'rozliczeń'])}`,
-  /** mediana w tys. zł, zaokrąglona do 10 tys. */
-  medianK: MEDIAN.rounded / 1000,
+  over500k: OVER_500K,
   over1m: OVER_1M,
   /** odsetek rozliczeń powyżej 500 tys. zł, w procentach (całkowity) */
   over500kPct: Math.round((OVER_500K / POSITIONS) * 100),

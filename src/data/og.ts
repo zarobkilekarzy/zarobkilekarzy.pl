@@ -12,6 +12,7 @@ import { adresaci } from '@/data/adresaci';
 import { writeToolOn } from '@/data/dzialaj';
 import { helpline } from '@/data/prawa-pacjenta';
 import { HEADLINE } from '@/data/zarobki-ujawnione-listy';
+import { MEDIANS } from '@/data/rozklad-wynagrodzen';
 import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 
@@ -38,12 +39,13 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Wynagrodzenia, budżet NFZ, długi szpitali i kolejki — każda liczba ze źródłem.',
     media: 'stat',
     stat: {
-      value: `~${HEADLINE.medianK}`,
-      unit: 'tys. zł',
-      label: 'Mediana rocznego rozliczenia',
-      desc: 'lekarza w placówkach, które ujawniły pełne listy płac',
+      // roczna = 12 × mediana miesięczna z lutego 2026 r., dlatego szacunek
+      value: formatPL(MEDIANS.specKontrakt * 12),
+      unit: 'zł',
+      label: 'Roczna mediana kontraktu specjalisty',
+      desc: 'brutto, z jednej umowy w jednym szpitalu: 12 × mediana miesięczna z lutego 2026 r.',
       accuracy: 'est',
-      source: `${HEADLINE.listsLabel} · ${HEADLINE.positionsLabel}`,
+      source: 'AOTMiT · Rzeczpospolita, 27.05.2026',
     },
     footer: { text: `Dział danych · stan na ${formatDate(site.updated)}`, flags: true },
   },

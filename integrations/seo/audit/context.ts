@@ -40,8 +40,8 @@ export const exists = (ctx: AuditContext, path: string) =>
 
 export const redirectFrom = (ctx: AuditContext, path: string) => ctx.redirects.find((r) => r.from === path);
 
-/** Strony błędów (404, 503): noindex, bez linków przychodzących, poza audytem treści. */
-export const isErrorPage = (path: string) => path === '/404.html' || path === '/503/';
+/** Strony błędów (404): noindex, bez linków przychodzących, poza audytem treści. */
+export const isErrorPage = (path: string) => path === '/404.html';
 
 /** Strony, które pokazują się wyszukiwarkom (bez przekierowań i bez stron błędów). */
 export const contentPages = (ctx: AuditContext) => [...ctx.pages.values()].filter((p) => !p.refresh && !isErrorPage(p.path));

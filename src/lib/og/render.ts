@@ -92,10 +92,10 @@ function sourceFile(img: ImageMetadata): string {
 
 const photoCache = new Map<string, Promise<string>>();
 
-/** Kadr jak object-fit: cover + object-position, w skali szarości jak na stronie (ui/Photo). */
-function photoUri(tracked: ImageMetadata, position: string): Promise<string> {
+/** Kadr jak object-fit: cover + object-position, w skali szarości jak na stronie (ui/Photo); ilustracja (`color`) zostaje w kolorze. */
+function photoUri(tracked: ImageMetadata, position: string, color = false): Promise<string> {
   const img = raw(tracked);
-  const key = `${img.src}|${position}`;
+  const key = `${img.src}|${position}|${color}`;
   if (!photoCache.has(key)) {
     photoCache.set(key, (async () => {
       if (img.width < MEDIA_W || img.height < MEDIA_H) console.warn(`[og] zdjęcie ${img.src} mniejsze niż ramka ${MEDIA_W}×${MEDIA_H}`);
@@ -103,11 +103,10 @@ function photoUri(tracked: ImageMetadata, position: string): Promise<string> {
       const w = Math.round(img.width * scale);
       const h = Math.round(img.height * scale);
       const [px = 50, py = 50] = position.split(/\s+/).map((p) => parseFloat(p));
-      const buf = await sharp(sourceFile(img))
+      const crop = sharp(sourceFile(img))
         .resize(w, h)
-        .extract({ left: Math.round(((w - MEDIA_W) * px) / 100), top: Math.round(((h - MEDIA_H) * py) / 100), width: MEDIA_W, height: MEDIA_H })
-        .grayscale()
-        .linear(1.05, -6) // ≈ contrast(1.05)
+        .extract({ left: Math.round(((w - MEDIA_W) * px) / 100), top: Math.round(((h - MEDIA_H) * py) / 100), width: MEDIA_W, height: MEDIA_H });
+      const buf = await (color ? crop : crop.grayscale().linear(1.05, -6)) // ≈ contrast(1.05)
         .jpeg({ quality: 85 })
         .toBuffer();
       return `data:image/jpeg;base64,${buf.toString('base64')}`;
@@ -232,7 +231,7 @@ const frame = (...children: Child[]) =>
 async function photo(m: Extract<OgMedia, { kind: 'photo' }>) {
   const [strong, rest] = m.badge ? splitBadge(typo(m.badge)) : [];
   return frame(
-    h('img', { src: await photoUri(m.src, m.position), width: MEDIA_W, height: MEDIA_H }),
+    h('img', { src: await photoUri(m.src, m.position, m.color), width: MEDIA_W, height: MEDIA_H }),
     m.badge && h('div', { style: { position: 'absolute', right: 14, bottom: 14, alignItems: 'center', padding: '15px 20px 15px 18px', background: C.blue, color: '#fff', fontFamily: BODY, fontSize: 18 } },
       m.icon && h('img', { src: iconUri(m.icon, '#fff'), width: 24, height: 24, style: { marginRight: 12 } }),
       strong && h('span', { style: { fontWeight: 600, marginRight: 6 } }, strong),

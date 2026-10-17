@@ -13,6 +13,8 @@ interface Props extends HTMLAttributes<'aside'> {
   /** nagłówek ramki (nie atrybut HTML) */
   title: string;
   variant?: 'note' | 'info' | 'editorial' | 'warn';
+  /** etykieta nad tytułem, gdy domyślna dla wariantu nie pasuje (np. warn = ostrzeżenie dla czytelnika, nie o liczbach) */
+  label?: string;
 }
 
 const LABEL: Record<NonNullable<Props['variant']>, string> = {
@@ -22,10 +24,10 @@ const LABEL: Record<NonNullable<Props['variant']>, string> = {
   warn: 'Jak czytać te liczby',
 };
 
-const { title, variant = 'note', class: className, ...rest } = Astro.props;
+const { title, variant = 'note', label, class: className, ...rest } = Astro.props;
 ---
 <aside class:list={['aside', `aside--${variant}`, className]} {...rest}>
-  <p class="aside__label">{variant === 'warn' && <Icon name="alert" size={16} />}{LABEL[variant]}</p>
+  <p class="aside__label">{variant === 'warn' && <Icon name="alert" size={16} />}{label ?? LABEL[variant]}</p>
   <p class="aside__title">{title}</p>
   <div class="aside__body"><slot /></div>
 </aside>

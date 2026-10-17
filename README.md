@@ -309,7 +309,7 @@ Bieżące kolejki na szpitalnych oddziałach ratunkowych zbiera osobny Worker z 
 Każda strona dostaje obrazek 1200×630 generowany przy buildzie (`lib/og`: Satori → sharp → PNG). `BaseLayout` sam wylicza adres ze ścieżki strony i dodaje `og:image` oraz `twitter:card`.
 
 - **Artykuł** ma obrazek automatycznie: etykieta sekcji, tytuł, pierwsze zdanie `summary`, okładka (jeśli jest) i stopka ze źródłami i datą.
-- **Nadpisanie** to pole `og` we frontmatterze, gdzie każde pole jest opcjonalne. Przykłady: `title` (z `\n` do ręcznego łamania), `lead: false`, `stat` (karta liczby), `photo` + `position`, `badge`, `media: none`. Gotowa grafika to `image`, która omija generator. Literówka w nazwie pola zatrzymuje build.
+- **Nadpisanie** to pole `og` we frontmatterze, gdzie każde pole jest opcjonalne. Przykłady: `title` (z `\n` do ręcznego łamania), `lead: false`, `stat` (karta liczby), `photo` + `position`, `badge`, `media: none`. `illustration` to grafika w miejscu zdjęcia, która zostaje w kolorze (zdjęcia idą w skali szarości) i nie ma etykiety. Gotowa grafika to `image`, która omija generator. Literówka w nazwie pola zatrzymuje build.
 - **Strona spoza kolekcji** to wpis w `src/data/og.ts`. Stopka jest domyślnie hasłem serwisu, chyba że wpis poda własną. Trasy bez wpisu dostają obrazek strony głównej, a build wypisuje ostrzeżenie `[og]`.
 - **Podgląd:** `npm run dev` → `/og-podglad/`. Po zmianie frontmattera wystarczy odświeżyć stronę.
 - **Zależności przypięte dokładnie:** `satori` 0.57.2 i `@fontsource/*` 5.3.0. Przed podbiciem Satori porównaj obrazki z poprzednimi, bo nowe wersje zmieniają silnik układu. Szczegóły w specyfikacji, §6.

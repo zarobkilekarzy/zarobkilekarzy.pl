@@ -224,6 +224,8 @@ export interface OgOverride {
   stat?: OgStat;
   /** zdjęcie inne niż okładka */
   photo?: ImageMetadata;
+  /** ilustracja w miejscu zdjęcia: w kolorze (zdjęcia idą w skali szarości), bez etykiety; ma pierwszeństwo przed `photo` */
+  illustration?: ImageMetadata;
   /** punkt kadrowania zdjęcia (jak object-position) */
   position?: string;
   /** etykieta na zdjęciu; false = bez */

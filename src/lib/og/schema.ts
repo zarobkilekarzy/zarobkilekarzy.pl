@@ -24,6 +24,7 @@ export const ogSchema = ({ image }: SchemaContext) =>
         })
         .optional(),
       photo: image().optional(),
+      illustration: image().optional(),
       position: z.string().optional(),
       badge: z.union([z.string(), z.literal(false)]).optional(),
       image: image().optional(),

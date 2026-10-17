@@ -12,7 +12,7 @@
  *   </XProfile>
  *
  * size="compact" — mniejsza karta do wtrąceń (lista kierunków, koniec artykułu): awatar obok nazwy,
- * jedno zdanie kontekstu ze slotu, link z profilu i do profilu w jednym wierszu. Bez opisu z profilu (`bio`).
+ * jedno zdanie kontekstu ze slotu, link do profilu i link z profilu w jednym wierszu, w tym samym stylu. Bez opisu z profilu (`bio`).
  *
  * width — ile miejsca zajmuje karta (niezależnie od `size`):
  *   fill — całą szerokość rodzica: komórka siatki, kolumna boczna (domyślnie dla size="full"),
@@ -47,6 +47,8 @@ const compact = size === 'compact';
 const w = width ?? (compact ? 'md' : 'fill');
 const url = `https://x.com/${handle}`;
 const host = link && new URL(link.href).host;
+/** etykieta = sam adres (np. „basal.si5.pl”) → bez powtórzenia hosta obok */
+const showHost = link && link.label.replace(/^www\./, '') !== host?.replace(/^www\./, '');
 const REL = 'nofollow noopener';
 ---
 <article class:list={['xp', `xp--${w}`, { 'xp--compact': compact }, className]} aria-label={`${name} (@${handle}) w serwisie X`} {...rest}>
@@ -71,14 +73,15 @@ const REL = 'nofollow noopener';
   {bio && !compact && <p class="xp__bio">{bio}</p>}
 
   <div class="xp__actions">
-    {link && (
-      <a class="xp__link" {...linkAttrs(link.href)} rel={REL}>
+    {link && !compact && (
+      <a class="xp__link" {...{ ...linkAttrs(link.href), rel: REL }}>
         <span class="xp__link-label">W profilu</span>
         <span class="xp__link-title">{link.label}</span>
-        <span class="xp__link-host">{host} ↗</span>
+        {showHost ? <span class="xp__link-host">{host} ↗</span> : <span class="xp__link-host" aria-hidden="true">↗</span>}
       </a>
     )}
     <LinkArrow href={url} rel={REL} class="xp__cta">{compact ? 'Profil na X' : `Profil @${handle} na X`}</LinkArrow>
+    {link && compact && <LinkArrow href={link.href} rel={REL} class="xp__cta">{link.label}</LinkArrow>}
   </div>
 </article>
 
@@ -143,12 +146,8 @@ const REL = 'nofollow noopener';
   .xp--compact .xp__actions {
     grid-area: actions; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 22px; margin-top: 14px;
   }
-  .xp--compact .xp__link { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 0; border: 0; background: none; }
-  .xp--compact .xp__link-label { display: none; }
-  .xp--compact .xp__link-title { font-size: 0.875rem; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
-  .xp--compact .xp__link:hover .xp__link-title { color: var(--blue); text-decoration-color: currentColor; }
-  .xp--compact .xp__link-host { font-size: 0.71875rem; }
-  .xp--compact .xp__cta { order: -1; margin-top: 0; }
+  /* w kompakcie link z profilu to drugi LinkArrow — oba linki wyglądają tak samo */
+  .xp--compact .xp__cta { margin-top: 0; }
 
   @media (max-width: 480px) {
     .xp--compact { grid-template-areas: "av top" "av who" "credit credit" "actions actions"; column-gap: 14px; padding: 16px; }

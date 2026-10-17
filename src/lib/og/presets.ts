@@ -13,7 +13,7 @@ export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
 
 export type OgMedia =
-  | { kind: 'photo'; src: ImageMetadata; position: string; badge?: string; icon?: IconName }
+  | { kind: 'photo'; src: ImageMetadata; position: string; badge?: string; icon?: IconName; color?: boolean }
   | { kind: 'stat'; stat: OgStat }
   | ({ kind: 'map' } & NonNullable<OgPage['map']>)
   | ({ kind: 'bars' } & NonNullable<OgPage['bars']>)
@@ -68,7 +68,7 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
   const alt = title.replace(/\s*\n\s*/g, ' ');
   if (o.image) return { route, alt, file: o.image };
 
-  const photo = o.photo ?? d.photo;
+  const photo = o.illustration ?? o.photo ?? d.photo;
   const mode = o.media ?? 'auto';
   const kind = mode === 'auto' ? (o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : 'none') : mode;
 
@@ -79,11 +79,13 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
     media = { kind: 'map', ...d.map };
   } else if (kind === 'bars' && d.bars) {
     media = { kind: 'bars', ...d.bars };
+  } else if (kind === 'photo' && o.illustration) {
+    media = { kind: 'photo', src: o.illustration, position: o.position ?? '50% 50%', color: true };
   } else if (kind === 'photo' && photo) {
     const badge = o.badge === false ? undefined : (o.badge ?? d.badge);
     media = { kind: 'photo', src: photo, position: o.position ?? d.position ?? '50% 50%', badge, icon: d.icon };
   } else if (kind !== 'none') {
-    console.warn(`[og] ${route}: media „${kind}” bez danych (og.${kind === 'photo' ? 'photo' : 'stat'}) — obrazek bez mediów`);
+    console.warn(`[og] ${route}: media „${kind}” bez danych (og.${kind === 'photo' ? 'photo / og.illustration' : 'stat'}) — obrazek bez mediów`);
   }
 
   return {

@@ -1,0 +1,41 @@
+---
+/**
+ * Pytania pomocnicze obszaru albo części: znak „?” zamiast punktora, mniejszy krój — podpowiedź, nie część
+ * opisu obszaru. Pytanie z linkiem (np. do projektu nowelizacji) pokazuje link w osobnej linii.
+ * `spacing`: `list` — na liście obszarów, `area` — pod nagłówkiem sekcji, `part` — pod opisem części kadr.
+ */
+import type { BarometrHint } from '@/data/barometr-polityczny';
+import { typo } from '@/lib/format';
+
+interface Props {
+  hints: BarometrHint[];
+  /** nazwa listy dla czytników ekranu, np. „Pytania pomocnicze: Finansowanie” */
+  label: string;
+  spacing?: 'list' | 'area' | 'part';
+}
+
+const { hints, label, spacing = 'list' } = Astro.props;
+---
+<ul class:list={['hints', `hints--${spacing}`]} aria-label={label}>
+  {hints.map((hint) => (
+    typeof hint === 'string' ? (
+      <li>{typo(hint)}</li>
+    ) : (
+      <li>{typo(hint.text)}<a class="hints__link" href={hint.link.href}>{hint.link.label}</a></li>
+    )
+  ))}
+</ul>
+
+<style>
+  .hints { display: grid; gap: 6px; max-width: 72ch; }
+  .hints--list { margin-top: 10px; }
+  .hints--area { margin: calc(-1 * clamp(16px, 2vw, 32px)) 0 32px; }
+  .hints--part { margin: -12px 0 24px; }
+
+  .hints li { position: relative; padding-left: 22px; font-size: 0.875rem; line-height: 1.55; color: var(--ink-2); }
+  .hints li::before { content: "?"; position: absolute; left: 0; top: 1px; display: grid; place-items: center; width: 15px; height: 15px; border: 1px solid var(--line-2); font: 500 0.625rem/1 var(--f-mono); color: var(--muted); }
+
+  /* link w osobnej linii, jak „Źródło:” w całym serwisie */
+  .hints__link { display: block; width: fit-content; margin-top: 2px; color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--muted); }
+  .hints__link:hover { color: var(--blue); text-decoration-color: currentColor; }
+</style>

@@ -18,6 +18,7 @@ import StatusTrack from '@/components/blocks/StatusTrack.astro';
 import Aside from '@/components/blocks/Aside.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import AreaAnswer from '@/components/barometr/AreaAnswer.astro';
+import HintList from '@/components/barometr/HintList.astro';
 import { barometrAreas, barometrContact, barometrPage, barometrProfiles } from '@/data/barometr-polityczny';
 import { formatDate, isoDate, pad2, typo } from '@/lib/format';
 import type { Stage } from '@/types';
@@ -101,12 +102,14 @@ const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(`Baro
   {areas.map((a, i) => (
     <Section id={a.id} tone={i % 2 ? 'default' : 'soft'} aria-labelledby={`${a.id}-title`}>
       <SectionHead eyebrow={`Obszar ${pad2(a.n)}`} title={a.name} id={`${a.id}-title`} aside={a.text} />
+      {a.hints && <HintList hints={a.hints} label={`Pytania pomocnicze: ${a.name}`} spacing="area" />}
       {a.parts ? (
         <div class="bp-parts">
           {a.parts.map((part) => (
             <div class="bp-part" id={`${a.id}-${part.id}`}>
               <h3 class="bp-part__title">{part.title}</h3>
               <p class="bp-part__text">{typo(part.text.charAt(0).toUpperCase() + part.text.slice(1))}</p>
+              {part.hints && <HintList hints={part.hints} label={`Pytania pomocnicze: ${part.title}`} spacing="part" />}
               <AreaAnswer entry={part.entry} missing="Partia nie odniosła się do tej części." />
             </div>
           ))}

@@ -1,22 +1,29 @@
 ---
 /**
  * /barometr-polityczny/ — sześć obszarów (zarazem pytania do partii) w układzie wierszy NumberedList,
- * a pod obszarem z częściami (kadry) — lista części, na które partia odpowiada osobno.
+ * pod obszarem z częściami (kadry) — lista części, na które partia odpowiada osobno,
+ * a przy obszarze albo części — pytania pomocnicze (podpowiedź, nie obowiązek).
  */
 import Num from '@/components/ui/Num.astro';
-import { barometrAreas } from '@/data/barometr-polityczny';
+import HintList from '@/components/barometr/HintList.astro';
+import { answerLimitLabel, barometrAreas } from '@/data/barometr-polityczny';
 import { typo } from '@/lib/format';
 ---
+<p class="areas__note">Pytania pomocnicze (ze znakiem „?”) to tylko sugestia. Nie zamykają tematu: można odpowiedzieć szerzej albo po swojemu i nie trzeba odpowiadać na każde. Całość mieści się w limicie {answerLimitLabel} na odpowiedź.</p>
 <ol class="areas">
   {barometrAreas.map((area, i) => (
     <li data-reveal>
       <Num n={i + 1} size="sm" />
       <div>
         <p><strong>{typo(area.title)}</strong> {typo(area.text)}</p>
+        {area.hints && <HintList hints={area.hints} label={`Pytania pomocnicze: ${area.title.replace(/\.$/, '')}`} />}
         {area.parts && (
           <ul class="areas__parts">
             {area.parts.map((part) => (
-              <li><strong>{part.title}:</strong> {typo(part.text)}</li>
+              <li>
+                <strong>{part.title}:</strong> {typo(part.text)}
+                {part.hints && <HintList hints={part.hints} label={`Pytania pomocnicze: ${part.title}`} />}
+              </li>
             ))}
           </ul>
         )}
@@ -31,6 +38,8 @@ import { typo } from '@/lib/format';
   .areas p { font-size: 1rem; line-height: 1.65; }
   .areas strong { color: var(--ink); font-weight: 600; }
 
-  .areas__parts { display: grid; gap: 8px; margin-top: 12px; padding-left: 16px; border-left: 2px solid var(--line-2); }
-  .areas__parts li { font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
+  .areas__parts { display: grid; gap: 12px; margin-top: 12px; padding-left: 16px; border-left: 2px solid var(--line-2); }
+  .areas__parts > li { font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
+
+  .areas__note { margin-bottom: 20px; max-width: 72ch; font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
 </style>

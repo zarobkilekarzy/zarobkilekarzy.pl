@@ -16,6 +16,7 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 
 import heroImg from '@/assets/img/hero-pokoj-lekarski.jpg';
+import barometrOg from '@/assets/img/barometr-polityczny-og.png';
 
 // odpowiedzi placówek na wniosek o płace (monitoring Watchdog Polska)
 const answered = (...r: Response[]) => monitoring.facilities.filter((f) => r.includes(f.response)).length;
@@ -135,8 +136,11 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Najważniejsze pojęcia z ochrony zdrowia w kilku zdaniach. Przy każdym haśle podstawa prawna albo źródło.',
     footer: { text: 'Definicje bez ocen, ze źródłem' },
   },
-  // bez liczby partii i dat wysyłki — na OG nic, co się zmienia (X trzyma obrazek w pamięci)
+  // bez liczby partii i dat wysyłki — na OG nic, co się zmienia (X trzyma obrazek w pamięci).
+  // Gotowa grafika (barometr publiczna–prywatna) zamiast generatora; tytuł zostaje jako og:image:alt.
+  // Przy zmianie tekstu albo obszarów grafikę trzeba wygenerować od nowa.
   '/barometr-polityczny/': {
+    image: barometrOg,
     eyebrow: 'Barometr polityczny',
     title: 'Co partie proponują\nw ochronie zdrowia',
     lead: 'Te same pytania dla każdej partii. Odpowiedzi publikujemy bez zmian w treści, z dokumentami wskazanymi przez partię.',

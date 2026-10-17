@@ -7,6 +7,7 @@ import type { ImageMetadata } from 'astro';
 import type { TextItem } from '@/types';
 import { formatDate, formatPL, plural } from '@/lib/format';
 import { contact } from '@/data/o-serwisie';
+import { projekt } from '@/data/projekt-ustawy';
 
 import centrumLogo from '@/assets/partie/centrum.png';
 import demokracjaLogo from '@/assets/partie/demokracja-bezposrednia.png';
@@ -66,9 +67,18 @@ export const answerLimitLabel = `${formatPL(ANSWER_LIMIT)} ${plural(ANSWER_LIMIT
 /** długość odpowiedzi tą samą miarą co limit */
 export const answerLength = (answer: string[]) => answer.join('').length;
 
+/**
+ * Pytania pomocnicze: podpowiedź, co ująć w odpowiedzi — nie obowiązek, ten sam limit znaków.
+ * Zasada redakcji: każde dopuszcza każdą odpowiedź, także skrajną i „nic nie zmieniać” („Czy…? Jeśli tak — …”),
+ * i da się je zadać każdej partii oraz NIL. Pytanie może mieć link (np. do projektu nowelizacji).
+ */
+export type BarometrHint = string | { text: string; link: { label: string; href: string } };
+type Hints = BarometrHint[];
+
 /** Część obszaru (kadry: lekarze, pielęgniarki, inne zawody) — osobna odpowiedź z tym samym limitem. */
 export interface BarometrAreaPart extends TextItem {
   id: string;
+  hints?: Hints;
 }
 
 /** Obszar opisu: `id` = kotwica sekcji na podstronie partii (stała — linkują do niej inne strony). */
@@ -76,6 +86,7 @@ export interface BarometrArea extends TextItem {
   id: string;
   /** części obszaru; każda to osobna odpowiedź (decyzja redakcji 17.10.2026 — kadry w trzech częściach) */
   parts?: BarometrAreaPart[];
+  hints?: Hints;
 }
 
 /** Obszary opisu — te same dla każdej partii; to zarazem pytania, które wysyłamy partiom. */
@@ -84,36 +95,84 @@ export const barometrAreas: BarometrArea[] = [
     id: 'finansowanie',
     title: 'Finansowanie.',
     text: 'Ile publicznych pieniędzy na ochronę zdrowia i skąd je wziąć: ze składki, z budżetu państwa, z innych źródeł.',
+    hints: [
+      'Kto powinien płacić za leczenie: pieniądze publiczne (składka, budżet), prywatne (ubezpieczenia, dopłaty pacjentów) czy jedne i drugie — i w jakich proporcjach?',
+      'Czy zmieniać składkę zdrowotną — jej wysokość albo zasady naliczania, np. dla przedsiębiorców? Jeśli tak — jak?',
+      'Czy zmieniać wysokość publicznych wydatków na zdrowie? Jeśli tak — o ile i do kiedy?',
+    ],
   },
   {
     id: 'kadry',
     title: 'Kadry.',
     text: 'Jak zapewnić kadry ochrony zdrowia. Odpowiedź w trzech częściach:',
     parts: [
-      { id: 'lekarze', title: 'Lekarze', text: 'kształcenie, liczba miejsc na studiach, specjalizacje.' },
-      { id: 'pielegniarki', title: 'Pielęgniarki', text: 'kształcenie, liczba miejsc na studiach, specjalizacje.' },
-      { id: 'inne-zawody', title: 'Inne zawody medyczne', text: 'ratownicy medyczni, fizjoterapeuci, diagności laboratoryjni i inni: kształcenie, liczba miejsc na studiach.' },
+      {
+        id: 'lekarze',
+        title: 'Lekarze',
+        text: 'kształcenie, liczba miejsc na studiach, specjalizacje.',
+        hints: [
+          'Czy zmienić liczbę miejsc na studiach lekarskich — zwiększyć, utrzymać czy zmniejszyć — i dlaczego?',
+          'Czy lekarze, którzy robią specjalizację w rezydenturze opłacanej z pieniędzy publicznych, powinni mieć obowiązek pracy w Polsce albo w publicznym systemie po jej ukończeniu? Jeśli tak — przez ile lat i na jakich zasadach?',
+          'Czy ewidencjonować i ograniczać łączny czas pracy lekarza we wszystkich miejscach, w których pracuje za pieniądze publiczne? Jeśli tak — jak to sprawdzać?',
+          'Czy zmienić zasady dopuszczania do pracy lekarzy spoza Unii Europejskiej? Jeśli tak — jak?',
+        ],
+      },
+      {
+        id: 'pielegniarki',
+        title: 'Pielęgniarki',
+        text: 'kształcenie, liczba miejsc na studiach, specjalizacje.',
+        hints: [
+          'Czy zmienić liczbę miejsc na studiach pielęgniarskich — zwiększyć, utrzymać czy zmniejszyć — i dlaczego?',
+          'Czy zmieniać zakres samodzielnych uprawnień pielęgniarek, np. wystawianie recept czy udzielanie porad? Jeśli tak — jak?',
+        ],
+      },
+      {
+        id: 'inne-zawody',
+        title: 'Inne zawody medyczne',
+        text: 'ratownicy medyczni, fizjoterapeuci, diagności laboratoryjni, farmaceuci i inni: kształcenie, liczba miejsc na studiach.',
+        hints: ['Czy inne zawody medyczne, np. farmaceuci, powinny przejąć część zadań lekarzy, np. wystawianie recept czy udzielanie porad? Jeśli tak — które?'],
+      },
     ],
   },
   {
     id: 'wynagrodzenia',
     title: 'Wynagrodzenia i jawność.',
     text: 'Jak ustalać i rozliczać wynagrodzenia z publicznych pieniędzy: etat i kontrakt, płace minimalne, jawność łącznych kwot.',
+    hints: [
+      'Jaka forma zatrudnienia w placówkach finansowanych przez NFZ: etat, kontrakt czy obie? Czy różnice w podatkach i składkach między nimi powinny zostać?',
+      {
+        text: 'Czy poparliby Państwo projekt nowelizacji przygotowany przez ten serwis — jawne łączne wynagrodzenia z pieniędzy publicznych pod stałym identyfikatorem zamiast nazwiska — bez zmian, z poprawkami czy wcale? I dlaczego?',
+        link: { label: 'Projekt nowelizacji', href: projekt.href },
+      },
+    ],
   },
   {
     id: 'dostep',
     title: 'Dostęp i kolejki.',
     text: 'Jak skrócić czas oczekiwania na świadczenia i jak go rzetelnie mierzyć.',
+    hints: [
+      'Czy państwo powinno gwarantować najdłuższy czas oczekiwania na świadczenia? Jeśli tak — jaki i co, gdy zostanie przekroczony?',
+      'Czy i jak państwo powinno wpływać na wybór między lekami oryginalnymi a ich zamiennikami (generykami) — w refundacji i w aptece?',
+      'Czy i jak zmieniać dostęp do pomocy psychiatrycznej i psychologicznej, w tym dla dzieci i młodzieży?',
+    ],
   },
   {
     id: 'szpitale',
     title: 'Szpitale.',
     text: 'Sieć szpitali, ich zadłużenie i zasady finansowania: kto pokrywa straty i kto decyduje o zmianach.',
+    hints: [
+      'Kto powinien prowadzić szpitale: państwo lub samorząd, prywatne podmioty czy jedni i drudzy?',
+      'Czy zmieniać zasady postępowania z zadłużonymi szpitalami? Jeśli tak — jak?',
+    ],
   },
   {
     id: 'pacjent',
     title: 'Pacjent.',
     text: 'Prawa pacjenta, informacja o jakości leczenia, dochodzenie roszczeń po błędzie medycznym.',
+    hints: [
+      'Kto powinien orzekać w sprawach odpowiedzialności zawodowej lekarzy — sądy samorządu lekarskiego, sądy powszechne czy skład mieszany, np. z udziałem przedstawicieli pacjentów — i dlaczego?',
+      'Czy i jak sztuczna inteligencja powinna być używana w leczeniu — i kto ma odpowiadać za jej błędy?',
+    ],
   },
 ];
 

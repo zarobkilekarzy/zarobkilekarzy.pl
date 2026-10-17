@@ -76,8 +76,16 @@ export const egzaminPage = {
   lead: '200 pytań jednokrotnego wyboru, 4 godziny, próg 56%. Pytania są jawne: CEM publikuje je po każdej sesji z kluczem i statystyką odpowiedzi. Rozwiąż cały egzamin, szybki test albo ucz się pytanie po pytaniu.',
   privacy:
     'Odpowiedzi, postęp i notatki zostają w tej przeglądarce. Do porównania z innymi trafia anonimowo tylko wynik ukończonego testu: sesja, tryb, punkty i czas.',
-  agentPrompt:
-    'Na stronie https://zarobkilekarzy.pl/egzamin/ jest obiekt window.lek (wszystkie funkcje zwracają Promise). Przeczytaj window.lek.opis, potem: await lek.rozpocznij("szybki", "2026-jesien"); pobieraj pytania przez lek.pytania(1, 20), odpowiadaj z własnej wiedzy przez lek.odpowiedzi({ 1: "A", 2: "C", … }), a na koniec wywołaj lek.zakoncz() i podaj wynik z lek.wynik().',
+  // Ten sam interfejs co window.lek (lib/egzamin/api.ts) — przy zmianie API aktualizuj oba miejsca.
+  agentPrompt: `Rozwiąż pełny egzamin LEK (200 pytań) na https://zarobkilekarzy.pl/egzamin/ przez window.lek (JavaScript w karcie; funkcje zwracają Promise).
+
+1. Najnowsza sesja: const [s] = await lek.sesje(); await lek.rozpocznij("egzamin", s.id)
+2. Partiami po 25: await lek.pytania(1, 25), potem await lek.odpowiedzi({ 1: "A", 2: "C", … }); dalej 26–50 itd.
+3. Gdy await lek.bezOdpowiedzi() zwróci [], await lek.zakoncz() zwraca wynik.
+
+Odpowiadaj tylko z własnej wiedzy: bez czytania kodu i plików danych strony, bez internetu (klucz jest publiczny).
+
+Podaj: sesję, punkty / maksimum i procent, próg i czy zdany, przeciętny wynik zdających, liczbę błędnych, bez odpowiedzi i unieważnionych oraz tabelę według dziedzin.`,
 };
 
 /** Źródła zasad i jawności — wspólne dla sekcji „Skąd te pytania” i stopki źródeł. */

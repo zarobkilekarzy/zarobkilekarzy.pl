@@ -29,15 +29,16 @@ const country = (key: CountryKey): ComparisonRow => {
 };
 const rows = [country('no'), country('se'), country('uk'), country('pl')];
 
-// tabela rok po roku: Polska pierwsza, jak w tabeli w artykule (RevocationTable); pod latami suma
-// i wskaźnik na 100 tys. z okna porównania — liczby całkowite, jak na grafice z porównaniem krajów
+// tabela rok po roku: Polska na końcu (w pionie skrajna prawa kolumna), jak na grafice z porównaniem
+// krajów; pod latami suma i wskaźnik na 100 tys. z okna porównania — liczby całkowite
 const years = `${FIRST_YEAR}–${LAST_YEAR}`;
+const tableCountries = [...COUNTRIES.filter((c) => c.key !== 'pl'), ...COUNTRIES.filter((c) => c.key === 'pl')];
 const revocationTable: DataTable = {
   periods: REVOCATIONS.map((r) => String(r.year)),
-  series: COUNTRIES.map((c) => ({ label: c.name, sub: c.body, values: REVOCATIONS.map((r) => r[c.key]), highlight: c.key === 'pl' })),
+  series: tableCountries.map((c) => ({ label: c.name, sub: c.body, values: REVOCATIONS.map((r) => r[c.key]), highlight: c.key === 'pl' })),
   summary: [
-    { label: 'Razem', sub: years, values: COUNTRIES.map((c) => formatPL(total(c.key))) },
-    { label: 'Na 100 tys.', sub: `rocznie ${span}`, values: COUNTRIES.map((c) => formatPL(ratePer100k(c.key))) },
+    { label: 'Razem', sub: years, values: tableCountries.map((c) => formatPL(total(c.key))) },
+    { label: 'Na 100 tys.', sub: `rocznie ${span}`, values: tableCountries.map((c) => formatPL(ratePer100k(c.key))) },
   ],
 };
 
@@ -60,7 +61,7 @@ const odpowiedzialnosc: InfographicSet = {
       measure: `liczba odebrań rok po roku · ${years}`,
       table: revocationTable,
       sources: 'Źródła: Helsetilsynet, HSAN, GMC, NIL · definicje różnią się między krajami',
-      alt: `Infografika: liczba odebrań prawa do zawodu lekarzom rok po roku w latach ${years}. Razem: ${COUNTRIES.map((c) => `${c.name} ${total(c.key)}`).join(', ')}. Średnio rocznie na 100 tys. lekarzy w latach ${span}: ${COUNTRIES.map((c) => `${c.name} ${formatPL(ratePer100k(c.key))}`).join(', ')}. ${REVOCATIONS.map((r) => `${r.year}: ${COUNTRIES.map((c) => `${c.name} ${r[c.key]}`).join(', ')}`).join('; ')}. Definicje różnią się między krajami. Źródła: Helsetilsynet, HSAN, GMC, NIL.`,
+      alt: `Infografika: liczba odebrań prawa do zawodu lekarzom rok po roku w latach ${years}. Razem: ${tableCountries.map((c) => `${c.name} ${total(c.key)}`).join(', ')}. Średnio rocznie na 100 tys. lekarzy w latach ${span}: ${tableCountries.map((c) => `${c.name} ${formatPL(ratePer100k(c.key))}`).join(', ')}. ${REVOCATIONS.map((r) => `${r.year}: ${tableCountries.map((c) => `${c.name} ${r[c.key]}`).join(', ')}`).join('; ')}. Definicje różnią się między krajami. Źródła: Helsetilsynet, HSAN, GMC, NIL.`,
     },
   ],
 };

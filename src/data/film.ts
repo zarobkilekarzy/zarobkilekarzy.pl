@@ -1,6 +1,10 @@
 /**
  * Film „Brak odczytu” (ok. 40 s) — strona główna (components/home/Film.astro) i /media/.
- * Plik i okładka leżą w public/film/. `transcript` to napisy z filmu ujęcie po ujęciu ze źródłami:
+ * Pliki leżą w public/film/: MP4 (Chrome, Firefox, pobieranie), ten sam film pocięty na HLS
+ * w hls/ (Safari, także na iOS) i okładka. HLS jest potrzebny, bo statyczne pliki Workera
+ * ignorują nagłówek Range, a Safari bez odpowiedzi 206 nie odtwarza MP4 — kawałki HLS pobiera
+ * w całości. Odtwarzacz podaje HLS jako pierwsze źródło; przeglądarki bez HLS biorą MP4.
+ * `transcript` to napisy z filmu ujęcie po ujęciu ze źródłami:
  * opis dla czytników ekranu i miejsce, gdzie każda liczba z filmu ma link — stopki w kadrze są
  * za drobne, żeby je przeczytać na telefonie. Tekst trzyma stan z filmu (monitoring: 12.10.2026),
  * więc nie liczy się z bieżących danych — po zmianie filmu poprawić go ręcznie.
@@ -32,6 +36,8 @@ const REZYDENT: FilmSource[] = [
 export const film = {
   title: 'Brak odczytu',
   src: '/film/brak-odczytu.mp4',
+  /** lista odtwarzania HLS (kawałki po 4 s, fMP4) */
+  hls: '/film/hls/brak-odczytu.m3u8',
   /** pierwsza klatka filmu */
   poster: '/film/brak-odczytu.webp',
   /** nazwa pliku przy pobieraniu */
@@ -39,7 +45,7 @@ export const film = {
   width: 1920,
   height: 1080,
   seconds: 40,
-  size: '3,7 MB',
+  size: '4,6 MB',
   transcript: [
     {
       text: 'Jeden lekarz, 2025 r.: ponad 1,6 mln zł w jeden rok. Rezydent bez ukończonej specjalizacji, cztery publiczne szpitale naraz. W jednym z nich średnio 331 godzin w miesiącu, a pełny etat to ok. 168. Sprawę badają prokuratura i izba lekarska.',

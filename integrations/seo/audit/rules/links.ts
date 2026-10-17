@@ -2,7 +2,7 @@
  * Linki wewnętrzne: cel istnieje, prowadzi wprost (nie przez przekierowanie) i ma formę kanoniczną
  * (strona z ukośnikiem). `href="#"` to placeholder — link donikąd dla czytelnika i robota.
  */
-import { exists, grouped, hasPage, internalPath, redirectFrom, type Finding, type Rule } from '../context';
+import { exists, grouped, hasPage, internalPath, isErrorPage, redirectFrom, type Finding, type Rule } from '../context';
 import { isFilePath, withSlash } from '../../../../src/lib/seo/urls';
 
 export const links: Rule = (ctx) => {
@@ -68,7 +68,7 @@ export const links: Rule = (ctx) => {
       if (path) linked.add(withSlash(path));
     }
   for (const p of ctx.pages.values())
-    if (hasPage(ctx, p.path) && p.path !== '/404.html' && !linked.has(p.path))
+    if (hasPage(ctx, p.path) && !isErrorPage(p.path) && !linked.has(p.path))
       out.push({ rule: 'links', level: 'warn', message: 'strona bez linków z innych stron (sierota)', pages: [p.path] });
   return out;
 };

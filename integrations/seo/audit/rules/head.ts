@@ -2,7 +2,7 @@
  * <head>: tytuł, opis, język, canonical, robots, obrazek podglądu oraz długości i duplikaty
  * tytułów i opisów między stronami.
  */
-import { contentPages, grouped, type Finding, type Rule } from '../context';
+import { contentPages, grouped, isErrorPage, type Finding, type Rule } from '../context';
 import { isIndexable } from '../../facts';
 
 /** Google pokazuje ok. 580 px tytułu (~60 znaków) i ok. 160 znaków opisu. */
@@ -18,8 +18,8 @@ export const head: Rule = (ctx) => {
   for (const p of ctx.pages.values()) {
     if (p.refresh) continue;
     const indexable = isIndexable(p);
-    if (p.path === '/404.html') {
-      if (indexable) err(p.path, 'strona 404 bez noindex');
+    if (isErrorPage(p.path)) {
+      if (indexable) err(p.path, 'strona błędu bez noindex');
       continue;
     }
 

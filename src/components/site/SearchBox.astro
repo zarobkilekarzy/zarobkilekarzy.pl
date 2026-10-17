@@ -8,6 +8,7 @@
 import type { HTMLAttributes } from 'astro/types';
 import Icon from '@/components/ui/Icon.astro';
 import SearchResult from '@/components/site/SearchResult.astro';
+import SearchEmptyArchive from '@/components/site/SearchEmptyArchive.astro';
 import { searchPageHref } from '@/lib/search/engine';
 import type { SearchHit } from '@/types';
 
@@ -46,7 +47,13 @@ const { id, popular, limit = 8, autofocus, class: className, ...rest } = Astro.p
     {popular.map((hit) => <SearchResult {...hit} />)}
   </ul>
   <template><SearchResult title="" category="" href="" /></template>
-  <p class="search-box__empty" data-empty hidden>Nic nie znaleźliśmy. Spróbuj innego słowa albo zajrzyj do <a href="/slownik/">słownika pojęć</a>.</p>
+  <div class="search-box__empty" data-empty hidden>
+    <SearchEmptyArchive />
+    <div>
+      <p class="search-box__empty-title">Brak w kartotece.</p>
+      <p>Przetrząsnęliśmy szuflady i nic. Spróbuj krótszego słowa, np. {['kontrakt', 'NFZ', 'limit'].map((word, i) => <>{i > 0 && (i === 2 ? ' albo ' : ', ')}<a href={searchPageHref(word)}>{word}</a></>)}, albo zajrzyj do <a href="/slownik/">słownika pojęć</a>.</p>
+    </div>
+  </div>
 </zl-search>
 
 <script>
@@ -152,6 +159,12 @@ const { id, popular, limit = 8, autofocus, class: className, ...rest } = Astro.p
   .search-box__label { padding: 16px 20px 8px; }
   /* Wysokość listy ustawia rodzic: okno ją ogranicza, strona wyników nie */
   .search-box__results { padding: 0 8px 12px; overflow-y: auto; max-height: var(--search-results-height, none); }
-  .search-box__empty { padding: 8px 20px 24px; font-size: 0.90625rem; }
+  .search-box__empty { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 20px; align-items: center; padding: 8px 20px 24px; font-size: 0.90625rem; }
+  .search-box__empty[hidden] { display: none; }
+  .search-box__empty-title { font: 600 1.125rem/1.3 var(--f-display); color: var(--ink); margin-bottom: 6px; }
+  @media (max-width: 520px) {
+    .search-box__empty { grid-template-columns: 1fr; }
+    .search-box__empty > :global(svg) { max-width: 260px; }
+  }
   .search-box__empty a { color: var(--blue); text-decoration: underline; }
 </style>

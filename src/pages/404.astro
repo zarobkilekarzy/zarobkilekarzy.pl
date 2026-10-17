@@ -1,14 +1,15 @@
 ---
 /**
- * Strona 404 — na razie sam mechanizm: noindex, bez grafu danych strukturalnych i bez wpisu w sitemapie.
+ * Strona 404 — noindex, bez grafu danych strukturalnych i bez wpisu w sitemapie.
  * Cloudflare (Workers Static Assets, not_found_handling: 404-page) serwuje dist/404.html ze statusem 404 dla każdego adresu bez pliku i bez przekierowania.
- * Treść (wyszukiwarka, popularne miejsca) dojdzie później; stare adresy obsługuje src/data/seo/redirects.ts.
+ * Stare adresy obsługuje src/data/seo/redirects.ts.
  */
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Section from '@/components/layout/Section.astro';
 import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
+import NotFoundDoctor from '@/components/site/NotFoundDoctor.astro';
 import type { SeoInput } from '@/lib/seo';
 
 const seo: SeoInput = {
@@ -19,17 +20,29 @@ const seo: SeoInput = {
 ---
 <BaseLayout seo={seo}>
   <Section class="nf">
-    <Eyebrow>Błąd 404</Eyebrow>
-    <Heading as="h1" size="display">Nie ma takiej strony</Heading>
-    <p class="lead nf__lead">Adres mógł się zmienić albo zawierać literówkę.</p>
-    <p class="nf__links">
-      <LinkArrow href="/">Strona główna</LinkArrow>
-      <LinkArrow href="/szukaj/">Szukaj w serwisie</LinkArrow>
-    </p>
+    <div class="nf__grid">
+      <div>
+        <Eyebrow>Błąd 404</Eyebrow>
+        <Heading as="h1" size="display">Strony nie zastaliśmy</Heading>
+        <p class="lead nf__lead">Być może ta strona <strong>dyżuruje teraz w&nbsp;innym szpitalu</strong>.</p>
+        <p class="nf__note">Adres mógł się zmienić albo zawierać literówkę. Zacznij od strony głównej albo poszukaj tego, czego potrzebujesz.</p>
+        <p class="nf__links">
+          <LinkArrow href="/">Strona główna</LinkArrow>
+          <LinkArrow href="/szukaj/">Szukaj w serwisie</LinkArrow>
+        </p>
+      </div>
+      <NotFoundDoctor />
+    </div>
   </Section>
 </BaseLayout>
 
 <style>
+  .nf__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 48px; align-items: center; }
   .nf__lead { margin-top: 1.5rem; }
+  .nf__note { margin-top: 1rem; max-width: 42ch; color: var(--muted); }
   .nf__links { display: flex; flex-wrap: wrap; gap: 1rem 2rem; margin-top: 2rem; }
+  @media (max-width: 720px) {
+    .nf__grid { grid-template-columns: 1fr; gap: 32px; }
+    .nf__grid > :global(svg) { order: -1; }
+  }
 </style>

@@ -356,7 +356,7 @@ const profileHref = (id: string) => `${barometrPage.href}${id}/`;
 /**
  * Wzór opisu na fikcyjnej partii — pokazuje układ, nie treść. Odpowiedzi opisują, co partia w danym
  * miejscu napisze; nie wolno tu wstawiać zmyślonych stanowisk ani przypisywać ich prawdziwej partii.
- * Jeden obszar bez odpowiedzi (szpitale) i jeden bez wskazanych dokumentów (dostęp) — żeby było widać oba przypadki.
+ * Wszystkie obszary i części uzupełnione: każda odpowiedź opisuje, czego dotyczą pytania pomocnicze w tym miejscu.
  */
 export const barometrExample: BarometrProfile = {
   id: 'wzor',
@@ -382,41 +382,55 @@ export const barometrExample: BarometrProfile = {
       ],
       checks: { cost: true, funding: true, deadline: false },
     },
-    // kadry w trzech częściach: pełna odpowiedź, odpowiedź bez dokumentów i część pominięta
+    // kadry w trzech częściach — każda odpowiedź opisuje, czego dotyczą pytania pomocnicze w tym miejscu
     {
       area: 'kadry',
       part: 'lekarze',
-      answer: ['Tu odpowiedź partii o lekarzach: kształceniu, liczbie miejsc na studiach i specjalizacjach.'],
+      answer: [
+        'Tu partia odpowiada o lekarzach: czy zmienić liczbę miejsc na studiach lekarskich i czy lekarze, którzy robią specjalizację w rezydenturze opłacanej z pieniędzy publicznych, mają mieć obowiązek pracy w Polsce albo w publicznym systemie.',
+        'Może też napisać, czy ewidencjonować i ograniczać łączny czas pracy lekarza we wszystkich miejscach finansowanych z pieniędzy publicznych oraz na jakich zasadach dopuszczać do pracy lekarzy spoza Unii Europejskiej.',
+      ],
       documents: [{ kind: 'Poprawka', title: 'Poprawka, którą partia wskazała: do jakiej ustawy, z linkiem do druku' }],
       checks: { cost: false, funding: false, deadline: true },
     },
     {
       area: 'kadry',
       part: 'pielegniarki',
-      answer: ['Tu odpowiedź partii o pielęgniarkach: kształceniu, liczbie miejsc na studiach i specjalizacjach.'],
-      documents: [],
+      answer: ['Tu partia odpowiada o pielęgniarkach: czy zmienić liczbę miejsc na studiach pielęgniarskich i czy zmieniać zakres ich samodzielnych uprawnień, np. wystawianie recept czy udzielanie porad.'],
+      documents: [{ kind: 'Program', title: 'Fragment programu partii o pielęgniarkach, z linkiem do dokumentu na stronie partii' }],
       checks: { cost: true, funding: true, deadline: false },
     },
-    { area: 'kadry', part: 'inne-zawody', documents: [] },
+    {
+      area: 'kadry',
+      part: 'inne-zawody',
+      answer: ['Tu partia odpowiada o innych zawodach medycznych — ratownikach, fizjoterapeutach, diagnostach laboratoryjnych, farmaceutach: o kształceniu, liczbie miejsc na studiach i o tym, czy część zadań lekarzy mogłyby przejąć inne zawody.'],
+      documents: [{ kind: 'Projekt ustawy', title: 'Projekt, który partia wskazała na poparcie odpowiedzi: tytuł, numer druku i link do strony Sejmu' }],
+      checks: { cost: true, funding: false, deadline: true },
+    },
     {
       area: 'wynagrodzenia',
-      answer: ['Tu odpowiedź partii o zasadach wynagradzania z publicznych pieniędzy, w tym o jawności łącznych kwot.'],
+      answer: [
+        'Tu partia odpowiada o zasadach wynagradzania z publicznych pieniędzy: jaka forma zatrudnienia w placówkach finansowanych przez NFZ — etat, kontrakt czy obie — i czy różnice w podatkach i składkach między nimi powinny zostać.',
+        'Może też odnieść się do projektu nowelizacji przygotowanego przez serwis: poprzeć go bez zmian, z poprawkami albo wcale — i wyjaśnić dlaczego.',
+      ],
       documents: [{ kind: 'Program', title: 'Fragment programu partii o wynagrodzeniach, z linkiem do dokumentu na stronie partii' }],
       checks: { cost: true, funding: true, deadline: true },
     },
     {
       area: 'dostep',
-      answer: ['Tu odpowiedź partii o skracaniu kolejek i o tym, jak mierzyć czas oczekiwania na świadczenia.'],
-      documents: [],
+      answer: ['Tu partia odpowiada, czy państwo powinno gwarantować najdłuższy czas oczekiwania na świadczenia, jak wpływać na wybór między lekami oryginalnymi a generykami i jak zmieniać dostęp do pomocy psychiatrycznej i psychologicznej, w tym dla dzieci i młodzieży.'],
+      documents: [{ kind: 'Program', title: 'Fragment programu partii o kolejkach, lekach i zdrowiu psychicznym, z linkiem do dokumentu na stronie partii' }],
       checks: { cost: true, funding: false, deadline: false },
     },
     {
       area: 'szpitale',
-      documents: [],
+      answer: ['Tu partia odpowiada, kto powinien prowadzić szpitale — państwo lub samorząd, prywatne podmioty czy jedni i drudzy — i czy zmieniać zasady postępowania z zadłużonymi szpitalami.'],
+      documents: [{ kind: 'Projekt ustawy', title: 'Projekt, który partia wskazała na poparcie odpowiedzi: tytuł, numer druku i link do strony Sejmu' }],
+      checks: { cost: false, funding: true, deadline: true },
     },
     {
       area: 'pacjent',
-      answer: ['Tu odpowiedź partii o prawach pacjenta, informacji o jakości leczenia i dochodzeniu roszczeń po błędzie medycznym.'],
+      answer: ['Tu partia odpowiada o prawach pacjenta i informacji o jakości leczenia: kto powinien orzekać w sprawach odpowiedzialności zawodowej lekarzy oraz czy i jak używać sztucznej inteligencji w leczeniu — i kto ma odpowiadać za jej błędy.'],
       documents: [{ kind: 'Projekt ustawy', title: 'Projekt, który partia wskazała na poparcie odpowiedzi: tytuł, numer druku i link do strony Sejmu' }],
       checks: { cost: false, funding: false, deadline: true },
     },

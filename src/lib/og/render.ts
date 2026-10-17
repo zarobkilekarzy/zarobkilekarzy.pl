@@ -1,6 +1,6 @@
 /**
  * Szablon obrazka OG (rodzina A „Okładka”, 1200×630): logo, etykieta, tytuł, lead, stopka
- * i media po prawej (zdjęcie / karta liczby / brak). Satori → SVG (tekst jako krzywe) → sharp → PNG.
+ * i media po prawej (zdjęcie / karta liczby / mapa / brak). Satori → SVG (tekst jako krzywe) → sharp → PNG.
  *
  * Pułapki Satori:
  * - fonty: statyczne WOFF z @fontsource (pliki z Fonts API Astro są zmienne),
@@ -17,6 +17,9 @@ import tokensCss from '@/styles/tokens.css?raw';
 import { icons, type IconName } from '@/icons';
 import { typo } from '@/lib/format';
 import { raw } from '@/lib/images';
+import { geo } from '@/lib/mapa/geo';
+import { toneOfClass } from '@/lib/mapa/layout';
+import { renderMapSvg, staticColors } from '@/lib/mapa/svg';
 import type { Accuracy, OgStat } from '@/types';
 import { OG_HEIGHT, OG_WIDTH, type OgEntry, type OgMedia, type OgSpec } from './presets';
 
@@ -240,6 +243,25 @@ function stat(s: OgStat) {
           s.source && typo(s.source)))));
 }
 
+/**
+ * Mapa tym samym rendererem co strona (lib/mapa/svg), bez ramki — wprost na tle; pod nią legenda klas.
+ * W ciemnej wersji kropka legendy stoi na krążku w kolorze województw, bo jasne odcienie giną na bieli.
+ */
+function map(m: Extract<OgMedia, { kind: 'map' }>) {
+  const theme = m.theme ?? 'jasny';
+  const src = `data:image/svg+xml;base64,${Buffer.from(renderMapSvg([m.layer], { theme, active: m.layer.id, labels: false })).toString('base64')}`;
+  const { seq, base } = staticColors(theme === 'ciemny');
+  const dot = (color: string) =>
+    theme === 'ciemny'
+      ? h('div', { style: { alignItems: 'center', justifyContent: 'center', width: 22, height: 22, marginRight: 9, borderRadius: '50%', background: base } },
+          h('div', { style: { width: 12, height: 12, borderRadius: '50%', background: color } }))
+      : h('div', { style: { width: 14, height: 14, marginRight: 9, borderRadius: '50%', background: color } });
+  return h('div', { style: { flexDirection: 'column', justifyContent: 'center', flexShrink: 0, width: MEDIA_W, height: MEDIA_H } },
+    h('img', { src, width: MEDIA_W, height: Math.round((MEDIA_W * geo.height) / geo.width) }),
+    m.legend && h('div', { style: { flexWrap: 'wrap', gap: '8px 22px', marginTop: 20, fontFamily: BODY, fontSize: 16, color: C.text } },
+      ...m.legend.map(([cls, label]) => h('div', { style: { alignItems: 'center' } }, dot(seq[toneOfClass(cls, m.layer.scale)]), typo(label)))));
+}
+
 /* ---------- Szablon ---------- */
 async function layout(spec: OgSpec, route: string): Promise<Node> {
   const wide = spec.media.kind === 'none';
@@ -258,7 +280,7 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
           ...titleLines(title)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
       spec.footer && footer(spec.footer)),
-    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : null);
+    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : null);
 }
 
 /** PNG 1200×630 z paletą 8-bit: zdjęcia B&W + kolory marki mieszczą się w niej bez widocznej straty. */

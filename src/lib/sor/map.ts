@@ -10,6 +10,7 @@ import { formatDate, typo } from '@/lib/format';
 import { geo } from '@/lib/mapa/geo';
 import type { MapSet, PointLayer, Tip } from '@/lib/mapa/types';
 import { prettyName } from '@/lib/monitoring/name';
+import { adapt } from './live';
 import { SOR_DATA_URL } from './source';
 
 interface Sor {
@@ -84,4 +85,13 @@ const queues: PointLayer = {
 };
 
 export const sorMap: MapSet = { id: 'sor', layers: [queues] };
+
+/**
+ * Warstwa z kolorami i wielkościami z jednej, zamrożonej migawki (adapter jak na stronie) — do
+ * ilustracji, która nie może się zmieniać (obrazek OG). Bez godziny i liczb: to nie jest stan na żywo.
+ */
+export function frozenLayer(snapshot: unknown): PointLayer {
+  const r = adapt(snapshot, { keys: queues.points.map((p) => p.key ?? null), tips: queues.points.map((p) => p.tip) });
+  return { ...queues, live: undefined, points: queues.points.map((p, i) => ({ ...p, value: r.points[i].value, size: r.points[i].size })) };
+}
 export const sorCount = sor.length;

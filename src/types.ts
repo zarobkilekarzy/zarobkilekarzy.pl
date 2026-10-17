@@ -4,6 +4,7 @@
  */
 import type { ImageMetadata } from 'astro';
 import type { IconName } from './icons';
+import type { MapLayer } from './lib/mapa/types';
 
 /** Czy liczba jest dokładna, czy szacunkowa — każda dana w serwisie ma taką etykietę. */
 export type Accuracy = 'exact' | 'est';
@@ -236,6 +237,8 @@ export interface OgPage extends OgOverride {
   title: string;
   footer?: { text: string; flags?: boolean };
   badgeIcon?: IconName;
+  /** mapa w miejscu zdjęcia: warstwa z lib/mapa, legenda [klasa skali, podpis] i barwy (ciemna = kontrast z białą kartą) */
+  map?: { layer: MapLayer; legend?: [number, string][]; theme?: 'jasny' | 'ciemny' };
 }
 
 /** Etap drogi (np. projektu ustawy): zakończony, bieżący albo przed nami. */

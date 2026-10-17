@@ -12,6 +12,8 @@ import { adresaci } from '@/data/adresaci';
 import { writeToolOn } from '@/data/dzialaj';
 import { helpline } from '@/data/prawa-pacjenta';
 import { HEADLINE } from '@/data/zarobki-ujawnione-listy';
+import sorOgSnapshot from '@/data/sor/migawka-og.json';
+import { frozenLayer } from '@/lib/sor/map';
 
 import heroImg from '@/assets/img/hero-pokoj-lekarski.jpg';
 
@@ -166,6 +168,8 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Kolejki na SOR.\nIle się czeka\ni czy w normie',
     lead: 'Wszystkie szpitalne oddziały ratunkowe na jednej mapie, odświeżanej co 10 minut — z normami czasu z rozporządzenia.',
     footer: { text: 'Dane systemu TOPSOR, ze źródłami' },
+    // ilustracja z jednej migawki (17.10.2026, 13:26) — zamrożona, bo na OG nic się nie zmienia
+    map: { layer: frozenLayer(sorOgSnapshot), theme: 'ciemny', legend: [[1, 'w normie'], [2, 'ponad normę'], [3, 'ponad 2× normę']] },
   },
   '/szukaj/': {
     eyebrow: 'Wyszukiwarka',

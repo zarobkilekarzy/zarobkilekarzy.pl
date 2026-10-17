@@ -15,6 +15,7 @@ export const OG_HEIGHT = 630;
 export type OgMedia =
   | { kind: 'photo'; src: ImageMetadata; position: string; badge?: string; icon?: IconName }
   | { kind: 'stat'; stat: OgStat }
+  | ({ kind: 'map' } & NonNullable<OgPage['map']>)
   | { kind: 'none' };
 
 /** Gotowa specyfikacja obrazka — wejście szablonu. */
@@ -46,6 +47,7 @@ interface Defaults {
   badge?: string;
   icon?: IconName;
   footer?: OgSpec['footer'];
+  map?: OgPage['map'];
 }
 
 /** Skróty, po których kropka nie kończy zdania („500 tys. CAD”, „art. 27a”). */
@@ -66,11 +68,13 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
 
   const photo = o.photo ?? d.photo;
   const mode = o.media ?? 'auto';
-  const kind = mode === 'auto' ? (o.stat ? 'stat' : photo ? 'photo' : 'none') : mode;
+  const kind = mode === 'auto' ? (o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : 'none') : mode;
 
   let media: OgMedia = { kind: 'none' };
   if (kind === 'stat' && o.stat) {
     media = { kind: 'stat', stat: o.stat };
+  } else if (kind === 'map' && d.map) {
+    media = { kind: 'map', ...d.map };
   } else if (kind === 'photo' && photo) {
     const badge = o.badge === false ? undefined : (o.badge ?? d.badge);
     media = { kind: 'photo', src: photo, position: o.position ?? d.position ?? '50% 50%', badge, icon: d.icon };
@@ -122,6 +126,6 @@ export function articleOg(article: Article): OgEntry {
 }
 
 /** Strona spoza kolekcji (src/data/og.ts): wszystko podane wprost; stopka domyślnie z hasłem serwisu. */
-export function pageOg(route: string, { footer = { text: 'Bez emocji, ze źródłami.' }, badgeIcon, ...page }: OgPage): OgEntry {
-  return compose(route, { title: page.title, footer, icon: badgeIcon }, page);
+export function pageOg(route: string, { footer = { text: 'Bez emocji, ze źródłami.' }, badgeIcon, map, ...page }: OgPage): OgEntry {
+  return compose(route, { title: page.title, footer, icon: badgeIcon, map }, page);
 }

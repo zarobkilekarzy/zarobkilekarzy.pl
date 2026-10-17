@@ -1,6 +1,7 @@
 ---
 /** Wyróżniony materiał: zdjęcie z etykietą, metadane, tytuł, lead. */
 import Photo from '@/components/ui/Photo.astro';
+import FocusPhoto from '@/components/ui/FocusPhoto.astro';
 import Badge from '@/components/ui/Badge.astro';
 import Meta from '@/components/ui/Meta.astro';
 import { articleHref, type Article } from '@/lib/content';
@@ -10,17 +11,20 @@ interface Props {
   article: Article;
   /** atrybut sizes zdjęcia — zależy od szerokości kolumny w danym układzie */
   sizes?: string;
+  /** głębia ostrości sterowana kursorem (ui/FocusPhoto) */
+  focus?: boolean;
 }
 
-const { article, sizes = '(min-width: 1025px) 650px, calc(100vw - 32px)' } = Astro.props;
+const { article, sizes = '(min-width: 1025px) 650px, calc(100vw - 32px)', focus = false } = Astro.props;
+const Media = focus ? FocusPhoto : Photo;
 const { title, summary, category, date, kicker, cover, coverAlt, coverPosition, badge } = article.data;
 ---
 <article class="feature" data-reveal>
   <a class="feature__link" href={articleHref(article)}>
     {cover && (
-      <Photo src={cover} alt={coverAlt ?? ''} ratio="16/10" position={coverPosition} widths={[480, 720, 1080, 1600]} sizes={sizes} frame>
+      <Media src={cover} alt={coverAlt ?? ''} ratio="16/10" position={coverPosition} widths={[480, 720, 1080, 1600]} sizes={sizes} frame>
         {badge && <Badge variant="light" icon="pin" label={badge} />}
-      </Photo>
+      </Media>
     )}
     <div class="feature__body">
       <Meta category={category} date={date} extra={kicker} />

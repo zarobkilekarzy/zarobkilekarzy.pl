@@ -1,0 +1,107 @@
+---
+/**
+ * Odpowiedź partii w jednym obszarze albo jednej części obszaru (kadry: lekarze, pielęgniarki, inne zawody):
+ * stanowisko w nadesłanym brzmieniu z licznikiem znaków, dokumenty wskazane przez partię i „Czy podano”.
+ * Bez odpowiedzi — sama ramka z tekstem `missing`.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import { answerLength, barometrChecks, type BarometrAreaEntry } from '@/data/barometr-polityczny';
+import { formatDate, formatPL, isoDate, plural, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Props {
+  entry?: BarometrAreaEntry;
+  /** tekst, gdy partia nie odpowiedziała, np. „Partia nie odniosła się do tego obszaru.” */
+  missing: string;
+}
+
+const { entry, missing } = Astro.props;
+
+/** długość odpowiedzi w znakach ze spacjami (bez podziałów akapitów) — ta sama miara co limit */
+const length = (answer: string[]) => {
+  const n = answerLength(answer);
+  return `${formatPL(n)} ${plural(n, ['znak', 'znaki', 'znaków'])} ze spacjami`;
+};
+---
+{entry?.answer ? (
+  <div class="bp-area">
+    <div class="bp-answer">
+      <p class="mono-label bp-label">Stanowisko partii</p>
+      <blockquote class="bp-quote">{entry.answer.map((p) => <p>{typo(p)}</p>)}</blockquote>
+      <p class="bp-note">Odpowiedź w nadesłanym brzmieniu, bez zmian w treści · {length(entry.answer)}</p>
+    </div>
+
+    <div class="bp-side">
+      <p class="mono-label bp-label">Dokumenty wskazane przez partię</p>
+      {entry.documents.length ? (
+        <ul class="bp-docs">
+          {entry.documents.map((d) => (
+            <li>
+              <span class="bp-docs__kind">{d.kind}{d.date && <> · <time datetime={isoDate(d.date)}>{formatDate(d.date)}</time></>}</span>
+              {d.href ? <a {...linkAttrs(d.href)}>{typo(d.title)}</a> : <span>{typo(d.title)}</span>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="bp-missing">Partia nie wskazała dokumentów w tej sprawie.</p>
+      )}
+
+      {entry.checks && (
+        <>
+          <p class="mono-label bp-label">Czy podano</p>
+          <ul class="bp-checks">
+            {barometrChecks.map((c) => {
+              const ok = entry.checks![c.key];
+              return (
+                <li class:list={['bp-check', { 'bp-check--no': !ok }]}>
+                  <Icon name={ok ? 'check' : 'close'} size={16} />
+                  <span>{c.label}</span>
+                  <span class="bp-check__val">{ok ? 'podano' : 'nie podano'}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+    </div>
+  </div>
+) : (
+  <p class="bp-missing bp-missing--area">{missing}</p>
+)}
+
+<style>
+  .bp-area { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px clamp(32px, 5vw, 72px); align-items: start; }
+  .bp-label { color: var(--muted); margin-bottom: 14px; }
+  .bp-side .bp-label:not(:first-child) { margin-top: 32px; }
+
+  .bp-quote { padding-left: 24px; border-left: 2px solid var(--blue); }
+  .bp-quote p { font: 400 1.1875rem/1.55 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .bp-quote p + p { margin-top: 14px; }
+  .bp-note { margin-top: 14px; padding-left: 26px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .bp-missing--area { max-width: 72ch; }
+  .bp-missing { padding: 16px 20px; border: 1px dashed var(--line-2); font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
+
+  .bp-docs { border-top: 1px solid var(--line-2); }
+  .bp-docs li { display: grid; gap: 4px; padding: 14px 0; border-bottom: 1px solid var(--line-2); font-size: 0.9375rem; line-height: 1.5; color: var(--ink); }
+  .bp-docs__kind { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .bp-docs a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--muted); }
+  .bp-docs a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  .bp-checks { border-top: 1px solid var(--line-2); }
+  .bp-check { display: grid; grid-template-columns: 16px 1fr auto; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line-2); font-size: 0.9375rem; color: var(--ink); }
+  .bp-check :global(.icon) { color: var(--ok); }
+  .bp-check--no :global(.icon) { color: var(--muted); }
+  .bp-check__val { font: 400 0.75rem/1.4 var(--f-mono); color: var(--ok); }
+  .bp-check--no .bp-check__val { color: var(--muted); }
+
+  @media (max-width: 900px) {
+    .bp-area { grid-template-columns: minmax(0, 1fr); }
+  }
+  /* telefon: odpowiedź do 1 500 znaków nie może zajmować kilku ekranów — mniejszy krój i węższe wcięcie */
+  @media (max-width: 720px) {
+    .bp-quote { padding-left: 16px; }
+    .bp-quote p { font-size: 1.03125rem; line-height: 1.55; }
+    .bp-quote p + p { margin-top: 12px; }
+    .bp-note { padding-left: 18px; }
+  }
+</style>

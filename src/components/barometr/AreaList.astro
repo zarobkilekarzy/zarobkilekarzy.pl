@@ -1,0 +1,36 @@
+---
+/**
+ * /barometr-polityczny/ — sześć obszarów (zarazem pytania do partii) w układzie wierszy NumberedList,
+ * a pod obszarem z częściami (kadry) — lista części, na które partia odpowiada osobno.
+ */
+import Num from '@/components/ui/Num.astro';
+import { barometrAreas } from '@/data/barometr-polityczny';
+import { typo } from '@/lib/format';
+---
+<ol class="areas">
+  {barometrAreas.map((area, i) => (
+    <li data-reveal>
+      <Num n={i + 1} size="sm" />
+      <div>
+        <p><strong>{typo(area.title)}</strong> {typo(area.text)}</p>
+        {area.parts && (
+          <ul class="areas__parts">
+            {area.parts.map((part) => (
+              <li><strong>{part.title}:</strong> {typo(part.text)}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .areas { border-top: 1px solid var(--line-2); }
+  .areas > li { display: grid; grid-template-columns: 64px 1fr; gap: 16px; padding: 24px 0; border-bottom: 1px solid var(--line-2); }
+  .areas p { font-size: 1rem; line-height: 1.65; }
+  .areas strong { color: var(--ink); font-weight: 600; }
+
+  .areas__parts { display: grid; gap: 8px; margin-top: 12px; padding-left: 16px; border-left: 2px solid var(--line-2); }
+  .areas__parts li { font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
+</style>

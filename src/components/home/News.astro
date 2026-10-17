@@ -1,0 +1,55 @@
+---
+/** Strona główna: trzy ostatnie aktualności — data, tytuł i lead; całość pod /aktualnosci/. */
+import { Image } from 'astro:assets';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { formatDate, isoDate, typo } from '@/lib/format';
+import { getNews, newsHref, newsImage, newsPage } from '@/lib/news';
+
+const news = (await getNews()).slice(0, 3);
+---
+{news.length > 0 && (
+  <Section id="aktualnosci" space="bottom" aria-labelledby="aktualnosci-title">
+    <SectionHead eyebrow="Aktualności" title="Co słychać w projekcie" id="aktualnosci-title" layout="row">
+      <LinkArrow slot="action" href={newsPage.href}>Wszystkie aktualności</LinkArrow>
+    </SectionHead>
+
+    <ol class="hnews">
+      {news.map((n) => (
+        <li>
+          <a href={newsHref(n)}>
+            <Image src={newsImage(n).src} alt="" widths={[360, 720]} sizes="(min-width: 1025px) 400px, (min-width: 721px) 240px, calc(100vw - 32px)" class="hnews__img" />
+            <time datetime={isoDate(n.data.date)}>{formatDate(n.data.date)}</time>
+            <h3 class="hnews__title">{typo(n.data.title)}</h3>
+            <p class="hnews__desc">{typo(n.data.summary)}</p>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </Section>
+)}
+
+<style>
+  .hnews { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 clamp(24px, 3vw, 48px); border-top: 1px solid var(--ink); }
+  .hnews a { display: block; padding: 24px 0 22px; }
+  .hnews :global(.hnews__img) { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; object-position: 0 0; margin-bottom: 16px; border: 1px solid var(--line); }
+  .hnews time { font: 400 0.75rem/1.2 var(--f-mono); letter-spacing: .02em; color: var(--muted); }
+  .hnews__title { margin: 10px 0 8px; font: 500 1.125rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); transition: color .2s; }
+  .hnews__desc {
+    font-size: 0.90625rem; line-height: 1.55;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  }
+  .hnews a:hover .hnews__title { color: var(--blue); }
+
+  @media (max-width: 1024px) {
+    .hnews { grid-template-columns: minmax(0, 1fr); }
+    .hnews li + li { border-top: 1px solid var(--line); }
+    .hnews a { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 0 24px; align-content: start; }
+    .hnews :global(.hnews__img) { grid-row: span 3; margin-bottom: 0; }
+  }
+  @media (max-width: 720px) {
+    .hnews a { display: block; }
+    .hnews :global(.hnews__img) { margin-bottom: 16px; }
+  }
+</style>

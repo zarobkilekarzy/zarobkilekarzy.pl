@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import type { ImageMetadata } from 'astro';
 import { raw } from '@/lib/images';
 import { getPublishedArticles } from '@/lib/content';
+import { getNews, newsHref, newsImage } from '@/lib/news';
 import { ogPages } from '@/data/og';
 import { articleOg, pageOg, type OgEntry } from './presets';
 
@@ -16,8 +17,19 @@ export { OG_HEIGHT, OG_WIDTH } from './presets';
 const DEFAULT_ROUTE = '/';
 
 async function collect(): Promise<OgEntry[]> {
-  const articles = await getPublishedArticles();
-  return [...Object.entries(ogPages).map(([route, page]) => pageOg(route, page)), ...articles.map(articleOg)];
+  const [articles, news] = await Promise.all([getPublishedArticles(), getNews()]);
+  // Wpis aktualności: preset strony z tytułem i leadem wpisu — bez daty na obrazku (na OG nic, co się zmienia)
+  const newsOg = news.map((entry) =>
+    pageOg(newsHref(entry), {
+      eyebrow: 'Aktualności',
+      title: entry.data.title,
+      lead: entry.data.summary,
+      photo: newsImage(entry).src,
+      position: entry.data.cover ? '0% 0%' : '70% 50%',
+      footer: { text: 'Co nowego w projekcie' },
+    }),
+  );
+  return [...Object.entries(ogPages).map(([route, page]) => pageOg(route, page)), ...articles.map(articleOg), ...newsOg];
 }
 
 // W buildzie liczymy raz; w dev za każdym razem, żeby zmiana frontmattera była od razu widoczna

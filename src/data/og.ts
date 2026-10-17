@@ -18,6 +18,7 @@ import { frozenLayer } from '@/lib/sor/map';
 
 import heroImg from '@/assets/img/hero-pokoj-lekarski.jpg';
 import barometrOg from '@/assets/img/barometr-polityczny-og.png';
+import { newsIllustration } from '@/lib/news';
 
 // odpowiedzi placówek na wniosek o płace (monitoring Watchdog Polska)
 const answered = (...r: Response[]) => monitoring.facilities.filter((f) => r.includes(f.response)).length;
@@ -113,6 +114,14 @@ export const ogPages: Record<string, OgPage> = {
     title: 'O projekcie\nzarobkilekarzy.pl',
     lead: 'Po co powstał serwis, na jakich zasadach dobieramy źródła i jak zgłosić błąd.',
     footer: { text: 'Mechanizmy, nie nazwiska' },
+  },
+  '/aktualnosci/': {
+    eyebrow: 'O serwisie',
+    title: 'Aktualności',
+    lead: 'Co zmienia się na stronie i w projekcie — z datą przy każdym wpisie.',
+    photo: newsIllustration.src,
+    position: '70% 50%',
+    footer: { text: 'Co nowego w projekcie' },
   },
   '/media/': {
     eyebrow: 'O serwisie',

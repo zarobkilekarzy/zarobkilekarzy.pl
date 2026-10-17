@@ -102,4 +102,31 @@ const glossary = defineCollection({
   }),
 });
 
-export const collections = { articles, glossary };
+/**
+ * Aktualności (/aktualnosci/): krótkie komunikaty o tym, co dzieje się w projekcie — zmiany na stronie,
+ * wysłane pisma, nowe etapy działań. Materiały merytoryczne to artykuły; tu tylko informacja „co i kiedy”.
+ */
+const news = defineCollection({
+  // .md dla samego tekstu, .mdx gdy wpis osadza zdjęcia w treści (<Screenshot>, <Figure>) albo inne bloki
+  loader: glob({ base: './src/content/aktualnosci', pattern: '**/*.{md,mdx}' }),
+  schema: ({ image }) => z.object({
+    title: z.string(),
+    /** dzień, którego dotyczy komunikat; lista idzie od najnowszego */
+    date: z.coerce.date(),
+    /** jedno–dwa zdania: lead pod tytułem, opis na liście, w RSS i w meta description */
+    summary: z.string(),
+    /** szkic: strona wpisu tylko w `astro dev` (noindex, ramka „Szkic”); w buildzie wpisu nie ma — np. przed wysłaniem pism */
+    draft: z.boolean().default(false),
+    /** materiały serwisu, których dotyczy komunikat — odnośniki pod treścią */
+    links: z.array(z.object({ label: z.string(), href: z.string() })).optional(),
+    /** wpis o tym samym na X — zwykły link pod treścią, bez osadzania (osadzenie ładuje skrypty i śledzenie X) */
+    x: z.url().optional(),
+    /** zdjęcie wpisu: nad treścią i na obrazku OG; pliki w src/assets/aktualnosci/ (bez metadanych — zob. README) */
+    cover: image().optional(),
+    coverAlt: z.string().optional(),
+    /** podpis pod zdjęciem wpisu */
+    coverCaption: z.string().optional(),
+  }).refine((d) => !d.cover || d.coverAlt, { message: 'Zdjęcie wpisu (`cover`) wymaga opisu `coverAlt`.', path: ['coverAlt'] }),
+});
+
+export const collections = { articles, glossary, news };

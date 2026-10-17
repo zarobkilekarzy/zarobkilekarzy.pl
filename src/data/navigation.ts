@@ -43,6 +43,7 @@ export const dataSections: IndexRef[] = [
 export const mobileExtras: Link[] = [];
 
 export const topbarLinks: Link[] = [
+  { label: 'Aktualności', href: '/aktualnosci/' },
   { label: 'Metodologia', href: '/o-projekcie/#zasady' },
   { label: 'Sprostowania', href: '/o-projekcie/#sprostowania' },
   x,
@@ -62,6 +63,7 @@ export const footerNav: NavGroup[] = [
     title: 'Inicjatywa',
     links: [
       { label: 'O projekcie', href: '/o-projekcie/' },
+      { label: 'Aktualności', href: '/aktualnosci/' },
       { label: 'Postulat', href: '/postulat/' },
       { label: 'Barometr polityczny', href: '/barometr-polityczny/' },
       { label: 'Najczęstsze zarzuty', href: '/faq/' },
@@ -95,6 +97,7 @@ export const searchExtras: SearchDoc[] = [
     keywords: ['działaj', 'poparcie projektu', 'udostępnij', 'infografiki', ...(writeToolOn ? ['napisz do posła', 'napisz do polityka', 'list do posła', 'senator'] : [])],
     sections: writeToolOn ? [{ title: 'Napisz do polityka', anchor: 'napisz' }] : [],
   },
+  { id: 'aktualnosci', title: 'Aktualności: co nowego w projekcie', category: 'O serwisie', href: '/aktualnosci/', keywords: ['aktualności', 'komunikaty', 'nowości', 'zmiany na stronie', 'nowa wersja strony'] },
   { id: 'petycja', title: 'Petycja o jawny rejestr wynagrodzeń (archiwum)', category: 'Postulat', href: '/postulat/petycja/', keywords: ['petycja', 'PWZ'] },
   // kierunki z /program/ jako sekcje: „ewidencja czasu pracy” prowadzi prosto do kierunku
   {

@@ -1,0 +1,101 @@
+---
+/** Wpis aktualności, np. /aktualnosci/nowa-wersja-strony/. Szkic (`draft`) powstaje tylko w dev: noindex i ramka „Szkic”. */
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
+import { render } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Prose from '@/components/article/Prose.astro';
+import ProseLink from '@/components/article/ProseLink.astro';
+import ShareLinks from '@/components/article/ShareLinks.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Screenshot from '@/components/blocks/Screenshot.astro';
+import { formatDate, isoDate, typo } from '@/lib/format';
+import { getAllNews, newsHref, newsPage } from '@/lib/news';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+export const getStaticPaths = (async () => {
+  const news = await getAllNews();
+  return news.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { entry } = Astro.props;
+const { title, date, summary, draft, links = [], x, cover, coverAlt, coverCaption } = entry.data;
+const { Content } = await render(entry);
+
+const url = new URL(newsHref(entry), Astro.site).href;
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: newsPage.title, href: newsPage.href }, { label: title }];
+const seo: SeoInput = {
+  title,
+  description: summary,
+  type: 'article',
+  index: !draft,
+  dates: { published: date },
+  section: newsPage.title,
+  breadcrumbs: crumbs,
+  entities: [{ kind: 'article' }],
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="entry">
+    <header class="entry__head">
+      <Breadcrumbs items={crumbs} />
+      <div class="entry__intro">
+        <Eyebrow>{newsPage.title}</Eyebrow>
+        <Heading as="h1" size="display" class="entry__title">{typo(title)}</Heading>
+        <p class="lead entry__lead">{typo(summary)}</p>
+        <p class="entry__date"><time datetime={isoDate(date)}>{formatDate(date)}</time></p>
+      </div>
+    </header>
+
+    {draft && (
+      <Aside variant="warn" label="Wersja robocza" title="Szkic" class="entry__draft">
+        <p>Podgląd lokalny. Ten wpis nie trafi na stronę, dopóki ma we frontmatterze <code>draft: true</code>.</p>
+      </Aside>
+    )}
+
+    {cover && <Screenshot src={cover} alt={coverAlt!} caption={coverCaption} class="entry__cover" sizes="(min-width: 1025px) 1000px, calc(100vw - 32px)" />}
+
+    <div class="entry__body">
+      <Prose><Content components={{ a: ProseLink }} /></Prose>
+
+      {(links.length > 0 || x) && (
+        <ul class="entry__links">
+          {links.map((link) => <li><LinkArrow href={link.href}>{link.label}</LinkArrow></li>)}
+          {x && <li><LinkArrow href={x}>Ten wpis na X</LinkArrow></li>}
+        </ul>
+      )}
+
+      <footer class="entry__foot">
+        <ShareLinks url={url} title={title} />
+        <LinkArrow href={newsPage.href}>Wszystkie aktualności</LinkArrow>
+      </footer>
+    </div>
+  </Section>
+</BaseLayout>
+
+<style>
+  .entry { padding-top: clamp(32px, 4vw, 56px); }
+  .entry__intro { margin-top: 40px; }
+  .entry__title { font-size: clamp(2.25rem, 4.2vw, 3.75rem); margin-bottom: 24px; max-width: 20ch; }
+  .entry__lead { font-size: 1.1875rem; max-width: 40em; }
+  .entry__date { margin-top: 20px; font: 400 0.8125rem/1.2 var(--f-mono); letter-spacing: .02em; color: var(--muted); }
+
+  .entry__draft { margin-top: 40px; max-width: 780px; }
+  .entry :global(.entry__cover) { margin-top: clamp(32px, 4vw, 48px); max-width: 1000px; }
+  .entry__body { margin-top: clamp(40px, 5vw, 64px); padding-top: 40px; border-top: 1px solid var(--line); }
+  .entry__links { display: grid; gap: 12px; margin-top: 48px; max-width: 780px; }
+  .entry__foot {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px 40px;
+    margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); max-width: 780px;
+  }
+
+  @media (max-width: 720px) {
+    .entry__lead { font-size: 1.0625rem; }
+  }
+</style>

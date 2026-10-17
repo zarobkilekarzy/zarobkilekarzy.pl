@@ -41,6 +41,7 @@ function build(doc: MonitoringDoc) {
   const sources: MapSource[] = [
     { label: 'Źródło', name: `${doc.source.name}, monitoring „${doc.source.monitoring}”`, href: doc.source.url, detail: `stan ${formatDate(new Date(doc.updated))}` },
     { label: 'Granice', name: `${geo.source.name}, ${geo.source.publisher}`, href: geo.source.url, detail: `stan ${formatDate(new Date(geo.source.asOf))}` },
+    { label: 'Wybrzeże', name: `${geo.source.coast.name}, ${geo.source.coast.publisher}`, href: geo.source.coast.url, detail: geo.source.coast.copyright },
   ];
 
   /* ---------- Zarobki ---------- */

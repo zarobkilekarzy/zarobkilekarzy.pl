@@ -3,7 +3,11 @@
  *
  * Plik src/data/geo/polska.json generuje skrypt spoza serwisu z warstw PRG (usługa WFS GUGiK):
  * granice uproszczone do ok. 1 km i przeliczone z układu PUWG 1992 (EPSG:2180) na płaszczyznę
- * width × height, więc ścieżki i punkty są gotowe do SVG. Czytany jako tekst (?raw), żeby
+ * width × height, więc ścieżki i punkty są gotowe do SVG. Województwa w PRG obejmują morskie wody
+ * wewnętrzne (Zatoka Gdańska, zalewy), więc są przycięte do lądu z GISCO (Eurostat): brzeg morza z GISCO,
+ * granice lądowe i między województwami z PRG. Mierzeje (Helska, Wiślana, Dziwnowska) są poszerzone o ok.
+ * 1,5 km, bo przy tej skali mają poniżej pół piksela i znikały pod obrysem; środki gmin, które wypadały
+ * na wodzie, stoją w siedzibach gmin. Czytany jako tekst (?raw), żeby
  * TypeScript nie wyprowadzał typu z 2,5 tys. kluczy. Parametry tego przeliczenia są w pliku
  * (`projection`), więc punkt podany współrzędnymi geograficznymi trafia w to samo miejsce
  * co granice (`project`).
@@ -41,7 +45,11 @@ export interface Projection {
 }
 
 export interface Geo {
-  source: { name: string; publisher: string; url: string; asOf: string };
+  source: {
+    name: string; publisher: string; url: string; asOf: string;
+    /** linia brzegowa, do której przycięto województwa */
+    coast: { name: string; publisher: string; copyright: string; url: string };
+  };
   width: number;
   height: number;
   projection: Projection;

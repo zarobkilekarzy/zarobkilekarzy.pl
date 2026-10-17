@@ -72,8 +72,10 @@ export function renderMapSvg(layers: MapLayer[], o: SvgOptions): string {
     .map((r) => {
       const t = tones?.get(r.teryt);
       if (!c) return `<path class="pm-reg" data-r="${r.teryt}" data-tone="${t?.tone ?? ''}" d="${r.d}"/>`;
+      // kartogram: odstęp między województwami to obrys w kolorze tła POD wypełnieniem (paint-order) — kolejne
+      // województwo nachodzi nim 1,2 px na poprzednie, a brzeg morza nie jest ścinany (Hel znikał pod obrysem)
       return t
-        ? `<path d="${r.d}" fill="${c.seq[t.tone]}" stroke="${c.gap}" stroke-width="1.2" stroke-linejoin="round"/>`
+        ? `<path d="${r.d}" fill="${c.seq[t.tone]}" stroke="${c.gap}" stroke-width="2.4" stroke-linejoin="round" paint-order="stroke"/>`
         : `<path d="${r.d}" fill="${c.base}" stroke="${c.border}" stroke-width="0.8" stroke-linejoin="round"/>`;
     })
     .join('');

@@ -80,6 +80,7 @@ const queues: PointLayer = {
       detail: 'Dz.U. 2025 poz. 1646',
     },
     { label: 'Granice', name: `${geo.source.name}, ${geo.source.publisher}`, href: geo.source.url, detail: `stan ${formatDate(new Date(geo.source.asOf))}` },
+    { label: 'Wybrzeże', name: `${geo.source.coast.name}, ${geo.source.coast.publisher}`, href: geo.source.coast.url, detail: geo.source.coast.copyright },
   ],
   points: sor.map((s) => ({ at: { lat: s.lat, lng: s.lng }, key: s.numer, value: null, tip: tip(s) })),
 };

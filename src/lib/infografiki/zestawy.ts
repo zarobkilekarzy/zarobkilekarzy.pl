@@ -450,7 +450,7 @@ const monitoringMaps: InfographicSet = {
       title: 'Kto ujawnił dane o płacach lekarzy',
       measure: `monitoring Watchdog Polska · płace lekarzy za ${monitoring.year} r.`,
       map: { set: 'monitoring', layer: 'jawnosc' },
-      sources: `Źródło: Watchdog Polska (fedrowanie), granice: PRG, GUGiK${opennessP >= 0.05 ? ' · różnice między województwami w granicach przypadku' : ''}`,
+      sources: `Źródło: Watchdog Polska (fedrowanie), granice: PRG, GUGiK, wybrzeże: GISCO © EuroGeographics${opennessP >= 0.05 ? ' · różnice między województwami w granicach przypadku' : ''}`,
       alt: `Mapa województw: ${openness.summary!.text.replace(/\u00A0/g, ' ')} — ${openness.summary!.value}. ${openness.kind === 'regions' ? [...openness.regions].sort((a, b) => b.value - a.value).map((r) => `${r.tip.title} ${r.exact ?? r.display} (${r.detail})`).join(', ') : ''}. Źródło: Watchdog Polska, monitoring „${monitoring.source.monitoring}”.`,
     },
     {
@@ -458,7 +458,7 @@ const monitoringMaps: InfographicSet = {
       title: 'Ile płacą szpitale, które ujawniły listy płac',
       measure: `monitoring Watchdog Polska · płace lekarzy za ${monitoring.year} r.`,
       map: { set: 'monitoring', layer: 'zarobki' },
-      sources: 'Źródło: Watchdog Polska (fedrowanie), granice: PRG, GUGiK · każda kwota to wypłata jednej placówki',
+      sources: 'Źródło: Watchdog Polska (fedrowanie), granice: PRG, GUGiK, wybrzeże: GISCO © EuroGeographics · każda kwota to wypłata jednej placówki',
       alt: `Mapa Polski: ${pay.summary!.value} ${pay.summary!.text.replace(/\u00A0/g, ' ')}. Koło = placówka w gminie siedziby, kolor = mediana rocznych wypłat (${pay.scale.labels.map((l, i) => `${l}: ${pay.scale.counts![i]}`).join(', ')}), wielkość = liczba pozycji na liście. Szare punkty: placówki bez pełnej listy. Źródło: Watchdog Polska, monitoring „${monitoring.source.monitoring}”.`,
     },
   ],

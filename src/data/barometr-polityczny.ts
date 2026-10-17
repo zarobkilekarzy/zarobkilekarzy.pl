@@ -48,7 +48,7 @@ export const barometrContact = {
  */
 export const barometrSchedule = {
   sendOn: new Date('2026-10-19'),
-  answerWeeks: 3,
+  answerWeeks: 2,
 };
 /** ostatni dzień na odpowiedź */
 export const answerDeadline = new Date(barometrSchedule.sendOn.getTime() + barometrSchedule.answerWeeks * 7 * 86_400_000);
@@ -133,7 +133,7 @@ export const barometrToSend: TextItem[] = [
   },
   {
     title: 'Odpowiedzi w sześciu obszarach',
-    text: `Do ${answerLimitLabel} na każdy obszar z listy powyżej. Obszar, w którym partia nie ma stanowiska, można pominąć.`,
+    text: `Do ${answerLimitLabel} na każdy obszar z listy powyżej. Obszar, w którym partia nie ma stanowiska, można pominąć. Prosimy bez nazwisk — opisujemy programy, nie osoby.`,
   },
   {
     title: 'Koszt, źródło pieniędzy, termin',

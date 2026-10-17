@@ -15,6 +15,7 @@ import satori, { type Font } from 'satori';
 import sharp, { type Sharp } from 'sharp';
 import tokensCss from '@/styles/tokens.css?raw';
 import { icons, type IconName } from '@/icons';
+import { site } from '@/data/navigation';
 import { typo } from '@/lib/format';
 import { raw } from '@/lib/images';
 import type { Accuracy, OgStat } from '@/types';
@@ -185,6 +186,14 @@ export const logo = (c: Pick<typeof C, 'ink' | 'muted' | 'blue'> = C) =>
     'zarobkilekarzy',
     h('span', { style: { color: c.muted } }, '.pl'));
 
+/** „Obserwuj @konto na [logo X]” — dyskretna linia w stopce obrazków OG i infografik. */
+export const followX = (c: Pick<typeof C, 'ink' | 'muted'>, size: number, style: Style = {}) =>
+  h('div', { style: { alignItems: 'center', fontSize: size, color: c.muted, whiteSpace: 'nowrap', ...style } },
+    'Obserwuj',
+    h('span', { style: { margin: '0 0.6em', color: c.ink } }, site.twitter),
+    'na',
+    h('img', { src: iconUri('x', c.ink), width: size, height: size, style: { marginLeft: Math.round(size * 0.45) } }));
+
 const eyebrow = (text: string) =>
   h('div', { style: { alignItems: 'center', fontFamily: MONO, fontWeight: 500, fontSize: 16, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.blue } },
     h('div', { style: { width: 10, height: 10, marginRight: 12, background: C.blue } }),
@@ -199,10 +208,14 @@ const flag = (accuracy: Accuracy) =>
     },
   }, accuracy === 'exact' ? 'Dokładna' : 'Szacunek');
 
-const footer = ({ text, flags }: NonNullable<OgSpec['footer']>) =>
-  h('div', { style: { alignItems: 'center', gap: 10, paddingTop: 20, borderTop: `1px solid ${C.line}`, fontFamily: MONO, fontSize: 15, color: C.muted } },
-    h('span', { style: { marginRight: flags ? 6 : 0 } }, typo(text)),
-    flags && [flag('exact'), flag('est')]);
+/** Stopka; linia „Obserwuj” po prawej, a przy wąskiej kolumnie (obok zdjęcia lub liczby) w osobnym wierszu. */
+const footer = ({ text, flags }: NonNullable<OgSpec['footer']>, wide: boolean) =>
+  h('div', { style: { flexDirection: 'column', paddingTop: 20, borderTop: `1px solid ${C.line}`, fontFamily: MONO, fontSize: 15, color: C.muted } },
+    h('div', { style: { alignItems: 'center', gap: 10 } },
+      h('span', { style: { marginRight: flags ? 6 : 0 } }, typo(text)),
+      flags && [flag('exact'), flag('est')],
+      wide && followX(C, 15, { marginLeft: 'auto' })),
+    !wide && followX(C, 15, { marginTop: 12 }));
 
 /** Ramka z narożnymi uchwytami i cieniem (ui/Photo frame). */
 const frame = (...children: Child[]) =>
@@ -257,7 +270,7 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
         h('div', { style: { flexDirection: 'column', marginTop: spec.eyebrow ? 26 : 0, maxWidth: wide ? WIDE_W : '100%', fontFamily: DISPLAY, fontWeight: 400, fontSize: size, lineHeight: 1, letterSpacing: '-0.04em', color: C.ink } },
           ...titleLines(title)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
-      spec.footer && footer(spec.footer)),
+      spec.footer && footer(spec.footer, wide)),
     spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : null);
 }
 

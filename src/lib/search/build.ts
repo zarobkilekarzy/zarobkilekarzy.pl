@@ -41,9 +41,13 @@ async function articleWithContent(article: Article): Promise<SearchDoc> {
   };
 }
 
+/** Adresy z `searchExtras`: wpis kolekcji kierujący na tę samą stronę (np. do listy „Co nowego”) się nie dubluje. */
+const extraHrefs = new Set(searchExtras.map((d) => d.href));
+
 /** Wszystkie cele wyszukiwania. `describe` decyduje, ile treści artykułu trafia do pozycji. */
 async function collectDocs(describe: (article: Article) => SearchDoc | Promise<SearchDoc>): Promise<SearchDoc[]> {
-  const [articles, glossary] = await Promise.all([getAllArticles(), getGlossary()]);
+  const [all, glossary] = await Promise.all([getAllArticles(), getGlossary()]);
+  const articles = all.filter((a) => !extraHrefs.has(articleHref(a)));
   return [
     ...(await Promise.all(articles.map(describe))),
     ...glossary.map((g) => ({

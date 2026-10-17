@@ -3,6 +3,7 @@ import type { IndexRef, Link, NavGroup, SearchDoc } from '@/types';
 import { rightsGroups } from '@/data/prawa-pacjenta';
 import { programGroups, programPage } from '@/data/program';
 import { dzialajPage, writeToolOn } from '@/data/dzialaj';
+import { barometrOthers, barometrPage, barometrParties } from '@/data/barometr-polityczny';
 import { monitoring } from '@/lib/monitoring';
 import { formatPL, plural } from '@/lib/format';
 
@@ -104,6 +105,26 @@ export const searchExtras: SearchDoc[] = [
     summary: programPage.lead,
     keywords: ['szerszy program', 'postulaty', 'reforma'],
     sections: programGroups.flatMap((g) => g.items).map((i) => ({ title: i.title, anchor: i.id })),
+  },
+  // nazwy partii i klubów z tej samej listy co karty — „Prawo i Sprawiedliwość” albo „Trzecia Droga” trafia w barometr
+  {
+    id: 'barometr-polityczny',
+    title: barometrPage.docTitle,
+    category: 'Barometr',
+    href: barometrPage.href,
+    summary: barometrPage.lead,
+    keywords: [
+      'partie', 'programy partii', 'polityka zdrowotna', 'stanowiska partii', 'pytania do partii', 'wybory', 'kluby poselskie', 'Sejm',
+      ...[...barometrParties, ...barometrOthers].flatMap((p) => [p.name, p.club]),
+      // powszechne skróty, których nie ma w nazwach
+      'KO', 'PiS', 'PSL', 'NIL',
+    ],
+    sections: [
+      { title: 'Partie w Sejmie', anchor: 'partie' },
+      { title: 'O co pytamy partie', anchor: 'obszary' },
+      { title: 'Zasady barometru', anchor: 'zasady' },
+      { title: 'Zaproszenie dla partii', anchor: 'zaproszenie' },
+    ],
   },
   { id: 'o-projekcie', title: 'O projekcie: cel, zasady, sprostowania', category: 'O serwisie', href: '/o-projekcie/', keywords: ['kontakt', 'sprostowanie', 'metodologia', 'zasady', 'kto prowadzi'] },
   { id: 'media', title: 'Materiały medialne: infografiki do pobrania', category: 'O serwisie', href: '/media/', keywords: ['infografika', 'grafiki', 'do pobrania', 'dla mediów', 'press kit', 'dziennikarze', 'licencja'] },

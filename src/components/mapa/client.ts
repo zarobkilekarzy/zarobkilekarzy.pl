@@ -242,6 +242,7 @@ class PolandMap extends HTMLElement {
     const list = box.querySelector<HTMLUListElement>('[role="listbox"]')!;
     const status = box.querySelector('.pm-search__status');
     const layerId = box.dataset.layer!;
+    let touch = false;
 
     const close = () => {
       list.hidden = true;
@@ -293,10 +294,17 @@ class PolandMap extends HTMLElement {
               li.setAttribute('role', 'option');
               li.setAttribute('aria-selected', 'false');
               li.append(el('span', t.title, 'pm-search__name'), el('span', t.meta, 'pm-search__meta'));
-              // pointerdown zamiast click: pole nie traci fokusu, zanim wybór się wykona
+              // pointerdown bez domyślnej akcji: pole nie traci fokusu, więc lista nie znika. Wybór
+              // dopiero na click — gdyby lista zniknęła już na pointerdown, click trafiłby w to, co
+              // pod nią, a „kliknięcie poza mapą” od razu zamknęłoby przypięty dymek.
               li.addEventListener('pointerdown', (e) => {
                 e.preventDefault();
+                touch = e.pointerType === 'touch';
+              });
+              li.addEventListener('click', () => {
                 choose(n);
+                // na telefonie chowamy klawiaturę, żeby nie zasłaniała dymku
+                if (touch) input.blur();
               });
               return li;
             })

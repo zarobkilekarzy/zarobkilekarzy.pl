@@ -6,12 +6,14 @@
  * Limit Cloudflare: 100 reguł.
  */
 import { newsletter, newsletterOn } from '../../src/data/newsletter';
+import { SOR_DATA_ORIGIN } from '../../src/lib/sor/source';
 
 /**
  * CSP statyczny (bez hashy per build), więc `'unsafe-inline'` dla skryptów i stylów: Astro wstawia
  * małe skrypty i atrybuty `style` w HTML. Z zewnątrz tylko Cloudflare Web Analytics (beacon
  * wpięty ręcznie w Analytics.astro): skrypt z static.cloudflareinsights.com, raport do
  * cloudflareinsights.com. Endpoint newslettera dochodzi do connect-src sam, gdy blok jest włączony.
+ * Mapa i kafelek kolejek na SOR czytają migawkę z dane.zarobkilekarzy.pl (Worker SOR, lib/sor/source).
  * Cloudflare Turnstile (challenges.cloudflare.com: skrypt, ramka, zapytania) — niewidoczny widżet
  * przy zapisie wyniku egzaminu do statystyk (src/lib/egzamin/stats.ts).
  * HSTS celowo nie tutaj — ustawione strefowo w panelu Cloudflare (jedno źródło nagłówka).
@@ -19,7 +21,7 @@ import { newsletter, newsletterOn } from '../../src/data/newsletter';
  */
 export function contentSecurityPolicy(): string {
   const TURNSTILE = 'https://challenges.cloudflare.com';
-  const connect = ["'self'", TURNSTILE, 'https://cloudflareinsights.com'];
+  const connect = ["'self'", TURNSTILE, 'https://cloudflareinsights.com', SOR_DATA_ORIGIN];
   if (newsletterOn) connect.push(new URL(newsletter.endpoint).origin);
   return [
     "default-src 'self'",

@@ -1,0 +1,81 @@
+---
+/**
+ * Kafelek „Na żywo · SOR” na stronie głównej (sekcja „Dla pacjenta”): ile osób czeka teraz na lekarza
+ * i w ilu SOR czas przekracza normę — z tej samej migawki i tych samych reguł co mapa (lib/sor/summary).
+ * W HTML jest ukryty; skrypt pokazuje go dopiero po wczytaniu świeżych danych, więc gdy danych brak
+ * albo stoją, kafelka po prostu nie ma. Dane pobiera dopiero, gdy sekcja zbliża się do ekranu —
+ * każde pobranie to wywołanie Workera SOR, liczone do dziennego limitu konta.
+ */
+import { SOR_DATA_URL } from '@/lib/sor/source';
+
+// lokalny podgląd przed włączeniem crona: PUBLIC_SOR_URL=/ścieżka/do/migawki.json (jak w lib/sor/map)
+const url = import.meta.env.PUBLIC_SOR_URL || SOR_DATA_URL;
+---
+<zl-sor-live data-src={url} hidden>
+  <a class="sorlive" href="/prawa-pacjenta/sor/">
+    <span class="sorlive__tag"><span class="sorlive__dot" aria-hidden="true"></span>Na żywo · SOR</span>
+    <span class="sorlive__num" data-n></span>
+    <span class="sorlive__text" data-text></span>
+    <span class="sorlive__meta"><span data-meta></span><span class="sorlive__go">Mapa kolejek →</span></span>
+  </a>
+</zl-sor-live>
+
+<script>
+  import { formatPL, plural, typo } from '@/lib/format';
+  import { hm, isOutdated, isSnapshot, summarize } from '@/lib/sor/summary';
+
+  class SorLive extends HTMLElement {
+    connectedCallback() {
+      // ukryty element nie przecina ekranu — obserwujemy sekcję, w której stoi
+      const watched = this.closest('section') ?? this.parentElement;
+      if (!watched || !('IntersectionObserver' in window)) return void this.load();
+      const io = new IntersectionObserver((entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        void this.load();
+      }, { rootMargin: '400px 0px' });
+      io.observe(watched);
+    }
+
+    private async load() {
+      try {
+        const res = await fetch(this.dataset.src!);
+        if (!res.ok) return;
+        const data: unknown = await res.json();
+        if (!isSnapshot(data)) return;
+        const s = summarize(data);
+        if (!s.measured || isOutdated(s.freshest)) return;
+        const over = s.counts[2] + s.counts[3];
+        const set = (sel: string, text: string) => { this.querySelector(sel)!.textContent = typo(text); };
+        set('[data-n]', formatPL(s.before));
+        set('[data-text]', `${plural(s.before, ['osoba czeka', 'osoby czekają', 'osób czeka'])} teraz na lekarza w szpitalnych oddziałach ratunkowych`);
+        set('[data-meta]', `w ${over} z ${s.measured} SOR-ów czas ponad normę · stan z ${hm(s.freshest)}`);
+        this.hidden = false;
+      } catch {
+        // bez danych kafelka nie ma
+      }
+    }
+  }
+
+  if (!customElements.get('zl-sor-live')) customElements.define('zl-sor-live', SorLive);
+</script>
+
+<style>
+  zl-sor-live:not([hidden]) { display: block; margin-top: 36px; }
+  .sorlive { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; padding: 18px 20px; border: 1px solid var(--line-2); background: var(--surface); color: inherit; text-decoration: none; transition: border-color .2s; }
+  .sorlive:hover { border-color: var(--ink); }
+  .sorlive:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .sorlive__tag { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .sorlive__dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+  /* to samo pulsujące kółko co na mapie (components/mapa) */
+  .sorlive__dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--bad); animation: sorlive-ping 1.6s cubic-bezier(.2, .6, .4, 1) infinite; }
+  @keyframes sorlive-ping {
+    from { transform: scale(1); opacity: .9; }
+    to { transform: scale(3.2); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .sorlive__dot::after { animation: none; } }
+  .sorlive__num { font: 600 2.5rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
+  .sorlive__text { font-size: 0.9375rem; line-height: 1.4; color: var(--text-strong); }
+  .sorlive__meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 0.8125rem; color: var(--muted); }
+  .sorlive__go { font-weight: 500; color: var(--blue); }
+</style>

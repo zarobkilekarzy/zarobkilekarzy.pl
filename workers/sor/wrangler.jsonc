@@ -1,0 +1,35 @@
+// Worker zbierający kolejki na SOR (pacjent.gov.pl, TOPSOR) do D1 i podający je pod
+// https://dane.zarobkilekarzy.pl/sor/teraz.json — osobny od Workera strony (root wrangler.jsonc).
+// Opis działania i schemat danych: workers/sor/src/index.js.
+// Wdrożenie z katalogu głównego repo:  npx wrangler deploy -c workers/sor/wrangler.jsonc
+// Kolejność pierwszego wdrożenia (repo infrastruktury, OpenTofu): baza D1 → ten Worker → domena
+// dane.zarobkilekarzy.pl (Custom Domain wymaga istniejącego Workera). Domeny nie ma tutaj —
+// przypina ją tofu, tak jak domenę Workera strony.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "zarobkilekarzy-sor",
+  "main": "./src/index.js",
+  "compatibility_date": "2026-10-01",
+  // bez adresu *.workers.dev i adresów podglądu — z sieci tylko przez dane.zarobkilekarzy.pl
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": {
+    // Co 2 minuty piąta część listy SOR, czyli każdy SOR co 10 minut (włączone 17.10.2026).
+    // Kod zakłada odstęp 2 minut: numer partii = floor(scheduledTime / 120000) % 5 (OKRES_MS
+    // w src/index.js). Wyłączenie odpytywania pacjent.gov.pl: [] i ponowne wdrożenie — pusta lista
+    // usuwa też crony dodane ręcznie w panelu.
+    "crons": ["*/2 * * * *"]
+  },
+  // Migawka i archiwum pomiarów. ID bazy jest publiczne (tofu output d1_sor_database_id).
+  "d1_databases": [
+    {
+      "binding": "SOR_DB",
+      "database_name": "zarobki-sor",
+      "database_id": "63d4ac5d-101b-4654-aa8b-566af3337db1"
+    }
+  ],
+  // Logi uruchomień crona (podsumowanie partii i liczba błędów według rodzaju) w panelu Workers.
+  "observability": {
+    "enabled": true
+  }
+}

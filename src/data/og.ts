@@ -154,6 +154,12 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Dwie karty na kartce A4: przetnij i złóż. Albo dwie strony dużą czcionką — dla osoby starszej i na tablicę.',
     footer: { text: 'PDF, czarno-biały, do rozdawania bez pytania o zgodę' },
   },
+  '/prawa-pacjenta/sor/': {
+    eyebrow: 'Dla pacjenta · na żywo',
+    title: 'Kolejki na SOR.\nIle się czeka\ni czy w normie',
+    lead: 'Wszystkie szpitalne oddziały ratunkowe na jednej mapie, odświeżanej co 10 minut — z normami czasu z rozporządzenia.',
+    footer: { text: 'Dane systemu TOPSOR, ze źródłami' },
+  },
   '/szukaj/': {
     eyebrow: 'Wyszukiwarka',
     title: 'Szukaj w serwisie',

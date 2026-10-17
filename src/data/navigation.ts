@@ -110,6 +110,7 @@ export const searchExtras: SearchDoc[] = [
   { id: 'slownik', title: 'Słownik pojęć: kontrakt, kapitacja, ryczałt, gotowość', category: 'Słownik', href: '/slownik/', keywords: ['słowniczek', 'pojęcia', 'definicje', 'skróty', 'co to jest'] },
   { id: 'faq', title: 'Najczęstsze zarzuty wobec jawności płac', category: 'O serwisie', href: '/faq/', keywords: ['FAQ', 'zarzuty', 'pytania', 'populizm', 'RODO', 'OECD'] },
   { id: 'karta-praw-pacjenta', title: 'Karta praw pacjenta do druku (PDF)', category: 'Przewodnik', href: '/prawa-pacjenta/druk/', keywords: ['karta kieszonkowa', 'duży druk', 'wydruk', 'pdf'] },
+  { id: 'kolejki-sor', title: 'Kolejki na SOR na żywo: mapa i normy czasu', category: 'Przewodnik', href: '/prawa-pacjenta/sor/', keywords: ['SOR', 'szpitalny oddział ratunkowy', 'kolejka', 'czas oczekiwania', 'triaż', 'TOPSOR', 'norma czasu'] },
   // pytania z /prawa-pacjenta/ jako sekcje: „kopia dokumentacji” prowadzi prosto do odpowiedzi
   {
     id: 'prawa-pacjenta-pytania',

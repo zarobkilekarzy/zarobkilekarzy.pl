@@ -25,7 +25,7 @@ import { renderSVG } from 'uqr';
 import { formatPL, typo } from '@/lib/format';
 import { tokenPair } from '@/lib/tokens';
 import { geo } from '@/lib/mapa/geo';
-import { radius, R_MISSING } from '@/lib/mapa/layout';
+import { radius, R_MISSING, toneOfClass } from '@/lib/mapa/layout';
 import { mapSets, type MapSetId } from '@/lib/mapa/sets';
 import { regionTones, renderMapSvg, staticColors } from '@/lib/mapa/svg';
 import { BODY, DISPLAY, MONO, h, loadFonts, logo, type Node } from '@/lib/og/render';
@@ -597,14 +597,14 @@ function mapLayout(set: InfographicSet, i: Infographic, m: NonNullable<Infograph
 
   const scale = h('div', { style: { flexDirection: 'column' } },
     head(layer.scale.title),
-    ...layer.scale.labels.map((label, t) => item(swatch(sc.seq[t], layer.kind === 'regions'), label, layer.scale.counts && formatPL(layer.scale.counts[t]))));
+    ...layer.scale.labels.map((label, t) => item(swatch(sc.seq[toneOfClass(t, layer.scale)], layer.kind === 'regions'), label, layer.scale.counts && formatPL(layer.scale.counts[t]))));
   const sizes = layer.kind === 'points' && layer.size && (() => {
-    const R = radius(Math.max(...layer.size.samples)) * k * 1.6;
+    const R = radius(Math.max(...layer.size.samples), layer.size.radius) * k * 1.6;
     return h('div', { style: { flexDirection: 'column', marginTop: pion ? 28 : 16 } },
       head(layer.size.title),
       h('div', { style: { alignItems: 'flex-end' } },
         ...layer.size.samples.map((n) => {
-          const r = radius(n) * k * 1.6;
+          const r = radius(n, layer.size!.radius) * k * 1.6;
           return h('div', { style: { flexDirection: 'column', alignItems: 'center', width: Math.max(2 * R, 48), marginRight: 12 } },
             h('div', { style: { width: 2 * r, height: 2 * r, borderRadius: '50%', border: `1px solid ${C.muted}` } }),
             h('span', { style: { marginTop: 6, fontFamily: MONO, fontSize: mg.sizeLab, color: C.muted } }, formatPL(n)));

@@ -2,7 +2,8 @@
  * Kontrakt warstwy mapy. Warstwa to gotowe do wyświetlenia dane jednego trybu mapy — wartości,
  * skala, teksty legendy i dymków — bez wiedzy o tym, gdzie mapa stoi i czy jest interaktywna.
  * Silnik (./layout, ./svg) i komponent (components/mapa/PolandMap.astro) czytają tylko ten kontrakt,
- * więc nowy temat (np. czas oczekiwania na SOR) to nowa funkcja budująca warstwy plus wpis w ./sets.
+ * więc nowy temat to nowa funkcja budująca warstwy plus wpis w ./sets. Warstwa punktowa może brać
+ * wartości „na żywo” — z pliku JSON wczytywanego w przeglądarce przez adapter (./live).
  *
  * Wszystkie teksty są gotowe do wyświetlenia (sformatowane liczby, polskie znaki typograficzne).
  */
@@ -17,6 +18,19 @@ export interface ClassScale {
   labels: string[];
   /** liczebność klas, pokazywana w legendzie */
   counts?: number[];
+  /** stopień rampy --seq-* dla każdej klasy, gdy klas jest mniej niż stopni (np. [0, 1, 3, 4]) */
+  tones?: number[];
+}
+
+/** Wiersz tabeli w dymku: komórki (pierwsza = etykieta), podpis pod etykietą, wyróżnienie wartości. */
+export interface TipRow {
+  cells: string[];
+  /** drobny podpis pod etykietą, np. „żółty · do 60 min” */
+  sub?: string;
+  /** wyróżnione komórki (indeksy), np. czas ponad normę */
+  alert?: number[];
+  /** odstęp nad wierszem — początek nowej grupy */
+  gap?: boolean;
 }
 
 /** Dymek przy punkcie albo województwie. */
@@ -24,8 +38,16 @@ export interface Tip {
   title: string;
   /** linia pod tytułem, np. „Ząbki · Mazowieckie” */
   meta?: string;
-  /** wiersze „etykieta — wartość” */
-  rows?: [string, string][];
+  /** duże liczby pod tytułem: [wartość, podpis] */
+  stats?: [string, string][];
+  /** nagłówki kolumn, gdy wiersze mają więcej niż dwie komórki */
+  cols?: string[];
+  /** wiersze „etykieta — wartość” albo wiersze tabeli */
+  rows?: ([string, string] | TipRow)[];
+  /** drobny tekst pod wierszami, np. godzina pomiaru */
+  foot?: string;
+  /** zastrzeżenie oddzielone kreską, np. o niejednoznacznych danych */
+  warn?: string;
   href?: string;
   hrefLabel?: string;
 }
@@ -80,18 +102,40 @@ export interface PointLayer extends LayerBase {
   kind: 'points';
   points: {
     /** kod TERYT siedziby, 7 cyfr (gmina, dzielnica albo obszar wiejski — zob. geo.communePoint) */
-    teryt: string;
+    teryt?: string;
+    /** położenie ze współrzędnych geograficznych (WGS84) — dokładniejsze niż środek gminy */
+    at?: { lat: number; lng: number };
+    /** identyfikator punktu w danych na żywo (np. numer księgi rejestrowej SOR) */
+    key?: string;
     /** null = punkt bez danych, szary */
     value: number | null;
     /** wielkość koła (np. liczba pozycji na liście); bez niej koło ma stały rozmiar */
     size?: number;
     tip: Tip;
   }[];
-  /** legenda wielkości kół */
-  size?: { title: string; samples: number[] };
+  /** legenda wielkości kół; `radius` — promień = max(min, base + k·√wielkość), domyślnie jak w ./layout */
+  size?: { title: string; samples: number[]; radius?: Radius };
   /** podpis szarego punktu w legendzie */
   missing?: { label: string; count: number };
+  /**
+   * Wartości na żywo: przeglądarka wczytuje `url` i przepuszcza przez adapter z ./live, który zwraca
+   * wartości, wielkości i dymki punktów, liczebność klas, podsumowanie i listę `top`. Do czasu
+   * wczytania (i bez JavaScriptu) punkty są szare, a panel pokazuje `pending`.
+   */
+  live?: { url: string; adapter: LiveAdapterId; pending: string };
+  /** lista wyróżnionych punktów pod legendą (np. najdłuższe kolejki); przy warstwie na żywo wypełnia ją adapter */
+  top?: { title: string };
 }
+
+/** Promień koła z wielkości: max(min, base + k·√wielkość). */
+export interface Radius {
+  base: number;
+  k: number;
+  min: number;
+}
+
+/** Adaptery danych na żywo (./live). */
+export type LiveAdapterId = 'sor';
 
 export type MapLayer = RegionLayer | PointLayer;
 

@@ -1,7 +1,8 @@
 ---
 /**
  * Szablon artykułu: nagłówek (slot „aside” — narzędzie obok tytułu zamiast „W skrócie”), spis treści,
- * treść (slot, z przypisami na końcu), opcjonalna ramka „Dlaczego to nasz temat”,
+ * treść (slot, z przypisami na końcu), opcjonalna ramka „Dlaczego to nasz temat”, infografiki do pobrania
+ * (gdy w lib/infografiki/zestawy.ts jest zestaw o kluczu = id artykułu),
  * sprostowania, udostępnianie, powiązane materiały i stanowisko redakcji.
  * SEO z frontmattera: Article (+ Dataset dla działu Dane), okruszki, daty — graf buduje lib/seo.
  */
@@ -16,10 +17,12 @@ import Prose from '@/components/article/Prose.astro';
 import ShareLinks from '@/components/article/ShareLinks.astro';
 import ArticleList from '@/components/blocks/ArticleList.astro';
 import Aside from '@/components/blocks/Aside.astro';
+import InfographicsSection from '@/components/blocks/InfographicsSection.astro';
 import PostulatCta from '@/components/site/PostulatCta.astro';
 import { getFootnotes, getRelated, readingMinutes, sectionOf, type Article } from '@/lib/content';
 import { mainNav } from '@/data/navigation';
 import { typo } from '@/lib/format';
+import { infographicSets } from '@/lib/infografiki/zestawy';
 import type { Crumb, Entity, SeoInput } from '@/lib/seo';
 
 interface Props {
@@ -34,6 +37,8 @@ const section = sectionOf(article);
 // Okruszek sekcji linkuje tam, gdzie prowadzi pozycja menu tej sekcji
 const sectionHref = mainNav.find((link) => link.match === `/${section.path}/`)?.href;
 const related = await getRelated(article);
+// infografiki artykułu: zestaw o kluczu = id artykułu (ostatni człon trasy)
+const graphics = infographicSets[article.id]?.items.length ?? 0;
 // Źródła artykułu to przypisy (`[^id]`): liczba do nagłówka, adresy do JSON-LD
 const footnotes = getFootnotes(article);
 const url = new URL(Astro.url.pathname, Astro.site).href;
@@ -89,6 +94,8 @@ const seo: SeoInput = {
           </Aside>
         )}
 
+        {graphics > 0 && <InfographicsSection set={article.id} class="article__ig" />}
+
         <footer class="article__foot">
           <div class="article__fix">
             <p><strong>Widzisz błąd?</strong> Poprawki publikujemy w rejestrze sprostowań z datą i opisem zmiany. Opisujemy mechanizmy, a nie konkretne osoby.</p>
@@ -127,6 +134,7 @@ const seo: SeoInput = {
   .article__toc { position: sticky; top: calc(var(--header-h) + 32px); }
 
   .article__editorial { margin-top: 56px; }
+  .article__main :global(.article__ig) { margin-top: 56px; }
   /* minmax(0, …): szeroka zawartość stopki nie może rozpychać kolumny na wąskim ekranie */
   .article__foot { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; margin-top: 72px; }
   .article__fix {

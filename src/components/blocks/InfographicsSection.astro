@@ -1,0 +1,49 @@
+---
+/**
+ * Zwijana sekcja „Infografiki do pobrania” na dole strony (<details>, domyślnie zwinięta, bez JS):
+ * nagłówek h2 z liczbą grafik i znacznikiem +/– jak w FAQ, po rozwinięciu blocks/Infographics.
+ * Artykuły dostają ją z ArticleLayout (zestaw o kluczu = id artykułu); podstrony spoza kolekcji
+ * (egzamin, symulator, monitoring) wstawiają ją same.
+ *
+ *   <InfographicsSection set="egzamin" />
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Infographics from '@/components/blocks/Infographics.astro';
+import { infographicSets } from '@/lib/infografiki/zestawy';
+import { plural } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'details'> {
+  /** klucz zestawu z lib/infografiki/zestawy.ts */
+  set: string;
+}
+
+const { set, class: className, ...rest } = Astro.props;
+const count = infographicSets[set]?.items.length ?? 0;
+if (!count) throw new Error(`[infografiki] nieznany albo pusty zestaw „${set}”`);
+---
+<details class:list={['igs', className]} {...rest}>
+  <summary>
+    <h2 id="infografiki">{count > 1 ? 'Infografiki' : 'Infografika'} do pobrania</h2>
+    <span class="igs__count">{count} {plural(count, ['grafika', 'grafiki', 'grafik'])} · pion i poziom, jasna i ciemna</span>
+  </summary>
+  <Infographics set={set} />
+</details>
+
+<style>
+  .igs { border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); }
+  summary {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; align-items: center;
+    padding: 24px 0; cursor: pointer; list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; grid-column: 2; grid-row: 1 / span 2; font: 400 1.75rem/1 var(--f-mono); color: var(--blue); }
+  .igs[open] summary::after { content: "–"; }
+  summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
+  h2 {
+    margin: 0; font: 400 clamp(1.5rem, 2.2vw, 1.875rem)/1.15 var(--f-display); letter-spacing: -0.03em; color: var(--ink);
+    scroll-margin-top: calc(var(--header-h) + 24px); transition: color .2s;
+  }
+  summary:hover h2 { color: var(--blue); }
+  .igs__count { font: 400 0.75rem/1.55 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .igs[open] { padding-bottom: 32px; }
+</style>

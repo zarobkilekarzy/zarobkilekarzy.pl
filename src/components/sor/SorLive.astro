@@ -1,0 +1,132 @@
+---
+/**
+ * „Na żywo · SOR”: ile osób czeka teraz na lekarza i w ilu SOR czas przekracza normę — z tej samej
+ * migawki i tych samych reguł co mapa (lib/sor/summary) — z linkiem do mapy /prawa-pacjenta/sor/.
+ * - variant="kafelek" (strona główna, sekcja „Dla pacjenta”): w HTML ukryty, pojawia się dopiero ze
+ *   świeżymi danymi; bez danych kafelka po prostu nie ma.
+ * - variant="pas" (strona praw pacjenta): zawsze widoczny, ze stałym opisem mapy; świeże dane
+ *   podmieniają opis na liczby.
+ * Dane pobiera dopiero, gdy element zbliża się do ekranu — każde pobranie to wywołanie Workera SOR,
+ * liczone do dziennego limitu konta.
+ */
+import { typo } from '@/lib/format';
+import { SOR_CYCLE_MIN, SOR_DATA_URL } from '@/lib/sor/source';
+
+interface Props {
+  variant?: 'kafelek' | 'pas';
+  class?: string;
+}
+
+const { variant = 'kafelek', class: className } = Astro.props;
+const pas = variant === 'pas';
+// lokalny podgląd przed włączeniem crona: PUBLIC_SOR_URL=/ścieżka/do/migawki.json (jak w lib/sor/map)
+const url = import.meta.env.PUBLIC_SOR_URL || SOR_DATA_URL;
+const fallback = `Mapa wszystkich szpitalnych oddziałów ratunkowych: ile osób czeka na lekarza i czy czas mieści się w normie. Odświeżana co ${SOR_CYCLE_MIN} minut.`;
+---
+{/* hidden={false} na elemencie niestandardowym Astro wypisuje dosłownie jako hidden="false" (i element znika) — stąd undefined */}
+<zl-sor-live data-src={url} data-variant={variant} class:list={[className]} hidden={pas ? undefined : true}>
+  <a class:list={['sorlive', `sorlive--${variant}`]} href="/prawa-pacjenta/sor/">
+    <span class="sorlive__tag"><span class="sorlive__dot" aria-hidden="true"></span>Na żywo · SOR</span>
+    {pas && <span class="sorlive__title">Kolejki na SOR teraz</span>}
+    <span class="sorlive__num" data-n hidden={pas}></span>
+    <span class="sorlive__text" data-text>{pas && typo(fallback)}</span>
+    {pas ? (
+      <>
+        <span class="sorlive__meta" data-meta hidden></span>
+        <span class="sorlive__go sorlive__go--button">Zobacz mapę kolejek →</span>
+      </>
+    ) : (
+      <span class="sorlive__meta"><span data-meta></span><span class="sorlive__go">Mapa kolejek →</span></span>
+    )}
+  </a>
+</zl-sor-live>
+
+<script>
+  import { formatPL, plural, typo } from '@/lib/format';
+  import { hm, isOutdated, isSnapshot, summarize } from '@/lib/sor/summary';
+
+  class SorLive extends HTMLElement {
+    connectedCallback() {
+      // ukryty kafelek nie przecina ekranu — wtedy obserwujemy sekcję, w której stoi
+      const watched = this.hidden ? (this.closest('section') ?? this.parentElement) : this;
+      if (!watched || !('IntersectionObserver' in window)) return void this.load();
+      const io = new IntersectionObserver((entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        void this.load();
+      }, { rootMargin: '400px 0px' });
+      io.observe(watched);
+    }
+
+    private async load() {
+      try {
+        const res = await fetch(this.dataset.src!);
+        if (!res.ok) return;
+        const data: unknown = await res.json();
+        if (!isSnapshot(data)) return;
+        const s = summarize(data);
+        if (!s.measured || isOutdated(s.freshest)) return;
+        const over = s.counts[2] + s.counts[3];
+        const set = (sel: string, text: string) => {
+          const el = this.querySelector<HTMLElement>(sel)!;
+          el.textContent = typo(text);
+          el.hidden = false;
+        };
+        set('[data-n]', formatPL(s.before));
+        set('[data-text]', `${plural(s.before, ['osoba czeka', 'osoby czekają', 'osób czeka'])} teraz na lekarza w szpitalnych oddziałach ratunkowych`);
+        set('[data-meta]', `w ${over} z ${s.measured} SOR-ów czas ponad normę · stan z ${hm(s.freshest)}`);
+        this.hidden = false;
+      } catch {
+        // bez danych: kafelka nie ma, pas zostaje ze stałym opisem
+      }
+    }
+  }
+
+  if (!customElements.get('zl-sor-live')) customElements.define('zl-sor-live', SorLive);
+</script>
+
+<style>
+  zl-sor-live:not([hidden]) { display: block; }
+  zl-sor-live[data-variant="kafelek"]:not([hidden]) { margin-top: 36px; }
+  .sorlive { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; padding: 18px 20px; border: 1px solid var(--line-2); background: var(--surface); color: inherit; text-decoration: none; transition: border-color .2s; }
+  .sorlive:hover { border-color: var(--ink); }
+  .sorlive:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .sorlive [hidden] { display: none; }
+  .sorlive__tag { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .sorlive__dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+  /* to samo pulsujące kółko co na mapie (components/mapa) */
+  .sorlive__dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--bad); animation: sorlive-ping 1.6s cubic-bezier(.2, .6, .4, 1) infinite; }
+  @keyframes sorlive-ping {
+    from { transform: scale(1); opacity: .9; }
+    to { transform: scale(3.2); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .sorlive__dot::after { animation: none; } }
+  .sorlive__num { font: 600 2.5rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
+  .sorlive__text { font-size: 0.9375rem; line-height: 1.4; color: var(--text-strong); }
+  .sorlive__meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 0.8125rem; color: var(--muted); }
+  .sorlive__go { font-weight: 500; color: var(--blue); }
+
+  /* ---------- pas na stronie praw pacjenta ---------- */
+  .sorlive--pas {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "tag tag go" "title title go" "num text go" "meta meta go";
+    gap: 8px 20px; padding: clamp(20px, 3vw, 28px) clamp(20px, 3vw, 32px);
+    border: 0; border-left: 4px solid var(--blue); background: var(--blue-50);
+  }
+  .sorlive--pas:hover { border-color: var(--blue); }
+  .sorlive--pas .sorlive__tag { grid-area: tag; }
+  .sorlive__title { grid-area: title; font: 600 clamp(1.375rem, 2.4vw, 1.75rem)/1.15 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .sorlive--pas .sorlive__num { grid-area: num; }
+  .sorlive--pas .sorlive__text { grid-area: text; max-width: 42em; font-size: 1rem; }
+  /* bez danych opis zajmuje też miejsce liczby */
+  .sorlive--pas .sorlive__num[hidden] + .sorlive__text { grid-column: 1 / 3; }
+  .sorlive--pas .sorlive__meta { grid-area: meta; padding-top: 0; border-top: 0; }
+  .sorlive__go--button { grid-area: go; align-self: center; padding: 14px 20px; background: var(--ink); color: var(--on-ink); white-space: nowrap; transition: background .2s; }
+  .sorlive--pas:hover .sorlive__go--button { background: var(--blue-fill); }
+
+  @media (max-width: 720px) {
+    .sorlive--pas { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "tag tag" "title title" "num text" "meta meta" "go go"; }
+    .sorlive--pas .sorlive__num[hidden] + .sorlive__text { grid-column: 1 / -1; }
+    .sorlive__go--button { margin-top: 8px; text-align: center; }
+  }
+</style>

@@ -1,6 +1,6 @@
 /**
  * Podsumowanie migawki sor/teraz.json — jedno źródło liczb dla mapy (lib/sor/live) i kafelka na
- * stronie głównej (components/home/SorLive), żeby obie pokazywały to samo.
+ * stronie głównej (components/sor/SorLive), żeby obie pokazywały to samo.
  *
  * Do sum (osoby przed lekarzem, wszyscy w SOR, liczba SOR z pomiarem) wchodzi każdy świeży pomiar;
  * do klas wobec normy — tylko taki, który da się z normą porównać (zob. measure). Wpis o ponad

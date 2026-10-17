@@ -24,7 +24,10 @@ const capitalize = (s: string) => s[0].toLocaleUpperCase('pl') + s.slice(1);
 <BaseLayout seo={seo}>
   <Section space="bottom" class="sor-top">
     <PageHeader title={page.title} lead={page.lead} eyebrow="Dla pacjenta · na żywo" crumbs={crumbs}>
-      <p class="sor-112"><a href="tel:112">112</a><span>{typo(page.emergency)}</span></p>
+      <div class="sor-112">
+        <a class="sor-112__num" href="tel:112">112</a>
+        <p><strong>{typo(page.emergency.title)}</strong> <span>{typo(page.emergency.text)}</span></p>
+      </div>
     </PageHeader>
   </Section>
 
@@ -74,9 +77,14 @@ const capitalize = (s: string) => s[0].toLocaleUpperCase('pl') + s.slice(1);
 </BaseLayout>
 
 <style>
-  .sor-112 { display: flex; align-items: center; gap: 14px; margin-top: 28px; padding: 14px 18px; border: 1px solid var(--line-2); background: var(--surface); font-size: 0.9375rem; color: var(--text-strong); max-width: 40em; }
-  .sor-112 a { font: 600 1.375rem/1 var(--f-display); color: var(--ink); text-decoration: none; }
-  .sor-112 a:hover { color: var(--blue); }
+  /* jedyny alarmowy blok strony — ten sam czerwony co „112” w karcie pomocy (components/pacjent/HelpCard) */
+  .sor-112 { display: flex; align-items: center; gap: clamp(16px, 2.5vw, 24px); max-width: 40em; margin-top: 32px; padding: clamp(16px, 2.5vw, 22px) clamp(16px, 2.5vw, 26px); border-left: 4px solid var(--bad); background: var(--bad-bg); }
+  .sor-112__num { flex: none; display: grid; place-items: center; min-width: 4.75rem; height: 3.75rem; padding: 0 12px; background: var(--bad); color: var(--on-ink); font: 600 1.875rem/1 var(--f-display); letter-spacing: -0.02em; text-decoration: none; transition: background .2s; }
+  .sor-112__num:hover { background: light-dark(#8f1c13, #FFB3AA); }
+  .sor-112__num:focus-visible { outline: 2px solid var(--bad); outline-offset: 3px; }
+  .sor-112 p { display: grid; gap: 2px; }
+  .sor-112 strong { font: 600 clamp(1.25rem, 2.2vw, 1.5rem)/1.2 var(--f-display); letter-spacing: -0.015em; color: var(--bad); }
+  .sor-112 span { font-size: 1rem; line-height: 1.4; color: var(--text-strong); }
 
   .sor-steps { display: grid; gap: 32px; max-width: 46em; counter-reset: krok; }
   .sor-steps li { position: relative; padding-left: 52px; counter-increment: krok; }

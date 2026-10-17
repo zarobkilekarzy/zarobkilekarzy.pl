@@ -15,7 +15,7 @@ export const page = {
   seoTitle: 'Kolejki na SOR na żywo',
   lead: 'Ile osób czeka teraz na lekarza w każdym szpitalnym oddziale ratunkowym i czy czas oczekiwania mieści się w normie. Pod mapą: jak działa kolejka na SOR i czego te dane nie mówią.',
   description: 'Mapa szpitalnych oddziałów ratunkowych odświeżana co 10 minut: ile osób czeka na lekarza i czy w normie. Jak działa triaż i czego dane nie mówią.',
-  emergency: 'Zagrożenie życia? Dzwoń pod 112 — nie sprawdzaj kolejek.',
+  emergency: { title: 'Zagrożenie życia?', text: 'Dzwoń pod 112 — nie sprawdzaj kolejek.' },
   checked: new Date('2026-10-17'),
 };
 

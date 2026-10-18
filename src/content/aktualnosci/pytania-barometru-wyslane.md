@@ -1,8 +1,7 @@
 ---
 title: "Pytania barometru wysłane do klubów, kół i NIL"
-date: 2026-10-19
+date: 2026-10-18
 summary: "Te same pytania o politykę zdrowotną trafiły do 11 klubów i kół poselskich oraz do Naczelnej Izby Lekarskiej. Odpowiedzi przyjmujemy do 2 listopada 2026 r."
-draft: true
 cover: ../../assets/img/barometr-polityczny-og.png
 coverAlt: "Grafika barometru politycznego: półokrągła skala od „publiczna” do „prywatna” ze wskazówką ustawioną pionowo pośrodku."
 links:
@@ -12,7 +11,7 @@ links:
     href: /barometr-polityczny/wzor/
 ---
 
-19 października 2026 r. wysłaliśmy pytania [barometru politycznego](/barometr-polityczny/) do **11 klubów i kół poselskich** oraz do **Naczelnej Izby Lekarskiej**. Każdy adresat dostał osobną wiadomość z tymi samymi pytaniami.
+18 października 2026 r. wysłaliśmy pytania [barometru politycznego](/barometr-polityczny/) do **11 klubów i kół poselskich** oraz do **Naczelnej Izby Lekarskiej**. Każdy adresat dostał osobną wiadomość z tymi samymi pytaniami.
 
 ## O co pytamy
 

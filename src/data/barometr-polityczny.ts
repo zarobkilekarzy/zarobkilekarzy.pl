@@ -31,7 +31,7 @@ export const barometrPage = {
   seoTitle: 'Barometr: polityka zdrowotna partii',
   lead: 'Co partie proponują w ochronie zdrowia — według tych samych pytań dla każdej z nich i ze źródłem przy każdej tezie. Zaczynamy od zaproszenia: każda partia może przedstawić nam swój program.',
   description: 'Polityka zdrowotna partii według tych samych pytań i ze źródłami. Zaproszenie dla partii do przesłania programu w ochronie zdrowia.',
-  updated: new Date('2026-10-17'),
+  updated: new Date('2026-10-18'),
   /** true = szkic: noindex (także podstron partii). Opublikowane 17.10.2026; wzór opisu zostaje noindex zawsze. */
   draft: false,
 };
@@ -48,11 +48,15 @@ export const barometrContact = {
  * u tych, które nie odpowiedziały (statusy nie zmieniają się same: strona jest statyczna).
  */
 export const barometrSchedule = {
-  sendOn: new Date('2026-10-19'),
+  // pytania poszły w niedzielę 18.10, dzień przed zapowiedzią — do wszystkich naraz; termin bez zmian (decyzja redakcji 18.10.2026)
+  sendOn: new Date('2026-10-18'),
   answerWeeks: 2,
+  deadline: new Date('2026-11-02'),
 };
 /** ostatni dzień na odpowiedź */
-export const answerDeadline = new Date(barometrSchedule.sendOn.getTime() + barometrSchedule.answerWeeks * 7 * 86_400_000);
+export const answerDeadline = barometrSchedule.deadline;
+/** status po wysyłce pytań — ten sam dzień u wszystkich */
+const SENT: BarometrStatus = { stage: 'wyslane', sent: barometrSchedule.sendOn };
 /** „3 tygodnie” */
 export const answerTime = `${barometrSchedule.answerWeeks} ${plural(barometrSchedule.answerWeeks, ['tydzień', 'tygodnie', 'tygodni'])}`;
 
@@ -270,17 +274,17 @@ export const barometrSejm = {
 /** Partie z klubem albo kołem w Sejmie — na stronie alfabetycznie (zasada „te same pytania dla wszystkich”). */
 export const barometrParties: BarometrParty[] = (
   [
-    { id: 'centrum', name: 'Centrum', club: 'Klub Parlamentarny Centrum', logo: centrumLogo },
-    { id: 'demokracja-bezposrednia', name: 'Demokracja Bezpośrednia', club: 'Koło Poselskie Demokracja Bezpośrednia', logo: demokracjaLogo },
-    { id: 'koalicja-obywatelska', name: 'Koalicja Obywatelska', club: 'Klub Parlamentarny Koalicja Obywatelska – Platforma Obywatelska, Nowoczesna, Inicjatywa Polska, Zieloni', logo: koLogo },
-    { id: 'konfederacja', name: 'Konfederacja Wolność i Niepodległość', club: 'Klub Poselski Konfederacja', logo: konfederacjaLogo },
-    { id: 'konfederacja-korony-polskiej', name: 'Konfederacja Korony Polskiej', club: 'Koło Poselskie Konfederacja Korony Polskiej', logo: kkpLogo },
-    { id: 'lewica', name: 'Lewica', club: 'Koalicyjny Klub Parlamentarny Lewicy (Nowa Lewica, PPS, Unia Pracy)', logo: lewicaLogo },
-    { id: 'polska-2050', name: 'Polska 2050', club: 'Klub Parlamentarny Polska 2050', logo: polska2050Logo },
-    { id: 'psl', name: 'Polskie Stronnictwo Ludowe', club: 'Klub Parlamentarny Polskie Stronnictwo Ludowe – Trzecia Droga', logo: pslLogo },
-    { id: 'pis', name: 'Prawo i Sprawiedliwość', club: 'Klub Parlamentarny Prawo i Sprawiedliwość', logo: pisLogo },
-    { id: 'razem', name: 'Razem', club: 'Koło Poselskie Razem', logo: razemLogo },
-    { id: 'rozwoj-plus', name: 'Rozwój Plus', club: 'Klub Parlamentarny Rozwój Plus', logo: rozwojLogo },
+    { id: 'centrum', name: 'Centrum', club: 'Klub Parlamentarny Centrum', logo: centrumLogo, status: SENT },
+    { id: 'demokracja-bezposrednia', name: 'Demokracja Bezpośrednia', club: 'Koło Poselskie Demokracja Bezpośrednia', logo: demokracjaLogo, status: SENT },
+    { id: 'koalicja-obywatelska', name: 'Koalicja Obywatelska', club: 'Klub Parlamentarny Koalicja Obywatelska – Platforma Obywatelska, Nowoczesna, Inicjatywa Polska, Zieloni', logo: koLogo, status: SENT },
+    { id: 'konfederacja', name: 'Konfederacja Wolność i Niepodległość', club: 'Klub Poselski Konfederacja', logo: konfederacjaLogo, status: SENT },
+    { id: 'konfederacja-korony-polskiej', name: 'Konfederacja Korony Polskiej', club: 'Koło Poselskie Konfederacja Korony Polskiej', logo: kkpLogo, status: SENT },
+    { id: 'lewica', name: 'Lewica', club: 'Koalicyjny Klub Parlamentarny Lewicy (Nowa Lewica, PPS, Unia Pracy)', logo: lewicaLogo, status: SENT },
+    { id: 'polska-2050', name: 'Polska 2050', club: 'Klub Parlamentarny Polska 2050', logo: polska2050Logo, status: SENT },
+    { id: 'psl', name: 'Polskie Stronnictwo Ludowe', club: 'Klub Parlamentarny Polskie Stronnictwo Ludowe – Trzecia Droga', logo: pslLogo, status: SENT },
+    { id: 'pis', name: 'Prawo i Sprawiedliwość', club: 'Klub Parlamentarny Prawo i Sprawiedliwość', logo: pisLogo, status: SENT },
+    { id: 'razem', name: 'Razem', club: 'Koło Poselskie Razem', logo: razemLogo, status: SENT },
+    { id: 'rozwoj-plus', name: 'Rozwój Plus', club: 'Klub Parlamentarny Rozwój Plus', logo: rozwojLogo, status: SENT },
   ] satisfies BarometrParty[]
 ).sort((a, b) => a.name.localeCompare(b.name, 'pl'));
 
@@ -292,6 +296,7 @@ export const barometrOthers: BarometrParty[] = [
     club: 'Samorząd zawodowy lekarzy i lekarzy dentystów',
     logo: nilLogo,
     notParty: true,
+    status: SENT,
     // słowami ustawy (art. 5 pkt 14–16), nie „lobbuje” — lobbing ma w prawie węższe znaczenie
     about: {
       heading: 'Dlaczego NIL jest na liście',
@@ -369,7 +374,7 @@ export const barometrExample: BarometrProfile = {
   club: 'Fikcyjny klub parlamentarny — wzór opisu',
   example: true,
   status: { stage: 'odpowiedz' },
-  updated: barometrPage.updated,
+  updated: new Date('2026-10-17'),
   areas: [
     {
       area: 'finansowanie',
@@ -439,7 +444,7 @@ export const barometrExample: BarometrProfile = {
       checks: { cost: false, funding: false, deadline: true },
     },
   ],
-  changes: [{ date: barometrPage.updated, text: 'Wzór opisu — pierwsza wersja.' }],
+  changes: [{ date: new Date('2026-10-17'), text: 'Wzór opisu — pierwsza wersja.' }],
 };
 
 /** Opisy z własną podstroną. Prawdziwy opis: id = id karty partii, dane partii z barometrParties. */

@@ -97,6 +97,7 @@ export const barometrAreas: BarometrArea[] = [
     text: 'Ile publicznych pieniędzy na ochronę zdrowia i skąd je wziąć: ze składki, z budżetu państwa, z innych źródeł.',
     hints: [
       'Kto powinien płacić za leczenie: pieniądze publiczne (składka, budżet), prywatne (ubezpieczenia, dopłaty pacjentów) czy jedne i drugie — i w jakich proporcjach?',
+      'Czy ochrona zdrowia powinna być bardziej publiczna czy bardziej prywatna — np. czy zwiększyć, utrzymać czy zmniejszyć udział prywatnych placówek w leczeniu finansowanym z pieniędzy publicznych — i dlaczego?',
       'Czy zmieniać składkę zdrowotną — jej wysokość albo zasady naliczania, np. dla przedsiębiorców? Jeśli tak — jak?',
       'Czy zmieniać wysokość publicznych wydatków na zdrowie? Jeśli tak — o ile i do kiedy?',
     ],
@@ -180,7 +181,7 @@ export const barometrAreas: BarometrArea[] = [
 export const barometrRules: TextItem[] = [
   {
     title: 'Te same pytania dla wszystkich',
-    text: `Każda partia dostaje ten sam zestaw obszarów i tyle samo miejsca: do ${answerLimitLabel} na każdą odpowiedź. Dłuższą odpowiedź odsyłamy do skrócenia — pełną wersję partia może dołączyć jako dokument. Opisy układamy alfabetycznie.`,
+    text: `Każda partia dostaje ten sam zestaw obszarów i tyle samo miejsca: do ${answerLimitLabel} w każdym obszarze, a w kadrach — w każdej z trzech części. Dłuższą odpowiedź odsyłamy do skrócenia — pełną wersję partia może dołączyć jako dokument. Opisy układamy alfabetycznie.`,
   },
   {
     title: 'Słowa partii, nie nasz wybór',
@@ -188,7 +189,7 @@ export const barometrRules: TextItem[] = [
   },
   {
     title: 'Bez odpowiedzi — piszemy to wprost',
-    text: `Na odpowiedź każda partia ma ${answerTime}. Potem przy karcie partii, która nie odpowiedziała, piszemy „Bez odpowiedzi” i datę wysłania pytań — bez opisu za partię. Spóźnioną odpowiedź dodamy, gdy tylko przyjdzie.`,
+    text: `Na odpowiedź każda partia ma ${answerTime}. Potem przy karcie partii, która nie odpowiedziała, piszemy „Bez odpowiedzi” i datę wysłania pytań — bez opisu za partię. Spóźnioną odpowiedź dodamy, gdy tylko przyjdzie. Pominięty obszar też oznaczamy wprost: „Partia nie odniosła się do tego obszaru”.`,
   },
   {
     title: 'Prawo do poprawki',
@@ -204,11 +205,11 @@ export const barometrToSend: TextItem[] = [
   },
   {
     title: 'Odpowiedzi w sześciu obszarach',
-    text: `Do ${answerLimitLabel} na każdy obszar z listy powyżej, a w kadrach — osobno na lekarzy, pielęgniarki i inne zawody medyczne. Obszar albo część, w której partia nie ma stanowiska, można pominąć. Prosimy bez nazwisk — opisujemy programy, nie osoby.`,
+    text: `Do ${answerLimitLabel} na każdy obszar z listy powyżej, a w kadrach — osobno na lekarzy, pielęgniarki i inne zawody medyczne. Obszar albo część, w której partia nie ma stanowiska, można pominąć — zaznaczymy wtedy wprost przy tym obszarze, że partia się do niego nie odniosła. Prosimy bez nazwisk — opisujemy programy, nie osoby.`,
   },
   {
     title: 'Koszt, źródło pieniędzy, termin',
-    text: 'Przy każdej propozycji: ile ma kosztować, skąd wziąć na nią pieniądze i do kiedy ma zostać wdrożona.',
+    text: 'Jeśli propozycja tego dotyczy: ile ma kosztować, skąd wziąć na nią pieniądze i do kiedy ma zostać wdrożona.',
   },
   {
     title: 'Dokumenty na poparcie odpowiedzi',
@@ -325,8 +326,9 @@ export interface BarometrAreaEntry {
   answer?: string[];
   /** dokumenty wskazane przez partię; puste = partia żadnego nie wskazała */
   documents: BarometrDocument[];
-  /** czy przy propozycjach podano koszt, źródło pieniędzy i termin — nie oceniamy, czy propozycja jest dobra */
-  checks?: { cost: boolean; funding: boolean; deadline: boolean };
+  /** czy przy propozycjach podano koszt, źródło pieniędzy i termin — nie oceniamy, czy propozycja jest dobra;
+   *  'nie-dotyczy' = propozycja nie ma kosztu ani terminu (np. zmiana zasad bez wydatków) */
+  checks?: { cost: BarometrCheck; funding: BarometrCheck; deadline: BarometrCheck };
 }
 
 export interface BarometrProfile {
@@ -345,6 +347,8 @@ export interface BarometrProfile {
 }
 
 /** Trzy pytania sprawdzalności — te same w każdym obszarze i przy każdej partii. */
+export type BarometrCheck = boolean | 'nie-dotyczy';
+
 export const barometrChecks = [
   { key: 'cost', label: 'Koszt propozycji' },
   { key: 'funding', label: 'Źródło pieniędzy' },

@@ -51,12 +51,13 @@ const length = (answer: string[]) => {
           <p class="mono-label bp-label">Czy podano</p>
           <ul class="bp-checks">
             {barometrChecks.map((c) => {
-              const ok = entry.checks![c.key];
+              const v = entry.checks![c.key];
+              const na = v === 'nie-dotyczy';
               return (
-                <li class:list={['bp-check', { 'bp-check--no': !ok }]}>
-                  <Icon name={ok ? 'check' : 'close'} size={16} />
+                <li class:list={['bp-check', { 'bp-check--no': !v || na }]}>
+                  {na ? <span class="bp-check__na" aria-hidden="true">–</span> : <Icon name={v ? 'check' : 'close'} size={16} />}
                   <span>{c.label}</span>
-                  <span class="bp-check__val">{ok ? 'podano' : 'nie podano'}</span>
+                  <span class="bp-check__val">{na ? 'nie dotyczy' : v ? 'podano' : 'nie podano'}</span>
                 </li>
               );
             })}
@@ -93,6 +94,7 @@ const length = (answer: string[]) => {
   .bp-check--no :global(.icon) { color: var(--muted); }
   .bp-check__val { font: 400 0.75rem/1.4 var(--f-mono); color: var(--ok); }
   .bp-check--no .bp-check__val { color: var(--muted); }
+  .bp-check__na { width: 16px; text-align: center; color: var(--muted); }
 
   @media (max-width: 900px) {
     .bp-area { grid-template-columns: minmax(0, 1fr); }

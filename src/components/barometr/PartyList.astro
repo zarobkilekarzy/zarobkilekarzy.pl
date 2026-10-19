@@ -1,7 +1,8 @@
 ---
 /**
  * /barometr-polityczny/ — karty partii: logo, nazwa, klub albo koło w Sejmie, stan opisu.
- * Za partiami (barometrOthers) — uczestnicy sporu, którzy nie są partiami, z etykietą „Nie partia”.
+ * Za partiami (barometrOthers) — partie spoza Sejmu (etykieta „Poza Sejmem”) i uczestnicy sporu, którzy nie są
+ * partiami (etykieta „Nie partia”).
  * Na karcie stan kontaktu (statusLabel): pytania niewysłane → wysłane → odpowiedź albo „Bez odpowiedzi”;
  * nad listą legenda stanów i link do wzoru podstrony partii.
  * Logo każdej partii ma tę samą powierzchnię (szerokie są niższe, wysokie węższe), żeby żadne
@@ -27,7 +28,8 @@ const parties = [...barometrParties, ...barometrOthers].map((party) => {
   const fit = Math.min(1, MAX_W / w, MAX_H / h);
   w = Math.round(w * fit);
   h = Math.round(h * fit);
-  return { ...party, w, h, status: party.status ?? NOT_SENT };
+  const tag = party.notParty ? 'Nie partia' : party.outsideSejm ? 'Poza Sejmem' : undefined;
+  return { ...party, w, h, tag, status: party.status ?? NOT_SENT };
 });
 ---
 <div class="legend">
@@ -41,13 +43,13 @@ const parties = [...barometrParties, ...barometrOthers].map((party) => {
 
 <ul class="parties">
   {parties.map((p) => (
-    <li id={`partia-${p.id}`} class:list={['party', { 'party--other': p.notParty }]}>
+    <li id={`partia-${p.id}`} class:list={['party', { 'party--other': p.tag }]}>
       <div class="party__logo">
         <Image src={p.logo} width={p.w} height={p.h} densities={[1, 2]} alt={`Logo: ${p.name}`} />
       </div>
-      {p.notParty && (
+      {p.tag && (
         <div class="party__tagrow">
-          <p class="party__tag">Nie partia</p>
+          <p class="party__tag">{p.tag}</p>
           {p.about && (
             <Popover variant="hint" label={`${p.about.heading}: wyjaśnienie`} heading={p.about.heading} placement="bottom">
               {typo(p.about.text)}

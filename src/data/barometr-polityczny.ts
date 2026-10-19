@@ -12,6 +12,7 @@ import { projekt } from '@/data/projekt-ustawy';
 import centrumLogo from '@/assets/partie/centrum.png';
 import demokracjaLogo from '@/assets/partie/demokracja-bezposrednia.png';
 import kkpLogo from '@/assets/partie/kkp.png';
+import korwinLogo from '@/assets/partie/korwin.png';
 import koLogo from '@/assets/partie/ko.svg';
 import konfederacjaLogo from '@/assets/partie/konfederacja.png';
 import lewicaLogo from '@/assets/partie/lewica.png';
@@ -31,7 +32,7 @@ export const barometrPage = {
   seoTitle: 'Barometr: polityka zdrowotna partii',
   lead: 'Co partie proponują w ochronie zdrowia — według tych samych pytań dla każdej z nich i ze źródłem przy każdej tezie. Zaczynamy od zaproszenia: każda partia może przedstawić nam swój program.',
   description: 'Polityka zdrowotna partii według tych samych pytań i ze źródłami. Zaproszenie dla partii do przesłania programu w ochronie zdrowia.',
-  updated: new Date('2026-10-18'),
+  updated: new Date('2026-10-19'),
   /** true = szkic: noindex (także podstron partii). Opublikowane 17.10.2026; wzór opisu zostaje noindex zawsze. */
   draft: false,
 };
@@ -232,8 +233,11 @@ export interface BarometrParty {
   logo: ImageMetadata;
   /** true = nie partia (np. samorząd zawodowy) — karta z wyraźnym oznaczeniem, na końcu listy */
   notParty?: boolean;
-  /** objaśnienie w dymku „?” przy etykiecie „Nie partia”: dlaczego jest na liście, ze źródłem */
-  about?: { heading: string; text: string; source: { label: string; href: string } };  /** etap kontaktu; brak = pytań jeszcze nie wysłano */
+  /** true = partia bez klubu i koła w Sejmie — karta z etykietą „Poza Sejmem”, za partiami w Sejmie */
+  outsideSejm?: boolean;
+  /** objaśnienie w dymku „?” przy etykiecie („Nie partia”, „Poza Sejmem”): dlaczego jest na liście, ze źródłem */
+  about?: { heading: string; text: string; source: { label: string; href: string } };
+  /** etap kontaktu; brak = pytań jeszcze nie wysłano */
   status?: BarometrStatus;
 }
 
@@ -288,8 +292,26 @@ export const barometrParties: BarometrParty[] = (
   ] satisfies BarometrParty[]
 ).sort((a, b) => a.name.localeCompare(b.name, 'pl'));
 
-/** Uczestnicy sporu o politykę zdrowotną, którzy nie są partiami — za partiami, z oznaczeniem „nie partia”. */
+/**
+ * Spoza wykazu klubów i kół — za partiami w Sejmie: partie bez klubu i koła w Sejmie (etykieta „Poza Sejmem”)
+ * i uczestnicy sporu o politykę zdrowotną, którzy nie są partiami (etykieta „Nie partia”).
+ */
 export const barometrOthers: BarometrParty[] = [
+  {
+    id: 'korwin',
+    // nazwa tak, jak partia zapisuje ją na swojej stronie (korwin.com.pl: „Partia KORWiN”)
+    name: 'KORWiN',
+    club: 'Partia bez klubu i koła w Sejmie X kadencji',
+    logo: korwinLogo,
+    outsideSejm: true,
+    about: {
+      heading: 'Dlaczego KORWiN jest na liście',
+      text: 'KORWiN nie ma w Sejmie X kadencji klubu ani koła, dlatego nie ma jej w wykazie klubów. Dopisaliśmy ją do barometru jako partię spoza Sejmu: dostaje te same pytania, a jej stanowisko opiszemy na tych samych zasadach.',
+      source: { label: 'Sejm RP, „Kluby i koła” (X kadencja)', href: 'https://www.sejm.gov.pl/Sejm10.nsf/kluby.xsp' },
+    },
+    // pytania poszły dzień po klubach i kołach (decyzja redakcji 19.10.2026); termin ten sam
+    status: { stage: 'wyslane', sent: new Date('2026-10-19') },
+  },
   {
     id: 'nil',
     name: 'Naczelna Izba Lekarska',

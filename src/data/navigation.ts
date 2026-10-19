@@ -123,7 +123,7 @@ export const searchExtras: SearchDoc[] = [
       'KO', 'PiS', 'PSL', 'NIL',
     ],
     sections: [
-      { title: 'Partie w Sejmie', anchor: 'partie' },
+      { title: 'Partie', anchor: 'partie' },
       { title: 'O co pytamy partie', anchor: 'obszary' },
       { title: 'Zasady barometru', anchor: 'zasady' },
       { title: 'Zaproszenie dla partii', anchor: 'zaproszenie' },

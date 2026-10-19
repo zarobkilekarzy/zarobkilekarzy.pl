@@ -19,7 +19,7 @@ import Button from '@/components/ui/Button.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import PartyList from '@/components/barometr/PartyList.astro';
 import AreaList from '@/components/barometr/AreaList.astro';
-import { answerDeadline, answerTime, barometrAreas, barometrContact, barometrExample, barometrPage, barometrParties, barometrRules, barometrSchedule, barometrToSend } from '@/data/barometr-polityczny';
+import { answerDeadline, answerTime, barometrAreas, barometrContact, barometrExample, barometrOthers, barometrPage, barometrParties, barometrRules, barometrSchedule, barometrToSend } from '@/data/barometr-polityczny';
 import { formatDate } from '@/lib/format';
 import { CURRENT, CURRENT_PLAN, formatMld } from '@/data/budzet-nfz';
 import type { Crumb, SeoInput } from '@/lib/seo';
@@ -27,18 +27,20 @@ import type { Crumb, SeoInput } from '@/lib/seo';
 const page = barometrPage;
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: page.title }];
 const seo: SeoInput = { title: page.seoTitle, description: page.description, social: { title: page.docTitle }, breadcrumbs: crumbs, index: !page.draft };
+// wszystkie partie na liście: w Sejmie i spoza Sejmu (bez NIL — to nie partia)
+const parties = [...barometrParties, ...barometrOthers.filter((p) => !p.notParty)];
 // ile partii dostało już pytania — do nagłówka; dopóki żadna, piszemy to wprost
-const sent = barometrParties.filter((p) => p.status && p.status.stage !== 'niewyslane').length;
-const questions = sent === 0 ? `wyślemy ${formatDate(barometrSchedule.sendOn)}` : `wysłane do ${sent} z ${barometrParties.length}`;
+const sent = parties.filter((p) => p.status && p.status.stage !== 'niewyslane').length;
+const questions = sent === 0 ? `wyślemy ${formatDate(barometrSchedule.sendOn)}` : `wysłane do ${sent} z ${parties.length}`;
 // treść zaproszenia: data wysyłki i termin z danych, żeby nie rozjechały się z kartami
 const invite = sent === 0
   ? `Pytania z sześciu obszarów wyślemy do wszystkich z listy tego samego dnia — ${formatDate(barometrSchedule.sendOn)}. Na odpowiedź każdy ma ${answerTime}, do ${formatDate(answerDeadline)}; spóźnioną odpowiedź też opublikujemy. Program można przysłać wcześniej, z oficjalnego adresu partii albo jej biura prasowego. Danych osoby kontaktowej nie publikujemy.`
-  : `Pytania z sześciu obszarów wysłaliśmy do wszystkich z listy tego samego dnia — ${formatDate(barometrSchedule.sendOn)}. Na odpowiedź każdy ma czas do ${formatDate(answerDeadline)}; spóźnioną odpowiedź też opublikujemy. Odpowiedź albo program można przysłać z oficjalnego adresu partii albo jej biura prasowego. Danych osoby kontaktowej nie publikujemy.`;
+  : `Pytania z sześciu obszarów wysłaliśmy do wszystkich z listy — datę wysyłki podajemy przy każdej karcie. Na odpowiedź każdy ma czas do ${formatDate(answerDeadline)}; spóźnioną odpowiedź też opublikujemy. Odpowiedź albo program można przysłać z oficjalnego adresu partii albo jej biura prasowego. Danych osoby kontaktowej nie publikujemy.`;
 const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(barometrContact.subject)}`;
 
 const jump = [
   { label: 'Po co barometr', href: '#po-co' },
-  { label: 'Partie', href: '#partie', count: barometrParties.length },
+  { label: 'Partie', href: '#partie', count: parties.length },
   { label: 'O co pytamy', href: '#obszary', count: barometrAreas.length },
   { label: 'Zasady', href: '#zasady' },
   { label: 'Zaproszenie dla partii', href: '#zaproszenie' },
@@ -49,7 +51,7 @@ const jump = [
     <PageHeader title={page.title} lead={page.lead} eyebrow={page.eyebrow} crumbs={crumbs}>
       <PageMeta
         items={[
-          { label: 'Partie', value: barometrParties.length },
+          { label: 'Partie', value: parties.length },
           { label: 'Opisy', value: 0 },
           { label: 'Pytania do partii', value: questions },
           { label: 'Kontakt', value: barometrContact.email },
@@ -72,9 +74,9 @@ const jump = [
   <Section id="partie" aria-labelledby="partie-title">
     <SectionHead
       eyebrow="Partie"
-      title="Partie w Sejmie"
+      title="Partie"
       id="partie-title"
-      aside="Każda partia dostanie własną podstronę z opisem według tych samych sześciu obszarów. Na końcu listy Naczelna Izba Lekarska: to nie partia, tylko samorząd zawodowy lekarzy, ale jej stanowisko opiszemy na tych samych zasadach."
+      aside="Każda partia dostanie własną podstronę z opisem według tych samych sześciu obszarów. Najpierw partie z klubem albo kołem w Sejmie, potem KORWiN — partia bez klubu i koła w Sejmie. Na końcu Naczelna Izba Lekarska: to nie partia, tylko samorząd zawodowy lekarzy. Stanowisko każdej z nich opiszemy na tych samych zasadach."
     />
     <PartyList />
   </Section>

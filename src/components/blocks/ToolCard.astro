@@ -1,21 +1,61 @@
 ---
-/** Karta narzędzia/usługi z ikoną i wezwaniem do działania. */
+/**
+ * Karta narzędzia/usługi z ikoną i wezwaniem do działania — w dwóch układach:
+ * - card (domyślny): pionowa karta, np. sekcja „Sprawdź sam” na stronie głównej;
+ * - banner: poziomy baner w treści artykułu (MDX) — mały, ale wyróżniony, zamiast ikony
+ *   może mieć mini-wykres słupkowy (`bars`).
+ * Gotowe banery symulatorów: components/podaz/SimulatorBanner.astro.
+ */
 import Icon from '@/components/ui/Icon.astro';
 import type { Tool } from '@/types';
 import { typo } from '@/lib/format';
 
+export interface ToolBars {
+  /** Wartości słupków od lewej (np. dopływ rok po roku). */
+  values: readonly number[];
+  /** Tyle pierwszych słupków to historia — rysowane jaśniej. */
+  past?: number;
+  /** Indeks słupka wyróżnionego kobaltem (pulsuje). */
+  highlight?: number;
+  /** Górna granica skali; domyślnie największa wartość. */
+  max?: number;
+}
+
 interface Props {
   tool: Tool;
   cta?: string;
+  layout?: 'card' | 'banner';
+  /** Mini-wykres w miejscu ikony (tylko układ banner). */
+  bars?: ToolBars;
 }
 
-const { tool, cta = 'Otwórz' } = Astro.props;
+const { tool, cta = 'Otwórz', layout = 'card', bars } = Astro.props;
+const banner = layout === 'banner';
+// Baner stoi w prozie artykułu, której style łapią <p> i nagłówki — tam same <span>
+const Text = banner ? 'span' : 'p';
+const Title = banner ? 'span' : 'h3';
+
+// Mini-wykres: słupki we wspólnej skali od zera, historia jaśniej, wyróżniony słupek kobaltem
+const W = 132, H = 56, GAP = 1;
+const chart = banner && bars && (() => {
+  const max = bars.max ?? Math.max(...bars.values);
+  const bw = (W - GAP * (bars.values.length - 1)) / bars.values.length;
+  return bars.values.map((n, i) => {
+    const h = Math.max(2, Math.min(1, n / max) * (H - 8));
+    const kind = i === bars.highlight ? 'highlight' : i < (bars.past ?? 0) ? 'past' : 'future';
+    return { x: (i * (bw + GAP)).toFixed(1), y: (H - h).toFixed(1), w: bw.toFixed(1), h: h.toFixed(1), kind };
+  });
+})();
 ---
-<a class="tool" href={tool.href} data-reveal>
-  <span class="tool__icon"><Icon name={tool.icon} /></span>
-  <p class="mono-label">{tool.label}</p>
-  <h3 class="tool__title">{typo(tool.title)}</h3>
-  <p class="tool__desc">{typo(tool.desc)}</p>
+<a class:list={['tool', { 'tool--banner': banner }]} href={tool.href} data-reveal={banner ? undefined : ''}>
+  {chart ? (
+    <svg class="tool__chart" viewBox={`0 0 ${W} ${H}`} width={W} height={H} aria-hidden="true">
+      {chart.map((b) => <rect class={`tool__bar tool__bar--${b.kind}`} x={b.x} y={b.y} width={b.w} height={b.h} />)}
+    </svg>
+  ) : <span class="tool__icon"><Icon name={tool.icon} /></span>}
+  <Text class="mono-label tool__label">{tool.label}</Text>
+  <Title class="tool__title">{typo(tool.title)}</Title>
+  <Text class="tool__desc">{typo(tool.desc)}</Text>
   <span class="tool__go">{cta}<Icon name="arrow" size={16} class="tool__go-icon" /></span>
 </a>
 
@@ -35,7 +75,42 @@ const { tool, cta = 'Otwórz' } = Astro.props;
   .tool:hover .tool__go { color: var(--blue); }
   .tool:hover .tool__go-icon { transform: translateX(3px); }
 
+  /* ---------- Baner w treści artykułu: grafika | tekst | przycisk ---------- */
+  .tool--banner {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "media label go" "media title go" "media desc go";
+    align-items: center; gap: 2px 24px; margin: 32px 0; padding: 18px 22px;
+    background: var(--blue-50); border-color: color-mix(in srgb, var(--blue) 35%, transparent); border-left: 4px solid var(--blue);
+  }
+  .tool--banner:hover { border-color: var(--blue); }
+  .tool--banner:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .tool--banner .tool__icon, .tool--banner .tool__chart { grid-area: media; margin: 0; }
+  .tool--banner .tool__icon { background: var(--surface); }
+  .tool__chart { display: block; width: 132px; height: auto; }
+  .tool__bar--past { fill: var(--chart-soft); }
+  .tool__bar--future { fill: var(--chart); }
+  .tool__bar--highlight { fill: var(--blue); animation: tool-pulse 1.6s ease-in-out infinite; }
+  @keyframes tool-pulse { 50% { opacity: .35; } }
+  .tool--banner .tool__label { grid-area: label; color: var(--blue); }
+  .tool--banner .tool__title { grid-area: title; margin: 0; font-weight: 500; font-size: 1.25rem; line-height: 1.25; letter-spacing: -0.02em; }
+  .tool--banner .tool__desc { grid-area: desc; margin: 4px 0 0; line-height: 1.5; color: var(--text-strong); }
+  .tool--banner .tool__go {
+    grid-area: go; margin: 0; padding: 10px 16px; white-space: nowrap;
+    background: var(--blue-fill); color: #fff; /* kolor-stały: biały na pełnym kobalcie */
+  }
+  .tool--banner:hover .tool__go { color: #fff; } /* kolor-stały: biały na pełnym kobalcie */
+
   @media (max-width: 720px) {
     .tool { padding: 24px 20px; }
+  }
+  /* Wąsko: grafika obok tytułu, przycisk pod spodem na całą szerokość */
+  @media (max-width: 640px) {
+    .tool--banner { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "media label" "media title" "desc desc" "go go"; gap: 2px 16px; padding: 16px; }
+    .tool__chart { width: 88px; }
+    .tool--banner .tool__desc { margin-top: 10px; }
+    .tool--banner .tool__go { justify-content: center; margin-top: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tool__bar--highlight { animation: none; }
   }
 </style>

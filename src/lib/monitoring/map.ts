@@ -13,7 +13,7 @@ import { geo, regionByName } from '@/lib/mapa/geo';
 import { homogeneityP } from '@/lib/mapa/stat';
 import type { MapSet, MapSource, PointLayer, RegionLayer } from '@/lib/mapa/types';
 import { monitoring, type MonitoringDoc, type Response } from '.';
-import { VOIVODESHIPS } from './codes';
+import { AGGREGATE_LABEL, NO_LIST_LABEL, VOIVODESHIPS } from './codes';
 import { prettyName } from './name';
 
 const MEDIAN_EDGES = [100_000, 150_000, 200_000, 300_000];
@@ -21,11 +21,6 @@ const MEDIAN_LABELS = ['do 100 tys.', '100–150 tys.', '150–200 tys.', '200�
 const SHARE_EDGES = [0.05, 0.1, 0.15, 0.2];
 const SHARE_LABELS = ['do 5%', '5–10%', '10–15%', '15–20%', 'ponad 20%'];
 
-/** Odpowiedź placówki bez pełnej listy — jak w komórce tabeli (components/monitoring/grid.ts, RESPONSE.title). */
-const NO_LIST: Record<Response, string> = {
-  disclosed: 'dane nieprzetworzone', refused: 'odmowa', silence: 'cisza', other: 'inna odpowiedź',
-  receipt: 'tylko potwierdzenie', forwarded: 'przekazana dalej', unknown: 'odpowiedź nieustalona',
-};
 
 const money = (n: number) => (n >= 1e6 ? `${formatPL(n / 1e6, 2)} mln zł` : `${formatPL(Math.round(n / 1e3))} tys. zł`);
 const percent = (share: number, decimals = 1) => `${formatPL(share * 100, decimals)}%`;
@@ -90,7 +85,7 @@ function build(doc: MonitoringDoc) {
               size: f.payroll.doctors,
               tip: { title, meta, rows: [['Mediana roczna', money(f.payroll.median)], ['Najwyższa wypłata', money(f.payroll.max)], ['Pozycji na liście', formatPL(f.payroll.doctors)]] as [string, string][], ...link },
             }
-          : { teryt: f.teryt!, value: null, tip: { title, meta, rows: [['Odpowiedź', f.aggregate ? 'dane zbiorcze' : NO_LIST[f.response]]] as [string, string][], ...link } };
+          : { teryt: f.teryt!, value: null, tip: { title, meta, rows: [['Odpowiedź', f.aggregate ? AGGREGATE_LABEL : NO_LIST_LABEL[f.response]]] as [string, string][], ...link } };
       }),
   };
 

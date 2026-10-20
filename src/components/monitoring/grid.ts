@@ -6,7 +6,7 @@
 import type { GridConfig, Html, RenderContext } from '@/components/datagrid/types';
 import { esc } from '@/components/datagrid/render';
 import { formatPL, slug } from '@/lib/format';
-import { VOIVODESHIPS } from '@/lib/monitoring/codes';
+import { AGGREGATE_LABEL, NO_LIST_LABEL, VOIVODESHIPS, upperFirst } from '@/lib/monitoring/codes';
 import type { Facility, MonitoringDoc, NetworkLevel, Payroll, Response } from '@/lib/monitoring';
 import { prettyName } from '@/lib/monitoring/name';
 
@@ -44,17 +44,15 @@ interface ResponseInfo {
 
 /** Kolejność = kolejność na pasku: najpierw trzy duże grupy (dane, odmowa, cisza). */
 export const RESPONSE: Record<Response, ResponseInfo> = {
-  disclosed: { value: 'dane', label: 'ujawniła dane', tone: 'ok', title: 'Dane nieprzetworzone', note: 'placówka przysłała dane, ale nie udało się ich odczytać i zestawić w roczną listę (arkusz lub archiwum, skan, niepełna lista) — są w sprawie u źródła' },
-  refused: { value: 'odmowa', label: 'odmówiła', tone: 'bad', title: 'Odmowa', note: 'placówka nie udostępniła danych' },
-  silence: { value: 'cisza', label: 'cisza', tone: 'mute', title: 'Cisza', note: 'brak odpowiedzi na wniosek' },
-  other: { value: 'inna', label: 'inna odpowiedź', tone: 'mid', title: 'Inna odpowiedź', note: 'bez danych o wynagrodzeniach' },
-  receipt: { value: 'potwierdzenie', label: 'tylko potwierdzenie', tone: 'soft', title: 'Tylko potwierdzenie', note: 'placówka potwierdziła odbiór wniosku i na tym poprzestała' },
-  forwarded: { value: 'przekazana', label: 'przekazana dalej', tone: 'fwd', title: 'Przekazana dalej', note: 'wniosek trafił do innej instytucji' },
-  unknown: { value: 'nieustalona', label: 'nieustalona', tone: 'unk', title: 'Odpowiedź nieustalona', note: 'automat nie sklasyfikował odpowiedzi' },
+  disclosed: { value: 'dane', label: 'ujawniła dane', tone: 'ok', title: upperFirst(NO_LIST_LABEL.disclosed), note: 'placówka przysłała dane, ale nie udało się ich odczytać i zestawić w roczną listę (arkusz lub archiwum, skan, niepełna lista) — są w sprawie u źródła' },
+  refused: { value: 'odmowa', label: 'odmówiła', tone: 'bad', title: upperFirst(NO_LIST_LABEL.refused), note: 'placówka nie udostępniła danych' },
+  silence: { value: 'cisza', label: 'cisza', tone: 'mute', title: upperFirst(NO_LIST_LABEL.silence), note: 'brak odpowiedzi na wniosek' },
+  other: { value: 'inna', label: 'inna odpowiedź', tone: 'mid', title: upperFirst(NO_LIST_LABEL.other), note: 'bez danych o wynagrodzeniach' },
+  receipt: { value: 'potwierdzenie', label: 'tylko potwierdzenie', tone: 'soft', title: upperFirst(NO_LIST_LABEL.receipt), note: 'placówka potwierdziła odbiór wniosku i na tym poprzestała' },
+  forwarded: { value: 'przekazana', label: 'przekazana dalej', tone: 'fwd', title: upperFirst(NO_LIST_LABEL.forwarded), note: 'wniosek trafił do innej instytucji' },
+  unknown: { value: 'nieustalona', label: 'nieustalona', tone: 'unk', title: upperFirst(NO_LIST_LABEL.unknown), note: 'automat nie sklasyfikował odpowiedzi' },
 };
 const RESPONSE_ORDER = Object.keys(RESPONSE) as Response[];
-/** Komórka w miejscu kolumn płacowych dla placówki, która przysłała zestawienie zamiast listy (pole `aggregate`). */
-export const AGGREGATE_TITLE = 'Dane zbiorcze';
 
 const NETWORK: Record<NetworkLevel, { value: string; short: string; label: string }> = {
   I: { value: 'I', short: 'I st.', label: 'szpital I stopnia' },
@@ -304,7 +302,7 @@ export const grid: GridConfig<Row, Stats> = {
       has: (row) => row.payroll !== null,
       empty: (row) => {
         // spacja tysięcy nie łamie liczby („4 538 150,06”)
-        if (row.aggregate) return `<span class="mon-void"><strong>${AGGREGATE_TITLE}</strong> — ${esc(row.aggregate.note).replace(/(\d) (?=\d)/g, '$1&nbsp;')}</span>`;
+        if (row.aggregate) return `<span class="mon-void"><strong>${upperFirst(AGGREGATE_LABEL)}</strong> — ${esc(row.aggregate.note).replace(/(\d) (?=\d)/g, '$1&nbsp;')}</span>`;
         const r = RESPONSE[row.response];
         return `<span class="mon-void"><strong>${r.title}</strong> — ${r.note}</span>`;
       },

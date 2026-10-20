@@ -16,6 +16,7 @@
  */
 import { monitoring } from '@/lib/monitoring';
 import type { Facility, Payroll, Response } from '@/lib/monitoring';
+import { AGGREGATE_LABEL, NO_LIST_LABEL, upperFirst } from '@/lib/monitoring/codes';
 import { formatPL, plural } from '@/lib/format';
 
 const { facilities, buckets } = monitoring;
@@ -66,13 +67,17 @@ export const PAYROLL_TOTAL = sum(lists.map((p) => p.total));
 
 /* ---------- odpowiedzi na wniosek ---------- */
 
-/** Wynik wniosku: placówka z listą liczy się jako „lista”, reszta według kategorii odpowiedzi. */
-type Outcome = 'list' | Response;
-const outcomeOf = (f: Facility): Outcome => (f.payroll ? 'list' : f.response);
+/**
+ * Wynik wniosku: placówka z listą liczy się jako „lista”, z opisem danych zbiorczych jako „zbiorcze”,
+ * reszta według kategorii odpowiedzi (te same nazwy co w przeglądarce monitoringu — lib/monitoring/codes).
+ */
+type Outcome = 'list' | 'aggregate' | Response;
+const outcomeOf = (f: Facility): Outcome => (f.payroll ? 'list' : f.aggregate ? 'aggregate' : f.response);
 
 const OUTCOME_LABEL: Record<Outcome, string> = {
   list: 'Pełna roczna lista płac',
-  disclosed: 'Dane nieporównywalne',
+  aggregate: upperFirst(AGGREGATE_LABEL),
+  disclosed: upperFirst(NO_LIST_LABEL.disclosed),
   refused: 'Odmowa',
   silence: 'Cisza',
   receipt: 'Tylko potwierdzenie odbioru',
@@ -206,6 +211,30 @@ if (!example) {
   throw new Error(`zarobki-ujawnione-listy: sprawa ${EXAMPLE_ID} (przykład listy numerowanej) nie ma już listy płac — wybierz inny przykład`);
 }
 export const EXAMPLE = example.payroll;
+
+/* ---------- liczby wpisane we frontmatter artykułu ---------- */
+
+/**
+ * Lead, opis i punkty kluczowe artykułu (frontmatter zarobki-ujawnione-listy.mdx) to statyczny YAML —
+ * nie liczą się z danych. Po podmianie JSON-a monitoringu build zatrzyma się tutaj, zanim frontmatter
+ * zacznie przeczyć treści. Po zmianie: popraw frontmatter, potem wartości poniżej.
+ */
+const FRONTMATTER = { lists: 97, positions: 11_113, medianRounded: 180_000, over500kPct: 13, over1m: 172, refusedOrSilentPct: 70 };
+const actual = {
+  lists: LISTS,
+  positions: POSITIONS,
+  medianRounded: MEDIAN.rounded,
+  over500kPct: Math.round((OVER_500K / POSITIONS) * 100),
+  over1m: OVER_1M,
+  refusedOrSilentPct: Math.round((REFUSED_OR_SILENT / DATA.requests) * 100),
+};
+const stale = (Object.keys(FRONTMATTER) as (keyof typeof FRONTMATTER)[]).filter((k) => FRONTMATTER[k] !== actual[k]);
+if (stale.length) {
+  throw new Error(
+    `zarobki-ujawnione-listy: frontmatter artykułu ma nieaktualne liczby (${stale.map((k) => `${k}: ${FRONTMATTER[k]} → ${actual[k]}`).join(', ')}). ` +
+      'Popraw stat/summary/description/keyPoints w src/content/articles/zarobki-ujawnione-listy.mdx, potem FRONTMATTER w src/data/zarobki-ujawnione-listy.ts.',
+  );
+}
 
 /* ---------- skrót do kart poza artykułem ---------- */
 

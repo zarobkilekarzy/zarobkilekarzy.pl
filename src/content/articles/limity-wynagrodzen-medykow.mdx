@@ -1,0 +1,331 @@
+---
+title: "Limity płac medyków: rządowy projekt z 28 września 2026 r. przed głosowaniem w Sejmie"
+seoTitle: "Limity płac lekarzy — projekt ustawy"
+category: Analiza
+topic: rejestr
+order: 2
+stat: { value: "16×", unit: płacy minimalnej miesięcznie — łączny pułap }
+date: 2026-10-20
+summary: "Rządowy projekt ustawy ustala najwyższą stawkę godzinową i miesięczną medyków w placówkach z umową z NFZ. Wprowadza też limit dwóch etatów, zakaz płacy liczonej jako procent kontraktu i umowy wyłącznie z osobami, nie ze spółkami."
+description: "Projekt ustawy (druk nr 3157): stawka 1/20 płacy minimalnej za godzinę, 8–16× miesięcznie, najwyżej dwa etaty, zakaz płacy jako procentu kontraktu z NFZ."
+keyPoints:
+  - Stawka godzinowa wynagrodzenia zasadniczego nie może przekroczyć 1/20 płacy minimalnej, czyli 240,30 zł w 2026 r. Limit obejmuje umowę o pracę i kontrakt, ale tylko za świadczenia finansowane przez NFZ.
+  - Miesięczny pułap u jednego świadczeniodawcy to 8-krotność płacy minimalnej na pełny etat (38 448 zł), z dodatkami 12-krotność (57 672 zł). Łącznie u wszystkich nie więcej niż 16-krotność, czyli 76 896 zł.
+  - Łączny czas pracy nie może przekroczyć dwóch etatów. W szpitalu trzeba mieć co najmniej pół etatu, umowę zawiera się z osobą, nie ze spółką, a płaca nie może być procentem kontraktu z NFZ.
+  - Przestrzeganie limitów opiera się na oświadczeniach składanych pod groźbą odpowiedzialności karnej i na kontrolach NFZ. Sumę z kilku placówek zna tylko osoba, która ją deklaruje.
+changelog:
+  - date: 2026-10-20
+    text: "Pierwsza wersja: projekt w brzmieniu przyjętym przez Komisję Zdrowia ([druk nr 3193](https://api.sejm.gov.pl/sejm/term10/prints/3193/3193.pdf)). Tego dnia, po drugim czytaniu, projekt wrócił do komisji z poprawkami i wnioskami mniejszości."
+related:
+  - wieloetatowosc
+  - kontrakt-vs-etat
+  - rekordy
+  - ustawa-o-danych-a-jawny-rejestr
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import StatusTrack from '@/components/blocks/StatusTrack.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Verdict from '@/components/blocks/Verdict.astro';
+import LimitCalculator from '@/components/limity/LimitCalculator.astro';
+import { formatPL } from '@/lib/format';
+
+export const LINKS = {
+  proces: 'https://api.sejm.gov.pl/sejm/term10/processes/3157',
+  druk: 'https://api.sejm.gov.pl/sejm/term10/prints/3157/3157.pdf',
+  sprawozdanie: 'https://api.sejm.gov.pl/sejm/term10/prints/3193/3193.pdf',
+  min2026: 'https://api.sejm.gov.pl/eli/acts/DU/2025/1242/text.pdf',
+  min2027: 'https://api.sejm.gov.pl/eli/acts/DU/2026/1213/text.pdf',
+  przecietne: 'https://api.sejm.gov.pl/eli/acts/MP/2026/192/text.pdf',
+};
+
+{/* Płaca minimalna 2026: Dz.U. 2025 poz. 1242; 2027: Dz.U. 2026 poz. 1213; przeciętne wynagrodzenie 2025: M.P. 2026 poz. 192.
+    Mnożniki z art. 132ab w brzmieniu z druku nr 3193. */}
+export const MIN = 4806;
+export const AVG = 8903.56;
+
+export const CAPS = [
+  { label: 'Płaca minimalna w 2026 r.', note: '1× płacy minimalnej', value: MIN, secondary: true },
+  { label: 'Przeciętne wynagrodzenie w 2025 r.', note: `${formatPL(AVG / MIN, 2)}× płacy minimalnej`, value: AVG, secondary: true },
+  { label: 'Pół etatu u jednego świadczeniodawcy', note: '4× płacy minimalnej', value: MIN * 4 },
+  { label: 'Pełny etat u jednego świadczeniodawcy', note: '8× płacy minimalnej', value: MIN * 8 },
+  { label: 'Pełny etat z dodatkami, np. za funkcję kierowniczą', note: '12× płacy minimalnej', value: MIN * 12 },
+  { label: 'Łącznie u wszystkich świadczeniodawców', note: '16× płacy minimalnej', value: MIN * 16, highlight: true },
+];
+
+export const CALC_BASES = [
+  { id: 'min2026', label: 'Płaca minimalna 2026', amount: MIN, source: { label: 'Dz.U. 2025 poz. 1242', href: LINKS.min2026 } },
+  { id: 'min2027', label: 'Płaca minimalna 2027', amount: 4950, source: { label: 'Dz.U. 2026 poz. 1213', href: LINKS.min2027 } },
+  { id: 'avg2025', label: 'Przeciętne wynagrodzenie 2025', amount: AVG, source: { label: 'M.P. 2026 poz. 192', href: LINKS.przecietne } },
+];
+
+export const CALC_ROWS = [
+  { label: 'Stawka za godzinę', factor: 1 / 20, ratio: '1/20', unit: 'zł' },
+  { label: 'Pół etatu u jednego świadczeniodawcy', factor: 4, ratio: '4×', unit: 'zł' },
+  { label: 'Pełny etat u jednego świadczeniodawcy', factor: 8, ratio: '8×', unit: 'zł' },
+  { label: 'Pełny etat z dodatkami', factor: 12, ratio: '12×', unit: 'zł' },
+  { label: 'Łącznie u wszystkich', factor: 16, ratio: '16×', unit: 'zł', marked: true },
+];
+
+Rządowy projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych (druk nr 3157) wprowadza górną granicę wynagrodzenia lekarzy, pielęgniarek i innych medyków w placówkach, które mają umowę z NFZ.[^druk] Limit ma dwie części: najwyższą stawkę za godzinę i najwyższą kwotę za miesiąc. Obie są liczone jako wielokrotność płacy minimalnej, więc rosną razem z nią.
+
+Projekt zmienia też zasady zatrudniania: ogranicza łączny czas pracy, wymaga co najmniej pół etatu w szpitalu, zakazuje zawierania umów przez spółki-pośredników i ustalania płacy jako procentu kontraktu. Poniżej każdą zmianę opisujemy osobno, w brzmieniu przyjętym przez sejmową Komisję Zdrowia.[^sprawozdanie]
+
+<StatRow
+  label="Limity wynagrodzenia w projekcie, kwoty z 2026 r."
+  items={[
+    { value: 240.3, decimals: 2, unit: 'zł za godzinę = 1/20 płacy minimalnej', desc: 'najwyższa stawka wynagrodzenia zasadniczego, na etacie i na kontrakcie', accuracy: 'exact', source: 'Druk nr 3193, art. 132ab ust. 1 i 6', href: LINKS.sprawozdanie },
+    { value: 38448, unit: 'zł miesięcznie = 8× płacy minimalnej', desc: 'pułap u jednego świadczeniodawcy przy pełnym etacie', accuracy: 'exact', source: 'Druk nr 3193, art. 132ab ust. 7', href: LINKS.sprawozdanie },
+    { value: 76896, unit: 'zł miesięcznie = 16× płacy minimalnej', desc: 'łączny pułap u wszystkich świadczeniodawców z umową z NFZ', accuracy: 'exact', source: 'Druk nr 3193, art. 132ab ust. 7–8', href: LINKS.sprawozdanie },
+  ]}
+/>
+
+## Na jakim etapie jest projekt
+
+Projekt wpłynął do Sejmu 28 września 2026 r. Komisja Zdrowia przeprowadziła pierwsze czytanie 7 października i zarekomendowała jego uchwalenie. 20 października, po drugim czytaniu na posiedzeniu Sejmu, projekt wrócił do komisji, bo posłowie zgłosili poprawki i wnioski mniejszości.[^proces] Komisja musi je zaopiniować, zanim Sejm zagłosuje nad całością.
+
+<StatusTrack
+  label="Etapy prac nad projektem"
+  stages={[
+    { label: 'Projekt w Sejmie', note: 'druk nr 3157', date: new Date('2026-09-28'), state: 'done', href: LINKS.druk },
+    { label: 'Pierwsze czytanie', note: 'Komisja Zdrowia, druk nr 3193', date: new Date('2026-10-07'), state: 'done', href: LINKS.sprawozdanie },
+    { label: 'Drugie czytanie', note: 'poprawki, powrót do komisji', date: new Date('2026-10-20'), state: 'current', href: LINKS.proces },
+    { label: 'Trzecie czytanie', note: 'głosowanie w Sejmie', state: 'next' },
+    { label: 'Senat i prezydent', state: 'next' },
+  ]}
+/>
+
+Tekst opisuje wersję z druku nr 3193. Poprawki z drugiego czytania mogą ją jeszcze zmienić — każdą zmianę po kolejnym etapie dopisujemy w [historii zmian](#historia-zmian) pod artykułem.
+
+## Co zmienia się względem dzisiejszych przepisów
+
+<Comparison
+  table={{
+    caption: 'Zasady zatrudniania i wynagradzania medyków dziś i w projekcie (druk nr 3193). Wyróżnione: zasady, których dziś nie ma',
+    columns: ['', 'Dziś', 'W projekcie'],
+    rows: [
+      { cells: ['Stawka za godzinę', 'Ustalają strony umowy, ustawa nie wyznacza górnej granicy', 'Najwyżej 1/20 płacy minimalnej (240,30 zł w 2026 r.) za świadczenia z NFZ'], marked: true },
+      { cells: ['Płaca miesięczna', 'Bez górnej granicy', '8× płacy minimalnej na etat u jednego świadczeniodawcy, 12× z dodatkami, łącznie najwyżej 16×'], marked: true },
+      { cells: ['Czas pracy na etacie', 'Przeciętnie 48 godzin tygodniowo, więcej za pisemną zgodą pracownika', 'Najwyżej dwa etaty łącznie u wszystkich świadczeniodawców'], marked: true },
+      { cells: ['Czas pracy na kontrakcie', 'Limity czasu pracy dla pracowników go nie obejmują', 'Liczy się do limitu dwóch etatów'], marked: true },
+      { cells: ['Wymiar w szpitalu', 'Dowolny', 'Co najmniej pół etatu, kolejne miejsce za zgodą dotychczasowych pracodawców'], marked: true },
+      { cells: ['Kto przyjmuje zlecenie szpitala', 'Każdy podmiot wykonujący działalność leczniczą, także spółka, albo osoba', 'Osoba z jednoosobową praktyką; inny podmiot tylko we własnym zakładzie'], marked: true },
+      { cells: ['Płaca jako procent kontraktu z NFZ', 'Dopuszczalna', 'Zakazana'], marked: true },
+    ],
+  }}
+/>
+
+Stan dzisiejszy opisują art. 26 i art. 96 ustawy o działalności leczniczej, a praktykę „leasingu pracowniczego” i płacy procentowej — uzasadnienie projektu.[^udl][^druk]
+
+## Kogo dotyczą limity
+
+Projekt mówi o „osobie wykonującej zawód medyczny”, a więc nie tylko o lekarzach. To pojęcie z ustawy o działalności leczniczej obejmuje osoby uprawnione do udzielania świadczeń zdrowotnych, m.in. pielęgniarki, położne, ratowników medycznych i fizjoterapeutów.[^sprawozdanie]
+
+Zakres dwóch głównych limitów jest różny:
+
+- **limit czasu pracy** liczy zatrudnienie u wszystkich świadczeniodawców, także pracę we własnej praktyce poza zakładem leczniczym (art. 132aa ust. 1);
+- **limity płacy** obejmują wynagrodzenie za świadczenia objęte umową z NFZ, wypłacane przez placówki, które taką umowę mają (art. 132ab ust. 1 i 7).
+
+Za pracę finansowaną prywatnie placówka może więc płacić bez tych limitów. Czas tej pracy liczy się jednak do dwóch etatów.
+
+## Stawka godzinowa: 1/20 płacy minimalnej
+
+Stawka godzinowa brutto wynagrodzenia zasadniczego za świadczenia objęte umową z NFZ nie może przekroczyć **1/20 płacy minimalnej**. W 2026 r. płaca minimalna wynosi 4806 zł, więc limit to **240,30 zł za godzinę**.[^min2026] Przepis dotyczy umowy o pracę, a przez odesłanie w ust. 6 także kontraktu i innych umów cywilnoprawnych.[^sprawozdanie] W opisie wersji skierowanej w lipcu do konsultacji stawka godzinowa dotyczyła osób na kontraktach.[^rz-projekt]
+
+Projekt wiąże limity z płacą minimalną, a nie z przeciętnym wynagrodzeniem. Dla porównania: przeciętne wynagrodzenie w gospodarce w 2025 r. wyniosło 8903,56 zł,[^przecietne] więc stawka 240,30 zł to ok. 4,3 razy więcej niż przeciętna płaca za godzinę przy 160 godzinach w miesiącu (55,65 zł).
+
+Limit dotyczy wynagrodzenia zasadniczego. Ponad nie placówka może przyznać:
+
+- dodatek motywacyjny;
+- dodatki należne z mocy ustawy, do kwoty, jaką ta ustawa wyznacza;
+- dodatek za wysługę lat, w placówkach publicznych;
+- wynagrodzenie dodatkowe za funkcję kierowniczą, np. ordynatora, oraz za zadania dydaktyczne i naukowe;
+- wynagrodzenie dodatkowe za transplantologię kliniczną, świadczenia wysokospecjalistyczne i pracę w centrach urazowych.
+
+Wszystkie te dodatki mieszczą się jednak w pułapie miesięcznym.
+
+## Pułap miesięczny: trzy progi
+
+Drugi limit to najwyższe średnie wynagrodzenie miesięczne. Średnią liczy się w okresie rozliczeniowym nie dłuższym niż cztery miesiące, więc miesiąc z większą liczbą godzin może się wyrównać z lżejszym.[^sprawozdanie]
+
+<Figure
+  title="Łączny pułap to 16 płac minimalnych, czyli ok. 8,6 przeciętnego wynagrodzenia"
+  note="Kwoty przy płacy minimalnej z 2026 r. (4806 zł). Pułap jednego świadczeniodawcy mnoży się przez wymiar etatu z umowy; łączny pułap obowiązuje niezależnie od dodatków. Szare słupki to punkty odniesienia, nie limity."
+  source={[
+    { label: 'Sprawozdanie Komisji Zdrowia, druk nr 3193, art. 132ab ust. 7–8', href: LINKS.sprawozdanie },
+    { label: 'Rozporządzenie RM, Dz.U. 2025 poz. 1242 (płaca minimalna 2026)', href: LINKS.min2026 },
+    { label: 'Komunikat Prezesa GUS, M.P. 2026 poz. 192 (przeciętne wynagrodzenie 2025)', href: LINKS.przecietne },
+  ]}
+>
+  <BarChart
+    rows={CAPS.map((r) => ({ ...r, display: `${formatPL(r.value, Number.isInteger(r.value) ? 0 : 2)} zł` }))}
+    max={80000}
+    unit="zł"
+    caption={`Wykres słupkowy, kwoty miesięczne: ${CAPS.map((r) => `${r.label} (${r.note}) ${formatPL(r.value, Number.isInteger(r.value) ? 0 : 2)} zł`).join('; ')}.`}
+  />
+</Figure>
+
+<Comparison
+  table={{
+    caption: 'Pułapy średniego miesięcznego wynagrodzenia za świadczenia objęte umową z NFZ (art. 132ab ust. 7–8 w brzmieniu z druku nr 3193). Kwoty przy płacy minimalnej 4806 zł z 2026 r.',
+    columns: ['', 'Kiedy obowiązuje', 'Kwota w 2026 r.'],
+    rows: [
+      { cells: ['8× płacy minimalnej', 'U jednego świadczeniodawcy, pomnożona przez wymiar etatu z umowy', '38 448 zł przy pełnym etacie (8×), 19 224 zł przy pół etatu (4×)'] },
+      { cells: ['12× płacy minimalnej', 'U jednego świadczeniodawcy, gdy osoba dostaje dodatki ustawowe, za wysługę lat albo wynagrodzenie za funkcję kierowniczą, dydaktykę lub naukę', '57 672 zł przy pełnym etacie (12×)'] },
+      { cells: ['16× płacy minimalnej', 'Łącznie u wszystkich świadczeniodawców z umową z NFZ, niezależnie od dodatków', '76 896 zł (16×), rocznie 922 752 zł'], marked: true },
+    ],
+  }}
+  markLabel="Łączny pułap"
+/>
+
+Oba limity są ze sobą spójne. Pełny etat to ok. 160 godzin w miesiącu, a 160 × 240,30 zł daje dokładnie 38 448 zł, czyli 8-krotność płacy minimalnej. Dwa etaty to 320 godzin i 76 896 zł, czyli 16-krotność. Tak tę kwotę wylicza uzasadnienie projektu.[^druk]
+
+Uzasadnienie zalicza do grupy z 12-krotnością także transplantologię, świadczenia wysokospecjalistyczne i centra urazowe.[^druk] Sam przepis ust. 8 wymienia wprost tylko dodatki ustawowe, wysługę lat oraz funkcje kierownicze, dydaktyczne i naukowe.[^sprawozdanie]
+
+<Verdict
+  label="Przykład"
+  title="Lekarz z etatem w jednym szpitalu i pół etatu w drugim ma jeszcze miejsce na pół etatu"
+  steps={[
+    { value: '38 448 zł', desc: 'pełny etat w szpitalu A: 8× płacy minimalnej' },
+    { value: '19 224 zł', desc: 'pół etatu w szpitalu B: 4× płacy minimalnej' },
+    { value: '57 672 zł', desc: 'razem półtora etatu: 12× płacy minimalnej; do łącznego pułapu 16× brakuje 19 224 zł' },
+  ]}
+  text="Przykład poglądowy, kwoty z 2026 r. bez dodatków. Do limitu dwóch etatów zostaje pół etatu, a do łącznego pułapu — dokładnie tyle, ile zarobiłby na nim przy najwyższej stawce."
+/>
+
+Przed zatrudnieniem medyk składa oświadczenie o łącznym maksymalnym wynagrodzeniu we wszystkich placówkach. Każdą zmianę, która wpływa na tę sumę, zgłasza w ciągu 7 dni. Kierownik placówki ma wtedy 3 dni robocze, żeby zaproponować zmianę umowy, która utrzyma sumę w limicie. Jeśli medyk w ciągu kolejnych 3 dni roboczych się nie zgodzi, kierownik rozwiązuje umowę bez okresu wypowiedzenia.[^sprawozdanie]
+
+<Aside variant="warn" title="Dwa limity, nie jeden">
+
+W mediach krąży skrót „8-krotność płacy minimalnej, czyli 240 zł za godzinę”. To dwa różne limity: 240,30 zł to stawka za godzinę (1/20 płacy minimalnej), a 8-krotność to pułap miesięczny u jednego świadczeniodawcy na pełny etat. Kwota 76 800 zł, podawana czasem jako pułap łączny, wynika z zaokrąglenia stawki do 240 zł. Projekt liczy od płacy minimalnej, co w 2026 r. daje 76 896 zł (16×).[^druk]
+
+</Aside>
+
+### Kalkulator: jak zmieniają się limity
+
+Wszystkie limity to stałe ułamki albo wielokrotności jednej kwoty, więc rosną i maleją razem z nią. Od 1 stycznia 2027 r. płaca minimalna wyniesie 4950 zł,[^min2027] a z nią wzrosną limity. Przeciętne wynagrodzenie to wariant „co gdyby” — projekt go nie używa.
+
+<Figure
+  title="Limity rosną razem z kwotą, od której są liczone"
+  note="Wybierz kwotę albo wpisz własną. Projekt odnosi limity do płacy minimalnej; przeciętne wynagrodzenie to scenariusz, nie zapis projektu. Kwoty miesięczne bez stawki godzinowej."
+  source={{ label: 'Mnożniki: druk nr 3193, art. 132ab ust. 1, 7 i 8', href: LINKS.sprawozdanie }}
+>
+  <LimitCalculator bases={CALC_BASES} rows={CALC_ROWS} reference={MIN} />
+</Figure>
+
+## Czas pracy: najwyżej dwa etaty łącznie
+
+Łączny czas pracy medyka u wszystkich świadczeniodawców nie może przekroczyć dwukrotności pełnego wymiaru czasu pracy w miesiącu. Pełny wymiar to 8 godzin pomnożone przez liczbę dni roboczych w miesiącu, pomniejszone o święta wypadające w dni powszednie. Na umowie cywilnoprawnej liczy się odpowiednik etatu, czyli liczba godzin z umowy.[^sprawozdanie]
+
+Do limitu nie wlicza się gotowości do udzielania świadczeń poza szpitalem, czyli czasu, w którym lekarz jest pod telefonem i przyjeżdża na wezwanie (art. 98 ustawy o działalności leczniczej).
+
+Przed zatrudnieniem medyk składa kierownikowi placówki oświadczenie o łącznym wymiarze pracy we wszystkich miejscach. Każdą zmianę wymiaru u innego pracodawcy zgłasza w ciągu 7 dni.[^sprawozdanie]
+
+## Szpital i poradnie: co najmniej pół etatu i zgoda pierwszego pracodawcy
+
+W szpitalach i ambulatoryjnej opiece specjalistycznej (AOS) prowadzonych przez placówki z umową z NFZ na leczenie szpitalne lekarz, pielęgniarka, położna, fizjoterapeuta i ratownik muszą mieć co najmniej pół etatu albo jego odpowiednik.[^sprawozdanie] Cel podaje uzasadnienie: częsta rotacja osób na cząstkowych etatach utrudnia prowadzenie leczenia jednego pacjenta i zwiększa ryzyko błędów.[^druk]
+
+Kolejne takie zatrudnienie wymaga zgody kierowników wszystkich szpitali, w których medyk już pracuje. Procedura ma cztery kroki:[^sprawozdanie]
+
+<NumberedList
+  layout="columns"
+  items={[
+    { title: 'Wniosek.', text: 'Medyk prosi kierowników szpitali, w których pracuje, o zgodę na kolejne zatrudnienie, co najmniej na pół etatu.' },
+    { title: '14 dni.', text: 'Kierownik odpowiada w 14 dni. Brak odpowiedzi oznacza zgodę — medyk składa o tym oświadczenie u nowego pracodawcy.' },
+    { title: 'Odmowa z ofertą.', text: 'Odmówić można tylko z powodu niezaspokojonych potrzeb kadrowych: na piśmie, z ofertą większego wymiaru pracy u siebie.' },
+    { title: 'Pół etatu albo odejście.', text: 'Kto pracował dotąd w jednym szpitalu poniżej pół etatu, dostaje ofertę zwiększenia wymiaru. Jeśli jej nie przyjmie i chce pracy w drugim szpitalu, kierownik odmawia zgody i wypowiada umowę.' },
+  ]}
+/>
+
+Wymóg pół etatu nie obejmuje:
+
+- dyżurów medycznych i pracy zmianowej poza normalnymi godzinami pracy, z wyjątkiem planowych zabiegów;
+- poradni, w których krótszy wymiar wynika z harmonogramu umowy z NFZ;
+- osoby, która pracuje tylko w jednym takim szpitalu i złoży o tym oświadczenie.
+
+Gdy w danej dziedzinie brakuje ludzi albo trzeba obsadzić dyżury, prezes NFZ może na wniosek placówki zgodzić się na odstępstwo od limitu dwóch etatów i od wymogu pół etatu, na najwyżej 6 miesięcy. Brak odpowiedzi w ciągu 14 dni oznacza zgodę. W razie nagłej śmierci, długiej nieobecności pracownika albo siły wyższej kierownik może odstąpić od tych wymogów sam, na 21 dni.[^sprawozdanie]
+
+## Umowa z osobą, nie ze spółką
+
+Projekt zmienia art. 26 ustawy o działalności leczniczej, który pozwala szpitalowi zlecać udzielanie świadczeń na zewnątrz. Dziś zlecenie może przyjąć każdy podmiot wykonujący działalność leczniczą, także spółka.[^udl] Po zmianie zlecenie na pracę w szpitalu będzie można dać tylko osobie z jednoosobową praktyką zawodową. Innemu podmiotowi leczniczemu szpital zleci świadczenia tylko wtedy, gdy ten udzieli ich we własnym zakładzie albo w miejscu wezwania.[^sprawozdanie]
+
+Uzasadnienie nazywa obecną praktykę „leasingiem pracowniczym”. Szpital zleca świadczenia spółce, która formalnie jest podmiotem leczniczym, ale w praktyce tylko dostarcza personel. Gdy stroną umowy jest spółka, ograniczenia czasu pracy jej nie dotyczą i trudno ustalić łączny czas pracy konkretnej osoby.[^druk]
+
+Umowa o udzielenie zamówienia ma trwać co najmniej 3 miesiące, chyba że rodzaj i liczba świadczeń uzasadniają krótszą. Musi określać łączną liczbę godzin, stawkę godzinową oraz maksymalny miesięczny wymiar pracy i wynagrodzenie. Placówka finansowana ze środków publicznych udziela zamówienia w konkursie ofert.[^sprawozdanie]
+
+## Płaca nie jako procent kontraktu
+
+Wynagrodzenia medyka za świadczenia objęte umową z NFZ nie wolno określić jako procentu kwoty, którą placówka dostaje z tej umowy (art. 132ab ust. 12).[^sprawozdanie] Według uzasadnienia przy takim rozliczeniu każde podniesienie wyceny świadczeń przez NFZ automatycznie podnosi płacę. Rząd uznaje to za jedno ze źródeł „spirali płacowej” i zadłużania się szpitali.[^druk] Jak ten mechanizm wygląda w ujawnionych wypłatach, opisujemy w tekście o [rekordach](/dane/rekordy/).
+
+## Kontrole i kary
+
+Oświadczenia o czasie pracy i wynagrodzeniu medyk składa pod groźbą odpowiedzialności karnej za fałszywe oświadczenie (art. 233 § 6 kodeksu karnego). Placówka przechowuje je przez 10 lat.[^sprawozdanie]
+
+Kierownik placówki, który narusza wymogi dotyczące limitów, popełnia wykroczenie zagrożone grzywną do 30 000 zł (nowy art. 193). Projekt rozszerza też uprawnienia kontrolne NFZ:[^sprawozdanie]
+
+- placówki z umową z NFZ muszą udostępniać informacje, także o świadczeniach spoza umowy, oraz dokumentację kadrową: umowy, kwalifikacje i ewidencję czasu pracy;
+- NFZ może żądać takiej dokumentacji również od placówek bez umowy z NFZ;
+- NFZ może ponownie skontrolować sprawę, którą już raz zbadał, gdy wyjdą na jaw nowe fakty albo poprzednia kontrola naruszyła prawo;
+- wyjaśnienia składane kontrolerom NFZ są objęte groźbą odpowiedzialności karnej za fałszywe oświadczenie.
+
+Według oceny skutków regulacji NFZ zatrudni do kontroli ok. 400 dodatkowych osób, w tym 352 w departamencie kontroli w centrali. W latach 2027–2036 będzie to kosztować łącznie 545,24 mln zł.[^druk]
+
+## Terminy i dostosowanie umów
+
+Ustawa ma wejść w życie miesiąc po ogłoszeniu. Obowiązujące umowy trzeba dostosować do nowych wymogów w ciągu 6 miesięcy od tego dnia.[^sprawozdanie] Wersja z konsultacji dawała na to czas do 31 grudnia 2026 r.[^rz-projekt] Rząd zastąpił ten termin półrocznym okresem przejściowym.[^rz-rzad]
+
+Jeśli umowy nie da się dostosować, kierownik ją wypowiada: umowę o pracę z okresem wypowiedzenia z kodeksu pracy, kontrakt z najwyżej miesięcznym. Przepisy chroniące pracownika przed wypowiedzeniem, m.in. konsultacja ze związkiem zawodowym i ochrona przedemerytalna (art. 38, 39 i 41 kodeksu pracy), nie mają wtedy zastosowania. Układy zbiorowe i regulaminy wynagradzania niezgodne z limitami tracą moc po 6 miesiącach.[^sprawozdanie]
+
+Kto pracuje w kilku szpitalach, przy dostosowaniu wskazuje jeden jako „świadczeniodawcę podstawowego”. Jego kierownik decyduje o zgodzie na pozostałe zatrudnienia.[^sprawozdanie]
+
+## Pozostałe zmiany w projekcie
+
+Projekt zmienia też przepisy, które nie dotyczą wynagrodzeń medyków:[^sprawozdanie]
+
+<NumberedList
+  items={[
+    { title: 'Taryfy i rachunek kosztów.', text: 'Agencja Oceny Technologii Medycznych i Taryfikacji (AOTMiT) będzie mogła wycenić świadczenie spoza rocznego planu, jeśli minister się zgodzi albo nie odpowie w 7 dni roboczych. Zyska też prawo sprawdzania, jak placówki prowadzą rachunek kosztów. Za nieusunięcie nieprawidłowości albo nieprzekazanie danych prezes NFZ będzie mógł nałożyć karę umowną.' },
+    { title: 'Dyrektorzy oddziałów NFZ.', text: 'Powoływać i odwoływać ich będzie prezes NFZ, po zasięgnięciu opinii rady oddziału.' },
+    { title: 'Pracownicy NFZ.', text: 'Bez zgody prezesa NFZ nie będą mogli jednocześnie pracować dla placówek ani aptek, które mają umowę z NFZ albo się o nią ubiegają.' },
+    { title: 'Równe traktowanie pacjentów.', text: 'Ustawa o prawach pacjenta zyska nowy art. 8a: zakaz dyskryminacji w dostępie do świadczeń, m.in. ze względu na pochodzenie, obywatelstwo, wyznanie, orientację seksualną, niepełnosprawność, płeć i wiek.' },
+    { title: 'Nocna i świąteczna opieka.', text: 'Szpitale w sieci będą jej udzielać na wniosek złożony do prezesa NFZ. Te, które robią to dziś, będą mogły zrezygnować po 3 miesiącach od zawiadomienia oddziału NFZ.' },
+    { title: 'Agencja Badań Medycznych.', text: 'Odpis z NFZ dla Agencji wyniesie „do 0,3%” zamiast stałych 0,3%. Ustawa wyznacza minimum: 200 mln zł w 2027 r., 550 mln zł w 2028 r. i po 350 mln zł w latach 2029–2031. Według oceny skutków stąd mają pochodzić pieniądze na nowych kontrolerów NFZ.' },
+  ]}
+/>
+
+## Wnioski mniejszości
+
+Komisja odrzuciła dwie grupy poprawek. Sejm zagłosuje nad nimi jako nad wnioskami mniejszości.[^sprawozdanie]
+
+Pierwsza grupa wprowadza **zakaz udzielania świadczeń finansowanych przez NFZ** dla lekarza, który umyślnie poświadczył nieprawdę: o wykonanym świadczeniu, o czasie albo miejscu pracy, w zwolnieniu lekarskim lub w innym zaświadczeniu. Zakaz orzekałby prezes NFZ, na od miesiąca do 8 lat, a przy ponownym naruszeniu dożywotnio. Od decyzji przysługiwałoby odwołanie do sądu pracy. Zakazy trafiałyby do rejestru, który placówki sprawdzałyby codziennie, a pacjent miałby prawo wiedzieć, że lekarz jest nim objęty.
+
+Druga grupa przenosi oświadczenia o czasie pracy do systemu teleinformatycznego P1. Medyk wskazywałby w nim wszystkie placówki, w których pracuje, a ich kierownicy widzieliby jego oświadczenia. Do 30 czerwca 2027 r. oświadczenia składano by na papierze, a do 31 lipca 2027 r. trzeba by je przenieść do systemu.
+
+<Aside title="Czego projekt nie przewiduje">
+
+Projekt nie zawiera przepisu o publikacji wynagrodzeń ani łącznych kwot wypłacanych jednej osobie.[^sprawozdanie] W wersji przyjętej przez komisję nie tworzy też wspólnego rejestru oświadczeń. Każda placówka przechowuje oświadczenia swoich pracowników, a sumę z kilku miejsc zna tylko osoba, która ją deklaruje.
+
+Dane o płacy każdej osoby, oznaczone numerem PESEL i numerem prawa wykonywania zawodu, minister zdrowia może zbierać od sierpnia 2026 r. na podstawie innej ustawy. Ona również nie przewiduje ich publikacji. Opisujemy ją w tekście o [ustawie o danych płacowych](/analizy/ustawa-o-danych-a-jawny-rejestr/).
+
+</Aside>
+
+[^druk]: Rządowy projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych oraz niektórych innych ustaw, [druk nr 3157](https://api.sejm.gov.pl/sejm/term10/prints/3157/3157.pdf), 28.09.2026 — uzasadnienie (cele limitów, „leasing pracowniczy”, płaca procentowa, rotacja personelu) i ocena skutków regulacji (wyliczenie 76 896 zł, zatrudnienie i koszty NFZ).
+
+[^sprawozdanie]: Sprawozdanie Komisji Zdrowia o rządowym projekcie, [druk nr 3193](https://api.sejm.gov.pl/sejm/term10/prints/3193/3193.pdf), 7.10.2026 — tekst projektu przyjęty przez komisję (art. 1 pkt 7–8, 9, 14, 20–24, 26–27; art. 2–7) oraz wnioski mniejszości nr 1–9.
+
+[^proces]: Sejm RP, [przebieg procesu legislacyjnego, druk nr 3157](https://api.sejm.gov.pl/sejm/term10/processes/3157) — wpływ 28.09.2026, pierwsze czytanie w Komisji Zdrowia 7.10.2026, drugie czytanie 20.10.2026 i ponowne skierowanie do komisji.
+
+[^udl]: [Ustawa o działalności leczniczej](https://api.sejm.gov.pl/eli/acts/DU/2026/156/text.pdf) (t.j. Dz.U. 2026 poz. 156) — art. 26 ust. 1 (zamówienie dla podmiotu wykonującego działalność leczniczą albo osoby) i art. 96 ust. 1 (praca ponad przeciętnie 48 godzin tygodniowo za pisemną zgodą pracownika).
+
+[^min2026]: [Rozporządzenie Rady Ministrów z 11 września 2025 r.](https://api.sejm.gov.pl/eli/acts/DU/2025/1242/text.pdf) (Dz.U. 2025 poz. 1242) — minimalne wynagrodzenie od 1.01.2026: 4806 zł.
+
+[^min2027]: [Rozporządzenie Rady Ministrów z 14 września 2026 r.](https://api.sejm.gov.pl/eli/acts/DU/2026/1213/text.pdf) (Dz.U. 2026 poz. 1213) — minimalne wynagrodzenie od 1.01.2027: 4950 zł.
+
+[^przecietne]: [Komunikat Prezesa GUS z 9 lutego 2026 r.](https://api.sejm.gov.pl/eli/acts/MP/2026/192/text.pdf) (M.P. 2026 poz. 192) — przeciętne wynagrodzenie w gospodarce narodowej w 2025 r.: 8903,56 zł.
+
+[^rz-projekt]: Rynek Zdrowia, [Limit 240 zł za godzinę i 76,8 tys. zł miesięcznie dla medyków, maksymalnie dwa etaty. Jest projekt](https://www.rynekzdrowia.pl/Prawo/Limit-240-zl-za-godzine-i-76-8-tys-zl-miesiecznie-dla-medykow-maksymalnie-dwa-etaty-Jest-projekt,287088,2.html), 25.07.2026 — wersja opublikowana w RCL 24.07.2026: stawka 1/20 płacy minimalnej dla osób na kontraktach, dostosowanie umów do 31.12.2026.
+
+[^rz-rzad]: Rynek Zdrowia, [Limity wynagrodzeń przyjęte przez rząd](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Limity-wynagrodzen-przyjete-przez-rzad-Reforma-wejdzie-w-zycie-odpowiedzialnie-ale-szybko,289179,1.html), 22.09.2026 — pół roku na dostosowanie umów.

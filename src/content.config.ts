@@ -30,6 +30,11 @@ const articles = defineCollection({
        * Opcjonalne: tylko przy tematach, w których redakcja zajmuje stanowisko.
        */
       editorial: z.array(z.string()).min(1).optional(),
+      /**
+       * „Historia zmian” pod treścią (article/Changelog) — dla tekstów, które śledzą zmieniającą się
+       * sprawę, np. projekt ustawy w Sejmie. Wpis: data i co się zmieniło (zapis lib/inline).
+       */
+      changelog: z.array(z.object({ date: z.coerce.date(), text: z.string() })).min(1).optional(),
       /** powiązane materiały; bez tego pola — inne z tej samej kategorii */
       related: z.array(reference('articles')).optional(),
       /** tymczasowy adres dla materiałów bez treści — zob. lib/content.ts → articleHref */

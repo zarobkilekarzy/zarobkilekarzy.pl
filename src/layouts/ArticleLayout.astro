@@ -15,6 +15,7 @@ import ArticleHeader from '@/components/article/ArticleHeader.astro';
 import Toc from '@/components/article/Toc.astro';
 import Prose from '@/components/article/Prose.astro';
 import ShareLinks from '@/components/article/ShareLinks.astro';
+import Changelog from '@/components/article/Changelog.astro';
 import ArticleList from '@/components/blocks/ArticleList.astro';
 import Aside from '@/components/blocks/Aside.astro';
 import InfographicsSection from '@/components/blocks/InfographicsSection.astro';
@@ -31,7 +32,7 @@ interface Props {
 }
 
 const { article, headings } = Astro.props;
-const { title, summary, updated, date, keyPoints, editorial } = article.data;
+const { title, summary, updated, date, keyPoints, editorial, changelog } = article.data;
 
 const section = sectionOf(article);
 // Okruszek sekcji linkuje tam, gdzie prowadzi pozycja menu tej sekcji
@@ -96,6 +97,8 @@ const seo: SeoInput = {
 
         {graphics > 0 && <InfographicsSection set={article.id} class="article__ig" />}
 
+        {changelog && <Changelog entries={changelog} class="article__log" />}
+
         <footer class="article__foot">
           <div class="article__fix">
             <p><strong>Widzisz błąd?</strong> Poprawki publikujemy w rejestrze sprostowań z datą i opisem zmiany. Opisujemy mechanizmy, a nie konkretne osoby.</p>
@@ -135,6 +138,7 @@ const seo: SeoInput = {
 
   .article__editorial { margin-top: 56px; }
   .article__main :global(.article__ig) { margin-top: 56px; }
+  .article__main :global(.article__log) { margin-top: 56px; }
   /* minmax(0, …): szeroka zawartość stopki nie może rozpychać kolumny na wąskim ekranie */
   .article__foot { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; margin-top: 72px; }
   .article__fix {

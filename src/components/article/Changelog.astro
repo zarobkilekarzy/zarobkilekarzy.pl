@@ -1,0 +1,42 @@
+---
+/**
+ * „Historia zmian” pod treścią artykułu: wpisy z pola `changelog` frontmattera, od najnowszego.
+ * Dla tekstów, które śledzą coś, co się zmienia (projekt ustawy w Sejmie): data i jedno–dwa zdania,
+ * co zmieniło się w opisywanej sprawie albo w samym tekście. Zapis wpisu: lib/inline (**b**, [a](href)).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { formatDate, isoDate } from '@/lib/format';
+import { inline } from '@/lib/inline';
+
+interface Props extends HTMLAttributes<'section'> {
+  entries: { date: Date; text: string }[];
+}
+
+const { entries, class: className, ...rest } = Astro.props;
+const sorted = [...entries].sort((a, b) => b.date.getTime() - a.date.getTime());
+---
+<section class:list={['log', className]} aria-labelledby="historia-zmian" {...rest}>
+  <h2 class="log__title" id="historia-zmian">Historia zmian</h2>
+  <ol class="log__list">
+    {sorted.map((e) => (
+      <li class="log__item">
+        <time class="log__date" datetime={isoDate(e.date)}>{formatDate(e.date)}</time>
+        <p class="log__text" set:html={inline(e.text)} />
+      </li>
+    ))}
+  </ol>
+</section>
+
+<style>
+  .log { padding-top: 20px; border-top: 1px solid var(--ink); }
+  .log__title { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .log__list { margin: 12px 0 0; padding: 0; list-style: none; }
+  .log__item { display: grid; grid-template-columns: 11ch minmax(0, 1fr); gap: 4px 20px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .log__date { font: 400 0.8125rem/1.6 var(--f-mono); color: var(--ink-2); }
+  .log__text { font-size: 0.9375rem; line-height: 1.6; color: var(--ink-2); }
+  .log__text :global(a) { color: var(--ink); }
+
+  @media (max-width: 520px) {
+    .log__item { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

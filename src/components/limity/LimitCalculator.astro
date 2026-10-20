@@ -1,0 +1,171 @@
+---
+/**
+ * Kalkulator limitów wynagrodzenia z projektu ustawy (druk nr 3157): czytelnik wybiera kwotę
+ * odniesienia (płaca minimalna 2026/2027, przeciętne wynagrodzenie albo własną), a tabela przelicza
+ * stawkę godzinową (1/20) i pułapy miesięczne (4×, 8×, 12×, 16×). Mnożniki i kwoty — w propsach.
+ * Bez JS zostaje tabela dla pierwszej kwoty; skrypt tylko przelicza.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Icon from '@/components/ui/Icon.astro';
+import { formatPL, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+export interface LimitBase {
+  id: string;
+  label: string;
+  amount: number;
+  source: { label: string; href: string };
+}
+
+export interface LimitRow {
+  label: string;
+  /** mnożnik kwoty odniesienia, np. 1/20 albo 16 */
+  factor: number;
+  /** zapis mnożnika obok kwoty, np. „1/20” albo „16×” */
+  ratio: string;
+  unit: string;
+  marked?: boolean;
+}
+
+interface Props extends HTMLAttributes<'div'> {
+  bases: LimitBase[];
+  rows: LimitRow[];
+  /** kwota, do której odnosi się zmiana procentowa (płaca minimalna z roku, w którym liczy projekt) */
+  reference: number;
+}
+
+const { bases, rows, reference, class: className, ...rest } = Astro.props;
+const first = bases[0];
+// kwota do grosza; całe złote bez części dziesiętnej
+const money = (v: number) => formatPL(v, Number.isInteger(Math.round(v * 100) / 100) ? 0 : 2);
+---
+<zl-limit-calc class:list={['lc', className]} data-reference={reference} {...rest}>
+  <fieldset class="lc__bases">
+    <legend class="lc__legend">Kwota odniesienia</legend>
+    {bases.map((b, i) => (
+      <label class="lc__base">
+        <input type="radio" name="lc-base" value={b.amount} checked={i === 0} />
+        <span class="lc__base-label">{typo(b.label)}</span>
+        <span class="lc__base-amount">{money(b.amount)} zł</span>
+      </label>
+    ))}
+    <label class="lc__base lc__base--own">
+      <input type="radio" name="lc-base" value="own" />
+      <span class="lc__base-label">Własna kwota</span>
+      <span class="lc__own">
+        <input class="lc__own-input" type="number" min="1000" max="100000" step="1" inputmode="decimal" value={first.amount} aria-label="Własna kwota odniesienia w złotych" />
+        <span aria-hidden="true">zł</span>
+      </span>
+    </label>
+  </fieldset>
+
+  <table class="lc__table">
+    <caption class="sr-only">Limity wynagrodzenia przeliczone od wybranej kwoty odniesienia</caption>
+    <thead>
+      <tr><th scope="col">Limit</th><th scope="col">Mnożnik</th><th scope="col">Kwota</th></tr>
+    </thead>
+    <tbody>
+      {rows.map((r) => (
+        <tr class:list={{ 'is-marked': r.marked }}>
+          <th scope="row">{typo(r.label)}</th>
+          <td class="lc__ratio">{r.ratio}</td>
+          <td class="lc__value"><span data-factor={r.factor}>{money(first.amount * r.factor)}</span> {r.unit}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <p class="lc__status" role="status" data-el="status">{typo(`Kwota odniesienia: ${money(first.amount)} zł.`)}</p>
+
+  <ul class="lc__sources">
+    {bases.map((b) => (
+      <li>{typo(`${b.label}: `)}<a {...linkAttrs(b.source.href)}>{typo(b.source.label)}<Icon name="arrow-ne" size={10} /></a></li>
+    ))}
+  </ul>
+</zl-limit-calc>
+
+<script>
+  import { formatPL } from '@/lib/format';
+
+  const money = (v: number) => formatPL(v, Number.isInteger(Math.round(v * 100) / 100) ? 0 : 2);
+
+  class ZlLimitCalc extends HTMLElement {
+    connectedCallback() {
+      const reference = Number(this.dataset.reference);
+      const radios = [...this.querySelectorAll<HTMLInputElement>('input[name="lc-base"]')];
+      const own = this.querySelector<HTMLInputElement>('.lc__own-input');
+      const cells = [...this.querySelectorAll<HTMLElement>('[data-factor]')];
+      const status = this.querySelector<HTMLElement>('[data-el="status"]');
+      // nazwa grupy radiowej unikalna na stronie, gdyby kalkulator stał dwa razy
+      const name = `lc-base-${Math.random().toString(36).slice(2, 8)}`;
+      radios.forEach((r) => (r.name = name));
+
+      const update = () => {
+        const picked = radios.find((r) => r.checked);
+        const base = picked?.value === 'own' ? Number(own?.value) : Number(picked?.value);
+        if (!Number.isFinite(base) || base <= 0) return;
+        cells.forEach((c) => (c.textContent = money(base * Number(c.dataset.factor))));
+        const diff = (base / reference - 1) * 100;
+        const change = Math.abs(diff) < 0.05 ? '' : ` To o ${formatPL(Math.abs(diff), 1)}% ${diff > 0 ? 'więcej' : 'mniej'} niż płaca minimalna z 2026 r., więc tyle samo ${diff > 0 ? 'rosną' : 'spadają'} wszystkie limity.`;
+        if (status) status.textContent = `Kwota odniesienia: ${money(base)} zł.${change}`;
+      };
+
+      radios.forEach((r) => r.addEventListener('change', update));
+      own?.addEventListener('input', () => {
+        const ownRadio = radios.find((r) => r.value === 'own');
+        if (ownRadio) ownRadio.checked = true;
+        update();
+      });
+    }
+  }
+
+  if (!customElements.get('zl-limit-calc')) customElements.define('zl-limit-calc', ZlLimitCalc);
+</script>
+
+<style>
+  zl-limit-calc { display: block; container-type: inline-size; }
+
+  .lc__bases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; border: 0; }
+  .lc__legend {
+    margin-bottom: 12px; padding: 0;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+  }
+  .lc__base {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: start;
+    padding: 12px 14px; border: 1px solid var(--line-2); background: var(--surface); cursor: pointer;
+  }
+  .lc__base:has(input:checked) { border-color: var(--blue); box-shadow: inset 3px 0 0 var(--blue); background: var(--blue-50); }
+  .lc__base > input { grid-row: span 2; margin: 3px 0 0; accent-color: var(--blue); }
+  .lc__base-label { font: 500 0.9375rem/1.4 var(--f-display); color: var(--ink); }
+  .lc__base-amount { font: 400 0.8125rem/1.4 var(--f-mono); color: var(--ink-2); }
+  .lc__own { display: inline-flex; align-items: center; gap: 6px; font: 400 0.8125rem/1.4 var(--f-mono); color: var(--ink-2); }
+  .lc__own-input {
+    width: 9ch; padding: 4px 6px; border: 1px solid var(--line-2); border-radius: 0;
+    background: var(--bg); color: var(--ink); font: inherit;
+  }
+  .lc__own-input:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+  .lc__table { width: 100%; margin-top: 24px; border-collapse: collapse; font-size: 0.9375rem; line-height: 1.5; }
+  .lc__table thead th {
+    text-align: left; padding: 8px 16px 8px 0; border-bottom: 1px solid var(--ink);
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+  }
+  .lc__table thead th:last-child, .lc__value { text-align: right; padding-right: 0; }
+  .lc__table tbody th, .lc__table td { text-align: left; padding: 12px 16px 12px 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+  .lc__table tbody th { font: 500 0.9375rem/1.45 var(--f-display); color: var(--ink); }
+  .lc__ratio { font: 400 0.875rem/1.4 var(--f-mono); color: var(--ink-2); white-space: nowrap; }
+  .lc__value { font: 500 1rem/1.4 var(--f-mono); color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .lc__table .is-marked > * { background: var(--blue-50); }
+  .lc__table .is-marked > :first-child { box-shadow: inset 3px 0 0 var(--blue); padding-left: 12px; }
+  .lc__table .is-marked > :last-child { padding-right: 12px; }
+
+  .lc__status { margin-top: 14px; font-size: 0.875rem; line-height: 1.55; color: var(--ink-2); }
+  .lc__sources { margin: 14px 0 0; padding: 0; list-style: none; font-size: 0.8125rem; line-height: 1.55; color: var(--muted); }
+  .lc__sources a { display: inline-flex; align-items: center; gap: 3px; color: var(--ink-2); }
+
+  @container (max-width: 520px) {
+    .lc__bases { grid-template-columns: minmax(0, 1fr); }
+    .lc__table tbody th, .lc__table td { padding-right: 10px; }
+    .lc__table tbody th { font-size: 0.875rem; }
+  }
+</style>

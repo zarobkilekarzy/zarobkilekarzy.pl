@@ -27,13 +27,15 @@ interface Props {
   unitLabel: string;
   /** kropek w wierszu */
   cols?: number;
+  /** wartości są liczbami pól co do jednego (bez zaokrągleń) — podpis „=” zamiast „≈” */
+  exact?: boolean;
   title?: string;
   source: string;
   href?: string;
   accuracy?: Accuracy;
 }
 
-const { groups, unit, unitLabel, cols = 29, title, source, href, accuracy = 'exact' } = Astro.props;
+const { groups, unit, unitLabel, cols = 29, exact = false, title, source, href, accuracy = 'exact' } = Astro.props;
 const cells = groups.flatMap((g) => Array.from({ length: Math.round(g.value / unit) }, () => g.kind));
 ---
 <figure class="unit">
@@ -47,7 +49,7 @@ const cells = groups.flatMap((g) => Array.from({ length: Math.round(g.value / un
       </li>
     ))}
   </ul>
-  <p class="unit__note">1 {unit === 1 ? 'pole' : 'kropka'} ≈ {formatPL(unit)} {unitLabel}</p>
+  <p class="unit__note">1 {unit === 1 ? 'pole' : 'kropka'} {exact ? '=' : '≈'} {formatPL(unit)} {unitLabel}</p>
   <p class="unit__src">
     <Flag accuracy={accuracy} />
     {href ? <a {...linkAttrs(href)}>{typo(source)}<Icon name="arrow-ne" size={10} /></a> : typo(source)}

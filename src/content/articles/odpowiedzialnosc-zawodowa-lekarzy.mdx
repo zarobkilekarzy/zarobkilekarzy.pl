@@ -7,6 +7,9 @@ order: 9
 stat: { value: "20", unit: lekarzy prawomocnie pozbawionych prawa do zawodu w latach 2010–2025 }
 date: 2026-07-20
 updated: 2026-10-17
+cover: ../../assets/articles/odpowiedzialnosc-zawodowa-lekarzy/pieczatki.jpg
+coverAlt: Siedem pieczątek ustawionych od najmniejszej do największej. Pierwsze są ciemne od tuszu, ostatnia, największa, jest czysta
+coverPosition: "100% 50%"
 summary: W latach 2010–2025 sądy lekarskie prawomocnie odebrały prawo wykonywania zawodu 20 lekarzom. Upomnienie, nagana i kara pieniężna to 86% kar orzeczonych w pierwszej instancji w latach 2020–2025.
 description: W latach 2010–2025 sądy lekarskie prawomocnie odebrały prawo do zawodu 20 lekarzom. 86% kar z lat 2020–2025 to upomnienie, nagana lub kara pieniężna.
 keyPoints:
@@ -35,6 +38,9 @@ import BarChart from '@/components/blocks/BarChart.astro';
 import Comparison from '@/components/blocks/Comparison.astro';
 import Steps from '@/components/blocks/Steps.astro';
 import TwoLists from '@/components/blocks/TwoLists.astro';
+import MonitorPhoto from '@/components/ui/MonitorPhoto.astro';
+import stampsPhoto from '@/assets/articles/odpowiedzialnosc-zawodowa-lekarzy/pieczatki.jpg';
+import UnitChart from '@/components/blocks/UnitChart.astro';
 import RevocationTable from '@/components/odpowiedzialnosc-zawodowa-lekarzy/RevocationTable.astro';
 import {
   FIRST_INSTANCE,
@@ -85,9 +91,33 @@ export const scandiMin = Math.min(ratePer100k('no'), ratePer100k('se'));
 export const rates = { pl: ratePer100k('pl'), no: ratePer100k('no'), se: ratePer100k('se'), uk: ratePer100k('uk') };
 export const ratioUk = Math.round(RATIO_UK);
 
+<MonitorPhoto
+  src={stampsPhoto}
+  alt="Siedem pieczątek ustawionych od najmniejszej do największej. Pierwsze są ciemne od tuszu, ostatnia, największa, jest czysta"
+  effect="ekg"
+  ratio="3/2"
+  sizes="(min-width: 1025px) 720px, calc(100vw - 32px)"
+  frame
+/>
+
 Najsurowsza kara, jaką samorząd lekarski może wymierzyć lekarzowi, to pozbawienie prawa wykonywania zawodu. Według rocznych sprawozdań sądów lekarskich w latach {allYears} prawomocnie orzeczono ją wobec {plTotal} lekarzy, czyli średnio nieco ponad raz w roku.[^nil-sady] Najczęściej sądy lekarskie kończą sprawy upomnieniem, naganą albo karą pieniężną.
 
 Opisujemy, kto w Polsce orzeka o odpowiedzialności zawodowej lekarzy, jakie kary stosuje i jak te liczby wyglądają na tle Norwegii i Szwecji, gdzie o prawie do zawodu decydują urzędy państwowe, oraz Wielkiej Brytanii, gdzie orzeka trybunał oddzielony od regulatora zawodu. Nie piszemy o żadnej konkretnej sprawie ani osobie, tylko o tym, jak działa system.
+
+<UnitChart
+  title={`Na ${formatPL(PENALTIES_TOTAL)} kar orzeczonych przez sądy lekarskie w latach ${PENALTIES.period} pozbawienie prawa wykonywania zawodu zapadło ${revocation} razy`}
+  unit={1}
+  exact
+  unitLabel="kara orzeczona w pierwszej instancji"
+  cols={68}
+  groups={[
+    { value: PENALTIES_TOTAL - suspension - revocation, kind: 'off', label: 'pozostałe kary — od upomnienia po ograniczenie zakresu czynności' },
+    { value: suspension, kind: 'mid', label: 'zawieszenie prawa wykonywania zawodu na 1–5 lat' },
+    { value: revocation, kind: 'on', label: 'pozbawienie prawa wykonywania zawodu' },
+  ]}
+  source={`NIL, sprawozdania okręgowych sądów lekarskich ${PENALTIES.period} (zestawienie własne)`}
+  href={LINKS.nilCourts}
+/>
 
 <StatRow
   label="Sądy lekarskie w liczbach"

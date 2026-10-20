@@ -18,6 +18,7 @@ export type OgMedia =
   | ({ kind: 'map' } & NonNullable<OgPage['map']>)
   | ({ kind: 'bars' } & NonNullable<OgPage['bars']>)
   | { kind: 'panels'; panels: NonNullable<OgPage['panels']> }
+  | { kind: 'logo'; logo: NonNullable<OgPage['logo']> }
   | { kind: 'none' };
 
 /** Gotowa specyfikacja obrazka — wejście szablonu. */
@@ -27,6 +28,8 @@ export interface OgSpec {
   eyebrow?: string;
   lead?: string;
   footer?: { text: string; flags?: boolean };
+  /** lead bez względu na długość tytułu */
+  leadAlways?: boolean;
   media: OgMedia;
 }
 
@@ -52,6 +55,8 @@ interface Defaults {
   map?: OgPage['map'];
   bars?: OgPage['bars'];
   panels?: OgPage['panels'];
+  logo?: OgPage['logo'];
+  leadAlways?: boolean;
 }
 
 /** Skróty, po których kropka nie kończy zdania („500 tys. CAD”, „art. 27a”). */
@@ -72,7 +77,7 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
 
   const photo = o.illustration ?? o.photo ?? d.photo;
   const mode = o.media ?? 'auto';
-  const kind = mode === 'auto' ? (o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : d.panels ? 'panels' : 'none') : mode;
+  const kind = mode === 'auto' ? (o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : d.panels ? 'panels' : d.logo ? 'logo' : 'none') : mode;
 
   let media: OgMedia = { kind: 'none' };
   if (kind === 'stat' && o.stat) {
@@ -83,6 +88,8 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
     media = { kind: 'bars', ...d.bars };
   } else if (kind === 'panels' && d.panels) {
     media = { kind: 'panels', panels: d.panels };
+  } else if (kind === 'logo' && d.logo) {
+    media = { kind: 'logo', logo: d.logo };
   } else if (kind === 'photo' && o.illustration) {
     media = { kind: 'photo', src: o.illustration, position: o.position ?? '50% 50%', color: true };
   } else if (kind === 'photo' && photo) {
@@ -100,6 +107,7 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
       eyebrow: o.eyebrow ?? d.eyebrow,
       lead: o.lead === false ? undefined : (o.lead ?? d.lead),
       footer: d.footer,
+      leadAlways: d.leadAlways,
       media,
     },
   };
@@ -140,6 +148,6 @@ export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels
 }
 
 /** Strona spoza kolekcji (src/data/og.ts): wszystko podane wprost; stopka domyślnie z hasłem serwisu. */
-export function pageOg(route: string, { footer = { text: 'Bez emocji, ze źródłami.' }, badgeIcon, map, bars, panels, ...page }: OgPage): OgEntry {
-  return compose(route, { title: page.title, footer, icon: badgeIcon, map, bars, panels }, page);
+export function pageOg(route: string, { footer = { text: 'Bez emocji, ze źródłami.' }, badgeIcon, map, bars, panels, logo, leadAlways, ...page }: OgPage): OgEntry {
+  return compose(route, { title: page.title, footer, icon: badgeIcon, map, bars, panels, logo, leadAlways }, page);
 }

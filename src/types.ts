@@ -257,6 +257,13 @@ export interface OgPage extends OgOverride {
    * podpisy (<text>) szablon przepisuje na tekst Satori, żeby miały krój serwisu
    */
   panels?: { head: string; svg: string; height: number }[];
+  /**
+   * logo w miejscu zdjęcia, na białym polu (barometr: logo partii, ta sama powierzchnia dla każdej);
+   * 'serwis' = logo serwisu w miejscu logo partii (wzór na fikcyjnej partii)
+   */
+  logo?: ImageMetadata | 'serwis';
+  /** lead także przy długim tytule (domyślnie znika, gdy tytuł ma ponad 34 znaki) — np. nazwa partii nad „Stanowisko…” */
+  leadAlways?: boolean;
 }
 
 /** Etap drogi (np. projektu ustawy): zakończony, bieżący albo przed nami. */

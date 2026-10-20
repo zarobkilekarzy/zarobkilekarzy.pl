@@ -31,6 +31,7 @@ import { createHmac } from 'node:crypto';
 import heroImg from '@/assets/img/hero-pokoj-lekarski.jpg';
 import barometrOg from '@/assets/img/barometr-polityczny-og.png';
 import { newsIllustration } from '@/lib/news';
+import { barometrProfiles } from '@/data/barometr-polityczny';
 
 // odpowiedzi placówek na wniosek o płace (monitoring Watchdog Polska)
 const answered = (...r: Response[]) => monitoring.facilities.filter((f) => r.includes(f.response)).length;
@@ -273,6 +274,21 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Te same pytania dla każdej partii. Odpowiedzi publikujemy bez zmian w treści, z dokumentami wskazanymi przez partię.',
     footer: { text: 'Pieniądz publiczny, nie polityka' },
   },
+  // Opis partii: logo partii (ta sama powierzchnia dla każdej), bez dat odpowiedzi i aktualizacji.
+  // Wzór na fikcyjnej partii — logo serwisu w miejscu logo partii, jak na samej stronie.
+  ...Object.fromEntries(
+    barometrProfiles.map((profile): [string, OgPage] => [
+      profile.href,
+      {
+        eyebrow: profile.example ? 'Barometr polityczny · wzór' : 'Barometr polityczny',
+        title: profile.name,
+        lead: 'Stanowisko w sześciu obszarach polityki zdrowotnej, w nadesłanym brzmieniu.',
+        leadAlways: true,
+        logo: profile.example ? 'serwis' : profile.logo,
+        footer: { text: 'Pieniądz publiczny, nie polityka' },
+      },
+    ]),
+  ),
   '/program/': {
     eyebrow: 'Szerszy program',
     title: 'Co poza jawnością\nwynagrodzeń',

@@ -1,6 +1,6 @@
 /**
  * Szablon obrazka OG (rodzina A „Okładka”, 1200×630): logo, etykieta, tytuł, lead, stopka
- * i media po prawej (zdjęcie / karta liczby / mapa / wykres / brak). Satori → SVG (tekst jako krzywe) → sharp → PNG.
+ * i media po prawej (zdjęcie / karta liczby / mapa / wykres / logo / brak). Satori → SVG (tekst jako krzywe) → sharp → PNG.
  *
  * Pułapki Satori:
  * - fonty: statyczne WOFF z @fontsource (pliki z Fonts API Astro są zmienne),
@@ -82,7 +82,7 @@ export const loadFonts = () =>
 
 /* ---------- Zdjęcia: plik źródłowy z src/assets, kadr i desaturacja w sharp ---------- */
 // Publiczne API zamiast prywatnego ImageMetadata.fsPath: dopasowanie po src do importów z src/assets
-const assets = import.meta.glob<ImageMetadata>('/src/assets/**/*.{jpg,jpeg,png,webp,avif}', { eager: true, import: 'default' });
+const assets = import.meta.glob<ImageMetadata>('/src/assets/**/*.{jpg,jpeg,png,webp,avif,svg}', { eager: true, import: 'default' });
 
 function sourceFile(img: ImageMetadata): string {
   const key = Object.keys(assets).find((k) => raw(assets[k]).src === img.src);
@@ -328,14 +328,45 @@ const panels = (m: Extract<OgMedia, { kind: 'panels' }>) =>
   h('div', { style: { flexDirection: 'column', justifyContent: 'center', gap: 30, flexShrink: 0, width: MEDIA_W, height: MEDIA_H } },
     ...m.panels.map(panel));
 
+/**
+ * Logo partii wprost na białej karcie, bez ramki i cienia. Każde logo ma tę samą powierzchnię (neutralność, jak karty
+ * w barometr/PartyList): szerokie są niższe, wysokie węższe. 'serwis' = logo serwisu w miejscu logo partii (wzór).
+ */
+const LOGO_AREA = 63000;
+const LOGO_MAX_W = 380;
+const LOGO_MAX_H = 220;
+
+async function partyLogo(m: Extract<OgMedia, { kind: 'logo' }>) {
+  let inner: Node;
+  if (m.logo === 'serwis') {
+    // proporcje jak na stronie wzoru (barometr-polityczny/[id]: znak 40 px, napis 28 px), ×1,6
+    inner = h('div', { style: { alignItems: 'center', fontFamily: DISPLAY, fontWeight: 500, fontSize: 45, letterSpacing: '-0.03em', color: C.ink } },
+      h('img', { src: iconUri('logo', C.blue), width: 64, height: 64, style: { marginRight: 22 } }),
+      'zarobkilekarzy',
+      h('span', { style: { color: C.muted } }, '.pl'));
+  } else {
+    const { width, height } = raw(m.logo);
+    const ratio = width / height;
+    let w = Math.sqrt(LOGO_AREA * ratio);
+    let hh = w / ratio;
+    const fit = Math.min(1, LOGO_MAX_W / w, LOGO_MAX_H / hh);
+    w = Math.round(w * fit);
+    hh = Math.round(hh * fit);
+    // SVG rasteryzujemy gęściej, żeby krawędzie były ostre także po skalowaniu w górę
+    const buf = await sharp(sourceFile(m.logo), { density: 300 }).resize(w * 2, hh * 2, { fit: 'inside' }).png().toBuffer();
+    inner = h('img', { src: `data:image/png;base64,${buf.toString('base64')}`, width: w, height: hh });
+  }
+  return h('div', { style: { alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: MEDIA_W, height: MEDIA_H } }, inner);
+}
+
 /* ---------- Szablon ---------- */
 async function layout(spec: OgSpec, route: string): Promise<Node> {
   const wide = spec.media.kind === 'none';
   const title = typo(spec.title);
   const size = titleSize(title, wide);
   if (!wide && !title.includes('\n') && title.length > 80) console.warn(`[og] ${route}: tytuł ma ${title.length} znaków — skróć go albo ustaw og.title`);
-  // Lead tylko przy krótkim tytule, żeby całość mieściła się w kadrze
-  const showLead = spec.lead && title.split('\n').length <= 3 && title.length <= (wide ? 48 : 34);
+  // Lead tylko przy krótkim tytule, żeby całość mieściła się w kadrze (chyba że strona prosi o niego wprost)
+  const showLead = spec.lead && (spec.leadAlways || (title.split('\n').length <= 3 && title.length <= (wide ? 48 : 34)));
 
   return h('div', { style: { width: OG_WIDTH, height: OG_HEIGHT, padding: `${PAD_Y}px ${PAD_X}px`, background: '#fff', fontFamily: BODY, color: C.text } },
     h('div', { style: { flexDirection: 'column', flex: 1, minWidth: 0, paddingRight: wide ? 0 : GAP } },
@@ -346,7 +377,7 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
           ...titleLines(title)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
       spec.footer && footer(spec.footer, wide)),
-    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : null);
+    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : null);
 }
 
 /** PNG 1200×630 z paletą 8-bit: zdjęcia B&W + kolory marki mieszczą się w niej bez widocznej straty. */

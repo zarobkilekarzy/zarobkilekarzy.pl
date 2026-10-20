@@ -47,6 +47,8 @@ export function headersFile(files: Iterable<string>): string {
     // Pliki sesji egzaminu: moduł pobiera je z ?v=<hash treści>, więc zmiana danych = nowy adres.
     // Jedna reguła na katalog zamiast reguły na plik — każda nowa sesja CEM nie zużywa limitu.
     ['/egzamin/dane/*', 'Cache-Control: public, max-age=31536000, immutable', 'X-Robots-Tag: noindex'],
+    // Prototypy (np. gry przed wydaniem pod docelowym adresem) — poza indeksem także nagłówkiem, nie tylko meta.
+    ['/prototypy/*', 'X-Robots-Tag: noindex'],
     [
       '/*',
       `Content-Security-Policy: ${contentSecurityPolicy()}`,

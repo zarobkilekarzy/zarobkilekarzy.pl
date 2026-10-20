@@ -1,0 +1,445 @@
+---
+/**
+ * /prototypy/sad-lekarski/ — PROTOTYP (index: false + X-Robots-Tag z integrations/seo, bez linku w menu):
+ * gra „Czy orzekasz jak sąd lekarski”. Docelowy adres zapadnie przy wydaniu.
+ * Gracz czyta stan faktyczny z prawomocnego orzeczenia, wybiera rozstrzygnięcie ze skali art. 83
+ * ustawy o izbach lekarskich i widzi, co orzekł sąd. Dane: src/data/sad-lekarski.ts.
+ * Układ na jeden ekran: sprawa po lewej, skala po prawej; po wyborze skala zwija się do linijki
+ * z oznaczeniami „Ty” i „Sąd”, a w jej miejscu pojawia się wyrok.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Icon from '@/components/ui/Icon.astro';
+import MonitorPhoto from '@/components/ui/MonitorPhoto.astro';
+import aktaImg from '@/assets/img/monitoring-teczki.jpg';
+import {
+  ANALIZA_URL, CASES, PORTAL_URL, REGULAMIN_URL, SCALE, USTAWA_URL, sadPage,
+} from '@/data/sad-lekarski';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Prototyp: sąd lekarski' }];
+const seo: SeoInput = {
+  title: 'Czy orzekasz jak sąd lekarski? Gra na orzeczeniach',
+  description:
+    'Dziesięć prawdziwych spraw z prawomocnych orzeczeń sądów lekarskich. Wybierz karę ze skali, którą daje ustawa, i porównaj z tym, co orzekł sąd.',
+  breadcrumbs: crumbs,
+  index: false,
+};
+
+const cases = CASES.map((c) => ({
+  ...c,
+  facts: c.facts.map(typo),
+  charge: typo(c.charge),
+  verdict: { ...c.verdict, text: typo(c.verdict.text) },
+  reasoning: c.reasoning ? typo(c.reasoning) : undefined,
+}));
+const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="top" aria-label="Gra">
+    <Breadcrumbs items={crumbs} />
+    <header class="intro">
+      <div>
+        <Eyebrow class="intro__eyebrow">Prototyp · gra · odpowiedzialność zawodowa</Eyebrow>
+        <Heading as="h1" size="h2" punct="?" class="intro__title">{sadPage.title}</Heading>
+      </div>
+      <p class="intro__lead">{typo(sadPage.lead)}</p>
+    </header>
+
+    <div class="game" data-game>
+      <script type="application/json" data-cases set:html={JSON.stringify({ cases, scale })} />
+
+      <div class="play" data-play>
+        <div class="bar">
+          <p class="bar__step"><b data-step>1</b> / {cases.length}</p>
+          <div class="bar__track" aria-hidden="true"><span data-bar></span></div>
+          <p class="bar__label" data-label></p>
+        </div>
+
+        <div class="stage">
+          <article class="case" aria-live="polite">
+            <div class="case__facts" data-facts></div>
+            <p class="case__charge"><span class="mono-label">Zarzut</span><span data-charge></span></p>
+          </article>
+
+          <div class="side">
+            <fieldset class="scale" data-scale>
+              <legend class="mono-label">Twoje orzeczenie <span class="scale__hint">klawisze 0–7</span></legend>
+              <ol>
+                {SCALE.map((s) => (
+                  <li>
+                    <button type="button" class="opt" data-level={s.level}>
+                      <span class="opt__step" aria-hidden="true">{s.level}</span>
+                      <span class="opt__label">{s.label}</span>
+                      <span class="opt__note">{s.note}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </fieldset>
+
+            <div class="verdict" data-reveal hidden>
+              <span class="burst" data-burst aria-hidden="true"></span>
+              <p class="verdict__head" data-reveal-head></p>
+              <div class="ruler" aria-hidden="true">
+                <ol class="ruler__cells">
+                  {SCALE.map((s) => <li data-cell={s.level}><span class="ruler__you">Ty</span><span class="ruler__court">Sąd</span></li>)}
+                </ol>
+                <p class="ruler__ends"><span>Bez kary</span><span>Pozbawienie prawa do zawodu</span></p>
+              </div>
+              <p class="verdict__pair" data-pair></p>
+              <p class="verdict__text"><span class="mono-label">Sąd orzekł</span><strong data-verdict></strong></p>
+              <p class="verdict__why" data-reasoning hidden></p>
+              <p class="verdict__src">
+                Źródło: portal prawomocnych orzeczeń NIL, plik <code data-file></code>
+                <br /><a {...linkAttrs(PORTAL_URL)}>nil.org.pl/orzeczenia<Icon name="arrow-ne" size={14} /></a>
+              </p>
+              <button type="button" class="next" data-next><span data-next-label>Następna sprawa</span><Icon name="arrow" size={18} /></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="result" data-result hidden tabindex="-1">
+        <div class="result__main">
+          <p class="mono-label">Twój wynik</p>
+          <p class="result__title" data-result-title></p>
+          <p class="result__lead" data-result-lead></p>
+          <dl class="result__stats">
+            <div><dt>Trafione</dt><dd data-hits></dd></div>
+            <div><dt>Surowiej niż sąd</dt><dd data-harsher></dd></div>
+            <div><dt>Łagodniej niż sąd</dt><dd data-milder></dd></div>
+          </dl>
+          <button type="button" class="next" data-restart><span>Zagraj jeszcze raz</span><Icon name="arrow" size={18} /></button>
+        </div>
+        <div class="result__side">
+          <details class="result__all">
+            <summary>Wszystkie sprawy: Ty i sąd</summary>
+            <table class="result__table">
+              <thead><tr><th scope="col">Sprawa</th><th scope="col">Ty</th><th scope="col">Sąd</th></tr></thead>
+              <tbody data-rows></tbody>
+            </table>
+          </details>
+          <p class="result__note">{typo(sadPage.national)} <a href={ANALIZA_URL}>Jak orzekają sądy lekarskie</a></p>
+          <p class="result__note">{typo(sadPage.sample)}</p>
+        </div>
+      </div>
+    </div>
+  </Section>
+
+  <Section tone="soft" aria-labelledby="skad">
+    <div class="about">
+      <div class="about__main">
+      <p class="mono-label">Skąd te sprawy</p>
+      <Heading as="h2" size="h2" id="skad" class="about__title">Prawdziwe orzeczenia, nasze opisy</Heading>
+      <div class="prose">
+        <p>{typo('Od 2024 r. Naczelna Rada Lekarska publikuje zanonimizowane prawomocne orzeczenia sądów lekarskich: Naczelnego Sądu Lekarskiego doręczone po 1 stycznia 2024 r. i okręgowych sądów doręczone po 1 lipca 2024 r. Portal zaczernia sygnatury, daty, nazwę sądu, nazwiska i kwoty.')}</p>
+        <p>{typo('Regulamin portalu pozwala wykorzystywać orzeczenia w celach naukowych, dydaktycznych i informacyjnych (§ 5 ust. 3). Opisy spraw piszemy sami i ogólniej niż orzeczenie: bez miejscowości i dat. Każde rozstrzygnięcie ma nazwę pliku, pod którą można je znaleźć na portalu.')}</p>
+        <p>{typo('Skala w grze to kary z art. 83 ust. 1 ustawy o izbach lekarskich, w kolejności, w jakiej wymienia je ustawa. „Bez kary” obejmuje uniewinnienie i umorzenie postępowania. Gdy sąd orzekł za jeden czyn dwie kary, liczy się surowsza.')}</p>
+      </div>
+      <ul class="sources">
+        <li><a {...linkAttrs(PORTAL_URL)}>Portal prawomocnych orzeczeń sądów lekarskich (NIL)<Icon name="arrow-ne" size={14} /></a></li>
+        <li><a {...linkAttrs(REGULAMIN_URL)}>Regulamin portalu (uchwała NRL nr 10/24/IX)<Icon name="arrow-ne" size={14} /></a></li>
+        <li><a {...linkAttrs(USTAWA_URL)}>Ustawa o izbach lekarskich, t.j. Dz.U. 2021 poz. 1342 (art. 82–83)<Icon name="arrow-ne" size={14} /></a></li>
+      </ul>
+      </div>
+      <MonitorPhoto
+        effect="scan"
+        src={aktaImg}
+        alt="Rzędy spiętych sznurkiem plików dokumentów rozłożone na stole, widok z góry"
+        ratio="4/3"
+        sizes="(min-width: 1025px) 520px, 100vw"
+        widths={[480, 720, 1040]}
+        frame
+        class="about__photo"
+      />
+    </div>
+  </Section>
+</BaseLayout>
+
+<script>
+  interface GameCase {
+    id: string; label: string; court: string; facts: string[]; charge: string;
+    verdict: { level: number; text: string }; reasoning?: string; file: string;
+  }
+  interface GameData { cases: GameCase[]; scale: { level: number; label: string }[] }
+
+  const root = document.querySelector<HTMLElement>('[data-game]');
+  const dataEl = root?.querySelector<HTMLScriptElement>('[data-cases]');
+  if (root && dataEl) {
+    const { cases, scale } = JSON.parse(dataEl.textContent ?? '{}') as GameData;
+    const $ = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+    const play = $('[data-play]');
+    const result = $('[data-result]');
+    const scaleBox = $('[data-scale]');
+    const reveal = $('[data-reveal]');
+    const opts = [...root.querySelectorAll<HTMLButtonElement>('.opt')];
+    const cells = [...root.querySelectorAll<HTMLElement>('[data-cell]')];
+    const burstBox = $('[data-burst]');
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const labelOf = (level: number) => scale.find((s) => s.level === level)?.label ?? '';
+    const steps = (n: number) => (n === 1 ? 'stopień' : n < 5 ? 'stopnie' : 'stopni');
+
+    let i = 0;
+    let answers: number[] = [];
+
+    /** Przewija do elementu tylko wtedy, gdy nie mieści się w oknie. */
+    function scrollIfHidden(el: HTMLElement) {
+      const r = el.getBoundingClientRect();
+      if (r.top < 72 || r.bottom > window.innerHeight) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /**
+     * Trafienie: z pola linijki rozchodzi się po karcie wyroku podwójna fala kropek (jak `pulse`
+     * w ui/MonitorPhoto) — siatka co 16 px, każda kropka zapala się z opóźnieniem zależnym od odległości.
+     */
+    function burst(from: HTMLElement) {
+      burstBox.replaceChildren();
+      if (still) return;
+      const S = 16;
+      const W = reveal.clientWidth, H = reveal.clientHeight;
+      const cols = Math.floor(W / S), rows = Math.floor(H / S);
+      const ox = (W - cols * S) / 2 + S / 2, oy = (H - rows * S) / 2 + S / 2;
+      const box = reveal.getBoundingClientRect(), at = from.getBoundingClientRect();
+      const cx = at.left + at.width / 2 - box.left, cy = at.top + at.height / 2 - box.top;
+      let dots = '';
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const x = ox + c * S, y = oy + r * S;
+        dots += `<circle cx="${x}" cy="${y}" r="${S * .26}" style="--d:${(Math.hypot(x - cx, y - cy) / 700).toFixed(3)}s"/>`;
+      }
+      burstBox.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${dots}</svg>`;
+    }
+
+    function show() {
+      burstBox.replaceChildren();
+      const c = cases[i];
+      $('[data-step]').textContent = String(i + 1);
+      $('[data-bar]').style.setProperty('--p', String(i / cases.length));
+      $('[data-label]').textContent = `${c.court} · ${c.label}`;
+      $('[data-facts]').replaceChildren(...c.facts.map((t) => Object.assign(document.createElement('p'), { textContent: t })));
+      $('[data-charge]').textContent = c.charge;
+      for (const o of opts) o.disabled = false;
+      scaleBox.hidden = false;
+      reveal.hidden = true;
+    }
+
+    function answer(level: number) {
+      if (!reveal.hidden) return;
+      const c = cases[i];
+      answers[i] = level;
+      const court = c.verdict.level;
+      for (const cell of cells) {
+        const l = Number(cell.dataset.cell);
+        cell.classList.toggle('is-you', l === level);
+        cell.classList.toggle('is-court', l === court);
+        cell.classList.toggle('is-between', l > Math.min(level, court) && l < Math.max(level, court));
+      }
+      const d = level - court;
+      const head = $('[data-reveal-head]');
+      head.className = `verdict__head ${d === 0 ? 'is-hit' : 'is-miss'}`;
+      head.textContent = d === 0 ? 'Orzekasz jak sąd.'
+        : `${d > 0 ? 'Surowiej' : 'Łagodniej'} niż sąd o ${Math.abs(d)} ${steps(Math.abs(d))}.`;
+      $('[data-pair]').textContent = d === 0 ? `Oboje: ${labelOf(level)}` : `Ty: ${labelOf(level)} · Sąd: ${labelOf(court)}`;
+      $('[data-verdict]').textContent = c.verdict.text;
+      const why = $('[data-reasoning]');
+      why.hidden = !c.reasoning;
+      why.textContent = c.reasoning ?? '';
+      $('[data-file]').textContent = c.file;
+      $('[data-next-label]').textContent = i === cases.length - 1 ? 'Zobacz wynik' : 'Następna sprawa';
+      scaleBox.hidden = true;
+      reveal.hidden = false;
+      reveal.classList.toggle('is-hit', d === 0);
+      if (d === 0) burst(cells[court]);
+      $<HTMLButtonElement>('[data-next]').focus({ preventScroll: true });
+      scrollIfHidden(reveal);
+    }
+
+    function finish() {
+      const diffs = cases.map((c, k) => answers[k] - c.verdict.level);
+      const hits = diffs.filter((d) => d === 0).length;
+      const harsher = diffs.filter((d) => d > 0).length;
+      const milder = diffs.filter((d) => d < 0).length;
+      const n = cases.length;
+      let title: string; let lead: string;
+      if (hits >= Math.ceil(n * 0.8)) {
+        title = 'Orzekasz jak sąd lekarski.';
+        lead = `Trafiasz ${hits} z ${n} rozstrzygnięć — skala kar jest dla Ciebie taka sama jak dla sędziów samorządu.`;
+      } else if (harsher > milder) {
+        title = 'Orzekasz surowiej niż sąd lekarski.';
+        lead = `W ${harsher} z ${n} spraw wybierasz cięższą karę niż sąd.`;
+      } else if (milder > harsher) {
+        title = 'Orzekasz łagodniej niż sąd lekarski.';
+        lead = `W ${milder} z ${n} spraw wybierasz lżejsze rozstrzygnięcie niż sąd.`;
+      } else {
+        title = 'Ważysz sprawy inaczej niż sąd lekarski.';
+        lead = 'Raz surowiej, raz łagodniej — bez stałego kierunku.';
+      }
+      $('[data-result-title]').textContent = title;
+      $('[data-result-lead]').textContent = lead;
+      $('[data-hits]').textContent = `${hits} z ${n}`;
+      $('[data-harsher]').textContent = String(harsher);
+      $('[data-milder]').textContent = String(milder);
+      $('[data-rows]').replaceChildren(...cases.map((c, k) => {
+        const tr = document.createElement('tr');
+        tr.className = diffs[k] === 0 ? 'is-hit' : '';
+        for (const t of [c.label, labelOf(answers[k]), labelOf(c.verdict.level)]) tr.append(Object.assign(document.createElement('td'), { textContent: t }));
+        return tr;
+      }));
+      play.hidden = true;
+      result.hidden = false;
+      result.focus({ preventScroll: true });
+      scrollIfHidden(result);
+    }
+
+    function next() {
+      if (i === cases.length - 1) { finish(); return; }
+      i += 1;
+      show();
+      scrollIfHidden(play);
+    }
+
+    for (const o of opts) o.addEventListener('click', () => answer(Number(o.dataset.level)));
+    $('[data-next]').addEventListener('click', next);
+    $('[data-restart]').addEventListener('click', () => {
+      i = 0; answers = [];
+      result.hidden = true; play.hidden = false;
+      show();
+      scrollIfHidden(play);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (play.hidden || e.altKey || e.ctrlKey || e.metaKey) return;
+      if ((e.target as HTMLElement).closest('input, textarea, select')) return;
+      if (/^[0-7]$/.test(e.key) && reveal.hidden) answer(Number(e.key));
+    });
+    show();
+  }
+</script>
+
+<style>
+  .top { padding-top: clamp(20px, 2.5vw, 32px); }
+
+  .intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 56px; align-items: end; margin: 28px 0 36px; }
+  .intro :global(.intro__eyebrow) { margin-bottom: 12px; }
+  .intro :global(.intro__title) { font-size: clamp(1.75rem, 3.2vw, 2.5rem); }
+  .intro__lead { font-size: 1rem; line-height: 1.55; color: var(--text-strong); max-width: 36em; }
+
+  .bar { display: grid; grid-template-columns: auto minmax(80px, 1fr) auto; align-items: center; gap: 18px; margin-bottom: 22px; }
+  .bar__step { font: 500 0.8125rem/1 var(--f-mono); color: var(--muted); }
+  .bar__step b { color: var(--ink); font-weight: 600; }
+  .bar__track { height: 2px; background: var(--line-2); }
+  .bar__track span { display: block; height: 100%; width: calc(var(--p, 0) * 100%); background: var(--blue); transition: width .4s var(--ease); }
+  .bar__label { font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: right; }
+
+  .stage { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(24px, 3.5vw, 48px); align-items: start; }
+
+  .case { padding: clamp(24px, 3vw, 40px); background: var(--surface); border: 1px solid var(--line-2); }
+  .case__facts { display: grid; gap: 14px; font-size: 1.0625rem; line-height: 1.65; color: var(--ink-2); }
+  .case__charge { display: grid; gap: 6px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 0.875rem; line-height: 1.5; color: var(--text-strong); }
+
+  .scale { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .scale legend { display: flex; justify-content: space-between; width: 100%; margin-bottom: 12px; padding: 0; }
+  .scale__hint { color: var(--muted); text-transform: none; letter-spacing: 0; }
+  .scale ol { display: grid; gap: 6px; }
+  .opt {
+    display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: baseline; gap: 10px;
+    width: 100%; padding: 14px 16px; text-align: left;
+    background: var(--surface); border: 1px solid var(--line-2); color: var(--ink);
+    transition: border-color .15s var(--ease), background .15s var(--ease);
+  }
+  .opt:hover:not(:disabled) { border-color: var(--blue); background: var(--blue-50); }
+  .opt:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .opt__step { font: 500 0.75rem/1 var(--f-mono); color: var(--muted); }
+  .opt__label { font: 500 0.9375rem/1.25 var(--f-display); }
+  .opt__note { font-size: 0.6875rem; color: var(--muted); text-align: right; white-space: nowrap; }
+
+  .verdict { position: relative; isolation: isolate; overflow: hidden; padding: clamp(24px, 3vw, 36px); background: var(--surface); border: 1px solid var(--line-2); border-top: 3px solid var(--blue); }
+  .verdict.is-hit { border-top-color: var(--ok); }
+  .verdict > :not(.burst) { position: relative; z-index: 1; }
+  /* fala kropek przy trafieniu: każda kropka dwa razy błyska (lub-dub) z opóźnieniem --d zależnym od odległości */
+  .burst { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .burst :global(svg) { display: block; }
+  .burst :global(circle) { fill: var(--ok); opacity: 0; transform-box: fill-box; transform-origin: center; animation: burst 1.3s var(--ease) var(--d) both; }
+  @keyframes burst {
+    0% { opacity: 0; transform: scale(.3); }
+    12% { opacity: .5; transform: scale(1); }
+    30% { opacity: 0; }
+    42% { opacity: .28; }
+    62%, 100% { opacity: 0; }
+  }
+  .verdict.is-hit .verdict__head { animation: hit-pop .6s var(--ease); }
+  @keyframes hit-pop { 0% { transform: scale(.92); opacity: 0; } 60% { transform: scale(1.03); opacity: 1; } 100% { transform: none; } }
+  .verdict__head { font: 500 1.375rem/1.2 var(--f-display); letter-spacing: -0.01em; }
+  .verdict__head.is-hit { color: var(--ok); }
+  .verdict__head.is-miss { color: var(--ink); }
+
+  .ruler { margin-top: 22px; }
+  .ruler__cells { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; padding: 22px 0; }
+  .ruler__cells li { position: relative; height: 8px; background: var(--line-2); }
+  .ruler__cells li.is-between { background: var(--chart-soft); }
+  .ruler__cells li.is-you { background: var(--ink); }
+  .ruler__cells li.is-court { background: var(--blue); }
+  .ruler__cells li.is-you.is-court { background: var(--ok); }
+  .ruler__you, .ruler__court { position: absolute; left: 50%; transform: translateX(-50%); display: none; font: 500 0.625rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+  .ruler__you { bottom: calc(100% + 6px); color: var(--ink); }
+  .ruler__court { top: calc(100% + 6px); color: var(--blue); }
+  .ruler__cells li.is-you .ruler__you, .ruler__cells li.is-court .ruler__court { display: block; }
+  .ruler__ends { display: flex; justify-content: space-between; font-size: 0.6875rem; color: var(--muted); }
+
+  .verdict__pair { margin-top: 12px; font-size: 0.875rem; color: var(--text-strong); }
+  .verdict__text { display: grid; gap: 6px; margin-top: 20px; font-size: 1rem; line-height: 1.5; color: var(--ink); }
+  .verdict__text strong { font-weight: 600; }
+  .verdict__why { margin-top: 12px; font-size: 0.9375rem; line-height: 1.65; color: var(--text-strong); }
+  .verdict__src { margin-top: 16px; font-size: 0.75rem; line-height: 1.7; color: var(--muted); }
+  .verdict__src code { font: 400 0.75rem/1 var(--f-mono); }
+  .verdict__src a, .result__note a { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .verdict__src a:hover, .result__note a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  .next {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 24px; height: 48px; padding: 0 20px;
+    background: var(--blue-fill); color: #fff; font: 500 0.9375rem/1 var(--f-display); /* kolor-stały: biały na stałym kobalcie */
+  }
+  .next:hover { background: var(--blue-600); }
+  .next:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+
+  .result { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); padding: clamp(24px, 3vw, 40px); background: var(--surface); border: 1px solid var(--line-2); }
+  .result:focus { outline: none; }
+  .result__title { margin-top: 8px; font: 500 clamp(1.625rem, 3vw, 2.25rem)/1.1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .result__lead { margin-top: 10px; font-size: 1rem; color: var(--text-strong); }
+  .result__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+  .result__stats div { padding-top: 10px; border-top: 2px solid var(--ink); }
+  .result__stats dt { font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .result__stats dd { margin-top: 6px; font: 500 1.5rem/1 var(--f-display); color: var(--ink); }
+  .result__all summary { cursor: pointer; font: 500 0.9375rem/1.3 var(--f-display); color: var(--ink); }
+  .result__table { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 0.8125rem; }
+  .result__table th, .result__table td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .result__table th { font: 500 0.625rem/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .result__table td { color: var(--ink-2); }
+  .result__table tr.is-hit td:nth-child(2) { color: var(--ok); font-weight: 600; }
+  .result__note { margin-top: 14px; font-size: 0.8125rem; line-height: 1.6; color: var(--text); }
+
+  .about { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 96px); align-items: center; }
+  .about :global(.about__title) { margin: 14px 0 24px; }
+  .prose { display: grid; gap: 16px; max-width: 42em; font-size: 1.03125rem; line-height: 1.7; }
+  .sources { display: grid; gap: 8px; margin-top: 28px; }
+  .sources a { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .sources a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .verdict.is-hit .verdict__head { animation: none; }
+  }
+  @media (max-width: 900px) {
+    .intro, .stage, .result, .about { grid-template-columns: minmax(0, 1fr); }
+    .bar { grid-template-columns: auto minmax(60px, 1fr); }
+    .bar__label { grid-column: 1 / -1; text-align: left; }
+    .scale__hint { display: none; }
+  }
+  @media (max-width: 480px) {
+    .opt__note { display: none; }
+    .ruler__ends span:last-child { max-width: 9em; text-align: right; }
+  }
+</style>

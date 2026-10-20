@@ -16,10 +16,12 @@ interface Props {
 }
 
 const { items } = Astro.props;
+// Jedna ramka dla słupków i piktogramów — grafiki kafli mają równą wysokość
+const FRAME: [cols: number, rows: number] = [20, 13];
 ---
 <div class="tiles">
   {items.map((t) => {
-    const bars = t.bars && barsMask(t.bars.values, { cols: 20, rows: 9, max: t.bars.max, past: t.bars.past });
+    const bars = t.bars && barsMask(t.bars.values, { cols: FRAME[0], rows: FRAME[1], max: t.bars.max, past: t.bars.past });
     return (
       <article class:list={['tile', { 'tile--blue': t.tone === 'blue' }]} data-reveal>
         <div class="tile__top">
@@ -33,7 +35,7 @@ const { items } = Astro.props;
           </p>
         </div>
         {bars ? <DotGrid cells={bars.cells} cols={bars.cols} class="tile__art" />
-          : t.pictogram && <Pictogram name={t.pictogram} frame={[20, 13]} class="tile__art" />}
+          : t.pictogram && <Pictogram name={t.pictogram} frame={FRAME} class="tile__art" />}
       </article>
     );
   })}

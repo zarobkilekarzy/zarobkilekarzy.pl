@@ -69,7 +69,6 @@ const allRedirects: Redirect[] = [
       ['/og/analizy/jedno-pwz.png', '/og/dane/rozklad-wynagrodzen.png'],
       ['/og/analizy/lejek-ksztalcenia.png', '/og/analizy/dlaczego-brakuje-lekarzy.png'],
       ['/og/analizy/monitor-reformy-zdrowia.png', '/og/mechanizmy/wieloetatowosc.png'],
-      ['/og/analizy/symulator-podazy-lekarzy.png', '/og/index.png'],
       ['/og/dane/patologia-w-liczbach.png', '/og/dane.png'],
       ['/og/dane/pensje-rezydentow.png', '/og/dane/wedlug-specjalizacji.png'],
       ['/og/dane/stawki.png', '/og/dane/rozklad-wynagrodzen.png'],

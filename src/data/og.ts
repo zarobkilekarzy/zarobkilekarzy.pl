@@ -15,6 +15,7 @@ import { HEADLINE } from '@/data/zarobki-ujawnione-listy';
 import { MEDIANS } from '@/data/rozklad-wynagrodzen';
 import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
+import { simulatorOgPanels } from '@/lib/podaz/og';
 
 import heroImg from '@/assets/img/hero-pokoj-lekarski.jpg';
 import barometrOg from '@/assets/img/barometr-polityczny-og.png';
@@ -76,6 +77,14 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Pogłębione tematy\nze źródłami',
     lead: 'Jawność i rejestr, pieniądz publiczny, kształcenie lekarzy i porównania międzynarodowe.',
     footer: { text: 'Każda teza ze źródłem' },
+  },
+  // osobna trasa (wpis kolekcji bez treści, więc bez presetu artykułu) — na obrazku wykresy samego narzędzia
+  '/analizy/symulator-podazy-lekarzy/': {
+    eyebrow: 'Analizy · narzędzie',
+    title: 'Symulator\npodaży lekarzy',
+    lead: 'Zmień limit przyjęć na medycynę i zobacz, ilu lekarzy będzie w 2040 i 2050 r.',
+    panels: simulatorOgPanels(),
+    footer: { text: 'Start modelu: rejestr NIL co do osoby' },
   },
   '/egzamin/': {
     eyebrow: 'Egzamin LEK',

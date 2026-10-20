@@ -246,6 +246,11 @@ export interface OgPage extends OgOverride {
   map?: { layer: MapLayer; legend?: [number | number[] | null, string][]; theme?: 'jasny' | 'ciemny' };
   /** wykres w miejscu zdjęcia: wiersze z paskami we wspólnej skali od zera, `marked` = wiersz w kobalcie */
   bars?: { head?: string; rows: { label: string; value: number; sub?: string; marked?: boolean }[] };
+  /**
+   * wykresy strony w miejscu zdjęcia, jeden pod drugim: nagłówek + gotowy <svg> o szerokości kolumny mediów;
+   * podpisy (<text>) szablon przepisuje na tekst Satori, żeby miały krój serwisu
+   */
+  panels?: { head: string; svg: string; height: number }[];
 }
 
 /** Etap drogi (np. projektu ustawy): zakończony, bieżący albo przed nami. */

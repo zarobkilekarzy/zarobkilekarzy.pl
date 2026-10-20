@@ -289,6 +289,36 @@ function bars(b: Extract<OgMedia, { kind: 'bars' }>) {
         h('div', { style: { width: Math.max(2, Math.round((r.value / max) * MEDIA_W)), height: 14, marginTop: 12, background: r.marked ? C.blue : tokenColor('chart', false) } }))));
 }
 
+/**
+ * Wykresy strony jeden pod drugim (np. symulator: nabór → wynik). Linie i pola zostają w SVG,
+ * a podpisy <text> stają się tekstem Satori w tym samym miejscu — SVG w <img> nie zna krojów serwisu.
+ */
+const LABEL = 13;
+const TEXT_RE = /<text class="([^"]*)" x="([^"]+)" y="([^"]+)"(?: text-anchor="([^"]+)")?>([^<]*)<\/text>/g;
+
+function panel({ head, svg, height }: Extract<OgMedia, { kind: 'panels' }>['panels'][number]) {
+  const labels = [...svg.matchAll(TEXT_RE)].map(([, cls, x, y, anchor = 'start', text]) => {
+    const left = parseFloat(x);
+    const pos: Style = anchor === 'end' ? { right: MEDIA_W - left } : anchor === 'middle' ? { left: left - 60, width: 120, justifyContent: 'center' } : { left };
+    return h('div', {
+      style: {
+        position: 'absolute', top: Math.round(parseFloat(y) - LABEL * 0.85), ...pos,
+        fontFamily: MONO, fontSize: LABEL, lineHeight: 1, whiteSpace: 'nowrap', color: cls.includes('c-label--strong') ? C.ink : C.muted,
+      },
+    }, text);
+  });
+  const src = `data:image/svg+xml;base64,${Buffer.from(svg.replace(TEXT_RE, '')).toString('base64')}`;
+  return h('div', { style: { flexDirection: 'column' } },
+    h('div', { style: { paddingBottom: 12, fontFamily: MONO, fontWeight: 500, fontSize: 15, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted } }, typo(head)),
+    h('div', { style: { position: 'relative', width: MEDIA_W, height } },
+      h('img', { src, width: MEDIA_W, height }),
+      ...labels));
+}
+
+const panels = (m: Extract<OgMedia, { kind: 'panels' }>) =>
+  h('div', { style: { flexDirection: 'column', justifyContent: 'center', gap: 30, flexShrink: 0, width: MEDIA_W, height: MEDIA_H } },
+    ...m.panels.map(panel));
+
 /* ---------- Szablon ---------- */
 async function layout(spec: OgSpec, route: string): Promise<Node> {
   const wide = spec.media.kind === 'none';
@@ -307,7 +337,7 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
           ...titleLines(title)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
       spec.footer && footer(spec.footer, wide)),
-    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : null);
+    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : null);
 }
 
 /** PNG 1200×630 z paletą 8-bit: zdjęcia B&W + kolory marki mieszczą się w niej bez widocznej straty. */

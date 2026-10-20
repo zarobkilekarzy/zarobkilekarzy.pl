@@ -114,6 +114,41 @@ export const PICTOGRAMS = {
     '.#.#.',
     '.#.#.',
   ],
+  // kolejka: pierwsza osoba zapalona, pozostałe czekają (półtonem)
+  kolejka: [
+    '.###...ooo...ooo.',
+    '.###...ooo...ooo.',
+    '.................',
+    '#####.ooooo.ooooo',
+    '#####.ooooo.ooooo',
+    '#####.ooooo.ooooo',
+    '.#.#...o.o...o.o.',
+    '.#.#...o.o...o.o.',
+    '.#.#...o.o...o.o.',
+  ],
+  // półokrągła skala ze wskazówką pośrodku, jak na obrazku barometru politycznego
+  barometr: [
+    '.....#####.....',
+    '...##.....##...',
+    '..#..o...o..#..',
+    '.#.....#.....#.',
+    '#.o....#....o.#',
+    '#......#......#',
+    '#.....###.....#',
+    '###############',
+  ],
+  koperta: [
+    '###############',
+    '##...........##',
+    '#.#.........#.#',
+    '#..#.......#..#',
+    '#...#.....#...#',
+    '#....#...#....#',
+    '#.....###.....#',
+    '#.............#',
+    '#.............#',
+    '###############',
+  ],
 } as const satisfies Record<string, readonly string[]>;
 
 export type PictogramName = keyof typeof PICTOGRAMS;

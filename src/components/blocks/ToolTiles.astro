@@ -1,7 +1,8 @@
 ---
 /**
  * Rząd kafli narzędzi: etykieta, tytuł, opis i przyciski u góry, grafika z kropek (lib/siatka) na dole.
- * Kafel `tone: 'blue'` ma pełne wypełnienie kobaltem i białe kropki. Dane: src/data/narzedzia.ts.
+ * Kafle na pozycjach 1. i 3. mają pełne wypełnienie kobaltem i białe kropki (albo `tone: 'blue'` wprost).
+ * Dane: src/data/narzedzia.ts (zestaw na hub).
  * Kliknięcie w kafel prowadzi tam, gdzie pierwszy przycisk (rozciągnięty link); kolejne leżą nad nim.
  */
 import DotGrid from '@/components/ui/DotGrid.astro';
@@ -20,10 +21,10 @@ const { items } = Astro.props;
 const FRAME: [cols: number, rows: number] = [20, 13];
 ---
 <div class="tiles">
-  {items.map((t) => {
+  {items.map((t, i) => {
     const bars = t.bars && barsMask(t.bars.values, { cols: FRAME[0], rows: FRAME[1], max: t.bars.max, past: t.bars.past });
     return (
-      <article class:list={['tile', { 'tile--blue': t.tone === 'blue' }]} data-reveal>
+      <article class:list={['tile', { 'tile--blue': t.tone ? t.tone === 'blue' : i % 2 === 0 }]} data-reveal>
         <div class="tile__top">
           <p class="mono-label tile__label">{t.label}</p>
           <h3 class="tile__title">{typo(t.title)}</h3>

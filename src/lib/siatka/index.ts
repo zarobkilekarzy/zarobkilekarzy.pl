@@ -44,9 +44,12 @@ export const SHAPES: Record<Cell, string> = {
   miss: `<path d="M${MID - DIAG} ${MID - DIAG}l${2 * DIAG} ${2 * DIAG}M${MID + DIAG} ${MID - DIAG}l${-2 * DIAG} ${2 * DIAG}" stroke="currentColor" stroke-width="${STROKE}" fill="none"/>`,
 };
 
-/** Rysunek większy niż ramka zostałby po cichu przycięty — zatrzymujemy build. */
+/**
+ * Rysunek musi mieć w ramce co najmniej jedno wygaszone pole z każdej strony — dotykający krawędzi
+ * wygląda na ucięty, a większy niż ramka zostałby po cichu przycięty. Za ciasna ramka zatrzymuje build.
+ */
 function assertFits(w: number, h: number, cols: number, rows: number) {
-  if (w > cols || h > rows) throw new Error(`[siatka] rysunek ${w}×${h} nie mieści się w ramce ${cols}×${rows}`);
+  if (w + 2 > cols || h + 2 > rows) throw new Error(`[siatka] rysunek ${w}×${h} potrzebuje ramki co najmniej ${w + 2}×${h + 2} (margines 1 pola), jest ${cols}×${rows}`);
 }
 
 export interface Mask {
@@ -131,15 +134,16 @@ export function ekgTrace(cols: number, rows: number, { flatFrom = .62, baseline 
 
 /**
  * Słupki z pól: wartości (np. rok po roku) zgrupowane w `cols` kolumn (średnia z przedziału), wysokość
- * w `rows` polach od zera do `max`. Kolumny od indeksu wartości `past` to projekcja — pola pośrednie,
- * historia — zapalone; nad słupkami tło z plusów.
+ * od zera do `max` w `rows` polach minus `headroom` — górny rząd zostaje pusty, jak margines piktogramów.
+ * Kolumny od indeksu wartości `past` to projekcja — pola pośrednie, historia — zapalone; nad słupkami plusy.
  */
-export function barsMask(values: readonly number[], { cols, rows, max = Math.max(...values), past = values.length }: { cols: number; rows: number; max?: number; past?: number }): Mask {
+export function barsMask(values: readonly number[], { cols, rows, max = Math.max(...values), past = values.length, headroom = 1 }: { cols: number; rows: number; max?: number; past?: number; headroom?: number }): Mask {
+  const top = rows - headroom;
   const n = Math.min(cols, values.length);
   const heights = Array.from({ length: n }, (_, j) => {
     const from = Math.floor(j * values.length / n), to = Math.floor((j + 1) * values.length / n);
     const avg = values.slice(from, to).reduce((a, b) => a + b, 0) / (to - from);
-    return { h: Math.max(1, Math.min(rows, Math.round(avg / max * rows))), projected: from >= past };
+    return { h: Math.max(1, Math.min(top, Math.round(avg / max * top))), projected: from >= past };
   });
   const cells = Array.from({ length: n * rows }, (_, i): Cell => {
     const { h, projected } = heights[i % n];

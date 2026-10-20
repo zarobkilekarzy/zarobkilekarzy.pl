@@ -22,7 +22,7 @@ import { geo } from '@/lib/mapa/geo';
 import { toneOfClass } from '@/lib/mapa/layout';
 import { renderMapSvg, staticColors } from '@/lib/mapa/svg';
 import { tokenColor } from '@/lib/tokens';
-import { GEOMETRY, polyline } from '@/lib/siatka';
+import { GEOMETRY, frameLines, polyline } from '@/lib/siatka';
 import type { OgCover } from '@/types';
 import type { Accuracy, OgDots, OgStat } from '@/types';
 import { NARROW_TITLE_MAX, OG_HEIGHT, OG_WIDTH, type OgEntry, type OgMedia, type OgSpec } from './presets';
@@ -367,14 +367,19 @@ async function partyLogo(m: Extract<OgMedia, { kind: 'logo' }>) {
  * `.` to plus tła. Rysowana jako SVG w <img>; pod nią legenda kolorów (mapa kraju).
  */
 function dots(m: Extract<OgMedia, { kind: 'dots' }>) {
-  const cols = Math.max(...m.mask.map((l) => l.length)), rows = m.mask.length;
+  // rysunek dotykający brzegu (np. mapa kraju) dostaje pole marginesu z każdej strony, jak piktogramy
+  const edge = (l: string) => /[^.]/.test(l);
+  const touches = edge(m.mask[0]) || edge(m.mask[m.mask.length - 1]) || m.mask.some((l) => edge(l[0] ?? '.') || edge(l.at(-1) ?? '.'));
+  const w = Math.max(...m.mask.map((l) => l.length));
+  const mask = touches ? frameLines(m.mask, w + 2, m.mask.length + 2) : m.mask;
+  const cols = Math.max(...mask.map((l) => l.length)), rows = mask.length;
   const legendH = m.legend ? 44 + 30 * m.legend.length : 0;
   const cell = Math.floor(Math.min(MEDIA_W / cols, (MEDIA_H - legendH) / rows));
   const W = cols * cell, H = rows * cell;
   const arm = cell * GEOMETRY.arm, rOn = cell * GEOMETRY.on, rMid = cell * GEOMETRY.mid;
   const color = (c: OgDots['codes'][string]['color']) => token(c);
   let plus = '', marks = '';
-  m.mask.forEach((line, r) => [...line.padEnd(cols, '.')].forEach((ch, c) => {
+  mask.forEach((line, r) => [...line.padEnd(cols, '.')].forEach((ch, c) => {
     const x = c * cell + cell / 2, y = r * cell + cell / 2;
     const code = m.codes[ch];
     if (code) marks += `<circle cx="${x}" cy="${y}" r="${code.size === 'on' ? rOn : rMid}" fill="${color(code.color)}"/>`;

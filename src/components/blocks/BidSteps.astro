@@ -1,0 +1,102 @@
+---
+/**
+ * Licytacja krok po kroku: u góry schody ze słupków z kropek (lib/siatka) o wysokości `level`,
+ * pod każdym numer, kto wykonuje ruch i krótka liczba (`value`); niżej pełne opisy w tej samej
+ * kolejności. Kolor mówi, kto wykonuje ruch: `left` (np. szpital) — kobalt, `right` (konkurent) —
+ * bursztyn, `team` (np. lekarze) — kolor tekstu. Wysokości są poglądowe: blok rysuje kierunek
+ * licytacji, a liczby ze źródeł stoją w podpisach i opisach.
+ */
+import { CELL, SHAPES } from '@/lib/siatka';
+import { typo } from '@/lib/format';
+import { uid } from '@/lib/uid';
+
+interface Step {
+  side: 'left' | 'right' | 'team';
+  /** kto wykonuje ruch */
+  who: string;
+  /** krótki podpis pod słupkiem, np. „150 zł/h” */
+  value: string;
+  text: string;
+  /** wysokość słupka w polach (1 … max) */
+  level: number;
+}
+
+interface Props {
+  steps: Step[];
+  /** legenda kolorów, np. { left: 'szpital', right: 'konkurent', team: 'lekarze' } */
+  legend: Partial<Record<Step['side'], string>>;
+  /** pełny opis danych dla czytników ekranu */
+  caption: string;
+}
+
+const { steps, legend, caption } = Astro.props;
+const MAX = Math.max(...steps.map((s) => s.level));
+const W = 3;
+const id = uid('bid');
+const column = (level: number) =>
+  Array.from({ length: MAX * W }, (_, i) => {
+    const row = Math.floor(i / W);
+    return { x: (i % W) * CELL, y: row * CELL, on: MAX - row <= level };
+  });
+const n = (i: number) => String(i + 1).padStart(2, '0');
+---
+<div class="bid">
+  <svg class="bid__defs" aria-hidden="true" width="0" height="0">
+    <defs>
+      {(['on', 'off'] as const).map((k) => <symbol id={`${id}-${k}`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={SHAPES[k]} />)}
+    </defs>
+  </svg>
+  <div class="bid__stairs" role="img" aria-label={caption}>
+    {steps.map((s, i) => (
+      <div class:list={['bid__col', `bid--${s.side}`]}>
+        <svg class="bid__bar" viewBox={`0 0 ${W * CELL} ${MAX * CELL}`} aria-hidden="true">
+          {column(s.level).map((c) => <use href={`#${id}-${c.on ? 'on' : 'off'}`} class={c.on ? 'bid__on' : 'bid__off'} x={c.x} y={c.y} width={CELL} height={CELL} />)}
+        </svg>
+        <span class="bid__who">{n(i)}. {typo(s.who)}</span>
+        <b class="bid__value">{typo(s.value)}</b>
+      </div>
+    ))}
+  </div>
+  <ol class="bid__list">
+    {steps.map((s, i) => (
+      <li class={`bid--${s.side}`}>
+        <span class="bid__who">{n(i)}. {typo(s.who)}</span>
+        <span class="bid__text">{typo(s.text)}</span>
+      </li>
+    ))}
+  </ol>
+  <ul class="bid__legend" aria-hidden="true">
+    {(['left', 'right', 'team'] as const).filter((k) => legend[k]).map((k) => <li class={`bid__key bid--${k}`}>{typo(legend[k]!)}</li>)}
+  </ul>
+</div>
+
+<style>
+  .bid { container-type: inline-size; }
+  .bid__defs { position: absolute; }
+  .bid--left { --bid: var(--blue); }
+  .bid--right { --bid: var(--amber); }
+  .bid--team { --bid: var(--ink); }
+
+  .bid__stairs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+  .bid__col { display: grid; justify-items: start; gap: 4px; }
+  .bid__bar { display: block; width: min(54px, 100%); height: auto; margin-bottom: 6px; overflow: visible; }
+  .bid__on { color: var(--bid); }
+  .bid__off { color: color-mix(in srgb, var(--muted) 35%, transparent); }
+  .bid__who { font: 500 0.75rem/1.35 var(--f-mono); color: var(--bid); }
+  .bid__value { max-width: 100%; overflow-wrap: anywhere; font: 600 clamp(0.9375rem, 3.2cqi, 1.25rem)/1.15 var(--f-display); letter-spacing: -0.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .bid__list { list-style: none; display: grid; gap: 10px; margin: 22px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); }
+  .bid__list li { display: grid; grid-template-columns: 9.5em 1fr; gap: 12px; margin: 0; padding: 0; }
+  .bid__list li::before { content: none; }
+  .bid__text { font: 400 0.9375rem/1.5 var(--f-body); color: var(--text-strong); }
+
+  .bid__legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 18px 0 0; padding: 0; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .bid__key { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 0; }
+  .bid__key::before { content: ""; position: static; width: 10px; height: 10px; border-radius: 50%; background: var(--bid); }
+
+  @container (max-width: 560px) {
+    .bid__stairs { gap: 6px; }
+    .bid__col .bid__who { font-size: 0.6875rem; }
+    .bid__list li { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>

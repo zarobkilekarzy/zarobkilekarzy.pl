@@ -1,0 +1,541 @@
+---
+title: "Jeden lekarz, dwa cenniki"
+seoTitle: Publiczna a prywatna ochrona zdrowia
+category: Analiza
+topic: pieniadz
+order: 5
+stat: { value: "×3,1", unit: "budżet NFZ od 2015 r. — a kolejka dłuższa o 43%" }
+date: 2026-10-20
+summary: "Ten sam lekarz pracuje w szpitalu z umową z NFZ i w prywatnym gabinecie. Jak publiczna i prywatna ochrona zdrowia dzielą się kosztami i zyskami — w USA i w Polsce — i dlaczego więcej publicznych pieniędzy nie skraca kolejki, tylko wzmacnia drugi cennik."
+description: "Publiczna a prywatna ochrona zdrowia: model amerykański, polski system mieszany, konkurencja o lekarza i to, kto ponosi koszty, a kto zbiera marże."
+keyPoints:
+  - "Od 2015 r. koszty NFZ wzrosły 3,1 raza, a średni czas oczekiwania na świadczenie wydłużył się o 43%. U specjalisty prywatnie bywa 40% dorosłych, w 2018 r. było 29%."
+  - "Obok NFZ działa druga kasa: z własnej kieszeni pacjenci zapłacili w 2024 r. 47,6 mld zł, a abonament albo polisę ma 36% dorosłych."
+  - "Prywatny gabinet bywa drzwiami do leczenia, na które w NFZ czeka się miesiącami, a nawet latami — do szpitala może skierować każdy lekarz, a termin nadaje szpital, w którym często pracuje ten sam lekarz."
+  - "Szpitale publiczne przeciągają linę z gabinetami i z sobą nawzajem. W latach 2024–2025 zawieszono lub zlikwidowano 539 oddziałów, w 321 przypadkach z powodu braków kadrowych."
+  - "W USA i w Polsce działa ten sam mechanizm: państwo płaci za kształcenie, najstarszych pacjentów i straty, a marża powstaje tam, gdzie da się wybrać pacjenta i świadczenie."
+  - "Zakaz łączenia pracy w obu sektorach zapowiadają partie z obu stron sceny politycznej. Bez danych o tym, kto, gdzie i ile pracuje, nie da się go ani egzekwować, ani ocenić."
+editorial:
+  - >-
+    Sektor prywatny nie jest przeciwnikiem pacjenta. Problemem jest granica między sektorami, której nie
+    widać. Ci sami lekarze, te same sale i ta sama kolejka służą raz pacjentowi NFZ, raz klientowi gabinetu,
+    a publiczny płatnik nie wie, ile godzin kupuje ani ile kosztuje go licytacja o lekarza z sąsiednim
+    szpitalem.
+  - >-
+    Dlatego postulujemy jawne dane pseudonimizowane: łączne wypłaty z publicznych pieniędzy dla każdej osoby,
+    ze wszystkich miejsc pracy, co kwartał, pod stałym identyfikatorem zamiast nazwiska. Tylko wtedy da się
+    sprawdzić, czy kolejne miliardy dla publicznej ochrony zdrowia kupują więcej leczenia, czy droższą
+    godzinę tych samych osób.
+related:
+  - wizyty-prywatne-kolejka-cena
+  - kontrakt-vs-etat
+  - zadluzenie-szpitali
+  - zarobki-lekarzy-polska-sasiedzi
+---
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import BidSteps from '@/components/blocks/BidSteps.astro';
+import ColumnChart from '@/components/blocks/ColumnChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import DotRows from '@/components/blocks/DotRows.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import KeyFacts from '@/components/blocks/KeyFacts.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import TugOfWar from '@/components/blocks/TugOfWar.astro';
+import UnitChart from '@/components/blocks/UnitChart.astro';
+import Verdict from '@/components/blocks/Verdict.astro';
+import { GROWTH as Q } from '@/data/kolejki';
+import { formatPL } from '@/lib/format';
+
+export const LINKS = {
+  oecdPerCapita: 'https://www.oecd.org/en/publications/health-at-a-glance-2025_8f9e3f98-en/full-report/health-expenditure-per-capita_affe6b0a.html',
+  oecdSchemes: 'https://www.oecd.org/en/publications/health-at-a-glance-2025_8f9e3f98-en/full-report/health-expenditure-by-financing-scheme_074bead0.html',
+  eurostatSha: 'https://ec.europa.eu/eurostat/databrowser/view/hlth_sha11_hf/',
+  oddzialy: 'https://portal.abczdrowie.pl/539-zawieszonych-i-zamknietych-oddzialow-szpitalnych-powodem-glownie-braki-kadrowe/7242595503827456a',
+  nrz2024: 'https://api.sejm.gov.pl/eli/acts/MP/2026/971/text.pdf',
+  nrzSeria: 'https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/wydatki-na-ochrone-zdrowia-w-latach-2022-2024,27,5.html',
+  whc: 'https://www.korektorzdrowia.pl/wp-content/uploads/barometr-whc-2025.pdf',
+  gw: 'https://gloswielkopolski.pl/za-9-lat-ta-operacja-nie-bedzie-mi-juz-potrzebna-pani-agnieszka-na-zabieg-na-cito-u-degi-w-poznaniu-ma-czekac-az-do-2035-roku/ar/c14p2-29386235',
+  lop: 'https://www.termedia.pl/pobierz/28761ac10ff69d4055cd0f793cfa9175',
+  ostrzeszow: 'https://tvn24.pl/poznan/ostrzeszow-lekarze-przechodza-do-innego-szpitala-oddzialy-zawieszone-st8797075',
+  cms: 'https://www.cms.gov/data-research/statistics-trends-and-reports/national-health-expenditure-data/nhe-fact-sheet',
+  gus60: 'https://stat.gov.pl/obszary-tematyczne/osoby-starsze/osoby-starsze/sytuacja-osob-starszych-w-polsce-w-2022-roku,2,5.html',
+};
+
+{/* Wydatki na zdrowie na mieszkańca, USD PPP, 2024 — OECD, System of Health Accounts (API SDMX, pobrane 20.10.2026). USA „publicznie” = programy rządowe (HF11) + ubezpieczenie społeczne (HF121), bez prywatnych ubezpieczeń obowiązkowych z ACA (HF122). */}
+export const USA_PUBLIC = 4_057 + 3_430;
+export const PL_TOTAL = 4_328;
+export const PER_CAPITA = [
+  { label: 'USA — wszystkie wydatki', value: 14_823 },
+  { label: 'USA — tylko programy publiczne (Medicare, Medicaid i inne)', value: USA_PUBLIC, highlight: true },
+  { label: 'Niemcy — wszystkie wydatki', value: 9_584 },
+  { label: 'Szwecja — wszystkie wydatki', value: 7_906 },
+  { label: 'Francja — wszystkie wydatki', value: 7_433 },
+  { label: 'Wielka Brytania — wszystkie wydatki', value: 7_008 },
+  { label: 'Czechy — wszystkie wydatki', value: 5_201 },
+  { label: 'Polska — wszystkie wydatki', value: PL_TOTAL },
+];
+
+{/* Polska i UE-27, 2024 — Eurostat hlth_sha11_hf (PPS na mieszkańca) */}
+export const PL_PUBLIC_PPS = 2_011;
+export const EU_PUBLIC_PPS = 3_273;
+export const publicVsEu = Math.round((PL_PUBLIC_PPS / EU_PUBLIC_PPS) * 100);
+
+{/* Narodowy Rachunek Zdrowia, mln zł — obwieszczenia Prezesa GUS za kolejne lata; 2024: M.P. 2026 poz. 971 */}
+export const NRZ = {
+  2015: { total: 114_142.4, pub: 79_886.6, priv: 34_255.8 },
+  2024: { total: 287_565.5, pub: 221_187.8, priv: 66_377.7, oop: 47_640.5 },
+};
+export const share = (y) => (NRZ[y].priv / NRZ[y].total) * 100;
+export const OOP = [
+  { year: 2015, value: 26_533.9 }, { year: 2016, value: 27_787.2 }, { year: 2017, value: 29_679.2 },
+  { year: 2018, value: 27_413.2 }, { year: 2019, value: 29_701.9 }, { year: 2020, value: 29_668.4 },
+  { year: 2021, value: 33_625.3 }, { year: 2022, value: 36_963.4 }, { year: 2023, value: 38_633.2 },
+  { year: 2024, value: 47_640.5 },
+];
+export const mld = (v, d = 1) => formatPL(v / 1000, d);
+
+export const MATRIX = {
+  columns: ['', 'Placówka publiczna', 'Placówka prywatna'],
+  rows: [
+    { cells: ['Płaci NFZ', 'szpital powiatowy, SPZOZ, instytut — rdzeń systemu', 'spółka z umową z NFZ: przychodnia, pracownia rezonansu, ośrodek dializ, część szpitali'] },
+    { cells: ['Płaci pacjent albo jego pracodawca', 'płatne usługi szpitala publicznego, np. pokój o podwyższonym standardzie, badanie bez skierowania', 'gabinet, sieć przychodni z abonamentem, polisa, prywatny szpital'] },
+  ],
+};
+
+{/* Oferty pracy dla lekarzy w 2023 r., średnia stawka godzinowa — raport „Lekarze — oferty pracy” */}
+export const OFFER = { hospital: 162.79, aos: 248.58 };
+export const pullOf = (l, r) => ((r - l) / (r + l)) * 2;
+
+export const USA_PL = {
+  columns: ['', 'USA', 'Polska'],
+  rows: [
+    { cells: ['Najdroższe ryzyko', 'osoby 65+ to ok. 17% ludności i ok. 37% wydatków; ubezpiecza je państwowe Medicare', 'osoby 60+ to 25,9% ludności i 55,4% wydatków NFZ na leczenie szpitalne; dodatkowe ubezpieczenie ma 16% osób 65+'] },
+    { cells: ['Kształcenie lekarzy', 'Medicare: ok. 21,2 mld dolarów rocznie na rezydentury', 'budżet: 4,1 mld zł na staże i specjalizacje w 2025 r.; studia 200–250 tys. zł na lekarza'] },
+    { cells: ['Wybór zyskownych pacjentów', 'prywatne plany Medicare Advantage: państwo płaci za seniora ok. 14% więcej, głównie przez korzystną selekcję', 'NIK (2016): w prywatnych ośrodkach kardiologii 81–99% zabiegów to inwazyjne, wyceniane 5–6 razy wyżej; resztę pacjentów przejmował szpital publiczny'] },
+    { cells: ['Kierowanie do własnej placówki', 'zakazane ustawą; lekarze kierujący do własnych pracowni zlecali ok. 2 razy więcej rezonansów i tomografii', 'brak zakazu w ustawach; dopisywanie pacjentów poza kolejnością to najczęściej wskazywany przez lekarzy problem łączenia sektorów (41,4%)'] },
+    { cells: ['Straty i nieopłacalne leczenie', 'SOR musi leczyć każdego; 42,7 mld dolarów nieopłaconego leczenia w 2020 r.', 'samorządy dopłaciły do szpitali ponad 10 mld zł w latach 2015–2025; 91% szpitali powiatowych ze stratą'] },
+    { cells: ['Ile płaci się lekarzom z publicznych pieniędzy', 'Medicare co roku publikuje wypłaty dla każdego lekarza — z nazwiskiem', 'nie wiadomo; dane zbiera AOTMiT, bez publikacji dla jednej osoby'], marked: true },
+  ],
+};
+
+export const SENIORS = [
+  { label: 'USA — osoby 65+ w ludności', value: 17, display: 'ok. 17%' },
+  { label: 'USA — ich udział w wydatkach na świadczenia', value: 37, display: 'ok. 37%', highlight: true },
+  { label: 'Polska — osoby 60+ w ludności', value: 25.9, display: '25,9%' },
+  { label: 'Polska — ich udział w wydatkach NFZ na leczenie szpitalne', value: 55.4, display: '55,4%', highlight: true },
+];
+
+{/* Barometr WHC, IX/X 2025, średni czas oczekiwania w miesiącach; przypadek z Poznania — skierowanie pilne z IX 2026 r., termin 1.10.2035 */}
+export const QUEUES = [
+  { label: 'Wizyta u kardiologa', value: 4.6, display: '4,6 mies.' },
+  { label: 'Gastroskopia', value: 5.8, display: '5,8 mies.' },
+  { label: 'Endoprotezoplastyka stawu biodrowego', value: 17.6, display: '17,6 mies.' },
+  { label: 'Endoprotezoplastyka stawu kolanowego (przypadek stabilny)', value: 18.9, display: '18,9 mies.' },
+  { label: 'Rekonstrukcja ręki ze skierowaniem pilnym — jeden przypadek opisany w prasie', value: 108, display: 'ok. 9 lat', kind: 'mid' },
+  { label: 'Droga przez prywatny gabinet: od płatnej wizyty do zabiegu w szpitalu z umową z NFZ', display: 'nikt tego nie mierzy', missing: true },
+];
+
+Ten sam ortopeda rano operuje w szpitalu powiatowym, a po południu przyjmuje w gabinecie dwie ulice dalej. Na endoprotezę stawu biodrowego w ramach NFZ czeka się średnio prawie półtora roku.[^whc] Na płatną wizytę w gabinecie — tyle, ile wyznacza grafik lekarza. Pacjent widzi dwie kolejki i dwa cenniki. Lekarz ma jedną dobę i jeden grafik, który dzieli między publiczną a prywatną kasę. Ten tekst opisuje, jak oba systemy dzielą się pieniędzmi, ryzykiem i lekarzami — w Stanach Zjednoczonych, które uchodzą za wzór rynku, i w Polsce, gdzie oba sektory działają obok siebie, często pod jednym dachem.
+
+<StatRow
+  label="Publiczne pieniądze, prywatny rynek"
+  items={[
+    { value: Q.budget, decimals: 1, unit: 'raza', desc: `tyle wzrosły koszty NFZ w latach 2015–2025; średni czas oczekiwania na świadczenie wydłużył się w tym czasie o ${formatPL(Q.queue)}%`, accuracy: 'exact', source: 'NFZ, plany finansowe; Barometr WHC', href: 'https://www.nfz.gov.pl/bip/finanse-nfz/' },
+    { value: NRZ[2024].oop / 1000, decimals: 1, unit: 'mld zł', desc: 'zapłacili pacjenci za leczenie z własnej kieszeni w 2024 r. — obok 221,2 mld zł pieniędzy publicznych', accuracy: 'exact', source: 'GUS, Narodowy Rachunek Zdrowia', href: LINKS.nrz2024 },
+    { value: 539, unit: 'oddziałów', desc: 'szpitalnych zawieszono lub zlikwidowano w latach 2024–2025; w 321 przypadkach z powodu braków kadrowych', accuracy: 'est', source: 'zestawienie Menedżera Zdrowia', href: LINKS.oddzialy },
+  ]}
+/>
+
+## Kto płaci, a kto leczy
+
+„Publiczna” i „prywatna” ochrona zdrowia to skróty, które łączą dwie różne sprawy: kto płaci za leczenie i do kogo należy placówka. Szpital powiatowy jest publiczny w obu znaczeniach. Prywatna spółka, która ma umowę z NFZ na rezonans albo dializy, jest prywatna z właściciela, ale publiczna z pieniędzy — pacjent nic nie płaci, płaci Fundusz. Z kolei szpital publiczny może sprzedawać usługi komercyjne.
+
+<Comparison table={MATRIX} />
+
+Mówiąc o „uspołecznieniu kosztów i prywatyzacji zysków”, nie mamy więc na myśli tego, że spółki zarabiają, a SPZOZ-y tracą. Chodzi o to, które koszty — kształcenie, dyżury, ciężkie przypadki, straty — zostają po stronie publicznego płatnika, a które przychody można przenieść tam, gdzie da się wybrać pacjenta, świadczenie i cenę. W Polsce na ochronę zdrowia poszło w 2024 r. 287,6 mld zł bieżących wydatków.[^nrz2024]
+
+<UnitChart
+  title="Z 288 mld zł wydanych na zdrowie w 2024 r. 66 mld zł zapłacili pacjenci i pracodawcy"
+  unit={1}
+  unitLabel="mld zł"
+  cols={24}
+  groups={[
+    { value: NRZ[2024].pub, kind: 'on', label: 'mld zł — pieniądze publiczne: NFZ, budżet państwa, samorządy' },
+    { value: NRZ[2024].oop, kind: 'mid', label: 'mld zł — pacjenci z własnej kieszeni: wizyty, leki, stomatologia, badania' },
+    { value: NRZ[2024].priv - NRZ[2024].oop, kind: 'off', label: 'mld zł — abonamenty, polisy, pracodawcy i inne wydatki prywatne' },
+  ].map((g) => ({ ...g, value: Math.round(g.value / 1000) }))}
+  source="GUS, Narodowy Rachunek Zdrowia za 2024 r."
+  href={LINKS.nrz2024}
+/>
+
+## Model amerykański: rynek, za który płaci państwo
+
+Stany Zjednoczone wydały w 2024 r. na zdrowie 5,3 bln dolarów, czyli 18,0% PKB — po 15 474 dolary na mieszkańca.[^cms] Większość Amerykanów w wieku produkcyjnym ma ubezpieczenie od pracodawcy. Osoby po 65. roku życia ubezpiecza federalny program Medicare, najuboższych — stanowy Medicaid. Lekarzom i szpitalom płaci się za każdą usługę, a ceny negocjuje każdy ubezpieczyciel osobno. Prywatne ubezpieczenia pokryły w 2024 r. 31% wydatków, Medicare 21%, Medicaid 18%, a pacjenci z własnej kieszeni — 11%.[^cms]
+
+To nie jest system prywatny w czystej postaci. Według OECD publiczne pieniądze sfinansowały w 2023 r. 54% amerykańskich wydatków na zdrowie.[^oecd-finanse] W przeliczeniu na mieszkańca same programy publiczne — Medicare, Medicaid i pozostałe programy rządowe — kosztowały w 2024 r. {formatPL(USA_PUBLIC)} dolarów według parytetu siły nabywczej. To więcej niż wszystkie wydatki na zdrowie, publiczne i prywatne razem, w 27 z 37 pozostałych krajów OECD, w tym w Wielkiej Brytanii, Francji i Polsce.[^oecd-sha]
+
+<Figure
+  title={`Same programy publiczne w USA kosztują na mieszkańca ${formatPL(USA_PUBLIC / PL_TOTAL, 1)} raza więcej niż cała ochrona zdrowia w Polsce`}
+  note="Wydatki bieżące na zdrowie na mieszkańca w 2024 r., dolary według parytetu siły nabywczej (USD PPP). USA, programy publiczne: programy rządowe (m.in. Medicaid) i ubezpieczenie społeczne (Medicare), bez prywatnych ubezpieczeń, które OECD zalicza do obowiązkowych na mocy ustawy Affordable Care Act. Pozostałe kraje: wszystkie wydatki, publiczne i prywatne."
+  source={{ label: 'OECD, System of Health Accounts', href: LINKS.oecdPerCapita }}
+>
+  <BarChart
+    rows={PER_CAPITA.map((r) => ({ ...r, display: formatPL(r.value) }))}
+    max={15000}
+    unit="USD PPP"
+    caption={`Wykres słupkowy, wydatki na zdrowie na mieszkańca w 2024 r. w dolarach według parytetu siły nabywczej: ${PER_CAPITA.map((r) => `${r.label} ${formatPL(r.value)}`).join('; ')}.`}
+  />
+</Figure>
+
+Za te pieniądze Amerykanie nie żyją dłużej. Oczekiwana długość życia w 2023 r. wyniosła w USA i w Polsce tyle samo — 78,4 roku — przy wydatkach na mieszkańca 3,5 raza wyższych.[^oecd-profil] Mniej więcej co dwunasty mieszkaniec USA, 27,2 mln osób, nie miał w 2024 r. żadnego ubezpieczenia.[^nhis] Długi za leczenie, które trafiły do raportów kredytowych, sięgały 88 mld dolarów.[^cfpb]
+
+Drogie są przede wszystkim ceny. Prywatni ubezpieczyciele płacili szpitalom w 2022 r. średnio 254% stawek, które za te same usługi płaci Medicare, a za usługi lekarzy — 184%.[^rand] Lekarz w USA zarabia przeciętnie 277 260 dolarów rocznie, prawie cztery razy więcej niż przeciętny pracownik.[^bls] Praktykujących lekarzy jest przy tym mniej niż w Polsce: 2,7 na tysiąc mieszkańców wobec 3,9.[^oecd-sha]
+
+W tym modelu dobrze widać, jak koszty trafiają do wspólnej kasy, a zyski — do podmiotów, które mogą wybierać:
+
+<NumberedList
+  items={[
+    { title: 'Najdroższe ryzyko bierze państwo.', text: 'Osoby po 65. roku życia to ok. 17% Amerykanów, ale ok. 37% wydatków na świadczenia. Ubezpiecza je Medicare, czyli podatnik, a prywatni ubezpieczyciele obsługują głównie pracujących.' },
+    { title: 'Prywatny pośrednik zarabia na wyborze zdrowszych.', text: 'W prywatnych planach Medicare Advantage państwo płaci za tego samego seniora ok. 14% więcej niż w tradycyjnym Medicare, ok. 76 mld dolarów w 2026 r. Główny powód to selekcja: do planów zapisują się osoby zdrowsze, niż zakłada stawka.' },
+    { title: 'SOR leczy każdego.', text: 'Od 1986 r. szpital z oddziałem ratunkowym musi zbadać i ustabilizować każdego pacjenta bez względu na ubezpieczenie. Koszty niezapłaconego leczenia szpitale wyceniały w 2020 r. na 42,7 mld dolarów.' },
+    { title: 'Kształcenie lekarzy opłaca Medicare.', text: 'Na rezydentury Medicare wydało w roku budżetowym 2023 ok. 21,2 mld dolarów. Liczbę finansowanych miejsc zamrożono ustawą z 1997 r. na poziomie z 1996 r.' },
+    { title: 'Ulga zamiast dobroczynności.', text: 'Zwolnienia podatkowe szpitali non-profit były warte w 2020 r. ok. 28 mld dolarów. Na bezpłatne leczenie najuboższych szpitale te wydały ok. 16 mld.' },
+  ]}
+/>
+
+Dane do tej listy pochodzą od agend federalnych i Kongresu.[^cms][^medpac][^aha][^crs][^kff] Jest w niej też mechanizm, który Amerykanie uznali za na tyle groźny, że go zakazali. Lekarz nie może kierować pacjentów Medicare do placówki, w której ma interes finansowy — chyba że mieści się w jednym z wąskich wyjątków. Kongresowa izba kontroli policzyła, że lekarze kierujący na badania do własnych pracowni zlecali ok. dwa razy więcej rezonansów i tomografii niż pozostali.[^gao] W polskich ustawach o świadczeniach i o działalności leczniczej podobnego zakazu nie znaleźliśmy. Kodeks Etyki Lekarskiej zabrania jedynie polecania podmiotu leczniczego ze względu na własne korzyści.[^kel]
+
+## Polska: publiczny rdzeń, prywatna nakładka
+
+Polska, podobnie jak Niemcy, Czechy czy Austria, ma system ubezpieczeniowy: składka trafia do jednego płatnika, który kupuje świadczenia od placówek publicznych i prywatnych. Obok działa rynek, na którym pacjent płaci sam albo przez abonament czy polisę od pracodawcy. Oba rynki obsługują ci sami ludzie. W ankiecie samorządu lekarskiego z 2026 r. ok. 55% lekarzy deklarowało pracę i w publicznej, i w prywatnej części systemu, a 11,9% — wyłącznie w prywatnej.[^nil] Próba nie była losowa, ale skala jest jasna: dla większości specjalistów gabinet i szpital z umową z NFZ to dwa miejsca pracy jednego dnia.
+
+### Druga kasa: gabinety, abonamenty i własna kieszeń
+
+Część prywatnego rynku to placówki w pełni komercyjne, bez żadnej umowy z NFZ: gabinety specjalistów i ogólnopolskie sieci przychodni, które sprzedają abonamenty, najczęściej pracodawcom jako dodatek do pensji. Największa z sieci notowanych na giełdzie miała w 2025 r. w Polsce 1,24 mld euro przychodów.[^medicover] Abonament albo polisę zdrowotną ma według CBOS 36% dorosłych, z czego 17% dostaje je od pracodawcy. Wyłącznie poza NFZ leczy się 11% dorosłych, a 53% korzysta z obu systemów.[^cbos]
+
+<KeyFacts
+  items={[
+    { value: mld(NRZ[2024].oop), unit: 'mld zł', label: 'zapłacili pacjenci z własnej kieszeni w 2024 r., o 23% więcej niż rok wcześniej' },
+    { value: '36', unit: '%', label: 'dorosłych ma abonament medyczny albo polisę zdrowotną (2025 r.)' },
+    { value: '5,8', unit: 'mln', label: 'osób miało w 2025 r. prywatną polisę zdrowotną — bez abonamentów' },
+    { value: '×2,5', label: 'tyle wzrosły w latach 2019–2025 miesięczne wydatki gospodarstw domowych na wizyty i usługi ambulatoryjne' },
+  ]}
+/>
+
+Dobrowolne przedpłaty — abonamenty i polisy — kosztowały w 2023 r. 11,6 mld zł, dwa razy więcej niż w 2015 r.[^nrz-seria] Polisy zdrowotne miało w 2025 r. ponad 5,8 mln osób, o 8,6% więcej niż rok wcześniej.[^piu] Według budżetów gospodarstw domowych przeciętna osoba wydawała w 2025 r. na zdrowie ok. 121 zł miesięcznie, w tym na wizyty i usługi ambulatoryjne ok. 42 zł — 2,5 raza więcej niż w 2019 r.[^bgd] Ile wizyt odbywa się w gabinetach w pełni prywatnych, oficjalnie nie wiadomo. Statystyka GUS liczy przychodnie i praktyki świadczące usługi w ramach środków publicznych — w 2025 r. udzieliły one 330,7 mln porad lekarskich.[^gus-amb]
+
+<Figure
+  title={`Pacjenci płacą z własnej kieszeni ${formatPL(NRZ[2024].oop / OOP[0].value, 1)} raza więcej niż w 2015 r.`}
+  note="Bezpośrednie wydatki gospodarstw domowych na ochronę zdrowia (wizyty, leki, stomatologia, badania), mld zł w cenach bieżących, według Narodowego Rachunku Zdrowia za kolejne lata."
+  source={[{ label: 'GUS, Narodowy Rachunek Zdrowia za 2024 r.', href: LINKS.nrz2024 }, { label: 'GUS, Wydatki na ochronę zdrowia w latach 2022–2024', href: LINKS.nrzSeria }]}
+>
+  <ColumnChart
+    columns={OOP.map((o) => ({ label: String(o.year), value: o.value, display: mld(o.value) }))}
+    max={50000}
+    caption={`Wykres kolumnowy, wydatki pacjentów z własnej kieszeni w mld zł: ${OOP.map((o) => `${o.year} — ${mld(o.value)}`).join('; ')}.`}
+  />
+</Figure>
+
+Ten rynek nie jest odrębnym światem. Pracują w nim w dużej mierze ci sami specjaliści, którzy przyjmują w ramach NFZ, a pacjent idzie do gabinetu najczęściej po to, żeby ominąć kolejkę — tak płacenie tłumaczy 79% płacących.[^cbos2023] Najbliższy polskiemu przykład tego zjawiska daje Austria. Lekarz może tam mieć umowę z kasą chorych — wtedy pacjent nie płaci — albo pracować jako „lekarz wybrany” bez umowy, za pełną opłatą, z której kasa zwraca pacjentowi część. Liczba lekarzy kasowych stoi w miejscu, a lekarzy wybranych przybyło od 2004 r. o 61%.[^soh-at] Austria ma przy tym więcej lekarzy na mieszkańca niż Polska — prywatna część rośnie więc nie tylko z braku lekarzy, ale też dlatego, że praca poza kasą bywa dla nich korzystniejsza.
+
+## Ta sama patologia, inna skala
+
+Polski system nie przypomina amerykańskiego: ubezpieczenie jest powszechne, a ceny dla pacjenta NFZ są zerowe. W obu krajach działa jednak ten sam mechanizm — koszty, których nie da się wybrać, zostają przy publicznym płatniku, a przychody, które da się wybrać, mogą przejść na stronę prywatną.
+
+<Comparison table={USA_PL} />
+
+Źródła liczb w tabeli podajemy niżej, przy opisie każdego mechanizmu. Ostatni wiersz jest tu najważniejszy. W USA, które uchodzą za kraj rynkowy, Medicare od danych za 2013 r. co roku publikuje, ile zapłaciło każdemu lekarzowi za rozliczone usługi — z nazwiskiem i numerem identyfikacyjnym.[^cms-npi] W Polsce nie wiadomo, ile z publicznych pieniędzy dostaje jedna osoba, nawet bez nazwiska.
+
+<Figure
+  title="W obu krajach starsi pacjenci odpowiadają za ponad dwa razy większą część wydatków, niż wynosi ich udział w ludności"
+  note="USA: osoby w wieku 65+, wydatki na świadczenia zdrowotne ogółem, 2020 r. Polska: osoby w wieku 60+, kwota refundacji NFZ za leczenie szpitalne, 2022 r. Definicje się różnią, więc porównujemy proporcje w każdym kraju, nie kraje między sobą."
+  source={[{ label: 'CMS, National Health Expenditure', href: LINKS.cms }, { label: 'GUS, Sytuacja osób starszych w Polsce w 2022 r.', href: LINKS.gus60 }]}
+>
+  <BarChart
+    rows={SENIORS}
+    max={60}
+    unit="%"
+    caption="Wykres słupkowy: USA — osoby 65+ to ok. 17% ludności i ok. 37% wydatków na świadczenia; Polska — osoby 60+ to 25,9% ludności i 55,4% wydatków NFZ na leczenie szpitalne."
+  />
+</Figure>
+
+## Więcej pieniędzy, dłuższa kolejka
+
+Nasza teza brzmi: im słabsza publiczna opieka, tym silniejsza prywatna. Słabość nie oznacza tu jednak, że publicznych pieniędzy nie przybywa — przybywa ich szybko. Oznacza, że kupują coraz mniej leczenia. Gdy publiczny system nie daje terminu, pacjenci, których na to stać, płacą prywatnie, a lekarzom bardziej opłaca się gabinet. Im dłuższa publiczna kolejka, tym silniejszy drugi cennik — i tym więcej musi zapłacić szpital za te same godziny.
+
+Od 2015 r. koszty NFZ wzrosły {formatPL(Q.budget, 1)} raza. Średni czas oczekiwania na świadczenie, mierzony przez Fundację Watch Health Care, wydłużył się w tym czasie o {formatPL(Q.queue)}% i jesienią 2025 r. wyniósł 4,2 miesiąca, najwięcej w historii badania.[^nfz-plany][^whc] Kto może, idzie do gabinetu: w 2025 r. u specjalisty poza NFZ było w ciągu pół roku 40% dorosłych, w 2018 r. — 29%.[^cbos] Jak budżet NFZ, kolejka i cena prywatnej wizyty zmieniały się rok po roku, pokazujemy w analizie [Wizyty prywatne: im dłuższa kolejka, tym drożej](/analizy/wizyty-prywatne-kolejka-cena/).
+
+<Verdict
+  label="Teza"
+  title="Więcej publicznych pieniędzy, dłuższa kolejka, więcej wizyt w gabinetach"
+  steps={[
+    { value: `×${formatPL(Q.budget, 1)}`, desc: 'koszty NFZ w latach 2015–2025' },
+    { value: `+${formatPL(Q.queue)}%`, desc: 'średni czas oczekiwania na świadczenie w tym samym czasie' },
+    { value: '29% → 40%', desc: 'dorosłych było w pół roku u specjalisty prywatnie (2018 → 2025)' },
+  ]}
+  text="Pieniądze nie kupiły godzin lekarzy, tylko droższą godzinę. Jak to się dzieje, opisujemy w części o konkurencji o lekarza."
+/>
+
+Mimo wzrostu budżetu Polska wydaje na zdrowie mniej niż przeciętny kraj Unii: 7,84% PKB wobec 10,16% średnio w UE. Wydatki publiczne na mieszkańca w standardzie siły nabywczej wyniosły w 2024 r. {formatPL(PL_PUBLIC_PPS)} wobec {formatPL(EU_PUBLIC_PPS)} średnio w Unii, czyli {publicVsEu}%.[^eurostat] Pieniądze prywatne odgrywają przy tym większą rolę niż gdzie indziej: z własnej kieszeni pacjenci pokryli 16,6% wydatków (w UE 15,1%), a abonamenty, polisy i inne wydatki prywatne — 6,5% (w UE 4,6%).[^eurostat]
+
+Główna bariera to czas, nie cena. W badaniu EU-SILC z 2025 r. 2,2% dorosłych Polaków przyznało, że nie zbadało się albo nie leczyło, bo lista oczekujących była za długa. W UE takich osób było 1,2%. Z powodu kosztu zrezygnowało w Polsce 0,5%, w UE — 1,0%.[^silc]
+
+Udział prywatnych pieniędzy w całości wydatków spadł, z {formatPL(share(2015), 1)}% w 2015 r. do {formatPL(share(2024), 1)}% w 2024 r., bo publiczne rosły szybciej: nominalnie {formatPL(NRZ[2024].pub / NRZ[2015].pub, 2)} raza wobec {formatPL(NRZ[2024].priv / NRZ[2015].priv, 2)} raza.[^nrz2015][^nrz2024] Prywatny rynek nie skurczył się jednak w złotówkach — prawie się podwoił — a kolejka się wydłużyła. Gdyby dodatkowe publiczne pieniądze kupowały więcej godzin lekarzy, kolejka powinna się skracać, a gabinety tracić klientów. Działo się odwrotnie.
+
+Badania porównawcze opisują tę zależność ostrożniej. Analiza krajów OECD z równoległym prywatnym finansowaniem z 2004 r. stwierdza, że zwrot ku prywatnym pieniądzom w bilansie bardziej szkodzi systemom publicznym, niż im pomaga, choć skutki zależą od jego formy.[^tuohy] W Australii długa spodziewana kolejka skłaniała ludzi do kupna prywatnego ubezpieczenia, a w szpitalach publicznych pacjentom prywatnym przyznawano wyższy priorytet.[^johar] Przegląd badań o lekarzach pracujących w dwóch sektorach z 2011 r. stwierdza jednak, że twardych dowodów na ich wpływ na publiczne kolejki jest mało.[^socha]
+
+## Gabinet jako drzwi do szpitala
+
+Na wizytę u specjalisty w ramach NFZ czeka się miesiącami, na planową operację — często ponad rok, a w skrajnych przypadkach latami. Prywatna wizyta skraca pierwszą kolejkę, ale bywa też drzwiami do drugiej.
+
+<Figure
+  title="Na endoprotezę stawu w ramach NFZ czeka się półtora roku. Ile skraca tę drogę płatna wizyta, nikt nie mierzy"
+  note="Średni czas oczekiwania w placówkach z umową z NFZ według Barometru WHC, IX/X 2025. Przypadek z Poznania: termin na 1.10.2035 r. dla pacjentki ze skierowaniem pilnym, według relacji „Głosu Wielkopolskiego” — szpital sprawy nie skomentował."
+  source={[{ label: 'Fundacja Watch Health Care, Barometr WHC', href: LINKS.whc }, { label: '„Głos Wielkopolski”, 28.09.2026', href: LINKS.gw }]}
+>
+  <DotRows
+    rows={QUEUES}
+    unitLabel="1 kropka = 1 miesiąc czekania. Krzyżyki: brak danych."
+    caption={`Czas oczekiwania w miesiącach: ${QUEUES.map((q) => `${q.label} — ${q.display}`).join('; ')}.`}
+  />
+</Figure>
+
+Mechanizm jest prosty. Do szpitala może skierować każdy lekarz, także w prywatnym gabinecie — skierowania od lekarza z umową z NFZ wymaga tylko poradnia specjalistyczna. Kategorię medyczną i termin nadaje szpital, często ten, w którym pracuje lekarz z gabinetu.[^art57][^art20] Płatna konsultacja nie jest więc tylko szybszą wizytą. Może otworzyć drogę na oddział, na którym pracuje ten sam lekarz, i do zabiegu, za który zapłaci NFZ. Jeśli pacjent dostaje przez to termin wcześniej, niż uzasadnia jego stan, płatna wizyta kupuje miejsce w publicznej kolejce.
+
+Lekarze sami wskazują ten problem. W ankiecie samorządu lekarskiego 41,4% respondentów wymieniło dopisywanie pacjentów poza przejrzystą kolejnością jako problem łączenia sektorów, a 27,3% — przenoszenie pacjentów z kolejki publicznej do wizyt prywatnych.[^nil] Kontrole NFZ wykazały w 2026 r. przyjęcia poza kolejnością na dużą skalę: w klinice warszawskiego szpitala uniwersyteckiego 70% przyjęć objętych kontrolą odbyło się niezgodnie z kolejnością, a w klinice jednego z warszawskich szpitali resortowych — ponad 97%.[^uck][^mswia] W żadnej z tych kontroli NFZ nie potwierdził, że pacjenci trafiali na oddział przez prywatny gabinet. W pierwszej taki zarzut stawiało anonimowe pismo pracowników, w drugiej wskazano darowizny na fundację przy szpitalu, czemu resort zaprzecza. Jak często gabinet otwiera drogę na oddział, nie wiadomo, bo nikt nie zestawia płatnych wizyt z przyjęciami finansowanymi przez NFZ. Szczegółowo opisujemy to w części [Bilet przez gabinet](/analizy/wizyty-prywatne-kolejka-cena/#bilet-przez-gabinet).
+
+## Konkurencja o lekarza
+
+Szpital nie kupuje „lekarza”, tylko jego godziny, a godzin specjalistów nie da się szybko dokupić — od przyjęcia na studia do tytułu specjalisty mija 12–13 lat. Tę samą, ograniczoną pulę godzin chcą kupić prywatne gabinety, przychodnie z umową z NFZ i kilka szpitali w okolicy. Wygląda to jak przeciąganie liny, w którym lina ma dwa końce, ale ciągnących jest wielu.
+
+<Figure
+  title="Szpital przeciąga linę z gabinetem i z sąsiednim szpitalem"
+  note="Pierwsza runda: średnie stawki godzinowe w ofertach pracy dla lekarzy z 2023 r. według typu placówki — oferty, nie wypłaty; poradnie specjalistyczne to według autorów raportu w większości placówki prywatne. Druga runda: Ostrzeszów i Kępno, grudzień 2025 r. Położenie lekarza na linie oddaje proporcję stawek (pierwsza runda) albo to, dokąd przeszli lekarze (druga); kropka pod liną to jej środek."
+  source={[{ label: 'Raport „Lekarze — oferty pracy” za 2023 r.', href: LINKS.lop }, { label: 'TVN24, 11.12.2025', href: LINKS.ostrzeszow }]}
+>
+  <TugOfWar
+    rounds={[
+      {
+        title: 'Runda 1: szpital publiczny kontra gabinet',
+        left: { pictogram: 'szpital', label: 'Szpital — średnia oferta', value: `${formatPL(OFFER.hospital)} zł/h`, sub: 'oferty pracy, 2023 r.' },
+        right: { pictogram: 'gabinet', label: 'Poradnia specjalistyczna — średnia oferta', value: `${formatPL(OFFER.aos)} zł/h`, sub: 'w większości prywatne' },
+        pull: pullOf(OFFER.hospital, OFFER.aos),
+        result: `Gabinet oferuje za godzinę o ${formatPL((OFFER.aos / OFFER.hospital - 1) * 100)}% więcej. Lekarz nie musi wybierać jednego miejsca, więc szpital dostaje te godziny, które zostaną po gabinecie — albo płaci więcej.`,
+      },
+      {
+        title: 'Runda 2: szpital publiczny kontra szpital publiczny',
+        left: { pictogram: 'szpital', label: 'Szpital w Ostrzeszowie', value: '0 z 5', sub: 'ginekologów zostało' },
+        right: { pictogram: 'szpital', label: 'Szpital w sąsiednim Kępnie', value: '5 z 5', sub: 'ginekologów przeszło' },
+        pull: 0.9,
+        result: 'Według szpitala w Ostrzeszowie konkurent zaoferował znacznie wyższe stawki; szpital w Kępnie temu zaprzecza. Oddział położniczy w Ostrzeszowie zawieszono.',
+      },
+    ]}
+  />
+</Figure>
+
+Najkrócej opisała to NIK w kontroli szpitala na Śląsku: niedobór kadr „wzmocnił pozycję negocjacyjną lekarzy”, a zarząd, chcąc utrzymać ciągłość oddziałów, był „zmuszony do akceptowania żądań płacowych”. Wydatki na wynagrodzenia pracowników wzrosły tam w latach 2018–2021 o ponad 60%, a na podwykonawstwo medyczne — o 49,8%.[^nik-kadry] Negocjacje przebiegają w podobnych krokach w wielu szpitalach:
+
+<Figure
+  title="Jak przebiega licytacja o zespół lekarzy"
+  note="Schemat. Wysokość słupków pokazuje kierunek licytacji, nie dokładne stawki; liczby w opisach pochodzą z kontroli NIK, raportu o ofertach pracy i relacji prasowych o konkretnych szpitalach."
+>
+  <BidSteps
+    steps={[
+      { side: 'left', who: 'Szpital', level: 2, value: '150 zł/h', text: 'Ogłasza konkurs ofert na dyżury albo obsadę oddziału. W jednym ze szpitali skontrolowanych przez NIK umowa z 2021 r. dawała 150 zł za godzinę.' },
+      { side: 'right', who: 'Konkurent', level: 4, value: '249 zł/h', text: 'Gabinet albo szpital w sąsiednim powiecie płaci więcej. Tyle wynosiła w 2023 r. średnia oferta w poradniach specjalistycznych.' },
+      { side: 'team', who: 'Zespół', level: 4, value: 'odejścia', text: 'Lekarze oddziału składają wypowiedzenia naraz — tak było w 2025 i 2026 r. m.in. w Nowogardzie, Pińczowie i Ełku.' },
+      { side: 'left', who: 'Szpital', level: 5, value: '+28,6%', text: 'Podbija stawkę albo zawiesza oddział. W Opolu fundusz płac lekarzy wzrósł w 2025 r. o 28,6%; w latach 2024–2025 zawieszono lub zlikwidowano 539 oddziałów.' },
+      { side: 'team', who: 'Rynek', level: 6, value: '240 zł/h', text: 'Nowa stawka staje się punktem odniesienia. Po zapowiedzi rządowego limitu 240 zł za godzinę część lekarzy zażądała podwyżki właśnie do tej kwoty.' },
+    ]}
+    legend={{ left: 'szpital, który szuka lekarzy', right: 'konkurent: gabinet albo inny szpital', team: 'lekarze' }}
+    caption="Schemat licytacji w pięciu krokach: szpital ogłasza konkurs (150 zł/h), konkurent płaci więcej (średnio 248,58 zł/h w poradniach), zespół składa wypowiedzenia, szpital podbija stawkę albo zawiesza oddział, nowa stawka staje się punktem odniesienia (żądania 240 zł/h po zapowiedzi limitu)."
+  />
+</Figure>
+
+Każdy krok ma swoje źródło.[^nik-zlecenia][^lop][^nowogard][^pinczow][^elk][^opole][^oddzialy][^kotwica] W innych szpitalach wygląda to podobnie. Gdy szpital powiatowy w Iłży szukał w lutym 2026 r. lekarzy na oddział wewnętrzny, kandydaci żądali 350–500 zł za godzinę, a dyrektor nazwał te kwoty „zabójczymi” dla szpitala.[^ilza] Szpital w Bartoszycach, z 90,7 mln zł długu, płacił w 2026 r. ortopedzie ok. 113 tys. zł miesięcznie, a mimo to od sierpnia łączy trzy oddziały, bo brakuje lekarzy.[^bartoszyce] W skali kraju „braki kadrowe” były powodem 321 z 539 decyzji o zawieszeniu lub likwidacji oddziałów; najczęściej dotyczyły położnictwa. To zestawienie redakcyjne z uzasadnień, które szpitale przesyłały do Ministerstwa Zdrowia, a „braki kadrowe” mogą oznaczać zarówno brak chętnych, jak i lekarzy, którzy odeszli, bo dostali lepszą ofertę.[^oddzialy] Prawie 91% szpitali powiatowych zamknęło 2025 r. stratą na podstawowej działalności.[^zpp]
+
+Arytmetyka jest prosta. Przy stałym budżecie liczba kupionych godzin jest odwrotnie proporcjonalna do stawki: jeśli godzina drożeje o połowę, za te same pieniądze szpital kupuje jedną trzecią godzin mniej. Wyższe stawki nie sprowadzają nowych lekarzy, bo ich liczbę wyznaczają decyzje sprzed lat. Sprawiają za to, że ci sami lekarze przenoszą godziny tam, gdzie płacą więcej. Szpital, który przegrał licytację, zawiesza oddział, pacjenci jadą dalej albo idą prywatnie. Słabszy szpital ma mniej pieniędzy na kolejną rundę. Tak spirala się domyka — i tak dodatkowe publiczne pieniądze zamieniają się w droższą godzinę zamiast w krótszą kolejkę.
+
+Spiralę znają też inne kraje. Angielskie szpitale wydawały w roku 2014/15 na personel medyczny z agencji 3,3 mld funtów, o połowę więcej niż pięć lat wcześniej, a brytyjska izba kontroli stwierdziła statystycznie istotny związek tych wydatków z deficytami szpitali.[^nao] W Szwecji wszystkie regiony ograniczyły wynajem personelu i w 2024 r. wydatki na wynajętych lekarzy spadły o 23%, a na wynajęty personel ogółem — o 35,8%.[^skr] Licytację da się zatrzymać, gdy kupujący przestają się nawzajem przebijać — ale do tego trzeba wiedzieć, ile kto płaci.
+
+## Uspołecznienie kosztów, prywatyzacja zysków
+
+W Polsce, jak w USA, część kosztów ochrony zdrowia zostaje po stronie publicznej niezależnie od tego, kto świadczy usługę i kto na niej zarabia. Opisujemy ten mechanizm na pięciu przykładach. Żaden nie oznacza, że ktoś łamie prawo, a część z nich to po prostu zadania, które spoczywają na państwie. Razem pokazują jednak, gdzie leżą koszty, a gdzie marża.
+
+<NumberedList
+  items={[
+    { title: 'Kształcenie płaci państwo, umiejętności sprzedaje lekarz.', text: 'Sześć lat studiów lekarskich kosztowało według Ministerstwa Zdrowia 200–250 tys. zł (wycena z 2021 r.). Staże i specjalizacje kosztowały budżet w 2025 r. 4,1 mld zł. Obowiązek pracy w publicznej ochronie zdrowia mają tylko osoby, które wzięły kredyt na studia płatne. Absolwent studiów bezpłatnych może od pierwszego dnia pracować wyłącznie prywatnie.' },
+    { title: 'Najstarszych i najciężej chorych leczy NFZ.', text: 'Osoby po 60. roku życia to 25,9% ludności, ale 55,4% wydatków NFZ na leczenie szpitalne. Dodatkowe ubezpieczenie albo abonament ma 49% osób w wieku 25–34 lat i 16% osób po 65. roku życia. Abonament obsługuje głównie pracujących, kosztowne ryzyko zostaje w publicznym systemie.' },
+    { title: 'Dochodowe świadczenia idą osobno, reszta do szpitala.', text: 'NIK w kontroli z 2016 r. ustaliła, że w niepublicznych ośrodkach kardiologii świadczenia inwazyjne stanowiły 81–99% wszystkich, w publicznych — 31–81%. NFZ wyceniał je 5–6 razy wyżej niż leczenie zachowawcze. Prywatne oddziały działały zwykle w pomieszczeniach wynajętych od szpitali publicznych, a resztę pacjentów przejmował szpital. W jednym przypadku NIK stwierdziła „świadomie prowadzoną selekcję pacjentów”.' },
+    { title: 'Te same sale i te same godziny.', text: 'W kontroli Szpitala Południowego w Warszawie NIK ustaliła w 2026 r., że na oddziale ortopedii nie rozdzielono świadczeń NFZ i odpłatnych, a u dwóch z czterech lekarzy godziny rozliczane z NFZ nakładały się na godziny pracy komercyjnej.' },
+    { title: 'Straty pokrywa samorząd.', text: 'Powiaty i miasta na prawach powiatu dołożyły do szpitali w latach 2015–2025 ponad 10 mld zł. Zobowiązania publicznych szpitali sięgały pod koniec 2025 r. 34 mld zł. Notowana na giełdzie grupa medyczna, która ponad połowę przychodów osiąga w Polsce, a 79% — od płatników prywatnych, wykazała w 2025 r. marżę EBITDA 15,6%.' },
+  ]}
+/>
+
+Każdy punkt ma swoje źródło i swoje granice.[^druk1569][^nik-budzet][^kredyt][^gus-60][^cbos][^nik-kardio][^nik-poludniowy][^zpp-samorzady][^medicover] Ustalenia NIK o kardiologii dotyczą lat 2011–2014 i od tamtej pory wyceny się zmieniały. Wynik prywatnej grupy nie dowodzi, że zarabia ona kosztem szpitali publicznych — to inny model działania, w którym da się wybrać pacjenta i zakres usług. Samorząd nie musi pokrywać strat szpitala, tylko może, choć w praktyce robi to regularnie.[^uodl] Wspólny mianownik jest jeden: koszty, których nie da się wybrać — kształcenie, dyżury, pacjent wielochorobowy, deficyt — zostają po stronie publicznej. Przychody, które da się wybrać, mogą przejść na stronę prywatną.
+
+Są też koszty, których nikt nie liczy. Powikłania po zabiegach wykonanych komercyjnie, w kraju albo za granicą, leczy się w nagłych przypadkach na koszt NFZ, ale nie ma rejestru, który pozwoliłby ustalić, ile to kosztuje.
+
+<Aside title="Lekarz nie jest tu winowajcą" variant="warn" label="Jak czytać ten mechanizm">
+Lekarz, który przyjmuje lepszą ofertę, zachowuje się racjonalnie — tak samo jak informatyk czy inżynier. Mediana miesięcznych zarobków lekarzy na etacie i na kontrakcie wynosi według AOTMiT 24–27 tys. zł; ponad 100 tys. zł miesięcznie zarabia ok. 1,5% z nich.[^aotmit] Problem nie leży w zarobkach przeciętnego lekarza, tylko w tym, że kilkaset szpitali licytuje się o te same godziny po omacku, a publiczny płatnik nie widzi, co kupuje.
+</Aside>
+
+## Zakazać łączenia?
+
+Najprostsza odpowiedź na konflikt interesów to zakazać lekarzowi pracy w obu sektorach. Ten pomysł wraca w polityce regularnie. W 2026 r. zapowiadały go zarówno PiS, które chce wpisać zakaz do programu partii, jak i Nowa Lewica w projekcie dotyczącym finansowania ochrony zdrowia. Uzasadnienie brzmi podobnie jak w tym tekście: podmioty prywatne zarabiają, a trudne przypadki zostają w systemie publicznym.[^prawo-zakaz] W sondażu IBRiS dla „Rzeczpospolitej” z lipca 2026 r. 53,5% badanych uznało, że lekarze nie powinni łączyć pracy w obu sektorach, a 40,7% — że mogą.[^ibris]
+
+Lekarze widzą to inaczej. W ankiecie samorządu lekarskiego pełny zakaz poparło 15,1% respondentów, a najwięcej poparcia — 71,9% — zebrało rozdzielenie kolejek, grafików i rozliczeń publicznych i prywatnych.[^nil] Ogólnopolski Związek Zawodowy Lekarzy ostrzega, że zakaz wypchnie część lekarzy do sektora prywatnego.[^prawo-zakaz] Prezydium Naczelnej Rady Lekarskiej ocenia, że sztywne ograniczenia przy niedoborze kadr zmniejszą liczbę świadczeń w NFZ i zwiększą liczbę świadczeń wyłącznie prywatnych.[^nrl] Rządowy projekt zmian w ustawie o świadczeniach, nad którym pracuje Sejm, zakazu nie wprowadza. Ogranicza łączny czas pracy i wynagrodzenia oraz daje NFZ wgląd w usługi komercyjne placówek, które mają z nim umowy.[^druk3157]
+
+Zakaz rozwiązuje jeden problem — konflikt interesów — ale może pogłębić drugi. Przy stałej liczbie lekarzy część specjalistów wybrałaby gabinet, publiczna kolejka by się wydłużyła, a stawki dla tych, którzy zostali, wzrosłyby — to ten sam mechanizm licytacji, tylko z mocniejszym przeciwnikiem. Irlandia idzie drogą stopniową: od 2023 r. nowi konsultanci w publicznej służbie zdrowia dostają tylko umowy „wyłącznie publiczne”. W sierpniu 2025 r. miało je 64% konsultantów, ale wewnętrzny audyt wykazał, że nie ma systemu, który sprawdzałby wygaszanie praktyki prywatnej w szpitalach publicznych.[^irl] Brytyjskie i irlandzkie rozwiązania opisujemy szerzej w części [Zakazać łączenia?](/analizy/wizyty-prywatne-kolejka-cena/#zakazac-laczenia) analizy o wizytach prywatnych. Wspólny wniosek: bez danych o tym, kto, gdzie i ile pracuje, nie da się ani egzekwować zakazu, ani sprawdzić, czy jest potrzebny.
+
+## Co daje sektor prywatny
+
+Prywatna część systemu nie jest tylko kosztem. W 2024 r. dołożyła 66,4 mld zł, których budżet publiczny by nie wyłożył.[^nrz2024] Prywatne spółki z umowami z NFZ zwiększają przepustowość tam, gdzie płatnik kupuje wolumen: po zniesieniu limitów na operacje zaćmy średni czas oczekiwania spadł z 398 dni w 2019 r. do 55 dni pod koniec 2024 r.[^zacma] Praca w dwóch sektorach może też zwiększać łączną liczbę godzin lekarzy. W Norwegii, gdzie zbadano ponad 12 tys. lekarzy szpitalnych, takie łączenie nie miało związku z czasem oczekiwania, a lepiej płatne dodatkowe godziny w szpitalu zmniejszały skłonność do pracy prywatnej.[^norwegia]
+
+Ten ostatni wynik dobrze pokazuje, gdzie leży granica. Sektor prywatny pomaga, gdy płatnik publiczny wie, co kupuje, i potrafi zapłacić za godzinę tyle, żeby lekarz nie musiał jej szukać gdzie indziej. Szkodzi, gdy publiczny system jest za słaby, by płacić konkurencyjnie, i za ślepy, by widzieć, gdzie wypływają jego godziny i pacjenci.
+
+## Granica, której nie widać
+
+Dziś nikt w Polsce nie wie, ile godzin jeden lekarz przepracowuje dla NFZ, a ile prywatnie, ile łącznie dostaje z publicznych pieniędzy ze wszystkich miejsc pracy ani ile płaci za tę samą godzinę szpital w sąsiednim powiecie. Tej wiedzy nie ma NFZ, nie mają jej dyrektorzy szpitali ani pacjenci. Rządowy projekt da Funduszowi wgląd w usługi komercyjne placówek, ale płatnik zobaczy pojedyncze placówki, a nie sumę dla jednej osoby.[^druk3157]
+
+Szwedzkie regiony ograniczyły licytację o wynajęty personel, bo co roku publicznie liczą, ile na niego wydają.[^skr] Amerykanie zakazali kierowania pacjentów do własnych placówek, bo policzyli, ile to kosztuje, a wypłaty Medicare dla lekarzy publikują z nazwiskami.[^gao][^cms-npi] W obu przypadkach pierwszym krokiem była liczba. Nasz postulat jest skromniejszy niż amerykańska praktyka: jawne kwoty pod stałym pseudonimem, bez nazwisk. Bez takich danych każda kolejna złotówka dla publicznej ochrony zdrowia może kupić więcej leczenia — albo tylko podnieść cenę godziny w kolejnej rundzie licytacji.
+
+<Aside title="Czego te dane nie pokazują" variant="note">
+Nikt nie mierzy przepływu lekarzy i godzin między sektorem publicznym a prywatnym. Dlatego najsłabszym ogniwem opisanej spirali jest jej początek: nie da się dziś zmierzyć, o ile lepsza oferta gabinetu podnosi stawkę w szpitalu. Wśród opisanych tu przypadków zawieszenia oddziałów żaden nie dokumentuje przejścia lekarzy do sektora prywatnego — udokumentowana jest licytacja między szpitalami. Część wzrostu kosztów płac w szpitalach wynika z ustawy o najniższych wynagrodzeniach, a nie z rynku kontraktów; dostępne dane nie pozwalają oddzielić jednego od drugiego. Kolejki wydłużają też przyczyny niezależne od pieniędzy, m.in. starzenie się pacjentów. Porównania z UE i OECD opierają się na rachunkach zdrowia, których metodologia bywa rewidowana.
+</Aside>
+
+[^whc]: Fundacja Watch Health Care, [Barometr WHC — raport z IX/X 2025](https://www.korektorzdrowia.pl/wp-content/uploads/barometr-whc-2025.pdf) — średni czas oczekiwania na pojedyncze świadczenie 4,2 mies., najdłuższy w historii pomiarów; kardiolog 4,6 mies., gastroskopia 5,8 mies., endoprotezoplastyka stawu biodrowego 17,6 mies., stawu kolanowego (przypadek stabilny) 18,9 mies.
+
+[^nfz-plany]: NFZ, Biuletyn Informacji Publicznej, [Finanse NFZ — plany finansowe](https://www.nfz.gov.pl/bip/finanse-nfz/) — koszty w ostatecznych planach finansowych na lata 2015–2025; seria jak w zestawieniu [Budżet NFZ](/dane/budzet-nfz/), wzrost kolejki liczony jak w zestawieniu [Pieniądze a kolejka](/dane/kolejki/).
+
+[^nrz2024]: [Obwieszczenie Prezesa GUS z 30 września 2026 r. w sprawie Narodowego Rachunku Zdrowia za 2024 r.](https://api.sejm.gov.pl/eli/acts/MP/2026/971/text.pdf) (M.P. 2026 poz. 971) — wydatki bieżące na ochronę zdrowia 287 565,5 mln zł, publiczne 221 187,8 mln zł, prywatne 66 377,7 mln zł, w tym bezpośrednie wydatki gospodarstw domowych 47 640,5 mln zł (w 2023 r. 38 633,2 mln zł).
+
+[^nrz2015]: Obwieszczenia Prezesa GUS w sprawie Narodowego Rachunku Zdrowia za lata 2015–2023 — za 2015 r.: wydatki bieżące 114 142,4 mln zł, publiczne 79 886,6 mln zł, prywatne 34 255,8 mln zł; bezpośrednie wydatki gospodarstw domowych w kolejnych latach jak na wykresie. Krotności i udziały — nasz rachunek, w cenach bieżących.
+
+[^nrz-seria]: GUS, [Wydatki na ochronę zdrowia w latach 2022–2024](https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/wydatki-na-ochrone-zdrowia-w-latach-2022-2024,27,5.html), tablice — systemy dobrowolnego ubezpieczenia zdrowotnego (HF.2.1: składki na dobrowolne ubezpieczenia i abonamenty medyczne) 5 752,1 mln zł w 2015 r. i 11 645,8 mln zł w 2023 r. (dane wstępne).
+
+[^cms]: Centers for Medicare & Medicaid Services, [National Health Expenditure — Fact Sheet](https://www.cms.gov/data-research/statistics-trends-and-reports/national-health-expenditure-data/nhe-fact-sheet) — dane za 2024 r.: 5,3 bln USD, 15 474 USD na osobę, 18,0% PKB; udziały płatników; wydatki według wieku (2020 r.): osoby 65+ ok. 17% ludności i ok. 37% wydatków.
+
+[^cms-npi]: Centers for Medicare & Medicaid Services, [Medicare Physician & Other Practitioners — by Provider](https://data.cms.gov/provider-summary-by-type-of-service/medicare-physician-other-practitioners/medicare-physician-other-practitioners-by-provider) — roczne zestawienia od 2013 r.: lekarz z nazwiskiem i numerem NPI, liczba usług i łączna kwota wypłacona przez Medicare.
+
+[^oecd-finanse]: OECD, [*Health at a Glance 2025*, „Public funding of health spending”](https://www.oecd.org/en/publications/health-at-a-glance-2025_8f9e3f98-en/full-report/public-funding-of-health-spending_ff3ad2d2.html) — udział finansowania publicznego w USA 54% w 2023 r.
+
+[^oecd-sha]: OECD, System of Health Accounts, baza danych (wydatki według schematów finansowania, USD PPP na mieszkańca, 2024 r., pobrane 20.10.2026); [*Health at a Glance 2025*, „Health expenditure by financing scheme”](https://www.oecd.org/en/publications/health-at-a-glance-2025_8f9e3f98-en/full-report/health-expenditure-by-financing-scheme_074bead0.html) — część wydatków „obowiązkowych” w USA to prywatne ubezpieczenia wymagane ustawą Affordable Care Act; liczba praktykujących lekarzy na 1000 mieszkańców: USA 2,7 (2022), Polska 3,9 (2024). Porównanie z pozostałymi krajami — nasz rachunek.
+
+[^oecd-profil]: OECD, *Health at a Glance 2025*, profile krajowe: [Stany Zjednoczone](https://www.oecd.org/en/publications/health-at-a-glance-2025_15a55280-en/united-states_3517f35e-en.html) i [Polska](https://www.oecd.org/en/publications/health-at-a-glance-2025_15a55280-en/poland_c3917772-en.html) — oczekiwana długość życia w 2023 r. 78,4 roku w obu krajach; wydatki na mieszkańca w 2024 r. 14 885 i 4 284 USD PPP.
+
+[^nhis]: CDC, National Center for Health Statistics, [komunikat z 24.06.2025](https://www.cdc.gov/nchs/pressroom/releases/20250624.html) — w 2024 r. bez ubezpieczenia zdrowotnego było 8,2% mieszkańców USA (27,2 mln osób).
+
+[^cfpb]: Consumer Financial Protection Bureau, [Medical Debt Burden in the United States](https://www.consumerfinance.gov/data-research/research-reports/medical-debt-burden-in-the-united-states/), 2022 — 88 mld USD długów medycznych w raportach kredytowych (stan na czerwiec 2021 r.).
+
+[^rand]: RAND, [Prices Paid to Hospitals by Private Health Plans: Findings from Round 5.1](https://www.rand.org/pubs/research_reports/RRA1144-2-v2.html) — ceny z 2022 r.: szpitale 254% stawek Medicare, usługi lekarzy 184%.
+
+[^bls]: U.S. Bureau of Labor Statistics, [Occupational Employment and Wage Statistics, maj 2025](https://www.bls.gov/oes/current/oes_nat.htm) — średnie roczne wynagrodzenie lekarzy 277 260 USD, wszystkich pracowników 69 770 USD (bez samozatrudnionych). Krotność — nasz rachunek.
+
+[^medpac]: MedPAC, [raport dla Kongresu z marca 2026 r. — komunikat](https://www.medpac.gov/wp-content/uploads/2026/03/March_2026_MedPAC_Report_Press_Release_SEC.pdf) — Medicare wydaje na osoby w planach Medicare Advantage ok. 14% więcej niż w tradycyjnym Medicare, ok. 76 mld USD w 2026 r.; główny składnik to korzystna selekcja (ok. 11%).
+
+[^aha]: American Hospital Association, [Fact Sheet: Uncompensated Hospital Care Cost](https://www.aha.org/fact-sheets/2020-01-06-fact-sheet-uncompensated-hospital-care-cost) — 42,67 mld USD w 2020 r.; obowiązek z ustawy EMTALA z 1986 r. opisuje [CMS](https://www.cms.gov/medicare/regulations-guidance/legislation/emergency-medical-treatment-labor-act).
+
+[^crs]: Congressional Research Service, [Medicare Graduate Medical Education, 2025](https://www.congress.gov/crs_external_products/IF/PDF/IF13088/IF13088.3.pdf) (IF13088) — szacunkowo 21,2 mld USD w roku budżetowym 2023; limit miejsc ustalony na liczbie rezydentów z 1996 r. (Balanced Budget Act z 1997 r.).
+
+[^kff]: KFF, [The Estimated Value of Tax Exemption for Nonprofit Hospitals Was About $28 Billion in 2020](https://www.kff.org/health-costs/issue-brief/the-estimated-value-of-tax-exemption-for-nonprofit-hospitals-was-about-28-billion-in-2020/) — szacunek; koszty bezpłatnego leczenia (charity care) w tych szpitalach ok. 16 mld USD.
+
+[^gao]: U.S. Government Accountability Office, [Higher Use of Advanced Imaging Services by Providers Who Self-Refer](https://www.gao.gov/products/gao-12-966) (GAO-12-966), 2012; zakaz kierowania do placówek, w których lekarz ma interes finansowy (tzw. Stark Law), opisuje [CMS](https://www.cms.gov/medicare/regulations-guidance/physician-self-referral).
+
+[^kel]: [Kodeks Etyki Lekarskiej](https://www.mp.pl/etyka/dokumenty/show.html?id=384918) (obowiązuje od 1.01.2025), art. 65. W ustawie o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych i ustawie o działalności leczniczej odpowiednika tego zakazu nie znaleźliśmy.
+
+[^piu]: Polska Izba Ubezpieczeń, [Rynek ubezpieczeń zdrowotnych w 2025 roku nadal rośnie dwucyfrowo](https://piu.org.pl/rynek-ubezpieczen-zdrowotnych-w-2025-roku-nadal-rosnie-dwucyfrowo/), 14.05.2026 — ponad 5,8 mln osób, składka 2,65 mld zł; dane dotyczą polis, bez abonamentów medycznych.
+
+[^bgd]: GUS, [Sytuacja gospodarstw domowych w 2025 r. w świetle badania budżetów gospodarstw domowych](https://stat.gov.pl/obszary-tematyczne/warunki-zycia/dochody-wydatki-i-warunki-zycia-ludnosci/sytuacja-gospodarstw-domowych-w-2025-r-w-swietle-badania-budzetow-gospodarstw-domowych,3,25.html) — wydatki na osobę 2 015 zł miesięcznie, w tym zdrowie 6,0%, usługi ambulatoryjne 2,1% (w 2019 r. 1,35% z 1 252 zł). Kwoty w złotych — nasz rachunek z udziałów.
+
+[^gus-amb]: GUS, [Ambulatoryjna opieka zdrowotna w 2025 r.](https://stat.gov.pl/download/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/13/10/1/ambulatoryjna_opieka_zdrowotna_2025.pdf), 28.05.2026 — 25 119 przychodni i 486 praktyk lekarskich „świadczących usługi w ramach środków publicznych”, 330,7 mln porad lekarskich.
+
+[^cbos]: CBOS, [Korzystanie ze świadczeń i ubezpieczeń zdrowotnych](https://www.cbos.pl/SPISKOM.POL/2025/K_069_25.PDF), komunikat z badań nr 69/2025 — wizyty u specjalisty poza NFZ w 2018 i 2025 r.; wzorce korzystania (tylko NFZ 24%, oba systemy 53%, tylko poza NFZ 11%); dodatkowe ubezpieczenie zdrowotne ogółem i według wieku.
+
+[^cbos2023]: CBOS, [komunikat z badań nr 101/2023](https://cbos.pl/SPISKOM.POL/2023/K_101_23.PDF) — motywy korzystania z niepublicznej opieki zdrowotnej; krótszy czas oczekiwania wskazało 79% korzystających.
+
+[^nil]: Naczelna Izba Lekarska, [Raport z badania „Perspektywa 27”](https://nil.org.pl/uploaded_files/art_1778144361_perspektywa-27-final.pdf), 2026 — badanie internetowe, próba nielosowa (N = 2243); model pracy, problemy łączenia sektorów, poparcie dla wariantów regulacji.
+
+[^soh-at]: OECD i European Observatory on Health Systems and Policies, [State of Health in the EU: Austria, Country Health Profile 2025](https://health.ec.europa.eu/document/download/074dbff5-8c8d-459c-8623-52d0b895bc07_en?filename=2025_chp_at_english.pdf) — lekarze kasowi i lekarze wybrani; więcej w analizie [Zarobki lekarzy w Polsce na tle Europy](/analizy/zarobki-lekarzy-polska-sasiedzi/).
+
+[^eurostat]: Eurostat, [Health care expenditure by financing scheme](https://ec.europa.eu/eurostat/databrowser/view/hlth_sha11_hf/) (hlth_sha11_hf), 2024 r., pobrane 20.10.2026 — wydatki bieżące w % PKB, wydatki publiczne na mieszkańca w PPS, udział wydatków z kieszeni (HF.3) i pozostałych prywatnych (HF.2), Polska i UE-27.
+
+[^silc]: Eurostat, EU-SILC, [Self-reported unmet needs for medical examination by sex, age, main reason declared and income quintile](https://ec.europa.eu/eurostat/databrowser/view/hlth_silc_08/) (hlth_silc_08), 2025 r., osoby w wieku 16 lat i więcej.
+
+[^tuohy]: C. H. Tuohy, C. M. Flood, M. Stabile, [How Does Private Finance Affect Public Health Care Systems? Marshaling the Evidence from OECD Nations](https://doi.org/10.1215/03616878-29-3-359), *Journal of Health Politics, Policy and Law* 29(3), 2004, s. 359–396.
+
+[^johar]: M. Johar i in., [Waiting times for elective surgery and the decision to buy private health insurance](https://doi.org/10.1002/hec.1707), *Health Economics* 20(S1), 2011, s. 68–86; M. Johar i in., [Are waiting list prioritization guidelines being followed in Australia?](https://doi.org/10.1177/0272989X14532530), *Medical Decision Making* 34(8), 2014, s. 976–986 — wyższy priorytet dla pacjentów prywatnych w szpitalach publicznych Nowej Południowej Walii.
+
+[^socha]: K. Z. Socha, M. Bech, [Physician dual practice: a review of literature](https://ideas.repec.org/a/eee/hepoli/v102y2011i1p1-7.html), *Health Policy* 102(1), 2011, s. 1–7.
+
+[^art57]: [Ustawa z 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (t.j. Dz.U. 2025 poz. 1461), art. 57 ust. 1 (poradnie specjalistyczne — skierowanie lekarza ubezpieczenia zdrowotnego) i art. 58 (leczenie szpitalne — skierowanie lekarza, lekarza dentysty lub felczera).
+
+[^art20]: Tamże, art. 20 ust. 1 i ust. 2 pkt 1–2 — kolejność zgłoszenia i kategoria medyczna ustalana przez świadczeniodawcę.
+
+[^uck]: Rynek Zdrowia, [Pacjenci poza kolejką. Nieprawidłowości i 300 tys. zł kary dla kolejnego warszawskiego szpitala](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Pacjenci-poza-kolejka-Nieprawidlowosci-i-300-tys-zl-kary-dla-kolejnego-warszawskiego-szpitala,285677,1.html), czerwiec 2026 — kara 289 tys. zł; zarzut dotyczący prywatnego gabinetu pochodził z anonimowego pisma i nie został potwierdzony; szpital kwestionuje wyniki kontroli.
+
+[^mswia]: Rzeczpospolita, [NFZ: 97 proc. przyjęć poza kolejką w szpitalu MSWiA. Jest kara i śledztwo CBA](https://www.rp.pl/ochrona-zdrowia/art43883541-masowe-przyjecia-poza-kolejnoscia-w-szpitalu-mswia-nfz-przedstawil-wyniki-kontroli), 27.02.2026 — 2 178 z 2 244 przyjęć poza kolejnością w latach 2022–2025, kara 507,5 tys. zł; resort kwestionuje ustalenia dotyczące darowizn.
+
+[^nik-kadry]: NIK, [wystąpienie pokontrolne LKA.410.018.04.2022](https://nik.gov.pl/kontrole/wyniki-kontroli-nik/pobierz,lka~p_22_047_202206131523571655126637~id3~01,typ,kj.pdf) w ramach kontroli P/22/047 „Zasoby kadry medycznej w systemie ochrony zdrowia”, 2022.
+
+[^nik-zlecenia]: NIK, [Zlecanie usług medycznych przez szpitale publiczne](https://www.nik.gov.pl/plik/id,28541,vp,31371.pdf) (160/2022/P/22/046/KZD) — m.in. umowa z 30.07.2021 r. na dyżury specjalistyczne ze stawką 150 zł za godzinę.
+
+[^lop]: Raport „Lekarze — oferty pracy” za 2023 r., [PDF](https://www.termedia.pl/pobierz/28761ac10ff69d4055cd0f793cfa9175) — stawki z ogłoszeń w grupie lekarzy w mediach społecznościowych, nie wypłaty; średnio 198,29 zł/h; poradnie specjalistyczne 248,58 zł/h, szpitale 162,79 zł/h.
+
+[^nowogard]: Rynek Zdrowia (za PAP), [Wszyscy lekarze na oddziale złożyli wypowiedzenia. Szpital zawiesza kluczowe świadczenia](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Wszyscy-lekarze-na-oddziale-zlozyli-wypowiedzenia-Szpital-zawiesza-kluczowe-swiadczenia,279678,1.html), 5.01.2026.
+
+[^pinczow]: abcZdrowie, [Oddział wewnętrzny bez lekarzy. Szpital w Pińczowie wstrzymuje przyjęcia](https://portal.abczdrowie.pl/oddzial-wewnetrzny-bez-lekarzy-szpital-w-pinczowie-wstrzymuje-przyjecia/7278700377495552a), 21.04.2026.
+
+[^elk]: tko.pl, [Jedyny taki oddział na Mazurach zawieszony. Lekarze odeszli ze szpitala](https://tko.pl/387480,2026,09,07,jedyny-taki-oddzial-na-mazurach-zawieszony-lekarze-odeszli-ze-szpitala), 7.09.2026.
+
+[^opole]: abcZdrowie (za „Gazetą Wyborczą”), [Opole. Lekarze postawili ultimatum. Szpital uległ, wypłaca podwyżki](https://portal.abczdrowie.pl/opole-lekarze-postawili-ultimatum-szpital-ulegl-wyplaca-podwyzki/7312310288730496a), 28.07.2026 — fundusz płac lekarzy 40,68 mln zł (2024) i 52,33 mln zł (2025); money.pl, [Szpital podniósł stawki lekarzom. Inaczej zamknąłby oddziały](https://www.money.pl/gospodarka/szpital-podniosl-stawki-lekarzom-inaczej-zamknalby-oddzialy-7312024781994336a.html), 27.07.2026.
+
+[^kotwica]: Interia Biznes, [Lekarze chcą podwyżek. „Pani dyrektor, słyszymy, że możemy zarabiać 240 zł”](https://biznes.interia.pl/gospodarka/news-limity-zarobkow-lekarzy-w-szpitalach-widac-pierwsze-efekty-p,nId,23516042), lipiec 2026 — relacja Polskiej Federacji Szpitali.
+
+[^ilza]: Rynek Zdrowia, [500 zł za godzinę pracy lekarza w Iłży. „Kwoty nie są wysokie, one są zabójcze”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/500-zl-za-godzine-pracy-lekarza-w-Ilzy-Kwoty-nie-sa-wysokie-one-sa-zabojcze,281306,1.html), 20.02.2026.
+
+[^bartoszyce]: money.pl (za PAP), [Szpital walczy o przetrwanie. Tyle płaci lekarzom, a chętnych i tak brakuje](https://www.money.pl/gospodarka/szpital-walczy-o-przetrwanie-tyle-placi-lekarzom-a-chetnych-i-tak-brakuje-7307014998792544a.html), 13.07.2026.
+
+[^oddzialy]: abcZdrowie, [539 zawieszonych i zamkniętych oddziałów szpitalnych. Powodem głównie braki kadrowe](https://portal.abczdrowie.pl/539-zawieszonych-i-zamknietych-oddzialow-szpitalnych-powodem-glownie-braki-kadrowe/7242595503827456a), 12.01.2026 — zestawienie „Menedżera Zdrowia” z uzasadnień szpitali przesłanych do MZ: 95 likwidacji i 444 zawieszenia w 201 szpitalach, 93 dotyczyły położnictwa i ginekologii.
+
+[^zpp]: Związek Powiatów Polskich, [stanowisko z 17.06.2026 r.](https://www.zpp.pl/storage/files/2026-06/f82bcbc5a925e49b7436d94a6ea94a077397.pdf) — prawie 91% szpitali powiatowych ze stratą na działalności podstawowej za 2025 r.
+
+[^nao]: National Audit Office, [Managing the supply of NHS clinical staff in England](https://www.nao.org.uk/wp-content/uploads/2016/02/Managing-the-supply-of-NHS-clinical-staff-in-England.pdf), 2016 — wydatki trustów na personel agencyjny 2,2 mld funtów (2009/10) i 3,3 mld funtów (2014/15).
+
+[^skr]: Sveriges Kommuner och Regioner, [Kostnad för inhyrd personal, helår 2024](https://skr.se/download/18.1bd4a187199a31bc44792cd9/1759833220818/Kostnad-inhyrd-personal-helar-2024_SKR.pdf) — wynajęty personel ogółem −35,8% w 2024 r.; wynajęci lekarze: 4,95 mld koron (2023) i 3,83 mld koron (2024).
+
+[^druk1569]: [Rządowy projekt ustawy o zmianie ustawy — Prawo o szkolnictwie wyższym i nauce oraz niektórych innych ustaw](https://api.sejm.gov.pl/sejm/term9/prints/1569/1569.pdf) (druk sejmowy nr 1569, IX kadencja, 2021), uzasadnienie — koszt kształcenia na kierunku lekarskim 200–250 tys. zł w zależności od uczelni; metodyka niepodana.
+
+[^nik-budzet]: NIK, [Analiza wykonania budżetu państwa i założeń polityki pieniężnej w 2025 r.](https://www.nik.gov.pl/plik/id,32191.pdf) — „finansowanie staży i specjalizacji medycznych” 4 124,3 mln zł.
+
+[^kredyt]: [Ustawa z 17 listopada 2021 r. o zmianie ustawy — Prawo o szkolnictwie wyższym i nauce oraz niektórych innych ustaw](https://api.sejm.gov.pl/eli/acts/DU/2021/2232/text.pdf) (Dz.U. 2021 poz. 2232) — kredyt na odpłatne studia medyczne umarzany po 10 latach pracy w ciągu 12 lat w podmiocie ze środków publicznych i uzyskaniu specjalizacji priorytetowej (art. 103d Prawa o szkolnictwie wyższym).
+
+[^gus-60]: GUS, [Sytuacja osób starszych w Polsce w 2022 roku](https://stat.gov.pl/obszary-tematyczne/osoby-starsze/osoby-starsze/sytuacja-osob-starszych-w-polsce-w-2022-roku,2,5.html) — osoby w wieku 60+: 25,9% ludności i 55,4% kwoty refundacji NFZ za leczenie szpitalne.
+
+[^nik-kardio]: NIK, [Realizacja świadczeń zdrowotnych z zakresu kardiologii przez publiczne i niepubliczne podmioty lecznicze](https://www.nik.gov.pl/plik/id,10872,vp,13213.pdf) (P/14/078, 2016), okres 2011–2015 — struktura świadczeń, wycena, lokalizacja oddziałów niepublicznych, selekcja pacjentów w jednym podmiocie; śmiertelność po angioplastyce we wszystkich skontrolowanych ośrodkach niższa od średniej krajowej.
+
+[^nik-poludniowy]: NIK, [NIK o działalności Warszawskiego Szpitala Południowego](https://www.nik.gov.pl/aktualnosci/nik-o-dzialalnosci-warszawskiego-szpitala-poludniowego.html), lipiec 2026 (I/25/003/KZD).
+
+[^zpp-samorzady]: Rynek Zdrowia, [Powiaty wydają miliony na wsparcie szpitali. Najnowszy raport pokazuje skalę tych wydatków](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Powiaty-wydaja-miliony-na-wsparcie-szpitali-Najnowszy-raport-pokazuje-skale-tych-wydatkow,284813,1.html), 27.05.2026 — za raportem ZPP; zobowiązania szpitali zestawiamy w [Zadłużeniu szpitali](/dane/zadluzenie-szpitali/).
+
+[^medicover]: Medicover AB, [Interim report January–December 2025](https://storage.mfn.se/53b2f4c9-bbb2-43cc-a866-f9a73893d762/interim-report-january-december-2025.pdf) — grupa: przychody 2 378,1 mln euro, EBITDA 371,0 mln euro, 79% przychodów od płatników prywatnych; Polska — 1 240,3 mln euro przychodów. Marża — nasz rachunek.
+
+[^uodl]: [Ustawa z 15 kwietnia 2011 r. o działalności leczniczej](https://api.sejm.gov.pl/eli/acts/DU/2026/156/text.pdf) (t.j. Dz.U. 2026 poz. 156), art. 59 ust. 2 — podmiot tworzący „może” pokryć stratę netto.
+
+[^aotmit]: Polityka Zdrowotna, [100 tys. zł miesięcznie to dopiero początek. AOTMiT połączy dane lekarzy](https://politykazdrowotna.com/artykul/prezes-rutkowski-aotmit-n2439295), 5.08.2026 — mediana 24,4 tys. zł (etat) i 26,6 tys. zł (kontrakt), ok. 1,5% lekarzy powyżej 100 tys. zł miesięcznie.
+
+[^prawo-zakaz]: Prawo.pl, [Jeden lekarz, jeden etat — recepta czy przepis na katastrofę?](https://www.prawo.pl/zdrowie/czy-lekarze-beda-mogli-pracowac-tylko-w-jednej-placowce,1547003.html), 22.06.2026 — zapowiedzi zakazu łączenia pracy w programie PiS i w projekcie Nowej Lewicy; stanowisko OZZL.
+
+[^nrl]: Naczelna Izba Lekarska, [Stanowisko nr 17/26/P-X Prezydium Naczelnej Rady Lekarskiej z 11 sierpnia 2026 r.](https://nil.org.pl/articleToPdf/9353) w sprawie projektu ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych oraz niektórych innych ustaw.
+
+[^ibris]: Interia, [Nowy sondaż o pracy lekarzy. Większość wskazała jedno rozwiązanie](https://wydarzenia.interia.pl/kraj/news-nowy-sondaz-o-pracy-lekarzy-wiekszosc-wskazala-jedno-rozwiaz,nId,23518970), 24.07.2026 — sondaż IBRiS dla „Rzeczpospolitej”.
+
+[^irl]: Echo Live, [HSE finds no „structured system” to monitor phasing out of private consultants in public hospitals](https://www.echolive.ie/nationalnews/arid-41860716.html), 11.06.2026 — 3 090 z 4 825 konsultantów HSE na umowach „Public Only” w sierpniu 2025 r.; kontrakt wprowadzony 8.03.2023 r. opisuje [Komisja Europejska](https://reforms-investments.ec.europa.eu/projects/entry-operation-slaintecare-consultant-contract_en).
+
+[^zacma]: Ministerstwo Zdrowia, [odpowiedź na interpelację nr 7368](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDDMJYS/i07368-o1.pdf), 4.02.2025 — średni czas oczekiwania na operację zaćmy według danych NFZ.
+
+[^norwegia]: E. I. Johannessen, T. P. Hagen, [Physicians’ engagement in dual practices and the effects on labor supply in public hospitals: results from a register-based study](https://doi.org/10.1186/1472-6963-14-299), *BMC Health Services Research* 14:299, 2014 — 12 399 lekarzy szpitalnych w latach 2001–2009.
+
+[^druk3157]: [Rządowy projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych oraz niektórych innych ustaw](https://api.sejm.gov.pl/sejm/term10/prints/3157/3157.pdf) (druk sejmowy nr 3157, 28.09.2026) — art. 61ba: obowiązek udostępniania Prezesowi NFZ informacji, w tym o świadczeniach nieobjętych umową z Funduszem; limity czasu pracy i wynagrodzeń; [przebieg prac w Sejmie](https://api.sejm.gov.pl/sejm/term10/processes/3157).

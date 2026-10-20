@@ -1,0 +1,64 @@
+---
+/**
+ * Wiersze z kropek (lib/siatka): każdy wiersz to jedna wielkość w tej samej jednostce
+ * (np. 1 kropka = 1 miesiąc czekania), długie wartości zawijają się w kolejne linie po `cols` pól.
+ * `kind: 'mid'` — mniejsza kropka (pojedynczy przypadek, szacunek); `missing` — krzyżyki
+ * „brak danych” zamiast wartości. Dokładna liczba stoi w nagłówku wiersza.
+ */
+import DotGrid from '@/components/ui/DotGrid.astro';
+import type { Cell } from '@/lib/siatka';
+import { typo } from '@/lib/format';
+
+interface Row {
+  label: string;
+  /** liczba jednostek; zaokrąglana do pełnych kropek */
+  value?: number;
+  /** podpis liczby, np. „17,6 mies.” */
+  display: string;
+  kind?: 'on' | 'mid';
+  /** brak danych — krzyżyki zamiast kropek */
+  missing?: boolean;
+  note?: string;
+}
+
+interface Props {
+  rows: Row[];
+  /** „1 kropka = …” */
+  unitLabel: string;
+  cols?: number;
+  /** pełny opis danych dla czytników ekranu */
+  caption: string;
+}
+
+const { rows, unitLabel, cols = 36, caption } = Astro.props;
+const cellsOf = (r: Row): Cell[] => {
+  const filled: Cell[] = r.missing ? Array(3).fill('miss') : Array(Math.max(1, Math.round(r.value ?? 0))).fill(r.kind ?? 'on');
+  const total = Math.ceil(filled.length / cols) * cols;
+  return [...filled, ...Array(total - filled.length).fill('off')];
+};
+---
+<div class="drows" role="group" aria-label={caption}>
+  {rows.map((r) => (
+    <div class:list={['drows__row', r.missing && 'drows__row--missing']}>
+      <div class="drows__head">
+        <span class="drows__label">{typo(r.label)}</span>
+        <b class="drows__value">{typo(r.display)}</b>
+      </div>
+      <DotGrid cells={cellsOf(r)} cols={cols} class="drows__grid" />
+      {r.note && <span class="drows__note">{typo(r.note)}</span>}
+    </div>
+  ))}
+  <p class="drows__unit">{typo(unitLabel)}</p>
+</div>
+
+<style>
+  .drows { display: grid; gap: 18px; }
+  .drows__row { display: grid; gap: 8px; }
+  .drows__head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .drows__label { font: 400 0.9375rem/1.35 var(--f-body); color: var(--text-strong); }
+  .drows__value { font: 600 1.0625rem/1.2 var(--f-display); color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .drows__row--missing .drows__value { font: 400 0.8125rem/1.3 var(--f-mono); color: var(--muted); }
+  .drows :global(.drows__grid) { max-width: 100%; }
+  .drows__note { font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .drows__unit { margin: 0; font: 400 0.8125rem/1.4 var(--f-body); color: var(--muted); }
+</style>

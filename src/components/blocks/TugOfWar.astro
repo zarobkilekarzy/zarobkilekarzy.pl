@@ -1,0 +1,129 @@
+---
+/**
+ * Przeciąganie liny z siatki kropek (lib/siatka): dwie strony ciągną linę, na środku stoi to, o co
+ * walczą (piktogram `lekarz`). `pull` od −1 (cała lina po lewej) do 1 (po prawej) przesuwa postać;
+ * lewa część liny ma kolor lewej strony, prawa — prawej. Każda runda ma tytuł i wynik pod liną.
+ * Poniżej 560 px szerokości kontenera strony stają obok siebie nad liną.
+ *
+ *   <TugOfWar rounds={[{ title: '…', left: { pictogram: 'szpital', label: 'Szpital', value: '163 zł/h' },
+ *     right: { pictogram: 'gabinet', label: 'Gabinet', value: '249 zł/h' }, pull: 0.2, result: '…' }]} />
+ */
+import Pictogram from '@/components/ui/Pictogram.astro';
+import { CELL, SHAPES, parseMask } from '@/lib/siatka';
+import { PICTOGRAMS, type PictogramName } from '@/lib/siatka/piktogramy';
+import { typo } from '@/lib/format';
+import { uid } from '@/lib/uid';
+
+interface Side {
+  pictogram: PictogramName;
+  label: string;
+  /** duża liczba albo krótki stan, np. „163 zł/h” */
+  value: string;
+  sub?: string;
+}
+
+interface Round {
+  title: string;
+  left: Side;
+  right: Side;
+  /** −1 … 1: gdzie stoi postać na linie */
+  pull: number;
+  /** wynik pod liną — jedno, dwa zdania */
+  result: string;
+}
+
+interface Props {
+  rounds: Round[];
+  /** postać na środku liny */
+  figure?: PictogramName;
+}
+
+const { rounds, figure = 'lekarz' } = Astro.props;
+
+const COLS = 33, ROWS = 11, TOP = 1;
+const person = parseMask(PICTOGRAMS[figure]);
+// lina na wysokości dłoni: wiersz z rozłożonymi rękami (pierwszy pełny wiersz od góry poniżej głowy)
+const HANDS = TOP + 4;
+
+type Tone = 'left' | 'right' | 'figure' | 'bg';
+const draw = (pull: number) => {
+  const p = Math.max(-1, Math.min(1, pull));
+  const centre = Math.round((COLS - 1) / 2 + p * ((COLS - person.cols) / 2 - 1));
+  const x0 = centre - Math.floor(person.cols / 2);
+  const cells: { shape: 'on' | 'mid' | 'off'; tone: Tone; x: number; y: number }[] = [];
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      const px = x - x0, py = y - TOP;
+      const own = px >= 0 && py >= 0 && px < person.cols && py < person.rows ? person.cells[py * person.cols + px] : null;
+      if (own === 'on' || own === 'mid') cells.push({ shape: own, tone: 'figure', x, y });
+      else if (y === HANDS) cells.push({ shape: 'on', tone: x < centre ? 'left' : 'right', x, y });
+      else if (y === ROWS - 1 && x === (COLS - 1) / 2) cells.push({ shape: 'mid', tone: 'figure', x, y });
+      else cells.push({ shape: 'off', tone: 'bg', x, y });
+    }
+  }
+  return cells;
+};
+const id = uid('tug');
+---
+<div class="tug">
+  <svg class="tug__defs" aria-hidden="true" width="0" height="0">
+    <defs>
+      {(['on', 'mid', 'off'] as const).map((k) => <symbol id={`${id}-${k}`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={SHAPES[k]} />)}
+    </defs>
+  </svg>
+  {rounds.map((round) => (
+    <section class="tug__round">
+      <p class="tug__title">{typo(round.title)}</p>
+      <div class="tug__field">
+        {(['left', 'right'] as const).map((side) => (
+          <div class:list={['tug__side', `tug__side--${side}`]}>
+            <Pictogram name={round[side].pictogram} class="tug__pict" />
+            <span class="tug__label">{typo(round[side].label)}</span>
+            <b class="tug__value">{typo(round[side].value)}</b>
+            {round[side].sub && <span class="tug__sub">{typo(round[side].sub!)}</span>}
+          </div>
+        ))}
+        <svg class="tug__rope" viewBox={`0 0 ${COLS * CELL} ${ROWS * CELL}`} aria-hidden="true">
+          {draw(round.pull).map((c) => (
+            <use href={`#${id}-${c.shape}`} class={`tug__${c.tone}`} x={c.x * CELL} y={c.y * CELL} width={CELL} height={CELL} />
+          ))}
+        </svg>
+      </div>
+      <p class="tug__result">{typo(round.result)}</p>
+    </section>
+  ))}
+</div>
+
+<style>
+  .tug { container-type: inline-size; display: grid; gap: 28px; }
+  .tug__defs { position: absolute; }
+  .tug__round { display: grid; gap: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .tug__title { margin: 0; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+  .tug__field {
+    display: grid; align-items: center; gap: 16px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr) minmax(0, 1fr);
+    grid-template-areas: "left rope right";
+  }
+  .tug__side { grid-area: left; display: grid; justify-items: start; gap: 4px; }
+  .tug__side--right { grid-area: right; justify-items: end; text-align: right; }
+  .tug__side--right :global(.dg) { --dg-on: var(--amber); --dg-mid: color-mix(in srgb, var(--amber) 75%, transparent); --dg-off: color-mix(in srgb, var(--amber) 42%, transparent); }
+  .tug__side :global(.tug__pict) { width: 72px; margin-bottom: 6px; }
+  .tug__label { font: 400 0.8125rem/1.35 var(--f-body); color: var(--text); }
+  .tug__value { font: 600 clamp(1.25rem, 4.6cqi, 1.75rem)/1.1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .tug__side--left .tug__value { color: var(--blue); }
+  .tug__side--right .tug__value { color: var(--amber); }
+  .tug__sub { font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+
+  .tug__rope { grid-area: rope; display: block; width: 100%; height: auto; overflow: visible; }
+  .tug__left { color: var(--blue); }
+  .tug__right { color: var(--amber); }
+  .tug__figure { color: var(--ink); }
+  .tug__bg { color: color-mix(in srgb, var(--muted) 35%, transparent); }
+
+  .tug__result { margin: 0; font: 400 0.9375rem/1.55 var(--f-body); color: var(--text-strong); }
+
+  @container (max-width: 560px) {
+    .tug__field { grid-template-columns: 1fr 1fr; grid-template-areas: "left right" "rope rope"; }
+  }
+</style>

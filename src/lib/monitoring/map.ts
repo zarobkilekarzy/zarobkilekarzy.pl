@@ -23,7 +23,7 @@ const SHARE_LABELS = ['do 5%', '5–10%', '10–15%', '15–20%', 'ponad 20%'];
 
 /** Odpowiedź placówki bez pełnej listy — jak w komórce tabeli (components/monitoring/grid.ts, RESPONSE.title). */
 const NO_LIST: Record<Response, string> = {
-  disclosed: 'dane nieporównywalne', refused: 'odmowa', silence: 'cisza', other: 'inna odpowiedź',
+  disclosed: 'dane nieprzetworzone', refused: 'odmowa', silence: 'cisza', other: 'inna odpowiedź',
   receipt: 'tylko potwierdzenie', forwarded: 'przekazana dalej', unknown: 'odpowiedź nieustalona',
 };
 
@@ -71,7 +71,7 @@ function build(doc: MonitoringDoc) {
     scale: { title: 'Mediana rocznych wypłat w placówce', edges: MEDIAN_EDGES, labels: MEDIAN_LABELS, counts: medianCounts },
     summary: { value: formatPL(withList.length), text: typo(`z ${formatPL(total)} placówek przysłało pełną roczną listę płac lekarzy`) },
     size: { title: 'Pozycji na liście', samples: [20, 100, 500] },
-    missing: { label: typo('placówka bez pełnej listy: odmowa, cisza albo dane nieporównywalne'), count: total - withList.length },
+    missing: { label: typo('placówka bez pełnej listy: odmowa, cisza albo dane nieprzetworzone'), count: total - withList.length },
     note: spread && k >= 2
       ? typo(`Każde koło to jeden szpital. Kolor zależy bardziej od rodzaju szpitala niż od regionu: w województwie ${spread.v} mediany różnią się <b>${ratio - k >= 0.05 ? 'ponad ' : ''}${times(k)}</b> (od ${formatPL(Math.round(spread.min / 1e3))} do ${formatPL(Math.round(spread.max / 1e3))} tys. zł), więc mapa nie pokazuje „stawek w województwie”.`)
       : typo('Każde koło to jeden szpital. Kolor zależy bardziej od rodzaju szpitala niż od regionu, więc mapa nie pokazuje „stawek w województwie”.'),
@@ -119,7 +119,7 @@ function build(doc: MonitoringDoc) {
       (p >= 0.05 ? 'Różnice między województwami to <b>po kilka placówek</b> i mieszczą się w granicach przypadku. ' : '') +
         `W każdym województwie danych nie ujawniło <b>co najmniej ${Math.floor(minHidden * 100)}%</b> placówek.`,
     ),
-    caption: typo('Ujawniła dane = odpowiedziała danymi o wynagrodzeniach, także niepełnymi albo nieporównywalnymi (widełki, sumy działów).'),
+    caption: typo('Ujawniła dane = odpowiedziała danymi o wynagrodzeniach, także takimi, których nie udało się zestawić w roczną listę (arkusze, skany, widełki, sumy oddziałów).'),
     sources,
     regions: byRegion.map((r) => {
       const share = r.disclosed / r.all;

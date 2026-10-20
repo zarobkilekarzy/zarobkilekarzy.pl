@@ -44,7 +44,7 @@ interface ResponseInfo {
 
 /** Kolejność = kolejność na pasku: najpierw trzy duże grupy (dane, odmowa, cisza). */
 export const RESPONSE: Record<Response, ResponseInfo> = {
-  disclosed: { value: 'dane', label: 'ujawniła dane', tone: 'ok', title: 'Dane nieporównywalne', note: 'odpowiedź z danymi, ale bez pełnej rocznej listy (widełki, sumy działów, skany)' },
+  disclosed: { value: 'dane', label: 'ujawniła dane', tone: 'ok', title: 'Dane nieprzetworzone', note: 'placówka przysłała dane, ale nie udało się ich odczytać i zestawić w roczną listę (arkusz lub archiwum, skan, widełki, sumy oddziałów) — są w sprawie u źródła' },
   refused: { value: 'odmowa', label: 'odmówiła', tone: 'bad', title: 'Odmowa', note: 'placówka nie udostępniła danych' },
   silence: { value: 'cisza', label: 'cisza', tone: 'mute', title: 'Cisza', note: 'brak odpowiedzi na wniosek' },
   other: { value: 'inna', label: 'inna odpowiedź', tone: 'mid', title: 'Inna odpowiedź', note: 'bez danych o wynagrodzeniach' },

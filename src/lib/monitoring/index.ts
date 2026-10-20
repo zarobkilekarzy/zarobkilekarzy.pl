@@ -57,7 +57,7 @@ const facilitySchema = z.object({
   network: z.enum(NETWORK_LEVELS).nullable(),
   response: z.enum(RESPONSES),
   url: z.url(),
-  /** null = brak pełnej rocznej listy płac (odmowa, cisza albo dane nieporównywalne) */
+  /** null = brak pełnej rocznej listy płac (odmowa, cisza albo dane nieprzetworzone) */
   payroll: payrollSchema.nullable(),
 });
 

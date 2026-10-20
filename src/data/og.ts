@@ -129,6 +129,19 @@ export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'do
       rows: funnelRows.map((r) => ({ label: r.label, value: r.value, display: r.display, marked: r.highlight })),
     },
   },
+  // mnożniki zamiast złotych: kwoty zmieniają się co roku z płacą minimalną, a na OG nic, co się zmienia
+  '/analizy/limity-wynagrodzen-medykow/': {
+    bars: {
+      head: 'Pułap miesięczny w płacach minimalnych',
+      unit: '×',
+      rows: [
+        { label: 'Pół etatu w jednej placówce', value: 4 },
+        { label: 'Pełny etat w jednej placówce', value: 8 },
+        { label: 'Etat z dodatkami', sub: 'np. za funkcję kierowniczą', value: 12 },
+        { label: 'Łącznie we wszystkich placówkach', sub: 'najwyżej dwa etaty', value: 16, marked: true },
+      ],
+    },
+  },
   '/analizy/odpowiedzialnosc-zawodowa-lekarzy/': {
     bars: {
       head: `Odebrania prawa do zawodu na 100 tys. lekarzy rocznie, ${WINDOW.from}–${WINDOW.to}`,

@@ -53,18 +53,17 @@ const barometer: ToolTile = {
   pictogram: 'barometr',
 };
 
-const ask: ToolTile = {
+const share: ToolTile = {
   label: 'Działaj',
-  title: actions.ask.title,
-  // pierwsze zdanie opisu z /dzialaj/ — drugie odsyła do tekstu, do którego prowadzi przycisk
-  desc: actions.ask.text.split(/(?<=\.) /)[0],
-  links: [{ label: 'Jak zapytać', href: actions.ask.link.href }],
-  pictogram: 'koperta',
+  title: actions.infographics.title,
+  desc: actions.infographics.text,
+  links: [{ label: actions.infographics.link.label, href: `/dzialaj/${actions.infographics.link.href}` }],
+  pictogram: 'infografika',
 };
 
 /** Zestawy kafli hubów; kolor kafla wynika z pozycji (blocks/ToolTiles). */
 export const hubTiles = {
   dane: [monitoringTile, supply, sor],
   analizy: [supply, exam, barometer],
-  mechanizmy: [ask, sor, barometer],
+  mechanizmy: [share, sor, barometer],
 } satisfies Record<string, ToolTile[]>;

@@ -25,7 +25,7 @@ export const dzialajPage = {
   lead: 'Jawność łącznych wypłat z publicznych pieniędzy nie wejdzie sama. Obywatelski projekt ustawy trafi do Sejmu, gdy podpisze go co najmniej 15 posłów — a posłowie najpierw muszą o nim usłyszeć. Poniżej kilka sposobów, od najprostszego.',
   description: writeToolOn
     ? 'Udostępnij postulat, napisz do posła lub senatora gotowym listem albo poleć projekt nowelizacji art. 27a. List wychodzi z Twojej skrzynki.'
-    : 'Udostępnij postulat, poleć projekt nowelizacji art. 27a, przyślij dane albo sprostowanie i zapytaj szpital o informację publiczną.',
+    : 'Udostępnij postulat albo infografikę, poleć projekt nowelizacji art. 27a, przyślij dane albo sprostowanie.',
 };
 
 /** Pierwszy etap, który jeszcze przed nami — do metadanych nagłówka („Następny krok”). */
@@ -45,7 +45,7 @@ export const actions = {
   share: {
     title: 'Udostępnij postulat',
     text: 'Najszybsza pomoc: pokaż postulat znajomym. Wpis na X jest gotowy i neutralny, przed publikacją możesz go zmienić. Możesz dołączyć do niego infografikę — liczby i źródła są na grafice.',
-    media: { label: 'Infografiki do pobrania', href: mediaPage.href },
+    media: { label: 'Infografiki do wpisu', href: '#infografiki' },
   },
   write: {
     title: 'Napisz do polityka',
@@ -70,10 +70,10 @@ export const actions = {
       'dokumenty publiczne o wynagrodzeniach, których jeszcze u nas nie ma.',
     ],
   },
-  ask: {
-    title: 'Zapytaj szpital',
-    text: 'Szpital publiczny musi odpowiedzieć na wniosek o informację publiczną, a składając go, nie musisz podawać powodu. Jak takie pytania wyglądają i czym się kończą, opisujemy w tekście o braku jawności.',
-    link: { label: 'Wnioski o informację publiczną', href: '/mechanizmy/brak-jawnosci/#pytania-mediow-i-wnioski-o-informacje-publiczna' },
+  infographics: {
+    title: 'Udostępnij infografikę',
+    text: 'Jedna liczba ze źródłem przekonuje szybciej niż długi tekst. Każda grafika ma źródła, adres strony i kod QR — wystarczy dołączyć ją do wpisu albo wysłać znajomym.',
+    link: { label: 'Wybierz infografikę', href: '#infografiki' },
   },
   support: {
     title: 'Wesprzyj projekt',
@@ -85,6 +85,17 @@ export const actions = {
     text: 'Raz w miesiącu nowe dane i postęp projektu ustawy. Formularz zapisu jest w stopce każdej strony.',
     cta: 'Do formularza',
   },
+};
+
+/* ---------- Infografiki do udostępnienia (sekcja #infografiki) ---------- */
+
+export const infographicsShare = {
+  eyebrow: 'Udostępnij',
+  title: 'Infografiki do wpisu',
+  aside: 'Najnowsze grafiki z liczbami i źródłami. Na telefonie „Udostępnij” wyśle sam obraz do wybranej aplikacji; na komputerze otworzy wpis na X — grafikę dołączysz z pobranego pliku.',
+  /** ile grafik pokazać (po jednej z najnowszych zestawów /media/) */
+  limit: 3,
+  all: { label: 'Wszystkie infografiki, także poziome i ciemne', href: mediaPage.href },
 };
 
 /* ---------- Napisz do polityka ---------- */

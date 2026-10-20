@@ -1,6 +1,7 @@
 ---
 /**
- * /dzialaj/ — co czytelnik może zrobić, od najprostszego (karty), i narzędzie „Napisz do polityka” (#napisz).
+ * /dzialaj/ — co czytelnik może zrobić, od najprostszego (karty), infografiki do udostępnienia (#infografiki)
+ * i narzędzie „Napisz do polityka” (#napisz).
  * Treści: src/data/dzialaj.ts; etap projektu: src/data/projekt-ustawy.ts; adresaci: src/data/adresaci.ts.
  * Stary adres narzędzia /dzialaj/napisz/ przekierowuje tutaj (src/data/seo/redirects.ts).
  */
@@ -13,7 +14,9 @@ import StatusTrack from '@/components/blocks/StatusTrack.astro';
 import Button from '@/components/ui/Button.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import WriteTool from '@/components/dzialaj/WriteTool.astro';
-import { actions, dzialajPage, share, writeTool, writeToolOn } from '@/data/dzialaj';
+import InfographicShare from '@/components/blocks/InfographicShare.astro';
+import { actions, dzialajPage, infographicsShare, share, writeTool, writeToolOn } from '@/data/dzialaj';
+import { mediaPage } from '@/data/media';
 import { adresaci, stanNa } from '@/data/adresaci';
 import { currentStage, projekt, stages } from '@/data/projekt-ustawy';
 import { contact } from '@/data/o-serwisie';
@@ -37,7 +40,7 @@ const shareTargets = [
 ];
 
 const cards = [
-  'share', 'write', 'read', 'data', 'ask', 'support', ...(newsletterOn ? ['newsletter'] : []),
+  'share', 'write', 'read', 'data', 'infographics', 'support', ...(newsletterOn ? ['newsletter'] : []),
 ] as const;
 const num = (key: (typeof cards)[number]) => String(cards.indexOf(key) + 1).padStart(2, '0');
 ---
@@ -119,11 +122,11 @@ const num = (key: (typeof cards)[number]) => String(cards.indexOf(key) + 1).padS
       </li>
 
       <li class="act">
-        <p class="act__n">{num('ask')}</p>
-        <h3 class="act__title">{actions.ask.title}</h3>
-        <p class="act__text">{typo(actions.ask.text)}</p>
+        <p class="act__n">{num('infographics')}</p>
+        <h3 class="act__title">{actions.infographics.title}</h3>
+        <p class="act__text">{typo(actions.infographics.text)}</p>
         <div class="act__links">
-          <LinkArrow href={actions.ask.link.href}>{actions.ask.link.label}</LinkArrow>
+          <LinkArrow href={actions.infographics.link.href}>{actions.infographics.link.label}</LinkArrow>
         </div>
       </li>
 
@@ -147,6 +150,12 @@ const num = (key: (typeof cards)[number]) => String(cards.indexOf(key) + 1).padS
         </li>
       )}
     </ol>
+  </Section>
+
+  <Section space="bottom" id="infografiki" aria-labelledby="infografiki-title">
+    <SectionHead eyebrow={infographicsShare.eyebrow} title={infographicsShare.title} id="infografiki-title" aside={infographicsShare.aside} />
+    <InfographicShare sets={mediaPage.sets} limit={infographicsShare.limit} />
+    <p class="act-all"><LinkArrow href={infographicsShare.all.href}>{infographicsShare.all.label}</LinkArrow></p>
   </Section>
 
   {writeToolOn && (
@@ -184,6 +193,7 @@ const num = (key: (typeof cards)[number]) => String(cards.indexOf(key) + 1).padS
 
 <style>
   .act-top { padding-top: clamp(32px, 4vw, 56px); }
+  .act-all { margin-top: 32px; }
   .act-route { display: grid; gap: 16px; align-content: start; justify-items: start; }
   .act-route__track { justify-self: stretch; margin-block: 4px; }
 

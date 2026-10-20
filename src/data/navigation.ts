@@ -95,7 +95,7 @@ export const searchExtras: SearchDoc[] = [
     href: dzialajPage.href,
     summary: dzialajPage.lead,
     keywords: ['działaj', 'poparcie projektu', 'udostępnij', 'infografiki', ...(writeToolOn ? ['napisz do posła', 'napisz do polityka', 'list do posła', 'senator'] : [])],
-    sections: writeToolOn ? [{ title: 'Napisz do polityka', anchor: 'napisz' }] : [],
+    sections: [{ title: 'Infografiki do wpisu', anchor: 'infografiki' }, ...(writeToolOn ? [{ title: 'Napisz do polityka', anchor: 'napisz' }] : [])],
   },
   { id: 'aktualnosci', title: 'Aktualności: co nowego w projekcie', category: 'O serwisie', href: '/aktualnosci/', keywords: ['aktualności', 'komunikaty', 'nowości', 'zmiany na stronie', 'nowa wersja strony'] },
   { id: 'petycja', title: 'Petycja o jawny rejestr wynagrodzeń (archiwum)', category: 'Postulat', href: '/postulat/petycja/', keywords: ['petycja', 'PWZ'] },

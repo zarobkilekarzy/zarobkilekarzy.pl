@@ -1,0 +1,139 @@
+---
+/**
+ * Infografiki do udostępnienia (np. /dzialaj/#infografiki): po jednej z najnowszych zestawów, z podglądem,
+ * przyciskiem „Udostępnij” i pobraniem pionowej wersji (1080×1350 — pasuje do każdej sieci).
+ *
+ * „Udostępnij”: tam, gdzie przeglądarka umie przekazać plik (Web Share z plikiem — głównie telefony),
+ * wysyła sam obraz do wybranej aplikacji z tytułem i adresem strony; gdzie indziej — i bez JS — to zwykły
+ * link do wpisu na X z tytułem grafiki i adresem strony (obrazka X przez link dołączyć nie pozwala).
+ *
+ *   <InfographicShare sets={mediaPage.sets} limit={3} />
+ */
+import { FORMATS, infographicUrl, type InfographicSet } from '@/lib/infografiki/render';
+import { infographicSets } from '@/lib/infografiki/zestawy';
+import { typo } from '@/lib/format';
+import Icon from '@/components/ui/Icon.astro';
+
+interface Props {
+  /** klucze zestawów od najnowszego (jak mediaPage.sets) */
+  sets: string[];
+  /** ile grafik — po pierwszej z kolejnych zestawów */
+  limit?: number;
+}
+
+const { sets, limit = 3 } = Astro.props;
+const site = Astro.site ?? new URL('https://zarobkilekarzy.pl');
+
+const items = sets.slice(0, limit).map((key) => {
+  const set: InfographicSet | undefined = infographicSets[key];
+  if (!set) throw new Error(`[infografiki] nieznany zestaw „${key}”`);
+  const item = set.items[0];
+  const png = infographicUrl(set, item.id, 'pion');
+  const pageUrl = new URL(set.route, site).href;
+  const title = [item.title, item.titleAccent].filter(Boolean).join(' ').replace(/\s*\n\s*/g, ' ');
+  return {
+    title,
+    alt: item.alt,
+    png,
+    // nazwa pliku jak w blocks/Infographics: przedrostek serwisu + nazwa z adresu
+    file: `${set.filePrefix}-${png.split('/').pop()}`,
+    page: set.page,
+    route: set.route,
+    pageUrl,
+    x: `https://x.com/intent/post?text=${encodeURIComponent(title)}&url=${encodeURIComponent(pageUrl)}`,
+  };
+});
+---
+<ul class="igsh">
+  {items.map((it) => (
+    <li class="igsh__item">
+      <a class="igsh__thumb" href={it.png} target="_blank" rel="noopener">
+        <img src={it.png} width={FORMATS.pion.width} height={FORMATS.pion.height} alt={it.alt} loading="lazy" decoding="async" />
+      </a>
+      <p class="igsh__title">{typo(it.title)}</p>
+      <p class="igsh__source">Z tekstu: <a href={it.route}>{typo(it.page)}</a></p>
+      <p class="igsh__actions">
+        <a
+          class="igsh__btn igsh__btn--main"
+          href={it.x}
+          target="_blank"
+          rel="noopener"
+          data-ig-share
+          data-png={it.png}
+          data-file={it.file}
+          data-title={it.title}
+          data-url={it.pageUrl}
+        >
+          <Icon name="share" size={16} />Udostępnij<span class="sr-only"> (otwiera się w nowej karcie)</span>
+        </a>
+        <a class="igsh__btn" href={it.png} download={it.file}>
+          <Icon name="format-pion" size={16} />Pobierz<span class="sr-only"> PNG {FORMATS.pion.width}×{FORMATS.pion.height}</span>
+        </a>
+      </p>
+    </li>
+  ))}
+</ul>
+
+<script>
+  // Web Share z plikiem: obrazek pobieramy zawczasu (gdy karta jest widoczna), bo navigator.share
+  // musi ruszyć w tym samym kliknięciu — po czekaniu na sieć przeglądarka uzna je za niezamówione
+  const probe = new File([''], 'x.png', { type: 'image/png' });
+  const canShareFiles = typeof navigator.canShare === 'function' && navigator.canShare({ files: [probe] });
+
+  if (canShareFiles) {
+    const ready = new Map<HTMLElement, File>();
+    const load = async (link: HTMLElement) => {
+      if (ready.has(link)) return;
+      try {
+        const blob = await (await fetch(link.dataset.png!)).blob();
+        ready.set(link, new File([blob], link.dataset.file!, { type: 'image/png' }));
+      } catch { /* zostaje zwykły link do X */ }
+    };
+    const seen = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (e.isIntersecting) { seen.unobserve(e.target); load(e.target as HTMLElement); }
+    }), { rootMargin: '200px' });
+
+    for (const link of document.querySelectorAll<HTMLAnchorElement>('[data-ig-share]')) {
+      seen.observe(link);
+      link.addEventListener('click', (e) => {
+        const file = ready.get(link);
+        if (!file || !navigator.canShare({ files: [file] })) return; // jeszcze się pobiera albo nie da się — link do X
+        e.preventDefault();
+        navigator.share({ files: [file], title: link.dataset.title, text: `${link.dataset.title} ${link.dataset.url}` }).catch(() => {});
+      });
+    }
+  }
+</script>
+
+<style>
+  .igsh { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 24px; margin: 0; padding: 0; list-style: none; }
+  .igsh__item { display: flex; flex-direction: column; }
+  .igsh__thumb { display: block; line-height: 0; border: 1px solid var(--line); transition: border-color .2s; }
+  .igsh__thumb:hover { border-color: var(--blue); }
+  .igsh__thumb:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .igsh__thumb img { display: block; width: 100%; height: auto; }
+  .igsh__title {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ink);
+    font: 500 1.0625rem/1.35 var(--f-display); letter-spacing: -0.015em; color: var(--ink);
+  }
+  .igsh__source { margin-top: 6px; font-size: 0.8125rem; line-height: 1.45; color: var(--muted); }
+  .igsh__source a { color: inherit; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .igsh__source a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .igsh__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; }
+  .igsh__btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px;
+    font-weight: 500; font-size: 0.9375rem; color: var(--ink);
+    border: 1px solid var(--line-2); transition: color .2s, border-color .2s, background .2s;
+  }
+  .igsh__btn:hover { color: var(--blue); border-color: var(--blue); }
+  .igsh__btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .igsh__btn--main { background: var(--blue-fill); border-color: var(--blue-fill); color: #fff; } /* kolor-stały: biel na pełnym kobalcie */
+  .igsh__btn--main:hover { background: var(--blue-600); border-color: var(--blue-600); color: #fff; } /* kolor-stały: biel na pełnym kobalcie */
+
+  @media (max-width: 1024px) {
+    .igsh { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    .igsh { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

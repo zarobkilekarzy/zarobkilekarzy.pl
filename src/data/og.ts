@@ -27,6 +27,7 @@ import { COUNTRIES, WINDOW, ratePer100k, type CountryKey } from '@/data/odpowied
 import { pseudonymDemo } from '@/data/postulat';
 import { createHmac } from 'node:crypto';
 import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
+import { CASES as COURT_CASES, CATALOG_HREF, GAME_HREF, SCALE as COURT_SCALE, caseHref, verdictLabel } from '@/data/sad-lekarski';
 
 import barometrOg from '@/assets/img/barometr-polityczny-og.png';
 import { newsIllustration } from '@/lib/news';
@@ -351,6 +352,38 @@ export const ogPages: Record<string, OgPage> = {
     // ilustracja z jednej migawki (17.10.2026, 13:26) — zamrożona, bo na OG nic się nie zmienia
     map: { layer: frozenLayer(sorOgSnapshot), theme: 'ciemny', legend: [[1, 'w normie'], [2, 'ponad normę'], [3, 'ponad 2× normę']] },
   },
+  // gra i katalog orzeczeń sądów lekarskich: pieczątki jak w katalogu (ui/Stamp), kary ze skali art. 83 ust. 1
+  [GAME_HREF]: {
+    eyebrow: 'Gra · prawdziwe orzeczenia',
+    title: 'Czy orzekasz\njak sąd lekarski?',
+    lead: 'Fakty z prawomocnych orzeczeń. Wybierz karę ze skali z ustawy i porównaj z wyrokiem.',
+    footer: { text: 'Orzeczenia z portalu Naczelnej Izby Lekarskiej' },
+    stamps: [{ kicker: 'Sąd orzekł', label: COURT_SCALE[2].label, level: 2 }],
+  },
+  [CATALOG_HREF]: {
+    eyebrow: 'Katalog orzeczeń',
+    title: 'Za co i jak karzą\nsądy lekarskie',
+    lead: 'Streszczenia prawomocnych orzeczeń: co ustalił sąd, jaki był zarzut i jaka zapadła kara.',
+    footer: { text: 'Orzeczenia z portalu Naczelnej Izby Lekarskiej' },
+    stamps: [
+      { kicker: 'Sąd orzekł', label: 'Uniewinnienie', level: 0, tone: 'muted' },
+      { kicker: 'Sąd orzekł', label: COURT_SCALE[3].label, level: 3 },
+      { kicker: 'Sąd orzekł', label: COURT_SCALE[6].label, level: 6 },
+    ],
+  },
+  // osobna strona każdej sprawy z katalogu: tytuł sprawy i pieczątka z orzeczoną karą
+  ...Object.fromEntries(
+    COURT_CASES.map((c): [string, OgPage] => [
+      caseHref(c.id),
+      {
+        eyebrow: 'Sąd lekarski · orzeczenie',
+        title: c.title,
+        lead: c.summary,
+        footer: { text: 'Orzeczenia z portalu Naczelnej Izby Lekarskiej' },
+        stamps: [{ kicker: 'Sąd orzekł', label: verdictLabel(c), level: c.verdict.level, tone: c.verdict.level ? 'blue' : 'muted' }],
+      },
+    ]),
+  ),
   '/szukaj/': {
     eyebrow: 'Wyszukiwarka',
     title: 'Szukaj w serwisie',

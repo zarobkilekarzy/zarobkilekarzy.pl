@@ -312,6 +312,18 @@ export interface OgPage extends OgOverride {
   dots?: OgDots;
   /** okładka na cały kadr zamiast układu „tytuł + media” (obrazek domyślny) */
   cover?: OgCover;
+  /** pieczątki w miejscu zdjęcia, jak ui/Stamp (np. kary sądów lekarskich): jedna duża albo kilka jedna pod drugą */
+  stamps?: OgStamp[];
+}
+
+/** Pieczątka na obrazku OG — te same pola co ui/Stamp. */
+export interface OgStamp {
+  label: string;
+  kicker?: string;
+  /** zapalone pola skali z kropek (0…max); bez — pieczątka bez skali */
+  level?: number;
+  max?: number;
+  tone?: 'blue' | 'muted';
 }
 
 /** Etap drogi (np. projektu ustawy): zakończony, bieżący albo przed nami. */

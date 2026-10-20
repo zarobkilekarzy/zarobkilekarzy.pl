@@ -1,7 +1,7 @@
 ---
 /**
- * /prototypy/sad-lekarski/ — PROTOTYP (index: false + X-Robots-Tag z integrations/seo, bez linku w menu):
- * gra „Czy orzekasz jak sąd lekarski”. Docelowy adres zapadnie przy wydaniu.
+ * /sad-lekarski/ — gra „Czy orzekasz jak sąd lekarski” (do 21.10.2026 prototyp pod /prototypy/sad-lekarski/).
+ * Katalog wszystkich rozstrzygnięć ma osobną stronę: /sad-lekarski/orzeczenia/.
  * Gracz czyta stan faktyczny z prawomocnego orzeczenia, wybiera rozstrzygnięcie ze skali art. 83
  * ustawy o izbach lekarskich i widzi, co orzekł sąd. Dane: src/data/sad-lekarski.ts.
  * Układ na jeden ekran: sprawa po lewej, skala po prawej; po wyborze skala zwija się do linijki
@@ -14,49 +14,82 @@ import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
 import Icon from '@/components/ui/Icon.astro';
 import MonitorPhoto from '@/components/ui/MonitorPhoto.astro';
+import DotGrid from '@/components/ui/DotGrid.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import ToolCard from '@/components/blocks/ToolCard.astro';
+import { articleHref, getArticle } from '@/lib/content';
 import aktaImg from '@/assets/img/monitoring-teczki.jpg';
 import {
-  ANALIZA_URL, CASES, PORTAL_URL, REGULAMIN_URL, SCALE, USTAWA_URL, sadPage,
+  CASES, CATALOG_HREF, NIL_PRAWOMOCNE_URL, PORTAL_URL, REGULAMIN_URL, ROUND_MIX, ROUND_SIZE, SCALE, USTAWA_URL, sadPage,
 } from '@/data/sad-lekarski';
+import {
+  FIRST_YEAR, LAST_YEAR, PENALTIES_MILD, PENALTIES_TOTAL, PENALTY_WINDOW, PL_ZERO_YEARS, YEARS_COUNT, penalty, total,
+} from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
+import { infographicSets } from '@/lib/infografiki/zestawy';
+import { FORMATS, THEMES, infographicUrl, type FormatKey, type ThemeKey } from '@/lib/infografiki/render';
 import type { Crumb, SeoInput } from '@/lib/seo';
 import { typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
 
-const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Prototyp: sąd lekarski' }];
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Czy orzekasz jak sąd lekarski?' }];
 const seo: SeoInput = {
   title: 'Czy orzekasz jak sąd lekarski? Gra na orzeczeniach',
   description:
     'Dziesięć prawdziwych spraw z prawomocnych orzeczeń sądów lekarskich. Wybierz karę ze skali, którą daje ustawa, i porównaj z tym, co orzekł sąd.',
   breadcrumbs: crumbs,
-  index: false,
 };
 
-const cases = CASES.map((c) => ({
+const typoCase = (c: (typeof CASES)[number]) => ({
   ...c,
   facts: c.facts.map(typo),
   charge: typo(c.charge),
   verdict: { ...c.verdict, text: typo(c.verdict.text) },
   reasoning: c.reasoning ? typo(c.reasoning) : undefined,
-}));
+});
+// gra: bez spraw oznaczonych inGame: false (katalog na /sad-lekarski/orzeczenia/ ma wszystkie)
+const cases = CASES.filter((c) => c.inGame !== false).map(typoCase);
+const files = new Set(CASES.map((c) => c.file)).size;
 const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
+const round = Math.min(ROUND_SIZE, cases.length);
+
+// Zakończenie: jak rzadko sądy lekarskie odbierają prawo do zawodu — liczby z modułu danych analizy
+const revoked = total('pl');
+const ordered = penalty('Pozbawienie prawa wykonywania zawodu');
+const orderedPct = Math.round((ordered / PENALTIES_TOTAL) * 100);
+const mildPct = Math.round((PENALTIES_MILD / PENALTIES_TOTAL) * 100);
+const igSet = infographicSets['odpowiedzialnosc-zawodowa-lekarzy'];
+const igItem = igSet.items.find((it) => it.id === 'porownanie-krajow')!;
+// warianty infografiki do przełącznika: format × motyw → adres, wymiary i nazwa pliku do pobrania
+const igVariants = Object.fromEntries((Object.keys(FORMATS) as FormatKey[]).flatMap((f) =>
+  (Object.keys(THEMES) as ThemeKey[]).map((t) => {
+    const src = infographicUrl(igSet, igItem.id, f, t);
+    return [`${f}-${t}`, { src, width: FORMATS[f].width, height: FORMATS[f].height, file: `${igSet.filePrefix}-${src.split('/').pop()}` }];
+  })));
+const ig0 = igVariants['poziom-jasny'];
+const analiza = await getArticle('odpowiedzialnosc-zawodowa-lekarzy');
+// Kropka = jeden prawomocnie pozbawiony lekarz; równa siatka po 10 w rzędzie (bez rozkładu na lata)
+const unitCols = 10;
+const unitCells = Array.from({ length: Math.ceil(revoked / unitCols) * unitCols }, (_, i): 'on' | 'off' => (i < revoked ? 'on' : 'off'));
 ---
 <BaseLayout seo={seo}>
   <Section space="bottom" class="top" aria-label="Gra">
     <Breadcrumbs items={crumbs} />
     <header class="intro">
       <div>
-        <Eyebrow class="intro__eyebrow">Prototyp · gra · odpowiedzialność zawodowa</Eyebrow>
+        <Eyebrow class="intro__eyebrow">Gra · odpowiedzialność zawodowa</Eyebrow>
         <Heading as="h1" size="h2" punct="?" class="intro__title">{sadPage.title}</Heading>
       </div>
       <p class="intro__lead">{typo(sadPage.lead)}</p>
     </header>
 
-    <div class="game" data-game>
-      <script type="application/json" data-cases set:html={JSON.stringify({ cases, scale })} />
+    <p class="more"><LinkArrow href={CATALOG_HREF}>{typo(`Katalog orzeczeń: wszystkie ${CASES.length} spraw z opisami i karą`)}</LinkArrow></p>
+
+    <div class="game" id="gra" data-game>
+      <script type="application/json" data-cases set:html={JSON.stringify({ cases, scale, mix: ROUND_MIX })} />
 
       <div class="play" data-play>
         <div class="bar">
-          <p class="bar__step"><b data-step>1</b> / {cases.length}</p>
+          <p class="bar__step"><b data-step>1</b> / <span data-total>{round}</span></p>
           <div class="bar__track" aria-hidden="true"><span data-bar></span></div>
           <p class="bar__label" data-label></p>
         </div>
@@ -125,11 +158,60 @@ const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
               <tbody data-rows></tbody>
             </table>
           </details>
-          <p class="result__note">{typo(sadPage.national)} <a href={ANALIZA_URL}>Jak orzekają sądy lekarskie</a></p>
-          <p class="result__note">{typo(sadPage.sample)}</p>
+          <p class="result__note">{typo(sadPage.sample.replace('{files}', String(files)))}</p>
         </div>
+
+        <section class="pwz" aria-labelledby="pwz-title">
+          <div class="pwz__text">
+            <p class="mono-label">Najwyższa kara</p>
+            <h2 class="pwz__title" id="pwz-title">Prawo do zawodu sądy lekarskie odbierają prawie nigdy</h2>
+            <div class="pwz__big">
+              <p class="pwz__n">{revoked}</p>
+              <figure class="pwz__units">
+                <DotGrid cells={unitCells} cols={unitCols} label={`${revoked} kropek — ${revoked} lekarzy`} class="pwz__dots" />
+                <figcaption>1 kropka = 1 lekarz</figcaption>
+              </figure>
+            </div>
+            <p class="pwz__cap">{typo('lekarzy prawomocnie pozbawionych prawa wykonywania zawodu')} <strong>{typo(`w ciągu ${YEARS_COUNT} lat (${FIRST_YEAR}–${LAST_YEAR})`)}</strong></p>
+            <p>{typo(`To nieco ponad jeden lekarz rocznie, a w ${PL_ZERO_YEARS} z tych ${YEARS_COUNT} lat — nikt. W pierwszej instancji w latach ${PENALTY_WINDOW.from}–${PENALTY_WINDOW.to} pozbawienie prawa do zawodu to ${ordered} z ${PENALTIES_TOTAL} kar (ok. ${orderedPct}%), a upomnienie, nagana i kara pieniężna — ${mildPct}%.`)}</p>
+            <p class="pwz__note">{typo('Na grafice: porównanie z Norwegią, Szwecją i Wielką Brytanią. Systemy różnią się zakresem spraw, a przestępstwa lekarzy w Polsce osądzają osobno sądy karne.')}</p>
+          </div>
+          <figure class="pwz__fig" data-ig={JSON.stringify(igVariants)}>
+            <div class="igsw">
+              <div class="igsw__group" role="group" aria-label="Format">
+                {(Object.keys(FORMATS) as FormatKey[]).map((f) => (
+                  <button type="button" data-ig-format={f} aria-pressed={f === 'poziom' ? 'true' : 'false'}>{FORMATS[f].label}</button>
+                ))}
+              </div>
+              <div class="igsw__group" role="group" aria-label="Motyw">
+                {(Object.keys(THEMES) as ThemeKey[]).map((t) => (
+                  <button type="button" data-ig-theme={t} aria-pressed={t === 'jasny' ? 'true' : 'false'}>{THEMES[t].label}</button>
+                ))}
+              </div>
+              <a class="igsw__dl" data-ig-dl href={ig0.src} download={ig0.file}><Icon name="arrow" size={14} />Pobierz PNG</a>
+            </div>
+            <a class="pwz__ig" data-ig-frame href={ig0.src} target="_blank" rel="noopener">
+              <img data-ig-img src={ig0.src} width={ig0.width} height={ig0.height} alt={igItem.alt} loading="lazy" decoding="async" />
+            </a>
+          </figure>
+          <div class="pwz__banner">
+            <ToolCard
+              layout="banner"
+              cta="Czytaj analizę"
+              image={analiza.data.cover && { src: analiza.data.cover, alt: analiza.data.coverAlt ?? '' }}
+              tool={{
+                icon: 'chart',
+                label: 'Analiza · samorząd',
+                title: analiza.data.title,
+                desc: 'Kary sądów lekarskich rok po roku, prawomocne odebrania prawa do zawodu i porównanie z Norwegią, Szwecją i Wielką Brytanią.',
+                href: articleHref(analiza),
+              }}
+            />
+          </div>
+        </section>
       </div>
     </div>
+
   </Section>
 
   <Section tone="soft" aria-labelledby="skad">
@@ -145,6 +227,7 @@ const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
       <ul class="sources">
         <li><a {...linkAttrs(PORTAL_URL)}>Portal prawomocnych orzeczeń sądów lekarskich (NIL)<Icon name="arrow-ne" size={14} /></a></li>
         <li><a {...linkAttrs(REGULAMIN_URL)}>Regulamin portalu (uchwała NRL nr 10/24/IX)<Icon name="arrow-ne" size={14} /></a></li>
+        <li><a {...linkAttrs(NIL_PRAWOMOCNE_URL)}>NIL: liczba prawomocnych orzeczeń według rodzaju, 2023–2025 (proporcje w grze)<Icon name="arrow-ne" size={14} /></a></li>
         <li><a {...linkAttrs(USTAWA_URL)}>Ustawa o izbach lekarskich, t.j. Dz.U. 2021 poz. 1342 (art. 82–83)<Icon name="arrow-ne" size={14} /></a></li>
       </ul>
       </div>
@@ -164,15 +247,55 @@ const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
 
 <script>
   interface GameCase {
-    id: string; label: string; court: string; facts: string[]; charge: string;
+    id: string; title: string; label: string; court: string; facts: string[]; charge: string;
     verdict: { level: number; text: string }; reasoning?: string; file: string;
   }
-  interface GameData { cases: GameCase[]; scale: { level: number; label: string }[] }
+  interface GameData { cases: GameCase[]; scale: { level: number; label: string }[]; mix: number[] }
+
+  /** Tasowanie Fishera–Yatesa. */
+  function shuffle<T>(list: T[]): T[] {
+    for (let k = list.length - 1; k > 0; k--) {
+      const j = Math.floor(Math.random() * (k + 1));
+      [list[k], list[j]] = [list[j], list[k]];
+    }
+    return list;
+  }
 
   const root = document.querySelector<HTMLElement>('[data-game]');
   const dataEl = root?.querySelector<HTMLScriptElement>('[data-cases]');
   if (root && dataEl) {
-    const { cases, scale } = JSON.parse(dataEl.textContent ?? '{}') as GameData;
+    const { cases: all, scale, mix } = JSON.parse(dataEl.textContent ?? '{}') as GameData;
+    const ROUND = Number(root.querySelector('[data-total]')?.textContent) || all.length;
+
+    /** Koszyk kary: 0 bez kary, 1 upomnienie, 2 nagana, 3 kara pieniężna, 4 surowsze (poziomy 4–7). */
+    const bucket = (c: GameCase) => Math.min(c.verdict.level, 4);
+
+    /**
+     * Rozgrywka: orzeczenia w losowej kolejności, aż do ROUND rozstrzygnięć, z luźnym rozkładem kar (ROUND_MIX).
+     * Cel każdego koszyka = udział × ROUND, przesunięty losowo o −1…+1; pierwsze przejście bierze orzeczenia,
+     * które mieszczą się w celach, drugie dopełnia rundę czymkolwiek. Sprawy z jednego orzeczenia (kilka zarzutów,
+     * kilku obwinionych) idą razem i w swojej kolejności — opisy się do siebie odwołują.
+     */
+    function deal(): GameCase[] {
+      const groups = new Map<string, GameCase[]>();
+      for (const c of all) groups.set(c.file, [...(groups.get(c.file) ?? []), c]);
+      const target = mix.map((share) => Math.max(0, Math.round(share * ROUND + (Math.random() * 2 - 1))));
+      const have = mix.map(() => 0);
+      const out: GameCase[] = [];
+      const rest: GameCase[][] = [];
+      const take = (g: GameCase[]) => { out.push(...g); for (const c of g) have[bucket(c)] += 1; };
+      for (const g of shuffle([...groups.values()])) {
+        const need = mix.map(() => 0);
+        for (const c of g) need[bucket(c)] += 1;
+        const fits = out.length + g.length <= ROUND && need.every((n, b) => have[b] + n <= target[b] + (n > 1 ? 1 : 0));
+        if (fits) take(g); else rest.push(g);
+      }
+      for (const g of rest) if (out.length + g.length <= ROUND) take(g);
+      // kolejność w rundzie: grupy przemieszane, w grupie — kolejność z orzeczenia
+      const dealt = new Map<string, GameCase[]>();
+      for (const c of out) dealt.set(c.file, [...(dealt.get(c.file) ?? []), c]);
+      return shuffle([...dealt.values()]).flat();
+    }
     const $ = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
     const play = $('[data-play]');
     const result = $('[data-result]');
@@ -185,6 +308,7 @@ const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
     const labelOf = (level: number) => scale.find((s) => s.level === level)?.label ?? '';
     const steps = (n: number) => (n === 1 ? 'stopień' : n < 5 ? 'stopnie' : 'stopni');
 
+    let cases = deal();
     let i = 0;
     let answers: number[] = [];
 
@@ -220,7 +344,8 @@ const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
       const c = cases[i];
       $('[data-step]').textContent = String(i + 1);
       $('[data-bar]').style.setProperty('--p', String(i / cases.length));
-      $('[data-label]').textContent = `${c.court} · ${c.label}`;
+      $('[data-total]').textContent = String(cases.length);
+      $('[data-label]').textContent = c.label ? `${c.court} · ${c.label}` : c.court;
       $('[data-facts]').replaceChildren(...c.facts.map((t) => Object.assign(document.createElement('p'), { textContent: t })));
       $('[data-charge]').textContent = c.charge;
       for (const o of opts) o.disabled = false;
@@ -287,7 +412,7 @@ const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
       $('[data-rows]').replaceChildren(...cases.map((c, k) => {
         const tr = document.createElement('tr');
         tr.className = diffs[k] === 0 ? 'is-hit' : '';
-        for (const t of [c.label, labelOf(answers[k]), labelOf(c.verdict.level)]) tr.append(Object.assign(document.createElement('td'), { textContent: t }));
+        for (const t of [c.title, labelOf(answers[k]), labelOf(c.verdict.level)]) tr.append(Object.assign(document.createElement('td'), { textContent: t }));
         return tr;
       }));
       play.hidden = true;
@@ -306,7 +431,7 @@ const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
     for (const o of opts) o.addEventListener('click', () => answer(Number(o.dataset.level)));
     $('[data-next]').addEventListener('click', next);
     $('[data-restart]').addEventListener('click', () => {
-      i = 0; answers = [];
+      cases = deal(); i = 0; answers = [];
       result.hidden = true; play.hidden = false;
       show();
       scrollIfHidden(play);
@@ -318,6 +443,31 @@ const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
     });
     show();
   }
+
+  // Przełącznik infografiki (pion/poziom × jasna/ciemna): podmienia obraz, link do pełnej wersji i pobieranie
+  const fig = document.querySelector<HTMLElement>('[data-ig]');
+  if (fig) {
+    const variants = JSON.parse(fig.dataset.ig ?? '{}') as Record<string, { src: string; width: number; height: number; file: string }>;
+    const img = fig.querySelector<HTMLImageElement>('[data-ig-img]')!;
+    const frame = fig.querySelector<HTMLAnchorElement>('[data-ig-frame]')!;
+    const dl = fig.querySelector<HTMLAnchorElement>('[data-ig-dl]')!;
+    const formats = [...fig.querySelectorAll<HTMLButtonElement>('[data-ig-format]')];
+    const themes = [...fig.querySelectorAll<HTMLButtonElement>('[data-ig-theme]')];
+    let format = 'poziom';
+    let theme = 'jasny';
+    const apply = () => {
+      const v = variants[`${format}-${theme}`];
+      if (!v) return;
+      img.src = v.src; img.width = v.width; img.height = v.height;
+      frame.href = v.src; dl.href = v.src; dl.download = v.file;
+      fig.classList.toggle('is-pion', format === 'pion');
+      for (const b of formats) b.setAttribute('aria-pressed', String(b.dataset.igFormat === format));
+      for (const b of themes) b.setAttribute('aria-pressed', String(b.dataset.igTheme === theme));
+    };
+    for (const b of formats) b.addEventListener('click', () => { format = b.dataset.igFormat!; apply(); });
+    for (const b of themes) b.addEventListener('click', () => { theme = b.dataset.igTheme!; apply(); });
+  }
+
 </script>
 
 <style>
@@ -422,6 +572,37 @@ const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
   .result__table tr.is-hit td:nth-child(2) { color: var(--ok); font-weight: 600; }
   .result__note { margin-top: 14px; font-size: 0.8125rem; line-height: 1.6; color: var(--text); }
 
+  /* zakończenie: najwyższa kara — tekst z liczbami i infografika z analizy (podgląd zawsze jasny, w nocy z ramką) */
+  .pwz { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(24px, 4vw, 56px); align-items: center; margin-top: 8px; padding-top: clamp(24px, 3vw, 36px); border-top: 1px solid var(--line-2); }
+  .pwz__title { margin-top: 8px; font: 500 clamp(1.25rem, 2.2vw, 1.625rem)/1.2 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .pwz__big { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: end; gap: 24px; margin: 22px 0 10px; }
+  .pwz__n { font: 500 clamp(3.5rem, 7vw, 5rem)/0.8 var(--f-display); letter-spacing: -0.04em; color: var(--blue); }
+  .pwz__units { margin: 0; max-width: 220px; }
+  .pwz__units :global(.pwz__dots) { --dg-off: color-mix(in srgb, var(--blue) 22%, transparent); }
+  .pwz__units figcaption { margin-top: 6px; font: 500 0.625rem/1.2 var(--f-mono); letter-spacing: .04em; color: var(--muted); }
+  .pwz__cap { margin-bottom: 14px; font-size: 1rem; line-height: 1.45; color: var(--text-strong); }
+  .pwz__cap strong { font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .pwz__text > p:not([class]) { font-size: 0.9375rem; line-height: 1.65; color: var(--text-strong); }
+  .pwz__note { margin-top: 10px; font-size: 0.8125rem; line-height: 1.6; color: var(--muted); }
+  .pwz__fig { margin: 0; }
+  .pwz__ig { display: block; border: 1px solid var(--line); }
+  .pwz__ig img { display: block; width: 100%; height: auto; }
+  .pwz__fig.is-pion .pwz__ig { max-width: 360px; margin-inline: auto; }
+  .pwz__banner { grid-column: 1 / -1; }
+  .pwz__banner :global(.tool--banner) { margin: 0; }
+
+  /* przełącznik wersji infografiki: format i motyw jako dwa segmenty, obok pobieranie */
+  .igsw { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-bottom: 12px; }
+  .igsw__group { display: inline-flex; border: 1px solid var(--line-2); }
+  .igsw__group button { padding: 7px 12px; font: 500 0.75rem/1 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); background: var(--surface); }
+  .igsw__group button + button { border-left: 1px solid var(--line-2); }
+  .igsw__group button:hover { color: var(--ink); }
+  .igsw__group button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+  .igsw__group button:focus-visible, .igsw__dl:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .igsw__dl { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: 0.8125rem; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .igsw__dl :global(svg) { transform: rotate(90deg); }
+  .igsw__dl:hover { color: var(--blue); text-decoration-color: currentColor; }
+
   .about { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 96px); align-items: center; }
   .about :global(.about__title) { margin: 14px 0 24px; }
   .prose { display: grid; gap: 16px; max-width: 42em; font-size: 1.03125rem; line-height: 1.7; }
@@ -429,11 +610,14 @@ const scale = SCALE.map((s) => ({ level: s.level, label: s.label }));
   .sources a { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
   .sources a:hover { color: var(--blue); text-decoration-color: currentColor; }
 
+  /* link do katalogu orzeczeń pod nagłówkiem */
+  .more { margin: -12px 0 28px; }
+
   @media (prefers-reduced-motion: reduce) {
     .verdict.is-hit .verdict__head { animation: none; }
   }
   @media (max-width: 900px) {
-    .intro, .stage, .result, .about { grid-template-columns: minmax(0, 1fr); }
+    .intro, .stage, .result, .about, .pwz { grid-template-columns: minmax(0, 1fr); }
     .bar { grid-template-columns: auto minmax(60px, 1fr); }
     .bar__label { grid-column: 1 / -1; text-align: left; }
     .scale__hint { display: none; }

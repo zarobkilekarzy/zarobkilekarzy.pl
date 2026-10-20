@@ -38,6 +38,9 @@ const allRedirects: Redirect[] = [
   { from: '/petycja/petycja-ministerstwo-zdrowia.pdf', to: '/postulat/petycja/petycja-ministerstwo-zdrowia.pdf', note: PETYCJA },
   { from: '/petycja/petycja-senat.pdf', to: '/postulat/petycja/petycja-senat.pdf', note: PETYCJA },
 
+  // Gra o sądach lekarskich: prototyp wydany pod docelowym adresem (21.10.2026); katalog i sprawy nie miały wersji pod /prototypy/
+  { from: '/prototypy/sad-lekarski/', to: '/sad-lekarski/', note: 'prototyp gry „Czy orzekasz jak sąd lekarski” wydany 21.10.2026 pod docelowym adresem' },
+
   // Działaj: narzędzie „Napisz do polityka” jest sekcją strony /dzialaj/ (przepisane od zera 16.10.2026)
   { from: '/dzialaj/napisz/', to: '/dzialaj/#napisz', note: 'narzędzie „Napisz do polityka” to dziś sekcja #napisz strony /dzialaj/ (redesign v2, 16.10.2026)' },
 

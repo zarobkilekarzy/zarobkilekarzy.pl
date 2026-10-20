@@ -45,8 +45,8 @@ if (!props.seo) console.warn(`[seo] ${Astro.url.pathname}: BaseLayout bez propsa
 const input: SeoInput = props.seo ?? { title: props.title ?? site.name, titleAbsolute: true, description: props.description ?? '' };
 
 // Obrazek OG wynika ze ścieżki strony (lib/og/registry.ts) — strony niczego nie przekazują.
-// Strony poza indeksem go nie potrzebują (i nie mają wpisu w rejestrze).
-const ogImage = input.index === false ? undefined : await ogImageFor(Astro.url.pathname);
+// Strony poza indeksem dostają go tylko z własnym wpisem (np. prototyp udostępniany linkiem), bez domyślnego.
+const ogImage = await ogImageFor(Astro.url.pathname, input.index !== false);
 const seo = resolveSeo(input, {
   site: Astro.site!,
   pathname: Astro.url.pathname,

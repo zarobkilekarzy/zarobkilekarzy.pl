@@ -1,0 +1,47 @@
+---
+/**
+ * Pieczątka: podwójna ramka, wersaliki, lekki obrót — rozstrzygnięcie albo status „przybity” na karcie.
+ * Opcjonalnie skala z kropek (motyw siatki, lib/siatka): `level` z `max` pól zapalonych, reszta plusy —
+ * np. kara z art. 83 ust. 1 (7 stopni), gdzie 0 = bez kary (same plusy).
+ *
+ *   <Stamp kicker="Sąd orzekł" label="Nagana" level={2} max={7} />
+ *
+ * Kolor z `tone`: blue (domyślny) albo muted (np. „bez kary”); kropki i ramka biorą currentColor.
+ */
+import DotGrid from './DotGrid.astro';
+
+interface Props {
+  label: string;
+  kicker?: string;
+  /** zapalone pola skali (0…max); bez — pieczątka bez skali */
+  level?: number;
+  max?: number;
+  tone?: 'blue' | 'muted';
+  /** opis skali dla czytników ekranu; bez — skala jest dekoracją */
+  scaleLabel?: string;
+  class?: string;
+}
+
+const { label, kicker, level, max = 7, tone = 'blue', scaleLabel, class: className } = Astro.props;
+const scale = level === undefined ? null : Array.from({ length: max }, (_, i) => (i < level ? 'on' as const : 'off' as const));
+---
+<span class:list={['stamp', `stamp--${tone}`, className]} style={`--stamp-cols:${max}`}>
+  {kicker && <span class="stamp__kicker">{kicker}</span>}
+  <span class="stamp__label">{label}</span>
+  {scale && <DotGrid cells={scale} cols={max} label={scaleLabel} class="stamp__scale" />}
+</span>
+
+<style>
+  .stamp {
+    display: inline-grid; justify-items: start; gap: 6px; max-width: 15em;
+    padding: 9px 14px 10px;
+    border: 2px solid currentColor; outline: 1px solid currentColor; outline-offset: 3px;
+    transform: rotate(-3deg); transform-origin: left center;
+    font: 500 0.625rem/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase;
+  }
+  .stamp--blue { color: var(--blue); }
+  .stamp--muted { color: var(--text-strong); }
+  .stamp__kicker { opacity: .8; }
+  .stamp__label { font: 600 0.9375rem/1.15 var(--f-display); letter-spacing: .06em; }
+  .stamp :global(.stamp__scale) { width: calc(11px * var(--stamp-cols)); --dg-on: currentColor; --dg-off: color-mix(in srgb, currentColor 40%, transparent); }
+</style>

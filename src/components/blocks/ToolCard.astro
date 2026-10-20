@@ -9,6 +9,7 @@
  * wtedy ma przyciski zamiast `cta`, a kliknięcie w resztę karty prowadzi tam, gdzie pierwszy przycisk
  * (rozciągnięty link; kolejne przyciski leżą nad nim).
  */
+import { Image } from 'astro:assets';
 import Icon from '@/components/ui/Icon.astro';
 import Pictogram from '@/components/ui/Pictogram.astro';
 import DotGrid from '@/components/ui/DotGrid.astro';
@@ -31,9 +32,11 @@ interface Props {
   layout?: 'card' | 'banner';
   /** Mini-wykres w miejscu ikony (tylko układ banner). */
   bars?: ToolBars;
+  /** Zdjęcie w miejscu ikony, np. okładka artykułu (tylko układ banner). */
+  image?: { src: ImageMetadata; alt: string };
 }
 
-const { tool, cta = 'Otwórz', layout = 'card', bars } = Astro.props;
+const { tool, cta = 'Otwórz', layout = 'card', bars, image } = Astro.props;
 const banner = layout === 'banner';
 // Baner stoi w prozie artykułu, której style łapią <p> i nagłówki — tam same <span>
 const Text = banner ? 'span' : 'p';
@@ -45,7 +48,9 @@ const Root = links ? 'div' : 'a';
 const chart = banner && bars && barsMask(bars.values, { cols: 16, rows: 7, max: bars.max, past: bars.past });
 ---
 <Root class:list={['tool', { 'tool--banner': banner, 'tool--links': links }]} href={links ? undefined : tool.href} data-reveal={banner ? undefined : ''}>
-  {chart ? (
+  {banner && image ? (
+    <Image src={image.src} alt={image.alt} widths={[160, 320]} sizes="160px" class="tool__img" />
+  ) : chart ? (
     <DotGrid cells={chart.cells} cols={chart.cols} class="tool__chart" />
   ) : !banner && tool.pictogram ? (
     <Pictogram name={tool.pictogram} frame={[21, 14]} class="tool__art" />
@@ -97,7 +102,8 @@ const chart = banner && bars && barsMask(bars.values, { cols: 16, rows: 7, max: 
   }
   .tool--banner:hover { border-color: var(--blue); }
   .tool--banner:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
-  .tool--banner .tool__icon, .tool--banner :global(.tool__chart) { grid-area: media; margin: 0; }
+  .tool--banner .tool__icon, .tool--banner :global(.tool__chart), .tool--banner .tool__img { grid-area: media; margin: 0; }
+  .tool__img { display: block; width: 160px; height: auto; aspect-ratio: 4 / 3; object-fit: cover; filter: var(--photo-filter); }
   .tool--banner .tool__icon { background: var(--surface); }
   .tool :global(.tool__chart) { width: 132px; }
   .tool--banner .tool__label { grid-area: label; color: var(--blue); }
@@ -121,7 +127,7 @@ const chart = banner && bars && barsMask(bars.values, { cols: 16, rows: 7, max: 
   /* Wąsko: grafika obok tytułu, przycisk pod spodem na całą szerokość */
   @media (max-width: 640px) {
     .tool--banner { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "media label" "media title" "desc desc" "go go"; gap: 2px 16px; padding: 16px; }
-    .tool :global(.tool__chart) { width: 88px; }
+    .tool :global(.tool__chart), .tool__img { width: 88px; }
     .tool--banner .tool__desc { margin-top: 10px; }
     .tool--banner .tool__go { justify-content: center; margin-top: 12px; }
     .tool--banner .tool__links { margin-top: 12px; flex-direction: row; }

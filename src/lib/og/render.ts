@@ -24,7 +24,7 @@ import { renderMapSvg, staticColors } from '@/lib/mapa/svg';
 import { tokenColor } from '@/lib/tokens';
 import { GEOMETRY, frameLines, polyline } from '@/lib/siatka';
 import type { OgCover } from '@/types';
-import type { Accuracy, OgDots, OgStat } from '@/types';
+import type { Accuracy, OgDots, OgStamp, OgStat } from '@/types';
 import { NARROW_TITLE_MAX, OG_HEIGHT, OG_WIDTH, type OgEntry, type OgMedia, type OgSpec } from './presets';
 
 const PAD_X = 64;
@@ -438,6 +438,42 @@ function cover(c: OgCover): Node {
       h('div', { style: { marginTop: 28, fontFamily: MONO, fontSize: 19, letterSpacing: '0.08em', textTransform: 'uppercase', color: col('text') } }, c.label)));
 }
 
+/**
+ * Pieczątki jak ui/Stamp: podwójna ramka (obwódka cienka na zewnątrz), wersaliki, lekki obrót,
+ * pod napisem skala z kropek (`level` z `max` zapalonych, reszta plusy). Jedna — duża na środku;
+ * kilka — jedna pod drugą, na przemian przesunięte i obrócone, jak przybite na kolejnych kartach.
+ */
+const STAMP_TILT = [-3, 2.5, -1.5, 3];
+
+function stampScale(level: number, max: number, cell: number, color: string) {
+  const arm = cell * GEOMETRY.arm, r = cell * GEOMETRY.on;
+  let plus = '', marks = '';
+  for (let i = 0; i < max; i++) {
+    const x = i * cell + cell / 2, y = cell / 2;
+    if (i < level) marks += `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}"/>`;
+    else plus += `M${x} ${y - arm}v${2 * arm}M${x - arm} ${y}h${2 * arm}`;
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${max * cell} ${cell}"><path d="${plus}" stroke="${color}" stroke-opacity=".4" stroke-width="${(cell * GEOMETRY.stroke).toFixed(2)}" fill="none"/>${marks}</svg>`;
+  return h('img', { src: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`, width: max * cell, height: cell });
+}
+
+function stamp({ label, kicker, level, max = 7, tone = 'blue' }: OgStamp, k: number, tilt: number) {
+  const color = tone === 'muted' ? C.ink : C.blue;
+  return h('div', { style: { padding: 6 * k, border: `${Math.max(1, Math.round(1.2 * k))}px solid ${color}`, transform: `rotate(${tilt}deg)`, color } },
+    h('div', { style: { flexDirection: 'column', alignItems: 'flex-start', gap: 10 * k, padding: `${12 * k}px ${18 * k}px ${13 * k}px`, border: `${Math.round(2.5 * k)}px solid ${color}` } },
+      kicker && h('div', { style: { fontFamily: MONO, fontWeight: 500, fontSize: Math.round(12 * k), letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.8 } }, typo(kicker)),
+      h('div', { style: { fontFamily: DISPLAY, fontWeight: 500, fontSize: Math.round(22 * k), lineHeight: 1.1, letterSpacing: '0.05em', textTransform: 'uppercase' } }, noWidow(typo(label))),
+      level !== undefined && stampScale(level, max, Math.round(15 * k), color)));
+}
+
+function stamps({ stamps: list }: Extract<OgMedia, { kind: 'stamps' }>) {
+  const single = list.length === 1;
+  const k = single ? 1.9 : 1.15;
+  return h('div', { style: { flexDirection: 'column', justifyContent: 'center', alignItems: single ? 'center' : 'stretch', gap: 30, flexShrink: 0, width: MEDIA_W, height: MEDIA_H } },
+    ...list.map((s, i) => h('div', { style: { justifyContent: single ? 'center' : i % 2 ? 'flex-end' : 'flex-start', paddingLeft: single ? 0 : 12, paddingRight: single ? 0 : 12 } },
+      stamp(s, k, STAMP_TILT[i % STAMP_TILT.length]))));
+}
+
 /* ---------- Szablon ---------- */
 async function layout(spec: OgSpec, route: string): Promise<Node> {
   const wide = spec.media.kind === 'none';
@@ -456,7 +492,7 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
           ...titleLines(title)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
       spec.footer && footer(spec.footer, wide)),
-    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : spec.media.kind === 'dots' ? dots(spec.media) : null);
+    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : spec.media.kind === 'dots' ? dots(spec.media) : spec.media.kind === 'stamps' ? stamps(spec.media) : null);
 }
 
 /** PNG 1200×630 z paletą 8-bit: zdjęcia B&W + kolory marki mieszczą się w niej bez widocznej straty. */

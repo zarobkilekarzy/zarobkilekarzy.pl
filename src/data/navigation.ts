@@ -132,6 +132,8 @@ export const searchExtras: SearchDoc[] = [
   { id: 'o-projekcie', title: 'O projekcie: cel, zasady, sprostowania', category: 'O serwisie', href: '/o-projekcie/', keywords: ['kontakt', 'sprostowanie', 'metodologia', 'zasady', 'kto prowadzi'] },
   { id: 'media', title: 'Materiały medialne: infografiki do pobrania', category: 'O serwisie', href: '/media/', keywords: ['infografika', 'grafiki', 'do pobrania', 'dla mediów', 'press kit', 'dziennikarze', 'licencja'] },
   { id: 'prywatnosc', title: 'Polityka prywatności', category: 'O serwisie', href: '/prywatnosc/', keywords: ['RODO', 'dane osobowe', 'ciasteczka', 'cookies', 'prywatność'] },
+  { id: 'sad-lekarski', title: 'Czy orzekasz jak sąd lekarski? Gra na orzeczeniach', category: 'Przewodnik', href: '/sad-lekarski/', keywords: ['gra', 'quiz', 'sąd lekarski', 'kary', 'odpowiedzialność zawodowa', 'NSL'] },
+  { id: 'orzeczenia-sadow-lekarskich', title: 'Katalog orzeczeń sądów lekarskich', category: 'Przewodnik', href: '/sad-lekarski/orzeczenia/', keywords: ['orzeczenia', 'wyroki', 'rejestr', 'sąd lekarski', 'kary', 'pozbawienie prawa do zawodu', 'upomnienie', 'nagana'] },
   { id: 'slownik', title: 'Słownik pojęć: kontrakt, kapitacja, ryczałt, gotowość', category: 'Słownik', href: '/slownik/', keywords: ['słowniczek', 'pojęcia', 'definicje', 'skróty', 'co to jest'] },
   { id: 'faq', title: 'Najczęstsze zarzuty wobec jawności płac', category: 'O serwisie', href: '/faq/', keywords: ['FAQ', 'zarzuty', 'pytania', 'populizm', 'RODO', 'OECD'] },
   { id: 'karta-praw-pacjenta', title: 'Karta praw pacjenta do druku (PDF)', category: 'Przewodnik', href: '/prawa-pacjenta/druk/', keywords: ['karta kieszonkowa', 'duży druk', 'wydruk', 'pdf'] },

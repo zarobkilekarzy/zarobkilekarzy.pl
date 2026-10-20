@@ -55,11 +55,15 @@ export const ogUrl = (entry: OgEntry) => `/og/${ogSlug(entry.route)}.png?v=${ver
 const withSlash = (path: string) => (path.endsWith('/') ? path : `${path}/`);
 const warned = new Set<string>();
 
-/** Obrazek dla strony; trasy bez wpisu dostają obrazek domyślny (strona główna). */
-export async function ogImageFor(pathname: string): Promise<{ url: string; alt: string }> {
+/**
+ * Obrazek dla strony; trasy bez wpisu dostają obrazek domyślny (strona główna).
+ * `fallback: false` — tylko własny wpis, bez domyślnego (strony poza indeksem, np. prototyp udostępniany linkiem).
+ */
+export async function ogImageFor(pathname: string, fallback = true): Promise<{ url: string; alt: string } | undefined> {
   const entries = await getOgEntries();
   const path = withSlash(pathname);
   let entry = entries.find((e) => e.route === path);
+  if (!entry && !fallback) return undefined;
   if (!entry) {
     if (!warned.has(path)) {
       warned.add(path);

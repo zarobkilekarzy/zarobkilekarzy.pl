@@ -1,0 +1,361 @@
+---
+/**
+ * /sad-lekarski/orzeczenia/ — katalog orzeczeń sądów lekarskich: każde rozstrzygnięcie z gry (i kilka spoza niej)
+ * jako karta z podsumowaniem i pieczątką kary; pełny opis w panelu pod wierszem, osobna strona sprawy
+ * pod /sad-lekarski/orzeczenia/<id>/ (link do udostępnienia). Dane: src/data/sad-lekarski.ts.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Icon from '@/components/ui/Icon.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Stamp from '@/components/ui/Stamp.astro';
+import { CASES, GAME_HREF, PORTAL_URL, SCALE, caseHref, verdictLabel } from '@/data/sad-lekarski';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Czy orzekasz jak sąd lekarski?', href: GAME_HREF }, { label: 'Katalog orzeczeń' }];
+const seo: SeoInput = {
+  title: 'Orzeczenia sądów lekarskich: za co i jak karzą',
+  description:
+    'Streszczenia prawomocnych orzeczeń sądów lekarskich: co ustalił sąd, jaki był zarzut i jaka zapadła kara — od uniewinnienia po pozbawienie prawa do zawodu.',
+  breadcrumbs: crumbs,
+};
+
+const catalog = CASES.map((c) => ({
+  ...c,
+  facts: c.facts.map(typo),
+  charge: typo(c.charge),
+  verdict: { ...c.verdict, text: typo(c.verdict.text) },
+  reasoning: c.reasoning ? typo(c.reasoning) : undefined,
+}));
+const files = new Set(CASES.map((c) => c.file)).size;
+const catalogLevels = SCALE.map((s) => ({ ...s, n: catalog.filter((c) => c.verdict.level === s.level).length })).filter((s) => s.n);
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="top">
+    <Breadcrumbs items={crumbs} />
+    <header class="intro">
+      <div>
+        <Eyebrow class="intro__eyebrow">Katalog orzeczeń · odpowiedzialność zawodowa</Eyebrow>
+        <Heading as="h1" size="h2" class="intro__title">Za co i jak karzą sądy lekarskie</Heading>
+      </div>
+      <div>
+        <p class="intro__lead">{typo(`${catalog.length} rozstrzygnięć z ${files} prawomocnych orzeczeń: krótko, co ustalił sąd i jaką karę orzekł. Każda sprawa ma osobną stronę z linkiem do udostępnienia.`)}</p>
+        <p class="intro__links">
+          <LinkArrow href={GAME_HREF}>Zagraj: czy orzekasz jak sąd lekarski?</LinkArrow>
+          <LinkArrow href={`${GAME_HREF}#skad`}>Skąd te sprawy</LinkArrow>
+        </p>
+      </div>
+    </header>
+
+    <section class="cat" id="katalog" aria-label="Orzeczenia" data-catalog>
+      <div class="cat__filters" role="group" aria-label="Pokaż według kary" data-cat-filters hidden>
+        <button type="button" aria-pressed="true" data-level="all">Wszystkie <span>{catalog.length}</span></button>
+        {catalogLevels.map((s) => <button type="button" aria-pressed="false" data-level={s.level}>{s.label} <span>{s.n}</span></button>)}
+      </div>
+      <ul class="cat__list">
+        {catalog.map((c) => (
+          <li class="cc" data-cc-level={c.verdict.level}>
+            <p class="cc__meta">{c.label ? `${c.court} · ${c.label}` : c.court}</p>
+            <h2 class="cc__title">{typo(c.title)}</h2>
+            <p class="cc__sum">{typo(c.summary)}</p>
+            <Stamp
+              kicker="Sąd orzekł"
+              label={verdictLabel(c)}
+              level={c.verdict.level}
+              tone={c.verdict.level ? 'blue' : 'muted'}
+              scaleLabel={`${c.verdict.level} z 7 w skali kar art. 83`}
+              class="cc__stamp"
+            />
+            <details class="cc__more" data-cc-more>
+              <summary><span class="cc__open">Pełny opis i uzasadnienie</span><span class="cc__close">Zwiń opis</span></summary>
+              <div class="cc__body">
+                <div class="cc__facts">{c.facts.map((f) => <p>{f}</p>)}</div>
+                <dl class="cc__rows">
+                  <div><dt class="mono-label">Zarzut</dt><dd>{c.charge}</dd></div>
+                  <div><dt class="mono-label">Sąd orzekł</dt><dd><strong>{c.verdict.text}</strong></dd></div>
+                  {c.reasoning && <div class="cc__why"><dt class="mono-label">Z uzasadnienia</dt><dd>{c.reasoning}</dd></div>}
+                </dl>
+                <p class="cc__src">Źródło: portal prawomocnych orzeczeń NIL, plik <code>{c.file}</code><br /><a {...linkAttrs(PORTAL_URL)}>nil.org.pl/orzeczenia<Icon name="arrow-ne" size={14} /></a></p>
+                <p class="cc__link"><a href={caseHref(c.id)}>Osobna strona sprawy — link do udostępnienia<Icon name="arrow" size={14} /></a></p>
+              </div>
+            </details>
+          </li>
+        ))}
+      </ul>
+      <nav class="cat__pages" aria-label="Strony katalogu" data-cat-pages hidden></nav>
+    </section>
+  </Section>
+</BaseLayout>
+
+<script>
+  // Katalog: filtr po karze, strony po PAGE kart i opis sprawy w panelu pod wierszem klikniętej karty
+  // (jak w galerii zdjęć). Bez JS: wszystkie karty naraz, opis rozwija się w samej karcie (<details>).
+  // Animacje tylko transformacją i przezroczystością — panel wstawiamy od razu w pełnej wysokości, a karty pod nim
+  // „zjeżdżają” ze starego miejsca (FLIP), więc przeglądarka nie przelicza układu w każdej klatce.
+  const list = document.querySelector<HTMLElement>('.cat__list');
+  if (list) {
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const EASE = 'cubic-bezier(.2, .7, .1, 1)';
+    const MS = 340;
+    const PAGE = 9;
+    const cards = [...list.querySelectorAll<HTMLElement>('.cc')];
+    const pager = document.querySelector<HTMLElement>('[data-cat-pages]')!;
+    const filters = document.querySelector<HTMLElement>('[data-cat-filters]');
+    const chips = filters ? [...filters.querySelectorAll<HTMLButtonElement>('[data-level]')] : [];
+    let level = 'all';
+    let page = 0;
+
+    const panel = document.createElement('li');
+    panel.className = 'cat__panel';
+    panel.innerHTML = '<div class="cat__panel-in"><div class="cat__panel-head"><p class="cat__panel-title"></p>'
+      + '<button type="button" class="cat__panel-close">Zwiń opis <span aria-hidden="true">–</span></button></div>'
+      + '<div class="cat__panel-body"></div></div>';
+    const pIn = panel.querySelector<HTMLElement>('.cat__panel-in')!;
+    const pTitle = panel.querySelector<HTMLElement>('.cat__panel-title')!;
+    const pBody = panel.querySelector<HTMLElement>('.cat__panel-body')!;
+    let active: HTMLElement | null = null;
+    let closing: Animation[] = [];
+
+    /** ostatnia widoczna karta w wierszu danej karty — za nią wstawiamy panel */
+    const rowEnd = (card: HTMLElement) => cards.filter((c) => !c.hidden && c.offsetTop === card.offsetTop).pop()!;
+    /** to, co leży pod miejscem wstawienia (karty dalszych wierszy i paginacja) — przesuwa się razem */
+    const after = (el: Element) => {
+      const out: HTMLElement[] = [];
+      for (let n = el.nextElementSibling; n; n = n.nextElementSibling) if (!(n as HTMLElement).hidden && n !== panel) out.push(n as HTMLElement);
+      if (!pager.hidden) out.push(pager);
+      return out;
+    };
+    const tops = (els: HTMLElement[]) => els.map((e) => e.getBoundingClientRect().top);
+    const slide = (els: HTMLElement[], from: number[], fill: FillMode = 'none') => els.map((el, k) => {
+      const dy = from[k] - el.getBoundingClientRect().top;
+      return el.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: MS, easing: EASE, fill });
+    });
+    const mark = (card: HTMLElement | null) => {
+      for (const c of cards) {
+        c.classList.toggle('is-active', c === card);
+        c.querySelector('summary')!.setAttribute('aria-expanded', String(c === card));
+      }
+      active = card;
+    };
+    const fill = (card: HTMLElement) => {
+      pTitle.textContent = card.querySelector('.cc__title')!.textContent;
+      pBody.replaceChildren(card.querySelector('.cc__body')!.cloneNode(true));
+      panel.style.setProperty('--notch', `${card.offsetLeft + card.offsetWidth / 2}px`);
+    };
+    const finishClosing = () => { for (const a of closing) a.cancel(); closing = []; };
+
+    const close = (animate = true) => {
+      finishClosing();
+      if (!panel.isConnected) return;
+      mark(null);
+      if (calm || !animate) { panel.remove(); return; }
+      // karty pod panelem jadą w górę na miejsce, które zostanie po panelu; panel w tym czasie gaśnie
+      // wysokość, którą zwolni panel: jego pudełko + odstęp wiersza − ujemny margines (dzióbek)
+      const h = panel.getBoundingClientRect().height + parseFloat(getComputedStyle(list).rowGap) - 8;
+      closing = after(panel).map((el) => el.animate([{ transform: 'none' }, { transform: `translateY(${-h}px)` }], { duration: MS, easing: EASE, fill: 'forwards' }));
+      const fade = pIn.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], { duration: MS * .7, easing: EASE, fill: 'forwards' });
+      closing.push(fade);
+      // po animacji usuwamy panel i zdejmujemy transformacje w tej samej klatce — karty są już na miejscu
+      Promise.all(closing.map((a) => a.finished)).then(() => { if (!active) { panel.remove(); finishClosing(); } }).catch(() => {});
+    };
+
+    const open = (card: HTMLElement) => {
+      finishClosing();
+      const end = rowEnd(card);
+      // ten sam wiersz: panel zostaje, zmienia treść, a karty pod nim płynnie dopasowują się do nowej wysokości
+      if (panel.isConnected && panel.previousElementSibling === end) {
+        const els = after(panel);
+        const from = tops(els);
+        fill(card);
+        mark(card);
+        if (calm) return;
+        slide(els, from);
+        pBody.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: EASE });
+        return;
+      }
+      // inny wiersz: stary panel znika od razu, a klikniętą kartę trzymamy w tym samym miejscu ekranu
+      const anchor = card.getBoundingClientRect().top;
+      panel.remove();
+      const shift = card.getBoundingClientRect().top - anchor;
+      if (shift) window.scrollBy(0, shift);
+      const els = after(end);
+      const from = tops(els);
+      fill(card);
+      end.after(panel);
+      mark(card);
+      if (!calm) {
+        slide(els, from);
+        pIn.animate([{ opacity: 0, transform: 'translateY(-10px)' }, { opacity: 1, transform: 'none' }], { duration: MS, easing: EASE });
+      }
+      // przewijamy tylko wtedy, gdy początek panelu byłby poza ekranem
+      const top = panel.getBoundingClientRect().top;
+      if (top > window.innerHeight - 140) window.scrollBy({ top: top - window.innerHeight + 260, behavior: calm ? 'auto' : 'smooth' });
+    };
+
+    for (const card of cards) {
+      card.querySelector('summary')!.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (active === card) close(); else open(card);
+      });
+    }
+    panel.querySelector('.cat__panel-close')!.addEventListener('click', () => {
+      const card = active;
+      close();
+      card?.querySelector<HTMLElement>('summary')!.focus({ preventScroll: true });
+    });
+    // zmiana szerokości przestawia wiersze — panel zamykamy bez animacji
+    let width = window.innerWidth;
+    window.addEventListener('resize', () => { if (window.innerWidth !== width) { width = window.innerWidth; close(false); } });
+
+    // filtr i strony
+    const button = (label: string, n: number, current = false, disabled = false) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.dataset.page = String(n);
+      b.disabled = disabled;
+      if (current) b.setAttribute('aria-current', 'page');
+      return b;
+    };
+    const apply = (scroll = false) => {
+      close(false);
+      const match = cards.filter((c) => level === 'all' || c.dataset.ccLevel === level);
+      const pages = Math.max(1, Math.ceil(match.length / PAGE));
+      page = Math.min(page, pages - 1);
+      for (const c of cards) c.hidden = true;
+      const shown = match.slice(page * PAGE, page * PAGE + PAGE);
+      for (const c of shown) c.hidden = false;
+      pager.hidden = pages < 2;
+      if (pages > 1) {
+        const nums = document.createElement('span');
+        nums.className = 'cat__pages-nums';
+        for (let n = 0; n < pages; n++) nums.append(button(String(n + 1), n, n === page));
+        const info = document.createElement('span');
+        info.className = 'cat__pages-info';
+        info.textContent = `${page * PAGE + 1}–${page * PAGE + shown.length} z ${match.length}`;
+        pager.replaceChildren(button('← Poprzednie', page - 1, false, page === 0), nums, button('Następne →', page + 1, false, page === pages - 1), info);
+      }
+      if (scroll) document.getElementById('katalog')!.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+    };
+    pager.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-page]');
+      if (!b || b.disabled) return;
+      page = Number(b.dataset.page);
+      apply(true);
+    });
+    if (filters) {
+      filters.hidden = false;
+      for (const chip of chips) chip.addEventListener('click', () => {
+        for (const c of chips) c.setAttribute('aria-pressed', String(c === chip));
+        level = chip.dataset.level!;
+        page = 0;
+        apply();
+      });
+    }
+    apply();
+  }
+</script>
+
+<style>
+  .top { padding-top: clamp(20px, 2.5vw, 32px); }
+
+  .intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px 56px; align-items: end; margin: 28px 0 36px; }
+  .intro :global(.intro__eyebrow) { margin-bottom: 12px; }
+  .intro :global(.intro__title) { font-size: clamp(1.75rem, 3.2vw, 2.5rem); }
+  .intro__lead { font-size: 1rem; line-height: 1.55; color: var(--text-strong); max-width: 36em; }
+  .intro__links { display: flex; flex-wrap: wrap; gap: 4px 28px; margin-top: 14px; }
+
+  /* katalog orzeczeń: karty z podsumowaniem i pieczątką kary */
+  .cat__filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .cat__filters[hidden] { display: none; }
+  .cat__filters button { padding: 8px 12px; border: 1px solid var(--line-2); background: var(--surface); font-size: 0.8125rem; color: var(--text-strong); }
+  .cat__filters button span { margin-left: 4px; font: 500 0.75rem/1 var(--f-mono); color: var(--muted); }
+  .cat__filters button:hover { border-color: var(--blue); }
+  .cat__filters button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .cat__filters button[aria-pressed="true"] span { color: inherit; opacity: .7; }
+  .cat__filters button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .cat__list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .cc { display: flex; flex-direction: column; padding: 24px; background: var(--surface); border: 1px solid var(--line-2); }
+  .cc[hidden] { display: none; }
+  .cc__meta { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .cc__title { margin-top: 8px; font: 500 1.125rem/1.25 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .cc__sum { margin-top: 10px; font-size: 0.9375rem; line-height: 1.6; color: var(--text-strong); }
+  .cc :global(.cc__stamp) { margin: 22px 0 8px 6px; align-self: flex-start; }
+  .cc__more { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line); }
+  .cc__more summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 0.875rem; color: var(--ink); }
+  .cc__more summary::-webkit-details-marker { display: none; }
+  .cc__more summary::after { content: "+"; margin-left: auto; font: 400 1.25rem/1 var(--f-mono); color: var(--blue); }
+  .cc__more[open] summary::after { content: "–"; }
+  .cc__more summary:hover { color: var(--blue); }
+  .cc__more summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .cc__close, .cc__more[open] .cc__open { display: none; }
+  .cc__more[open] .cc__close { display: inline; }
+  .cc__body { display: grid; gap: 22px; margin-top: 18px; color: var(--text-strong); }
+  .cc__facts { display: grid; gap: 12px; max-width: 42em; font-size: 0.96875rem; line-height: 1.7; }
+  .cc__rows { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px 32px; margin: 0; }
+  .cc__rows > div { padding-top: 12px; border-top: 1px solid var(--line-2); }
+  .cc__rows .cc__why { grid-column: 1 / -1; }
+  .cc__rows dt { margin-bottom: 6px; }
+  .cc__rows dd { margin: 0; font-size: 0.90625rem; line-height: 1.6; }
+  .cc__rows strong { font-weight: 600; color: var(--ink); }
+  .cc__src { font-size: 0.75rem; line-height: 1.7; color: var(--muted); }
+
+  /* paginacja katalogu */
+  .cat__pages { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line-2); }
+  .cat__pages[hidden] { display: none; }
+  .cat__pages :global(button) { min-width: 40px; height: 40px; padding: 0 12px; border: 1px solid var(--line-2); background: var(--surface); font-size: 0.875rem; color: var(--ink); }
+  .cat__pages :global(button:hover:not(:disabled)) { border-color: var(--blue); color: var(--blue); }
+  .cat__pages :global(button:disabled) { color: var(--muted); opacity: .5; cursor: default; }
+  .cat__pages :global(button[aria-current="page"]) { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .cat__pages :global(button:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .cat__pages :global(.cat__pages-nums) { display: inline-flex; gap: 6px; }
+  .cat__pages :global(.cat__pages-info) { margin-left: auto; font: 500 0.75rem/1 var(--f-mono); color: var(--muted); }
+
+  /* aktywna karta: kobaltowa ramka, przycisk „Zwiń opis” */
+  .cc.is-active { border-color: var(--blue); }
+  .cc.is-active .cc__open { display: none; }
+  .cc.is-active .cc__close { display: inline; }
+  .cc.is-active .cc__more summary::after { content: "–"; }
+
+  /* panel opisu pod wierszem karty — tworzy go skrypt, więc selektory :global (style Astro są zawężone do szablonu);
+     dzióbek wskazuje kartę (--notch = środek karty) */
+  .cat__list :global(.cat__panel) { grid-column: 1 / -1; position: relative; overflow: hidden; padding-top: 8px; margin-top: -8px; }
+  .cat__list :global(.cat__panel-in) { position: relative; padding: clamp(24px, 3vw, 40px); background: var(--surface); border: 1px solid var(--blue); }
+  .cat__list :global(.cat__panel-in)::before {
+    content: ""; position: absolute; top: 0; left: var(--notch, 50%); width: 14px; height: 14px;
+    transform: translate(-50%, -50%) rotate(45deg); background: var(--surface);
+    border-left: 1px solid var(--blue); border-top: 1px solid var(--blue); transition: left .32s var(--ease);
+  }
+  .cat__list :global(.cat__panel-head) { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 14px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .cat__list :global(.cat__panel-title) { font: 500 1.25rem/1.25 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .cat__list :global(.cat__panel-close) { display: inline-flex; align-items: center; gap: 8px; font-size: 0.875rem; color: var(--muted); white-space: nowrap; }
+  .cat__list :global(.cat__panel-close span) { font: 400 1.25rem/1 var(--f-mono); color: var(--blue); }
+  .cat__list :global(.cat__panel-close:hover) { color: var(--ink); }
+  .cat__list :global(.cat__panel-close:focus-visible) { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .cat__list :global(.cat__panel) .cc__body { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 0 clamp(32px, 4vw, 56px); align-items: start; margin: 0; }
+  .cat__list :global(.cat__panel) .cc__facts { align-content: start; }
+  .cat__list :global(.cat__panel) .cc__facts { grid-column: 1; grid-row: 1 / span 3; }
+  .cat__list :global(.cat__panel) .cc__rows { grid-column: 2; grid-template-columns: minmax(0, 1fr); }
+  .cat__list :global(.cat__panel) .cc__src { grid-column: 2; margin-top: 18px; }
+  .cat__list :global(.cat__panel) .cc__link { grid-column: 2; margin-top: 14px; }
+  .cc__src code { font: 400 0.75rem/1 var(--f-mono); }
+  .cc__src a { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .cc__link a { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--blue); text-underline-offset: 3px; }
+  .cc__link a:hover { color: var(--ink); }
+
+  @media (max-width: 900px) {
+    .intro { grid-template-columns: minmax(0, 1fr); }
+    .cat__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cc__rows { grid-template-columns: minmax(0, 1fr); }
+    .cat__list :global(.cat__panel) .cc__body { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .cat__list :global(.cat__panel) :is(.cc__facts, .cc__rows, .cc__src, .cc__link) { grid-column: 1; grid-row: auto; }
+  }
+  @media (max-width: 480px) {
+    .cat__list { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

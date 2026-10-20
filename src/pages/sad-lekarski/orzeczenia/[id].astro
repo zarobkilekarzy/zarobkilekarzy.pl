@@ -1,0 +1,134 @@
+---
+/**
+ * /sad-lekarski/orzeczenia/<id>/ — osobna strona jednego rozstrzygnięcia z katalogu orzeczeń,
+ * żeby dało się udostępnić link do wybranej sprawy; obrazek OG z pieczątką kary (src/data/og.ts).
+ */
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Icon from '@/components/ui/Icon.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Stamp from '@/components/ui/Stamp.astro';
+import ShareLinks from '@/components/article/ShareLinks.astro';
+import { CASES, CATALOG_HREF, GAME_HREF, PORTAL_URL, caseHref, verdictLabel } from '@/data/sad-lekarski';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+export const getStaticPaths = (() => CASES.map((c) => ({ params: { id: c.id }, props: { c } }))) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { c } = Astro.props;
+const url = new URL(caseHref(c.id), Astro.site).href;
+// inne rozstrzygnięcia z tego samego orzeczenia (kilka zarzutów albo obwinionych)
+const siblings = CASES.filter((o) => o.file === c.file && o.id !== c.id);
+
+const crumbs: Crumb[] = [
+  { label: 'Start', href: '/' },
+  { label: 'Czy orzekasz jak sąd lekarski?', href: GAME_HREF },
+  { label: 'Katalog orzeczeń', href: CATALOG_HREF },
+  { label: c.title },
+];
+const seo: SeoInput = {
+  title: `${c.title} — orzeczenie sądu lekarskiego`,
+  description: c.summary,
+  breadcrumbs: crumbs,
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="case">
+    <header class="case__head">
+      <Breadcrumbs items={crumbs} />
+      <div class="case__intro">
+        <Eyebrow>{c.label ? `${c.court} · ${c.label}` : c.court}</Eyebrow>
+        <Heading as="h1" size="display" punct="" class="case__title">{typo(c.title)}</Heading>
+        <p class="lead case__lead">{typo(c.summary)}</p>
+      </div>
+    </header>
+
+    <div class="case__body">
+      <div class="case__main">
+        <h2 class="mono-label">Co ustalił sąd</h2>
+        <div class="case__facts">{c.facts.map((f) => <p>{typo(f)}</p>)}</div>
+      </div>
+
+      <aside class="case__side" aria-label="Rozstrzygnięcie">
+        <Stamp
+          kicker="Sąd orzekł"
+          label={verdictLabel(c)}
+          level={c.verdict.level}
+          tone={c.verdict.level ? 'blue' : 'muted'}
+          scaleLabel={`${c.verdict.level} z 7 w skali kar art. 83`}
+          class="case__stamp"
+        />
+        <dl class="case__rows">
+          <div><dt class="mono-label">Zarzut</dt><dd>{typo(c.charge)}</dd></div>
+          <div><dt class="mono-label">Sąd orzekł</dt><dd><strong>{typo(c.verdict.text)}</strong></dd></div>
+          {c.reasoning && <div><dt class="mono-label">Z uzasadnienia</dt><dd>{typo(c.reasoning)}</dd></div>}
+        </dl>
+        <p class="case__src">
+          Źródło: portal prawomocnych orzeczeń NIL, plik <code>{c.file}</code><br />
+          <a {...linkAttrs(PORTAL_URL)}>nil.org.pl/orzeczenia<Icon name="arrow-ne" size={14} /></a>
+        </p>
+      </aside>
+    </div>
+
+    {siblings.length > 0 && (
+      <div class="case__more">
+        <h2 class="mono-label">To samo orzeczenie</h2>
+        <ul>{siblings.map((o) => <li><a href={caseHref(o.id)}>{typo(o.title)}</a> <span>{o.label}</span></li>)}</ul>
+      </div>
+    )}
+
+    <footer class="case__foot">
+      <ShareLinks url={url} title={c.title} label="Udostępnij sprawę" />
+      <div class="case__nav">
+        <LinkArrow href={GAME_HREF}>Zagraj: czy orzekasz jak sąd lekarski?</LinkArrow>
+        <LinkArrow href={CATALOG_HREF}>Wszystkie sprawy w katalogu</LinkArrow>
+      </div>
+    </footer>
+  </Section>
+</BaseLayout>
+
+<style>
+  .case__intro { margin-top: 40px; }
+  .case__title { font-size: clamp(2rem, 3.6vw, 3.25rem); margin-bottom: 22px; max-width: 22ch; }
+  .case__lead { font-size: 1.1875rem; max-width: 40em; }
+
+  .case__body {
+    display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 72px);
+    align-items: start; margin-top: clamp(40px, 5vw, 64px); padding-top: 32px; border-top: 1px solid var(--line);
+  }
+  .case__facts { display: grid; gap: 14px; max-width: 42em; margin-top: 14px; font-size: 1.0625rem; line-height: 1.7; color: var(--text-strong); }
+
+  .case__side { display: grid; gap: 24px; }
+  .case :global(.case__stamp) { justify-self: start; margin: 6px 0 4px 6px; }
+  .case__rows { display: grid; gap: 18px; margin: 0; }
+  .case__rows > div { padding-top: 12px; border-top: 1px solid var(--line-2); }
+  .case__rows dt { margin-bottom: 6px; }
+  .case__rows dd { margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--text-strong); }
+  .case__rows strong { font-weight: 600; color: var(--ink); }
+  .case__src { font-size: 0.8125rem; line-height: 1.6; color: var(--muted); }
+  .case__src code { font: 400 0.75rem/1 var(--f-mono); }
+  .case__src a { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+
+  .case__more { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .case__more ul { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 0.9375rem; }
+  .case__more a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .case__more a:hover { color: var(--blue); }
+  .case__more span { font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+
+  .case__foot {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px;
+    margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line);
+  }
+  .case__nav { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+
+  @media (max-width: 900px) {
+    .case__body { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

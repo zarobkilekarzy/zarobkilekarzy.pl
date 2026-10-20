@@ -1,10 +1,11 @@
 ---
 /**
  * Karty z numeracją „01.”. Wyróżniona karta jest niebieska; przy hover
- * wyróżnienie „wędruje” do wskazanej karty (czysty CSS).
+ * wyróżnienie „wędruje” do wskazanej karty (czysty CSS). Opcjonalnie piktogram z kropek na dole karty.
  */
 import Num from '@/components/ui/Num.astro';
 import Icon from '@/components/ui/Icon.astro';
+import Pictogram from '@/components/ui/Pictogram.astro';
 import type { PathCard } from '@/types';
 import { typo } from '@/lib/format';
 
@@ -23,6 +24,7 @@ const { items } = Astro.props;
         <p class="pcard__desc">{typo(item.desc)}</p>
         <ul class="pcard__tags">{item.tags.map((t) => <li>{t}</li>)}</ul>
       </div>
+      {item.pictogram && <Pictogram name={item.pictogram} frame={[24, 11]} class="pcard__art" />}
       <span class="pcard__go" aria-hidden="true"><Icon name="arrow" class="pcard__go-icon" /></span>
     </a>
   ))}
@@ -34,6 +36,9 @@ const { items } = Astro.props;
     --c-bg: var(--surface); --c-fg: var(--ink); --c-text: var(--text); --c-accent: var(--blue); --c-line: var(--line-2);
     --num-color: var(--c-accent);
     --num-dot: var(--c-fg);
+    --dg-on: var(--c-accent);
+    --dg-mid: color-mix(in srgb, var(--c-accent) 75%, transparent);
+    --dg-off: color-mix(in srgb, var(--c-accent) 38%, transparent);
     position: relative;
     display: flex; flex-direction: column; justify-content: space-between;
     min-height: 400px;
@@ -53,6 +58,7 @@ const { items } = Astro.props;
     border: 1px solid var(--c-line); color: var(--c-text);
     transition: border-color .45s var(--ease), color .45s var(--ease);
   }
+  .pcard :global(.pcard__art) { margin-top: 36px; max-width: 400px; }
   .pcard__go {
     position: absolute; top: 28px; right: 28px;
     display: grid; place-items: center; width: 44px; height: 44px;

@@ -5,6 +5,7 @@
 import { z } from 'astro/zod';
 import type { SchemaContext } from 'astro:content';
 import type { Accuracy } from '../../types';
+import { PICTOGRAMS, type PictogramName } from '../siatka/piktogramy';
 
 export const ogSchema = ({ image }: SchemaContext) =>
   z
@@ -28,5 +29,6 @@ export const ogSchema = ({ image }: SchemaContext) =>
       position: z.string().optional(),
       badge: z.union([z.string(), z.literal(false)]).optional(),
       image: image().optional(),
+      pictogram: z.enum(['ekg', ...Object.keys(PICTOGRAMS)] as ['ekg', ...PictogramName[]]).optional(),
     })
     .optional();

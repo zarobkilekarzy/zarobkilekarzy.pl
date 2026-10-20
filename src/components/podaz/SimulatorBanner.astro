@@ -1,8 +1,8 @@
 ---
 /**
  * Baner symulatora podaży w artykule — ToolCard w układzie banner, z danymi z modelu:
- * mini-wykres dopływu (historia jaśniej, pulsuje pierwszy rok, który zmienia suwak) i zdanie
- * z wynikiem, liczone tym samym kodem co narzędzie.
+ * mini-wykres dopływu z kropek (historia pełnymi, projekcja mniejszymi) i zdanie z wynikiem,
+ * liczone tym samym kodem co narzędzie; drugi przycisk prowadzi do drugiego symulatora.
  *   <SimulatorBanner kind="lekarze" />  ·  <SimulatorBanner kind="pielegniarki" />
  */
 import ToolCard, { type ToolBars } from '@/components/blocks/ToolCard.astro';
@@ -17,33 +17,35 @@ interface Props {
 }
 
 const { kind } = Astro.props;
+const DOCTORS = '/analizy/symulator-podazy-lekarzy/';
+const NURSES = '/analizy/symulator-podazy-pielegniarek/';
 
 const { tool, bars } = ((): { tool: Tool; bars: ToolBars } => {
   if (kind === 'lekarze') {
     const y2050 = doctors.simulate(doctors.BASE_INTAKE)[2050 - doctors.YEAR0].doctors;
     return {
       tool: {
-        icon: 'chart', label: 'Narzędzie · sprawdź sam', title: 'Symulator podaży lekarzy', href: '/analizy/symulator-podazy-lekarzy/',
+        icon: 'chart', label: 'Narzędzie · sprawdź sam', title: 'Symulator podaży lekarzy', href: DOCTORS,
+        links: [{ label: 'Otwórz symulator', href: DOCTORS }, { label: 'Podaż pielęgniarek', href: NURSES }],
         desc: `Przy dzisiejszym limicie (${doctors.seats(doctors.LIMIT_TODAY)}) w 2050 r. zawód będzie wykonywać ${formatPL(y2050)} lekarzy. Zmień nabór na medycynę i zobacz, kiedy widać skutek.`,
       },
       bars: {
-        values: doctors.BASE_INTAKE, max: doctors.INTAKE_MAX,
-        past: doctors.YEAR0 - doctors.YEAR_MIN, highlight: doctors.FIRST_EDITABLE - doctors.YEAR_MIN,
+        values: doctors.BASE_INTAKE, max: doctors.INTAKE_MAX, past: doctors.FIRST_EDITABLE - doctors.YEAR_MIN,
       },
     };
   }
   const low = lowest(nurses.simulate(nurses.BASE_RIGHTS));
   return {
     tool: {
-      icon: 'chart', label: 'Narzędzie · sprawdź sam', title: 'Symulator podaży pielęgniarek', href: '/analizy/symulator-podazy-pielegniarek/',
+      icon: 'chart', label: 'Narzędzie · sprawdź sam', title: 'Symulator podaży pielęgniarek', href: NURSES,
+      links: [{ label: 'Otwórz symulator', href: NURSES }, { label: 'Podaż lekarzy', href: DOCTORS }],
       desc: `Przy dzisiejszym dopływie do zawodu najmniej pielęgniarek — ${formatPL(low.nurses)} — będzie pracować w ${low.year} r. Zmień dopływ i wiek odejścia, zobacz drabinę wieku.`,
     },
     bars: {
       // pół skali narzędzia — przy pełnej (24 tys.) słupki byłyby niskie
-      values: nurses.BASE_RIGHTS, max: nurses.RIGHTS_MAX / 2,
-      past: nurses.YEAR0 - nurses.YEAR_MIN + 1, highlight: nurses.FIRST_POLICY - nurses.YEAR_MIN,
+      values: nurses.BASE_RIGHTS, max: nurses.RIGHTS_MAX / 2, past: nurses.YEAR0 - nurses.YEAR_MIN + 1,
     },
   };
 })();
 ---
-<ToolCard tool={tool} bars={bars} layout="banner" cta="Otwórz symulator" />
+<ToolCard tool={tool} bars={bars} layout="banner" />

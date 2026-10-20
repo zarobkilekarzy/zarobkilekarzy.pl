@@ -5,6 +5,7 @@
  */
 import { getCollection, type CollectionEntry } from 'astro:content';
 import illustration from '@/assets/aktualnosci/ilustracja-aktualnosci.webp';
+import { raw } from '@/lib/images';
 
 export type News = CollectionEntry<'news'>;
 
@@ -26,6 +27,15 @@ export const newsIllustration = {
 /** Zdjęcie wpisu na liście i na obrazku OG: własne (`cover`) albo ilustracja działu. */
 export const newsImage = (entry: News) =>
   entry.data.cover ? { src: entry.data.cover, alt: entry.data.coverAlt ?? '' } : newsIllustration;
+
+/**
+ * Czy miniaturę pokazać w całości: obraz szerszy niż kadr listy (infografika, obrazek OG) przycięty
+ * gubiłby treść z boku. Zrzuty ekranu (węższe) dalej wypełniają kadr, przycięte od dołu.
+ */
+export const newsThumbWhole = (entry: News, frame: number) => {
+  const { width, height } = raw(newsImage(entry).src);
+  return width / height > frame + .01;
+};
 
 const byDate = (a: News, b: News) => b.data.date.valueOf() - a.data.date.valueOf();
 

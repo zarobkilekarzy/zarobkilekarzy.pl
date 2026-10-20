@@ -11,7 +11,6 @@ import { currentStage, projekt } from '@/data/projekt-ustawy';
 import { adresaci } from '@/data/adresaci';
 import { writeToolOn } from '@/data/dzialaj';
 import { helpline } from '@/data/prawa-pacjenta';
-import { HEADLINE } from '@/data/zarobki-ujawnione-listy';
 import { MEDIANS } from '@/data/rozklad-wynagrodzen';
 import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
@@ -27,8 +26,8 @@ import { EXAMS_2025, passRate } from '@/data/zdawalnosc-egzaminow';
 import { COUNTRIES, WINDOW, ratePer100k, type CountryKey } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
 import { pseudonymDemo } from '@/data/postulat';
 import { createHmac } from 'node:crypto';
+import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
 
-import heroImg from '@/assets/img/hero-pokoj-lekarski.jpg';
 import barometrOg from '@/assets/img/barometr-polityczny-og.png';
 import { newsIllustration } from '@/lib/news';
 import { barometrProfiles } from '@/data/barometr-polityczny';
@@ -81,7 +80,26 @@ const aosServices = change(AOS_FIRST.services, AOS_LAST.services);
 const queueGrowth = change(WHC_2022.single, WHC_2024.single);
 
 /** Media artykułów (trasa → wykres w miejscu zdjęcia); etykieta, lead i stopka zostają z presetu artykułu. */
-export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels'>> = {
+export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots'>> = {
+  // mapy krajów z kropek (lib/siatka/kraje.ts); kolor = to, co o danej prowincji mówi artykuł
+  '/analizy/kanada-lekarze-ustawa-specjalna/': {
+    dots: {
+      mask: KANADA,
+      codes: { q: { size: 'on', color: 'blue' }, a: { size: 'on', color: 'seq-0' }, j: { size: 'on', color: 'ok' }, o: { size: 'mid', color: 'chart' } },
+      legend: [
+        { code: 'q', label: 'Quebec — ustawa nr 2 z 2025 r.' },
+        { code: 'a', label: 'Ontario i Alberta — warunki narzucone wcześniej' },
+        { code: 'j', label: 'Kolumbia Brytyjska i Nowy Brunszwik — jawne płatności' },
+      ],
+    },
+  },
+  '/analizy/tajwan-ochrona-zdrowia/': {
+    dots: {
+      mask: TAJWAN,
+      codes: { '#': { size: 'on', color: 'blue' } },
+      legend: [{ code: '#', label: 'Jeden płatnik dla całego kraju' }],
+    },
+  },
   '/analizy/ciecie-limitow-na-medycyne/': {
     panels: [
       { head: 'Miejsca na I roku medycyny', height: TWO_PANELS_H, svg: svg(MEDIA_W, TWO_PANELS_H, columnChart(intakeCols, MEDIA_W, TWO_PANELS_H)) },
@@ -123,10 +141,8 @@ export const ogPages: Record<string, OgPage> = {
   '/': {
     eyebrow: 'Przewodnik po pracy i zarobkach',
     title: 'Zarobki lekarzy.\nBez emocji,\nze źródłami',
-    photo: heroImg,
-    position: '38% 50%',
-    badge: `${formatPL(HEADLINE.positions)} rozliczeń w bazie`,
-    badgeIcon: 'db',
+    // obrazek domyślny: uderzenie EKG z kropek, jak avatar i film „Brak odczytu”
+    pictogram: 'ekg',
     footer: { text: 'Każda liczba ze źródłem', flags: true },
   },
   '/dane/': {

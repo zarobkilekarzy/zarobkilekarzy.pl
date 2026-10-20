@@ -1,0 +1,69 @@
+---
+/**
+ * Wykres jednostkowy z kropek (lib/siatka): jedna kropka = `unit` osób / zł / dni, grupy po kolei
+ * od lewej górnej. Rodzaj pola niesie znaczenie grupy: pełna kropka, mniejsza kropka, plus.
+ * Liczby kropek to zaokrąglenia — dokładne wartości stoją w legendzie, ze źródłem pod spodem.
+ *   <UnitChart unit={1000} unitLabel="lekarzy" groups={[{ value: 140297, kind: 'on', label: '…' }]} … />
+ */
+import DotGrid from '@/components/ui/DotGrid.astro';
+import Flag from '@/components/ui/Flag.astro';
+import Icon from '@/components/ui/Icon.astro';
+import type { Cell } from '@/lib/siatka';
+import type { Accuracy } from '@/types';
+import { formatPL, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
+
+interface Group {
+  value: number;
+  kind: Exclude<Cell, 'miss'>;
+  label: string;
+}
+
+interface Props {
+  groups: Group[];
+  /** ile przypada na jedną kropkę */
+  unit: number;
+  /** jednostka w podpisie „1 kropka ≈ 1000 lekarzy” */
+  unitLabel: string;
+  /** kropek w wierszu */
+  cols?: number;
+  title?: string;
+  source: string;
+  href?: string;
+  accuracy?: Accuracy;
+}
+
+const { groups, unit, unitLabel, cols = 29, title, source, href, accuracy = 'exact' } = Astro.props;
+const cells = groups.flatMap((g) => Array.from({ length: Math.round(g.value / unit) }, () => g.kind));
+---
+<figure class="unit">
+  {title && <figcaption class="unit__title">{typo(title)}</figcaption>}
+  <DotGrid cells={cells} cols={cols} label={groups.map((g) => `${formatPL(g.value)} — ${g.label}`).join('; ')} />
+  <ul class="unit__legend">
+    {groups.map((g) => (
+      <li>
+        <DotGrid mask={[{ on: '#', mid: 'o', off: '.' }[g.kind]]} class="unit__key" />
+        <b>{formatPL(g.value)}</b> {typo(g.label)}
+      </li>
+    ))}
+  </ul>
+  <p class="unit__note">1 {unit === 1 ? 'pole' : 'kropka'} ≈ {formatPL(unit)} {unitLabel}</p>
+  <p class="unit__src">
+    <Flag accuracy={accuracy} />
+    {href ? <a {...linkAttrs(href)}>{typo(source)}<Icon name="arrow-ne" size={10} /></a> : typo(source)}
+  </p>
+</figure>
+
+<style>
+  .unit { margin: 32px 0; padding: 24px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .unit__title { font: 500 1.0625rem/1.35 var(--f-display); color: var(--ink); margin-bottom: 18px; }
+  .unit__legend { display: grid; gap: 8px; margin: 20px 0 0; padding: 0; list-style: none; font-size: 0.9375rem; }
+  .unit__legend li { display: flex; align-items: baseline; gap: 10px; margin: 0; padding: 0; }
+  .unit__legend li::before { content: none; }
+  .unit__legend b { font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .unit :global(.unit__key) { flex: none; width: 14px; align-self: center; }
+  .unit__note { margin: 14px 0 0; font-size: 0.8125rem; color: var(--muted); }
+  .unit__src { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 0; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .unit__src a { display: inline-flex; align-items: center; gap: 4px; color: inherit; }
+  .unit__src a:hover { color: var(--blue); }
+</style>

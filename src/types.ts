@@ -5,6 +5,7 @@
 import type { ImageMetadata } from 'astro';
 import type { IconName } from './icons';
 import type { MapLayer } from './lib/mapa/types';
+import type { PictogramName } from './lib/siatka/piktogramy';
 
 /** Czy liczba jest dokładna, czy szacunkowa — każda dana w serwisie ma taką etykietę. */
 export type Accuracy = 'exact' | 'est';
@@ -93,6 +94,8 @@ export interface PathCard {
   tags: string[];
   href: string;
   featured?: boolean;
+  /** piktogram z kropek na dole karty (lib/siatka/piktogramy.ts) */
+  pictogram?: PictogramName;
 }
 
 /** Kafel ze zdjęciem w pasku tematów. */
@@ -156,6 +159,24 @@ export interface Tool {
   title: string;
   desc: string;
   href: string;
+  /** piktogram z kropek zamiast ikony (karta, nie baner) */
+  pictogram?: PictogramName;
+  /** kilka wejść zamiast jednego — przyciski; klik w resztę karty prowadzi tam, gdzie pierwszy */
+  links?: { label: string; href: string }[];
+}
+
+/** Kafel narzędzia w stylu kart z kropkami (blocks/ToolTiles): tekst u góry, grafika z kropek na dole. */
+export interface ToolTile {
+  label: string;
+  title: string;
+  desc: string;
+  /** jedno lub kilka wejść — przyciski */
+  links: { label: string; href: string }[];
+  /** pełne wypełnienie kobaltem */
+  tone?: 'blue';
+  /** grafika: piktogram (lib/siatka/piktogramy.ts) albo słupki z kropek z danych */
+  pictogram?: PictogramName;
+  bars?: { values: readonly number[]; max?: number; past?: number };
 }
 
 /** Sekcja strony (nagłówek ## z kotwicą) — wynik wyszukiwania może prowadzić prosto do niej. */
@@ -219,8 +240,10 @@ export interface OgOverride {
   eyebrow?: string;
   /** lead pod tytułem; false = bez leadu */
   lead?: string | false;
-  /** auto: stat → zdjęcie → sam tytuł */
+  /** auto: stat → zdjęcie → … → grafika z kropek; none = sam tytuł na całą szerokość */
   media?: 'auto' | 'photo' | 'stat' | 'none';
+  /** piktogram z kropek (lib/siatka/piktogramy.ts) albo uderzenie EKG, gdy obrazek nie ma innej grafiki */
+  pictogram?: PictogramName | 'ekg';
   stat?: OgStat;
   /** zdjęcie inne niż okładka */
   photo?: ImageMetadata;
@@ -232,6 +255,14 @@ export interface OgOverride {
   badge?: string | false;
   /** gotowa grafika 1200×630 — omija generator */
   image?: ImageMetadata;
+}
+
+/** Grafika z kropek (lib/siatka) w miejscu zdjęcia: maska tekstowa, znaczenie liter i legenda kolorów. */
+export interface OgDots {
+  mask: readonly string[];
+  /** litera maski → wielkość kropki i kolor (nazwa tokenu z tokens.css, wartość dzienna); `.` = plus tła */
+  codes: Record<string, { size: 'on' | 'mid'; color: 'blue' | 'seq-0' | 'seq-1' | 'ok' | 'amber' | 'bad' | 'chart' }>;
+  legend?: { code: string; label: string }[];
 }
 
 /** Strona spoza kolekcji z własnym obrazkiem OG (src/data/og.ts). */
@@ -264,6 +295,8 @@ export interface OgPage extends OgOverride {
   logo?: ImageMetadata | 'serwis';
   /** lead także przy długim tytule (domyślnie znika, gdy tytuł ma ponad 34 znaki) — np. nazwa partii nad „Stanowisko…” */
   leadAlways?: boolean;
+  /** grafika z kropek w miejscu zdjęcia, np. mapa kraju (lib/siatka/kraje.ts) */
+  dots?: OgDots;
 }
 
 /** Etap drogi (np. projektu ustawy): zakończony, bieżący albo przed nami. */

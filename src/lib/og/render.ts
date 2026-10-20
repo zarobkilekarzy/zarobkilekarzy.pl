@@ -22,8 +22,9 @@ import { geo } from '@/lib/mapa/geo';
 import { toneOfClass } from '@/lib/mapa/layout';
 import { renderMapSvg, staticColors } from '@/lib/mapa/svg';
 import { tokenColor } from '@/lib/tokens';
-import type { Accuracy, OgStat } from '@/types';
-import { OG_HEIGHT, OG_WIDTH, type OgEntry, type OgMedia, type OgSpec } from './presets';
+import { GEOMETRY } from '@/lib/siatka';
+import type { Accuracy, OgDots, OgStat } from '@/types';
+import { NARROW_TITLE_MAX, OG_HEIGHT, OG_WIDTH, type OgEntry, type OgMedia, type OgSpec } from './presets';
 
 const PAD_X = 64;
 const PAD_Y = 56;
@@ -39,7 +40,8 @@ const WIDE_W = OG_WIDTH - 2 * PAD_X; // tytuł bez mediów: cała szerokość
 const lightOf = (value: string) =>
   value.replace(/light-dark\(((?:[^(),]|\([^()]*\))+),(?:[^()]|\([^()]*\))+\)/g, '$1').trim();
 const token = (name: string) => {
-  const value = tokensCss.match(new RegExp(`--${name}:\\s*([^;]+);`))?.[1].trim();
+  // kotwica na początku wiersza (jak lib/tokens): nazwy tokenów padają też w komentarzach („--chart: słupek…”)
+  const value = tokensCss.match(new RegExp(`^\\s*--${name}:\\s*([^;]+);`, 'm'))?.[1].trim();
   if (!value) throw new Error(`[og] brak tokenu --${name} w tokens.css`);
   return lightOf(value);
 };
@@ -359,12 +361,39 @@ async function partyLogo(m: Extract<OgMedia, { kind: 'logo' }>) {
   return h('div', { style: { alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: MEDIA_W, height: MEDIA_H } }, inner);
 }
 
+/**
+ * Grafika z kropek (lib/siatka, motyw „combo”) w kolumnie mediów: litery maski to kropki w kolorach z `codes`,
+ * `.` to plus tła. Rysowana jako SVG w <img>; pod nią legenda kolorów (mapa kraju).
+ */
+function dots(m: Extract<OgMedia, { kind: 'dots' }>) {
+  const cols = Math.max(...m.mask.map((l) => l.length)), rows = m.mask.length;
+  const legendH = m.legend ? 44 + 30 * m.legend.length : 0;
+  const cell = Math.floor(Math.min(MEDIA_W / cols, (MEDIA_H - legendH) / rows));
+  const W = cols * cell, H = rows * cell;
+  const arm = cell * GEOMETRY.arm, rOn = cell * GEOMETRY.on, rMid = cell * GEOMETRY.mid;
+  const color = (c: OgDots['codes'][string]['color']) => token(c);
+  let plus = '', marks = '';
+  m.mask.forEach((line, r) => [...line.padEnd(cols, '.')].forEach((ch, c) => {
+    const x = c * cell + cell / 2, y = r * cell + cell / 2;
+    const code = m.codes[ch];
+    if (code) marks += `<circle cx="${x}" cy="${y}" r="${code.size === 'on' ? rOn : rMid}" fill="${color(code.color)}"/>`;
+    else plus += `M${x} ${y - arm}v${2 * arm}M${x - arm} ${y}h${2 * arm}`;
+  }));
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><path d="${plus}" stroke="${C.blue}" stroke-opacity=".4" stroke-width="${(cell * GEOMETRY.stroke).toFixed(2)}" fill="none"/>${marks}</svg>`;
+  return h('div', { style: { flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexShrink: 0, width: MEDIA_W, height: MEDIA_H } },
+    h('img', { src: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`, width: W, height: H }),
+    m.legend && h('div', { style: { flexDirection: 'column', alignSelf: 'stretch', gap: 10, marginTop: 24, fontFamily: BODY, fontSize: 17, color: C.text } },
+      ...m.legend.map(({ code, label }) => h('div', { style: { alignItems: 'center' } },
+        h('div', { style: { width: 14, height: 14, marginRight: 12, borderRadius: '50%', background: color(m.codes[code].color) } }),
+        typo(label)))));
+}
+
 /* ---------- Szablon ---------- */
 async function layout(spec: OgSpec, route: string): Promise<Node> {
   const wide = spec.media.kind === 'none';
   const title = typo(spec.title);
   const size = titleSize(title, wide);
-  if (!wide && !title.includes('\n') && title.length > 80) console.warn(`[og] ${route}: tytuł ma ${title.length} znaków — skróć go albo ustaw og.title`);
+  if (!wide && !title.includes('\n') && title.length > NARROW_TITLE_MAX) console.warn(`[og] ${route}: tytuł ma ${title.length} znaków — skróć go albo ustaw og.title`);
   // Lead tylko przy krótkim tytule, żeby całość mieściła się w kadrze (chyba że strona prosi o niego wprost)
   const showLead = spec.lead && (spec.leadAlways || (title.split('\n').length <= 3 && title.length <= (wide ? 48 : 34)));
 
@@ -377,7 +406,7 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
           ...titleLines(title)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
       spec.footer && footer(spec.footer, wide)),
-    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : null);
+    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : spec.media.kind === 'dots' ? dots(spec.media) : null);
 }
 
 /** PNG 1200×630 z paletą 8-bit: zdjęcia B&W + kolory marki mieszczą się w niej bez widocznej straty. */

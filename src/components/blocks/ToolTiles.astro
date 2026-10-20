@@ -1,0 +1,78 @@
+---
+/**
+ * Rząd kafli narzędzi: etykieta, tytuł, opis i przyciski u góry, grafika z kropek (lib/siatka) na dole.
+ * Kafel `tone: 'blue'` ma pełne wypełnienie kobaltem i białe kropki. Dane: src/data/narzedzia.ts.
+ * Kliknięcie w kafel prowadzi tam, gdzie pierwszy przycisk (rozciągnięty link); kolejne leżą nad nim.
+ */
+import DotGrid from '@/components/ui/DotGrid.astro';
+import Icon from '@/components/ui/Icon.astro';
+import Pictogram from '@/components/ui/Pictogram.astro';
+import { barsMask } from '@/lib/siatka';
+import { typo } from '@/lib/format';
+import type { ToolTile } from '@/types';
+
+interface Props {
+  items: ToolTile[];
+}
+
+const { items } = Astro.props;
+---
+<div class="tiles">
+  {items.map((t) => {
+    const bars = t.bars && barsMask(t.bars.values, { cols: 20, rows: 9, max: t.bars.max, past: t.bars.past });
+    return (
+      <article class:list={['tile', { 'tile--blue': t.tone === 'blue' }]} data-reveal>
+        <div class="tile__top">
+          <p class="mono-label tile__label">{t.label}</p>
+          <h3 class="tile__title">{typo(t.title)}</h3>
+          <p class="tile__desc">{typo(t.desc)}</p>
+          <p class="tile__links">
+            {t.links.map((l, i) => (
+              <a class:list={['tile__btn', { 'tile__btn--main': i === 0 }]} href={l.href}>{l.label}<Icon name="arrow" size={16} /></a>
+            ))}
+          </p>
+        </div>
+        {bars ? <DotGrid cells={bars.cells} cols={bars.cols} class="tile__art" />
+          : t.pictogram && <Pictogram name={t.pictogram} frame={[20, 13]} class="tile__art" />}
+      </article>
+    );
+  })}
+</div>
+
+<style>
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+  .tile {
+    --t-bg: var(--surface); --t-fg: var(--ink); --t-text: var(--text); --t-accent: var(--blue); --t-line: var(--line-2);
+    --dg-on: var(--t-accent);
+    --dg-mid: color-mix(in srgb, var(--t-accent) 70%, transparent);
+    --dg-off: color-mix(in srgb, var(--t-accent) 38%, transparent);
+    position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 40px;
+    padding: 28px; background: var(--t-bg); border: 1px solid var(--t-line); color: var(--t-text);
+  }
+  .tile--blue {
+    --t-bg: var(--blue-fill); --t-fg: #fff; --t-text: rgba(255, 255, 255, .9); --t-accent: #fff; --t-line: var(--blue-fill); /* kolor-stały: biel na pełnym kobalcie */
+  }
+  .tile__label { margin: 0 0 12px; color: var(--t-accent); }
+  .tile__title { font: 500 1.625rem/1.15 var(--f-display); letter-spacing: -0.025em; color: var(--t-fg); margin: 0 0 12px; max-width: 18ch; }
+  .tile__desc { font-size: 0.9375rem; line-height: 1.6; margin: 0; max-width: 40ch; }
+  .tile__links { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
+  .tile__btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px;
+    font-weight: 500; font-size: 0.9375rem; color: var(--t-fg);
+    border: 1px solid color-mix(in srgb, var(--t-fg) 55%, transparent);
+    transition: background .2s, color .2s, border-color .2s;
+  }
+  .tile__btn:hover { border-color: var(--t-fg); }
+  .tile__btn:first-child::after { content: ""; position: absolute; inset: 0; }
+  .tile__btn + .tile__btn { position: relative; z-index: 1; }
+  .tile__btn--main { background: var(--blue-fill); border-color: var(--blue-fill); color: #fff; } /* kolor-stały: biel na pełnym kobalcie */
+  .tile__btn--main:hover { background: var(--blue-600); border-color: var(--blue-600); }
+  .tile--blue .tile__btn--main { background: #fff; border-color: #fff; color: var(--blue-fill); } /* kolor-stały: biały przycisk na kobalcie */
+  .tile--blue .tile__btn--main:hover { background: rgba(255, 255, 255, .88); } /* kolor-stały: biały przycisk na kobalcie */
+  .tile :global(.tile__art) { max-width: 360px; }
+
+  @media (max-width: 1024px) {
+    .tiles { grid-template-columns: minmax(0, 1fr); }
+    .tile :global(.tile__art) { max-width: 320px; }
+  }
+</style>

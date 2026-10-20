@@ -5,12 +5,16 @@
  */
 import type { ImageMetadata } from 'astro';
 import type { IconName } from '@/icons';
-import type { OgOverride, OgPage, OgStat } from '@/types';
+import type { Category, OgDots, OgOverride, OgPage, OgStat } from '@/types';
+import { PICTOGRAMS, type PictogramName } from '@/lib/siatka/piktogramy';
+import { ekgLines, frameLines } from '@/lib/siatka';
 import { articleHref, getFootnotes, readingMinutes, sectionOf, type Article } from '@/lib/content';
 import { formatDate, plural } from '@/lib/format';
 
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
+/** Najdłuższy tytuł (bez ręcznych podziałów), który mieści się w kolumnie obok mediów. */
+export const NARROW_TITLE_MAX = 80;
 
 export type OgMedia =
   | { kind: 'photo'; src: ImageMetadata; position: string; badge?: string; icon?: IconName; color?: boolean }
@@ -19,6 +23,7 @@ export type OgMedia =
   | ({ kind: 'bars' } & NonNullable<OgPage['bars']>)
   | { kind: 'panels'; panels: NonNullable<OgPage['panels']> }
   | { kind: 'logo'; logo: NonNullable<OgPage['logo']> }
+  | ({ kind: 'dots' } & OgDots)
   | { kind: 'none' };
 
 /** Gotowa specyfikacja obrazka — wejście szablonu. */
@@ -56,8 +61,26 @@ interface Defaults {
   bars?: OgPage['bars'];
   panels?: OgPage['panels'];
   logo?: OgPage['logo'];
+  dots?: OgDots;
+  /** piktogram, gdy obrazek nie ma innej grafiki */
+  pictogram?: PictogramName | 'ekg';
   leadAlways?: boolean;
 }
+
+/** Siatka z kropek w kolumnie mediów (470×518): 20×22 pola po ~23 px. */
+const DOT_COLS = 20;
+const DOT_ROWS = 22;
+
+/** Piktogram albo uderzenie EKG z kropek na polu z plusów — grafika obrazka bez zdjęcia i wykresu. */
+const pictogramDots = (name: PictogramName | 'ekg'): OgDots =>
+  name === 'ekg'
+    ? { mask: ekgLines(DOT_COLS, DOT_ROWS), codes: { '#': { size: 'on', color: 'blue' } } }
+    : { mask: frameLines(PICTOGRAMS[name], DOT_COLS, DOT_ROWS), codes: { '#': { size: 'on', color: 'blue' }, o: { size: 'mid', color: 'blue' } } };
+
+/** Piktogram artykułu bez grafiki — wg kategorii (działu). */
+const CATEGORY_PICTOGRAM: Record<Category, PictogramName> = {
+  Mechanizm: 'umowa', Analiza: 'szpital', Dane: 'pieniadze', Przewodnik: 'serce', 'Projekt ustawy': 'umowa', Narzędzie: 'schody',
+};
 
 /** Skróty, po których kropka nie kończy zdania („500 tys. CAD”, „art. 27a”). */
 const ABBR = /(?:^|\s)(?:tys|mln|mld|ok|r|art|ust|pkt|nr|dr|prof|np|tj|m\.in|ds|godz|min)\.$/i;
@@ -77,7 +100,9 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
 
   const photo = o.illustration ?? o.photo ?? d.photo;
   const mode = o.media ?? 'auto';
-  const kind = mode === 'auto' ? (o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : d.panels ? 'panels' : d.logo ? 'logo' : 'none') : mode;
+  // grafika z kropek zabiera kolumnę mediów — za długi tytuł zostaje na całą szerokość, bez niej
+  const fitsNarrow = title.includes('\n') || title.length <= NARROW_TITLE_MAX;
+  const kind = mode === 'auto' ? (o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : d.panels ? 'panels' : d.logo ? 'logo' : fitsNarrow || d.dots ? 'dots' : 'none') : mode;
 
   let media: OgMedia = { kind: 'none' };
   if (kind === 'stat' && o.stat) {
@@ -88,6 +113,8 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
     media = { kind: 'bars', ...d.bars };
   } else if (kind === 'panels' && d.panels) {
     media = { kind: 'panels', panels: d.panels };
+  } else if (kind === 'dots') {
+    media = { kind: 'dots', ...(d.dots ?? pictogramDots(o.pictogram ?? d.pictogram ?? 'ekg')) };
   } else if (kind === 'logo' && d.logo) {
     media = { kind: 'logo', logo: d.logo };
   } else if (kind === 'photo' && o.illustration) {
@@ -117,7 +144,7 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
  * Artykuł: etykieta sekcji, lead = pierwsze zdanie, okładka, stopka z liczbą przypisów i datą.
  * `media` — wykres w miejscu zdjęcia (src/data/og.ts → ogArticleMedia); okładka ma pierwszeństwo.
  */
-export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels'> = {}): OgEntry {
+export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels' | 'dots'> = {}): OgEntry {
   const { title, summary, cover, coverPosition, badge, updated, date, og } = article.data;
   const when = updated ?? date;
   const notes = getFootnotes(article).count;
@@ -140,6 +167,7 @@ export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels
       badge,
       // ta sama ikona co etykieta na okładce w blocks/ArticleFeature
       icon: 'pin',
+      pictogram: CATEGORY_PICTOGRAM[article.data.category],
       footer: { text: footer },
       ...media,
     },
@@ -148,6 +176,6 @@ export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels
 }
 
 /** Strona spoza kolekcji (src/data/og.ts): wszystko podane wprost; stopka domyślnie z hasłem serwisu. */
-export function pageOg(route: string, { footer = { text: 'Bez emocji, ze źródłami.' }, badgeIcon, map, bars, panels, logo, leadAlways, ...page }: OgPage): OgEntry {
-  return compose(route, { title: page.title, footer, icon: badgeIcon, map, bars, panels, logo, leadAlways }, page);
+export function pageOg(route: string, { footer = { text: 'Bez emocji, ze źródłami.' }, badgeIcon, map, bars, panels, logo, dots, leadAlways, ...page }: OgPage): OgEntry {
+  return compose(route, { title: page.title, footer, icon: badgeIcon, map, bars, panels, logo, dots, leadAlways }, page);
 }

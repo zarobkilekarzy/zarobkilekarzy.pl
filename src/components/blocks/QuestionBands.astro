@@ -3,8 +3,9 @@
  * Działy strony-indeksu jako pytania czytelnika: zdjęcie z liczbą, krótka odpowiedź
  * i materiały działu. Zdjęcie i tekst zamieniają się stronami co drugi dział.
  * Liczba na zdjęciu pochodzi z pierwszego materiału działu, który ma `stat`.
+ * Zdjęcia mają siatkę monitora na najechanie (ui/MonitorPhoto), efekty na zmianę: EKG, pomiar, tętno.
  */
-import Photo from '@/components/ui/Photo.astro';
+import MonitorPhoto from '@/components/ui/MonitorPhoto.astro';
 import Badge from '@/components/ui/Badge.astro';
 import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
@@ -13,6 +14,7 @@ import Tag from '@/components/ui/Tag.astro';
 import { articleHref, type Article } from '@/lib/content';
 import type { QuestionTopic } from '@/types';
 import { pad2, typo } from '@/lib/format';
+import type { MonitorEffect } from '@/lib/siatka';
 
 interface Props {
   groups: { topic: string; info: QuestionTopic; articles: Article[] }[];
@@ -21,6 +23,7 @@ interface Props {
 }
 
 const { groups, listLabel = 'Czytaj dalej' } = Astro.props;
+const EFFECTS: MonitorEffect[] = ['ekg', 'scan', 'pulse'];
 ---
 <div class="guide">
   {groups.map(({ topic, info, articles }, i) => {
@@ -28,9 +31,9 @@ const { groups, listLabel = 'Czytaj dalej' } = Astro.props;
     return (
       <section class:list={['band', { 'band--flip': i % 2 === 1 }]} id={topic} aria-labelledby={`${topic}-title`}>
         <div class="band__media" data-reveal>
-          <Photo src={info.image} alt="" ratio="5/6" position={info.position} widths={[480, 720, 960]} sizes="(min-width: 1025px) 625px, min(100vw - 32px, 560px)" frame>
+          <MonitorPhoto effect={EFFECTS[i % EFFECTS.length]} src={info.image} alt="" ratio="5/6" position={info.position} widths={[480, 720, 960]} sizes="(min-width: 1025px) 625px, min(100vw - 32px, 560px)" frame>
             {lead?.data.stat && <Badge variant="stat" value={lead.data.stat.value} label={lead.data.stat.unit} note={lead.data.title} />}
-          </Photo>
+          </MonitorPhoto>
         </div>
         <div class="band__body">
           <Eyebrow>{pad2(i + 1)} · {info.label}</Eyebrow>

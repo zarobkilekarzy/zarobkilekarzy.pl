@@ -10,7 +10,7 @@ import PageMeta from '@/components/layout/PageMeta.astro';
 import { Image } from 'astro:assets';
 import Icon from '@/components/ui/Icon.astro';
 import { formatDate, isoDate, typo } from '@/lib/format';
-import { getNews, newsHref, newsIllustration, newsImage, newsPage } from '@/lib/news';
+import { getNews, newsHref, newsIllustration, newsImage, newsPage, newsThumbWhole } from '@/lib/news';
 import type { Crumb, SeoInput } from '@/lib/seo';
 
 const news = await getNews();
@@ -40,7 +40,7 @@ const seo: SeoInput = {
       {news.map((n) => (
         <li class="news__item">
           <a href={newsHref(n)}>
-            <Image src={newsImage(n).src} alt="" widths={[240, 480]} sizes="(min-width: 721px) 240px, calc(100vw - 32px)" class="news__img" />
+            <Image src={newsImage(n).src} alt="" widths={[240, 480]} sizes="(min-width: 721px) 240px, calc(100vw - 32px)" class:list={['news__img', { 'is-whole': newsThumbWhole(n, 16 / 10) }]} />
             <span class="news__body">
               <time class="news__date" datetime={isoDate(n.data.date)}>{formatDate(n.data.date)}</time>
               <h2 class="news__title">{typo(n.data.title)}</h2>
@@ -65,6 +65,7 @@ const seo: SeoInput = {
   }
   .news-top :global(.news-top__img) { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
   .news :global(.news__img) { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: 0 0; border: 1px solid var(--line); }
+  .news :global(.news__img.is-whole) { object-fit: contain; object-position: 50% 50%; background: var(--bg-soft); }
   .news__date { display: block; margin-bottom: 10px; font: 400 0.8125rem/1.2 var(--f-mono); letter-spacing: .02em; color: var(--muted); }
   .news__title { font: 500 1.5rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); margin: 0 0 10px; transition: color .2s; }
   .news__desc { max-width: 60ch; font-size: 1rem; line-height: 1.6; }

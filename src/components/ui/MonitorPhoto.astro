@@ -1,0 +1,233 @@
+---
+/**
+ * <Photo> z siatką monitora (lib/siatka) na najechanie kursorem — zamiast dawnej głębi ostrości (FocusPhoto).
+ *
+ * Efekty (`effect`) — na stronie używane naprzemiennie:
+ * - ekg:  na zdjęcie wchodzi siatka plusów, a przez kadr w pętli biegnie zapis EKG — plusy na jego drodze
+ *         zmieniają się w kropki: uderzenia i płaska linia (jak avatar i film „Brak odczytu”). Jak na monitorze
+ *         przed głowicą jest przerwa, która wymazuje poprzedni przebieg (kropki wracają do plusów);
+ * - scan: siatka plusów, a kropki zapalają się wokół kursora jak punkt na monitorze;
+ * - pulse: tętno — z miejsca kursora co uderzenie serca rozchodzi się podwójna fala (lub-dub),
+ *          a plusy, przez które przechodzi, na chwilę zapalają się jako kropki.
+ *
+ * Siatkę buduje skrypt przy pierwszym najechaniu (zależy od wymiarów kadru). Dotyk, prefers-reduced-motion
+ * i brak JS dostają czyste zdjęcie.
+ */
+import type { ComponentProps } from 'astro/types';
+import Photo from './Photo.astro';
+import type { MonitorEffect } from '@/lib/siatka';
+
+type Props = ComponentProps<typeof Photo> & {
+  effect?: MonitorEffect;
+};
+
+const { effect = 'ekg', class: className, ...photo } = Astro.props;
+---
+<Photo {...photo} class:list={['mp', className]} data-monitor={effect}>
+  <span class="mp__layer" aria-hidden="true"></span>
+  <slot />
+</Photo>
+
+<style>
+  .mp__layer {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    /* siatka i zapis leżą na czarno-białym zdjęciu, nie na tle strony — kolory stałe w obu trybach */
+    --mp-grid: rgba(255, 255, 255, .38); /* kolor-stały: siatka na zdjęciu */
+    --mp-dot: var(--blue-fill);
+  }
+  .mp__layer :global(svg) { display: block; width: 100%; height: 100%; }
+  .mp__layer :global(.mp__grid) { stroke: var(--mp-grid); stroke-width: 1.1; opacity: 0; transition: opacity .3s; }
+  .mp__layer :global(.mp__dot) { fill: var(--mp-dot); }
+  .mp__layer.is-on :global(.mp__grid) { opacity: 1; }
+  /* kolumna zapisu EKG: plusy, a gdy przejdzie głowica — kropki */
+  .mp__layer :global(.mp__col .mp__dot), .mp__layer :global(.mp__col.is-dot .mp__grid) { opacity: 0; transition: none; }
+  .mp__layer.is-on :global(.mp__col.is-dot .mp__dot) { opacity: 1; }
+</style>
+
+<script>
+  import { GEOMETRY, ekgTrace, type MonitorEffect as Effect } from '@/lib/siatka';
+
+  const S = 16;         // bok pola w px kadru
+  const SPEED = 38;     // kolumn zapisu EKG na sekundę
+  const GAP = 4;        // przerwa wymazująca przed głowicą (w kolumnach)
+  const R_DOT = S * .26; // promień kropki — na zdjęciu mniejszy niż GEOMETRY.on, żeby zapis nie zasłaniał kadru
+  const ARM = S * GEOMETRY.arm;
+  const SCAN_R = 4;     // zasięg „punktu” w trybie scan (w polach)
+  const BEAT = 1500;    // pulse: odstęp uderzeń (ms), ~40/min — spokojne tętno
+  const DUB = 230;      // pulse: opóźnienie drugiej fali „dub” (ms)
+  const WAVE = 20;      // pulse: prędkość fali (pól na sekundę)
+  const REACH = 16;     // pulse: zasięg fali (w polach), potem gaśnie
+  const NS = 'http://www.w3.org/2000/svg';
+
+  interface Grid { cols: number; rows: number; ox: number; oy: number; columns: SVGGElement[]; pool: SVGCircleElement[] }
+
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function build(el: HTMLElement, layer: HTMLElement, effect: Effect): Grid {
+    const W = el.clientWidth, H = el.clientHeight;
+    const cols = Math.floor(W / S), rows = Math.floor(H / S);
+    const ox = (W - cols * S) / 2 + S / 2, oy = (H - rows * S) / 2 + S / 2;
+    const trace = effect === 'ekg' ? ekgTrace(cols, rows) : new Set<string>();
+
+    const plus = (c: number, r: number) => {
+      const x = ox + c * S, y = oy + r * S;
+      return `M${x} ${y - ARM}v${2 * ARM}M${x - ARM} ${y}h${2 * ARM}`;
+    };
+    // tło: wszystkie plusy jedną ścieżką (poza polami zapisu EKG)
+    let d = '';
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (!trace.has(`${c},${r}`)) d += plus(c, r);
+    // zapis EKG: kolumna = grupa z plusami i kropkami w tych samych polach; klasa is-dot przełącza
+    let ekg = '';
+    if (effect === 'ekg') for (let c = 0; c < cols; c++) {
+      let pd = '', dots = '';
+      for (let r = 0; r < rows; r++) if (trace.has(`${c},${r}`)) {
+        pd += plus(c, r);
+        dots += `<circle class="mp__dot" cx="${ox + c * S}" cy="${oy + r * S}" r="${R_DOT}"/>`;
+      }
+      ekg += `<g class="mp__col">${pd && `<path class="mp__grid" d="${pd}"/>`}${dots}</g>`;
+    }
+    layer.innerHTML = `<svg viewBox="0 0 ${W} ${H}"><path class="mp__grid" d="${d}"/><g class="mp__ekg">${ekg}</g><g class="mp__scan"></g></svg>`;
+
+    // scan: pula kropek wokół kursora, przestawiana przy ruchu; pulse: kropka w każdym polu
+    const pool: SVGCircleElement[] = [];
+    if (effect === 'pulse') {
+      const g = layer.querySelector('.mp__scan')!;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const dot = document.createElementNS(NS, 'circle');
+        dot.setAttribute('class', 'mp__dot');
+        dot.setAttribute('r', String(R_DOT));
+        dot.setAttribute('cx', String(ox + c * S));
+        dot.setAttribute('cy', String(oy + r * S));
+        dot.setAttribute('opacity', '0');
+        g.append(dot);
+        pool.push(dot);
+      }
+    }
+    if (effect === 'scan') {
+      const g = layer.querySelector('.mp__scan')!;
+      for (let i = 0; i < (2 * SCAN_R + 1) ** 2; i++) {
+        const dot = document.createElementNS(NS, 'circle');
+        dot.setAttribute('class', 'mp__dot');
+        dot.setAttribute('r', String(R_DOT));
+        dot.setAttribute('opacity', '0');
+        g.append(dot);
+        pool.push(dot);
+      }
+    }
+    const columns = [...layer.querySelectorAll<SVGGElement>('.mp__col')];
+    return { cols, rows, ox, oy, columns, pool };
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-monitor]').forEach((el) => {
+    const layer = el.querySelector<HTMLElement>('.mp__layer');
+    if (!layer || still) return;
+    const effect = el.dataset.monitor as Effect;
+    let grid: Grid | null = null;
+    let raf = 0;
+    let hovering = false;
+
+    // pierwsze najechanie buduje siatkę; zmiana rozmiaru kadru ją unieważnia (pierwsze, asynchroniczne
+    // wywołanie obserwatora przychodzi bez zmiany — nie może skasować siatki zbudowanej przy szybkim najechaniu)
+    let size = '';
+    new ResizeObserver(() => {
+      const now = `${el.clientWidth}x${el.clientHeight}`;
+      if (now === size) return;
+      size = now;
+      cancelAnimationFrame(raf);
+      layer.classList.remove('is-on');
+      grid = null;
+      layer.innerHTML = '';
+    }).observe(el);
+
+    // Głowica biegnie w kółko; kolumna ma kropki, gdy głowica już przez nią przeszła,
+    // chyba że leży w przerwie tuż przed głowicą (wymazany poprzedni przebieg)
+    const sweep = (t0: number) => (t: number) => {
+      if (!grid) return;
+      const { cols, columns } = grid;
+      const head = (t - t0) / 1000 * SPEED;
+      const at = head % cols;
+      columns.forEach((g, c) => {
+        const ahead = (c - at + cols) % cols;
+        g.classList.toggle('is-dot', head >= c && ahead >= GAP);
+      });
+      raf = requestAnimationFrame(sweep(t0));
+    };
+
+    // Tętno: fale wychodzą z miejsca, gdzie był kursor w chwili uderzenia; pole świeci, gdy fala
+    // przechodzi przez nie (pas ±0,6 pola), słabiej tuż za nią; fala słabnie z odległością
+    let cursor = { x: 0, y: 0 };
+    let waves: { x: number; y: number; t: number }[] = [];
+    let shown: string[] = [];
+    let beat = -1;
+    const pulse = (t0: number) => (t: number) => {
+      if (!grid) return;
+      const now = Math.floor((t - t0) / BEAT);
+      if (now > beat) {
+        beat = now;
+        const at = t0 + now * BEAT;
+        waves.push({ ...cursor, t: at }, { ...cursor, t: at + DUB });
+      }
+      waves = waves.filter((w) => (t - w.t) / 1000 * WAVE < REACH + 2);
+      const { cols, pool } = grid;
+      pool.forEach((dot, i) => {
+        const c = i % cols, r = Math.floor(i / cols);
+        let o = 0;
+        for (const w of waves) {
+          if (t < w.t) continue;
+          const radius = (t - w.t) / 1000 * WAVE;
+          const band = Math.abs(Math.hypot(c - w.x, r - w.y) - radius);
+          const fade = Math.max(0, 1 - radius / REACH);
+          o = Math.max(o, fade * (band < .6 ? 1 : band < 1.5 ? .4 : 0));
+        }
+        const v = o < .08 ? '0' : o.toFixed(1);
+        if (shown[i] !== v) { shown[i] = v; dot.setAttribute('opacity', v); }
+      });
+      raf = requestAnimationFrame(pulse(t0));
+    };
+
+    // start: siatka (budowana przy pierwszym najechaniu albo po zmianie rozmiaru) i animacja od zera
+    const start = (e: PointerEvent) => {
+      grid ??= build(el, layer, effect);
+      layer.classList.add('is-on');
+      const b = el.getBoundingClientRect();
+      cursor = { x: (e.clientX - b.left - grid.ox) / S, y: (e.clientY - b.top - grid.oy) / S };
+      cancelAnimationFrame(raf);
+      if (effect === 'ekg') raf = requestAnimationFrame((t) => sweep(t)(t));
+      if (effect === 'pulse') { waves = []; shown = []; beat = -1; raf = requestAnimationFrame((t) => pulse(t)(t)); }
+    };
+
+    el.addEventListener('pointerenter', (e) => {
+      if (e.pointerType === 'touch') return;
+      hovering = true;
+      start(e);
+    });
+
+    el.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
+      // kadr zmienił rozmiar pod kursorem (obserwator skasował siatkę) — budujemy od nowa bez czekania na wyjście
+      if (!grid) { if (hovering) start(e); if (!grid) return; }
+      const b = el.getBoundingClientRect();
+      const cx = (e.clientX - b.left - grid.ox) / S, cy = (e.clientY - b.top - grid.oy) / S;
+      cursor = { x: cx, y: cy };
+      if (effect !== 'scan') return;
+      const c0 = Math.round(cx), r0 = Math.round(cy);
+      let i = 0;
+      for (let r = r0 - SCAN_R; r <= r0 + SCAN_R; r++) for (let c = c0 - SCAN_R; c <= c0 + SCAN_R; c++) {
+        const dot = grid.pool[i++];
+        const dist = Math.hypot(c - cx, r - cy);
+        const inside = c >= 0 && r >= 0 && c < grid.cols && r < grid.rows;
+        dot.setAttribute('cx', String(grid.ox + c * S));
+        dot.setAttribute('cy', String(grid.oy + r * S));
+        dot.setAttribute('opacity', !inside ? '0' : dist < 1.2 ? '1' : dist < 2.6 ? '.5' : dist < 3.8 ? '.18' : '0');
+      }
+    });
+
+    el.addEventListener('pointerleave', () => {
+      hovering = false;
+      cancelAnimationFrame(raf);
+      layer.classList.remove('is-on');
+      grid?.columns.forEach((g) => g.classList.remove('is-dot'));
+      grid?.pool.forEach((dot) => dot.setAttribute('opacity', '0'));
+    });
+  });
+</script>

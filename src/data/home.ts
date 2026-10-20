@@ -62,6 +62,7 @@ export const paths: PathCard[] = [
     desc: 'Co Ci przysługuje u lekarza, jak sprawdzić w IKP rozliczone wizyty i gdzie zgłosić naruszenie — z podstawą prawną.',
     tags: ['Prawa pacjenta', 'IKP', 'Kolejki'],
     href: '#pacjent',
+    pictogram: 'serce',
   },
   {
     kicker: 'Chcę zrozumieć zarobki',
@@ -70,6 +71,7 @@ export const paths: PathCard[] = [
     tags: ['Specjalizacje', 'Kontrakty', 'Dyżury'],
     href: '#dane',
     featured: true,
+    pictogram: 'pieniadze',
   },
   {
     kicker: 'Idę na medycynę',
@@ -77,6 +79,7 @@ export const paths: PathCard[] = [
     desc: 'Limity miejsc, egzamin LEK, rezydentura i wybór specjalizacji. Co Cię czeka po dyplomie i ile to trwa.',
     tags: ['LEK', 'Rezydentura', 'Limity'],
     href: '#narzedzia',
+    pictogram: 'schody',
   },
 ];
 
@@ -121,20 +124,28 @@ export const rights: TextItem[] = [
   { title: 'Dokumentacja medyczna', text: 'Pierwsza kopia w żądanym zakresie jest bezpłatna.' },
 ];
 
+/** Przeglądarka monitoringu — w „Sprawdź sam” na głównej i w kaflach hubów (data/narzedzia.ts). */
+export const monitoringTool: Tool = {
+  icon: 'pin',
+  label: 'Przeglądarka',
+  title: 'Monitoring płac lekarzy',
+  desc: `${formatPL(monitoring.facilities.length)} ${plural(monitoring.facilities.length, ['placówka publiczna', 'placówki publiczne', 'placówek publicznych'])}. Kto ujawnił dane o wynagrodzeniach, kto odmówił, kto milczy.`,
+  href: '/dane/monitoring-watchdog/',
+  pictogram: 'szpital',
+};
+
 export const tools: Tool[] = [
-  {
-    icon: 'pin',
-    label: 'Przeglądarka',
-    title: 'Monitoring płac lekarzy',
-    desc: `${formatPL(monitoring.facilities.length)} ${plural(monitoring.facilities.length, ['placówka publiczna', 'placówki publiczne', 'placówek publicznych'])}. Kto ujawnił dane o wynagrodzeniach, kto odmówił, kto milczy.`,
-    href: '/dane/monitoring-watchdog/',
-  },
+  monitoringTool,
   {
     icon: 'chart',
-    label: 'Symulator',
-    title: 'Podaż lekarzy 1987–2050',
-    desc: 'Zmieniaj limity przyjęć na studia i zobacz, ilu lekarzy będzie praktykować za 10, 20 i 30 lat.',
+    label: 'Symulatory',
+    title: 'Podaż lekarzy i pielęgniarek',
+    desc: 'Zmieniaj nabór, wyjazdy i odejścia z zawodu — zobacz, ilu lekarzy i pielęgniarek będzie pracować za 10, 20 i 30 lat.',
     href: '/analizy/symulator-podazy-lekarzy/',
+    links: [
+      { label: 'Lekarzy', href: '/analizy/symulator-podazy-lekarzy/' },
+      { label: 'Pielęgniarek', href: '/analizy/symulator-podazy-pielegniarek/' },
+    ],
   },
 ];
 

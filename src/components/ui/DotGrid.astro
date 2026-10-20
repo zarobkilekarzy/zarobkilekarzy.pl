@@ -1,0 +1,58 @@
+---
+/**
+ * Siatka kropek i plusów (lib/siatka) jako SVG renderowane przy buildzie — bez JS.
+ * Pola podaje się wierszami (`cells`) albo maską tekstową (`mask`, jak w lib/siatka/piktogramy.ts).
+ *
+ * Kolory z rodzica: --dg-on (zapalone), --dg-mid, --dg-off (tło siatki), --dg-miss (brak danych).
+ * Domyślnie kobalt i jego półtony, więc tryb nocny działa sam; na wypełnieniu kobaltem
+ * rodzic ustawia np. --dg-on: #fff.
+ * Bez `label` grafika jest dekoracją (aria-hidden) — sens niesie tekst obok.
+ */
+import { CELL, SHAPES, parseMask, frameMask, type Cell, type Mask } from '@/lib/siatka';
+import { uid } from '@/lib/uid';
+
+interface Props {
+  /** maska tekstowa: # zapalone, o pośrednie, . wygaszone, x brak danych, spacja — puste */
+  mask?: readonly string[];
+  /** albo pola wierszami (null = puste) z liczbą kolumn */
+  cells?: readonly (Cell | null)[];
+  cols?: number;
+  /** ramka większa niż maska — rysunek na środku, margines z pól wygaszonych */
+  frame?: [cols: number, rows: number];
+  /** opis dla czytników ekranu; bez niego grafika jest ukryta */
+  label?: string;
+  class?: string;
+}
+
+const { mask, cells, cols, frame, label, class: className } = Astro.props;
+
+let grid: Mask;
+if (mask) grid = parseMask(mask);
+else if (cells && cols) grid = { cols, rows: Math.ceil(cells.length / cols), cells: [...cells] };
+else throw new Error('DotGrid: podaj `mask` albo `cells` z `cols`');
+if (frame) grid = frameMask(grid, ...frame);
+
+const id = uid('dg');
+const kinds = [...new Set(grid.cells.filter((k): k is Cell => k !== null))];
+const items = grid.cells.flatMap((k, i) => (k ? [{ k, x: (i % grid.cols) * CELL, y: Math.floor(i / grid.cols) * CELL }] : []));
+---
+<svg
+  class:list={['dg', className]}
+  viewBox={`0 0 ${grid.cols * CELL} ${grid.rows * CELL}`}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+>
+  <defs>
+    {kinds.map((k) => <symbol id={`${id}-${k}`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={SHAPES[k]} />)}
+  </defs>
+  {items.map(({ k, x, y }) => <use href={`#${id}-${k}`} class={`dg__${k}`} x={x} y={y} width={CELL} height={CELL} />)}
+</svg>
+
+<style>
+  .dg { display: block; width: 100%; height: auto; overflow: visible; }
+  .dg__on { color: var(--dg-on, var(--blue)); }
+  .dg__mid { color: var(--dg-mid, color-mix(in srgb, var(--blue) 75%, transparent)); }
+  .dg__off { color: var(--dg-off, color-mix(in srgb, var(--blue) 42%, transparent)); }
+  .dg__miss { color: var(--dg-miss, color-mix(in srgb, var(--muted) 55%, transparent)); }
+</style>

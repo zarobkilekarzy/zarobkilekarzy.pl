@@ -110,8 +110,9 @@ export interface ResultChartInput {
   hover?: number;
 }
 
-/** Pole między scenariuszem a odniesieniem, osobno tam, gdzie lekarzy jest więcej i mniej. */
-function gapAreas(a: number[], b: number[], X: (i: number) => number, Y: (v: number) => number) {
+/** Pole między scenariuszem a odniesieniem, osobno tam, gdzie wartość jest większa i mniejsza
+ *  (także symulator pielęgniarek). */
+export function gapAreas(a: number[], b: number[], X: (i: number) => number, Y: (v: number) => number) {
   type P = { x: number; ya: number; yb: number };
   const runs: { sign: number; pts: P[] }[] = [];
   let run = { sign: 0, pts: [] as P[] };

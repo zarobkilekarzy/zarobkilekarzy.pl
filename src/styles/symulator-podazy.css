@@ -1,0 +1,221 @@
+/*
+ * Symulatory podaży (lekarze: components/podaz/SupplySimulator.astro, pielęgniarki:
+ * components/podaz/pielegniarki/NurseSupplySimulator.astro) — wspólny wygląd.
+ * Wszystko pod `.sim`, bo arkusz jest globalny; wykresy SVG wstawiane jako HTML
+ * stylują się tu klasami `c-*`.
+ */
+/* ---------- Układ: ustawienia | wynik (przyklejony) ---------- */
+.sim {
+  display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: clamp(32px, 4vw, 64px); align-items: start;
+}
+.sim .sim__in { border-bottom: 1px solid var(--line); }
+.sim .sim__out { position: sticky; top: calc(var(--header-h) + 24px); display: grid; gap: 16px; }
+
+/* ---------- Kroki ---------- */
+.sim .step { padding: 22px 0 24px; border-top: 1px solid var(--line); }
+.sim .step:first-of-type { border-top-color: var(--ink); }
+.sim .step__row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.sim .step__label {
+  display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px;
+  font: 500 0.75rem/1.4 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink);
+}
+.sim .step__n { color: var(--blue); }
+.sim .step__hint { margin-top: 12px; font-size: 0.84375rem; line-height: 1.5; color: var(--muted); }
+.sim .step__hint--top { margin: -4px 0 12px; }
+/* Opisy zmieniane skryptem mają stałą wysokość — inaczej kroki niżej podskakują przy każdej zmianie */
+.sim .step__hint--2 { min-height: 3em; }
+.sim .step__hint--3 { min-height: 4.5em; }
+
+.sim .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.sim .chip {
+  padding: 8px 12px; border: 1px solid var(--line-2); font-size: 0.84375rem; color: var(--ink);
+  transition: border-color .2s, background .2s, color .2s;
+}
+.sim .chip:hover { border-color: var(--ink); }
+.sim .chip--history { border-style: dashed; }
+.sim .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+
+.sim .big { font: 400 2.125rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sim .big[data-mixed] { font-size: 1.0625rem; line-height: 2.125rem; letter-spacing: -0.01em; color: var(--muted); }
+
+.sim .link { font-size: 0.8125rem; color: var(--blue); text-decoration: underline; text-underline-offset: .2em; }
+.sim .link:hover { color: var(--ink); }
+
+/* ---------- Suwaki: cienki tor, kwadratowa gałka; zmieniony = kobalt („twoje”, jak słupki naboru i linia scenariusza) ---------- */
+.sim .range {
+  --c: var(--ink);
+  appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 28px; margin: 0;
+  background: transparent; cursor: pointer;
+}
+.sim .range[data-changed] { --c: var(--blue); }
+.sim .range::-webkit-slider-runnable-track {
+  height: 2px; background: linear-gradient(var(--c), var(--c)) 0 / var(--p, 50%) 100% no-repeat, var(--line-2);
+}
+.sim .range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; margin-top: -8px;
+  background: var(--surface); border: 2px solid var(--c); border-radius: 0;
+}
+.sim .range::-moz-range-track { height: 2px; background: var(--line-2); }
+.sim .range::-moz-range-progress { height: 2px; background: var(--c); }
+.sim .range::-moz-range-thumb { width: 14px; height: 14px; background: var(--surface); border: 2px solid var(--c); border-radius: 0; }
+.sim .range:focus-visible { outline: 0; }
+.sim .range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--blue); outline-offset: 2px; }
+.sim .range:focus-visible::-moz-range-thumb { outline: 2px solid var(--blue); outline-offset: 2px; }
+.sim .range--main { height: 36px; }
+.sim .range--main::-webkit-slider-runnable-track { height: 4px; }
+.sim .range--main::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -10px; background: var(--c); border-color: var(--c); }
+.sim .range--main::-moz-range-track, .sim .range--main::-moz-range-progress { height: 4px; }
+.sim .range--main::-moz-range-thumb { width: 20px; height: 20px; background: var(--c); }
+
+.sim .scale { position: relative; display: flex; justify-content: space-between; font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+/* „dziś” pod torem — tor jest wcięty o pół gałki z każdej strony */
+.sim .scale__now { position: absolute; left: calc(12px + (100% - 24px) * var(--at)); transform: translateX(-50%); color: var(--ink); }
+.sim .scale__now::before { content: ""; position: absolute; left: 50%; top: -9px; height: 6px; border-left: 1px solid var(--ink); }
+
+/* ---------- Nabór rok po roku ---------- */
+.sim .intake { position: relative; }
+.sim .intake__svg { width: 100%; height: 168px; touch-action: pan-y; cursor: crosshair; overflow: visible; }
+.sim .intake__svg:focus-visible:not([data-pointer]) { outline: 2px solid var(--blue); outline-offset: 4px; }
+.sim .intake__svg[data-pointer] { outline: 0; }
+
+.sim .key { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 0.78125rem; color: var(--muted); }
+.sim .key li { display: inline-flex; align-items: center; gap: 6px; }
+.sim .key__sw { display: inline-block; width: 8px; height: 12px; }
+.sim .key__sw--past { background: var(--chart-soft); }
+.sim .key__sw--future { background: var(--chart); }
+.sim .key__sw--changed { background: var(--blue); }
+.sim .key__sw--ref { width: 14px; height: 0; border-top: 1px solid color-mix(in srgb, var(--ink) 50%, transparent); }
+
+/* Dymek z dokładną liczbą — nad słupkiem, ponad przyklejonym wynikiem */
+.sim .pop {
+  position: absolute; z-index: 30; width: 244px; padding: 10px 12px;
+  background: var(--surface); border: 1px solid var(--ink);
+  box-shadow: 0 10px 30px -10px light-dark(rgba(4, 11, 27, .35), rgba(0, 0, 0, .7));
+}
+.sim .pop__head { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+.sim .pop__year { font: 500 0.9375rem/1 var(--f-display); color: var(--ink); font-variant-numeric: tabular-nums; min-width: 4.4em; text-align: center; }
+.sim .pop__era { margin-left: 6px; font: 400 0.65625rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sim .pop__icon { display: grid; place-items: center; width: 26px; height: 26px; font-size: 1.125rem; line-height: 1; color: var(--ink); }
+.sim .pop__icon:hover { background: var(--bg-soft); }
+.sim .pop__close { margin-left: auto; color: var(--muted); }
+.sim .pop__row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px; }
+.sim .pop__input {
+  width: 100%; min-width: 0; padding: 6px; border: 1px solid var(--line-2); background: var(--surface);
+  font: 400 1.0625rem/1 var(--f-display); text-align: center; font-variant-numeric: tabular-nums; color: var(--ink);
+}
+.sim .pop__step { padding: 0 8px; border: 1px solid var(--line-2); font: 400 0.75rem/1 var(--f-mono); color: var(--ink); }
+.sim .pop__step:hover { border-color: var(--ink); }
+.sim .pop__info { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; font-size: 0.78125rem; color: var(--muted); }
+
+/* ---------- Pola (losy rocznika, założenia) ---------- */
+.sim .fields { display: grid; gap: 14px; }
+.sim .field__label { display: flex; justify-content: space-between; gap: 12px; font-size: 0.875rem; color: var(--ink); }
+.sim .field__label span { color: var(--muted); white-space: nowrap; }
+.sim .field__label output { font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+.sim .field__note { font-size: 0.78125rem; line-height: 1.45; color: var(--muted); }
+
+.sim .seg { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 8px; border: 1px solid var(--line-2); }
+.sim .seg__opt { position: relative; cursor: pointer; }
+.sim .seg__opt + .seg__opt { border-left: 1px solid var(--line-2); }
+.sim .seg__opt input { position: absolute; opacity: 0; pointer-events: none; }
+.sim .seg__opt span { display: block; padding: 8px; text-align: center; font-size: 0.875rem; color: var(--ink); transition: background .2s, color .2s; }
+.sim .seg__opt:hover span { background: var(--bg-soft); }
+.sim .seg__opt:has(:checked) span { background: var(--ink); color: var(--on-ink); }
+.sim .seg__opt:has(:focus-visible) span { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* ---------- Wynik ---------- */
+.sim .out { padding: 20px 22px 16px; background: var(--surface); border: 1px solid var(--line-2); border-top: 2px solid var(--ink); }
+.sim .out__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.sim .out__head .mono-label { flex-basis: 100%; }
+.sim .out__big { font: 400 clamp(2.5rem, 4.6vw, 3.75rem)/1 var(--f-display); letter-spacing: -0.04em; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.sim .delta { font: 500 0.8125rem/1.3 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.sim .delta[data-sign="plus"] { color: var(--ok); }
+.sim .delta[data-sign="minus"] { color: var(--bad); }
+
+.sim .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 14px 0 6px; font-size: 0.78125rem; color: var(--muted); }
+.sim .legend li { display: inline-flex; align-items: center; gap: 6px; }
+.sim .legend__sw { display: inline-block; width: 18px; height: 0; }
+.sim .legend__sw--you { border-top: 2px solid var(--blue); }
+.sim .legend__sw--ref { border-top: 1.5px dashed color-mix(in srgb, var(--ink) 55%, transparent); }
+.sim .legend__sw--more, .sim .legend__sw--less { width: 10px; height: 10px; }
+.sim .legend__sw--more { background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.sim .legend__sw--less { margin-left: 4px; background: color-mix(in srgb, var(--bad) 16%, transparent); }
+
+.sim .chart { position: relative; }
+.sim .chart__svg { width: 100%; height: clamp(200px, 36vh, 320px); touch-action: pan-y; overflow: visible; }
+
+.sim .tip {
+  position: absolute; z-index: 2; min-width: 196px; padding: 10px 12px; pointer-events: none;
+  background: var(--inverse-2); color: rgba(255, 255, 255, .75); font-size: 0.78125rem; /* kolor-stały: dymek na ciemnym tle */
+}
+.sim .tip strong { display: block; margin-bottom: 4px; font: 500 0.9375rem/1.2 var(--f-display); color: #fff; } /* kolor-stały */
+.sim .tip p { display: flex; justify-content: space-between; gap: 16px; }
+.sim .tip b { font-weight: 500; color: #fff; font-variant-numeric: tabular-nums; } /* kolor-stały */
+.sim .tip .tip__d { margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, .2); }
+
+.sim .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+.sim .stats > div { padding: 12px 12px 0 0; }
+.sim .stats > div + div { padding-left: 14px; border-left: 1px solid var(--line); }
+.sim .stats__num { margin-top: 4px; font: 400 1.5rem/1.15 var(--f-display); letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.sim .stats .delta { font-size: 0.75rem; font-weight: 400; }
+
+.sim .comment { padding: 12px 14px; background: var(--bg-soft); border-left: 2px solid var(--blue); font-size: 0.90625rem; line-height: 1.55; color: var(--text-strong); }
+
+/* ---------- Wykresy (SVG wstawiane jako HTML) ---------- */
+.sim .c-grid { stroke: var(--line); }
+.sim .c-axis { stroke: var(--line-2); }
+.sim .c-label { font: 400 0.65625rem var(--f-mono); fill: var(--muted); font-variant-numeric: tabular-nums; }
+.sim .c-label--strong { fill: var(--ink); }
+.sim .c-future { fill: var(--bg-soft); }
+.sim .c-now { stroke: var(--muted); stroke-dasharray: 3 3; }
+/* Kobalt = „twoje”: zmieniony nabór tu, twój scenariusz na wykresie wyniku */
+.sim .c-bar--past { fill: var(--chart-soft); }
+.sim .c-bar--future { fill: var(--chart); }
+.sim .c-bar--changed { fill: var(--blue); }
+.sim .c-ref { fill: none; stroke: var(--ink); stroke-width: 1; opacity: .5; }
+.sim .c-selected { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.sim .c-gap--more { fill: var(--ok); opacity: .16; }
+.sim .c-gap--less { fill: var(--bad); opacity: .16; }
+.sim .c-gus { stroke: var(--muted); stroke-dasharray: 2 4; }
+.sim .c-label--gus { font-size: 0.625rem; }
+.sim .c-line { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.sim .c-line--you { stroke: var(--blue); stroke-width: 2; }
+.sim .c-line--ref { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: .55; }
+.sim .c-guide { stroke: var(--muted); stroke-dasharray: 2 3; }
+.sim .c-dot { stroke: var(--surface); stroke-width: 2; }
+.sim .c-dot--you { fill: var(--blue); }
+.sim .c-dot--ref { fill: var(--muted); }
+
+/* ---------- Średnie ekrany: węższa kolumna ustawień ---------- */
+@media (max-width: 1100px) {
+  .sim { grid-template-columns: minmax(0, 360px) minmax(0, 1fr); }
+  .sim .stats__num { font-size: 1.25rem; }
+}
+
+/* ---------- Wąskie ekrany: wynik przyklejony u góry, kroki pod nim ----------
+   .sim__out znika z układu (display: contents), więc jego dzieci stają się
+   elementami .sim: karta wyniku idzie na górę i przykleja się w obrębie całego
+   symulatora, statystyki i komentarz — na koniec, pod ustawieniami. */
+@media (max-width: 860px) {
+  .sim { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .sim .sim__out { display: contents; }
+  .sim .out {
+    order: -1; position: sticky; top: var(--header-h); z-index: 20;
+    padding: 12px 14px 8px; border-width: 1px; border-top-width: 2px;
+    box-shadow: 0 12px 24px -16px light-dark(rgba(4, 11, 27, .35), rgba(0, 0, 0, .8));
+  }
+  .sim .out__head .mono-label { flex-basis: auto; }
+  .sim .out__big { font-size: 1.875rem; }
+  .sim .legend { margin: 6px 0 2px; font-size: 0.71875rem; gap: 2px 12px; }
+  .sim .chart__svg { height: clamp(120px, 20vh, 170px); }
+  .sim .sim__in { margin-top: 8px; }
+  .sim .stats { margin-top: 32px; }
+  .sim .comment { margin-top: 16px; }
+}
+@media (max-width: 480px) {
+  .sim .stats { grid-template-columns: 1fr 1fr; }
+  .sim .stats > div:nth-child(3) { grid-column: 1 / -1; padding-left: 0; border-left: 0; border-top: 1px solid var(--line); margin-top: 12px; }
+  .sim .legend .legend__gap { display: none; }
+}

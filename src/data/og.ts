@@ -16,6 +16,7 @@ import { MEDIANS } from '@/data/rozklad-wynagrodzen';
 import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { simulatorOgPanels } from '@/lib/podaz/og';
+import { nurseSimulatorOgPanels } from '@/lib/podaz/pielegniarki/og';
 import { columnChart, lineChart, sumSchema, svg } from '@/lib/og/charts';
 import { ageRows, dayRows } from '@/data/ciecie-limitow-na-medycyne';
 import { INDEX_CHART } from '@/data/kolejki';
@@ -177,6 +178,13 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Zmień limit przyjęć na medycynę i zobacz, ilu lekarzy będzie w 2040 i 2050 r.',
     panels: simulatorOgPanels(),
     footer: { text: 'Start modelu: rejestr NIL co do osoby' },
+  },
+  '/analizy/symulator-podazy-pielegniarek/': {
+    eyebrow: 'Analizy · narzędzie',
+    title: 'Symulator\npodaży pielęgniarek',
+    lead: 'Zmień dopływ do zawodu i wiek odejścia — zobacz, ile pielęgniarek będzie pracować i jak zmieni się drabina wieku.',
+    panels: nurseSimulatorOgPanels(),
+    footer: { text: 'Start modelu: zatrudnione z rejestru CRPiP' },
   },
   '/egzamin/': {
     eyebrow: 'Egzamin LEK',

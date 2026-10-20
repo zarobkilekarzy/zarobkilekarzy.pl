@@ -1,0 +1,188 @@
+---
+/**
+ * /analizy/symulator-podazy-pielegniarek/ — ustaw dopływ do zawodu, zobacz, ile pielęgniarek
+ * będzie pracować i jak zmieni się drabina wieku. Widok: components/podaz/pielegniarki,
+ * rachunek: lib/podaz/pielegniarki/model. Odpowiednik /analizy/symulator-podazy-lekarzy/.
+ * Wpis kolekcji `symulator-podazy-pielegniarek` zostaje bez treści i linkuje tutaj (href).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Prose from '@/components/article/Prose.astro';
+import NoteRef from '@/components/article/NoteRef.astro';
+import NoteList from '@/components/article/NoteList.astro';
+import NurseSupplySimulator from '@/components/podaz/pielegniarki/NurseSupplySimulator.astro';
+import {
+  BACKTEST, BASE_RIGHTS, CRPIP_URL, backtestError, backtest, DEFAULTS, DENSITY_TODAY, EMPLOYED_TOTAL, NIPIP_FROZEN, POPULATION_URL, PYRAMID_DATE,
+  PYRAMID_URL, REGISTERED_TOTAL, RIGHTS_TODAY, RIGHTS_URL, START_DATE, STUDY_YEARS, YEAR0, YEAR_END, simulate,
+} from '@/lib/podaz/pielegniarki/model';
+import { lowest } from '@/lib/podaz/pielegniarki/summary';
+import { articleHref, getArticle, isPublished } from '@/lib/content';
+import { mainNav } from '@/data/navigation';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { formatPL, typo } from '@/lib/format';
+import { defineNotes } from '@/lib/notes';
+
+const title = 'Symulator podaży pielęgniarek';
+const lead = `Na pielęgniarstwie nie ma krajowego limitu miejsc, a studia I stopnia trwają ${STUDY_YEARS} lata. Zmień dopływ do zawodu i wiek odejścia — zobacz, ile pielęgniarek będzie pracować do ${YEAR_END} r. i jak zmieni się drabina wieku.`;
+const description = `Ustaw dopływ do zawodu i wiek odejścia, a zobaczysz, ile pielęgniarek będzie pracować do ${YEAR_END} r. Start: ${formatPL(EMPLOYED_TOTAL)} zatrudnionych w CRPiP.`;
+const analysesHref = mainNav.find((link) => link.match === '/analizy/')?.href ?? '/analizy/';
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Analizy', href: analysesHref }, { label: title }];
+// Narzędzie z opisem modelu i źródłami — w danych strukturalnych to artykuł działu Analizy.
+// Daty z wpisu kolekcji (src/content/articles/symulator-podazy-pielegniarek.md: date / updated).
+const entry = await getArticle('symulator-podazy-pielegniarek');
+const seo: SeoInput = {
+  title: `${title} w Polsce`,
+  description,
+  type: 'article',
+  section: 'Analizy',
+  dates: { published: entry?.data.date, modified: entry?.data.updated ?? entry?.data.date },
+  breadcrumbs: crumbs,
+  entities: [{ kind: 'article' }],
+};
+
+const related = async (id: string) => {
+  const article = await getArticle(id);
+  return isPublished(article) ? articleHref(article) : undefined;
+};
+const analiza = await related('pielegniarstwo-w-polsce');
+const lekarze = '/analizy/symulator-podazy-lekarzy/';
+
+const base = simulate(BASE_RIGHTS);
+const low = lowest(base);
+const worst = backtestError(DEFAULTS);
+// Kontrola wieku odejścia: przy 65 latach i pracy wszystkich nowych pielęgniarek zatrudnienie by spadało
+const at65 = backtest({ ...DEFAULTS, retireAge: 65, entry: 1 }).at(-1)!;
+// Ten sam sprawdzian dla 75 lat: udział pracujących, który najlepiej odtwarza lata 2022–2025
+const fit75 = Array.from({ length: 71 }, (_, i) => 0.3 + i / 100)
+  .map((entry) => ({ entry, error: backtestError({ ...DEFAULTS, retireAge: 75, entry }) }))
+  .reduce((a, b) => (b.error < a.error ? b : a));
+
+const notes = defineNotes({
+  crpip: `NIPiP, [Liczba pielęgniarek i położnych zarejestrowanych i zatrudnionych](${CRPIP_URL}), aktualizacja 14.01.2026: zatrudnione pielęgniarki na 31 grudnia, lata 2012–2025.`,
+  pyramid: `NIPiP, [Pielęgniarka, położna — zawody deficytowe w polskim systemie ochrony zdrowia](${PYRAMID_URL}), kwiecień 2022, rozdz. I: zatrudnione pielęgniarki według przedziałów wieku, CRPiP, stan na ${PYRAMID_DATE}.`,
+  rights: `NIPiP, [Liczba osób, które uzyskały prawo wykonywania zawodu](${RIGHTS_URL}): pielęgniarki, lata 2014–2025; rok 2013 — raport z kwietnia 2022 r., rozdz. IV.`,
+  gusLife: 'GUS, [Trwanie życia w 2025 r.](https://stat.gov.pl/obszary-tematyczne/ludnosc/trwanie-zycia/trwanie-zycia-w-2025-r-,2,20.html), tablica A: prawdopodobieństwo zgonu według wieku i płci. Model waży je udziałem mężczyzn wśród pielęgniarek w rejestrze (3,5%).',
+  gusPop: `GUS, [Prognoza ludności rezydującej dla Polski na lata 2023–2060](${POPULATION_URL}), tablica 1.`,
+  oecd: 'OECD, [Health at a Glance 2025 — nota o Polsce](https://www.oecd.org/content/dam/oecd/en/publications/reports/2025/11/health-at-a-glance-2025-country-notes_2f94481e/poland_3e11c239/c3917772-en.pdf): 5,9 praktykującej pielęgniarki na 1000 mieszkańców (2023 r.).',
+});
+
+const meta = [
+  { label: 'Start modelu', value: `${formatPL(EMPLOYED_TOTAL)} pielęgniarek` },
+  { label: 'CRPiP', value: START_DATE },
+  { label: `Dopływ ${YEAR0}`, value: `${formatPL(RIGHTS_TODAY)} osób` },
+  { label: 'Horyzont', value: `${YEAR_END} r.` },
+];
+---
+<BaseLayout seo={seo}>
+  <Section space="none" class="sim-page">
+    <header class="sim-page__head">
+      <Breadcrumbs items={crumbs} />
+      <div class="sim-page__intro">
+        <div>
+          <Eyebrow>Narzędzie · dostęp do zawodu</Eyebrow>
+          <Heading as="h1" size="display" class="sim-page__title">{title}</Heading>
+          <p class="lead sim-page__lead">{typo(lead)}</p>
+        </div>
+        <dl class="sim-page__meta">
+          {meta.map(({ label, value }) => <div><dt>{label}</dt><dd>{value}</dd></div>)}
+        </dl>
+      </div>
+    </header>
+
+    <NurseSupplySimulator />
+  </Section>
+
+  <Section tone="soft" aria-labelledby="model">
+    <div class="about">
+      <div>
+        <p class="mono-label">Jak czytać wynik</p>
+        <Heading as="h2" size="h2" id="model" class="about__title">Różnice, nie poziomy</Heading>
+        <p class="about__lead">
+          {typo(`Bez ruszania suwaków symulator odtwarza dane: rok ${YEAR0} to co do osoby liczba zatrudnionych pielęgniarek w rejestrze, a dopływ do ${YEAR0} r. — seria samorządu zawodowego. Wszystko, co zmienisz, model liczy jako odchylenie od tego stanu, więc wiarygodne są przede wszystkim różnice między scenariuszami.`)}
+        </p>
+      </div>
+
+      <div>
+        <Prose class="about__body">
+          <h3>Co model robi</h3>
+          <ol>
+            <li><strong>Liczy zatrudnione, nie zarejestrowane.</strong> {typo(`Punkt wyjścia to ${formatPL(EMPLOYED_TOTAL)} pielęgniarek zatrudnionych na ${START_DATE}.`)}<NoteRef notes={notes} id="crpip" /> {typo(`W rejestrze jest ich ${formatPL(REGISTERED_TOTAL)}, ale ok. ${formatPL(Math.round((REGISTERED_TOTAL - EMPLOYED_TOTAL) / 1000))} tys. nie pracuje w zawodzie.`)}</li>
+            <li><strong>Sam przesuwa drabinę wieku do dziś.</strong> {typo(`Ostatni opublikowany rozkład wieku zatrudnionych jest z ${PYRAMID_DATE}.`)}<NoteRef notes={notes} id="pyramid" /> {typo(`Model rozbija jego sześć przedziałów na roczniki (sumy przedziałów zostają co do osoby), postarza je o cztery lata z rzeczywistym dopływem i na koniec dopasowuje do liczby zatrudnionych w ${YEAR0} r. Drabina „${YEAR0}” jest więc rekonstrukcją, nie pomiarem.`)}</li>
+            <li><strong>Dolicza nowe pielęgniarki.</strong> {typo(`Co roku dochodzą osoby z nowym prawem wykonywania zawodu (w ${YEAR0} r. ${formatPL(RIGHTS_TODAY)}, z cudzoziemcami)`)}<NoteRef notes={notes} id="rights" /> {typo(`— w modelu w wieku 23 lat. Pracuje z nich ${Math.round(DEFAULTS.entry * 100)}%.`)}</li>
+            <li><strong>Odejmuje odchodzące.</strong> {typo('W każdym wieku odejmuje zgony według tablic trwania życia GUS.')}<NoteRef notes={notes} id="gusLife" /> {typo(`Po wybranym wieku (domyślnie ${DEFAULTS.retireAge} lat) rocznik wygasa przez pięć lat, a pielęgniarki, które już dziś mają ponad 70 lat, ubywają tylko przez zgony — tak samo jak w symulatorze lekarzy.`)}</li>
+          </ol>
+
+          <h3>Skąd 70 lat i {Math.round(DEFAULTS.entry * 100)}%</h3>
+          <p>
+            {typo(`Obie liczby wzięliśmy z jednego sprawdzianu: model startuje z drabiny z kwietnia 2022 r. i liczy kolejne lata z rzeczywistym dopływem. Przy wieku odejścia 70 lat i ${Math.round(DEFAULTS.entry * 100)}% pracujących trafia w liczbę zatrudnionych w latach 2022–2025 z dokładnością do ${formatPL(worst)} osób:`)}
+          </p>
+          <table class="about__table">
+            <thead><tr><th scope="col">Rok</th><th scope="col">Model</th><th scope="col">CRPiP</th></tr></thead>
+            <tbody>
+              {BACKTEST.map((b) => <tr><th scope="row">{b.year}</th><td>{formatPL(b.model)}</td><td>{formatPL(b.actual)}</td></tr>)}
+            </tbody>
+          </table>
+          <p>
+            {typo(`Gdyby pielęgniarki odchodziły w wieku 65 lat, zatrudnienie spadałoby nawet wtedy, gdyby pracowała każda osoba z nowym prawem wykonywania zawodu: w ${at65.year} r. model pokazałby ${formatPL(at65.model)} zatrudnionych, a było ${formatPL(at65.actual)}. Prognoza NIPiP z 2022 r. zakładała odejście w wieku 60 lat, pracę każdej nowej osoby i stały dopływ ${formatPL(NIPIP_FROZEN)} rocznie — ten ostatni scenariusz jest wśród gotowych.`)}
+          </p>
+          <p>
+            {typo(`Wiek odejścia i udział pracujących częściowo się znoszą: 75 lat i ${Math.round(fit75.entry * 100)}% pracujących też pasuje do danych (z błędem do ${formatPL(fit75.error)} osób). Dlatego oba są suwakami, a nie stałymi.`)}
+          </p>
+
+          <h3>Czego model nie robi</h3>
+          <ul>
+            <li><strong>Nie zna wieku nowych pielęgniarek.</strong> {typo('Każda wchodzi w modelu w wieku 23 lat. Część kończy studia później, więc dolne szczeble przyszłej drabiny są trochę za liczne, a odejścia — trochę za późne.')}</li>
+            <li><strong>Nie liczy etatów ani godzin.</strong> {typo('Pielęgniarka w modelu to osoba zatrudniona w rejestrze. Wiele pracuje w kilku miejscach, a po sześćdziesiątce często na część etatu. „Zatrudnione” w rejestrze nie obejmują też wszystkich umów cywilnoprawnych.')}</li>
+            <li><strong>Nie liczy położnych.</strong> {typo('To osobny zawód z młodszą drabiną wieku. Prognozy NIPiP często sumują oba zawody — przy porównaniach trzeba o tym pamiętać.')}</li>
+            <li><strong>Nie zna popytu.</strong> {typo(`Linia „tyle samo na 1000 mieszkańców co dziś” pokazuje tylko utrzymanie dzisiejszej gęstości (${formatPL(DENSITY_TODAY, 1)}) przy kurczącej się ludności.`)}<NoteRef notes={notes} id="gusPop" /> {typo('Potrzeby starzejącego się społeczeństwa rosną, więc to dolna granica, a nie cel. OECD podaje dla Polski 5,9 praktykującej pielęgniarki na 1000 mieszkańców — według innej definicji, więc tych liczb nie należy zestawiać.')}<NoteRef notes={notes} id="oecd" /></li>
+          </ul>
+        </Prose>
+
+        <p class="about__sources">
+          {typo(`Przy dzisiejszym dopływie najmniej pielęgniarek — ${formatPL(low.nurses)} — model pokazuje w ${low.year} r. Dopływ po ${YEAR0} r. to założenie: co roku tyle osób co w ${YEAR0} r.`)}
+          {analiza && <> Dane o kadrze, prognozach i emigracji zebraliśmy w analizie <a href={analiza}>o pielęgniarstwie w Polsce</a>.</>}
+          {' '}Ten sam rachunek dla lekarzy: <a href={lekarze}>symulator podaży lekarzy</a>.
+        </p>
+
+        <NoteList notes={notes} class="about__notes" />
+      </div>
+    </div>
+  </Section>
+</BaseLayout>
+
+<style>
+  .sim-page { padding-top: clamp(28px, 4vw, 48px); padding-bottom: clamp(56px, 6vw, 96px); }
+  .sim-page__head { margin-bottom: clamp(28px, 3vw, 40px); }
+  .sim-page__intro {
+    display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 24px clamp(32px, 5vw, 80px); align-items: end; margin-top: 32px;
+  }
+  .sim-page__title { font-size: clamp(2.375rem, 4.4vw, 3.875rem); margin-bottom: 18px; }
+  .sim-page__lead { font-size: 1.125rem; max-width: 38em; }
+  .sim-page__meta { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
+  .sim-page__meta > div { padding: 12px 16px 12px 0; border-bottom: 1px solid var(--line); }
+  .sim-page__meta dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .sim-page__meta dd { font: 400 1.0625rem/1.2 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+
+  .about { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+  .about__title { margin: 14px 0 20px; }
+  .about__lead { font-size: 1.0625rem; line-height: 1.65; color: var(--text-strong); }
+  .about__body :global(h3:first-child) { margin-top: 0; }
+  .about__table { width: auto; min-width: 18rem; font-variant-numeric: tabular-nums; }
+  .about__table th, .about__table td { padding: 4px 16px 4px 0; text-align: right; border-bottom: 1px solid var(--line); }
+  .about__table th:first-child { text-align: left; }
+  .about__notes { margin-top: 32px; }
+  .about__sources { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line-2); font-size: 0.90625rem; line-height: 1.6; color: var(--muted); }
+  .about__body a, .about__sources a { color: var(--blue); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .about__body a:hover, .about__sources a:hover { text-decoration-thickness: 2px; }
+
+  @media (max-width: 960px) {
+    .sim-page__intro, .about { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .sim-page__lead { font-size: 1.03125rem; }
+  }
+</style>

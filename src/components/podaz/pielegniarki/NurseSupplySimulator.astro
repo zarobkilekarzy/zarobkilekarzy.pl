@@ -1,0 +1,238 @@
+---
+/**
+ * Symulator podaży pielęgniarek: ustawienia po lewej, wynik po prawej — przyklejony,
+ * jak w symulatorze lekarzy (components/podaz/SupplySimulator.astro, ten sam arkusz
+ * styles/symulator-podazy.css). Pod wynikiem drabina wieku w wybranym roku.
+ * Rachunek: lib/podaz/pielegniarki/model, wykresy: lib/podaz/pielegniarki/charts.
+ */
+import {
+  BASE_RIGHTS, DEFAULTS, FIRST_POLICY, PRESETS, RIGHTS_MAX, RIGHTS_STEP, RIGHTS_TODAY, YEAR0, YEAR_END, YEAR_MAX,
+  perThousand, simulate,
+} from '@/lib/podaz/pielegniarki/model';
+import { LADDER_HEIGHT, ladderChart, ladderMax, resultChart, rightsChart } from '@/lib/podaz/pielegniarki/charts';
+import { HEADLINE_YEAR, commentary } from '@/lib/podaz/pielegniarki/summary';
+import { formatPL } from '@/lib/format';
+import '@/styles/symulator-podazy.css';
+
+/** Rozmiar pierwszego renderu (bez JS); skrypt przerysowuje wykresy w rozmiarze kontenera. */
+const SSR = { rights: [420, 168], result: [680, 260], ladder: [680, LADDER_HEIGHT] } as const;
+
+const scenario = simulate(BASE_RIGHTS);
+const at = (year: number) => scenario[year - YEAR0];
+/** Lata do wyboru pod drabiną; domyślnie rok z nagłówka. */
+const LADDER_YEARS = [YEAR0, 2035, HEADLINE_YEAR, YEAR_END];
+
+// Losy nowej pielęgniarki. `scale` przelicza wartość suwaka na pole modelu (procenty → ułamek).
+const rates = [
+  { key: 'entry', label: 'Pracuje w zawodzie', suffix: '%', unit: 'nowych', min: 30, max: 100, step: 1, scale: 100, note: 'Z tym udziałem model najlepiej odtwarza zatrudnienie w latach 2022–2025. Bezpośredniego pomiaru nie ma; NIPiP w prognozach zakładał 100%.' },
+  { key: 'inflow', label: 'Dodatkowo z zagranicy', suffix: '', unit: 'rocznie', min: 0, max: 5000, step: 100, scale: 1, note: 'Ponad cudzoziemców, którzy już są w danych NIPiP (w 2021 r. 291 osób).' },
+] as const;
+const rateValue = (r: (typeof rates)[number]) => Math.round(DEFAULTS[r.key] * r.scale);
+const pct = (v: number, min: number, max: number) => `${(((v - min) / (max - min)) * 100).toFixed(1)}%`;
+---
+<zl-nurse-supply class="sim sim--nurses" data-no-anchor>
+  <div class="sim__in">
+    <h2 class="sr-only">Ustawienia</h2>
+
+    <section class="step" aria-labelledby="sim-s1">
+      <h3 class="step__label" id="sim-s1"><span class="step__n">01</span>Scenariusz</h3>
+      <div class="chips" role="group" aria-labelledby="sim-s1">
+        {PRESETS.map((p) => (
+          <button type="button" class="chip" data-preset={p.id} aria-pressed={p.id === 'baza' ? 'true' : 'false'}>{p.label}</button>
+        ))}
+      </div>
+      <p class="step__hint step__hint--3" data-el="preset-desc">{PRESETS[0].desc}</p>
+    </section>
+
+    <section class="step" aria-labelledby="sim-s2">
+      <div class="step__row">
+        <h3 class="step__label" id="sim-s2"><span class="step__n">02</span>Nowe pielęgniarki od {FIRST_POLICY} r.</h3>
+        <output class="big" for="sim-limit" data-el="limit-out">{formatPL(RIGHTS_TODAY)}</output>
+      </div>
+      <input
+        class="range range--main" type="range" id="sim-limit" data-el="limit" aria-labelledby="sim-s2"
+        min="0" max={RIGHTS_MAX} step={RIGHTS_STEP} value={RIGHTS_TODAY} style={`--p: ${pct(RIGHTS_TODAY, 0, RIGHTS_MAX)}`}
+      />
+      <div class="scale" aria-hidden="true">
+        <span>0</span>
+        <span class="scale__now" style={`--at: ${RIGHTS_TODAY / RIGHTS_MAX}`}>dziś</span>
+        <span>{formatPL(RIGHTS_MAX)}</span>
+      </div>
+      <p class="step__hint step__hint--2" data-el="limit-note">Dzisiejszy dopływ, co roku aż do {YEAR_MAX} r.</p>
+      <p class="step__hint">Liczba osób, które w danym roku uzyskują prawo wykonywania zawodu pielęgniarki. Lata {YEAR0 + 1}–{FIRST_POLICY - 1} zostają, bo te osoby już studiują.</p>
+    </section>
+
+    <section class="step" aria-labelledby="sim-s3">
+      <h3 class="step__label" id="sim-s3"><span class="step__n">03</span>Dopływ rok po roku</h3>
+      <p class="step__hint step__hint--top">Przeciągnij po wykresie, żeby narysować dopływ. Kliknij słupek, żeby wpisać liczbę.</p>
+      <div class="intake" data-el="intake-wrap">
+        <svg
+          class="intake__svg" data-el="intake" viewBox={`0 0 ${SSR.rights[0]} ${SSR.rights[1]}`}
+          tabindex="0" role="application" aria-roledescription="wykres do edycji"
+          aria-label={`Nowe prawa wykonywania zawodu pielęgniarki 2013–${YEAR_MAX}; do ${YEAR0} r. dane NIPiP. Strzałki w lewo i w prawo wybierają rok, w górę i w dół zmieniają liczbę o 100 (z Shift o 1000).`}
+          set:html={rightsChart(SSR.rights[0], SSR.rights[1], BASE_RIGHTS)}
+        />
+        <div class="pop" data-el="pop" role="dialog" aria-label="Dopływ w wybranym roku" hidden>
+          <div class="pop__head">
+            <button type="button" class="pop__icon" data-el="pop-prev" aria-label="Poprzedni rok">‹</button>
+            <strong class="pop__year" data-el="pop-year"></strong>
+            <button type="button" class="pop__icon" data-el="pop-next" aria-label="Następny rok">›</button>
+            <span class="pop__era" data-el="pop-era"></span>
+            <button type="button" class="pop__icon pop__close" data-el="pop-close" aria-label="Zamknij">×</button>
+          </div>
+          <div class="pop__row">
+            <button type="button" class="pop__step" data-step="-1000">−1000</button>
+            <input class="pop__input" type="number" data-el="pop-input" min="0" max={RIGHTS_MAX} step={RIGHTS_STEP} inputmode="numeric" aria-label="Liczba nowych pielęgniarek w tym roku" />
+            <button type="button" class="pop__step" data-step="1000">+1000</button>
+          </div>
+          <p class="pop__info">
+            <span data-el="pop-base"></span>
+            <button type="button" class="link" data-el="pop-reset">przywróć</button>
+          </p>
+        </div>
+      </div>
+      <ul class="key" aria-hidden="true">
+        <li><i class="key__sw key__sw--past"></i>dane NIPiP</li>
+        <li><i class="key__sw key__sw--future"></i>przyszłość</li>
+        <li><i class="key__sw key__sw--changed"></i>twoja zmiana</li>
+        <li><i class="key__sw key__sw--ref"></i>bez zmian</li>
+      </ul>
+    </section>
+
+    <section class="step" aria-labelledby="sim-s4">
+      <div class="step__row">
+        <h3 class="step__label" id="sim-s4"><span class="step__n">04</span>Losy pielęgniarki</h3>
+        <button type="button" class="link" data-el="rates-reset" hidden>przywróć z danych</button>
+      </div>
+      <div class="fields">
+        {rates.map((r) => (
+          <div class="field">
+            <label class="field__label" for={`sim-${r.key}`}>
+              {r.label}
+              <span><output data-out={r.key}>{formatPL(rateValue(r))}</output>{r.suffix} {r.unit}</span>
+            </label>
+            <input
+              class="range" type="range" id={`sim-${r.key}`} data-rate={r.key} data-scale={r.scale}
+              min={r.min} max={r.max} step={r.step} value={rateValue(r)} style={`--p: ${pct(rateValue(r), r.min, r.max)}`}
+              aria-describedby={`sim-${r.key}-note`}
+            />
+            <p class="field__note" id={`sim-${r.key}-note`}>{r.note}</p>
+          </div>
+        ))}
+        <div class="field" role="radiogroup" aria-labelledby="sim-age-label">
+          <span class="field__label" id="sim-age-label">Pracuje do wieku</span>
+          <div class="seg seg--4">
+            {[60, 65, 70, 75].map((age) => (
+              <label class="seg__opt">
+                <input type="radio" name="sim-age" value={age} checked={age === DEFAULTS.retireAge} data-default={age === DEFAULTS.retireAge ? '' : undefined} />
+                <span>{age} lat</span>
+              </label>
+            ))}
+          </div>
+          <p class="field__note">Potem rocznik wygasa przez pięć lat. Kobiety mogą przejść na emeryturę w wieku 60 lat, ale przy odejściach od 65 lat zatrudnienie w latach 2022–2025 spadałoby nawet wtedy, gdyby pracowały wszystkie nowe pielęgniarki — a rosło.</p>
+        </div>
+      </div>
+      <p class="step__hint">Zmieniają tylko twój scenariusz; „bez zmian” zostaje przy wartościach z danych.</p>
+    </section>
+  </div>
+
+  <div class="sim__out">
+    <h2 class="sr-only">Wynik</h2>
+    <div class="out" data-el="out">
+      <div class="out__head">
+        <p class="mono-label">Pielęgniarek w {HEADLINE_YEAR} r.</p>
+        <p class="out__big" data-el="headline">{formatPL(at(HEADLINE_YEAR).nurses)}</p>
+        <p class="delta" data-el="headline-d">bez zmian</p>
+      </div>
+      <ul class="legend" aria-hidden="true">
+        <li><i class="legend__sw legend__sw--you"></i>twój scenariusz</li>
+        <li><i class="legend__sw legend__sw--ref"></i>bez zmian</li>
+        <li><i class="legend__sw legend__sw--density"></i>dzisiejsza gęstość</li>
+        <li class="legend__gap"><i class="legend__sw legend__sw--more"></i>więcej<i class="legend__sw legend__sw--less"></i>mniej</li>
+      </ul>
+      <div class="chart" data-el="result-wrap">
+        <svg
+          class="chart__svg" data-el="result" viewBox={`0 0 ${SSR.result[0]} ${SSR.result[1]}`}
+          role="img" aria-label={`Zatrudnione pielęgniarki ${YEAR0}–${YEAR_END}: twój scenariusz i scenariusz bez zmian`}
+          set:html={resultChart({ width: SSR.result[0], height: SSR.result[1], scenario, reference: scenario })}
+        />
+        <div class="tip" data-el="tip" hidden></div>
+      </div>
+    </div>
+
+    <section class="ladder" aria-labelledby="sim-ladder">
+      <div class="ladder__head">
+        <h3 class="mono-label" id="sim-ladder">Drabina wieku w <span data-el="ladder-year">{HEADLINE_YEAR}</span> r.</h3>
+        <div class="ladder__years" role="group" aria-label="Rok drabiny">
+          {LADDER_YEARS.map((year) => (
+            <button type="button" class="ladder__year" data-year={year} aria-pressed={year === HEADLINE_YEAR ? 'true' : 'false'}>{year}</button>
+          ))}
+        </div>
+      </div>
+      <svg
+        class="ladder__svg" data-el="ladder" viewBox={`0 0 ${SSR.ladder[0]} ${SSR.ladder[1]}`}
+        role="img" aria-label="Zatrudnione pielęgniarki według grup wieku w wybranym roku, z kreską przy stanie dzisiejszym"
+        set:html={ladderChart({ width: SSR.ladder[0], ladder: at(HEADLINE_YEAR).ladder, today: at(YEAR0).ladder, vMax: ladderMax(scenario) })}
+      />
+      <p class="ladder__note"><i class="ladder__tick"></i>kreska — stan w {YEAR0} r. · tło — po 60. roku życia · najedź na wykres w czasie albo go dotknij, żeby zobaczyć inny rok</p>
+    </section>
+
+    <dl class="stats">
+      <div>
+        <dt class="mono-label">W 2040 r.</dt>
+        <dd class="stats__num" data-el="y2040">{formatPL(at(2040).nurses)}</dd>
+        <dd class="delta" data-el="y2040-d">bez zmian</dd>
+      </div>
+      <div>
+        <dt class="mono-label">Na 1000 osób, {HEADLINE_YEAR}</dt>
+        <dd class="stats__num" data-el="density">{formatPL(perThousand(at(HEADLINE_YEAR).nurses, HEADLINE_YEAR), 1)}</dd>
+        <dd class="delta">dziś {formatPL(perThousand(at(YEAR0).nurses, YEAR0), 1)}</dd>
+      </div>
+      <div>
+        <dt class="mono-label">Skutek widać od</dt>
+        <dd class="stats__num" data-el="visible">—</dd>
+        <dd class="delta">różnica ≥ {formatPL(1000)} osób</dd>
+      </div>
+    </dl>
+
+    <p class="comment" data-el="comment">
+      {commentary({ rights: BASE_RIGHTS, settings: DEFAULTS, scenario, reference: scenario, ratesChanged: false })}
+    </p>
+  </div>
+
+  <p class="sr-only" aria-live="polite" data-el="status"></p>
+</zl-nurse-supply>
+
+<script>
+  import './client';
+</script>
+
+<style>
+  /* Wynik jest tu wyższy niż u lekarzy (drabina pod spodem), więc wykres w czasie jest niższy.
+     Przedrostek .sim--nurses przebija wspólny arkusz (styles/symulator-podazy.css). */
+  .sim--nurses .chart__svg { height: clamp(180px, 28vh, 260px); }
+  .sim--nurses .seg--4 { grid-template-columns: repeat(4, 1fr); }
+  .legend__sw--density { border-top: 1px dashed var(--muted); }
+
+  .ladder { padding: 14px 22px 12px; border: 1px solid var(--line-2); background: var(--surface); }
+  .ladder__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 10px; }
+  .ladder__years { display: flex; gap: 4px; }
+  .ladder__year {
+    padding: 4px 8px; border: 1px solid var(--line-2); font: 400 0.75rem/1 var(--f-mono); color: var(--ink);
+    font-variant-numeric: tabular-nums; transition: border-color .2s, background .2s, color .2s;
+  }
+  .ladder__year:hover { border-color: var(--ink); }
+  .ladder__year[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .ladder__svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .ladder__note { margin-top: 8px; font-size: 0.75rem; line-height: 1.5; color: var(--muted); }
+  .ladder__tick { display: inline-block; width: 0; height: 11px; margin-right: 6px; vertical-align: -1px; border-left: 2px solid var(--ink); }
+
+  .sim :global(.c-zone) { fill: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .sim :global(.c-bar--ladder) { fill: var(--blue); }
+  .sim :global(.c-tick) { stroke: var(--ink); stroke-width: 2; }
+
+  @media (max-width: 860px) {
+    .sim--nurses .chart__svg { height: clamp(120px, 20vh, 170px); }
+    .ladder { margin-top: 32px; padding: 14px; }
+  }
+</style>

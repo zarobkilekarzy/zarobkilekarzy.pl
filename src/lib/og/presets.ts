@@ -105,8 +105,11 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
   };
 }
 
-/** Artykuł: etykieta sekcji, lead = pierwsze zdanie, okładka, stopka z liczbą przypisów i datą. */
-export function articleOg(article: Article): OgEntry {
+/**
+ * Artykuł: etykieta sekcji, lead = pierwsze zdanie, okładka, stopka z liczbą przypisów i datą.
+ * `media` — wykres w miejscu zdjęcia (src/data/og.ts → ogArticleMedia); okładka ma pierwszeństwo.
+ */
+export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels'> = {}): OgEntry {
   const { title, summary, cover, coverPosition, badge, updated, date, og } = article.data;
   const when = updated ?? date;
   const notes = getFootnotes(article).count;
@@ -130,6 +133,7 @@ export function articleOg(article: Article): OgEntry {
       // ta sama ikona co etykieta na okładce w blocks/ArticleFeature
       icon: 'pin',
       footer: { text: footer },
+      ...media,
     },
     og,
   );

@@ -277,16 +277,21 @@ function map(m: Extract<OgMedia, { kind: 'map' }>) {
 /** Wiersze z paskami we wspólnej skali od zera, jak w infografikach: wyróżniony wiersz w kobalcie, reszta w łupku. */
 function bars(b: Extract<OgMedia, { kind: 'bars' }>) {
   const max = Math.max(...b.rows.map((r) => r.value));
+  // przy 5–6 wierszach układ gęsty (jak GD w infografikach); do 4 wierszy bez zmian
+  const dense = b.rows.length > 4;
+  const [gap, labelSize, valueSize, barH] = dense ? [18, 18, 42, 10] : [26, 20, 56, 14];
   return h('div', { style: { flexDirection: 'column', justifyContent: 'center', flexShrink: 0, width: MEDIA_W, height: MEDIA_H } },
     b.head && h('div', { style: { paddingBottom: 14, borderBottom: `1px solid ${C.line}`, fontFamily: MONO, fontWeight: 500, fontSize: 15, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted } }, typo(b.head)),
     ...b.rows.map((r) =>
-      h('div', { style: { flexDirection: 'column', paddingTop: 26 } },
+      h('div', { style: { flexDirection: 'column', paddingTop: gap } },
         h('div', { style: { alignItems: 'flex-end', justifyContent: 'space-between' } },
-          h('div', { style: { flexDirection: 'column', paddingBottom: 4 } },
-            h('span', { style: { fontSize: 20, lineHeight: 1.25, color: C.ink } }, typo(r.label)),
+          h('div', { style: { flexDirection: 'column', paddingBottom: 4, paddingRight: 16 } },
+            h('span', { style: { fontSize: labelSize, lineHeight: 1.25, color: C.ink } }, typo(r.label)),
             r.sub && h('span', { style: { marginTop: 4, fontFamily: MONO, fontWeight: 500, fontSize: 13, letterSpacing: '0.06em', textTransform: 'uppercase', color: r.marked ? C.blue : C.muted } }, typo(r.sub))),
-          h('span', { style: { fontFamily: DISPLAY, fontWeight: 300, fontSize: 56, lineHeight: 0.9, letterSpacing: '-0.045em', color: r.marked ? C.blue : C.ink } }, formatPL(r.value))),
-        h('div', { style: { width: Math.max(2, Math.round((r.value / max) * MEDIA_W)), height: 14, marginTop: 12, background: r.marked ? C.blue : tokenColor('chart', false) } }))));
+          h('div', { style: { alignItems: 'baseline', flexShrink: 0, fontFamily: DISPLAY, fontWeight: 300, fontSize: valueSize, lineHeight: 0.9, letterSpacing: '-0.045em', color: r.marked ? C.blue : C.ink } },
+            r.display ?? formatPL(r.value),
+            b.unit && h('span', { style: { marginLeft: 4, fontSize: Math.round(valueSize * 0.5), letterSpacing: 0 } }, b.unit))),
+        h('div', { style: { width: Math.max(2, Math.round((r.value / max) * MEDIA_W)), height: barH, marginTop: dense ? 9 : 12, background: r.marked ? C.blue : tokenColor('chart', false) } }))));
 }
 
 /**
@@ -294,18 +299,22 @@ function bars(b: Extract<OgMedia, { kind: 'bars' }>) {
  * a podpisy <text> stają się tekstem Satori w tym samym miejscu — SVG w <img> nie zna krojów serwisu.
  */
 const LABEL = 13;
+const BIG_LABEL = 26;
 const TEXT_RE = /<text class="([^"]*)" x="([^"]+)" y="([^"]+)"(?: text-anchor="([^"]+)")?>([^<]*)<\/text>/g;
 
 function panel({ head, svg, height }: Extract<OgMedia, { kind: 'panels' }>['panels'][number]) {
   const labels = [...svg.matchAll(TEXT_RE)].map(([, cls, x, y, anchor = 'start', text]) => {
     const left = parseFloat(x);
+    const big = cls.includes('c-label--big');
+    const size = big ? BIG_LABEL : LABEL;
     const pos: Style = anchor === 'end' ? { right: MEDIA_W - left } : anchor === 'middle' ? { left: left - 60, width: 120, justifyContent: 'center' } : { left };
     return h('div', {
       style: {
-        position: 'absolute', top: Math.round(parseFloat(y) - LABEL * 0.85), ...pos,
-        fontFamily: MONO, fontSize: LABEL, lineHeight: 1, whiteSpace: 'nowrap', color: cls.includes('c-label--strong') ? C.ink : C.muted,
+        position: 'absolute', top: Math.round(parseFloat(y) - size * 0.85), ...pos,
+        fontFamily: big ? DISPLAY : MONO, fontSize: size, lineHeight: 1, letterSpacing: big ? '-0.03em' : 0, whiteSpace: 'nowrap',
+        color: cls.includes('c-label--blue') ? C.blue : cls.includes('c-label--strong') ? C.ink : C.muted,
       },
-    }, text);
+    }, text.replace(/&lt;/g, '<').replace(/&amp;/g, '&'));
   });
   const src = `data:image/svg+xml;base64,${Buffer.from(svg.replace(TEXT_RE, '')).toString('base64')}`;
   return h('div', { style: { flexDirection: 'column' } },

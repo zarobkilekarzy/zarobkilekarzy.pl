@@ -6,9 +6,9 @@
 import { createHash } from 'node:crypto';
 import type { ImageMetadata } from 'astro';
 import { raw } from '@/lib/images';
-import { getPublishedArticles } from '@/lib/content';
+import { articleHref, getPublishedArticles } from '@/lib/content';
 import { getNews, newsHref, newsImage } from '@/lib/news';
-import { ogPages } from '@/data/og';
+import { ogArticleMedia, ogPages } from '@/data/og';
 import { articleOg, pageOg, type OgEntry } from './presets';
 
 export type { OgEntry };
@@ -29,7 +29,7 @@ async function collect(): Promise<OgEntry[]> {
       footer: { text: 'Co nowego w projekcie' },
     }),
   );
-  return [...Object.entries(ogPages).map(([route, page]) => pageOg(route, page)), ...articles.map(articleOg), ...newsOg];
+  return [...Object.entries(ogPages).map(([route, page]) => pageOg(route, page)), ...articles.map((a) => articleOg(a, ogArticleMedia[articleHref(a)])), ...newsOg];
 }
 
 // W buildzie liczymy raz; w dev za każdym razem, żeby zmiana frontmattera była od razu widoczna

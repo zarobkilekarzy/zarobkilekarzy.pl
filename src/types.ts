@@ -245,7 +245,13 @@ export interface OgPage extends OgOverride {
    */
   map?: { layer: MapLayer; legend?: [number | number[] | null, string][]; theme?: 'jasny' | 'ciemny' };
   /** wykres w miejscu zdjęcia: wiersze z paskami we wspólnej skali od zera, `marked` = wiersz w kobalcie */
-  bars?: { head?: string; rows: { label: string; value: number; sub?: string; marked?: boolean }[] };
+  bars?: {
+    head?: string;
+    /** jednostka przy każdej liczbie, mniejszym stopniem (np. „%”) */
+    unit?: string;
+    /** `display` = liczba na obrazku, gdy nie całkowita (np. „55,6”); skala pasków zawsze z `value` */
+    rows: { label: string; value: number; display?: string; sub?: string; marked?: boolean }[];
+  };
   /**
    * wykresy strony w miejscu zdjęcia, jeden pod drugim: nagłówek + gotowy <svg> o szerokości kolumny mediów;
    * podpisy (<text>) szablon przepisuje na tekst Satori, żeby miały krój serwisu

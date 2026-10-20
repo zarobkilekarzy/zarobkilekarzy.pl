@@ -16,6 +16,16 @@ import { MEDIANS } from '@/data/rozklad-wynagrodzen';
 import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { simulatorOgPanels } from '@/lib/podaz/og';
+import { columnChart, lineChart, sumSchema, svg } from '@/lib/og/charts';
+import { ageRows, dayRows } from '@/data/ciecie-limitow-na-medycyne';
+import { INDEX_CHART } from '@/data/kolejki';
+import { BUDGET } from '@/data/budzet-nfz';
+import { AOS_FIRST, AOS_LAST, WHC_2022, WHC_2024, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
+import { funnelRows } from '@/data/odsiew-na-medycynie';
+import { EXAMS_2025, passRate } from '@/data/zdawalnosc-egzaminow';
+import { COUNTRIES, WINDOW, ratePer100k, type CountryKey } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
+import { pseudonymDemo } from '@/data/postulat';
+import { createHmac } from 'node:crypto';
 
 import heroImg from '@/assets/img/hero-pokoj-lekarski.jpg';
 import barometrOg from '@/assets/img/barometr-polityczny-og.png';
@@ -24,6 +34,88 @@ import { newsIllustration } from '@/lib/news';
 // odpowiedzi placówek na wniosek o płace (monitoring Watchdog Polska)
 const answered = (...r: Response[]) => monitoring.facilities.filter((f) => r.includes(f.response)).length;
 const fullLists = monitoring.facilities.filter((f) => f.payroll).length;
+
+/* ---------- Wykresy na obrazkach (strony i artykuły) ---------- */
+
+const MEDIA_W = 470; // kolumna mediów w lib/og/render.ts
+const PANEL_H = 440;
+const TWO_PANELS_H = 196;
+
+// Postulat: trzy umowy jednej osoby (udziały poglądowe, bez kwot) i identyfikator z przykładu na /postulat/
+const POSTULAT_PIECES = [
+  { label: 'Szpital — etat', share: 5 },
+  { label: 'Poradnia z umową z NFZ — kontrakt', share: 3 },
+  { label: 'Dyżury w innym mieście — zlecenie', share: 2 },
+];
+const demoId = `${createHmac('sha256', pseudonymDemo.key).update(pseudonymDemo.pwz).digest('hex').slice(0, 8)}…`;
+
+// Cięcie limitów: rok naboru skrócony do podpisu pod kolumną („2015/16” → „2015”, „1994–2000” → „94–00”)
+const shortYear = (label: string) => (label.includes('–') ? label.replace(/\d\d(\d\d)–\d\d(\d\d)/, '$1–$2') : label.slice(0, 4));
+const intakeCols = dayRows.map((r, i) => ({
+  label: shortYear(r.label),
+  value: r.value,
+  display: i === 0 ? `>${formatPL(r.value)}` : r.highlight || i === dayRows.length - 1 ? r.display : undefined,
+  highlight: r.highlight,
+}));
+// od najstarszych do najmłodszych, żeby oś czasu studiów szła w tę samą stronę co nabór
+const ageCols = [...ageRows].reverse().map((r) => ({ label: r.label.replace(' lat', ''), value: r.value, display: r.highlight ? r.display : undefined, highlight: r.highlight }));
+
+const finals = BUDGET.filter((r) => r.status === 'final');
+const costCols = finals.map((r, i) => ({
+  label: r.year % 5 === 0 ? String(r.year) : '',
+  value: r.costs,
+  display: i === 0 || i === finals.length - 1 ? formatPL(r.costs, 1) : undefined,
+  highlight: i === finals.length - 1,
+}));
+
+const country = (key: CountryKey) => {
+  const c = COUNTRIES.find((x) => x.key === key)!;
+  // jedno miejsce po przecinku: Polska ma 1,2, a „1” zaniżałoby wynik na korzyść tezy
+  return { label: c.name, sub: c.body, value: ratePer100k(key), display: formatPL(ratePer100k(key), 1), marked: key === 'pl' };
+};
+
+const aosCost = change(AOS_FIRST.cost, AOS_LAST.cost);
+const aosServices = change(AOS_FIRST.services, AOS_LAST.services);
+const queueGrowth = change(WHC_2022.single, WHC_2024.single);
+
+/** Media artykułów (trasa → wykres w miejscu zdjęcia); etykieta, lead i stopka zostają z presetu artykułu. */
+export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels'>> = {
+  '/analizy/ciecie-limitow-na-medycyne/': {
+    panels: [
+      { head: 'Miejsca na I roku medycyny', height: TWO_PANELS_H, svg: svg(MEDIA_W, TWO_PANELS_H, columnChart(intakeCols, MEDIA_W, TWO_PANELS_H)) },
+      { head: 'Lekarze dziś według wieku', height: TWO_PANELS_H, svg: svg(MEDIA_W, TWO_PANELS_H, columnChart(ageCols, MEDIA_W, TWO_PANELS_H)) },
+    ],
+  },
+  '/dane/kolejki/': {
+    panels: [{ head: `Indeks, ${INDEX_CHART.base} = 100`, height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, lineChart(INDEX_CHART, MEDIA_W, PANEL_H, [INDEX_CHART.xMin, INDEX_CHART.xMin + 5, INDEX_CHART.xMax - 1])) }],
+  },
+  '/dane/budzet-nfz/': {
+    panels: [{ head: 'Koszty w planie NFZ, mld zł', height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, columnChart(costCols, MEDIA_W, PANEL_H)) }],
+  },
+  '/analizy/wizyty-prywatne-kolejka-cena/': {
+    bars: {
+      head: `Poradnie specjalistyczne z NFZ, ${AOS_FIRST.year}–${AOS_LAST.year}`,
+      unit: '%',
+      rows: [
+        { label: 'Pieniądze NFZ', sub: `z ${formatPL(AOS_FIRST.cost / 1e6, 1)} do ${formatPL(AOS_LAST.cost / 1e6, 1)} mld zł`, value: aosCost, display: `+${formatPL(aosCost, 1)}`, marked: true },
+        { label: 'Świadczenia', sub: `z ${formatPL(AOS_FIRST.services / 1e6, 1)} do ${formatPL(AOS_LAST.services / 1e6, 1)} mln`, value: aosServices, display: `+${formatPL(aosServices, 1)}` },
+        { label: 'Czas oczekiwania', sub: `z ${formatPL(WHC_2022.single, 1)} do ${formatPL(WHC_2024.single, 1)} mies.`, value: queueGrowth, display: `+${formatPL(queueGrowth)}` },
+      ],
+    },
+  },
+  '/analizy/odsiew-na-medycynie/': {
+    bars: {
+      head: 'Ze 100 osób, które zaczynają studia',
+      rows: funnelRows.map((r) => ({ label: r.label, value: r.value, display: r.display, marked: r.highlight })),
+    },
+  },
+  '/analizy/odpowiedzialnosc-zawodowa-lekarzy/': {
+    bars: {
+      head: `Odebrania prawa do zawodu na 100 tys. lekarzy rocznie, ${WINDOW.from}–${WINDOW.to}`,
+      rows: (['no', 'se', 'uk', 'pl'] as const).map(country),
+    },
+  },
+};
 
 export const ogPages: Record<string, OgPage> = {
   '/': {
@@ -90,12 +182,19 @@ export const ogPages: Record<string, OgPage> = {
     eyebrow: 'Egzamin LEK',
     title: 'Sprawdź się\nna pytaniach LEK',
     lead: '200 pytań, 4 godziny, próg 56%. Nauka, szybki test albo pełny egzamin na czas — ze statystyką zdających.',
+    // ta sama lista co infografika „Jaka część zdających zdaje egzamin” (lib/infografiki/zestawy.ts)
+    bars: {
+      head: 'Zdało egzamin w 2025 r., wszystkie podejścia',
+      unit: '%',
+      rows: EXAMS_2025.map((e) => ({ label: e.name, value: passRate(e), display: formatPL(passRate(e), 1), marked: e.key === 'lek' })),
+    },
   },
   // etap i wersja z projekt-ustawy.ts — zmiana etapu zmienia obrazek
   '/postulat/': {
     eyebrow: 'Postulat',
     title: 'Jawne kwoty,\nchronione nazwiska',
     lead: 'Łączne wynagrodzenie każdej osoby z placówek z umową z NFZ — co kwartał, jako otwarte dane, bez nazwisk.',
+    panels: [{ head: 'Wynagrodzenie jednej osoby', height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, sumSchema(MEDIA_W, PANEL_H, POSTULAT_PIECES, demoId)) }],
     footer: { text: `Projekt ustawy · wersja ${projekt.version} · ${currentStage.label.toLowerCase()}` },
   },
   '/postulat/projekt-ustawy/': {

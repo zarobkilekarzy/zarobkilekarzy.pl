@@ -104,7 +104,7 @@ export const rightsGroups: RightsGroup[] = [
     id: 'teraz',
     eyebrow: 'Teraz, na miejscu',
     title: 'U lekarza i w szpitalu',
-    lead: 'Z tych praw możesz skorzystać od razu. Przy każdym jest zdanie, które da się spokojnie powiedzieć, i artykuł ustawy — gdyby ktoś zapytał o podstawę.',
+    lead: 'Punkt wyjścia: masz prawo do leczenia zgodnego z aktualną wiedzą medyczną, z należytą starannością (art. 6 ust. 1, art. 8). Z praw poniżej możesz skorzystać od razu. Przy każdym jest zdanie, które da się spokojnie powiedzieć, i artykuł ustawy — gdyby ktoś zapytał o podstawę.',
     items: [
       {
         id: 'informacja',
@@ -139,6 +139,7 @@ export const rightsGroups: RightsGroup[] = [
         short: 'Możesz żądać konsultacji innego lekarza albo konsylium. Lekarz może odmówić, ale musi wpisać odmowę do dokumentacji.',
         more: [
           'Lekarz może uznać prośbę za bezzasadną. Wtedy ma obowiązek odnotować odmowę w dokumentacji medycznej. Ten wpis jest ważny: „nie” powiedziane w gabinecie zostaje na piśmie i da się je później sprawdzić.',
+          'To samo działa wobec pielęgniarki i położnej: możesz żądać, żeby zasięgnęła opinii innej pielęgniarki lub położnej, a odmowa też trafia do dokumentacji (art. 6 ust. 3 pkt 2 i ust. 6).',
         ],
         say: 'Proszę o konsultację z innym lekarzem. Jeśli to niemożliwe, proszę wpisać odmowę do dokumentacji.',
         basis: 'art. 6 ust. 3–5',
@@ -163,10 +164,38 @@ export const rightsGroups: RightsGroup[] = [
         short: 'Na Twoje życzenie — także przy badaniu. Odmowa jest możliwa tylko z dwóch powodów i musi trafić do dokumentacji.',
         more: [
           'Personel może odmówić tylko wtedy, gdy istnieje ryzyko zagrożenia epidemicznego albo wymaga tego bezpieczeństwo zdrowotne pacjenta. „Taką mamy zasadę” nie jest żadnym z tych powodów.',
+          'To prawo dotyczy obecności przy badaniu czy zabiegu. Opieka bliskiej osoby podczas pobytu w szpitalu to osobne prawo — [opisujemy je niżej](#opieka-bliskiej).',
         ],
         say: 'Chcę, żeby ta osoba była przy mnie. Jeśli to niemożliwe, proszę wpisać powód odmowy do dokumentacji.',
         basis: 'art. 21',
         card: 'Obecności bliskiej osoby. Odmowa tylko z powodu epidemii lub bezpieczeństwa.',
+      },
+      {
+        id: 'godnosc',
+        q: 'Przy badaniu są studenci albo inne osoby. Muszę się zgodzić?',
+        verdict: 'Nie',
+        short: 'Masz prawo do poszanowania intymności i godności. Obecność osób, które nie udzielają Ci świadczenia — na przykład studentów — wymaga Twojej zgody.',
+        more: [
+          'Każdy, kto wykonuje zawód medyczny, ma obowiązek postępować tak, by szanować Twoją intymność i godność (art. 20 ust. 1, art. 22 ust. 1). Inny personel medyczny uczestniczy w badaniu tylko wtedy, gdy jest to niezbędne ze względu na rodzaj świadczenia albo czynności kontrolne. Na obecność wszystkich innych osób potrzebna jest Twoja zgoda (art. 22 ust. 2). Za dziecko zgodę wyraża przedstawiciel ustawowy.',
+          'Osoby obecne za Twoją zgodą też obowiązuje tajemnica (art. 22 ust. 3). Prawo do godności obejmuje również prawo do umierania w spokoju i godności (art. 20 ust. 2).',
+          'Za zawinione naruszenie tego prawa sąd może przyznać zadośćuczynienie (art. 4) — [więcej przy zgłaszaniu naruszeń](#naruszone-prawa).',
+        ],
+        say: 'Nie zgadzam się na obecność innych osób przy badaniu.',
+        basis: 'art. 20, 22',
+        card: 'Godności i intymności. Studenci przy badaniu — tylko za Twoją zgodą.',
+      },
+      {
+        id: 'opieka-bliskiej',
+        q: 'Czy w szpitalu może się mną opiekować ktoś bliski?',
+        verdict: 'Tak',
+        short: 'Masz prawo do dodatkowej opieki pielęgnacyjnej: bliska osoba może się Tobą opiekować w szpitalu. Chodzi o opiekę, nie o leczenie — leczenie zapewnia personel.',
+        more: [
+          'Ustawa definiuje dodatkową opiekę pielęgnacyjną jako opiekę, która nie polega na udzielaniu świadczeń zdrowotnych. Wymienia wprost opiekę nad dzieckiem, nad osobą ze znacznym stopniem niepełnosprawności i nad kobietą w ciąży, w czasie porodu i połogu (art. 34 ust. 1–2).',
+          'Szpital może pobrać za to opłatę, ale tylko w wysokości **rzeczywistych kosztów**. Wysokość opłaty i sposób jej wyliczenia muszą być jawne i dostępne w szpitalu (art. 35 ust. 1–3). Pobyt rodzica przy dziecku jest bezpłatny — [zobacz niżej](#rodzic-przy-dziecku).',
+          'Kierownik placówki może ograniczyć to prawo przy zagrożeniu epidemicznym albo ze względu na bezpieczeństwo zdrowotne pacjentów (art. 5).',
+        ],
+        say: 'Chcę, żeby ta osoba się mną opiekowała. Jeśli jest opłata, proszę pokazać, ile wynosi i jak ją wyliczono.',
+        basis: 'art. 34–35',
       },
       {
         id: 'rodzic-przy-dziecku',
@@ -186,13 +215,25 @@ export const rightsGroups: RightsGroup[] = [
         verdict: 'Nie',
         short: 'Przy zagrożeniu zdrowia lub życia masz prawo do natychmiastowej pomocy — niezależnie od kolejek i skierowań.',
         more: [
-          'To prawo działa niezależnie od list oczekujących. Kobieta rodząca ma prawo do natychmiastowych świadczeń związanych z porodem (art. 7 ust. 2).',
+          'To prawo działa niezależnie od list oczekujących. Osobno ustawa zapewnia kobiecie rodzącej prawo do świadczeń związanych z porodem (art. 7 ust. 2).',
           'Gdy życie jest zagrożone, nie szukaj przepisów — dzwoń pod **112**.',
         ],
         basis: 'art. 7',
         card: 'Natychmiastowej pomocy przy zagrożeniu życia — bez kolejki.',
       },
     ],
+    also: {
+      title: 'Pozostałe prawa w skrócie',
+      items: [
+        { text: 'Gdy świadczeń nie starcza dla wszystkich — przejrzysta, obiektywna procedura ustalania kolejności, oparta na kryteriach medycznych.', basis: 'art. 6 ust. 2' },
+        { text: 'Informacja o prawach pacjenta na piśmie, wywieszona w placówce w ogólnodostępnym miejscu. Gdy nie możesz się poruszać — dostarczona do sali.', basis: 'art. 11' },
+        { text: 'Wczesna informacja, gdy lekarz zamierza odstąpić od Twojego leczenia, i wskazanie, gdzie możesz leczyć się dalej.', basis: 'art. 10' },
+        { text: 'Informacja w zrozumiały sposób dla osoby ze szczególnymi potrzebami, także z pomocą środków wspierających komunikowanie się.', basis: 'art. 12 ust. 2' },
+        { text: 'W szpitalu — kontakt z innymi osobami osobiście, telefonicznie i listownie, a także prawo do odmowy kontaktu. Odwiedziny placówka może ograniczyć także ze względów organizacyjnych.', basis: 'art. 33, art. 5' },
+        { text: 'W szpitalu — opieka duszpasterska. Gdy stan zdrowia się pogarsza lub życie jest zagrożone, szpital musi umożliwić kontakt z duchownym Twojego wyznania.', basis: 'art. 36–37' },
+        { text: 'W szpitalu — przechowanie rzeczy wartościowych w depozycie, na koszt szpitala.', basis: 'art. 39' },
+      ],
+    },
   },
   {
     id: 'dokumenty',
@@ -273,6 +314,8 @@ export const routes: Route[] = [
     facts: [
       { label: 'Jak', text: 'Telefonicznie, e-mailem (kancelaria@rpp.gov.pl), przez ePUAP (/RzPP/skrytka) albo listem: ul. Płocka 11/13, 01-231 Warszawa.' },
       { label: 'Koszt', text: 'Bezpłatnie — wniosek do Rzecznika jest wolny od opłat (art. 50 ust. 2).' },
+      { label: 'Na miejscu', text: 'Jeśli placówka ma pełnomocnika do spraw praw pacjenta, możesz zacząć od niego — bierze udział w rozpatrywaniu skarg (art. 40a). Podlega jednak kierownikowi placówki, więc nie jest niezależny jak Rzecznik.' },
+      { label: 'Pieniądze', text: 'Rzecznik nie przyzna Ci pieniędzy. Za zawinione naruszenie praw pacjenta — na przykład godności, tajemnicy albo prawa do informacji — sąd może zasądzić zadośćuczynienie za doznaną krzywdę (art. 4 w związku z art. 448 Kodeksu cywilnego). To osobna podstawa niż odszkodowanie za szkodę na zdrowiu.' },
     ],
     actions: [
       { label: '800 190 590', href: 'tel:+48800190590', icon: 'phone' },

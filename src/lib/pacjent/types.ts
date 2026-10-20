@@ -44,6 +44,8 @@ export interface RightsGroup {
   title: string;
   lead: string;
   items: RightQA[];
+  /** pozostałe prawa jednym zdaniem — pod pytaniami, bez rozwijania */
+  also?: { title: string; items: { text: string; basis: string }[] };
 }
 
 /** „Co się stało?” → dokąd, jak, w jakim terminie, za ile. */

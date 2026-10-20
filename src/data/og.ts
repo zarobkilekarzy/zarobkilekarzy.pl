@@ -154,8 +154,8 @@ export const ogPages: Record<string, OgPage> = {
   '/': {
     eyebrow: 'Przewodnik po pracy i zarobkach',
     title: 'Zarobki lekarzy.\nBez emocji,\nze źródłami',
-    // obrazek domyślny: uderzenie EKG z kropek, jak avatar i film „Brak odczytu”
-    pictogram: 'ekg',
+    // obrazek domyślny (też dla tras bez własnego wpisu): okładka z siatki kropek, wersja ciemna jak w propozycji motywu
+    cover: { lines: ['Zarobki lekarzy', 'bez emocji, ze źródłami'], label: 'zarobkilekarzy.pl', theme: 'ciemny' },
     footer: { text: 'Każda liczba ze źródłem', flags: true },
   },
   '/dane/': {

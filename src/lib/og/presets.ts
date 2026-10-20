@@ -5,7 +5,7 @@
  */
 import type { ImageMetadata } from 'astro';
 import type { IconName } from '@/icons';
-import type { Category, OgDots, OgOverride, OgPage, OgStat } from '@/types';
+import type { Category, OgCover, OgDots, OgOverride, OgPage, OgStat } from '@/types';
 import { PICTOGRAMS, type PictogramName } from '@/lib/siatka/piktogramy';
 import { ekgLines, frameLines } from '@/lib/siatka';
 import { articleHref, getFootnotes, readingMinutes, sectionOf, type Article } from '@/lib/content';
@@ -36,6 +36,8 @@ export interface OgSpec {
   /** lead bez względu na długość tytułu */
   leadAlways?: boolean;
   media: OgMedia;
+  /** okładka na cały kadr — szablon pomija wtedy tytuł, media i stopkę */
+  cover?: OgCover;
 }
 
 /** Obrazek jednej trasy: generowany ze `spec` albo gotowy plik (`file`). */
@@ -93,7 +95,7 @@ export function firstSentence(text: string): string | undefined {
   return out.length <= 120 ? out : undefined;
 }
 
-function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
+function compose(route: string, d: Defaults, o: OgOverride & { cover?: OgCover } = {}): OgEntry {
   const title = o.title ?? d.title;
   const alt = title.replace(/\s*\n\s*/g, ' ');
   if (o.image) return { route, alt, file: o.image };
@@ -136,6 +138,7 @@ function compose(route: string, d: Defaults, o: OgOverride = {}): OgEntry {
       footer: d.footer,
       leadAlways: d.leadAlways,
       media,
+      cover: o.cover,
     },
   };
 }

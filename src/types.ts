@@ -257,6 +257,19 @@ export interface OgOverride {
   image?: ImageMetadata;
 }
 
+/**
+ * Okładka na cały kadr (obrazek domyślny): siatka plusów, tytuł w dwóch wierszach na środku pustego pola,
+ * w narożnikach krzyże medyczne i fragmenty EKG z kropek. Zastępuje zwykły układ „tytuł + media”.
+ */
+export interface OgCover {
+  /** pierwszy wiersz w kolorze tekstu, drugi w kobalcie */
+  lines: [string, string];
+  /** wersaliki pod tytułem, np. adres serwisu */
+  label: string;
+  /** domyślnie jasna, jak pozostałe obrazki */
+  theme?: 'jasny' | 'ciemny';
+}
+
 /** Grafika z kropek (lib/siatka) w miejscu zdjęcia: maska tekstowa, znaczenie liter i legenda kolorów. */
 export interface OgDots {
   mask: readonly string[];
@@ -297,6 +310,8 @@ export interface OgPage extends OgOverride {
   leadAlways?: boolean;
   /** grafika z kropek w miejscu zdjęcia, np. mapa kraju (lib/siatka/kraje.ts) */
   dots?: OgDots;
+  /** okładka na cały kadr zamiast układu „tytuł + media” (obrazek domyślny) */
+  cover?: OgCover;
 }
 
 /** Etap drogi (np. projektu ustawy): zakończony, bieżący albo przed nami. */

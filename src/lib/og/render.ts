@@ -22,7 +22,8 @@ import { geo } from '@/lib/mapa/geo';
 import { toneOfClass } from '@/lib/mapa/layout';
 import { renderMapSvg, staticColors } from '@/lib/mapa/svg';
 import { tokenColor } from '@/lib/tokens';
-import { GEOMETRY } from '@/lib/siatka';
+import { GEOMETRY, polyline } from '@/lib/siatka';
+import type { OgCover } from '@/types';
 import type { Accuracy, OgDots, OgStat } from '@/types';
 import { NARROW_TITLE_MAX, OG_HEIGHT, OG_WIDTH, type OgEntry, type OgMedia, type OgSpec } from './presets';
 
@@ -388,6 +389,50 @@ function dots(m: Extract<OgMedia, { kind: 'dots' }>) {
         typo(label)))));
 }
 
+/**
+ * Okładka na cały kadr (obrazek domyślny, wg propozycji motywu siatki): 40×21 pól po 30 px, tytuł na środku
+ * pustego pola, w narożnikach krzyże medyczne złożone z kropek i dwa fragmenty zapisu EKG.
+ */
+const COVER_COLS = 40;
+const COVER_ROWS = 21;
+/** puste pole pod tytułem: kolumny i wiersze siatki (włącznie) */
+const COVER_FIELD = { c0: 7, c1: 32, r0: 6, r1: 14 };
+
+function coverMarks(): Set<string> {
+  const lit = new Set<string>();
+  const cross = (cx: number, cy: number, s = 1) => {
+    for (let i = -s; i <= s; i++) { lit.add(`${cx + i},${cy}`); lit.add(`${cx},${cy + i}`); }
+  };
+  cross(2, 2); cross(37, 3, 2); cross(5, 17, 2); cross(35, 18);
+  for (const k of ['0,0', '1,0', '0,1', '39,20', '38,20', '39,19']) lit.add(k);
+  for (const k of polyline([[22, 3], [24, 3], [25, 4], [26, 0], [27, 5], [28, 3], [31, 3]])) lit.add(k);
+  for (const k of polyline([[10, 19], [13, 19], [14, 18], [15, 19], [18, 19]])) lit.add(k);
+  return lit;
+}
+
+function cover(c: OgCover): Node {
+  const night = c.theme === 'ciemny';
+  const col = (name: string) => tokenColor(name, night);
+  const cell = OG_WIDTH / COVER_COLS;
+  const lit = coverMarks();
+  const { c0, c1, r0, r1 } = COVER_FIELD;
+  let plus = '', marks = '';
+  for (let r = 0; r < COVER_ROWS; r++) for (let q = 0; q < COVER_COLS; q++) {
+    const x = q * cell + cell / 2, y = r * cell + cell / 2;
+    if (lit.has(`${q},${r}`)) marks += `<circle cx="${x}" cy="${y}" r="${cell * GEOMETRY.on}" fill="${col('blue')}"/>`;
+    else if (q < c0 || q > c1 || r < r0 || r > r1) plus += `M${x} ${y - cell * GEOMETRY.arm}v${2 * cell * GEOMETRY.arm}M${x - cell * GEOMETRY.arm} ${y}h${2 * cell * GEOMETRY.arm}`;
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${OG_WIDTH} ${OG_HEIGHT}"><path d="${plus}" stroke="${col('blue')}" stroke-opacity=".4" stroke-width="${(cell * GEOMETRY.stroke).toFixed(2)}" fill="none"/>${marks}</svg>`;
+  const line = (text: string, color: string) =>
+    h('div', { style: { fontFamily: DISPLAY, fontWeight: 500, fontSize: 76, lineHeight: 1.05, letterSpacing: '-0.03em', color } }, typo(text));
+  return h('div', { style: { position: 'relative', width: OG_WIDTH, height: OG_HEIGHT, background: col('bg') } },
+    h('img', { src: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`, width: OG_WIDTH, height: OG_HEIGHT, style: { position: 'absolute', top: 0, left: 0 } }),
+    h('div', { style: { position: 'absolute', top: 0, left: 0, width: OG_WIDTH, height: OG_HEIGHT, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' } },
+      line(c.lines[0], col('ink')),
+      line(c.lines[1], col('blue')),
+      h('div', { style: { marginTop: 28, fontFamily: MONO, fontSize: 19, letterSpacing: '0.08em', textTransform: 'uppercase', color: col('text') } }, c.label)));
+}
+
 /* ---------- Szablon ---------- */
 async function layout(spec: OgSpec, route: string): Promise<Node> {
   const wide = spec.media.kind === 'none';
@@ -414,7 +459,7 @@ export async function renderOg(entry: OgEntry): Promise<Buffer> {
   const png = (img: Sharp) => img.png({ palette: true, quality: 90, compressionLevel: 9 }).toBuffer();
   if (entry.file) return png(sharp(sourceFile(entry.file)).resize(OG_WIDTH, OG_HEIGHT, { fit: 'cover' }));
 
-  const tree = await layout(entry.spec!, entry.route);
+  const tree = entry.spec!.cover ? cover(entry.spec!.cover) : await layout(entry.spec!, entry.route);
   const svg = await satori(tree as unknown as Parameters<typeof satori>[0], { width: OG_WIDTH, height: OG_HEIGHT, fonts: await loadFonts() });
   return png(sharp(Buffer.from(svg)));
 }

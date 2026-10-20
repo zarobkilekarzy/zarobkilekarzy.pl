@@ -71,7 +71,7 @@ function build(doc: MonitoringDoc) {
     scale: { title: 'Mediana rocznych wypłat w placówce', edges: MEDIAN_EDGES, labels: MEDIAN_LABELS, counts: medianCounts },
     summary: { value: formatPL(withList.length), text: typo(`z ${formatPL(total)} placówek przysłało pełną roczną listę płac lekarzy`) },
     size: { title: 'Pozycji na liście', samples: [20, 100, 500] },
-    missing: { label: typo('placówka bez pełnej listy: odmowa, cisza albo dane nieprzetworzone'), count: total - withList.length },
+    missing: { label: typo('placówka bez pełnej listy: odmowa, cisza, dane zbiorcze albo nieprzetworzone'), count: total - withList.length },
     note: spread && k >= 2
       ? typo(`Każde koło to jeden szpital. Kolor zależy bardziej od rodzaju szpitala niż od regionu: w województwie ${spread.v} mediany różnią się <b>${ratio - k >= 0.05 ? 'ponad ' : ''}${times(k)}</b> (od ${formatPL(Math.round(spread.min / 1e3))} do ${formatPL(Math.round(spread.max / 1e3))} tys. zł), więc mapa nie pokazuje „stawek w województwie”.`)
       : typo('Każde koło to jeden szpital. Kolor zależy bardziej od rodzaju szpitala niż od regionu, więc mapa nie pokazuje „stawek w województwie”.'),
@@ -90,7 +90,7 @@ function build(doc: MonitoringDoc) {
               size: f.payroll.doctors,
               tip: { title, meta, rows: [['Mediana roczna', money(f.payroll.median)], ['Najwyższa wypłata', money(f.payroll.max)], ['Pozycji na liście', formatPL(f.payroll.doctors)]] as [string, string][], ...link },
             }
-          : { teryt: f.teryt!, value: null, tip: { title, meta, rows: [['Odpowiedź', NO_LIST[f.response]]] as [string, string][], ...link } };
+          : { teryt: f.teryt!, value: null, tip: { title, meta, rows: [['Odpowiedź', f.aggregate ? 'dane zbiorcze' : NO_LIST[f.response]]] as [string, string][], ...link } };
       }),
   };
 

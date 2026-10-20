@@ -57,6 +57,11 @@ const facilitySchema = z.object({
   network: z.enum(NETWORK_LEVELS).nullable(),
   response: z.enum(RESPONSES),
   url: z.url(),
+  /**
+   * opis danych zbiorczych (przedziały, sumy, widełki) — tylko placówka, która odpowiedziała danymi
+   * bez listy per lekarz; liczby dokładnie jak w piśmie
+   */
+  aggregate: z.object({ note: z.string().min(1) }).optional(),
   /** null = brak pełnej rocznej listy płac (odmowa, cisza albo dane nieprzetworzone) */
   payroll: payrollSchema.nullable(),
 });
@@ -87,6 +92,13 @@ export const monitoringSchema = z
           code: 'custom',
           path: ['facilities', i, 'teryt'],
           message: `TERYT ${f.teryt} nie leży w województwie ${f.voivodeship} (oczekiwany prefiks ${prefix})`,
+        });
+      }
+      if (f.aggregate && (f.response !== 'disclosed' || f.payroll)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['facilities', i, 'aggregate'],
+          message: 'opis danych zbiorczych tylko przy odpowiedzi „disclosed” bez listy płac',
         });
       }
       if (f.payroll && f.payroll.histogram.length !== doc.buckets.length + 1) {

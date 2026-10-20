@@ -44,7 +44,7 @@ interface ResponseInfo {
 
 /** Kolejność = kolejność na pasku: najpierw trzy duże grupy (dane, odmowa, cisza). */
 export const RESPONSE: Record<Response, ResponseInfo> = {
-  disclosed: { value: 'dane', label: 'ujawniła dane', tone: 'ok', title: 'Dane nieprzetworzone', note: 'placówka przysłała dane, ale nie udało się ich odczytać i zestawić w roczną listę (arkusz lub archiwum, skan, widełki, sumy oddziałów) — są w sprawie u źródła' },
+  disclosed: { value: 'dane', label: 'ujawniła dane', tone: 'ok', title: 'Dane nieprzetworzone', note: 'placówka przysłała dane, ale nie udało się ich odczytać i zestawić w roczną listę (arkusz lub archiwum, skan, niepełna lista) — są w sprawie u źródła' },
   refused: { value: 'odmowa', label: 'odmówiła', tone: 'bad', title: 'Odmowa', note: 'placówka nie udostępniła danych' },
   silence: { value: 'cisza', label: 'cisza', tone: 'mute', title: 'Cisza', note: 'brak odpowiedzi na wniosek' },
   other: { value: 'inna', label: 'inna odpowiedź', tone: 'mid', title: 'Inna odpowiedź', note: 'bez danych o wynagrodzeniach' },
@@ -53,6 +53,8 @@ export const RESPONSE: Record<Response, ResponseInfo> = {
   unknown: { value: 'nieustalona', label: 'nieustalona', tone: 'unk', title: 'Odpowiedź nieustalona', note: 'automat nie sklasyfikował odpowiedzi' },
 };
 const RESPONSE_ORDER = Object.keys(RESPONSE) as Response[];
+/** Komórka w miejscu kolumn płacowych dla placówki, która przysłała zestawienie zamiast listy (pole `aggregate`). */
+export const AGGREGATE_TITLE = 'Dane zbiorcze';
 
 const NETWORK: Record<NetworkLevel, { value: string; short: string; label: string }> = {
   I: { value: 'I', short: 'I st.', label: 'szpital I stopnia' },
@@ -301,6 +303,8 @@ export const grid: GridConfig<Row, Stats> = {
       label: 'Roczna lista płac lekarzy, brutto',
       has: (row) => row.payroll !== null,
       empty: (row) => {
+        // spacja tysięcy nie łamie liczby („4 538 150,06”)
+        if (row.aggregate) return `<span class="mon-void"><strong>${AGGREGATE_TITLE}</strong> — ${esc(row.aggregate.note).replace(/(\d) (?=\d)/g, '$1&nbsp;')}</span>`;
         const r = RESPONSE[row.response];
         return `<span class="mon-void"><strong>${r.title}</strong> — ${r.note}</span>`;
       },
@@ -385,6 +389,7 @@ export const grid: GridConfig<Row, Stats> = {
       { label: 'Ponad 500 tys. zł', value: (r) => r.payroll?.over500k ?? null },
       { label: 'Ponad 1 mln zł', value: (r) => r.payroll?.over1m ?? null },
       { label: 'Udział top 10 (%)', value: (r) => (r.payroll ? Math.round(r.payroll.top10Share * 1000) / 10 : null) },
+      { label: 'Dane zbiorcze (opis)', value: (r) => r.aggregate?.note ?? null },
       ...data.labels.map((label, i) => ({ label: `Lekarzy: ${label}`, value: (r: Row) => r.payroll?.histogram[i] ?? null })),
       { label: 'Sprawa (adres)', value: (r) => r.url },
     ],

@@ -34,7 +34,8 @@ const WATCHDOG_SUPPORT = 'https://siecobywatelska.pl/wspieraj-dzialania-watchdog
 const { facilities, year, source } = monitoring;
 const total = facilities.length;
 const lists = facilities.filter((f) => f.payroll).length;
-const unprocessed = facilities.filter((f) => f.response === 'disclosed' && !f.payroll).length;
+const aggregates = facilities.filter((f) => f.aggregate).length;
+const unprocessed = facilities.filter((f) => f.response === 'disclosed' && !f.payroll && !f.aggregate).length;
 const updated = new Date(monitoring.updated);
 
 const title = 'Przeglądarka monitoringu płac lekarzy';
@@ -155,7 +156,7 @@ const seo: SeoInput = {
     <SectionHead eyebrow="Metoda" title="Jak czytać tę tabelę" id="jak-czytac" />
     <div class="mon-method">
       <div class="mon-method__text">
-        <p>{typo(`Kolumny płacowe wypełniamy tylko dla ${lists} placówek, które przysłały pełną roczną listę brutto w podziale na lekarzy: co najmniej 10 pozycji i mediana od 60 tys. zł. To odsiewa listy miesięczne i cząstkowe. Pozostałe ${unprocessed} odpowiedzi z danymi oznaczamy jako „dane nieprzetworzone”: placówka przysłała dane, ale nie udało się ich odczytać i zestawić w roczną listę. Najczęściej przyszły w arkuszu, archiwum albo jako skan, których automat nie odczytuje; część to widełki lub sumy oddziałów. Same dane są w sprawie u źródła — link jest w wierszu.`)}</p>
+        <p>{typo(`Kolumny płacowe wypełniamy tylko dla ${lists} placówek, które przysłały pełną roczną listę brutto w podziale na lekarzy: co najmniej 10 pozycji i mediana od 60 tys. zł. To odsiewa listy miesięczne i cząstkowe. ${aggregates} placówek zamiast listy przysłało zestawienie — liczby lekarzy w przedziałach kwot, sumy, widełki albo średnie; oznaczamy je jako „dane zbiorcze” i opisujemy, co zawierają, z liczbami dokładnie jak w piśmie. Pozostałe ${unprocessed} odpowiedzi z danymi oznaczamy jako „dane nieprzetworzone”: placówka przysłała dane, ale nie udało się ich odczytać i zestawić w roczną listę. Najczęściej przyszły w arkuszu, archiwum albo jako skan, których automat nie odczytuje; część to listy niepełne albo krótsze niż 10 pozycji. Same dane są w sprawie u źródła — link jest w wierszu.`)}</p>
         <p>{typo('Domyślnie tabela pokazuje tylko placówki z listą płac. Pozostałe zobaczysz po wyłączeniu przełącznika „Tylko z listą płac” albo po kliknięciu kategorii odpowiedzi. Gdy wyszukiwanie nie trafia w żadną placówkę z listą, tabela sama pokazuje wszystkie pasujące.')}</p>
         <p>{typo('Każda kwota to wypłata jednej placówki. Lekarz pracujący w kilku miejscach ma tu tylko część dochodu — łącznych zarobków nikt nie zna, bo nikt nie sumuje wypłat jednej osoby z różnych placówek. Traktuj kwoty jako dolne granice.')}</p>
         <p>{typo('Przedziały w rozkładzie są takie same dla wszystkich placówek, więc wykresy da się porównywać. Publikujemy wyłącznie liczebności przedziałów, nigdy pojedynczych kwot.')}</p>

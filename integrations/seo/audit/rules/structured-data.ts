@@ -13,6 +13,7 @@ const REQUIRED: Record<string, { error: string[]; warn?: string[] }> = {
   BreadcrumbList: { error: ['itemListElement'] },
   FAQPage: { error: ['mainEntity'] },
   DefinedTermSet: { error: ['name', 'hasDefinedTerm'] },
+  WebApplication: { error: ['name', 'offers'], warn: ['applicationCategory'] },
   Organization: { error: ['name', 'url', 'logo'] },
   WebSite: { error: ['name', 'url'] },
 };

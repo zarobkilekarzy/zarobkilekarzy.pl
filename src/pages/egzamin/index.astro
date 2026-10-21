@@ -11,11 +11,14 @@ import PageMeta from '@/components/layout/PageMeta.astro';
 import Heading from '@/components/ui/Heading.astro';
 import Icon from '@/components/ui/Icon.astro';
 import KeyFacts from '@/components/blocks/KeyFacts.astro';
+import Faq from '@/components/blocks/Faq.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
 import ExamApp from '@/components/egzamin/ExamApp.astro';
 import {
   BANK, EXAMS, FIELDS, GAP_YEARS, MODES, ORIGIN_TABLE, RULES, SESSIONS,
-  egzaminPage, egzaminSources,
+  egzaminFaq, egzaminPage, egzaminSources,
 } from '@/data/egzamin';
+import { plain } from '@/lib/inline';
 import type { Crumb, SeoInput } from '@/lib/seo';
 import { formatPL, typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
@@ -27,11 +30,23 @@ const facts = [
 ];
 
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Egzamin LEK' }];
+// Frazy z wyszukiwarki („darmowy egzamin LEK”, „egzamin lekarski online”) w tytule, opisie i nagłówku;
+// WebApplication z ofertą 0 zł mówi wyszukiwarce, że test jest bezpłatny; pytania pod testem = FAQPage.
 const seo: SeoInput = {
-  title: 'Egzamin LEK online: jawna baza pytań',
+  title: 'Darmowy egzamin LEK i LDEK online',
   description:
-    'Rozwiąż LEK lub LDEK na pytaniach z jawnej bazy CEM: pełny egzamin na czas, szybki test albo nauka z natychmiastową odpowiedzią i statystyką zdających.',
+    'Darmowy egzamin lekarski online: rozwiąż LEK lub LDEK na jawnych pytaniach CEM z kluczem i statystyką zdających. Bez konta — pełny test na czas lub nauka.',
   breadcrumbs: crumbs,
+  page: {
+    type: 'FAQPage',
+    questions: egzaminFaq.map((item) => ({ question: item.question, answer: plain(item.answer.join(' ')) })),
+  },
+  entities: [{
+    kind: 'webApp',
+    name: 'Egzamin LEK i LDEK online',
+    alternateName: ['Lekarski Egzamin Końcowy — test online', 'Lekarsko-Dentystyczny Egzamin Końcowy — test online'],
+    category: 'EducationalApplication',
+  }],
 };
 ---
 <BaseLayout seo={seo}>
@@ -132,6 +147,17 @@ const seo: SeoInput = {
     </div>
   </Section>
 
+  <Section id="pytania" aria-labelledby="pytania-title">
+    <div class="faq-sec">
+      <div class="faq-sec__intro">
+        <Eyebrow>Pytania i odpowiedzi</Eyebrow>
+        <Heading id="pytania-title">Egzamin lekarski w pytaniach</Heading>
+        <p>{typo('Zasady LEK i LDEK z ustawy o zawodach lekarza i lekarza dentysty oraz rozporządzenia ministra zdrowia — przy odpowiedziach link do przepisu albo źródła danych.')}</p>
+      </div>
+      <Faq items={egzaminFaq} openFirst />
+    </div>
+  </Section>
+
   <Section aria-label="Infografiki do pobrania">
     <InfographicsSection set="egzamin" />
   </Section>
@@ -194,8 +220,11 @@ const seo: SeoInput = {
   .sources a:hover { color: var(--blue); text-decoration-color: currentColor; }
   .sources__note { margin-top: 16px; font-size: 0.8125rem; color: var(--muted); }
 
+  .faq-sec { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
+  .faq-sec__intro p { margin: 24px 0 0; font-size: 1.03125rem; line-height: 1.7; max-width: 40ch; color: var(--ink-2); }
+
   @media (max-width: 1024px) {
-    .about { grid-template-columns: minmax(0, 1fr); }
+    .about, .faq-sec { grid-template-columns: minmax(0, 1fr); }
     .howto { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   }
 </style>

@@ -25,6 +25,7 @@ export const ids = (site: string, url: string) => ({
   article: `${url}#article`,
   dataset: `${url}#dataset`,
   terms: `${url}#terms`,
+  app: `${url}#app`,
 });
 
 export type Ids = ReturnType<typeof ids>;
@@ -191,4 +192,22 @@ export const definedTermSet = (entity: EntityOf<'termSet'>, seo: ResolvedSeo, id
     description: term.description,
     inDefinedTermSet: ref(id.terms),
   })),
+});
+
+/** Narzędzie w przeglądarce: bezpłatne (oferta 0 zł), bez instalacji. */
+export const webApplication = (entity: EntityOf<'webApp'>, seo: ResolvedSeo, identity: Identity, id: Ids): SchemaNode => ({
+  '@type': 'WebApplication',
+  '@id': id.app,
+  name: entity.name ?? seo.social.title,
+  ...(entity.alternateName?.length && { alternateName: entity.alternateName }),
+  description: seo.description,
+  url: seo.url,
+  inLanguage: identity.language,
+  applicationCategory: entity.category,
+  operatingSystem: 'Dowolny (przeglądarka internetowa)',
+  browserRequirements: 'Wymaga JavaScript',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'PLN' },
+  isAccessibleForFree: true,
+  mainEntityOfPage: ref(id.webpage),
+  publisher: ref(id.organization),
 });

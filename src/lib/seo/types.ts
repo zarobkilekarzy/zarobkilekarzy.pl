@@ -51,6 +51,15 @@ export type Entity =
       /** domyślnie tytuł strony */
       name?: string;
       terms: { id: string; name: string; alternateName?: string; description: string }[];
+    }
+  | {
+      /** narzędzie działające w przeglądarce (WebApplication), bezpłatne */
+      kind: 'webApp';
+      /** domyślnie tytuł strony */
+      name?: string;
+      alternateName?: string[];
+      /** np. 'EducationalApplication' */
+      category: string;
     };
 
 export interface SeoInput {

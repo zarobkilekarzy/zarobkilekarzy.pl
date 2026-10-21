@@ -1,9 +1,9 @@
 /**
  * Jeden graf JSON-LD na stronę: Organization, WebSite, WebPage (+ obrazek i okruszki)
- * i główne byty strony (Article, Dataset, DefinedTermSet). Strony poza indeksem grafu nie dostają.
+ * i główne byty strony (Article, Dataset, DefinedTermSet, WebApplication). Strony poza indeksem grafu nie dostają.
  */
 import type { SeoInput, ResolvedSeo, SchemaNode } from '../types';
-import { article, breadcrumbList, dataset, definedTermSet, ids, organization, primaryImage, webPage, website, type Identity } from './nodes';
+import { article, breadcrumbList, dataset, definedTermSet, ids, organization, primaryImage, webApplication, webPage, website, type Identity } from './nodes';
 
 export function buildGraph(input: SeoInput, seo: ResolvedSeo, identity: Identity, site: URL) {
   if (!seo.indexable) return undefined;
@@ -21,6 +21,8 @@ export function buildGraph(input: SeoInput, seo: ResolvedSeo, identity: Identity
         return dataset(entity, seo, identity, id);
       case 'termSet':
         return definedTermSet(entity, seo, identity, id);
+      case 'webApp':
+        return webApplication(entity, seo, identity, id);
     }
   });
 

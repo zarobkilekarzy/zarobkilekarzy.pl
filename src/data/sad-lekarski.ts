@@ -177,12 +177,12 @@ export const CASES: CourtCase[] = [
   {
     id: 'teleporady-leki-nasenne',
     title: 'Teleporady: leki nasenne',
-    summary: 'Przez teleporady lekarka przepisała pacjentce 37 opakowań silnego leku nasennego; pacjentka się uzależniła.',
+    summary: 'Przez teleporady lekarka przepisała pacjentce 37 opakowań silnego leku nasennego w dawkach ponad dopuszczalne; pacjentka trafiła później na leczenie uzależnienia.',
     label: '',
     court: 'Okręgowy sąd lekarski',
     facts: [
       'Lekarka prowadziła pacjentkę wyłącznie przez teleporady na portalu internetowym. Przepisała jej łącznie 37 opakowań silnego leku nasennego po 30 tabletek, w dawkach ponad dopuszczalne według charakterystyki produktu. Już w trzech pierwszych teleporadach — 5 opakowań, czyli 150 tabletek, przy dawkowaniu jednej dziennie.',
-      'Pacjentka trafiła później na oddział psychiatryczny z objawami odstawiennymi, uzależniona od tego leku.',
+      'Pacjentka trafiła później na oddział psychiatryczny z objawami odstawiennymi z powodu uzależnienia.',
       'Lekarka tłumaczyła, że pacjentka ją okłamywała i zatajała uzależnienie, a gdy portal ją zablokował, założyła konto pod fałszywym nazwiskiem i groziła skargą do rzecznika. Twierdziła też, że stopniowo zmniejszała dawki i kierowała pacjentkę do szpitala.',
     ],
     charge: 'Brak należytej staranności (art. 8 KEL, art. 4 ustawy o zawodach lekarza).',
@@ -194,11 +194,11 @@ export const CASES: CourtCase[] = [
   {
     id: 'ratownictwo-covid',
     title: 'Ratownictwo: pacjentka z COVID-19',
-    summary: 'Lekarz zespołu ratownictwa nie skierował do szpitala pacjentki z COVID-19 mimo czynników ryzyka; wcześniej orzekał sąd karny.',
+    summary: 'Lekarzowi zespołu ratownictwa zarzucono, że nie skierował do szpitala pacjentki z COVID-19 mimo czynników ryzyka; wcześniej orzekał sąd karny.',
     label: '',
     court: 'Okręgowy sąd lekarski',
     facts: [
-      'Lekarz, kierownik zespołu ratownictwa medycznego, badał pacjentkę chorą na COVID-19 i zdecydował, że nie trzeba jej hospitalizować. Nie uwzględnił przy tym dodatkowych czynników ryzyka, które u niej występowały.',
+      'Według zarzutu lekarz, kierownik zespołu ratownictwa medycznego, stwierdził u pacjentki COVID-19, ale nie uwzględnił występujących u niej dodatkowych czynników ryzyka i błędnie zdecydował, że nie trzeba jej hospitalizować. Sąd lekarski nie rozstrzygał o winie.',
       'Sprawą zajął się najpierw sąd karny. Warunkowo umorzył postępowanie wobec lekarza na dwa lata próby, zasądził od niego zadośćuczynienie dla pokrzywdzonych i zobowiązał go do przeproszenia ich.',
       'Potem ten sam czyn trafił do sądu lekarskiego.',
     ],
@@ -215,17 +215,17 @@ export const CASES: CourtCase[] = [
     label: 'lekarz 1 z 2',
     court: 'Okręgowy sąd lekarski',
     facts: [
-      'Pacjentka trafiła do szpitala z dusznością, bólami brzucha, nudnościami i wymiotami; chirurdzy wykluczyli przyczynę chirurgiczną. Na oddziale nie dostała profilaktyki przeciwzakrzepowej, nikt nie szukał przyczyny duszności (echo serca, spirometria, angio-TK, peptyd natriuretyczny), nie powtórzono EKG mimo zmian w zapisie ani badań przy podwyższonych CRP, troponinie i D-dimerach.',
+      'Pacjentka trafiła do szpitala z dusznością, bólami brzucha, nudnościami i wymiotami; chirurdzy wykluczyli przyczynę chirurgiczną. Na oddziale zamiast heparyny drobnocząsteczkowej dostała jako profilaktykę przeciwzakrzepową inny lek, nikt nie szukał przyczyny duszności (echo serca, spirometria, angio-TK, peptyd natriuretyczny), nie powtórzono EKG mimo zmian w zapisie ani badań przy podwyższonych CRP, troponinie i D-dimerach.',
       'Ordynator — specjalista i jedyny lekarz decydujący o leczeniu i wypisie — zlecił wypis do domu przed zakończeniem diagnostyki. Nadzorował też dokumentację, w której brakowało wywiadu, obserwacji i planu leczenia.',
-      'Pacjentka zmarła w domu. Sąd uznał, że najpewniej z powodu nierozpoznanego zawału serca albo zatoru tętnicy płucnej.',
+      'Pacjentka zmarła w domu krótko po wypisie; sekcji zwłok nie było. Sąd zaznaczył, że przyczyny nie da się ustalić z całą pewnością, ale z dużym prawdopodobieństwem był to nierozpoznany zawał serca albo zator tętnicy płucnej.',
     ],
     charge: 'Nieudzielenie należytej pomocy i wadliwy nadzór (art. 8 KEL, art. 4 ustawy o zawodach lekarza); nierzetelna dokumentacja.',
     verdict: {
       level: 6,
-      text: 'Zawieszenie prawa wykonywania zawodu na 2 lata i zakaz pełnienia funkcji kierowniczych na 5 lat — najdłużej, jak pozwala ustawa. Za dokumentację osobno nagana.',
+      text: 'Zawieszenie prawa wykonywania zawodu na 2 lata i zakaz pełnienia funkcji kierowniczych na 5 lat (najdłużej, jak pozwala ustawa) — za każdy z dwóch zarzutów dotyczących leczenia. Za dokumentację osobno nagana.',
     },
     reasoning:
-      'Zmiany w EKG nie były według sądu trudne w interpretacji — ich rozpoznania wymaga się od studenta 4. lub 5. roku medycyny. Kary mają zabezpieczyć pacjentów przed lekarzem, który poważnie naruszył standardy prowadzenia oddziału i leczenia. Wiek pacjentki nie może być wyznacznikiem należnej jej opieki.',
+      'Zmiany w EKG nie były według sądu trudne w interpretacji — ich rozpoznania wymaga się od studenta 4. lub 5. roku medycyny. Kary mają zabezpieczyć pacjentów przed lekarzem, który poważnie naruszył standardy prowadzenia oddziału i leczenia. Słowa ordynatora, że w tym wieku każdy może umrzeć z dowolnej przyczyny, sąd ocenił jako „nonszalanckie podejście”.',
     file: 'OSL/0013-25.pdf',
   },
   {
@@ -263,18 +263,20 @@ export const CASES: CourtCase[] = [
       level: 3,
       text: 'Kara pieniężna za każdy z czterech zarzutów — po połowie przeciętnego miesięcznego wynagrodzenia w sektorze przedsiębiorstw.',
     },
+    reasoning:
+      'Sąd uznał wyjaśnienia lekarza za linię obrony, a epidemię COVID-19 — za brak usprawiedliwienia. Przyczyny widział raczej w niestaranności i chęci szybkiego załatwienia każdego przypadku. Okolicznością obciążającą była wcześniejsza karalność za podobny czyn.',
     file: 'OSL/0015.pdf',
   },
   {
     id: 'ciaza-hipotrofia',
     title: 'Ciąża: hipotrofia płodu',
-    summary: 'Ginekolożka nie zbadała przepływów ani nie zrobiła KTG mimo hipotrofii płodu; dziecko urodziło się martwe, a sąd karny skazał ją na grzywnę.',
+    summary: 'Ginekolożka nie rozpoznała w USG hipotrofii płodu, nie zbadała przepływów ani nie zrobiła KTG; dziecko urodziło się martwe, a sąd karny skazał ją na grzywnę.',
     label: '',
     court: 'Okręgowy sąd lekarski',
     facts: [
-      'Lekarka ginekolog-położnik prowadziła ciążę. Na wizycie, mimo stwierdzenia w USG hipotrofii płodu (za małej masy dziecka), nie zbadała przepływów krwi metodą Dopplera ani nie zrobiła KTG. Wyjaśniła, że nie umie wykonywać badań dopplerowskich, a aparat KTG w gabinecie miała, ale nie było go gdzie użyć. Dziecko urodziło się martwe.',
-      'Lekarka tłumaczyła, że parametry płodu przeliczała w uznanym kalkulatorze i nieprawidłowe wyniki wyszły dopiero na kolejnej wizycie — wtedy skierowała pacjentkę do szpitala.',
-      'Za ten sam czyn sąd karny skazał ją wcześniej na grzywnę za narażenie dziecka na niebezpieczeństwo utraty życia. Przed sądem lekarskim wyraziła żal i skruchę.',
+      'Lekarka ginekolog-położnik prowadziła ciążę. Na wizycie wynik USG wskazywał na hipotrofię płodu (za małą masę dziecka), ale lekarka jej nie rozpoznała i nie zbadała przepływów krwi metodą Dopplera ani nie zrobiła KTG. Wyjaśniła, że nie umie wykonywać badań dopplerowskich, a aparat KTG w gabinecie miała, ale nie było go gdzie użyć. Dziecko urodziło się martwe.',
+      'Lekarka tłumaczyła, że wynik USG odczytała jako prawidłowy, bo masa płodu odpowiadała wiekowi ciąży; parametry przeliczyła w uznanym kalkulatorze dopiero po porodzie. Przyznała się do błędu w diagnostyce. Biegli: prawidłowe postępowanie zmniejszyłoby ryzyko, ale nie ma pewności, że zapobiegłoby śmierci płodu.',
+      'Za ten sam czyn sąd karny skazał ją wcześniej na grzywnę. Przed sądem lekarskim wyraziła żal i skruchę.',
     ],
     charge: 'Brak należytej staranności (art. 8 KEL, art. 4 ustawy o zawodach lekarza).',
     verdict: {
@@ -282,21 +284,23 @@ export const CASES: CourtCase[] = [
       text: 'Uznana za winną, ale postępowanie umorzone (art. 82 ust. 2 ustawy o izbach lekarskich).',
     },
     reasoning:
-      'Kara samorządu byłaby według sądu oczywiście niecelowa wobec grzywny prawomocnie orzeczonej przez sąd karny za ten sam czyn.',
+      'Kara samorządu byłaby według sądu oczywiście niecelowa wobec grzywny prawomocnie orzeczonej przez sąd karny za ten sam czyn. Umorzenie — zaznaczył sąd — „nie oznacza uniewinnienia”.',
     file: 'OSL/0014.pdf',
   },
   {
     id: 'skladki',
     title: 'Nieopłacone składki członkowskie',
-    summary: 'Lekarka przez dwa okresy nie płaciła obowiązkowych składek na izbę lekarską.',
+    summary: 'Lekarka łącznie przez ponad 4 lata nie płaciła obowiązkowych składek na izbę lekarską.',
     label: '',
     court: 'Okręgowy sąd lekarski',
     facts: [
       'Przynależność do izby lekarskiej i składka członkowska są dla lekarza obowiązkowe. Lekarka przez dwa okresy nie płaciła składek na rzecz okręgowej izby; łączną kwotę zaległości portal zaczernia.',
-      'Izba wzywała ją do dobrowolnej zapłaty, ale zaległość nie została uregulowana, więc rzecznik skierował sprawę do sądu.',
+      'Izba wzywała ją do dobrowolnej zapłaty, ale nie płaciła; całą zaległość uregulowała dopiero po wszczęciu postępowania w sprawie odpowiedzialności zawodowej.',
     ],
     charge: 'Uchylanie się od obowiązku wspierania samorządu (art. 59 zd. 1 KEL, art. 8 ustawy o izbach lekarskich).',
     verdict: { level: 1, text: 'Upomnienie.' },
+    reasoning:
+      'Sąd uznał zaległość trwającą ponad 4 lata za uporczywe uchylanie się od obowiązku i brak poszanowania dla samorządu; na korzyść lekarki wziął spłatę całej zaległości. Upomnienie ma stanowić „odpowiedni bodziec mobilizujący”.',
     file: 'OSL/0012-25.pdf',
   },
   {
@@ -354,13 +358,13 @@ export const CASES: CourtCase[] = [
   },
   {
     id: 'dokumentacja-pelnomocnik',
-    title: 'Chirurg plastyczny: dokumentacja dla adwokata',
-    summary: 'Pacjentka zarzuciła chirurgowi plastycznemu, że nie wydał dokumentacji medycznej, o którą prosił jej adwokat.',
+    title: "Operacja plastyczna: dokumentacja dla adwokata",
+    summary: "Pacjentka zarzuciła lekarzowi, który operował ją w prywatnym centrum chirurgii plastycznej, że nie wydał dokumentacji medycznej, o którą prosił jej adwokat.",
     label: '',
     court: 'Sąd lekarski I instancji',
     facts: [
       'Po operacji plastycznej twarzy w prywatnym centrum adwokat pacjentki pisał do lekarza najpierw o zwrocie kosztów i zadośćuczynieniu, a potem dwukrotnie o wydanie dokumentacji medycznej.',
-      'Do żadnego z tych pism nie załączył pełnomocnictwa od pacjentki.',
+      'Z dokumentów nie wynikało, by do któregokolwiek z tych pism załączył pełnomocnictwo od pacjentki.',
       'Lekarz wysłał dokumentację wraz ze zdjęciami na adres pacjentki, a pacjentka potwierdziła mailowo, że ją dostała. Rzecznik nie ustalił, czego miało w niej brakować.',
     ],
     charge: 'Nieudostępnienie dokumentacji medycznej osobie upoważnionej (art. 26 ustawy o prawach pacjenta).',
@@ -378,11 +382,11 @@ export const CASES: CourtCase[] = [
     court: 'Okręgowy sąd lekarski',
     facts: [
       'W prywatnym gabinecie ginekolożka, za zgodą pacjentki i za pieniądze, przerwała jej ciążę, choć nie zachodziła żadna z przesłanek, które wówczas dopuszczała ustawa.',
-      'Sąd karny prawomocnie skazał ją m.in. na 10 miesięcy pozbawienia wolności w zawieszeniu na 3 lata, grzywnę, przepadek korzyści i roczny zakaz wykonywania zawodu ginekologa-położnika.',
-      'Sąd lekarski był związany ustaleniami wyroku karnego.',
+      'Sąd karny prawomocnie skazał ją m.in. na karę pozbawienia wolności w zawieszeniu, grzywnę, przepadek korzyści i roczny zakaz wykonywania zawodu ginekologa-położnika.',
+      "Stan faktyczny sąd lekarski ustalił na podstawie wyroków sądów karnych obu instancji, których lekarka nie kwestionowała. Sąd uznał, że na podstawie art. 62 ustawy o izbach lekarskich jest „związany ustaleniami dokonanymi przez sąd powszechny w prawomocnym wyroku skazującym”.",
     ],
     charge: 'Naruszenie art. 2 ust. 1 i art. 39 KEL oraz art. 4a ustawy o planowaniu rodziny.',
-    verdict: { level: 0, text: 'Uznana za winną, ale postępowanie umorzone (art. 82 ust. 2 ustawy o izbach lekarskich).' },
+    verdict: { level: 0, text: "Postępowanie umorzone (art. 82 ust. 2 ustawy o izbach lekarskich) — sąd stwierdził przewinienie zawodowe, ale kary nie wymierzył; koszty poniósł Skarb Państwa." },
     reasoning:
       'Kara samorządu byłaby oczywiście niecelowa wobec kary orzeczonej w postępowaniu karnym. Sąd podkreślił, że umorzenie przesądza o przewinieniu zawodowym, choć kary nie wymierza.',
     file: 'OSL/OSL.07.07W.docx',
@@ -395,13 +399,13 @@ export const CASES: CourtCase[] = [
     court: "Okręgowy sąd lekarski",
     facts: [
       "Lekarz z zagranicy, w swoim kraju specjalista endokrynolog, dostał w Polsce w uproszczonym trybie warunkowe prawo wykonywania zawodu — jako lekarz bez specjalizacji. W tym trybie tytułu specjalisty się nie uznaje.",
-      "W przychodni, na umowie zlecenia, udzielał porad z endokrynologii. Na drzwiach gabinetu wisiała tabliczka z jego nazwiskiem i napisami „endokrynologia” i „diabetologia”; sąd uznał, że nie kazał jej zdjąć i godził się na wprowadzanie pacjentów w błąd. Ogłoszeń sam nie zamieszczał.",
+      "Przy drzwiach gabinetu wisiała tabliczka z jego nazwiskiem i napisami „endokrynologia” i „diabetologia”; sąd uznał, że lekarz nic nie zrobił, by ją usunięto, i tym samym pośrednio godził się na wprowadzanie pacjentów w błąd. Ogłoszeń sam nie zamieszczał.",
       "Tłumaczył, że przyjęto go jako lekarza ogólnego i że znał przepisy. Dyrektor placówki przyznał, że zatrudnienie wynikało z błędnego rozumienia zasad; umowę zmieniono na porady w poradni lekarza rodzinnego.",
     ],
     charge: "Udzielanie świadczeń specjalistycznych bez uprawnień i posługiwanie się nieuznanym tytułem (art. 5, 7 i 16 ustawy o zawodach lekarza, art. 1 KEL).",
     verdict: { level: 0, text: "Umorzenie jako przewinienia mniejszej wagi (art. 82 ust. 2 ustawy o izbach lekarskich)." },
     reasoning:
-      "Sąd uznał czyn za „wyraz pewnej lekkomyślności”, a nie zaplanowane działanie, a społeczną szkodliwość — za nieznaczną, bo żaden pacjent nie poniósł realnej szkody. Wziął pod uwagę dobrą opinię w obecnej pracy i niekaralność; samo stwierdzenie przewinienia ma być przestrogą.",
+      "Według sądu działanie lekarza nie było „z góry zaplanowanym” naruszeniem przepisów, „ale raczej wyrazem pewnej lekkomyślności”, a społeczną szkodliwość — nieznaczną, bo żaden pacjent nie poniósł realnej szkody. Sąd wziął pod uwagę dobrą opinię w obecnej pracy i niekaralność; samo stwierdzenie przewinienia ma być przestrogą.",
     file: "OSL/OSL.07.08W.docx",
   },
   {
@@ -429,13 +433,13 @@ export const CASES: CourtCase[] = [
     court: "Okręgowy sąd lekarski",
     facts: [
       "Lekarz, który wykonywał rozmazy z biopsji, zakłuł się igłą z krwią pacjentki. Zgłosił się na SOR, a stamtąd — zgodnie z procedurą szpitala — następnego dnia do lekarki medycyny pracy.",
-      "Lekarka odmówiła skierowania go do poradni chorób zakaźnych na profilaktykę poekspozycyjną i zaleciła tylko badania krwi po 6 tygodniach, 3 i 6 miesiącach. Nie wydała też zaświadczenia o odmowie. Lekarz poszedł do poradni sam, zobowiązując się pokryć koszt leków i badań.",
-      "Biegła z chorób zakaźnych: zakłucie igłą to ewidentna ekspozycja i podstawa do skierowania, a każde opóźnienie wydłuża czas do oceny specjalisty. Lekarka twierdziła, że według procedur szpitala skierowanie nie było potrzebne, a wyniki z SOR były prawidłowe.",
+      "Lekarka odmówiła skierowania go do poradni chorób zakaźnych na profilaktykę poekspozycyjną i zaleciła tylko badania laboratoryjne po 6 tygodniach, 3 i 6 miesiącach. Nie wydała też zaświadczenia o odmowie. Lekarz poszedł do poradni sam, zobowiązując się pokryć koszt leków i badań.",
+      "Biegła z chorób zakaźnych: wpisy w dokumentacji („igła nieznanego pochodzenia”, zakłucie) oznaczały według procedury ewidentną ekspozycję i dawały podstawę do skierowania; lekarza należało skierować do specjalisty już na SOR, a odsyłanie do poradni medycyny pracy wydłużało czas do oceny przez specjalistę. Według działu epidemiologii placówki za postępowanie po ekspozycji odpowiada lekarz medycyny pracy. Lekarka twierdziła, że według procedur szpitala skierowanie nie było potrzebne, a wyniki z SOR były prawidłowe.",
     ],
     charge: "Brak należytej staranności (art. 8 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 1, text: "Upomnienie — o taką karę wnosił rzecznik." },
     reasoning:
-      "Sąd przyznał, że upomnienie jako kara „mogłaby się wydawać zbyt łagodna”, bo błąd mógł mieć negatywne skutki zdrowotne. Surowszą karę uznał jednak za zbyt dolegliwą wobec stopnia winy; wziął pod uwagę niekaralność w długim stażu i postawę lekarki.",
+      "Sąd przyznał, że kara upomnienia „mogłaby się wydawać zbyt łagodna”, bo błąd mógł mieć negatywne skutki zdrowotne. Surowszą karę uznał jednak za zbyt dolegliwą wobec stopnia winy; wziął pod uwagę niekaralność w długim stażu i postawę lekarki.",
     file: "OSL/OSL.07.10W.docx",
   },
   {
@@ -446,7 +450,7 @@ export const CASES: CourtCase[] = [
     label: "",
     court: "Okręgowy sąd lekarski",
     facts: [
-      "Rzecznik dowiedział się od sekretarza okręgowej rady lekarskiej, że lekarka zalega ze składkami członkowskimi. Część zaległości za sporny okres później opłaciła.",
+      "Rzecznik dowiedział się od sekretarza okręgowej rady lekarskiej, że lekarka zalega ze składkami członkowskimi. Część zaległości za ten okres opłaciła.",
       "Nie stawiła się ani na przesłuchanie u rzecznika, ani na rozprawę i nie złożyła żadnych wyjaśnień.",
     ],
     charge: "Uchylanie się od obowiązku wspierania samorządu (art. 59 zd. 1 i art. 76 KEL).",
@@ -513,13 +517,13 @@ export const CASES: CourtCase[] = [
     court: "Okręgowy sąd lekarski",
     facts: [
       "Chirurg z wieloletnim stażem pełnił samodzielny dyżur na SOR. Po zgłoszeniu na policję badanie wykazało 0,41, a ok. 20 minut później 0,42 mg/l alkoholu w wydychanym powietrzu. Lekarza zatrzymano; dyżuru nie mógł dokończyć.",
-      "Wcześniej tego wieczoru zajął się czterema pacjentami: nastawił palec, zlecił badania przy bólu brzucha, przyjął na oddział pacjenta z urazem biodra, zaopatrzył skręcony staw skokowy. Nikt nie wyczuł alkoholu ani nie miał zastrzeżeń; według dokumentacji nikomu nie zaszkodził.",
-      "Lekarz przyznał się. Mówił o „głupim incydencie”, wypaleniu zawodowym, trudnej sytuacji rodzinnej i jednym piwie.",
+      "Wcześniej tego dnia zajął się czterema pacjentami: nastawił palec, zlecił badania przy bólu brzucha, przyjął na oddział pacjentkę z urazem biodra, zaopatrzył skręcony staw skokowy. Pacjenci nie wyczuli alkoholu i nikt nie miał zastrzeżeń; według dokumentacji nikomu nie zaszkodził.",
+      "Lekarz przyznał się. Mówił, że był to „głupi incydent”; tłumaczył się trudną sytuacją rodzinną i twierdził, że wypił piwo.",
     ],
     charge: "Naruszenie godności zawodu (art. 1 ust. 3 i art. 64 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 1, text: "Upomnienie." },
     reasoning:
-      "Sąd uznał picie na dyżurze za „karygodne i niedopuszczalne”, bo na samodzielnym dyżurze SOR lekarz musi być w jak najlepszym stanie. Złagodziły karę: niekaralność, skrucha, trudna sytuacja rodzinna, incydentalność zdarzenia i brak szkody u pacjentów.",
+      "Według sądu „karygodnym i niedopuszczalnym zachowaniem było podjęcie przez obwinionego lekarza decyzji o spożyciu alkoholu podczas dyżuru lekarskiego” — na samodzielnym dyżurze SOR lekarz powinien być w jak najlepszym stanie psychofizycznym. Trudną sytuację rodzinną sąd zrozumiał, ale uznał, że „nic nie usprawiedliwiło czynu”. Jako okoliczności łagodzące wskazał niekaralność, postawę w postępowaniu i skruchę; wziął też pod uwagę, że żaden pacjent nie poniósł szkody.",
     file: "OSL/OSL.07.16W.docx",
   },
   {
@@ -610,7 +614,7 @@ export const CASES: CourtCase[] = [
   {
     id: "ortodontka-ekstrakcje",
     title: "Ortodoncja: trzy zbędne ekstrakcje",
-    summary: "Dentystka usunęła pacjentce trzy zęby do leczenia ortodontycznego, choć według biegłej nie było takiej potrzeby.",
+    summary: "Dentystka zdecydowała o usunięciu pacjentce trzech zębów przed leczeniem ortodontycznym, choć według biegłej, której wnioski sąd przyjął, ekstrakcje były zbędne.",
     label: "",
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
@@ -621,7 +625,7 @@ export const CASES: CourtCase[] = [
     charge: "Nieprawidłowe leczenie ortodontyczne i nierzetelna dokumentacja (art. 6, 8 i 28 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 2, text: "Nagana, a za dokumentację upomnienie. Sąd I instancji orzekł zawieszenie prawa wykonywania zawodu na rok — NSL złagodził je do nagany." },
     reasoning:
-      "NSL nie miał wątpliwości co do winy, ale rok zawieszenia uznał za „zbyt surowy”: to pierwsze przewinienie, obrońca przedstawił sytuację rodzinną lekarki, a ona sama chciała mediacji. Próbę zrzucenia decyzji o ekstrakcjach na lekarza, który je wykonał, NSL nazwał „niestosowną i nieetyczną”.",
+      "NSL nie miał wątpliwości co do winy, ale uznał, że kara roku zawieszenia „pozostaje zbyt surowa”: to pierwsze przewinienie, obrońca przedstawił sytuację rodzinną lekarki, a ona sama chciała mediacji. Próba obarczenia lekarki, która wykonała ekstrakcje, odpowiedzialnością za decyzję o usunięciu zębów była według NSL co najmniej „niestosowna i nieetyczna”.",
     file: "NSL/NSL.01.02-2024W.docx",
   },
   {
@@ -667,29 +671,29 @@ export const CASES: CourtCase[] = [
     facts: [
       "Izba lekarska sprawdzała lekarzy w placówkach reklamujących się jako „kliniki witaminowe”. W prywatnej placówce lekarz pobierał pacjentom 100–150 ml krwi, ozonował ją i podawał z powrotem do żyły. Strona placówki wymieniała choroby, które zabieg miał leczyć; lekarz mówił o 150 chorobach.",
       "Biegli: skuteczności dożylnej ozonoterapii nie potwierdzono w wiarygodnych badaniach — efekty nie przekraczały placebo. Taki zabieg z krwią powinien też podlegać przepisom o publicznej służbie krwi.",
-      "Sprawa wróciła do NSL po wyroku Sądu Najwyższego, który kazał zasięgnąć opinii biegłych. Po rozprawie obrońca oświadczył, że lekarz zaprzestał tych zabiegów.",
+      "Sprawa wróciła do NSL po wyroku Sądu Najwyższego, który kazał zasięgnąć opinii biegłych. Na rozprawie przed NSL obrońca oświadczył, że lekarz zaprzestał tych zabiegów; usługa zniknęła też ze strony placówki.",
     ],
     charge: "Stosowanie metod niezweryfikowanych naukowo (art. 57 ust. 1 KEL, art. 4 ustawy o zawodach lekarza).",
-    verdict: { level: 3, text: "Kara pieniężna na fundację pomagającą dzieciom z chorobami nowotworowymi — orzeczona w I instancji i utrzymana przez NSL." },
+    verdict: { level: 3, text: "Kara pieniężna na cel społeczny związany z ochroną zdrowia — orzeczona w I instancji i utrzymana przez NSL." },
     reasoning:
-      "NSL: „Zdobywanie pieniędzy za wszelką cenę od ciężko chorych pacjentów jest niezgodne z etyką lekarską”. Okoliczności łagodzących nie znalazł — lekarz nie okazał poczucia winy; kara pieniężna miała być realną dolegliwością wobec czerpania korzyści.",
+      "NSL w pełni zgodził się z oceną prezes Polskiego Towarzystwa Ozonoterapii: „Zdobywanie pieniędzy za wszelką cenę od ciężko chorych pacjentów jest niezgodne z etyką lekarską”. Okoliczności łagodzących nie znalazł — lekarz nie okazał poczucia winy; kara pieniężna miała być realną dolegliwością wobec czerpania korzyści.",
     file: "NSL/NSL.01.04-2024W.docx",
   },
   {
     id: "ortodoncja-11-lat",
     title: "Ortodoncja: jedenaście lat leczenia",
-    summary: "Leczenie ortodontyczne tyłozgryzu trwało około 11 lat i nie przyniosło prawidłowego zgryzu.",
+    summary: "Leczenie ortodontyczne tyłozgryzu trwało ponad dziesięć lat i nie przyniosło prawidłowego zgryzu.",
     label: "",
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
-      "Ortodontka leczyła pacjentkę z tyłozgryzem aparatem lingwalnym, a potem nakładkami. Według biegłej cel leczenia wymagał przesunięcia zębów szczęki, a zamykanie luk w żuchwie bez zakotwienia szkieletowego sprzyjało nasileniu wady. Przeciętne leczenie trwa 2–3 lata; tu trwało około 11 lat i prawidłowego zgryzu nie osiągnięto. Dokumentacja była skąpa.",
+      "Ortodontka leczyła pacjentkę z tyłozgryzem aparatem lingwalnym, a potem nakładkami. Według biegłej cel leczenia wymagał przesunięcia zębów szczęki, a zamykanie luk w żuchwie bez zakotwienia szkieletowego sprzyjało nasileniu wady. Przeciętne leczenie trwa 2–3 lata; tu trwało ponad dziesięć lat i prawidłowego zgryzu nie osiągnięto. Dokumentacja była skąpa.",
       "Lekarka wskazywała na brak współpracy pacjentki i jej odmowę usunięcia zęba mądrości. Pacjentka złożyła skargę dwa i pół roku po zakończeniu leczenia.",
       "Sprawa trafiła do NSL po odwołaniu obrony.",
     ],
     charge: "Brak staranności w leczeniu i dokumentacji (art. 8 i 54 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 0, text: "Umorzenie z powodu przedawnienia. Sąd I instancji orzekł naganę i dwa upomnienia — NSL je uchylił, bo minęło 5 lat od czynu." },
     reasoning:
-      "NSL zaznaczył, że materiał dowodowy „nie uzasadnia” uniewinnienia — przewinienie się po prostu przedawniło. Wskazał, że skargę złożono późno, a część postępowania przypadła na pandemię, i „ubolewa nad długotrwałością” takich spraw.",
+      "NSL zaznaczył, że materiał dowodowy „nie uzasadnia” uniewinnienia, ale karalność zarzucanych czynów ustała. Wskazał, że skargę złożono późno, a część postępowania przypadła na pandemię, i „ubolewa nad długotrwałością” takich spraw.",
     file: "NSL/NSL.01.05-2024W.docx",
   },
   {
@@ -706,7 +710,7 @@ export const CASES: CourtCase[] = [
     charge: "Niezapewnienie odpowiedniej jakości opieki — niezachowanie standardów sanitarnych w czasie epidemii (art. 11 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 1, text: "Upomnienie — orzeczone w I instancji i utrzymane przez NSL." },
     reasoning:
-      "Fakty były bezsporne. NSL wskazał, że stetoskop może przenosić zakażenia, a kara upomnienia jest „w pełni zasadna i konieczna” z potrzeb prewencji.",
+      "Fakty były bezsporne. NSL wskazał, że stetoskop może przenosić zakażenia, a samo zastosowanie kary upomnienia jest „w pełni zasadne i konieczne w kontekście wymogów prewencyjnych”.",
     file: "NSL/NSL.01.06-2024W.docx",
   },
   {
@@ -768,7 +772,7 @@ export const CASES: CourtCase[] = [
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
       "Lekarz przyjechał na wizytę domową do pacjenta po nadużyciu alkoholu. Zbadał go, rozpoznał ostry brzuch, wystawił skierowanie do szpitala i polecił rodzinie zawieźć chorego na chirurgię. Wychodząc, powiedział: „Weź sobie cztery dechy, zbij pudło i idź się połóż na cmentarz”. Twierdził, że mówił to do rodziny, jako ostrzeżenie przed skutkami picia.",
-      "Stan pacjenta się pogorszył; zmarł mimo reanimacji. Lekarz wystawił kartę zgonu bez oględzin zwłok, tylko na podstawie karty od ratownika medycznego — sam przyznał, że „sytuacja taka nie powinna mieć miejsca”. Sąd nie wiązał śmierci pacjenta z zarzutami.",
+      "Stan pacjenta się pogorszył; zmarł mimo reanimacji. Lekarz wystawił kartę zgonu bez oględzin zwłok, tylko na podstawie karty od ratownika medycznego; według uzasadnienia miał świadomość, że „sytuacja taka nie powinna mieć miejsca”. Część skargi dotyczącą leczenia rzecznik umorzył; zarzuty przed sądem nie dotyczyły przyczyny śmierci.",
       "Lekarz odwołał się od orzeczenia I instancji, a potem odwołanie cofnął.",
     ],
     charge: "Naruszenie zasad etyki w kontakcie z pacjentem (art. 8 i 12 KEL) i stwierdzenie zgonu bez osobistych oględzin (art. 43 ust. 1 ustawy o zawodach lekarza).",
@@ -791,7 +795,7 @@ export const CASES: CourtCase[] = [
     charge: "Badanie bez zgody pacjentki i skierowanie do szpitala bez przesłanek (art. 15 ust. 3 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 0, text: "Umorzenie z powodu przedawnienia. Sąd I instancji orzekł naganę — NSL ją uchylił, bo minęło 5 lat od czynu." },
     reasoning:
-      "NSL przyznał, że przypisanie winy było zasadne: skierowanie wystawiono bez przesłanek i bez zgody na badanie, a czyn „nadal pozostaje przewinieniem”. Nie było jednak postępowania karnego, które przedłużałoby termin, więc kary wymierzyć nie można.",
+      "NSL uznał, że sąd I instancji zasadnie przypisał winę: skierowanie wystawiono bez przesłanek i bez zgody na badanie. Przypomniał, że przedawniony czyn „nadal stanowi przewinienie zawodowe”, ale sprawcy nie można już ukarać i w świetle prawa traktuje się go jak osobę, która przewinienia nie popełniła. Nie toczyło się postępowanie karne, które przedłużałoby termin.",
     file: "NSL/NSL.02.03-2024W.docx",
   },
   {
@@ -803,7 +807,7 @@ export const CASES: CourtCase[] = [
     facts: [
       "Młoda kobieta, kierująca samochodem, uderzyła w ogrodzenie. Ratownicy przywieźli ją na desce ortopedycznej z kołnierzem; ból lędźwiowy oceniono na 8 w skali 10. Lekarka dyżurna, internistka, zleciła tomografię głowy i badania krwi, ale nie badanie kręgosłupa — i rozpoznała stłuczenie.",
       "W karcie wypisowej znalazł się wpis o tomografii kręgosłupa bez zmian, choć takiego badania nie wykonano. Przez ten wpis lekarz rodzinny nie wystawił zwolnienia ani skierowania. Po 20 dniach rentgen wykazał złamanie kręgu L1.",
-      "Lekarka twierdziła, że diagnostyka była wystarczająca, a ból nie mógł być silny, skoro pacjentka zgłosiła się do lekarza dopiero po 20 dniach. Sprawa trafiła do NSL po odwołaniu obrony.",
+      "Lekarka twierdziła, że ból ustąpił po lekach przeciwbólowych, a za opóźnienie odpowiada pacjentka, która późno zgłosiła się do lekarza; obrona dowodziła w odwołaniu, że ból nie mógł być silny, skoro RTG wykonano dopiero po 20 dniach. Sprawa trafiła do NSL po odwołaniu obrony.",
     ],
     charge: "Niezlecenie badania kręgosłupa, które opóźniło rozpoznanie złamania (art. 8 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 3, text: "Kara pieniężna — jednokrotność przeciętnego wynagrodzenia. Sąd I instancji orzekł trzykrotność, NSL ją obniżył. Z zarzutu poświadczenia nieprawdy w karcie lekarkę uniewinniono." },
@@ -830,7 +834,7 @@ export const CASES: CourtCase[] = [
   },
   {
     id: "nocna-opieka-recepta",
-    title: "Nocna opieka: „symulanci” i cudza recepta",
+    title: "Nocna opieka: zarzut symulowania i cudza recepta",
     summary: "Lekarka na nocnym dyżurze wulgarnie zarzuciła małżonkom symulowanie choroby i dała pacjentce receptę wystawioną na inną osobę.",
     label: "",
     court: "Naczelny Sąd Lekarski · odwołanie",
@@ -842,7 +846,7 @@ export const CASES: CourtCase[] = [
     charge: "Nierzetelna dokumentacja (art. 41 ustawy o zawodach lekarza) i nieetyczne zachowanie wobec pacjentów (art. 12 KEL).",
     verdict: { level: 0, text: "Umorzenie z powodu przedawnienia. Sąd I instancji dał upomnienie za zachowanie, a sprawę recepty umorzył jako przewinienie mniejszej wagi — NSL uchylił całość, bo minęło 5 lat." },
     reasoning:
-      "NSL zaznaczył, że materiał dowodowy nie uzasadniał uniewinnienia od żadnego z zarzutów — sprawa po prostu się przedawniła.",
+      "NSL zaznaczył, że materiał dowodowy nie uzasadniał uniewinnienia od żadnego z zarzutów, ale karalność obu czynów ustała.",
     file: "NSL/NSL.02.06-2024W.docx",
   },
   {
@@ -971,14 +975,14 @@ export const CASES: CourtCase[] = [
     label: "",
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
-      "Pacjentka z plamieniem i rosnącym poziomem hormonu ciążowego dwukrotnie trafiła na oddział, którym kierował obwiniony. USG wykonywali rezydenci; wypisano ją najpierw z rozpoznaniem poronienia zagrażającego, potem poronienia chybionego, po lekach wywołujących poronienie.",
+      "Pacjentka z plamieniem i rosnącym poziomem hormonu ciążowego dwukrotnie trafiła na oddział, którym kierował obwiniony. Podczas pierwszego pobytu USG wykonywali rezydenci; wypisano ją najpierw z rozpoznaniem poronienia zagrażającego, potem poronienia chybionego, po lekach wywołujących poronienie.",
       "Kilka dni później przyszła do prywatnego gabinetu ordynatora. Po badaniu i USG nie stwierdził nic niepokojącego i wyznaczył wizytę za trzy miesiące. Następnego dnia trafiła na SOR we wstrząsie: pęknięta ciąża jajowodowa, 1,5–2 litry krwi w jamie brzusznej, usunięto jajowód.",
       "Lekarz twierdził, że podejrzewał ciążę pozamaciczną, a pacjentka wypisała się na własne żądanie — w dokumentacji nie ma o tym śladu. Do NSL odwołał się sam.",
     ],
     charge: "Brak należytej staranności w diagnostyce, w tym brak nadzoru nad badaniami rezydentów (art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 2, text: "Nagana — orzeczona w I instancji i utrzymana przez NSL." },
     reasoning:
-      "Sąd uznał, że ordynator nie nadzorował rezydentów, nie zlecił dalszej diagnostyki i zignorował wyniki hormonu, a wizyta w gabinecie była co najmniej trzecią okazją do rozpoznania. NSL: nagana „w pełni adekwatna i niezbędna”; na korzyść lekarza — niekaralność.",
+      "Sąd uznał, że ordynator nie nadzorował rezydentów, nie zlecił dalszej diagnostyki i zignorował wyniki hormonu, a wizyta w gabinecie była co najmniej trzecią okazją do rozpoznania. NSL: samo zastosowanie kary nagany jest „w pełni adekwatne i niezbędne w kontekście wymogów prewencyjnych”; sąd I instancji uwzględnił na korzyść lekarza niekaralność.",
     file: "NSL/NSL.08.02-2024W.docx",
   },
   {
@@ -988,9 +992,9 @@ export const CASES: CourtCase[] = [
     label: "",
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
-      "W czasie pandemii firma prowadzona przez lekarkę zawiesiła działalność. Dwóm pracownicom zaproponowano pozostanie na zwolnieniu z powodu ciąży. Lekarka założyła im dokumentację ciąży i wystawiła cztery zwolnienia lekarskie, choć żadne badanie ciąży nie potwierdziło.",
-      "Instytucja wstrzymała wypłaty po wykryciu nieprawidłowości, więc pieniądze nie zostały wypłacone. Sąd karny prawomocnie skazał lekarkę na rok pozbawienia wolności w zawieszeniu, grzywnę i rok zakazu wykonywania zawodu ginekologa; kary wykonała.",
-      "Przed sądem lekarskim nazwała sąd karny „kapturowym”; później przyznała, że postąpiła źle. Do NSL odwołała się sama, prosząc o umorzenie.",
+      "Firma prowadzona przez lekarkę zawiesiła działalność. Dwóm pracownicom zaproponowano pozostanie na zwolnieniu z powodu ciąży. Lekarka założyła im dokumentację ciąży i wystawiła cztery zwolnienia lekarskie, choć żadne badanie ciąży nie potwierdziło.",
+      "Instytucja wypłacająca zasiłki wstrzymała wypłaty po wykryciu nieprawidłowości. Sąd karny prawomocnie skazał lekarkę za ten sam czyn, orzekając m.in. czasowy zakaz wykonywania zawodu; kary wykonała.",
+      "Przed sądem lekarskim twierdziła, że wyrok karny wydał „sąd kapturowy”; później przyznała, że postąpiła źle. Do NSL odwołała się sama, prosząc o umorzenie.",
     ],
     charge: "Poświadczenie nieprawdy w dokumentacji i usiłowanie wyłudzenia świadczeń — podważenie zaufania do zawodu (art. 1 ust. 3 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 0, text: "Umorzenie — dalsza kara jest „oczywiście niecelowa” wobec kary karnej (art. 82 ust. 2). Sąd I instancji orzekł maksymalną karę pieniężną; NSL ją uchylił." },
@@ -1012,7 +1016,7 @@ export const CASES: CourtCase[] = [
     charge: "Uchylanie się od wspierania samorządu zawodowego (art. 59 KEL, art. 8 ustawy o izbach lekarskich).",
     verdict: { level: 1, text: "Upomnienie." },
     reasoning:
-      "Sąd: to nie jednorazowe roztargnienie, lecz „długotrwałe i uporczywe uchylanie się”. Na korzyść — spłata całej zaległości; upomnienie ma być „bodźcem mobilizującym”.",
+      "Sąd: to nie jednorazowe roztargnienie, lecz „długotrwałe i uporczywe uchylanie się”. Na korzyść — spłata całej zaległości; upomnienie ma stanowić „bodziec mobilizujący”.",
     file: "OSL/0015-25.pdf",
   },
   {
@@ -1023,8 +1027,8 @@ export const CASES: CourtCase[] = [
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
       "Chłopiec miał bóle brzucha. Rodzice, nie chcąc czekać na termin w poradni, poszli prywatnie do lekarza z doświadczeniem urologicznym. Ten rozpoznał przewlekłe zapalenie prostaty i zaburzenia lipidowe i zlecił dwa leki antybakteryjne — w dawkach i przez czas niezgodne z charakterystyką leku, bez pisemnej zgody rodziców na stosowanie poza wskazaniami.",
-      "Drugi lekarz rozpoznał m.in. hiperlipidemię, insulinooporność, niedokrwistość i zaburzenia lękowe i przepisał łącznie 10 rodzajów leków, w tym dwa antydepresyjne przeciwwskazane u osób poniżej 18 lat. Pielęgniarki odmówiły podania zastrzyków jako niebezpiecznych.",
-      "Po kilku dniach chłopiec miał silne bóle mięśni, sztywnienie nóg i duszność. W szpitalu odstawiono leki; badania wykazały, że jest zdrowy, a bóle brzucha wynikały z zaparć. Lekarze kwestionowali kompetencje biegłych. Do NSL odwołali się obaj i ich obrońcy.",
+      "Drugi lekarz postawił kolejne rozpoznania, m.in. zaburzeń lipidowych i metabolicznych, i przepisał łącznie 10 rodzajów leków, w tym dwa leki przeciwdepresyjne przeciwwskazane u osób poniżej 18 lat. Pielęgniarki odmówiły podania zastrzyków jako niebezpiecznych.",
+      "Po kilku dniach u chłopca wystąpiły poważne objawy niepożądane. W szpitalu odstawiono leki; badania wykazały, że jest zdrowy. Lekarze kwestionowali kompetencje biegłych. Do NSL odwołali się obaj i ich obrońcy.",
     ],
     charge: "Nieuprawnione rozpoznania i nieuzasadnione leczenie wieloma lekami niezgodnie z charakterystyką produktu (art. 8 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 5, text: "Ograniczenie zakresu czynności: zakaz leczenia osób poniżej 18 lat — na rok dla jednego lekarza i na 2 lata dla drugiego — oraz kary pieniężne. Sąd I instancji orzekł zawieszenie prawa wykonywania zawodu na 4 i 5 lat za każdy z czynów; NSL złagodził kary." },
@@ -1063,7 +1067,7 @@ export const CASES: CourtCase[] = [
     charge: "Odmowa przyjęcia pacjentki wbrew wskazaniom, bez osobistego badania (art. 8 KEL).",
     verdict: { level: 1, text: "Upomnienie. Sąd I instancji orzekł naganę, NSL złagodził karę; winę utrzymał." },
     reasoning:
-      "NSL: sąd I instancji „w zasadzie nie uzasadnił wymiaru kary”. Na korzyść lekarki — dotychczasowa praktyka i aktywny udział w postępowaniu; zarzut dotyczył decyzji, nie przypisywał jej śmierci płodu. Upomnienie wystarczy też jako przestroga dla innych.",
+      "NSL: sąd I instancji „w zasadzie nie uzasadnił wymiaru kary”. Na korzyść lekarki — dotychczasowa praktyka i aktywny udział w postępowaniu. NSL zaznaczył, że trudno ustalić, czy przyjęcie na oddział zmieniłoby dalszy przebieg, a macica pękła prawdopodobnie dopiero rano. Upomnienie wystarczy też jako przestroga dla innych.",
     file: "NSL/NSL.08.05-2024W.docx",
   },
   {
@@ -1102,8 +1106,8 @@ export const CASES: CourtCase[] = [
   },
   {
     id: "telewizja-metoda",
-    title: "Telewizja: „absolutnie nowatorska metoda”",
-    summary: "Stomatolożka w programie telewizyjnym przedstawiła się jako autorka „absolutnie nowatorskiej metody”, podała adres strony swojej placówki i radziła uważnie wybierać lekarzy.",
+    title: "Telewizja: reklama własnej metody leczenia",
+    summary: "Stomatolożka w programie telewizyjnym przedstawiła się jako autorka nowatorskiej metody leczenia, podała adres strony swojej placówki i radziła uważnie wybierać lekarzy.",
     label: "",
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
@@ -1112,9 +1116,9 @@ export const CASES: CourtCase[] = [
       "Lekarka tłumaczyła się stresem i brakiem doświadczenia w telewizji; przed NSL wyraziła skruchę. Sprawa była już raz w NSL i wróciła do ponownego rozpoznania. Do NSL odwołała się obrona.",
     ],
     charge: "Niedozwolona reklama i nielojalność wobec innych lekarzy (art. 63, 65 i 66 KEL).",
-    verdict: { level: 1, text: "Upomnienie. Sąd I instancji orzekł karę pieniężną — trzykrotność przeciętnego wynagrodzenia; NSL uznał ją za „niewspółmiernie surową”." },
+    verdict: { level: 1, text: "Upomnienie. Sąd I instancji orzekł karę pieniężną — trzykrotność przeciętnego wynagrodzenia; według NSL była ona „niewspółmiernie surowa”." },
     reasoning:
-      "NSL: wystąpienie „nie wyrządziło krzywdy pacjentom”, lekarka okazała skruchę i nie była karana. Umorzenia jednak odmówił — niedozwolona reklama to „przykre zjawisko”, a upomnienie jest „bezwzględnie konieczne” jako prewencja.",
+      "NSL: wystąpienie „nie wyrządziło krzywdy pacjentom”, lekarka okazała skruchę i nie była karana. Umorzenia jednak odmówił — niedozwolona reklama to „przykre zjawisko”, a kara upomnienia jest „bezwzględnie konieczna” jako prewencja.",
     file: "NSL/NSL - 0005.pdf",
   },
   {

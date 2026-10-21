@@ -40,7 +40,7 @@ const revocationTable: DataTable = {
   series: tableCountries.map((c) => ({ label: c.name, sub: c.body, values: REVOCATIONS.map((r) => r[c.key]), highlight: c.key === 'pl' })),
   summary: [
     { label: 'Razem', sub: years, values: tableCountries.map((c) => formatPL(total(c.key))) },
-    { label: 'Na 100 tys.', sub: `rocznie ${span}`, values: tableCountries.map((c) => formatPL(ratePer100k(c.key))) },
+    { label: 'Na 100 tys. lekarzy', sub: `rocznie ${span}`, values: tableCountries.map((c) => formatPL(ratePer100k(c.key))) },
   ],
 };
 

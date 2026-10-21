@@ -15,7 +15,7 @@
  * (indeksy albo liczby), nad wykresem duże liczby (zob. chartLayout). Trzeci, „proporcje” (pole
  * `split`): części całości — gruby pasek podzielony na segmenty albo kolumny 100% obok siebie
  * (zob. splitLayout). Czwarty, „tabela” (pole `table`): liczby rok po roku dla kilku podmiotów,
- * przy każdej liczbie mały pasek we wspólnej skali (zob. tableLayout). Piąty, „mapa” (pole `map`):
+ * same liczby, bez pasków (zob. tableLayout). Piąty, „mapa” (pole `map`):
  * warstwa z zestawu map (lib/mapa) — ten sam renderer co mapa na stronie, obok legenda (zob. mapLayout).
  * Rama (nagłówek i stopka) wspólna dla wszystkich stylów.
  */
@@ -495,25 +495,23 @@ function splitLayout(set: InfographicSet, i: Infographic, sp: Split, f: FormatKe
   return frame(set, i, f, theme, h('div', { style: { width: inner } }, ...sp.bars.map(column)));
 }
 
-/* ---------- Styl „tabela”: liczby rok po roku, przy każdej mały pasek ---------- */
+/* ---------- Styl „tabela”: liczby rok po roku ---------- */
 
 /**
- * Geometria tabeli. Pion: lata w wierszach, podmioty w kolumnach, pasek poziomy obok liczby.
- * Poziom: podmioty w wierszach, lata w kolumnach (16 lat nie zmieści się w wysokości 675),
- * pasek pionowy nad liczbą — w obu układach paski rosną w poprzek osi czasu.
+ * Geometria tabeli. Pion: lata w wierszach, podmioty w kolumnach. Poziom: podmioty w wierszach,
+ * lata w kolumnach (16 lat nie zmieści się w wysokości 675). Same liczby, bez pasków w komórkach:
+ * małe paski nic nie mówiły (decyzja 21.10.2026); proporcje niesie grafika z porównaniem krajów.
  */
 const TG = {
-  pion: { headH: 84, rowH: 39, sumH: 60, periodW: 150, num: 24, numW: 42, barH: 10, barMax: 104, label: 22, sub: 13, period: 16, sumSub: 12, total: 30 },
-  poziom: { headH: 46, rowH: 76, labelW: 190, sumW: 92, num: 16, barW: 12, barMax: 38, label: 17, sub: 10, period: 11, sumSub: 10, total: 24 },
+  pion: { headH: 84, rowH: 39, sumH: 60, periodW: 150, num: 24, numW: 60, label: 22, sub: 13, period: 16, sumSub: 12, total: 30 },
+  poziom: { headH: 46, rowH: 76, labelW: 190, sumW: 92, num: 20, label: 17, sub: 10, period: 11, sumSub: 10, total: 24 },
 };
 
 function tableLayout(set: InfographicSet, i: Infographic, t: DataTable, f: FormatKey, theme: ThemeKey): Node {
   const C = THEMES[theme].colors;
   const inner = FORMATS[f].width - 2 * G[f].padX;
-  const max = Math.max(...t.series.flatMap((s) => s.values));
-  // zera wyciszone (jak tabela w artykule), żeby było widać lata z decyzjami; zero nie ma paska
+  // zera wyciszone (jak tabela w artykule), żeby było widać lata z decyzjami
   const numColor = (s: TableSeries, v: number) => (v === 0 ? C.muted : s.highlight ? C.blue : C.ink);
-  const fill = (s: TableSeries) => (s.highlight ? C.blue : C.bar);
   const tint = (s: TableSeries) => (s.highlight ? C.tint : 'transparent');
   const numStyle = (s: TableSeries, v: number, size: number) => ({ fontFamily: DISPLAY, fontWeight: 300, fontSize: size, lineHeight: 1, letterSpacing: '-0.03em', color: numColor(s, v) });
   const sumStyle = (s: TableSeries, size: number) => ({ fontFamily: DISPLAY, fontWeight: 400, fontSize: size, lineHeight: 1, letterSpacing: '-0.04em', color: s.highlight ? C.blue : C.ink });
@@ -544,9 +542,7 @@ function tableLayout(set: InfographicSet, i: Infographic, t: DataTable, f: Forma
         h('div', { style: { width: g.periodW, flexShrink: 0, alignItems: 'center', ...mono(g.period, C.muted), textTransform: 'none' } }, period),
         ...t.series.map((s) => {
           const v = s.values[k];
-          return cell(s,
-            h('div', { style: { width: g.numW, flexShrink: 0, justifyContent: 'flex-end', ...numStyle(s, v, g.num) } }, formatPL(v)),
-            v > 0 && h('div', { style: { width: Math.max(3, (v / max) * g.barMax), height: g.barH, marginLeft: 12, background: fill(s) } }));
+          return cell(s, h('div', { style: { width: g.numW, flexShrink: 0, justifyContent: 'flex-end', ...numStyle(s, v, g.num) } }, formatPL(v)));
         }));
     // pierwsze podsumowanie oddziela od lat linia w kolorze tekstu, kolejne — zwykła
     const summary = t.summary.map((sum, k) =>
@@ -567,10 +563,7 @@ function tableLayout(set: InfographicSet, i: Infographic, t: DataTable, f: Forma
     h('div', { style: { height: g.rowH, alignItems: 'center', borderBottom: `1px solid ${C.line}`, background: tint(s) } },
       h('div', { style: { width: g.labelW, flexShrink: 0, flexDirection: 'column', paddingLeft: 8 } }, ...head(s, g)),
       ...s.values.map((v) =>
-        h('div', { style: { width: cellW, flexShrink: 0, flexDirection: 'column', alignItems: 'center' } },
-          h('div', { style: { height: g.barMax, alignItems: 'flex-end' } },
-            v > 0 && h('div', { style: { width: g.barW, height: Math.max(2, (v / max) * g.barMax), background: fill(s) } })),
-          h('div', { style: { marginTop: 6, ...numStyle(s, v, g.num) } }, formatPL(v)))),
+        h('div', { style: { width: cellW, flexShrink: 0, justifyContent: 'center', ...numStyle(s, v, g.num) } }, formatPL(v))),
       ...t.summary.map((sum) =>
         h('div', { style: { width: g.sumW, flexShrink: 0, justifyContent: 'flex-end', paddingRight: 8, ...sumStyle(s, g.total) } }, sum.values[j])));
   return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', width: inner } }, header, ...t.series.map(row)));

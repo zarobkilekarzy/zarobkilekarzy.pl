@@ -11,7 +11,21 @@ export const mediaPage = {
   seoTitle: 'Materiały medialne: film i infografiki',
   lead: 'Film, infografiki, dane i logo do artykułu, posta albo prezentacji. Liczby pochodzą z tych samych danych co teksty w serwisie, a źródła, adres strony i kod QR do niej są na każdej grafice.',
   description: 'Film zarobkilekarzy.pl, infografiki w formatach pionowym i poziomym, dane w plikach CSV i logo do pobrania, ze źródłami. Licencja CC BY 4.0.',
-  updated: '17.10.2026',
+  updated: '21.10.2026',
+  /**
+   * „Historia zmian” pod przeglądarką infografik: poprawki w grafikach, które już były do pobrania
+   * (nie nowe grafiki). Zapis wpisu: lib/inline.
+   */
+  infographicsChangelog: [
+    {
+      date: new Date('2026-10-21'),
+      text: 'Tabela [„Ilu lekarzom odebrano prawo do zawodu”](/analizy/odpowiedzialnosc-zawodowa-lekarzy/) rok po roku: bez małych pasków przy liczbach — zostały same liczby. Porównanie skali pokazuje druga grafika z tego zestawu.',
+    },
+    {
+      date: new Date('2026-10-21'),
+      text: 'Tabela [„Ilu lekarzom odebrano prawo do zawodu”](/analizy/odpowiedzialnosc-zawodowa-lekarzy/) rok po roku: wiersz „Na 100 tys.” ma pełny podpis „Na 100 tys. lekarzy” — wskaźnik jest liczony na 100 tys. lekarzy w danym kraju, nie mieszkańców. Liczby bez zmian.',
+    },
+  ],
   /** klucze zestawów infografik, od najnowszego */
   sets: ['odsiew-na-medycynie', 'pielegniarstwo-w-polsce', 'zadluzenie-szpitali', 'kolejki', 'english-division', 'symulator-podazy-lekarzy', 'egzamin', 'odpowiedzialnosc-zawodowa-lekarzy'],
   film: {

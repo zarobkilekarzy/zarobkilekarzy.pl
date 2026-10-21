@@ -79,7 +79,7 @@ export const paths: PathCard[] = [
     desc: 'Limity miejsc, egzamin LEK, rezydentura i wybór specjalizacji. Co Cię czeka po dyplomie i ile to trwa.',
     tags: ['LEK', 'Rezydentura', 'Limity'],
     href: '#narzedzia',
-    pictogram: 'schody',
+    pictogram: 'torba',
   },
 ];
 

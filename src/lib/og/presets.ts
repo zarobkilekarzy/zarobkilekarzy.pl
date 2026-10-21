@@ -83,7 +83,7 @@ const pictogramDots = (name: PictogramName | 'ekg'): OgDots =>
 
 /** Piktogram artykułu bez grafiki — wg kategorii (działu). */
 const CATEGORY_PICTOGRAM: Record<Category, PictogramName> = {
-  Mechanizm: 'umowa', Analiza: 'szpital', Dane: 'pieniadze', Przewodnik: 'serce', 'Projekt ustawy': 'umowa', Narzędzie: 'schody',
+  Mechanizm: 'umowa', Analiza: 'szpital', Dane: 'pieniadze', Przewodnik: 'serce', 'Projekt ustawy': 'umowa', Narzędzie: 'torba',
 };
 
 /** Skróty, po których kropka nie kończy zdania („500 tys. CAD”, „art. 27a”). */

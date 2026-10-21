@@ -272,6 +272,7 @@ const unitCells = Array.from({ length: Math.ceil(revoked / unitCols) * unitCols 
   if (root && dataEl) {
     const { cases: all, scale, mix } = JSON.parse(dataEl.textContent ?? '{}') as GameData;
     const ROUND = Number(root.querySelector('[data-total]')?.textContent) || all.length;
+    const caseBase = root.dataset.caseBase ?? '';
 
     /** Koszyk kary: 0 bez kary, 1 upomnienie, 2 nagana, 3 kara pieniężna, 4 surowsze (poziomy 4–7). */
     const bucket = (c: GameCase) => Math.min(c.verdict.level, 4);
@@ -381,7 +382,7 @@ const unitCells = Array.from({ length: Math.ceil(revoked / unitCols) * unitCols 
       why.hidden = !c.reasoning;
       why.textContent = c.reasoning ?? '';
       $('[data-file]').textContent = c.file;
-      $<HTMLAnchorElement>('[data-case-link]').href = `${root.dataset.caseBase}${c.id}/`;
+      $<HTMLAnchorElement>('[data-case-link]').href = `${caseBase}${c.id}/`;
       $('[data-next-label]').textContent = i === cases.length - 1 ? 'Zobacz wynik' : 'Następna sprawa';
       scaleBox.hidden = true;
       reveal.hidden = false;

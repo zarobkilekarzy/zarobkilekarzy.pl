@@ -280,3 +280,45 @@ export const LEDGER_TOTALS = {
   reached: share(PWZ_26_30, limitTotal),
   gap: limitTotal - PWZ_26_30,
 } as const;
+
+/* ---------- PES: część testowa, 2025 (infografika) ---------- */
+
+/*
+ * Wyniki części testowej Państwowego Egzaminu Specjalizacyjnego, policzone z list wyników CEM
+ * (każdy nr kodowy = jedno podejście; „ndst” = poniżej progu 60%, art. 16s ust. 4 ustawy o zawodach
+ * lekarza). Wszystkie podejścia, lekarze i lekarze dentyści. Odczyt 21.10.2026. Jesień 2025 zgadza
+ * się co do osoby z tabelą MZ w odpowiedzi na interpelację nr 18220 (2686 przystąpiło, 2224 zdało).
+ * Części ustnej CEM nie publikuje, więc to nie jest zdawalność całego PES.
+ */
+interface PesCount {
+  /** podejścia do testu */
+  n: number;
+  /** wynik co najmniej 60% */
+  passed: number;
+}
+
+export const PES_LINK = 'https://www.cem.edu.pl/spece_results_h.php';
+
+/** Wszystkie dziedziny, sesje wiosna i jesień 2025. */
+export const PES_2025_ALL: { spring: PesCount; autumn: PesCount } = {
+  spring: { n: 2813, passed: 2189 },
+  autumn: { n: 2686, passed: 2224 },
+};
+
+/** Siedem dziedzin z największą liczbą podejść w 2025 r. */
+export const PES_2025: { field: string; spring: PesCount; autumn: PesCount }[] = [
+  { field: 'Medycyna rodzinna', spring: { n: 348, passed: 259 }, autumn: { n: 335, passed: 275 } },
+  { field: 'Choroby wewnętrzne', spring: { n: 307, passed: 234 }, autumn: { n: 226, passed: 179 } },
+  { field: 'Pediatria', spring: { n: 193, passed: 161 }, autumn: { n: 234, passed: 209 } },
+  { field: 'Psychiatria', spring: { n: 144, passed: 120 }, autumn: { n: 153, passed: 131 } },
+  { field: 'Anestezjologia', spring: { n: 135, passed: 111 }, autumn: { n: 117, passed: 93 } },
+  { field: 'Położnictwo i ginekologia', spring: { n: 121, passed: 104 }, autumn: { n: 114, passed: 101 } },
+  { field: 'Kardiologia', spring: { n: 136, passed: 108 }, autumn: { n: 92, passed: 66 } },
+];
+
+/** Suma obu sesji i odsetek zdanych (%). */
+export const pesYear = ({ spring, autumn }: { spring: PesCount; autumn: PesCount }) => {
+  const n = spring.n + autumn.n;
+  const passed = spring.passed + autumn.passed;
+  return { n, passed, rate: share(passed, n) };
+};

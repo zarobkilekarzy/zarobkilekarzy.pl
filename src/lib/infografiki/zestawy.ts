@@ -13,7 +13,7 @@ import { BUDGET, CURRENT, DRAFT_2027, GAP_2027, budget, formatMld } from '@/data
 import { MEDIAN_WAGES, OUT_OF_POCKET, SPECIALISTS_2025, TO, WHC_EDITIONS, WHC_LATEST, contribution } from '@/data/kolejki';
 import { SPZOZ_QUARTERS } from '@/data/zadluzenie';
 import { AGE_BASE, AGE_LADDER } from '@/data/pielegniarstwo-w-polsce';
-import { FIRST_YEAR as STUDENTS_FIRST_YEAR, LINKS as ODSIEW_LINKS, funnelRows } from '@/data/odsiew-na-medycynie';
+import { FIRST_YEAR as STUDENTS_FIRST_YEAR, LINKS as ODSIEW_LINKS, PES_2025, PES_2025_ALL, PES_LINK, funnelRows, pesYear } from '@/data/odsiew-na-medycynie';
 import { DEFAULTS, LIMIT_TODAY, PRESETS, REGISTER_TOTAL, YEAR0, YEAR_MIN, seats, simulate } from '@/lib/podaz/model';
 import { AOS_FIRST, AOS_LAST, LINKS as WIZYTA_LINKS, NIL_N, NO_CLINICAL, WHC_2022, WHC_2024, WORK_MODEL, combined, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
 import { BEAN } from '@/data/ai-w-medycynie-2026';
@@ -421,6 +421,14 @@ const funnel: ComparisonRow[] = [
 ].map((r, i, all) => ({ ...r, highlight: i === all.length - 1 }));
 const funnelEnd = funnel.at(-1)!.display;
 
+// PES: siedem największych dziedzin i wszystkie dziedziny, od najwyższego odsetka; wyróżnione „wszystkie”
+const pesRows: ComparisonRow[] = [
+  ...PES_2025.map((d) => ({ label: d.field, y: pesYear(d), highlight: false })),
+  { label: 'Wszystkie dziedziny', y: pesYear(PES_2025_ALL), highlight: true },
+]
+  .map(({ label, y, highlight }) => ({ label, sub: `${formatPL(y.passed)} z ${formatPL(y.n)} podejść`, value: y.rate, display: formatPL(y.rate, 1), highlight }))
+  .sort((a, b) => b.value - a.value);
+
 const odsiew: InfographicSet = {
   route: '/analizy/odsiew-na-medycynie/',
   page: 'Analiza: Kto odpada z medycyny, a kto wyjeżdża',
@@ -433,6 +441,15 @@ const odsiew: InfographicSet = {
       rows: funnel,
       sources: 'Źródło: MZ BASiW (POL-on, ZUS, NFZ), obliczenia własne · proporcje z kilku roczników',
       alt: `Infografika: na 100 osób, które zaczynają kierunek lekarski (I semestr 2018/19, ${formatPL(firstAll)} osób), ${funnel.slice(1).map((r) => `${r.display} — ${r.label.toLowerCase()}`).join(', ')}. Pozostali na starcie to cudzoziemcy, z których wielu studiuje po angielsku. Kroki 1–3: studenci I semestru 2018/19 i absolwenci-Polacy 2023/24; dalsze kroki — losy rocznika 2016/17 w 2023 r. To zestawienie proporcji z kilku roczników, a nie śledzenie jednej grupy osób. Źródło: Ministerstwo Zdrowia, Baza Analiz Systemowych i Wdrożeniowych (${ODSIEW_LINKS.mz}).`,
+    },
+    {
+      id: 'zdawalnosc-pes',
+      title: 'Jaka część zdających zdaje test egzaminu specjalizacyjnego',
+      measure: 'PES, część testowa · odsetek podejść z wynikiem co najmniej 60% · 2025',
+      unit: '%',
+      rows: pesRows,
+      sources: 'Źródło: CEM, wyniki części testowej PES, sesje wiosna i jesień 2025, obliczenia własne · wszystkie podejścia',
+      alt: `Infografika: odsetek podejść do części testowej Państwowego Egzaminu Specjalizacyjnego z wynikiem co najmniej 60% w 2025 r. (sesje wiosenna i jesienna, wszystkie podejścia): ${pesRows.map((r) => `${r.label} ${r.display}% (${r.sub})`).join(', ')}. Siedem dziedzin z największą liczbą podejść. Grafika nie obejmuje części ustnej egzaminu — jej wyników Centrum Egzaminów Medycznych nie publikuje. Źródło: CEM, listy wyników części testowej PES (${PES_LINK}), obliczenia własne.`,
     },
   ],
 };

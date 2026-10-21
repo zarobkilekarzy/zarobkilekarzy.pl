@@ -2,9 +2,9 @@
 /**
  * Zestawienie 29 dziedzin w dwóch grupach (poza listą priorytetów / priorytetowe). Pensja rezydenta
  * jest wspólna dla całej grupy, więc stoi w nagłówku grupy, a nie w każdym wierszu. Kolumny: stawka
- * z ogłoszeń, miejsca rezydenckie i pozarezydenckie, kandydaci na miejsce. Każda kolumna ma inne
+ * z ogłoszeń, miejsca rezydenckie i pozarezydenckie, kandydaci na miejsce, zdany test PES. Każda kolumna ma inne
  * źródło — lista źródeł z linkami jest pod tabelą (podpis Figure ma tylko jeden link).
- * Dane: data/wedlug-specjalizacji.ts. W wąskim kontenerze wiersz = nazwa + cztery liczby pod nią.
+ * Dane: data/wedlug-specjalizacji.ts. W wąskim kontenerze wiersz = nazwa + pięć liczb pod nią.
  */
 import Figure from '@/components/blocks/Figure.astro';
 import {
@@ -47,31 +47,34 @@ const groups = [
 
 /** Krótkie etykiety komórek — widać je tylko w wąskim układzie, nad liczbą */
 const COLS = {
-  rate: 'Stawka zł/h',
+  rate: 'Zł/h',
   rez: 'Rezyd.',
   nonRez: 'Pozarez.',
-  candidates: 'Kandydaci',
+  candidates: 'Kandyd.',
+  pes: 'PES %',
 };
 
 const rate = (s: Specialty) => (s.rate === undefined ? '—' : formatPL(s.rate));
 const candidates = (s: Specialty) =>
   s.candidates === undefined ? '—' : s.candidates === 'below-1' ? '< 1' : formatPL(s.candidates, 2);
+const pes = (s: Specialty) => (s.pes === undefined ? '—' : formatPL((s.pes.passed / s.pes.n) * 100, 1));
 
 const sources = [
   { what: 'pensja', label: `rozporządzenie MZ, ${PAY_ACT.label}`, href: PAY_ACT.href },
   { what: 'stawki', label: `raport „Lekarze – oferty pracy” za ${OFFERS_2023.year} r., s. 19`, href: LINKS.offers2023 },
   { what: 'miejsca', label: 'CMKP, wykaz na sesję jesień 2025 (28.08.2025)', href: LINKS.cmkpPlaces },
   { what: 'kandydaci', label: 'zestawienie dyrektora CMKP za: Beauty Razem, 10.12.2025', href: LINKS.candidates },
+  { what: 'test PES', label: 'CEM, wyniki części testowej PES, obliczenia własne', href: LINKS.pes },
 ];
 ---
 <Figure
   title={title}
-  note={`Pensja rezydenta to płaca zasadnicza brutto od ${PAY_ACT.from} w pierwszych dwóch latach rezydentury. Stawka 2023 to średnia stawka godzinowa brutto (zł/h) z ${formatPL(OFFERS_2023.offers)} ogłoszeń o pracę z 2023 r. — oferta, nie wypłata; kreska oznacza, że dziedziny nie ma w raporcie, a choroby płuc, otorynolaryngologia, położnictwo i chirurgia ogólna to w nim wiersze „pulmonologia”, „laryngologia”, „ginekologia” i „chirurgia”. Miejsca to suma 16 województw w sesji jesień 2025; rezydenckie razem z doktoranckimi. Kandydaci na miejsce to liczba lekarzy, którzy wpisali dziedzinę jako pierwszy wybór, podzielona przez wszystkie miejsca w tej dziedzinie — rezydenckie i pozarezydenckie (tylko dziedziny z ponad 10 miejscami). CMKP podało dziesięć najbardziej obleganych dziedzin i dziesięć, w których miejsc było więcej niż chętnych (< 1); kreska — wartości nie opublikowano.`}
+  note={`Pensja rezydenta to płaca zasadnicza brutto od ${PAY_ACT.from} w pierwszych dwóch latach rezydentury. Stawka 2023 to średnia stawka godzinowa brutto (zł/h) z ${formatPL(OFFERS_2023.offers)} ogłoszeń o pracę z 2023 r. — oferta, nie wypłata; kreska oznacza, że dziedziny nie ma w raporcie, a choroby płuc, otorynolaryngologia, położnictwo i chirurgia ogólna to w nim wiersze „pulmonologia”, „laryngologia”, „ginekologia” i „chirurgia”. Miejsca to suma 16 województw w sesji jesień 2025; rezydenckie razem z doktoranckimi. Kandydaci na miejsce to liczba lekarzy, którzy wpisali dziedzinę jako pierwszy wybór, podzielona przez wszystkie miejsca w tej dziedzinie — rezydenckie i pozarezydenckie (tylko dziedziny z ponad 10 miejscami). CMKP podało dziesięć najbardziej obleganych dziedzin i dziesięć, w których miejsc było więcej niż chętnych (< 1); kreska — wartości nie opublikowano. Test PES to odsetek podejść do części testowej Państwowego Egzaminu Specjalizacyjnego z wynikiem co najmniej 60% w sześciu sesjach od wiosny 2023 do jesieni 2025, wszystkie podejścia (także powtórne). Część ustna nie jest wliczona — jej wyników nikt nie publikuje. W chirurgii plastycznej i urologii CEM nie publikuje wyników testu.`}
 >
   <table class="spec">
     <caption class="sr-only">
       Pensja rezydenta, stawka z ogłoszeń z 2023 r., miejsca rezydenckie i pozarezydenckie oraz kandydaci na
-      miejsce w sesji jesień 2025 — {SPECIALTIES.length} dziedzin w dwóch grupach.
+      miejsce w sesji jesień 2025 oraz odsetek zdanych podejść do testu PES w latach 2023–2025 — {SPECIALTIES.length} dziedzin w dwóch grupach.
     </caption>
     <thead>
       <tr>
@@ -80,12 +83,13 @@ const sources = [
         <th scope="col">Miejsca rezydenckie<span class="spec__sub">jesień 2025</span></th>
         <th scope="col">Pozarezydenckie<span class="spec__sub">jesień 2025</span></th>
         <th scope="col">Kandydaci na miejsce<span class="spec__sub">jesień 2025</span></th>
+        <th scope="col">Zdany test PES<span class="spec__sub">2023–2025, %</span></th>
       </tr>
     </thead>
     {groups.map((g) => (
       <tbody>
         <tr class="spec__group">
-          <th scope="rowgroup" colspan="5">
+          <th scope="rowgroup" colspan="6">
             <span class="spec__group-name">{g.name}<span class="spec__count"> · {g.count}</span></span>
             <span class="spec__pay">{typo(g.pay)}</span>
           </th>
@@ -102,6 +106,7 @@ const sources = [
             >
               {candidates(s)}
             </td>
+            <td data-label={COLS.pes}>{pes(s)}</td>
           </tr>
         ))}
       </tbody>
@@ -125,7 +130,7 @@ const sources = [
     font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
     border-bottom: 1px solid var(--ink);
   }
-  .spec thead th:first-child { text-align: left; width: 34%; }
+  .spec thead th:first-child { text-align: left; width: 30%; }
   .spec__sub { display: block; margin-top: 2px; letter-spacing: .02em; text-transform: none; }
 
   .spec tbody th, .spec td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); vertical-align: baseline; }
@@ -154,13 +159,13 @@ const sources = [
   .spec__src .spec__link { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s; }
   .spec__src .spec__link:hover { color: var(--blue); text-decoration-color: currentColor; }
 
-  /* Wąsko: nazwa dziedziny w pierwszym wierszu, cztery liczby z etykietami pod nią */
+  /* Wąsko: nazwa dziedziny w pierwszym wierszu, pięć liczb z etykietami pod nią */
   @container (max-width: 600px) {
     .spec thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     .spec, .spec tbody { display: block; }
     .spec .spec__group, .spec .spec__group th { display: block; }
     .spec tbody tr:not(.spec__group) {
-      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px 10px;
+      display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px 8px;
       padding: 12px 0; border-bottom: 1px solid var(--line);
     }
     .spec tbody th, .spec td { padding: 0; border: 0; }

@@ -26,6 +26,7 @@ export const LINKS = {
   offers2023: 'https://www.termedia.pl/pobierz/28761ac10ff69d4055cd0f793cfa9175',
   forecast:
     'https://www.rynekzdrowia.pl/Polityka-zdrowotna/Choc-ksztalcimy-coraz-wiecej-w-tych-dziedzinach-nadal-bedzie-brakowac-lekarzy,273691,14.html',
+  pes: 'https://www.cem.edu.pl/spece_results_h.php',
 } as const;
 
 /* ── Pensja rezydenta ─────────────────────────────────────────────────────────── */
@@ -122,9 +123,11 @@ export interface Specialty {
   /** miejsca zajęte po dwóch etapach jesieni 2025 — CMKP podało tylko dziesięć dziedzin w każdym trybie */
   takenRez?: number;
   takenNonRez?: number;
+  /** część testowa PES, sesje wiosna 2023 – jesień 2025: podejścia i wyniki co najmniej 60%; brak = CEM nie publikuje */
+  pes?: { n: number; passed: number };
 }
 
-type Row = Omit<Specialty, 'priority'>;
+type Row = Omit<Specialty, 'priority' | 'pes'>;
 
 /** Kolejność: najpierw kandydaci na miejsce (opublikowane wartości), dalej jak w wydaniu poprzednim. */
 const ROWS: Row[] = [
@@ -185,7 +188,45 @@ const ROWS: Row[] = [
   { id: 'patomorfologia', name: 'Patomorfologia', rez: 93, nonRez: 24, candidates: 'below-1' },
 ];
 
-export const SPECIALTIES: Specialty[] = ROWS.map((r) => ({ ...r, priority: isPriority(r.name) }));
+/*
+ * Część testowa PES w sześciu sesjach od wiosny 2023 do jesieni 2025: podejścia do testu i wyniki
+ * co najmniej 60% (art. 16s ust. 4 ustawy o zawodach lekarza), wszystkie podejścia. Policzone z list
+ * wyników CEM (jeden nr kodowy = jedno podejście), odczyt 21.10.2026; jesień 2025 zgadza się z tabelą
+ * MZ w odpowiedzi na interpelację nr 18220. Brak wpisu = CEM nie publikuje wyników testu w tej
+ * dziedzinie (chirurgia plastyczna: według MZ zdający przystępują tylko do części ustnej). Części
+ * ustnej CEM nie publikuje, więc to nie jest zdawalność całego PES.
+ */
+const PES_2023_2025: Record<string, { n: number; passed: number }> = {
+  'dermatologia': { n: 281, passed: 199 },
+  'endokrynologia': { n: 241, passed: 199 },
+  'gastroenterologia': { n: 190, passed: 167 },
+  'okulistyka': { n: 455, passed: 347 },
+  'kardiologia': { n: 701, passed: 536 },
+  'radiologia': { n: 573, passed: 463 },
+  'ortopedia': { n: 622, passed: 519 },
+  'otorynolaryngologia': { n: 309, passed: 211 },
+  'poloznictwo-ginekologia': { n: 659, passed: 581 },
+  'choroby-pluc': { n: 195, passed: 184 },
+  'medycyna-pracy': { n: 166, passed: 99 },
+  'rehabilitacja-medyczna': { n: 145, passed: 92 },
+  'anestezjologia': { n: 684, passed: 530 },
+  'chirurgia-ogolna': { n: 623, passed: 429 },
+  'onkologia-kliniczna': { n: 253, passed: 177 },
+  'hematologia': { n: 136, passed: 107 },
+  'psychiatria': { n: 830, passed: 666 },
+  'neurologia': { n: 419, passed: 337 },
+  'medycyna-paliatywna': { n: 97, passed: 91 },
+  'pediatria': { n: 1302, passed: 1082 },
+  'medycyna-rodzinna': { n: 1797, passed: 1336 },
+  'choroby-zakazne': { n: 101, passed: 74 },
+  'geriatria': { n: 97, passed: 77 },
+  'neonatologia': { n: 184, passed: 172 },
+  'choroby-wewnetrzne': { n: 1702, passed: 1246 },
+  'medycyna-ratunkowa': { n: 170, passed: 120 },
+  'patomorfologia': { n: 98, passed: 67 },
+};
+
+export const SPECIALTIES: Specialty[] = ROWS.map((r) => ({ ...r, priority: isPriority(r.name), pes: PES_2023_2025[r.id] }));
 
 export const spec = (id: string) => {
   const s = SPECIALTIES.find((x) => x.id === id);

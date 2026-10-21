@@ -84,7 +84,7 @@ const unitCells = Array.from({ length: Math.ceil(revoked / unitCols) * unitCols 
 
     <p class="more"><LinkArrow href={CATALOG_HREF}>{typo(`Katalog orzeczeń: wszystkie ${CASES.length} spraw z opisami i karą`)}</LinkArrow></p>
 
-    <div class="game" id="gra" data-game>
+    <div class="game" id="gra" data-game data-case-base={CATALOG_HREF}>
       <script type="application/json" data-cases set:html={JSON.stringify({ cases, scale, mix: ROUND_MIX })} />
 
       <div class="play" data-play>
@@ -137,6 +137,7 @@ const unitCells = Array.from({ length: Math.ceil(revoked / unitCols) * unitCols 
                 Źródło: portal prawomocnych orzeczeń NIL, plik <code data-file></code>
                 <br /><a {...linkAttrs(PORTAL_URL)}>nil.org.pl/orzeczenia<Icon name="arrow-ne" size={14} /></a>
               </p>
+              <p class="verdict__link"><a data-case-link href={CATALOG_HREF}>Osobna strona tej sprawy — link do udostępnienia<Icon name="arrow" size={14} /></a></p>
               <button type="button" class="next" data-next><span data-next-label>Następna sprawa</span><Icon name="arrow" size={18} /></button>
             </div>
           </div>
@@ -380,6 +381,7 @@ const unitCells = Array.from({ length: Math.ceil(revoked / unitCols) * unitCols 
       why.hidden = !c.reasoning;
       why.textContent = c.reasoning ?? '';
       $('[data-file]').textContent = c.file;
+      $<HTMLAnchorElement>('[data-case-link]').href = `${root.dataset.caseBase}${c.id}/`;
       $('[data-next-label]').textContent = i === cases.length - 1 ? 'Zobacz wynik' : 'Następna sprawa';
       scaleBox.hidden = true;
       reveal.hidden = false;
@@ -572,6 +574,9 @@ const unitCells = Array.from({ length: Math.ceil(revoked / unitCols) * unitCols 
   .verdict__why { margin-top: 12px; font-size: 0.9375rem; line-height: 1.65; color: var(--text-strong); }
   .verdict__src { margin-top: 16px; font-size: 0.75rem; line-height: 1.7; color: var(--muted); }
   .verdict__src code { font: 400 0.75rem/1 var(--f-mono); }
+  .verdict__link { margin-top: 12px; }
+  .verdict__link a { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--blue); text-underline-offset: 3px; }
+  .verdict__link a:hover { color: var(--ink); }
   .verdict__src a, .result__note a { display: inline-flex; align-items: center; gap: 4px; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
   .verdict__src a:hover, .result__note a:hover { color: var(--blue); text-decoration-color: currentColor; }
 

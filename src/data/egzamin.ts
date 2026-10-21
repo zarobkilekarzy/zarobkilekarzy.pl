@@ -143,7 +143,7 @@ export const egzaminFaq: FaqItem[] = [
 /** Źródła zasad i jawności — wspólne dla sekcji „Skąd te pytania” i stopki źródeł. */
 export const egzaminSources = [
   { label: 'Baza pytań LEK — Centrum Egzaminów Medycznych', href: 'https://cem.edu.pl/pytcem/eula_lek_p.php' },
-  { label: 'Art. 14c ustawy o zawodach lekarza i lekarza dentysty', href: 'https://lexlege.pl/ustawa-o-zawodach-lekarza-i-lekarza-dentysty/art-14c/' },
+  { label: 'Art. 14c ustawy o zawodach lekarza i lekarza dentysty (Dz.U. 2026 poz. 37)', href: USTAWA },
   { label: 'Rozporządzenie MZ, Dz.U. 2021 poz. 828', href: 'https://api.sejm.gov.pl/eli/acts/DU/2021/828/text.html' },
   { label: 'Wyrok NSA I OSK 2466/19 — Sieć Obywatelska Watchdog', href: 'https://siecobywatelska.pl/wazna-wygrana-nsa-pominal-niekonstytucyjne-przepisy-w-sprawie-jawnosci-egzaminow-medycznych/' },
   { label: 'Projekt likwidacji jawnej bazy — Termedia', href: 'https://www.termedia.pl/mz/LEK-i-LDEK-bez-jawnej-bazy-pytan,65929.html' },

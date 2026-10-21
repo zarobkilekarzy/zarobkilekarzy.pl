@@ -88,6 +88,19 @@ const COURT_STAMPS: OgStamp[] = [
   { kicker: 'Sąd orzekł', label: COURT_SCALE[6].label, level: 6 },
 ];
 
+// pułap płacy medyków w płacach minimalnych: mnożniki zamiast złotych, bo kwoty zmieniają się co roku
+// z płacą minimalną, a na OG nic, co się zmienia (analiza i wpis o niej w aktualnościach)
+const LIMITY_BARS: OgPage['bars'] = {
+  head: 'Pułap miesięczny w płacach minimalnych',
+  unit: '×',
+  rows: [
+    { label: 'Pół etatu w jednej placówce', value: 4 },
+    { label: 'Pełny etat w jednej placówce', value: 8 },
+    { label: 'Etat z dodatkami', sub: 'np. za funkcję kierowniczą', value: 12 },
+    { label: 'Łącznie we wszystkich placówkach', sub: 'najwyżej dwa etaty', value: 16, marked: true },
+  ],
+};
+
 export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps'>> = {
   // wpis w aktualnościach: pieczątki jak na obrazku katalogu (okładka wpisu przycięta pokazałaby tylko tytuł)
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },
@@ -139,19 +152,9 @@ export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'do
       rows: funnelRows.map((r) => ({ label: r.label, value: r.value, display: r.display, marked: r.highlight })),
     },
   },
-  // mnożniki zamiast złotych: kwoty zmieniają się co roku z płacą minimalną, a na OG nic, co się zmienia
-  '/analizy/limity-wynagrodzen-medykow/': {
-    bars: {
-      head: 'Pułap miesięczny w płacach minimalnych',
-      unit: '×',
-      rows: [
-        { label: 'Pół etatu w jednej placówce', value: 4 },
-        { label: 'Pełny etat w jednej placówce', value: 8 },
-        { label: 'Etat z dodatkami', sub: 'np. za funkcję kierowniczą', value: 12 },
-        { label: 'Łącznie we wszystkich placówkach', sub: 'najwyżej dwa etaty', value: 16, marked: true },
-      ],
-    },
-  },
+  '/analizy/limity-wynagrodzen-medykow/': { bars: LIMITY_BARS },
+  // wpis o analizie limitów płac: paski jak na obrazku analizy (zdjęciem wpisu jest obrazek OG analizy)
+  '/aktualnosci/limity-plac-medykow-w-sejmie/': { bars: LIMITY_BARS },
   '/analizy/odpowiedzialnosc-zawodowa-lekarzy/': {
     bars: {
       head: `Odebrania prawa do zawodu na 100 tys. lekarzy rocznie, ${WINDOW.from}–${WINDOW.to}`,

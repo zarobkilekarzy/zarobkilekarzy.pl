@@ -2,6 +2,8 @@
 title: "Limity płac medyków w Sejmie — analiza"
 date: 2026-10-20
 summary: "Rządowy projekt limitów płac medyków przeszedł drugie czytanie i wrócił do komisji. Na stronie jest analiza zmian z kalkulatorem limitów."
+cover: ../../assets/aktualnosci/limity-plac-medykow.png
+coverAlt: "Obrazek analizy: pułap miesięcznego wynagrodzenia w płacach minimalnych — 4× przy pół etatu, 8× przy pełnym etacie, 12× z dodatkami i 16× łącznie we wszystkich placówkach."
 links:
   - label: "Limity płac medyków: co zmienia rządowy projekt"
     href: /analizy/limity-wynagrodzen-medykow/

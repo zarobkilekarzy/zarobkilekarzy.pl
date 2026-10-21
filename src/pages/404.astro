@@ -17,6 +17,9 @@ const seo: SeoInput = {
   description: 'Pod tym adresem nie ma strony. Wróć na stronę główną albo użyj wyszukiwarki.',
   index: false,
 };
+
+/** Jedno uderzenie serca na linii y = 60 od punktu x (piksele) */
+const beat = (x: number) => `L${x} 60l8 -10l6 10l10 0l6 -40l8 72l7 -38l7 6l12 0l10 -10l8 10`;
 ---
 <BaseLayout seo={seo}>
   <Section class="nf">
@@ -33,16 +36,33 @@ const seo: SeoInput = {
       </div>
       <NotFoundDoctor />
     </div>
+    <!-- zapis EKG przez całą szerokość okna: uderzenia pod tekstem, za lekarzem linia płaska — lekarz na niej stoi -->
+    <svg class="nf__ekg" aria-hidden="true" height="120">
+      <path class="nf__ekg-wide" d={`M0 60${[60, 200, 340].map(beat).join('')}L4000 60`} />
+      <path class="nf__ekg-narrow" d={`M0 60${beat(24)}L4000 60`} />
+    </svg>
   </Section>
 </BaseLayout>
 
 <style>
-  .nf__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 48px; align-items: center; }
+  /* tekst i lekarz do dołu: lekarz stoi na linii EKG, tekst ma pod sobą miejsce na uderzenia */
+  .nf__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 48px; align-items: end; }
+  .nf__grid > div { padding-bottom: 84px; }
+  .nf__grid > :global(svg) { margin-bottom: -2px; }
   .nf__lead { margin-top: 1.5rem; }
   .nf__note { margin-top: 1rem; max-width: 42ch; color: var(--muted); }
   .nf__links { display: flex; flex-wrap: wrap; gap: 1rem 2rem; margin-top: 2rem; }
+
+  /* od lewej do prawej krawędzi okna; środek linii (y = 60) na dole ilustracji */
+  .nf__ekg { display: block; width: 100vw; max-width: none; margin: -60px 0 0 calc(50% - 50vw); overflow: hidden; }
+  .nf__ekg path { fill: none; stroke: var(--blue); stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+  .nf__ekg-narrow { display: none; }
+
+  /* telefon: tekst, pod nim lekarz na linii; jedno uderzenie przy lewej krawędzi, przed postacią */
   @media (max-width: 720px) {
     .nf__grid { grid-template-columns: 1fr; gap: 32px; }
-    .nf__grid > :global(svg) { order: -1; }
+    .nf__grid > div { padding-bottom: 0; }
+    .nf__ekg-wide { display: none; }
+    .nf__ekg-narrow { display: inline; }
   }
 </style>

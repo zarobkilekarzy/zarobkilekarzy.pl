@@ -68,7 +68,7 @@ export function cardAlt(c: CardInput): string {
   const p = c.payroll;
   const n = c.dist.total.length;
   const bins = c.labels.map((label, i) => `${label}: ${p.histogram[i]}`).join(', ');
-  return `${c.name}, ${c.city}: roczne wypłaty brutto dla lekarzy w ${c.year} r. Fundusz płac ${moneyText(p.total)} (${rankOf(c.dist.total, p.total)}. miejsce wśród ${n} placówek), mediana ${moneyText(p.median)} (${rankOf(c.dist.median, p.median)}.), najwyższa wypłata ${moneyText(p.max)} (${rankOf(c.dist.max, p.max)}.). Lekarze według rocznej wypłaty: ${bins}.`;
+  return `${c.name}, ${c.city}: roczne wypłaty brutto dla lekarzy w ${c.year} r. Fundusz płac ${moneyText(p.total)} (${rankOf(c.dist.total, p.total)}. miejsce wśród ${n} placówek), mediana ${moneyText(p.median)} (${rankOf(c.dist.median, p.median)}.), najwyższa wypłata ${moneyText(p.max)} (${rankOf(c.dist.max, p.max)}.). Lekarze według rocznej wypłaty: ${bins}. To kwoty z listy płac tej placówki, nie łączne zarobki lekarzy.`;
 }
 
 /* ---------- tekst ---------- */
@@ -252,7 +252,7 @@ function footer(p: Pen, c: CardInput, g: Geometry, C: Palette, inner: number, he
   const textW = inner - g.qr - 32;
   p.set('mono', 400, g.src);
   const src = p.wrap(
-    typo(`Źródło: ${c.source.name}, monitoring „${c.source.monitoring}”, sprawa #${c.id}. Kwoty wypłacone przez tę jedną placówkę — lekarz pracujący w kilku miejscach ma tu tylko część dochodu.`),
+    typo(`Źródło: ${c.source.name}, monitoring „${c.source.monitoring}”, sprawa #${c.id}. To kwoty z listy płac tej placówki, nie łączne zarobki lekarzy: lekarz może mieć tu kilka umów, a do tego pracować w innych miejscach. Sum na osobę nikt nie publikuje.`),
     textW,
   );
   const textH = g.url * 1.15 + g.srcLH * 0.45 + src.length * g.srcLH;

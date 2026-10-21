@@ -1,0 +1,105 @@
+---
+/**
+ * Kalendarz aktywności jak na GitHubie, w motywie siatki (lib/siatka): kolumna = tydzień (pn–nd),
+ * kropka = dzień z wpisami w czterech stopniach kobaltu (--seq-1…4), plus = dzień bez wpisów.
+ * SVG przy buildzie, bez JS; dymek dnia z <title>. Najwyżej 53 ostatnie tygodnie.
+ * Na wąskim ekranie przewija się w poziomie i startuje od najnowszych tygodni (direction: rtl).
+ *
+ *   <ActivityCalendar days={{ '2026-10-21': 33 }} from="2026-06-18" to="2026-10-21" label="…" />
+ */
+import { CELL, SHAPES } from '@/lib/siatka';
+import { plural } from '@/lib/format';
+import { uid } from '@/lib/uid';
+
+interface Props {
+  /** „RRRR-MM-DD” → liczba wpisów */
+  days: Record<string, number>;
+  /** pierwszy i ostatni dzień kalendarza (RRRR-MM-DD) */
+  from: string;
+  to: string;
+  /** progi stopni: [od 2. stopnia, od 3., od 4.] */
+  steps?: [number, number, number];
+  /** opis dla czytników ekranu */
+  label: string;
+}
+
+const { days, from, to, steps = [4, 10, 25], label } = Astro.props;
+
+const P = 22, LEFT = 30, TOP = 20;
+const DAY = 86_400_000;
+const MONTHS = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru'];
+const MONTHS_GEN = ['stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca', 'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'];
+const WEEKDAYS = ['PN', '', 'ŚR', '', 'PT', '', 'ND'];
+
+const toDate = (s: string) => new Date(`${s}T00:00:00Z`);
+const end = toDate(to);
+const weekStart = (d: Date) => new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * DAY);
+const start = new Date(Math.max(toDate(from).getTime(), weekStart(end).getTime() - 52 * 7 * DAY));
+const firstMonday = weekStart(start);
+const weeks = Math.round((weekStart(end).getTime() - firstMonday.getTime()) / (7 * DAY)) + 1;
+
+const level = (n: number) => (n === 0 ? 0 : 1 + steps.filter((s) => n >= s).length);
+
+const cells: { x: number; y: number; level: number; title: string }[] = [];
+for (let t = start.getTime(); t <= end.getTime(); t += DAY) {
+  const d = new Date(t);
+  const n = days[d.toISOString().slice(0, 10)] ?? 0;
+  const w = Math.round((weekStart(d).getTime() - firstMonday.getTime()) / (7 * DAY));
+  cells.push({
+    x: LEFT + w * P,
+    y: TOP + ((d.getUTCDay() + 6) % 7) * P,
+    level: level(n),
+    title: `${d.getUTCDate()} ${MONTHS_GEN[d.getUTCMonth()]}: ${n ? `${n} ${plural(n, ['zmiana', 'zmiany', 'zmian'])}` : 'bez zmian'}`,
+  });
+}
+
+// Podpis miesiąca nad pierwszym poniedziałkiem miesiąca; niepełny pierwszy miesiąc tylko, gdy jest miejsce
+const months: { x: number; text: string }[] = [];
+for (let w = 0; w < weeks; w++) {
+  const monday = new Date(firstMonday.getTime() + w * 7 * DAY);
+  if (monday.getUTCDate() <= 7) months.push({ x: LEFT + w * P, text: MONTHS[monday.getUTCMonth()].toUpperCase() });
+}
+if (!months.length || months[0].x - LEFT >= 3 * P) months.unshift({ x: LEFT, text: MONTHS[start.getUTCMonth()].toUpperCase() });
+
+const id = uid('ac');
+const width = LEFT + weeks * P, height = TOP + 7 * P;
+---
+<div class="ac">
+  <div class="ac__scroll">
+    <svg class="ac__svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
+      <defs>
+        <symbol id={`${id}-on`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={SHAPES.on} />
+        <symbol id={`${id}-off`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={SHAPES.off} />
+      </defs>
+      {months.map((m) => <text class="ac__label" x={m.x + 2} y="11">{m.text}</text>)}
+      {WEEKDAYS.map((d, i) => d && <text class="ac__label" x="0" y={TOP + i * P + P / 2 + 4}>{d}</text>)}
+      {cells.map((c) => (
+        <use href={`#${id}-${c.level ? 'on' : 'off'}`} class={`ac__l${c.level}`} x={c.x} y={c.y} width={P} height={P}><title>{c.title}</title></use>
+      ))}
+    </svg>
+  </div>
+  <div class="ac__legend" aria-hidden="true">
+    Mniej
+    <svg width="14" height="14" class="ac__l0"><use href={`#${id}-off`} width="14" height="14" /></svg>
+    {[1, 2, 3, 4].map((l) => <svg width="14" height="14" class={`ac__l${l}`}><use href={`#${id}-on`} width="14" height="14" /></svg>)}
+    Więcej
+  </div>
+</div>
+
+<style>
+  /* rtl: przewijanie startuje od prawej (najnowsze tygodnie); margin-right: auto trzyma wąski kalendarz przy lewej */
+  .ac__scroll { overflow-x: auto; direction: rtl; }
+  .ac__svg { display: block; direction: ltr; margin-right: auto; max-width: none; overflow: visible; }
+  .ac__label { font: 400 0.6875rem var(--f-mono); letter-spacing: .04em; fill: var(--muted); }
+  .ac__l0 { color: color-mix(in srgb, var(--blue) 42%, transparent); }
+  .ac__l1 { color: var(--seq-1); }
+  .ac__l2 { color: var(--seq-2); }
+  .ac__l3 { color: var(--seq-3); }
+  .ac__l4 { color: var(--seq-4); }
+  .ac__legend {
+    display: flex; align-items: center; gap: 4px; margin-top: 12px;
+    font: 400 0.6875rem/1 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+  }
+  .ac__legend svg:first-of-type { margin-left: 4px; }
+  .ac__legend svg:last-of-type { margin-right: 4px; }
+</style>

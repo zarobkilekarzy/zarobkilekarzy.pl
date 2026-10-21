@@ -9,13 +9,36 @@ import PageHeader from '@/components/layout/PageHeader.astro';
 import PageMeta from '@/components/layout/PageMeta.astro';
 import Prose from '@/components/article/Prose.astro';
 import NumberedList from '@/components/blocks/NumberedList.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import MiniStats from '@/components/blocks/MiniStats.astro';
+import ActivityCalendar from '@/components/blocks/ActivityCalendar.astro';
 import { contact, editorialRules, legalPages } from '@/data/o-serwisie';
+import { commitHistory } from '@/lib/historia';
+import { formatDate, formatPL, plural } from '@/lib/format';
 import type { Crumb, SeoInput } from '@/lib/seo';
 
 const page = legalPages.oProjekcie;
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: page.title }];
 const seo: SeoInput = { title: page.docTitle, description: page.description, breadcrumbs: crumbs };
 const mail = `mailto:${contact.email}`;
+
+// Historia zmian z gita, liczona przy każdym buildzie (bez historii — np. płytki klon — sekcji nie ma)
+const history = commitHistory();
+const historyStats = history && (() => {
+  const active = Object.keys(history.days).length;
+  const [peakDay, peak] = Object.entries(history.days).reduce((a, b) => (b[1] > a[1] ? b : a));
+  const day = (s: string) => formatDate(new Date(`${s}T00:00:00Z`));
+  return {
+    title: `Strona zmienia się na bieżąco: ${formatPL(history.total)} ${plural(history.total, ['zmiana', 'zmiany', 'zmian'])} w ${active} ${active === 1 ? 'dniu' : 'dniach'}`,
+    items: [
+      { label: 'Zmiany (commity)', value: formatPL(history.total) },
+      { label: 'Dni pracy', value: String(active) },
+      { label: 'Najwięcej w dniu', value: `${peak} · ${day(peakDay).slice(0, 5)}` },
+      { label: 'Ostatnia zmiana', value: day(history.last) },
+    ],
+    label: `Kalendarz zmian w kodzie strony od ${day(history.first)} do ${day(history.today)}: ${history.total} zmian w ${active} dniach, najwięcej ${peak} dnia ${day(peakDay)}.`,
+  };
+})();
 ---
 <BaseLayout seo={seo}>
   <Section space="bottom" class="about-top">
@@ -38,6 +61,23 @@ const mail = `mailto:${contact.email}`;
       <h2 id="kto">Kto prowadzi serwis</h2>
       <p>Serwis jest prowadzony anonimowo. Nie stoi za nim żadna fundacja, firma ani organizacja. Oceniaj nas po źródłach: każda liczba ma przypis z linkiem do dokumentu, który możesz sprawdzić sam.</p>
 
+      {history && historyStats && (
+        <>
+          <h2 id="historia-zmian">Historia zmian</h2>
+          <p>Kod i treść serwisu są publiczne. Każda poprawka — nowy tekst, zaktualizowana liczba, sprostowanie — zostaje w historii repozytorium z datą.</p>
+          <Figure
+            title={historyStats.title}
+            note="Kropka to dzień, w którym zmieniono kod albo treść strony — im mocniejsza, tym więcej zmian. Plus to dzień bez zmian. Grafika odświeża się przy każdym wydaniu strony."
+            source={{ label: 'historia repozytorium zarobkilekarzy.pl (GitHub)', href: 'https://github.com/zarobkilekarzy/zarobkilekarzy.pl/commits/main/' }}
+          >
+            <MiniStats items={historyStats.items} />
+            <div class="about-calendar">
+              <ActivityCalendar days={history.days} from={history.first} to={history.today} label={historyStats.label} />
+            </div>
+          </Figure>
+        </>
+      )}
+
       <h2 id="sprostowania">Sprostowania i kontakt</h2>
       <p>Widzisz błąd, nieaktualną liczbę albo źródło, które przestało działać? Napisz na <a href={mail}>{contact.email}</a>. Sprawdzamy każde zgłoszenie, a poprawiony tekst dostaje nową datę aktualizacji.</p>
       <p>Serwis ma charakter informacyjny i nie udziela porad medycznych ani prawnych. Jak traktujemy dane, opisuje <a href="/prywatnosc/">polityka prywatności</a>, a na najczęstsze zarzuty odpowiadamy w <a href="/faq/">osobnym tekście</a>.</p>
@@ -47,4 +87,5 @@ const mail = `mailto:${contact.email}`;
 
 <style>
   .about-top { padding-top: clamp(32px, 4vw, 56px); }
+  .about-calendar { margin-top: 28px; }
 </style>

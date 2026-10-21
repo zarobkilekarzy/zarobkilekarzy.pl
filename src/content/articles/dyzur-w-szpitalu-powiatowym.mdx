@@ -1,0 +1,268 @@
+---
+title: Dyżur w szpitalu powiatowym — kto płaci i ile
+seoTitle: "Dyżur w szpitalu powiatowym: kto płaci"
+category: Analiza
+topic: pieniadz
+order: 9
+stat: { value: "8 760", unit: "godzin w roku na jedno stanowisko dyżurowe" }
+date: 2026-10-21
+summary: "Szpital musi mieć lekarza na oddziale przez całą dobę, bez względu na to, ilu ma pacjentów. NFZ płaci mu jednak ryczałtem liczonym od sprawozdanych świadczeń, a nie od godzin obsady — a gdy pieniędzy brakuje, różnica zostaje w szpitalu, w budżecie powiatu albo w długu."
+description: "Ile kosztuje godzina, doba i rok dyżuru lekarza w szpitalu powiatowym, z czego jest opłacana i kto pokrywa różnicę, gdy ryczałt NFZ nie wystarcza."
+keyPoints:
+  - "Oddział szpitalny musi mieć lekarza przez całą dobę we wszystkie dni tygodnia. Koszt obsady liczy się więc w godzinach — rok to 8 760 godzin na jedno stanowisko — a ryczałt NFZ w sprawozdanych świadczeniach."
+  - "Godzina dyżuru specjalisty na etacie kosztuje przy ustawowym minimum ok. 116–155 zł. W przykładach stawek kontraktowych ujawnionych przez szpitale powiatowe to ok. 130–280 zł, a projekt limitu stawia sufit 240,30 zł."
+  - "Gdy ryczałt nie wystarcza, różnica zostaje w szpitalu: 207 szpitali powiatowych miało w 2025 r. ponad 1,26 mld zł straty netto. Powiat może ją pokryć, ale nie musi."
+related:
+  - rozliczenia-nfz
+  - kontrakt-vs-etat
+  - zadluzenie-szpitali
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import ToolCard from '@/components/blocks/ToolCard.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import SourcedTable from '@/components/english-division/SourcedTable.astro';
+import { formatPL } from '@/lib/format';
+import { SPECIALIST_FLOOR } from '@/data/rozklad-wynagrodzen';
+import { monitoringTool } from '@/data/home';
+import { postulat } from '@/data/postulat';
+import postulatPhoto from '@/assets/img/postulat-jawne-kwoty.jpg';
+
+export const LINKS = {
+  zpp26: 'https://www.zpp.pl/storage/files/2026-04//08462406e31e01f9efb3252bc7e4b9c91626.pdf',
+  druk3157: 'https://api.sejm.gov.pl/sejm/term10/prints/3157/3157.pdf',
+};
+
+{/* Godziny w roku: 365 dni × 24 h. Stawki — przykłady z tabeli „Co podano” i limit z projektu (1/20 × 4806 zł). */}
+export const YEAR_HOURS = 365 * 24;
+export const RATES = [
+  { label: '130 zł', value: 130, note: 'dolna granica stawek podanych w Ostródzie i Mławie' },
+  { label: '200 zł', value: 200, note: 'przykładowa stawka pośrednia' },
+  { label: '240,30 zł', value: 240.3, note: 'limit z projektu ustawy', marked: true },
+  { label: '270 zł', value: 270, note: 'górna granica stawek koordynatorów w Iławie' },
+];
+
+Noc w szpitalu powiatowym. Na internie leży kilkunastu pacjentów, w izbie przyjęć czeka kilka osób, na porodówce może nie być nikogo. Lekarz musi jednak być na miejscu, bo tak stanowią przepisy — a za każdą godzinę jego obecności ktoś płaci.
+
+<StatRow
+  label="Szpitale powiatowe w 2025 r."
+  items={[
+    { prefix: '>', value: 1.26, decimals: 2, unit: 'mld zł', desc: 'łącznej straty netto 207 szpitali powiatowych', accuracy: 'exact', source: 'Związek Powiatów Polskich, raport nr 26', href: LINKS.zpp26 },
+    { value: 91, unit: '%', desc: 'tych szpitali zakończyło rok stratą na sprzedaży — zysk miało 19 z 207', accuracy: 'exact', source: 'Związek Powiatów Polskich, raport nr 26', href: LINKS.zpp26 },
+    { value: 240.3, decimals: 2, unit: 'zł/h', desc: 'tyle wyniesie sufit stawki godzinowej, jeśli Sejm uchwali projekt limitów płac', accuracy: 'exact', source: 'druk sejmowy nr 3157', href: LINKS.druk3157 },
+  ]}
+/>
+
+## Dlaczego lekarz musi być na miejscu przez całą dobę
+
+Szpital I stopnia — najniższy poziom sieci szpitali — musi mieć co najmniej dwa z pięciu podstawowych oddziałów (chirurgię ogólną, choroby wewnętrzne, położnictwo i ginekologię, neonatologię, pediatrię) oraz SOR albo izbę przyjęć.[^usoz95l] Nie każdy szpital powiatowy ma I stopień, ale te wymagania pokazują minimum, które musi utrzymać mały szpital.
+
+Każdy oddział z pacjentami musi mieć całodobową opiekę lekarską we wszystkie dni tygodnia.[^oddzial] Przepis pozwala ją łączyć w obrębie tego samego rodzaju oddziałów: internę z innymi zachowawczymi, chirurgię z innymi zabiegowymi. Na porodówce wymaga stałej obecności specjalisty oraz anestezjologa w tej samej lokalizacji, a intensywnej terapii nie wolno łączyć z niczym.
+
+Szpitale z tej możliwości korzystają: często jeden lekarz dyżuruje w nocy na kilku oddziałach naraz, a bywa, że obsługuje też izbę przyjęć. NIK opisała np. umowę na dyżury jednocześnie w izbie przyjęć i na neurologii.[^nik-zlecanie] Taki dyżur jest dla szpitala tańszy, ale na jednego lekarza przypada więcej pacjentów.
+
+Nie każdy lekarz musi przy tym siedzieć w szpitalu. Ustawa przewiduje też gotowość, potocznie dyżur telefoniczny: lekarz przyjeżdża na wezwanie, np. gdy potrzebny jest specjalista, którego nie ma na miejscu. Na etacie za godzinę gotowości należy się połowa stawki zasadniczej, a od wezwania czas liczy się jak dyżur.[^udl98] Tam, gdzie przepis wymaga stałej obecności — jak na porodówce — telefon nie wystarcza.
+
+Z tego wynika podstawowa arytmetyka: rok ma **8 760 godzin** i tyle trzeba obsadzić na każdym stanowisku dyżurowym, bez względu na to, ilu jest pacjentów.
+
+## Ile kosztuje godzina dyżuru
+
+<Comparison
+  table={{
+    columns: ['', 'Etat (umowa o pracę)', 'Kontrakt (umowa cywilnoprawna)'],
+    rows: [
+      { cells: ['Stawka', `Jak za nadgodziny: dodatek 50% w dzień powszedni, 100% w nocy, w niedziele i święta. Przy minimum specjalisty ok. ${formatPL(SPECIALIST_FLOOR.dutyDay)}–${formatPL(SPECIALIST_FLOOR.dutyNight)} zł za godzinę`, 'Z oferty lekarza w konkursie, w którym kryterium bywa wyłącznie cena'] },
+      { cells: ['Dyżur telefoniczny', 'Połowa godzinowej stawki zasadniczej', 'Tak, jak zapisano w umowie'] },
+      { cells: ['Limit godzin', 'Przeciętnie 48 godzin tygodniowo, więcej za pisemną zgodą (klauzula opt-out, uchylona od 1 stycznia 2028 r.)', 'Brak limitu z Kodeksu pracy'] },
+      { cells: ['Co jest jawne', 'Ustawowe minimum płacy, znane co do grosza', 'Zwykle tylko wynik konkursu, bez stawki'] },
+    ],
+  }}
+/>
+
+Na etacie dyżur wlicza się do czasu pracy i jest płatny według zasad Kodeksu pracy o nadgodzinach.[^udl95][^kp1511] Minimum płacy zasadniczej specjalisty wynosi od 1 lipca 2026 r. **12 910,16 zł** miesięcznie,[^najnizsze] a pracę ponad 48 godzin tygodniowo umożliwia klauzula opt-out.[^udl96] Rachunek godziny przy minimum pokazujemy w zestawieniu [Rozkład wynagrodzeń](/dane/rozklad-wynagrodzen/).
+
+Jeden lekarz może też łączyć obie formy: mieć etat i dyżurować na kontrakcie, w tym samym szpitalu albo w innym. Przepisy na to pozwalają, a wybór formy zostawiają stronom. NIK zauważyła, że wyższe dochody, niższe składki i brak limitów Kodeksu pracy skłaniają część personelu do zamiany etatu na kontrakt.[^nik-powiatowe] Skutki obu form opisujemy w tekście [Kontrakt czy etat](/mechanizmy/kontrakt-vs-etat/).
+
+Stawek kontraktowych nie zbiera ani nie publikuje żaden urząd. W ogłoszeniach o konkursach w BIP trzech szpitali powiatowych nie ma kwot — cenę wpisuje oferent.[^wodzislaw] Znane stawki pochodzą z odpowiedzi szpitali na pytania i z wypowiedzi dyrekcji:
+
+<Figure
+  title="Stawki ujawnione przez szpitale powiatowe mierzą różne rzeczy"
+  note="Kwoty brutto za godzinę, tak jak podały je szpitale albo ich dyrekcja. Iława — dane za maj 2026 r., w części przypadków z dodatkiem funkcyjnym; Ostróda — tylko praca na oddziałach i w POZ; Mława — żądania kandydatów, nie zawarte umowy."
+>
+  <SourcedTable
+    columns={['Szpital', 'Co podano', 'Kto i kiedy']}
+    rows={[
+      { cells: ['Iława', '131,93–270 zł za godzinę dla lekarzy kierujących oddziałami', 'odpowiedź szpitala, maj 2026 r.'], source: { label: 'Info Iława, 27.08.2026', href: 'https://www.infoilawa.pl/aktualnosci/item/82756-ile-zarabiaja-lekarze-w-szpitalu-powiatowym-w-ilawie-placowka-podala-dane' } },
+      { cells: ['Ostróda', '130–280 zł za godzinę pracy na oddziałach i w POZ', 'wyjaśnienie szpitala, lipiec 2026 r.'], source: { label: 'Interia, 28.07.2026', href: 'https://wydarzenia.interia.pl/warminsko-mazurskie/news-lekarz-zarobil-1600-zl-za-godzine-powiatowy-szpital-z-milion,nId,23520736' } },
+      { cells: ['Wadowice', '260 zł za godzinę dla anestezjologów', 'wypowiedź wicedyrektora, lipiec 2026 r.'], source: { label: 'TVN24, 9.07.2026', href: 'https://tvn24.pl/krakow/wadowice-zarobki-lekarzy-w-szpitalu-st9135375' } },
+      { cells: ['Dzierżoniów', 'od 250 zł za godzinę na chirurgii', 'ogłoszenie szpitala, styczeń 2025 r.'], source: { label: 'strona szpitala, 22.01.2025', href: 'https://szpital.dzierzoniow.pl/zatrudnimy-lekarzy-na-oddzial-chirurgiczny-2.html' } },
+      { cells: ['Mława', 'kandydaci żądali od 130 do 1700 zł za godzinę', 'wypowiedź dyrektora, czerwiec 2026 r.'], source: { label: 'naTemat, 5.06.2026', href: 'https://natemat.pl/656236,od-130-zl-do-1700-zl-za-godzine-dyzuru-polskie-szpitale-tocza-walke-o-lekarzy' } },
+    ]}
+    caption="Stawki godzinowe lekarzy ujawnione przez szpitale powiatowe: Iława 131,93–270 zł (kierujący oddziałami, maj 2026 r.); Ostróda 130–280 zł (oddziały i POZ, lipiec 2026 r.); Wadowice 260 zł (anestezjolodzy, lipiec 2026 r.); Dzierżoniów od 250 zł (chirurgia, styczeń 2025 r.); Mława — żądania kandydatów od 130 do 1700 zł (czerwiec 2026 r.)."
+  />
+</Figure>
+
+Każdy wiersz mówi o czymś innym, więc nie da się z nich złożyć średniej.[^ilawa][^ostroda][^wadowice][^dzierzoniow][^mlawa] Rozrzut z Mławy pokazuje za to, jak wygląda rynek: sąsiednie szpitale powiatowe licytują się o tych samych lekarzy, a płacą z tego samego NFZ. Jak działa ta licytacja, także między szpitalem publicznym a prywatnym, opisujemy w tekście [Jeden lekarz, dwa cenniki](/analizy/publiczna-prywatna-ochrona-zdrowia/#konkurencja-o-lekarza).
+
+Ile to daje w skali jednego szpitala, widać tam, gdzie dane ujawniono. W Iławie średnia miesięczna faktura lekarza na kontrakcie wyniosła od stycznia do maja 2026 r. 37 558,33 zł, a 14 lekarzy fakturowało ponad 50 tys. zł miesięcznie.[^ilawa] Szpital w Wadowicach zapłacił w 2025 r. 89 lekarzom na kontraktach łącznie ok. 43 mln zł. Trzy najwyższe roczne kwoty przekroczyły 1,2 mln zł, a najwyższą dostał anestezjolog.[^wadowice] Każda z tych kwot to zapłata jednego szpitala, nie cały dochód lekarza.
+
+<Aside title="Dlaczego nie dzielimy kwoty przez godziny">
+
+Ostróda podała radnemu, że jeden lekarz dostał w kwietniu 2026 r. 91 462,26 zł za 56 godzin — z dzielenia ok. 1633 zł za godzinę. Szpital wyjaśnił jednak, że godziny obejmują tylko oddział i POZ, bez poradni, zabiegów i izby przyjęć.[^ostroda] Bez ewidencji wszystkich godzin taki iloraz nie jest stawką.
+
+</Aside>
+
+## Ile kosztuje doba i rok
+
+Koszt jednego stanowiska dyżurowego to stawka razy 8 760 godzin.
+
+<Comparison
+  table={{
+    caption: 'Rachunek poglądowy: jedno stanowisko lekarskie obsadzone przez cały rok na kontrakcie',
+    columns: ['Stawka za godzinę', 'Doba', 'Rok', 'Skąd ta stawka'],
+    rows: RATES.map((r) => ({
+      cells: [r.label, `${formatPL(Math.round(r.value * 24))} zł`, `${formatPL(Math.round(r.value * YEAR_HOURS))} zł`, r.note],
+      marked: r.marked,
+    })),
+  }}
+/>
+
+To szacunek: jedno stanowisko, bez zastępstw, cała doba na jednej stawce. Szpital z dwoma oddziałami i izbą przyjęć ma takich stanowisk kilka. Gdyby obsadzał cztery po 200 zł za godzinę, same dyżury kosztowałyby ok. 7 mln zł rocznie. Dla porównania: przychody przeciętnego szpitala powiatowego z NFZ wyniosły w 2025 r. ok. 131 mln zł (nasze wyliczenie z danych ZPP: 27,16 mld zł na 207 szpitali), choć rozrzut między małymi a dużymi szpitalami jest duży.
+
+Na etacie godzina dyżuru przy ustawowym minimum jest tańsza, ale po dyżurze lekarz musi mieć co najmniej 11 godzin odpoczynku, udzielonego zaraz po jego zakończeniu.[^udl97] Szpital potrzebuje więc więcej lekarzy niż stanowisk — kogoś, kto przejmie dzień po nocy. To jeden z powodów, dla których szpitale sięgają po kontrakty: NIK w 12 skontrolowanych szpitalach naliczyła średnio 47% personelu na umowach cywilnoprawnych, a ich koszt — średnio 26% kosztów działalności.[^nik-zlecanie]
+
+W sprawozdaniach 207 szpitali powiatowych za 2025 r. wynagrodzenia to 40,73% kosztów, a usługi medyczne obce — gdzie księguje się m.in. kontrakty lekarzy, ale też np. badania zlecane na zewnątrz — 25,30%.[^zpp26]
+
+## Kto płaci: od składki do budżetu powiatu
+
+<NumberedList
+  items={[
+    { title: 'NFZ.', text: 'Z umów z NFZ pochodzi średnio 93,8% przychodów szpitali powiatowych. Ryczałt zależy od punktów za świadczenia sprawozdane w poprzednim okresie, ich ceny i współczynnika jakości. Godzin obsady nie ma we wzorze: oddział z małą liczbą pacjentów wykazuje mało punktów, choć jego dyżury kosztują tyle samo.' },
+    { title: 'Szpital.', text: 'Gdy ryczałt nie pokrywa kosztów, szpital ponosi stratę i pokrywa ją najpierw sam. Przy stracie ponad 1% przychodów musi przygotować program naprawczy.' },
+    { title: 'Powiat.', text: 'Powiat „może pokryć” stratę szpitala — nie musi. Powiaty ziemskie wydawały na to po 2020 r. 26–36 mln zł rocznie. Np. w Lublińcu rada powiatu dała 700 tys. zł na stratę za 2025 r., która wyniosła 14,7 mln zł.' },
+    { title: 'Wierzyciele.', text: 'Reszta staje się długiem. Zobowiązania wymagalne miało 125 z 207 szpitali powiatowych, łącznie niemal 1,48 mld zł, a odsetki kosztowały je 344,04 mln zł. Po likwidacji samodzielnego publicznego zakładu jego długi przejmuje powiat.' },
+  ]}
+/>
+
+Zasady ryczałtu wyznaczają ustawa o świadczeniach i rozporządzenie ministra zdrowia,[^usoz136c][^ryczalt] a pokrywanie straty i przejęcie długów — ustawa o działalności leczniczej.[^udl59] Dane finansowe pochodzą z raportów Związku Powiatów Polskich[^zpp26][^zpp27] i z uchwały rady powiatu.[^lubliniec] Jak działa ryczałt, opisujemy w tekście [Rozliczenia NFZ](/mechanizmy/rozliczenia-nfz/).
+
+Część powiatów zamiast pokrywać stratę pożycza szpitalom pieniądze. Rada Powiatu Radomskiego pożyczyła w kwietniu 2026 r. szpitalom w Iłży i Pionkach 4,93 mln zł na zobowiązania za 2025 r.; według starosty powiat przekazał już obu szpitalom łącznie ponad 32 mln zł.[^ilza] W Jaśle powiat pożyczył szpitalowi 6 mln zł bez odsetek na 10 lat.[^jaslo] Pożyczka nie zmniejsza straty — przesuwa spłatę na kolejne lata, które szpital zaczyna z tym samym ryczałtem i tymi samymi dyżurami.
+
+## Gdy dyżuru nie ma kto wziąć
+
+Pieniądze to jedna strona. Druga to ludzie: oddział bez kompletu dyżurów nie może przyjmować pacjentów. Szpital w Skarżysku-Kamiennej zawiesił pediatrię od 1 kwietnia 2025 r.; jako powód podał „brak lekarzy potrzebnych do obsadzenia dyżurów”.[^skarzysko] W Zakopanem oddział położniczo-ginekologiczno-noworodkowy jest zawieszony do 31 października 2026 r., a szpital ogłasza konkursy na lekarzy do ordynacji i dyżurów.[^zakopane] W Lesku oddział, na którym w 2025 r. odbyły się 74 porody, zawieszono z braku lekarzy i z powodu remontu, a NFZ na wniosek dyrektora rozwiązał umowę z końcem roku.[^lesko]
+
+## Czy każdy powiat potrzebuje pełnego szpitala
+
+Skoro koszt dyżuru nie zależy od liczby pacjentów, najdrożej wychodzi w szpitalach, które mają ich najmniej. W Wadowicach porodówkę zawieszono od lutego 2026 r.: porodów było 566 w 2025 r. wobec ok. 1000 w 2020 r., a oddział przyniósł 12 mln zł straty.[^wadowice-porod]
+
+Jednym z kierunków reformy jest koncentracja: mniej oddziałów, skupionych w większych szpitalach. NIK wskazała w 2023 r. „zbyt dużą liczbę szpitali powiatowych” jako jedną z przyczyn ich problemów.[^nik-powiatowe] Od 2025 r. NFZ może na wniosek szpitala wykreślić oddział z sieci, jeśli posłuży to konsolidacji świadczeń na danym obszarze, a w jego miejsce zawrzeć umowę np. na leczenie planowe.[^usoz159a]
+
+Są też argumenty przeciw. Zamknięty oddział to dłuższa droga dla pacjenta, a przy porodzie liczą się minuty: na początku października 2026 r. w Warszawie kobieta, odesłana ze szpitala do domu, urodziła według swojej relacji ok. 20 minut później. Szpital twierdzi, że pacjentka sama chciała wrócić.[^miedzylesie] Część szpitali powiatowych niedawno zainwestowała w budynki i sprzęt. Szpital w Pionkach otworzył w 2023 r. nowe pawilony — budowa i remont kosztowały 86 mln zł, wyposażenie kolejne 15 mln zł, ok. 40% pochodziło z rządowego funduszu. Chirurgia ma tam zostać zamknięta z końcem 2026 r.,[^pionki] a powiat pożycza obu swoim szpitalom pieniądze na bieżące zobowiązania.[^ilza]
+
+## Te same godziny w dwóch miejscach
+
+Godzin, które jeden lekarz przepracowuje w kilku miejscach, nie sumuje nikt. Bywa, że te same godziny trafiają do rozliczenia dwa razy. NIK opisała szpital, który zapłacił dwóm lekarzom 16,3 tys. zł za godziny wykazane w tym samym czasie w dwóch miejscach.[^nik-zlecanie] W szpitalu powiatowym w Braniewie jeden lekarz rozliczył w 2024 r. 11 577 godzin, choć rok przestępny ma ich 8784 — według nowego zarządu te same godziny liczono w kilku tytułach naraz. To zarzut, nie ustalony fakt: zarzutów nikomu nie postawiono.[^braniewo][^de-braniewo] Opisujemy tę sprawę szerzej w tekście o [wieloetatowości](/mechanizmy/wieloetatowosc/).
+
+NIK znalazła też dyżury trwające bez przerwy 73, a w innej kontroli nawet 124 godziny.[^nik-powiatowe][^nik-zlecanie] W tej drugiej kontroli jedynym kryterium wyboru ofert była w większości przypadków cena, umowy zawierano mimo niespełnienia wymogów, bo brakowało lekarzy do dyżurów, a w 9 z 12 szpitali wypłacono łącznie 10,3 mln zł ponad maksymalną wartość umów.[^nik-zlecanie] Same kwoty widać tylko wtedy, gdy szpital odpowie na pytanie. W monitoringu Sieci Obywatelskiej Watchdog Polska wniosek o wynagrodzenia lekarzy dostało 212 szpitali I stopnia. 73 odmówiły, a czytelne listy przysłało 26. W typowym z nich środkowa pozycja to ok. 154 tys. zł rocznie, a 18 pozycji przekracza 1 mln zł — każda to zapłata jednego szpitala.[^watchdog]
+
+<ToolCard
+  layout="banner"
+  tool={{ ...monitoringTool, label: 'Dane · sprawdź sam', desc: 'Który szpital ujawnił płace lekarzy, który odmówił, a który milczy. Placówki można filtrować według poziomu sieci szpitali.' }}
+  cta="Otwórz monitoring"
+/>
+
+## Co zmieni limit 240 zł za godzinę
+
+Rządowy projekt w Sejmie przewiduje, że stawka godzinowa brutto za świadczenia finansowane przez NFZ nie może przekroczyć 1/20 minimalnego wynagrodzenia, czyli **240,30 zł** w 2026 r.[^druk3157][^minimalne] Limit obejmuje też kontrakty, a tekst nie wyłącza z niego dyżurów. 20 października 2026 r. projekt wrócił do komisji. Etapy śledzimy w tekście [Limity wynagrodzeń medyków](/analizy/limity-wynagrodzen-medykow/).
+
+Prezes Ogólnopolskiego Związku Pracodawców Szpitali Powiatowych mówi, że „raczej nikt nie będzie pracował na SOR za 240 zł/h”, a zarazem, że limit stanie się podłogą dla lekarzy, którzy zarabiają dziś mniej.[^ozpsp] Ilu lekarzy jest powyżej, a ilu poniżej tej kwoty, nie pokazał nikt — także uzasadnienie projektu.[^druk3157]
+
+## Czego nie wiadomo
+
+Nie wiadomo, ile szpitale powiatowe płacą łącznie za dyżury, jaki jest rozkład stawek ani ile godzin jedna osoba przepracowuje we wszystkich szpitalach razem. Tych liczb nie ma w żadnym publicznym rejestrze. Dopóki ich nie ma, sporu o to, czy 240 zł za godzinę to za mało, czy za dużo, nie da się rozstrzygnąć danymi.
+
+Odpowiedź na część tych pytań dałoby łączne wynagrodzenie każdej osoby ze wszystkich placówek z umową z NFZ, publikowane co kwartał pod stałym identyfikatorem zamiast nazwiska. Wtedy zdublowane godziny i kwoty z kilku szpitali widać by było w jednym wierszu.
+
+<ToolCard
+  layout="banner"
+  tool={{ icon: 'chart', label: 'Postulat', title: postulat.title, desc: postulat.text, href: postulat.primary.href }}
+  cta={postulat.primary.label}
+  image={{ src: postulatPhoto, alt: '' }}
+/>
+
+[^usoz95l]: Ustawa o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych, [art. 95l ust. 4 pkt 1 i art. 95m ust. 3 i 6](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (t.j. Dz.U. 2025 poz. 1461) — profile szpitala I stopnia, wymóg co najmniej dwóch z nich oraz umowy na SOR albo izbę przyjęć.
+
+[^oddzial]: Rozporządzenie Ministra Zdrowia w sprawie świadczeń gwarantowanych z zakresu leczenia szpitalnego, [§ 5 ust. 1 i załącznik nr 3 cz. I lp. 2–3, 9, 14, 26, 36, 37](https://api.sejm.gov.pl/eli/acts/DU/2023/870/text.pdf) (t.j. Dz.U. 2023 poz. 870 z późn. zm.) — całodobowa opieka lekarska we wszystkie dni tygodnia i zasady jej łączenia; wyjątek dla hospitalizacji planowej w dni wolne dodało [rozporządzenie zmieniające](https://api.sejm.gov.pl/eli/acts/DU/2026/840/text.pdf) (Dz.U. 2026 poz. 840).
+
+[^nik-zlecanie]: Najwyższa Izba Kontroli, [Zlecanie usług medycznych przez szpitale publiczne](https://www.nik.gov.pl/plik/id,28541,vp,31371.pdf), P/22/046, 29.03.2023 — 12 szpitali, w tym powiatowe: umowa na dyżury w izbie przyjęć i na oddziale neurologii, zdublowane godziny dwóch lekarzy (16,3 tys. zł nadpłaty), 134 dyżury ponad 40 godzin, najdłuższy 124 godziny.
+
+[^udl98]: Ustawa o działalności leczniczej, [art. 98](https://api.sejm.gov.pl/eli/acts/DU/2026/156/text.pdf) (t.j. Dz.U. 2026 poz. 156) — za godzinę gotowości 50% stawki godzinowej wynagrodzenia zasadniczego; wezwanie do szpitala rozlicza się jak dyżur medyczny.
+
+[^udl95]: Ustawa o działalności leczniczej, [art. 95](https://api.sejm.gov.pl/eli/acts/DU/2026/156/text.pdf) (t.j. Dz.U. 2026 poz. 156) — dyżur medyczny to wykonywanie czynności zawodowych poza normalnymi godzinami pracy, wlicza się do czasu pracy; do wynagrodzenia stosuje się odpowiednio art. 151¹ § 1–3 Kodeksu pracy (ust. 5).
+
+[^kp1511]: Kodeks pracy, [art. 151¹](https://api.sejm.gov.pl/eli/acts/DU/2026/1245/text.pdf) (t.j. Dz.U. 2026 poz. 1245) — dodatek 100% wynagrodzenia za nadgodziny w nocy, w niedziele i święta, 50% w pozostałe dni.
+
+[^najnizsze]: Ustawa z 8 czerwca 2017 r. o sposobie ustalania najniższego wynagrodzenia zasadniczego niektórych pracowników zatrudnionych w podmiotach leczniczych, [art. 3a i załącznik](https://api.sejm.gov.pl/eli/acts/DU/2022/2139/text.pdf) (t.j. Dz.U. 2022 poz. 2139) — współczynnik 1,45 dla lekarza specjalisty; kwota bazowa: [komunikat Prezesa GUS z 9.02.2026](https://api.sejm.gov.pl/eli/acts/MP/2026/192/text.pdf) (M.P. 2026 poz. 192), przeciętne wynagrodzenie w 2025 r. 8903,56 zł.
+
+[^udl96]: Ustawa o działalności leczniczej, [art. 96](https://api.sejm.gov.pl/eli/acts/DU/2026/156/text.pdf) (t.j. Dz.U. 2026 poz. 156) — praca ponad przeciętnie 48 godzin tygodniowo po pisemnej zgodzie; uchylenie od 1.01.2028 r.: art. 3 pkt 2 i art. 12 pkt 3 [ustawy z 5 lipca 2018 r.](https://api.sejm.gov.pl/eli/acts/DU/2018/1532/text.pdf) (Dz.U. 2018 poz. 1532).
+
+[^nik-powiatowe]: Najwyższa Izba Kontroli, [Funkcjonowanie szpitali powiatowych](https://www.nik.gov.pl/plik/id,28082,vp,30905.pdf), P/22/048, 2023 — 22 szpitale, lata 2020–2022: zamiana etatów na kontrakty, dyżury do 73 godzin bez przerwy w trzech szpitalach, „zbyt duża liczba szpitali powiatowych” wśród przyczyn problemów.
+
+[^wodzislaw]: Przejrzane ogłoszenia: Szpital Powiatowy w Wodzisławiu Śląskim, [konkurs ofert na dyżury i ordynację w izbie przyjęć](https://zoz.wodzislaw.pl/konkurs-ofert-na-udzielanie-calodobowych-swiadczen-zdrowotnych-w-charakterze-lekarza-w-przedmiocie-pelnienia-dyzurow-oraz-ordynacji-podstawowej-izba-przyjec-w-wodzislawiu-sl.html), 2025–2026 (kryterium: cena 100%); [Szpital Powiatowy w Kętrzynie](https://szpital-ketrzyn.pl/index.php/ogloszenia/konkurs-ofert) i [Mazurskie Centrum Zdrowia w Węgorzewie](https://mazurskiecentrumzdrowia.pl/rekrutacja/konkursy-ofert/), stan na 21.10.2026.
+
+[^ilawa]: Info Iława, [Ile zarabiają lekarze w Szpitalu Powiatowym w Iławie? Placówka podała dane](https://www.infoilawa.pl/aktualnosci/item/82756-ile-zarabiaja-lekarze-w-szpitalu-powiatowym-w-ilawie-placowka-podala-dane), 27.08.2026 — odpowiedź szpitala na pytanie mieszkańca; w części przypadków do stawki dochodzi dodatek funkcyjny.
+
+[^ostroda]: Interia, [Lekarz zarobił 1600 zł za godzinę. Powiatowy szpital z milionowymi długami](https://wydarzenia.interia.pl/warminsko-mazurskie/news-lekarz-zarobil-1600-zl-za-godzine-powiatowy-szpital-z-milion,nId,23520736), 28.07.2026 — zestawienie przekazane radnemu powiatu i wyjaśnienie szpitala.
+
+[^wadowice]: TVN24, [Wadowice: zarobki lekarzy w szpitalu](https://tvn24.pl/krakow/wadowice-zarobki-lekarzy-w-szpitalu-st9135375), 9.07.2026.
+
+[^dzierzoniow]: NZOZ Szpital Powiatowy w Dzierżoniowie, [Zatrudnimy lekarzy na oddział chirurgiczny](https://szpital.dzierzoniow.pl/zatrudnimy-lekarzy-na-oddzial-chirurgiczny-2.html), 22.01.2025.
+
+[^mlawa]: naTemat, [Od 130 zł do 1700 zł za godzinę dyżuru. Polskie szpitale toczą walkę o lekarzy](https://natemat.pl/656236,od-130-zl-do-1700-zl-za-godzine-dyzuru-polskie-szpitale-tocza-walke-o-lekarzy), 5.06.2026 — wypowiedź dyrektora szpitala w Mławie.
+
+[^zpp26]: Związek Powiatów Polskich, [Szpitale powiatowe w kryzysie — analiza sytuacji finansowej w 2025 roku](https://www.zpp.pl/storage/files/2026-04//08462406e31e01f9efb3252bc7e4b9c91626.pdf), raport nr 26, kwiecień 2026 — sprawozdania MZ-03 207 szpitali (163 SPZOZ i 44 spółek): struktura kosztów, udział NFZ w przychodach, wyniki, zobowiązania i koszty finansowe.
+
+[^usoz136c]: Ustawa o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych, [art. 136c](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (t.j. Dz.U. 2025 poz. 1461) — ryczałt sieci szpitali zależy od środków w planie NFZ oraz od liczby, rodzaju i cen świadczeń sprawozdanych w poprzednim okresie.
+
+[^ryczalt]: Rozporządzenie Ministra Zdrowia w sprawie sposobu ustalania ryczałtu systemu podstawowego szpitalnego zabezpieczenia świadczeń opieki zdrowotnej, [§ 3 ust. 1](https://api.sejm.gov.pl/eli/acts/DU/2025/878/text.pdf) (t.j. Dz.U. 2025 poz. 878, zm. Dz.U. 2026 poz. 105) — ryczałt to iloczyn liczby punktów, ceny punktu i współczynnika jakości.
+
+[^udl59]: Ustawa o działalności leczniczej, [art. 59 i 61](https://api.sejm.gov.pl/eli/acts/DU/2026/156/text.pdf) (t.j. Dz.U. 2026 poz. 156) — stratę netto pokrywa zakład, a podmiot tworzący „może” ją pokryć; program naprawczy przy stracie powyżej 1% przychodów; po likwidacji zobowiązania przechodzą m.in. na jednostkę samorządu terytorialnego.
+
+[^zpp27]: Związek Powiatów Polskich, [Nakłady JST na ochronę zdrowia](https://www.zpp.pl/storage/files/2026-05//498e57f73ed25c8f86d75dc7fc710a409440.pdf), raport nr 27, maj 2026 — wydatki powiatów na pokrycie ujemnego wyniku szpitali (§ 416) według sprawozdań RB-28S.
+
+[^udl97]: Ustawa o działalności leczniczej, [art. 97](https://api.sejm.gov.pl/eli/acts/DU/2026/156/text.pdf) (t.j. Dz.U. 2026 poz. 156) — co najmniej 11 godzin nieprzerwanego odpoczynku na dobę, po dyżurze udzielanego bezpośrednio po jego zakończeniu.
+
+[^ilza]: TwójRadom, [Blisko 5 mln zł wsparcia dla szpitali w Iłży i Pionkach](https://twojradom.pl/blisko-5-mln-zl-wsparcia-dla-szpitali-w-ilzy-i-pionkach-powiat-reaguje-na-kryzys/1459056), 28.04.2026 — pożyczki długoterminowe uchwalone przez radę powiatu i wypowiedź starosty.
+
+[^jaslo]: Jaslo4u.pl, [Szpital nad przepaścią. Powiat daje 6 milionów](https://www.jaslo4u.pl/szpital-nad-przepascia-powiat-daje-6-milionow-sesja-zakonczo-newsy-jaslo-36028), 21.04.2026.
+
+[^skarzysko]: Radio Kielce, [Skarżyska pediatria zawieszona](https://radiokielce.pl/1284363/skarzyska-pediatria-zawieszona), 31.03.2025.
+
+[^zakopane]: Szpital Powiatowy w Zakopanem, [Czasowe zawieszenie oddziału położniczo-ginekologiczno-noworodkowego](https://szpital-zakopane.pl/czasowe-zawieszenie-oddzialu-polozniczo-ginekologiczno-noworodkowego-2/), 1.10.2026 (aktualizacja 14.10.2026), i ogłoszenia konkursów ofert na stronie szpitala z 12 i 21.10.2026.
+
+[^lesko]: NFZ, [Informacja dotycząca statusu oddziału ginekologiczno-położniczego w Lesku](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/informacja-dotyczaca-statusu-oddzialu-ginekologiczno-polozniczego-w-lesku,8910.html), 21.03.2026.
+
+[^lubliniec]: Lubliniecka.pl, [Finansowa kroplówka dla lublinieckiego szpitala kosztem inwestycji](https://lubliniecka.pl/index.php/2026/08/24/finansowa-kroplowka-dla-lublinieckiego-szpitala-kosztem-inwestycji-powiat-przekazuje-placowce-kolejne-pieniadze/), 24.08.2026.
+
+[^wadowice-porod]: TVN24, [Od lutego bez porodówki w Wadowicach](https://tvn24.pl/zdrowie/od-lutego-bez-porodowki-w-wadowicach-decyzja-jest-bardzo-trudna-st8852887), 16.01.2026 — liczba porodów i strata oddziału według dyrekcji.
+
+[^usoz159a]: Ustawa o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych, [art. 159a ust. 4 i 5](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (t.j. Dz.U. 2025 poz. 1461) — wykreślenie profilu z umowy w sieci szpitali dla konsolidacji świadczeń i umowa zastępcza; przepisy dodała [ustawa z 5 sierpnia 2025 r.](https://api.sejm.gov.pl/eli/acts/DU/2025/1211/text.pdf) (Dz.U. 2025 poz. 1211), w mocy od 17.09.2025.
+
+[^miedzylesie]: Zero.pl, [Odesłana ze szpitala, urodziła w łazience. Oświadczenie placówki a fakty](https://zero.pl/news/odeslana-ze-szpitala-urodzila-w-lazience-oswiadczenie-placowki-a-fakty), 18.10.2026 — relacja pacjentki i oświadczenie szpitala; przebieg zdarzenia jest sporny.
+
+[^pionki]: Krytyka Polityczna, [Szpitale w stanie krytycznym](https://krytykapolityczna.pl/kraj/szpitale-w-stanie-krytycznym-w-budzecie-brakuje-pieniedzy/), 18.09.2026 — koszt nowych pawilonów i remontu, wyposażenia, udział Rządowego Funduszu Inwestycji Lokalnych, decyzja o zamknięciu chirurgii z dniem 31.12.2026 r.
+
+[^braniewo]: Interia, [Braniewo — doby rozliczone na 72 godziny w szpitalu powiatowym](https://wydarzenia.interia.pl/kraj/news-lekarz-pracowal-72-godziny-na-dobe-to-bylo-wprost-dojenie-sz,nId,23511769) — te same godziny rozliczane w kilku tytułach naraz, według nowego zarządu szpitala.
+
+[^de-braniewo]: Dziennik Elbląski, [Zarobki lekarza sięgnęły prawie 1,8 mln zł](https://dziennikelblaski.pl/artykul/zarobki-lekarza-siegnely-n2405057), 9.07.2026 — 11 577 godzin w 2024 r., faktury na 1 772 879,50 zł, zmiana zarządu, wypowiedzenie, brak zarzutów.
+
+[^watchdog]: Sieć Obywatelska Watchdog Polska, [monitoring „Ile zarabiają lekarze?”](https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabiaja-lekarze) — odpowiedzi szpitali za 2025 r.; poziom sieci, odczyt list i mediany: [Monitoring Watchdog](/dane/monitoring-watchdog/) (nasze opracowanie). Pozycja na liście to rozliczenie w jednej placówce, nie zawsze jedna osoba.
+
+[^druk3157]: Rządowy projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych oraz niektórych innych ustaw, [druk nr 3157](https://api.sejm.gov.pl/sejm/term10/prints/3157/3157.pdf) — projektowany art. 132ab ust. 1 i 6, uzasadnienie i zestawienie uwag z konsultacji; [przebieg prac](https://api.sejm.gov.pl/sejm/term10/processes/3157), stan na 21.10.2026.
+
+[^minimalne]: Rozporządzenie Rady Ministrów z 11 września 2025 r. w sprawie wysokości minimalnego wynagrodzenia za pracę oraz wysokości minimalnej stawki godzinowej w 2026 r., [§ 1](https://api.sejm.gov.pl/eli/acts/DU/2025/1242/text.pdf) (Dz.U. 2025 poz. 1242) — 4806 zł; 1/20 tej kwoty to 240,30 zł.
+
+[^ozpsp]: Rzeczpospolita, [Prezes związku szpitali: nikt nie będzie pracował na SOR za 240 zł/h](https://www.rp.pl/ochrona-zdrowia/art45258091-prezes-zwiazku-szpitali-nikt-nie-bedzie-pracowal-na-sor-za-240-zl-h), 6.10.2026 — wywiad z prezesem OZPSP (stanowisko strony sporu).

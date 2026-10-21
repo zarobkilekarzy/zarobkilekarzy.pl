@@ -1,6 +1,6 @@
 /**
- * Historia zmian strony z gita — liczba commitów na dzień, czytana przy każdym buildzie
- * (blocks/ActivityCalendar na /o-projekcie/).
+ * Historia zmian strony z gita — liczba commitów na dzień i zmienione pliki treści
+ * (`src/content/`), czytane przy każdym buildzie (blocks/ActivityCalendar na /o-projekcie/).
  *
  * Data commitu w strefie autora (`--date=short`), więc wynik nie zależy od strefy serwera CI.
  * CI musi pobrać całą historię (`fetch-depth: 0` w deploy.yml): w płytkim klonie wykres
@@ -11,6 +11,8 @@ import { execFileSync } from 'node:child_process';
 export interface CommitHistory {
   /** „2026-10-21” → liczba commitów */
   days: Record<string, number>;
+  /** „2026-10-21” → zmienione pliki w src/content/ (ścieżki od katalogu repo, jak `entry.filePath`) */
+  files: Record<string, string[]>;
   total: number;
   /** pierwszy i ostatni dzień z commitem */
   first: string;
@@ -35,9 +37,15 @@ export function commitHistory(): CommitHistory | null {
     if (!dates.length) return cache;
     const days: Record<string, number> = {};
     for (const d of dates) days[d] = (days[d] ?? 0) + 1;
+    const files: Record<string, string[]> = {};
+    let day = '';
+    for (const line of git('log', '--name-only', '--format=@%ad', '--date=short', 'HEAD', '--', 'src/content').split('\n')) {
+      if (line.startsWith('@')) day = line.slice(1);
+      else if (line && !(files[day] ??= []).includes(line)) files[day].push(line);
+    }
     const sorted = Object.keys(days).sort();
     const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Warsaw' }).format(new Date());
-    cache = { days, total: dates.length, first: sorted[0], last: sorted.at(-1)!, today };
+    cache = { days, files, total: dates.length, first: sorted[0], last: sorted.at(-1)!, today };
   } catch {
     console.warn('[historia] brak gita — kalendarz zmian pominięty');
   }

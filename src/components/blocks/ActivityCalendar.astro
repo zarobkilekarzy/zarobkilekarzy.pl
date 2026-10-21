@@ -2,7 +2,9 @@
 /**
  * Kalendarz aktywności jak na GitHubie, w motywie siatki (lib/siatka): kolumna = tydzień (pn–nd),
  * kropka = dzień z wpisami w czterech stopniach kobaltu (--seq-1…4), plus = dzień bez wpisów.
- * SVG przy buildzie, bez JS; dymek dnia z <title>. Najwyżej 53 ostatnie tygodnie.
+ * SVG przy buildzie; na kropkach dymki ui/Popover (wariant `cell`) z datą, liczbą wpisów i — gdy podane
+ * w `links` — do trzech odnośników („i N innych”). Dymki tylko w dniach z wpisami, żeby strona nie niosła
+ * setek pustych. Najwyżej 53 ostatnie tygodnie.
  * Na wąskim ekranie przewija się w poziomie i startuje od najnowszych tygodni (direction: rtl).
  *
  *   <ActivityCalendar days={{ '2026-10-21': 33 }} from="2026-06-18" to="2026-10-21" label="…" />
@@ -10,6 +12,7 @@
 import { CELL, SHAPES } from '@/lib/siatka';
 import { plural } from '@/lib/format';
 import { uid } from '@/lib/uid';
+import Popover from '@/components/ui/Popover.astro';
 
 interface Props {
   /** „RRRR-MM-DD” → liczba wpisów */
@@ -17,13 +20,16 @@ interface Props {
   /** pierwszy i ostatni dzień kalendarza (RRRR-MM-DD) */
   from: string;
   to: string;
+  /** „RRRR-MM-DD” → co zmieniono tego dnia (w dymku do trzech pozycji) */
+  links?: Record<string, { label: string; href: string }[]>;
   /** progi stopni: [od 2. stopnia, od 3., od 4.] */
   steps?: [number, number, number];
   /** opis dla czytników ekranu */
   label: string;
 }
 
-const { days, from, to, steps = [4, 10, 25], label } = Astro.props;
+const { days, from, to, links = {}, steps = [4, 10, 25], label } = Astro.props;
+const LINKS_MAX = 3;
 
 const P = 22, LEFT = 30, TOP = 20;
 const DAY = 86_400_000;
@@ -40,16 +46,19 @@ const weeks = Math.round((weekStart(end).getTime() - firstMonday.getTime()) / (7
 
 const level = (n: number) => (n === 0 ? 0 : 1 + steps.filter((s) => n >= s).length);
 
-const cells: { x: number; y: number; level: number; title: string }[] = [];
+const cells: { x: number; y: number; level: number; date: string; count: string; links: { label: string; href: string }[] }[] = [];
 for (let t = start.getTime(); t <= end.getTime(); t += DAY) {
   const d = new Date(t);
-  const n = days[d.toISOString().slice(0, 10)] ?? 0;
+  const key = d.toISOString().slice(0, 10);
+  const n = days[key] ?? 0;
   const w = Math.round((weekStart(d).getTime() - firstMonday.getTime()) / (7 * DAY));
   cells.push({
     x: LEFT + w * P,
     y: TOP + ((d.getUTCDay() + 6) % 7) * P,
     level: level(n),
-    title: `${d.getUTCDate()} ${MONTHS_GEN[d.getUTCMonth()]}: ${n ? `${n} ${plural(n, ['zmiana', 'zmiany', 'zmian'])}` : 'bez zmian'}`,
+    date: `${d.getUTCDate()} ${MONTHS_GEN[d.getUTCMonth()]} ${d.getUTCFullYear()}`,
+    count: `${n} ${plural(n, ['zmiana', 'zmiany', 'zmian'])}`,
+    links: links[key] ?? [],
   });
 }
 
@@ -66,6 +75,7 @@ const width = LEFT + weeks * P, height = TOP + 7 * P;
 ---
 <div class="ac">
   <div class="ac__scroll">
+    <div class="ac__plot" style={`width: ${width}px; height: ${height}px`}>
     <svg class="ac__svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
       <defs>
         <symbol id={`${id}-on`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={SHAPES.on} />
@@ -74,9 +84,21 @@ const width = LEFT + weeks * P, height = TOP + 7 * P;
       {months.map((m) => <text class="ac__label" x={m.x + 2} y="11">{m.text}</text>)}
       {WEEKDAYS.map((d, i) => d && <text class="ac__label" x="0" y={TOP + i * P + P / 2 + 4}>{d}</text>)}
       {cells.map((c) => (
-        <use href={`#${id}-${c.level ? 'on' : 'off'}`} class={`ac__l${c.level}`} x={c.x} y={c.y} width={P} height={P}><title>{c.title}</title></use>
+        <use href={`#${id}-${c.level ? 'on' : 'off'}`} class={`ac__l${c.level}`} x={c.x} y={c.y} width={P} height={P} />
       ))}
     </svg>
+    {cells.filter((c) => c.level).map((c) => (
+      <Popover variant="cell" class="ac__hit" style={`left: ${c.x}px; top: ${c.y}px; width: ${P}px; height: ${P}px`} label={`${c.date}: ${c.count}`} heading={c.count}>
+        {c.date}
+        {c.links.length > 0 && (
+          <span class="ac__links">
+            {c.links.slice(0, LINKS_MAX).map((l) => <a href={l.href}>{l.label}</a>)}
+            {c.links.length > LINKS_MAX && <span>i {c.links.length - LINKS_MAX} {plural(c.links.length - LINKS_MAX, ['inny tekst', 'inne teksty', 'innych tekstów'])}</span>}
+          </span>
+        )}
+      </Popover>
+    ))}
+    </div>
   </div>
   <div class="ac__legend" aria-hidden="true">
     Mniej
@@ -89,7 +111,10 @@ const width = LEFT + weeks * P, height = TOP + 7 * P;
 <style>
   /* rtl: przewijanie startuje od prawej (najnowsze tygodnie); margin-right: auto trzyma wąski kalendarz przy lewej */
   .ac__scroll { overflow-x: auto; direction: rtl; }
-  .ac__svg { display: block; direction: ltr; margin-right: auto; max-width: none; overflow: visible; }
+  .ac__plot { position: relative; direction: ltr; margin-right: auto; }
+  .ac__svg { display: block; max-width: none; overflow: visible; }
+  .ac__plot :global(.ac__hit) { position: absolute; display: block; }
+  .ac__links { display: grid; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
   .ac__label { font: 400 0.6875rem var(--f-mono); letter-spacing: .04em; fill: var(--muted); }
   .ac__l0 { color: color-mix(in srgb, var(--blue) 42%, transparent); }
   .ac__l1 { color: var(--seq-1); }

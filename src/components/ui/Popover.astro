@@ -13,6 +13,8 @@
  * `variant="term"` — termin w tekście z kropkowanym podkreśleniem,
  * `variant="hint"` — kółko „?” przy etykiecie (definicje w nagłówkach tabeli; treść wyzwalacza zbędna),
  * `variant="pin"` — wypełniony numer nad ilustracją (rozmiar: `--pop-pin`, domyślnie 22px).
+ * `variant="cell"` — niewidoczne pole na narysowanym elemencie (kropka dnia w ActivityCalendar);
+ *   rodzic ustawia rozmiar i pozycję `zl-popover`, wyzwalacz wypełnia go i pokazuje tylko obwódkę.
  * `placement="bottom"` — dymek pod wyzwalaczem (np. w nagłówku tabeli, żeby nie zasłaniał filtrów).
  * Treść dymka to treść frazowa (tekst, <strong>, <a>) — dymek bywa osadzony w akapicie.
  *
@@ -29,7 +31,7 @@ interface Props extends HTMLAttributes<'span'> {
   label?: string;
   /** pogrubiony nagłówek dymka */
   heading?: string;
-  variant?: 'marker' | 'term' | 'hint' | 'pin';
+  variant?: 'marker' | 'term' | 'hint' | 'pin' | 'cell';
   /** strona, po której dymek staje najpierw (gdy brak miejsca — przeciwna) */
   placement?: 'top' | 'bottom';
   /** podgląd po najechaniu/fokusie; false = tylko klik */
@@ -83,6 +85,11 @@ const { label, heading, variant = 'marker', placement = 'top', peek = true, id =
   }
   .pop__trigger--pin:hover { background: var(--blue-600); }
   .pop:has(:popover-open) .pop__trigger--pin { background: var(--blue-600); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--blue-fill); }
+
+  /* Pole na rysunku: sam obrys koła przy najechaniu i otwarciu — rysunek pod spodem zostaje bez zmian */
+  .pop__trigger--cell { display: block; width: 100%; height: 100%; border-radius: 50%; }
+  .pop__trigger--cell:hover, .pop:has(:popover-open) .pop__trigger--cell { box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .pop__trigger--cell:focus-visible { outline-offset: 0; }
 
   /* ---------- Dymek: w dzień jasny (powierzchnia, ramka, cień), w nocy granat uniesiony nad tło ---------- */
   .pop__panel {

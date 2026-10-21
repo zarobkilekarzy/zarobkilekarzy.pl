@@ -14,6 +14,8 @@ import MiniStats from '@/components/blocks/MiniStats.astro';
 import ActivityCalendar from '@/components/blocks/ActivityCalendar.astro';
 import { contact, editorialRules, legalPages } from '@/data/o-serwisie';
 import { commitHistory } from '@/lib/historia';
+import { articleHref, getPublishedArticles } from '@/lib/content';
+import { getNews, newsHref } from '@/lib/news';
 import { formatDate, formatPL, plural } from '@/lib/format';
 import type { Crumb, SeoInput } from '@/lib/seo';
 
@@ -23,8 +25,15 @@ const seo: SeoInput = { title: page.docTitle, description: page.description, bre
 const mail = `mailto:${contact.email}`;
 
 // Historia zmian z gita, liczona przy każdym buildzie (bez historii — np. płytki klon — sekcji nie ma)
+// Zmienione pliki → opublikowane artykuły i aktualności po `filePath`; reszta (kod, dane, szkice) pomijana
+async function changedTexts(files: Record<string, string[]>) {
+  const texts = new Map<string, { label: string; href: string }>();
+  for (const a of await getPublishedArticles()) if (a.filePath && !a.data.noindex) texts.set(a.filePath, { label: a.data.title, href: articleHref(a) });
+  for (const n of await getNews()) if (n.filePath) texts.set(n.filePath, { label: n.data.title, href: newsHref(n) });
+  return Object.fromEntries(Object.entries(files).map(([day, paths]) => [day, paths.flatMap((p) => texts.get(p) ?? [])]));
+}
 const history = commitHistory();
-const historyStats = history && (() => {
+const historyStats = history && await (async () => {
   const active = Object.keys(history.days).length;
   const [peakDay, peak] = Object.entries(history.days).reduce((a, b) => (b[1] > a[1] ? b : a));
   const day = (s: string) => formatDate(new Date(`${s}T00:00:00Z`));
@@ -36,6 +45,7 @@ const historyStats = history && (() => {
       { label: 'Najwięcej w dniu', value: `${peak} · ${day(peakDay).slice(0, 5)}` },
       { label: 'Ostatnia zmiana', value: day(history.last) },
     ],
+    links: await changedTexts(history.files),
     label: `Kalendarz zmian w kodzie strony od ${day(history.first)} do ${day(history.today)}: ${history.total} zmian w ${active} dniach, najwięcej ${peak} dnia ${day(peakDay)}.`,
   };
 })();
@@ -72,7 +82,7 @@ const historyStats = history && (() => {
           >
             <MiniStats items={historyStats.items} />
             <div class="about-calendar">
-              <ActivityCalendar days={history.days} from={history.first} to={history.today} label={historyStats.label} />
+              <ActivityCalendar days={history.days} links={historyStats.links} from={history.first} to={history.today} label={historyStats.label} />
             </div>
           </Figure>
         </>

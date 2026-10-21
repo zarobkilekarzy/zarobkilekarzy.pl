@@ -15,9 +15,13 @@
  * `animate` — po przewinięciu do wykresu linie rysują się od lewej do prawej (odsłanianie obszaru
  * wykresu), a podpisy na końcach pojawiają się na końcu. Bez JS i przy prefers-reduced-motion
  * wykres jest od razu pełny.
+ * Kropki pomiarów (`markers`) mają dymek z wartością: po najechaniu myszą albo po dotknięciu.
+ * Dymek pokazuje okres (`label`, domyślnie rok), wartość (`tip`, domyślnie liczba z jednostką
+ * albo indeks) i opis (`note`, domyślnie nazwa serii). To dodatek dla oka — czytnik ekranu
+ * dostaje `caption`, dlatego kropki nie łapią fokusu.
  */
 import type { HTMLAttributes } from 'astro/types';
-import { typo } from '@/lib/format';
+import { formatPL, typo } from '@/lib/format';
 
 interface Point {
   /** położenie na osi czasu: rok + ułamek */
@@ -25,6 +29,12 @@ interface Point {
   /** wartość: indeks albo kwota w jednostce wykresu */
   v: number;
   gapBefore?: boolean;
+  /** okres w dymku, np. „IX/X 2025”; domyślnie rok */
+  label?: string;
+  /** wartość w dymku, np. „4,2 mies.”; domyślnie `v` z jednostką wykresu albo indeks */
+  tip?: string;
+  /** opis pod wartością w dymku; domyślnie nazwa serii */
+  note?: string;
 }
 
 interface Series {
@@ -67,6 +77,13 @@ const X = (x: number) => ((x - xMin) / (xMax - xMin)) * 1000;
 const Y = (v: number) => 1000 - ((v - yMin) / (yMax - yMin)) * 1000;
 const pct = (x: number, lo: number, hi: number) => (((x - lo) / (hi - lo)) * 100).toFixed(3);
 
+/** Dymek kropki: przy lewym brzegu wyrównany do kropki zamiast wyśrodkowany, przy górnym — pod kropką */
+const tipValue = (p: Point) => p.tip ?? (base !== undefined ? `indeks ${formatPL(p.v)} (${base} = 100)` : `${formatPL(p.v, 1)}${unit ? `\u00A0${unit}` : ''}`);
+const tipPlace = (p: Point) => ({
+  'is-start': (p.x - xMin) / (xMax - xMin) < 0.2,
+  'is-below': (p.v - yMin) / (yMax - yMin) > 0.75,
+});
+
 /** Ciągłe odcinki serii (przerwa przy `gapBefore`) i odcinki przerywane między nimi */
 function paths(points: Point[]) {
   const runs: Point[][] = [];
@@ -107,7 +124,13 @@ function paths(points: Point[]) {
       </svg>
       {series.filter((s) => s.markers).map((s) =>
         s.points.map((p) => (
-          <span class={`ix__dot ix__dot--${s.tone}`} style={`left: ${pct(p.x, xMin, xMax)}%; bottom: ${pct(p.v, yMin, yMax)}%`}></span>
+          <span class:list={['ix__dot', `ix__dot--${s.tone}`, tipPlace(p)]} style={`left: ${pct(p.x, xMin, xMax)}%; bottom: ${pct(p.v, yMin, yMax)}%`}>
+            <span class="ix__tip">
+              <span class="ix__tip-when">{p.label ?? Math.floor(p.x)}</span>
+              <span class="ix__tip-val">{typo(tipValue(p))}</span>
+              <span class="ix__tip-note">{typo(p.note ?? s.label)}</span>
+            </span>
+          </span>
         )),
       )}
       {series.map((s) => {
@@ -133,6 +156,14 @@ function paths(points: Point[]) {
     const observer = new IntersectionObserver((entries) => {
       entries.filter((e) => e.isIntersecting).forEach((e) => {
         e.target.classList.add('is-drawn');
+        // po odsłonięciu obszar bez przycięcia — dymki kropek wychodzą poza wykres. Tylko przejście clip-path
+        // samego obszaru (zdarzenia dymków bąbelkują w górę); przerwane przejście też kończy odsłanianie.
+        const area = e.target.querySelector('.ix__area');
+        const done = (ev: Event) => {
+          if (ev.target === area && (ev as TransitionEvent).propertyName === 'clip-path') e.target.classList.add('is-done');
+        };
+        area?.addEventListener('transitionend', done);
+        area?.addEventListener('transitioncancel', done);
         observer.unobserve(e.target);
       });
     }, { threshold: 0.5 });
@@ -141,6 +172,29 @@ function paths(points: Point[]) {
       observer.observe(el);
     });
   }
+
+  /** Dymek nie wychodzi poza wykres (wąski ekran): przesunięcie w poziomie przed pokazaniem */
+  function fit(dot: Element) {
+    const tip = dot.querySelector<HTMLElement>('.ix__tip');
+    const box = dot.closest('.ix')?.getBoundingClientRect();
+    if (!tip || !box) return;
+    tip.style.removeProperty('--dx');
+    const r = tip.getBoundingClientRect();
+    const dx = Math.max(box.left - r.left, 0) + Math.min(box.right - r.right, 0);
+    if (dx) tip.style.setProperty('--dx', `${Math.round(dx)}px`);
+  }
+
+  // Mysz: dymek pokazuje :hover w CSS. Dotyk: stuknięcie otwiera (i zamyka inne), stuknięcie obok zamyka.
+  document.addEventListener('pointerover', (e) => {
+    const dot = (e.target as Element).closest?.('.ix__dot');
+    if (dot) fit(dot);
+  });
+  document.addEventListener('click', (e) => {
+    const dot = (e.target as Element).closest?.('.ix__dot');
+    document.querySelectorAll('.ix__dot.is-open').forEach((d) => d !== dot && d.classList.remove('is-open'));
+    if (dot) fit(dot);
+    dot?.classList.toggle('is-open');
+  });
 </script>
 
 <style>
@@ -167,6 +221,30 @@ function paths(points: Point[]) {
   .ix__dot--accent { background: var(--blue); }
   .ix__dot--data { background: var(--chart); }
   .ix__dot--ref { background: var(--muted); }
+  /* Większe pole trafienia niż sama kropka (palec, mysz) */
+  .ix__dot::before { content: ""; position: absolute; inset: -9px; border-radius: 50%; }
+  .ix__dot:is(:hover, .is-open) { z-index: 2; width: 12px; height: 12px; }
+
+  /* Dymek z wartością: nad kropką, wyśrodkowany; is-start — od kropki w prawo, is-below — pod kropką;
+     --dx — przesunięcie ze skryptu, gdy dymek wychodziłby poza wykres */
+  .ix__tip {
+    position: absolute; left: 50%; bottom: calc(100% + 8px); translate: calc(-50% + var(--dx, 0px)) 0;
+    display: grid; gap: 3px; padding: 7px 10px 8px;
+    /* jak dymek mapy i ui/Popover: w dzień jasny z ramką i cieniem, w nocy granat uniesiony nad tło */
+    background: light-dark(var(--surface), var(--inverse-2));
+    box-shadow:
+      inset 0 0 0 1px light-dark(var(--line-2), transparent),
+      0 20px 40px -16px light-dark(rgba(4, 11, 27, .18), rgba(4, 11, 27, .5)),
+      0 2px 6px light-dark(rgba(4, 11, 27, .06), transparent);
+    white-space: nowrap;
+    opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .15s, visibility .15s;
+  }
+  .ix__dot.is-start .ix__tip { left: -6px; translate: var(--dx, 0px) 0; }
+  .ix__dot.is-below .ix__tip { bottom: auto; top: calc(100% + 8px); }
+  .ix__dot:is(:hover, .is-open) .ix__tip { opacity: 1; visibility: visible; }
+  .ix__tip-when { font: 500 0.625rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .ix__tip-val { font: 400 1.0625rem/1.1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .ix__tip-note { font: 400 0.75rem/1.25 var(--f-body); color: var(--text); }
 
   /* Podpis na końcu linii, w marginesie po prawej: kreska w kolorze serii, nazwa, wartość */
   .ix__end {
@@ -194,6 +272,7 @@ function paths(points: Point[]) {
   .ix.is-armed .ix__end { opacity: 0; }
   .ix.is-drawn .ix__area { clip-path: inset(-12px calc(-1 * var(--reserve)) -12px -12px); transition: clip-path 1.8s cubic-bezier(0.45, 0, 0.55, 1); }
   .ix.is-drawn .ix__end { opacity: 1; transition: opacity 0.4s 1.5s; }
+  .ix.is-done .ix__area { clip-path: none; }
 
   @container (max-width: 560px) {
     .ix { --reserve: 104px; }

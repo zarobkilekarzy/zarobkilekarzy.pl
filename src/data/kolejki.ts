@@ -225,7 +225,10 @@ export const INDEX_CHART = {
       labelShift: 1,
       markers: true,
       // 2020: Barometr nie powstał — odcinek 2019–2021 przerywany
-      points: WHC_EDITIONS.map((e) => ({ x: e.x, v: (e.single / WHC_BASE) * 100, gapBefore: e.label === 'IX 2021' })),
+      points: WHC_EDITIONS.map((e) => ({
+        x: e.x, v: (e.single / WHC_BASE) * 100, gapBefore: e.label === 'IX 2021',
+        label: e.label, tip: `${fmt(e.single, 1)} mies.`, note: 'średnio na świadczenie (WHC)',
+      })),
     },
   ],
   caption:

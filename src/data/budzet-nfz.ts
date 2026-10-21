@@ -209,9 +209,9 @@ export const COST_CHART = {
       labelShift: -1,
       markers: true,
       points: [
-        { x: mid(LAST_FINAL.year), v: LAST_FINAL.costs },
-        { x: mid(CURRENT.year), v: CURRENT.costs },
-        { x: mid(DRAFT_2027.year), v: DRAFT_2027.total },
+        { x: mid(LAST_FINAL.year), v: LAST_FINAL.costs, note: 'plan ostateczny' },
+        { x: mid(CURRENT.year), v: CURRENT.costs, note: `plan w toku, po zmianie z ${CURRENT_PLAN.dateShort}` },
+        { x: mid(DRAFT_2027.year), v: DRAFT_2027.total, note: 'projekt planu z lipca 2026 r.' },
       ],
     },
     {
@@ -221,7 +221,7 @@ export const COST_CHART = {
       end: mld(LAST_FINAL.costs),
       labelShift: 1,
       markers: true,
-      points: FINALS.map((r) => ({ x: mid(r.year), v: r.costs })),
+      points: FINALS.map((r) => ({ x: mid(r.year), v: r.costs, note: 'plan ostateczny' })),
     },
   ],
   caption:

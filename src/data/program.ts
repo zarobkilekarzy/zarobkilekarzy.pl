@@ -165,7 +165,7 @@ export const programGroups: ProgramGroup[] = [
           text: `Gdy sąd lekarski karze, w ${Math.round((PENALTIES_MILD / PENALTIES_TOTAL) * 100)}% przypadków wybiera upomnienie, naganę albo karę pieniężną (${PENALTIES_MILD} z ${PENALTIES_TOTAL} kar orzeczonych w pierwszej instancji w latach ${PENALTY_WINDOW.from}–${PENALTY_WINDOW.to}). Prawo wykonywania zawodu prawomocnie odebrał w latach ${FIRST_YEAR}–${LAST_YEAR} ${revocations('pl')} lekarzom.`,
           source: { label: 'Naczelna Izba Lekarska', href: 'https://nil.org.pl/izba/naczelny-sad-lekarski/sprawozdania/dane-liczbowe-dotyczace-sadow-lekarskich' },
         },
-        dispute: 'Konstytucja (art. 17 ust. 1) powierza samorządom zawodów zaufania publicznego zarówno reprezentację, jak i pieczę nad należytym wykonywaniem zawodu. Rozdzielenie ról musi zmieścić się w tej formule — na przykład przez niezależny skład orzekający z udziałem spoza zawodu.',
+        dispute: 'Konstytucja (art. 17 ust. 1) pozwala tworzyć samorządy zawodów zaufania publicznego, które zarazem reprezentują zawód i sprawują pieczę nad jego należytym wykonywaniem. Rozdzielenie ról musi zmieścić się w tej formule — na przykład przez niezależny skład orzekający z udziałem spoza zawodu.',
         refs: ['odpowiedzialnosc-zawodowa-lekarzy'],
       },
       {

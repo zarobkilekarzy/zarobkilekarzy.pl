@@ -384,8 +384,8 @@ export const routes: Route[] = [
     examples: 'Chcesz, żeby sprawą zajął się samorząd lekarski i ocenił postępowanie lekarza.',
     to: 'Okręgowy rzecznik odpowiedzialności zawodowej (izba lekarska)',
     facts: [
-      { label: 'Jak', text: 'Tylko pisemnie, do okręgowej izby lekarskiej, do której należy lekarz: Twoje dane, data i miejsce zdarzenia, opis, dane lekarza, własnoręczny podpis.' },
-      { label: 'Termin', text: 'Postępowania nie wszczyna się po **3 latach** od zdarzenia (art. 64 ustawy o izbach lekarskich).', urgent: true },
+      { label: 'Jak', text: 'Do okręgowego rzecznika odpowiedzialności zawodowej w izbie, do której należy lekarz: Twoje dane, data i miejsce zdarzenia, opis i dane lekarza.' },
+      { label: 'Termin', text: 'Postępowania nie można wszcząć po **3 latach** od czynu (art. 64 ust. 1 ustawy o izbach lekarskich) — skargę złóż wcześniej, żeby rzecznik zdążył.', urgent: true },
       { label: 'Dobrze wiedzieć', text: 'To postępowanie dyscyplinarne: może ukarać lekarza, ale nie przyzna Ci pieniędzy. Skargę rozpatruje samorząd lekarski — to ta sama struktura pełni rolę oskarżyciela i sądu. [Opisujemy ten mechanizm](ref:odpowiedzialnosc-zawodowa-lekarzy).' },
     ],
   },
@@ -435,7 +435,7 @@ export const deadlines: Deadline[] = [
     card: `na wniosek o świadczenie za szkodę w szpitalu (najpóźniej 3 lata od zdarzenia). Opłata ${FUND.fee}.`,
   },
   { value: '3', unit: 'lata', what: 'na pozew o odszkodowanie i zadośćuczynienie', from: 'od dowiedzenia się o szkodzie i o tym, kto za nią odpowiada', basis: 'art. 442¹ § 1 k.c.' },
-  { value: '3', unit: 'lata', what: 'na skargę do rzecznika odpowiedzialności zawodowej', from: 'od zdarzenia', basis: 'art. 64 ustawy o izbach lekarskich' },
+  { value: '3', unit: 'lata', what: 'na wszczęcie postępowania przez rzecznika odpowiedzialności zawodowej — skargę złóż wcześniej', from: 'od czynu', basis: 'art. 64 ust. 1 ustawy o izbach lekarskich' },
   {
     value: '20', unit: 'lat', what: 'tyle placówka przechowuje dokumentację', from: 'od końca roku ostatniego wpisu', basis: 'art. 29', info: true,
     card: 'tyle placówka przechowuje dokumentację (30 lat, gdy zgon z uszkodzenia ciała lub zatrucia).',

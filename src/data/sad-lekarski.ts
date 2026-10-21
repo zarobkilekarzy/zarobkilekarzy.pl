@@ -79,7 +79,7 @@ export const SCALE = [
   {
     level: 7, label: 'Pozbawienie prawa do zawodu', note: 'pkt 7',
     law: [
-      { ref: 'art. 83 ust. 1 pkt 7', text: '„pozbawienie prawa wykonywania zawodu”.' },
+      { ref: 'art. 83 ust. 1 pkt 7', text: '„pozbawienie prawa wykonywania zawodu, o którym mowa w art. 5 pkt 3–3c”.' },
       PUBLIKACJA,
     ],
   },
@@ -100,7 +100,7 @@ export interface CourtCase {
   facts: string[];
   charge: string;
   verdict: { level: number; text: string };
-  /** co sąd napisał w uzasadnieniu — pokazujemy dopiero po odpowiedzi */
+  /** streszczenie uzasadnienia (w cudzysłowie tylko dosłowne fragmenty) — pokazujemy dopiero po odpowiedzi */
   reasoning?: string;
   /** nazwa pliku na portalu NIL — też klucz grupy: sprawy z jednego orzeczenia losują się razem */
   file: string;
@@ -496,13 +496,13 @@ export const CASES: CourtCase[] = [
     court: "Okręgowy sąd lekarski",
     facts: [
       "Lekarz w trakcie specjalizacji dyżurował w nocnej i świątecznej opiece zdrowotnej. Wieczorem przyszli dwaj ojcowie z chorymi dziećmi (gorączka, ból gardła, kaszel). Lekarz rozmawiał z nimi na korytarzu: dziewczynce zalecił herbatę, leżenie i coś z apteki, odmówił osłuchania i obejrzenia gardła; chłopcu tylko przyłożył dłoń do czoła. Żadnego dziecka nie przyjął do gabinetu i nie sporządził dokumentacji.",
-      "Jeden z ojców zawiadomił policję. Badanie wydychanego powietrza wykazało 0,58–0,59 mg/l alkoholu. Następnego dnia w innej placówce u dziewczynki rozpoznano ostre zapalenie krtani i tchawicy, a u chłopca ostre zapalenie oskrzeli.",
-      "Prokuratura umorzyła dochodzenie o narażenie pacjentów — biegły uznał uchybienia za bez skutku dla ich zdrowia. Lekarz przyznał się tylko do nietrzeźwości; twierdził, że ojciec „wymuszał antybiotyki”. Na rozprawę się nie stawił.",
+      "Jeden z ojców zawiadomił policję. Badanie wydychanego powietrza wykazało 0,58–0,59 mg/l alkoholu. Następnego dnia, po konsultacji w nocnej i świątecznej opiece, u dziewczynki rozpoznano ostre zapalenie krtani i tchawicy, a u chłopca ostre zapalenie oskrzeli.",
+      "Prokuratura umorzyła dochodzenie o narażenie pacjentów — biegła uznała uchybienia za bezskutkowe: nie naraziły dzieci na bezpośrednie niebezpieczeństwo utraty życia albo ciężkiego uszczerbku na zdrowiu. Lekarz przyznał się tylko do nietrzeźwości; twierdził, że ojciec „wymuszał antybiotyki”. Na rozprawę się nie stawił.",
     ],
     charge: "Naruszenie godności zawodu (art. 1 ust. 3 i art. 64 KEL), brak staranności i brak dokumentacji — pięć zarzutów.",
-    verdict: { level: 3, text: "Kara pieniężna (jednokrotność przeciętnego wynagrodzenia) za nietrzeźwość, nagana za niezbadanie każdego z dzieci i upomnienie za brak dokumentacji. Sąd wystąpił też do komisji izby o zbadanie zdolności lekarza do wykonywania zawodu." },
+    verdict: { level: 3, text: "Kara pieniężna (jednokrotność przeciętnego wynagrodzenia) za nietrzeźwość, nagana za niezbadanie każdego z dzieci i upomnienie za brak dokumentacji." },
     reasoning:
-      "Sąd nazwał rozpoczęcie dyżuru po alkoholu „karygodnym i niedopuszczalnym”, a wypitą ilość — znaczną. Nie uwierzył, że lekarz nie wiedział o swoim stanie. Jako okoliczność łagodzącą wziął tylko wcześniejszą niekaralność.",
+      "Sąd uznał za „karygodne i niedopuszczalne zachowanie” decyzję o rozpoczęciu dyżuru po spożyciu alkoholu, a wypitą ilość — za znaczną. Nie uwierzył, że lekarz nie wiedział o swoim stanie. Jako okoliczność łagodzącą wziął tylko wcześniejszą niekaralność.",
     file: "OSL/OSL.07.15W.docx",
   },
   {
@@ -626,8 +626,8 @@ export const CASES: CourtCase[] = [
   },
   {
     id: "rtg-radiolog",
-    title: "Opis RTG: przeoczony nowotwór",
-    summary: "Radiolog opisał zdjęcie płuc bez sugestii pilnej tomografii; nowotwór rozpoznano dwa tygodnie później, pacjent zmarł.",
+    title: "Opis RTG bez sugestii pilnej tomografii",
+    summary: "Radiolog opisał zdjęcie płuc bez sugestii pilnej tomografii; nowotwór rozpoznano dwa tygodnie później, ale sąd nie przypisał lekarzowi wpływu na opóźnienie rozpoznania ani na zgon.",
     label: "lekarz 1 z 2",
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
@@ -638,13 +638,13 @@ export const CASES: CourtCase[] = [
     charge: "Nieprawidłowy opis badania RTG, który mógł opóźnić rozpoznanie (art. 8 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 1, text: "Upomnienie — orzeczone w I instancji i utrzymane przez NSL." },
     reasoning:
-      "Brak sugestii pilnej tomografii był uchybieniem, ale NSL nie przypisał lekarzowi wpływu na zgon — „nie można domniemywać” okoliczności, za które ponosi się odpowiedzialność. Według NSL tomografia na SOR „nie była w stanie odmienić tragicznych losów chorego”.",
+      "Brak sugestii pilnej tomografii był uchybieniem, ale NSL nie przypisał lekarzowi wpływu na zgon — „nie można domniemywać” okoliczności, za które ponosi się odpowiedzialność. Według NSL samo wykonanie tomografii na SOR „niestety nie było w stanie odmienić tragicznych losów chorego”.",
     file: "NSL/NSL.01.03-2024W.docx",
   },
   {
     id: "rtg-pulmonolog",
     title: "Konsultacja: tomografia ambulatoryjnie",
-    summary: "Pulmonolożka konsultowała tego samego pacjenta na podstawie opisu RTG i zaleciła tomografię ambulatoryjnie.",
+    summary: "Pulmonolożka konsultowała tego samego pacjenta i zaleciła tomografię ambulatoryjnie; według zarzutu oparła się na opisie RTG, nie oglądając zdjęcia — sąd tego nie potwierdził.",
     label: "lekarz 2 z 2",
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
@@ -717,7 +717,7 @@ export const CASES: CourtCase[] = [
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
       "Na publicznym spotkaniu stowarzyszenia lekarka powiedziała w przemówieniu, że „te wszystkie epidemie to jest jedno wielkie kłamstwo”, i mówiła o szczepionkach. W tamtym roku w Polsce odnotowano 339 przypadków odry, wobec 63 rok wcześniej.",
-      "Tłumaczyła, że chodziło jej o epidemie „medialne”, np. za granicą, i że przemówienie przerwano. NSL odtworzył całe nagranie i uznał tę wersję za „wręcz nieprawdopodobną”.",
+      "Tłumaczyła, że chodziło jej o epidemie „medialne”, np. za granicą, i że przemówienie przerwano. NSL odtworzył całe nagranie i uznał za „wręcz nieprawdopodobne”, by lekarka mogła tak zmienić wypowiedź, żeby nie dotyczyła „także zjawiska epidemii w Polsce”.",
       "Sprawa wróciła do NSL po wyroku Sądu Najwyższego — wcześniej obrońcę usunięto z sali rozpraw za brak maseczki, co naruszyło prawo do obrony.",
     ],
     charge: "Publiczne kwestionowanie występowania epidemii (art. 71 KEL).",
@@ -734,7 +734,7 @@ export const CASES: CourtCase[] = [
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
       "Pacjentka z bólami stawów skroniowo-żuchwowych i szumami usznymi znalazła dentystę w internecie. Ten zalecił jej m.in. dietę GAPS z podręcznikiem, sól gorzką, kurkumę, ozonowanie uszu, wkładki ortopedyczne i pas — według ustaleń kupione w jego gabinecie — oraz rozpoznał u niej wadę postawy i problemy dróg żółciowych.",
-      "Zgryz leczył nadbudowami, które miały „wysunąć” zęby boczne. Dwie niezależne biegłe ortodontki: diagnoza była błędna, metoda niezweryfikowana naukowo, a u takich pacjentów to błąd w sztuce. Po ponad trzech latach pacjentka czuła się i wyglądała gorzej — wada się pogłębiła, pojawiły się recesje dziąseł i resorpcja korzeni.",
+      "Zgryz leczył nakładami, których celem według lekarza była „ekstruzja zębów bocznych”. Dwie niezależne biegłe ortodontki uznały diagnozę za błędną, a takie leczenie u tych pacjentów — za błąd w sztuce; pierwsza oceniła metodę jako niezweryfikowaną naukowo. Po ponad trzech latach pacjentka czuła się i wyglądała gorzej — wada się pogłębiła, pojawiły się recesje dziąseł i resorpcja korzeni.",
       "Dentysta przedstawiał się jako instruktor zagranicznego stowarzyszenia ortodontycznego; zarzutu posługiwania się tytułem specjalisty nie udowodniono. Sprawa trafiła do NSL po odwołaniu obrony.",
     ],
     charge: "Błędna diagnoza i leczenie niezgodne ze współczesną wiedzą, wykraczanie poza kompetencje (art. 8 i 10 KEL, art. 4 ustawy o zawodach lekarza).",
@@ -750,14 +750,14 @@ export const CASES: CourtCase[] = [
     label: "",
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
-      "W czterech różnych dniach lekarka przyszła do pracy w gabinecie nietrzeźwa i przyjmowała pacjentów. Sprawa zaczęła się od pisma komisji izby lekarskiej badającej jej zdolność do wykonywania zawodu i notatki policji z interwencji w gabinecie.",
+      "W czterech różnych dniach lekarka przyszła do pracy w gabinecie nietrzeźwa i przyjmowała pacjentów. Sprawa zaczęła się od pisma komisji izby lekarskiej i notatki policji z interwencji w gabinecie.",
       "Nie ustalono narażenia konkretnego pacjenta; policja i prokuratura uznały, że czyn nie był przestępstwem. Wcześniej lekarka nie była karana.",
       "Od orzeczenia I instancji lekarka się odwołała, ale potem odwołanie cofnęła.",
     ],
     charge: "Stawienie się do pracy w stanie nietrzeźwości (art. 1 ust. 2 i 3, art. 8 i 64 KEL).",
     verdict: { level: 6, text: "Zawieszenie prawa wykonywania zawodu na rok — orzeczone w I instancji; NSL pozostawił odwołanie bez rozpoznania, bo lekarka je cofnęła." },
     reasoning:
-      "Sąd I instancji nazwał przychodzenie do pracy po alkoholu „jednym z najbardziej skrajnych przykładów naruszenia zasad wykonywania zawodu” i podkreślił, że zdarzenia nie były incydentalne.",
+      "Sąd I instancji uznał, że przychodzenie do pracy po alkoholu to „jedno z najbardziej skrajnych przykładów naruszenia zasad wykonywania zawodu” i podkreślił, że zdarzenia nie były incydentalne.",
     file: "NSL/NSL.02.01-2024W.docx",
   },
   {
@@ -825,7 +825,7 @@ export const CASES: CourtCase[] = [
     charge: "Brak należytej staranności w stanie nietrzeźwości (art. 8 i 64 KEL).",
     verdict: { level: 6, text: "Zawieszenie prawa wykonywania zawodu na rok. Sąd I instancji orzekł 2 lata zawieszenia i naganę za dwa osobne czyny; NSL uznał to za jeden czyn i wymierzył jedną karę." },
     reasoning:
-      "NSL nie miał wątpliwości co do winy: kierownik zespołu ma obowiązek osobiście zbadać chorego i go nadzorować. Rozbicie jednego zachowania na dwa przewinienia uznał za rażąco niesprawiedliwe. Na korzyść: niekaralność i dynamiczny przebieg choroby; lekarz był jednak „bezrefleksyjny” i „arogancki wobec standardów”.",
+      "NSL nie miał wątpliwości co do winy: kierownik zespołu ma obowiązek osobiście zbadać chorego i go nadzorować. Rozbicie jednego zachowania na dwa przewinienia ocenił jako „rażąco niesprawiedliwe”. Na korzyść: niekaralność i dynamiczny przebieg choroby; lekarz był jednak „bezrefleksyjny”, a jego „arogancja wobec standardów zawodowych i etyki” istotnie naruszyła zasady.",
     file: "NSL/NSL.02.05-2024W.docx",
   },
   {
@@ -848,11 +848,11 @@ export const CASES: CourtCase[] = [
   {
     id: "teleporada-udar",
     title: "Teleporada przy objawach udaru",
-    summary: "Lekarka zastępująca lekarza rodzinnego wysłała do starszej pacjentki pielęgniarkę zamiast wezwać pogotowie; następnego dnia pacjentka trafiła na neurologię z udarem.",
+    summary: "Lekarka zastępująca lekarza rodzinnego wysłała do starszej pacjentki pielęgniarkę zamiast wezwać pogotowie; następnego dnia pacjentka trafiła na neurologię z porażeniem połowiczym i podejrzeniem udaru.",
     label: "",
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
-      "Syn zadzwonił do przychodni: matka nie może utrzymać laski ani stanąć na prawej nodze, drętwieją jej palce. Lekarka zastępowała lekarza rodzinnego w długi weekend i obsługiwała dwa rejony. Wysłała doświadczoną pielęgniarkę środowiskową.",
+      "Syn zadzwonił do przychodni, że matka ma nagle złe samopoczucie i jest tego dnia słabsza; w skardze, złożonej po roku, opisał drętwienie palców i niemożność utrzymania laski. Lekarka zastępowała lekarza rodzinnego w długi weekend i obsługiwała dwa rejony. Wysłała doświadczoną pielęgniarkę środowiskową.",
       "Pielęgniarka zbadała chorą — ciśnienie, cukier, ocena w kierunku udaru wypadła negatywnie — i po konsultacji telefonicznej zapisała zalecenia: odpoczynek, a przy opadnięciu kącika ust wezwanie pogotowia. Po południu stan się pogorszył; według syna matka dwa razy odmówiła jazdy do szpitala. Następnego dnia trafiła na neurologię z porażeniem.",
       "Skargę i odwołanie złożył syn pacjentki.",
     ],
@@ -882,7 +882,7 @@ export const CASES: CourtCase[] = [
   {
     id: "dyzur-chirurgia-zgon",
     title: "Dyżur na chirurgii: zgon po operacji",
-    summary: "Lekarka dyżurna usunęła sondę żołądkową pacjentowi po operacji wyrostka i nie zostawiła wpisu z dyżuru; dwa dni później pacjent zmarł.",
+    summary: "Lekarka dyżurna usunęła sondę żołądkową pacjentowi po operacji wyrostka, a wpis sporządziła dopiero po 24-godzinnym dyżurze; po ponownej operacji pacjent zmarł.",
     label: "",
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
@@ -893,7 +893,7 @@ export const CASES: CourtCase[] = [
     charge: "Niedostrzeżenie pogorszenia stanu pacjenta i brak wpisu w dokumentacji, co miało opóźnić reoperację (art. 8 KEL, art. 4 ustawy o zawodach lekarza).",
     verdict: { level: 0, text: "Uniewinnienie. Sąd I instancji przy ponownym rozpoznaniu orzekł naganę; pełnomocnik żony chciał kary pieniężnej — NSL uniewinnił." },
     reasoning:
-      "NSL: z dowodów nie wynika, że lekarka wiedziała o pogorszeniu, a brak wpisu w trakcie dyżuru nie ma związku przyczynowego ze zgonem. Opinia biegłego nie może być „naddowodem”, a wpis niezgodny z prawdą musi być „niewątpliwy, a nie tylko prawdopodobny”.",
+      "NSL: z dowodów nie wynika, że lekarka wiedziała o pogorszeniu, a brak wpisu w trakcie dyżuru nie ma związku przyczynowego ze zgonem. Opinia biegłego nie może być „kluczowym dowodem w sprawie” w oderwaniu od innych dowodów, a wpis niezgodny z prawdą musi być „niewątpliwy, a nie tylko prawdopodobny”.",
     file: "NSL/NSL.06.02-2024W.docx",
   },
   {
@@ -905,7 +905,7 @@ export const CASES: CourtCase[] = [
     facts: [
       "Lekarz z wieloletnim doświadczeniem wystąpił w transmisji na żywo z osobą spoza zawodu. Nie reagował, gdy rozmówca mówił, że witamina C ratuje życie, a lekarze mają „bzdurne procedury”, przez które ludzie umierają w szpitalach.",
       "Sam mówił, że dożylne DMSO działa silnie przeciwzapalnie i nie stosuje się go „ze względu na biznes w medycynie”, że rozcieńczony nadtlenek wodoru ma „znakomite efekty lecznicze” i że w zapaleniu płuc przy COVID-19 zastosowałby witaminę C, DMSO lub perhydrol. Żadna z tych tez nie ma potwierdzenia w badaniach klinicznych.",
-      "Faktów nie kwestionował. Kwestionował natomiast to, że w ogóle podlega samorządowi lekarskiemu, a do sądu napisał, że jego członkowie powinni się „douczyć”. Do NSL odwołał się sam.",
+      "Faktów nie kwestionował. Kwestionował natomiast to, że w ogóle podlega samorządowi lekarskiemu, a do sądu napisał, że nie będzie rozmawiał z organami izby, bo ich członkowie wymagają „douczenia się i doszkolenia”. Do NSL odwołał się sam.",
     ],
     charge: "Szerzenie informacji niezgodnych z aktualną wiedzą medyczną i podważanie zaufania do lekarzy (art. 1, 2, 4, 57 i 71 KEL).",
     verdict: { level: 6, text: "Zawieszenie prawa wykonywania zawodu na rok i kara pieniężna — czterokrotność przeciętnego wynagrodzenia. Orzeczone w I instancji, utrzymane przez NSL." },
@@ -1046,7 +1046,7 @@ export const CASES: CourtCase[] = [
     charge: "Przepisywanie opioidów bez wskazań medycznych (zarzut 1) i brak dokumentacji (zarzut 2) (art. 6, 8 i 28 KEL, art. 4 i 41 ustawy o zawodach lekarza).",
     verdict: { level: 2, text: "Nagana za każdy z dwóch zarzutów — orzeczona w I instancji i utrzymana przez NSL." },
     reasoning:
-      "NSL uznał nagany za „nieodzowne” wobec „bezrefleksyjnej postawy zawodowej”. Ocenił jednak, że lekarz mógł mieć w procederze „podrzędne znaczenie”, podczas gdy sąd I instancji pisał o jego „kluczowej roli” — kara pozostała ta sama.",
+      "NSL uznał nagany za „nieodzowne” wobec „bezrefleksyjnej postawy zawodowej”. Ocenił jednak, że lekarz mógł mieć w procederze „podrzędne znaczenie”, podczas gdy sąd I instancji pisał, że „pełnił w tym procederze kluczową rolę” — kara pozostała ta sama.",
     file: "NSL/NSL.02.15-2026W.docx",
   },
   {
@@ -1125,7 +1125,7 @@ export const CASES: CourtCase[] = [
     court: "Naczelny Sąd Lekarski · odwołanie",
     facts: [
       "Pracownicy szpitala zgłosili, że lekarz pełni dyżur na szpitalnym oddziale ratunkowym pod wpływem alkoholu. Wezwana policja zbadała go trzykrotnie: od 1,19 do 1,32 mg/l alkoholu w wydychanym powietrzu. Lekarz oświadczył, że w trakcie dyżuru wypił ok. 400 ml wódki.",
-      "Wcześniej NSL prawomocnie ukarał go za to samo zachowanie na SOR innego szpitala — zakazem samodzielnych dyżurów na 2 lata i karą pieniężną. Drugi zarzut dotyczył złamania tego zakazu; z niego sąd I instancji lekarza uniewinnił, bo na oddziale pracowało kilku lekarzy.",
+      "Wcześniej NSL prawomocnie ukarał go za identyczne zachowanie na SOR — zakazem samodzielnych dyżurów na 2 lata i karą pieniężną. Drugi zarzut dotyczył złamania tego zakazu; z niego sąd I instancji lekarza uniewinnił, bo na oddziale pracowało kilku lekarzy.",
       "Przed sądem I instancji lekarz wielokrotnie się nie stawiał. Obrona powoływała się na jego dorobek naukowy, poszukiwane kompetencje i żal, i prosiła o łagodniejszą karę. Do NSL odwołał się obrońca.",
     ],
     charge: "Wykonywanie zawodu w stanie nietrzeźwości (art. 1 ust. 3 i art. 64 KEL).",

@@ -17,7 +17,7 @@ Na stronie są dwa nowe narzędzia o odpowiedzialności zawodowej lekarzy. Oba k
 
 ## Gra: czy orzekasz jak sąd lekarski?
 
-W [grze](/sad-lekarski/) czytasz, co ustalił sąd w prawdziwej sprawie, i wybierasz karę ze skali, którą daje ustawa o izbach lekarskich — od uniewinnienia po pozbawienie prawa wykonywania zawodu. Potem widzisz, co orzekł sąd, i fragment uzasadnienia.
+W [grze](/sad-lekarski/) czytasz, co ustalił sąd w prawdziwej sprawie, i wybierasz karę ze skali, którą daje ustawa o izbach lekarskich — od uniewinnienia po pozbawienie prawa wykonywania zawodu. Potem widzisz, co orzekł sąd, i uzasadnienie w skrócie.
 
 Jedna rozgrywka to **10 rozstrzygnięć**. Gra dobiera je tak, by udział spraw bez kary, upomnień, nagan, kar pieniężnych i kar surowszych był zbliżony do rzeczywistego orzecznictwa, ale z luzem — każda rozgrywka jest inna.
 

@@ -1,0 +1,102 @@
+---
+/**
+ * Droga sprawy przed sądem lekarskim (artykuł „Jak działają sądy lekarskie”): lewa kolumna — samorząd
+ * (rzecznik → okręgowy sąd lekarski → Naczelny Sąd Lekarski), pod granicą samorządu kasacja do Sądu Najwyższego;
+ * prawa kolumna — sądy powszechne, osobno (sąd karny, odszkodowanie po kasacji lub wznowieniu).
+ * Linie ciągłe = droga sprawy w samorządzie, przerywane = sprawy przed sądami spoza samorządu.
+ * Na wąskim ekranie prawa kolumna wchodzi pod krok, do którego się odnosi.
+ * Podstawa każdego elementu: ustawa o izbach lekarskich, t.j. Dz.U. 2021 poz. 1342.
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import { caseHref } from '@/data/sad-lekarski';
+import { typo } from '@/lib/format';
+
+const USTAWA = 'https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf';
+---
+<Figure
+  title="Sprawa lekarza przechodzi przez dwie instancje samorządu. Poza samorząd wychodzi tylko z kasacją do Sądu Najwyższego, a gdy czyn jest też przestępstwem, osobno toczy się sprawa karna."
+  source={{ label: 'Ustawa o izbach lekarskich, art. 54, 68, 80, 90, 92, 94–97, 106 i 113a', href: USTAWA }}
+>
+  <div class="rt">
+    <p class="rt__lane">Samorząd lekarski</p>
+    <p class="rt__lane rt__lane--side">Sądy powszechne — osobno</p>
+
+    <div class="rt__node">
+      <p class="rt__k">Oskarża</p>
+      <p class="rt__h">Rzecznik odpowiedzialności zawodowej</p>
+      <p class="rt__d">{typo('Sprawdza zgłoszenie, zbiera dowody, stawia zarzuty. Odmowę wszczęcia i umorzenie pokrzywdzony może zaskarżyć.')}</p>
+    </div>
+
+    <p class="rt__arrow">wniosek o ukaranie</p>
+
+    <div class="rt__node rt__node--court">
+      <p class="rt__k">I instancja</p>
+      <p class="rt__h">Okręgowy sąd lekarski</p>
+      <p class="rt__d">{typo('Skład 3 osób. Może zawiesić sprawę do końca procesu karnego, a po karze karnej umorzyć ją jako niecelową.')}</p>
+    </div>
+    <span class="rt__link" aria-hidden="true"></span>
+    <div class="rt__side">
+      <p class="rt__k">Gdy czyn jest przestępstwem</p>
+      <p class="rt__h">Sąd karny</p>
+      <p class="rt__d">{typo('Proces toczy się niezależnie od sprawy w samorządzie. Sąd może orzec m.in. zakaz wykonywania zawodu.')}</p>
+      <p class="rt__ex">Przykład: <a href={caseHref('ciaza-fikcyjna')}>fikcyjne ciąże i zwolnienia</a></p>
+    </div>
+
+    <p class="rt__arrow">odwołanie · 14 dni</p>
+
+    <div class="rt__node rt__node--court">
+      <p class="rt__k">II instancja</p>
+      <p class="rt__h">Naczelny Sąd Lekarski</p>
+      <p class="rt__d">{typo('Skład 5 osób. Utrzymuje, zmienia albo uchyla orzeczenie; jego orzeczenie jest prawomocne z chwilą ogłoszenia.')}</p>
+    </div>
+
+    <p class="rt__border">Poza samorządem</p>
+
+    <p class="rt__arrow">kasacja · 2 miesiące — strony, minister zdrowia, Prezes NRL</p>
+
+    <div class="rt__node">
+      <p class="rt__k">Kasacja</p>
+      <p class="rt__h">Sąd Najwyższy</p>
+      <p class="rt__d">{typo('Tylko rażące naruszenie prawa albo niewspółmierność kary. W katalogu dwie sprawy wróciły po wyroku SN do NSL.')}</p>
+    </div>
+    <span class="rt__link" aria-hidden="true"></span>
+    <div class="rt__side">
+      <p class="rt__k">Po uniewinnieniu w kasacji lub wznowieniu</p>
+      <p class="rt__h">Sąd powszechny — odszkodowanie</p>
+      <p class="rt__d">{typo('Lekarz może żądać od izby odszkodowania i zadośćuczynienia za wykonaną karę.')}</p>
+    </div>
+  </div>
+  <p class="rt__legend" aria-hidden="true"><span>droga sprawy w samorządzie</span><span>sprawy przed sądami spoza samorządu</span></p>
+</Figure>
+
+<style>
+  /* siatka: [samorząd] [łącznik] [sądy powszechne]; wiersze w kolejności znaczników */
+  .rt { display: grid; grid-template-columns: minmax(0, 1.25fr) 48px minmax(0, 1fr); align-items: stretch; }
+  .rt__lane { grid-column: 1; margin: 0; padding-bottom: 10px; font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .rt__lane--side { grid-column: 3; }
+  .rt__node { grid-column: 1; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line-2); }
+  .rt__node--court { border-color: var(--blue); }
+  .rt__k { margin: 0; font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--blue); }
+  .rt__h { margin: 4px 0 0; font: 500 1rem/1.3 var(--f-display); color: var(--ink); }
+  .rt__d { margin: 4px 0 0; font-size: 0.8125rem; line-height: 1.5; color: var(--text-strong); }
+  /* strzałka w dół: linia + grot z obramowania */
+  .rt__arrow { grid-column: 1; position: relative; margin: 0; min-height: 44px; padding: 10px 0 10px 28px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .04em; color: var(--text); }
+  .rt__arrow::before { content: ""; position: absolute; left: 14px; top: 0; bottom: 6px; width: 1px; background: var(--ink); }
+  .rt__arrow::after { content: ""; position: absolute; left: 10px; bottom: 0; border: 4.5px solid transparent; border-top: 7px solid var(--ink); }
+  .rt__border { grid-column: 1 / -1; margin: 6px 0; padding-top: 6px; border-top: 1px dashed var(--muted); font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .rt__link { grid-column: 2; align-self: center; border-top: 1px dashed var(--muted); }
+  .rt__side { grid-column: 3; padding: 12px 14px; border: 1px dashed var(--muted); }
+  .rt__side .rt__k { color: var(--muted); }
+  .rt__ex { margin: 6px 0 0; font-size: 0.75rem; color: var(--muted); }
+  .rt__ex a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .rt__ex a:hover { color: var(--blue); }
+  .rt__legend { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: 16px 0 0; font-size: 0.75rem; color: var(--muted); }
+  .rt__legend span::before { content: ""; display: inline-block; width: 24px; margin-right: 8px; vertical-align: middle; border-top: 1px solid var(--ink); }
+  .rt__legend span + span::before { border-top-style: dashed; border-color: var(--muted); }
+
+  @media (max-width: 640px) {
+    .rt { grid-template-columns: minmax(0, 1fr); }
+    .rt__lane--side, .rt__link { display: none; }
+    .rt__side { grid-column: 1; margin: 8px 0 0 28px; }
+  }
+</style>

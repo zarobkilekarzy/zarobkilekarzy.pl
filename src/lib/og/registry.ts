@@ -18,14 +18,14 @@ const DEFAULT_ROUTE = '/';
 
 async function collect(): Promise<OgEntry[]> {
   const [articles, news] = await Promise.all([getPublishedArticles(), getNews()]);
-  // Wpis aktualności: preset strony z tytułem i leadem wpisu — bez daty na obrazku (na OG nic, co się zmienia)
+  // Wpis aktualności: preset strony z tytułem i leadem wpisu — bez daty na obrazku (na OG nic, co się zmienia).
+  // Grafika z ogArticleMedia (np. ta sama co na stronie, której dotyczy wpis) zastępuje zdjęcie.
   const newsOg = news.map((entry) =>
     pageOg(newsHref(entry), {
       eyebrow: 'Aktualności',
       title: entry.data.title,
       lead: entry.data.summary,
-      photo: newsImage(entry).src,
-      position: entry.data.cover ? '0% 0%' : '70% 50%',
+      ...(ogArticleMedia[newsHref(entry)] ?? { photo: newsImage(entry).src, position: entry.data.cover ? '0% 0%' : '70% 50%' }),
       footer: { text: 'Co nowego w projekcie' },
     }),
   );

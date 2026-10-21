@@ -111,9 +111,14 @@ const unitCells = Array.from({ length: Math.ceil(revoked / unitCols) * unitCols 
                       <span class="opt__label">{s.label}</span>
                       <span class="opt__note">{s.note}</span>
                     </button>
+                    <button type="button" class="law-btn" aria-expanded="false" aria-controls={`law-${s.level}`} aria-label={`Przepis: ${s.label}`} title="Jak tę karę opisuje ustawa" data-law-btn>§</button>
+                    <div class="law" id={`law-${s.level}`} hidden>
+                      {s.law.map((p) => <p><span class="law__ref">{p.ref}</span>{typo(p.text)}</p>)}
+                    </div>
                   </li>
                 ))}
               </ol>
+              <p class="scale__src">§ — przepis przy każdej karze, z <a {...linkAttrs(USTAWA_URL)}>ustawy o izbach lekarskich (t.j. Dz.U. 2021 poz. 1342)<Icon name="arrow-ne" size={12} /></a></p>
             </fieldset>
 
             <div class="verdict" data-reveal hidden>
@@ -429,6 +434,14 @@ const unitCells = Array.from({ length: Math.ceil(revoked / unitCols) * unitCols 
     }
 
     for (const o of opts) o.addEventListener('click', () => answer(Number(o.dataset.level)));
+    // „§” przy karze: rozwija dosłowny przepis pod pozycją skali (można czytać przed wyborem)
+    for (const b of root.querySelectorAll<HTMLButtonElement>('[data-law-btn]')) {
+      b.addEventListener('click', () => {
+        const box = document.getElementById(b.getAttribute('aria-controls')!)!;
+        box.hidden = !box.hidden;
+        b.setAttribute('aria-expanded', String(!box.hidden));
+      });
+    }
     $('[data-next]').addEventListener('click', next);
     $('[data-restart]').addEventListener('click', () => {
       cases = deal(); i = 0; answers = [];
@@ -495,6 +508,19 @@ const unitCells = Array.from({ length: Math.ceil(revoked / unitCols) * unitCols 
   .scale legend { display: flex; justify-content: space-between; width: 100%; margin-bottom: 12px; padding: 0; }
   .scale__hint { color: var(--muted); text-transform: none; letter-spacing: 0; }
   .scale ol { display: grid; gap: 6px; }
+  .scale li { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 6px; }
+  .law-btn {
+    background: var(--surface); border: 1px solid var(--line-2); color: var(--muted);
+    font: 500 0.9375rem/1 var(--f-mono); transition: border-color .15s var(--ease), color .15s var(--ease);
+  }
+  .law-btn:hover, .law-btn[aria-expanded="true"] { border-color: var(--blue); color: var(--blue); }
+  .law-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .law { grid-column: 1 / -1; display: grid; gap: 8px; margin-bottom: 4px; padding: 12px 16px; background: var(--bg-soft); border-left: 2px solid var(--blue); font-size: 0.8125rem; line-height: 1.6; color: var(--text-strong); }
+  .law[hidden] { display: none; }
+  .law__ref { display: block; margin-bottom: 2px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--blue); }
+  .scale__src { margin-top: 10px; font-size: 0.75rem; line-height: 1.5; color: var(--muted); }
+  .scale__src a { display: inline-flex; align-items: center; gap: 3px; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .scale__src a:hover { color: var(--blue); }
   .opt {
     display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: baseline; gap: 10px;
     width: 100%; padding: 14px 16px; text-align: left;

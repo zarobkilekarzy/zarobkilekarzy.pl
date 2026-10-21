@@ -2,6 +2,8 @@
 title: "Gra o sądach lekarskich i katalog ich orzeczeń"
 date: 2026-10-21
 summary: "W grze oceniasz prawdziwe sprawy z prawomocnych orzeczeń sądów lekarskich i porównujesz swoją karę z wyrokiem. W katalogu sprawdzisz, za co i jak karzą te sądy: 59 rozstrzygnięć, każde z osobną stroną."
+cover: ../../assets/aktualnosci/gra-i-katalog-orzeczen.png
+coverAlt: "Grafika katalogu orzeczeń: trzy pieczątki „Sąd orzekł” — uniewinnienie, kara pieniężna i zawieszenie prawa do zawodu, każda ze skalą kar z kropek."
 links:
   - label: "Gra: czy orzekasz jak sąd lekarski?"
     href: /sad-lekarski/

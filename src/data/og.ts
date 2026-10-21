@@ -3,7 +3,7 @@
  * Artykuły mają je automatycznie (lib/og/presets.ts) i nadpisują polem `og` we frontmatterze.
  * Strona główna jest też obrazkiem domyślnym dla tras bez własnego wpisu.
  */
-import type { OgPage } from '@/types';
+import type { OgPage, OgStamp } from '@/types';
 import { site } from '@/data/navigation';
 import { formatDate, formatPL, plural } from '@/lib/format';
 import { monitoring, type Response } from '@/lib/monitoring';
@@ -81,7 +81,16 @@ const aosServices = change(AOS_FIRST.services, AOS_LAST.services);
 const queueGrowth = change(WHC_2022.single, WHC_2024.single);
 
 /** Media artykułów (trasa → wykres w miejscu zdjęcia); etykieta, lead i stopka zostają z presetu artykułu. */
-export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots'>> = {
+// katalog orzeczeń sądów lekarskich: trzy rozstrzygnięcia z różnych końców skali (strona katalogu i wpis o nim)
+const COURT_STAMPS: OgStamp[] = [
+  { kicker: 'Sąd orzekł', label: 'Uniewinnienie', level: 0, tone: 'muted' },
+  { kicker: 'Sąd orzekł', label: COURT_SCALE[3].label, level: 3 },
+  { kicker: 'Sąd orzekł', label: COURT_SCALE[6].label, level: 6 },
+];
+
+export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps'>> = {
+  // wpis w aktualnościach: pieczątki jak na obrazku katalogu (okładka wpisu przycięta pokazałaby tylko tytuł)
+  '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },
   // mapy krajów z kropek (lib/siatka/kraje.ts); kolor = to, co o danej prowincji mówi artykuł
   '/analizy/kanada-lekarze-ustawa-specjalna/': {
     dots: {
@@ -365,11 +374,7 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Za co i jak karzą\nsądy lekarskie',
     lead: 'Streszczenia prawomocnych orzeczeń: co ustalił sąd, jaki był zarzut i jaka zapadła kara.',
     footer: { text: 'Orzeczenia z portalu Naczelnej Izby Lekarskiej' },
-    stamps: [
-      { kicker: 'Sąd orzekł', label: 'Uniewinnienie', level: 0, tone: 'muted' },
-      { kicker: 'Sąd orzekł', label: COURT_SCALE[3].label, level: 3 },
-      { kicker: 'Sąd orzekł', label: COURT_SCALE[6].label, level: 6 },
-    ],
+    stamps: COURT_STAMPS,
   },
   // osobna strona każdej sprawy z katalogu: tytuł sprawy i pieczątka z orzeczoną karą
   ...Object.fromEntries(

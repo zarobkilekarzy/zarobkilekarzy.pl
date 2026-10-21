@@ -13,16 +13,76 @@ export const REGULAMIN_URL =
 export const USTAWA_URL = 'https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf';
 export const ANALIZA_URL = '/analizy/odpowiedzialnosc-zawodowa-lekarzy/';
 
-/** Skala rozstrzygnięć: 0 = bez kary, 1–7 = kary z art. 83 ust. 1 pkt 1–7, w kolejności ustawy. */
+// Przepisy przy karach (art. 83 ust. 2 i art. 84 dotyczą kilku kar naraz) — dosłownie z t.j. Dz.U. 2021 poz. 1342
+const PUBLIKACJA = {
+  ref: 'art. 84',
+  text: '„W przypadku orzeczenia kary przewidzianej w art. 83 ust. 1 pkt 4–7, sąd lekarski może zarządzić opublikowanie orzeczenia w biuletynie okręgowej izby lekarskiej, której obwiniony jest członkiem.”',
+};
+const Z_ZAKAZEM = {
+  ref: 'art. 83 ust. 2',
+  text: '„Sąd lekarski, orzekając karę przewidzianą w ust. 1 pkt 5 lub 6, może dodatkowo orzec karę wymienioną w ust. 1 pkt 4.”',
+};
+const BEZ_OPISU = 'Ustawa wymienia tę karę bez dalszego opisu.';
+
+/**
+ * Skala rozstrzygnięć: 0 = bez kary, 1–7 = kary z art. 83 ust. 1 pkt 1–7, w kolejności ustawy.
+ * `law` — przepisy do rozwinięcia przy skali w grze, zanim gracz wybierze karę (cytaty dosłowne + numer przepisu).
+ */
 export const SCALE = [
-  { level: 0, label: 'Bez kary', note: 'uniewinnienie lub umorzenie' },
-  { level: 1, label: 'Upomnienie', note: 'art. 83 ust. 1 pkt 1' },
-  { level: 2, label: 'Nagana', note: 'pkt 2' },
-  { level: 3, label: 'Kara pieniężna', note: 'pkt 3' },
-  { level: 4, label: 'Zakaz funkcji kierowniczych', note: 'pkt 4 · od roku do 5 lat' },
-  { level: 5, label: 'Ograniczenie zakresu czynności', note: 'pkt 5 · od 6 miesięcy do 2 lat' },
-  { level: 6, label: 'Zawieszenie prawa do zawodu', note: 'pkt 6 · od roku do 5 lat' },
-  { level: 7, label: 'Pozbawienie prawa do zawodu', note: 'pkt 7' },
+  {
+    level: 0, label: 'Bez kary', note: 'uniewinnienie lub umorzenie',
+    law: [
+      { ref: 'art. 82 ust. 1 i art. 63', text: 'Sąd lekarski wydaje „orzeczenie uniewinniające”, gdy „czynu nie popełniono” albo „czyn nie stanowi przewinienia zawodowego”. Umarza postępowanie m.in., gdy „nastąpiło ustanie karalności” (przedawnienie).' },
+      { ref: 'art. 82 ust. 2', text: '„Sąd lekarski może umorzyć postępowanie w przypadku przewinienia mniejszej wagi albo jeżeli orzeczenie wobec obwinionego kary byłoby oczywiście niecelowe ze względu na rodzaj i wysokość kary prawomocnie orzeczonej za ten sam czyn w innym postępowaniu przewidzianym przez ustawy, a interes pokrzywdzonego temu się nie sprzeciwia.”' },
+    ],
+  },
+  {
+    level: 1, label: 'Upomnienie', note: 'art. 83 ust. 1 pkt 1',
+    law: [{ ref: 'art. 83 ust. 1 pkt 1', text: `„upomnienie”. ${BEZ_OPISU}` }],
+  },
+  {
+    level: 2, label: 'Nagana', note: 'pkt 2',
+    law: [{ ref: 'art. 83 ust. 1 pkt 2', text: `„nagana”. ${BEZ_OPISU}` }],
+  },
+  {
+    level: 3, label: 'Kara pieniężna', note: 'pkt 3',
+    law: [
+      { ref: 'art. 85 ust. 1', text: '„Karę pieniężną orzeka się na cel społeczny związany z ochroną zdrowia w wysokości od jednej trzeciej do czterokrotnego przeciętnego miesięcznego wynagrodzenia w sektorze przedsiębiorstw bez wypłat nagród z zysku, ogłoszonego przez Prezesa Głównego Urzędu Statystycznego, obowiązującego w chwili wydania orzeczenia w pierwszej instancji.”' },
+      { ref: 'art. 85 ust. 2', text: '„Karę pieniężną orzeka się samoistnie albo obok kar wymienionych w art. 83 ust. 1 pkt 4–6.”' },
+    ],
+  },
+  {
+    level: 4, label: 'Zakaz funkcji kierowniczych', note: 'pkt 4 · od roku do 5 lat',
+    law: [
+      { ref: 'art. 83 ust. 1 pkt 4', text: '„zakaz pełnienia funkcji kierowniczych w jednostkach organizacyjnych ochrony zdrowia na okres od roku do pięciu lat”.' },
+      PUBLIKACJA,
+    ],
+  },
+  {
+    level: 5, label: 'Ograniczenie zakresu czynności', note: 'pkt 5 · od 6 miesięcy do 2 lat',
+    law: [
+      { ref: 'art. 83 ust. 1 pkt 5', text: '„ograniczenie zakresu czynności w wykonywaniu zawodu lekarza na okres od sześciu miesięcy do dwóch lat”.' },
+      { ref: 'art. 86', text: '„Orzekając karę ograniczenia zakresu czynności w wykonywaniu zawodu lekarza, sąd lekarski określa szczegółowo czynności, których lekarz nie może wykonywać.”' },
+      Z_ZAKAZEM,
+      PUBLIKACJA,
+    ],
+  },
+  {
+    level: 6, label: 'Zawieszenie prawa do zawodu', note: 'pkt 6 · od roku do 5 lat',
+    law: [
+      { ref: 'art. 83 ust. 1 pkt 6', text: '„zawieszenie prawa wykonywania zawodu na okres od roku do pięciu lat”.' },
+      { ref: 'art. 87 ust. 3', text: '„Na poczet kary zawieszenia prawa wykonywania zawodu zalicza się okres tymczasowego zawieszenia prawa wykonywania zawodu.”' },
+      Z_ZAKAZEM,
+      PUBLIKACJA,
+    ],
+  },
+  {
+    level: 7, label: 'Pozbawienie prawa do zawodu', note: 'pkt 7',
+    law: [
+      { ref: 'art. 83 ust. 1 pkt 7', text: '„pozbawienie prawa wykonywania zawodu”.' },
+      PUBLIKACJA,
+    ],
+  },
 ] as const;
 
 export interface CourtCase {

@@ -104,6 +104,8 @@ const LIMITY_BARS: OgPage['bars'] = {
 export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps'>> = {
   // wpis w aktualnościach: pieczątki jak na obrazku katalogu (okładka wpisu przycięta pokazałaby tylko tytuł)
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },
+  // wpis o analizie limitów płac: paski jak na obrazku analizy (zdjęciem wpisu jest obrazek OG analizy)
+  '/aktualnosci/limity-plac-medykow-w-sejmie/': { bars: LIMITY_BARS },
   // mapy krajów z kropek (lib/siatka/kraje.ts); kolor = to, co o danej prowincji mówi artykuł
   '/analizy/kanada-lekarze-ustawa-specjalna/': {
     dots: {
@@ -153,8 +155,6 @@ export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'do
     },
   },
   '/analizy/limity-wynagrodzen-medykow/': { bars: LIMITY_BARS },
-  // wpis o analizie limitów płac: paski jak na obrazku analizy (zdjęciem wpisu jest obrazek OG analizy)
-  '/aktualnosci/limity-plac-medykow-w-sejmie/': { bars: LIMITY_BARS },
   '/analizy/odpowiedzialnosc-zawodowa-lekarzy/': {
     bars: {
       head: `Odebrania prawa do zawodu na 100 tys. lekarzy rocznie, ${WINDOW.from}–${WINDOW.to}`,

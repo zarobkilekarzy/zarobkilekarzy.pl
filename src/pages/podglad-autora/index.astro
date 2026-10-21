@@ -1,0 +1,79 @@
+---
+/**
+ * Szablon podglądu dla autorów — noindex, poza menu, sitemapą i wyszukiwarką.
+ * Czyta go skrypt `podglad.mjs` z zestawu zarobkilekarzy-writer-kit: bierze stąd style i znaczniki
+ * artykułu (nagłówek, „W skrócie”, spis treści, treść, ramka, przypisy) i wstawia w nie szkic autora.
+ * Dlatego strona składa te same komponenty co ArticleLayout i ma każdy z tych elementów, a jej treść
+ * się nie zmienia — skrypt nie zależy od żadnego prawdziwego artykułu.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import ArticleHeader from '@/components/article/ArticleHeader.astro';
+import Toc from '@/components/article/Toc.astro';
+import Prose from '@/components/article/Prose.astro';
+import NoteRef from '@/components/article/NoteRef.astro';
+import NoteList from '@/components/article/NoteList.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import { defineNotes } from '@/lib/notes';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const title = 'Szablon podglądu dla autorów';
+const section = { label: 'Analizy', href: '/analizy/' };
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: section.label, href: section.href }, { label: title }];
+const headings = [{ depth: 2, slug: 'jak-dziala-podglad', text: 'Jak działa podgląd' }];
+const notes = defineNotes({
+  zasady: 'zarobkilekarzy.pl, [Zasady redakcyjne](/o-projekcie/#zasady).',
+});
+
+const seo: SeoInput = {
+  title,
+  description: 'Szablon, z którego narzędzie podglądu dla autorów bierze wygląd artykułu.',
+  index: false,
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="article">
+    <ArticleHeader
+      title={title}
+      summary="Ta strona nie jest artykułem. Narzędzie podglądu dla autorów bierze z niej wygląd artykułu i wstawia w niego szkic tekstu."
+      section={section}
+      crumbs={crumbs}
+      updated={new Date('2026-10-21')}
+      minutes={1}
+      notesCount={notes.length}
+      keyPoints={['W tym miejscu podgląd pokazuje punkty „W skrócie” ze szkicu.']}
+    />
+
+    <div class="article__body">
+      <aside class="article__toc"><Toc headings={headings} /></aside>
+
+      <div class="article__main">
+        <Prose>
+          <p>Treść szkicu trafia w to miejsce: akapity, śródtytuły, listy, tabele i przypisy.<NoteRef notes={notes} id="zasady" /></p>
+          <h2 id="jak-dziala-podglad">Jak działa podgląd</h2>
+          <p>Skrypt pobiera tę stronę, zachowuje jej style i układ, a nagłówek, spis treści, treść i przypisy zastępuje tekstem autora.</p>
+          <Aside variant="note" title="Propozycje ilustracji">
+            <p>W takiej ramce podgląd pokazuje opisy grafik zaproponowanych przez autora.</p>
+          </Aside>
+          <NoteList notes={notes} />
+        </Prose>
+      </div>
+    </div>
+  </Section>
+</BaseLayout>
+
+<style>
+  /* Kopia układu treści z layouts/ArticleLayout.astro — zmieniaj oba miejsca razem */
+  .article { padding-top: clamp(32px, 4vw, 56px); }
+  .article__body {
+    display: grid; grid-template-columns: 220px minmax(0, 1fr);
+    gap: clamp(40px, 5vw, 72px); align-items: start;
+    margin-top: clamp(56px, 6vw, 88px); padding-top: 40px; border-top: 1px solid var(--line);
+  }
+  .article__toc { position: sticky; top: calc(var(--header-h) + 32px); }
+
+  @media (max-width: 1024px) {
+    .article__body { grid-template-columns: minmax(0, 1fr); padding-top: 24px; gap: 32px; }
+    .article__toc { position: static; }
+  }
+</style>

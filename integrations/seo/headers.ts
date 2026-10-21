@@ -49,6 +49,8 @@ export function headersFile(files: Iterable<string>): string {
     ['/egzamin/dane/*', 'Cache-Control: public, max-age=31536000, immutable', 'X-Robots-Tag: noindex'],
     // Prototypy (np. gry przed wydaniem pod docelowym adresem) — poza indeksem także nagłówkiem, nie tylko meta.
     ['/prototypy/*', 'X-Robots-Tag: noindex'],
+    // Markdown dla agentów (integrations/markdown): typ z kodowaniem dla polskich znaków, poza indeksem — to kopia strony
+    ['/*.md', 'Content-Type: text/markdown; charset=utf-8', 'X-Robots-Tag: noindex'],
     [
       '/*',
       `Content-Security-Policy: ${contentSecurityPolicy()}`,

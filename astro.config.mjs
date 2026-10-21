@@ -7,6 +7,7 @@ import { headingIds } from './src/lib/markdown/heading-ids';
 import { footnotes } from './src/lib/markdown/footnotes';
 import { typography } from './src/lib/markdown/typography';
 import seo, { astroRedirects } from './integrations/seo';
+import markdown from './integrations/markdown';
 import { fontFamilies, localVariants } from './src/lib/fonts';
 
 // SEO: _redirects, sitemap z faktów HTML i audyt po buildzie
@@ -51,6 +52,8 @@ export default defineConfig({
     }),
     // Po sitemapie: audyt czyta gotowe pliki mapy
     seoIntegration,
+    // index.md obok każdej strony — treść w Markdownie dla agentów (llms.txt)
+    markdown(),
   ],
 
   env: {

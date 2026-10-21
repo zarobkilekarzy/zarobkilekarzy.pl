@@ -154,6 +154,30 @@ export const PICTOGRAMS = {
     '#.ooo..##.#',
     '###########',
   ],
+  // znak paragrafu (/ustawy/): obrys „§” z Inter Tight 300, dolna połowa = górna obrócona o 180°;
+  // kreska z dwóch pól (przy jednym łuki się rwą) — 20 wierszy, mieści się tylko w ramce OG (20×22)
+  paragraf: [
+    '...####...',
+    '..######..',
+    '.##....##.',
+    '.##....##.',
+    '.##.......',
+    '..##......',
+    '.#####....',
+    '##..###...',
+    '##....###.',
+    '##......##',
+    '##......##',
+    '.###....##',
+    '...###..##',
+    '....#####.',
+    '......##..',
+    '.......##.',
+    '.##....##.',
+    '.##....##.',
+    '..######..',
+    '...####...',
+  ],
 } as const satisfies Record<string, readonly string[]>;
 
 export type PictogramName = keyof typeof PICTOGRAMS;

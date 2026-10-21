@@ -219,6 +219,7 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Ustawy\nna stronie',
     lead: 'Obowiązujące ustawy, projekty w Sejmie i projekt obywatelski: co mówią o płacach i jawności.',
     footer: { text: 'Opisy na podstawie tekstu aktu' },
+    pictogram: 'paragraf',
   },
   // osobna trasa (wpis kolekcji bez treści, więc bez presetu artykułu) — na obrazku wykresy samego narzędzia
   '/analizy/symulator-podazy-lekarzy/': {

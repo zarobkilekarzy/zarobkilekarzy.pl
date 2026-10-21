@@ -16,6 +16,7 @@ export const analysisTopics: Record<(typeof ANALYSIS_TOPICS)[number], TopicInfo>
   rejestr: {
     label: 'Jawność i rejestr',
     lead: 'Co państwo już wie, czego nie publikuje i jak mogłyby wyglądać jawne dane o wynagrodzeniach.',
+    more: { label: 'Ustawy na stronie', href: '/ustawy/' },
   },
   pieniadz: {
     label: 'Pieniądz publiczny i wynagrodzenia',

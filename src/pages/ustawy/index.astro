@@ -1,0 +1,44 @@
+---
+/**
+ * /ustawy/ — ustawy i projekty ustaw opisane na stronie, pogrupowane według stanu (układ „Katalog”,
+ * jak /analizy/). Lista i stany: src/data/serie.ts — ta sama, co ramka article/Series w każdym tekście.
+ */
+import IndexLayout from '@/layouts/IndexLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import TopicCatalog from '@/components/blocks/TopicCatalog.astro';
+import { series, seriesStates } from '@/data/serie';
+import { getArticle } from '@/lib/content';
+
+const laws = series.find((s) => s.href === '/ustawy/');
+if (!laws) throw new Error('Brak serii z adresem /ustawy/ w src/data/serie.ts');
+
+const groups = await Promise.all(
+  (Object.keys(seriesStates) as (keyof typeof seriesStates)[]).map(async (state) => ({
+    topic: state,
+    info: seriesStates[state],
+    articles: await Promise.all(laws.items.filter((item) => item.state === state).map((item) => getArticle(item.ref))),
+  })),
+);
+const count = (state: keyof typeof seriesStates) => groups.find((g) => g.topic === state)?.articles.length ?? 0;
+---
+<IndexLayout
+  title={laws.title}
+  docTitle="Ustawy o płacach i jawności w ochronie zdrowia"
+  lead="Ustawy i projekty ustaw opisane na stronie, według etapu: obowiązujące, w Sejmie i projekt obywatelski tej strony. Każdy opis opiera się na tekście aktu, nie na omówieniach."
+  eyebrow="Przepisy"
+  meta={[
+    { label: 'Teksty', value: laws.items.length },
+    { label: 'Obowiązujące', value: count('law') },
+    { label: 'W Sejmie', value: count('bill') },
+  ]}
+  jump={{ title: 'Etapy', items: groups.map((g) => ({ label: g.info.label, href: `#${g.topic}`, count: g.articles.length })) }}
+  articles={groups.flatMap((g) => g.articles)}
+>
+  <Section space="bottom" class="catalog">
+    <TopicCatalog groups={groups} noun={['tekst', 'teksty', 'tekstów']} format={false} />
+  </Section>
+</IndexLayout>
+
+<style>
+  .catalog { padding-top: 48px; }
+</style>

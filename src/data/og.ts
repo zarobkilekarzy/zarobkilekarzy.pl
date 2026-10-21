@@ -214,6 +214,12 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Jawność i rejestr, pieniądz publiczny, kształcenie lekarzy i porównania międzynarodowe.',
     footer: { text: 'Każda teza ze źródłem' },
   },
+  '/ustawy/': {
+    eyebrow: 'Przepisy',
+    title: 'Ustawy\nna stronie',
+    lead: 'Obowiązujące ustawy, projekty w Sejmie i projekt obywatelski: co mówią o płacach i jawności.',
+    footer: { text: 'Opisy na podstawie tekstu aktu' },
+  },
   // osobna trasa (wpis kolekcji bez treści, więc bez presetu artykułu) — na obrazku wykresy samego narzędzia
   '/analizy/symulator-podazy-lekarzy/': {
     eyebrow: 'Analizy · narzędzie',

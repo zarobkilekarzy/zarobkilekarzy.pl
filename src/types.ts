@@ -31,6 +31,8 @@ export type DataFormat = (typeof DATA_FORMATS)[number];
 export interface TopicInfo {
   label: string;
   lead: string;
+  /** odsyłacz pod opisem działu, np. do strony zbiorczej */
+  more?: { label: string; href: string };
 }
 
 /** Dział pokazany jako pytanie czytelnika: krótka odpowiedź i zdjęcie (np. /mechanizmy/). */

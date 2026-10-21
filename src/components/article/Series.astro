@@ -1,0 +1,76 @@
+---
+/**
+ * Ramka serii (src/data/serie.ts): wszystkie teksty o jednej sprawie w stałej kolejności, z bieżącym
+ * zaznaczonym („Czytasz”). Stan aktu czytamy z kształtu znacznika, nie tylko z koloru: pełny kwadrat —
+ * obowiązuje, z obwódką — projekt w toku, przerywany — propozycja. Nic nie renderuje, gdy `current`
+ * nie należy do żadnej serii, więc szablon może ją wstawiać bez warunku.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { series } from '@/data/serie';
+import { withTargets } from '@/lib/content';
+import { plural, typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'nav'> {
+  /** id bieżącego artykułu */
+  current: string;
+}
+
+const { current, class: className, ...rest } = Astro.props;
+const found = series.find((s) => s.items.some((item) => item.ref === current));
+const items = found ? await withTargets(found.items.map((item) => ({ ...item, current: item.ref === current }))) : [];
+---
+{found && (
+  <nav class:list={['series', className]} aria-label={found.title} {...rest}>
+    <p class="series__title">{found.title} · {items.length} {plural(items.length, ['tekst', 'teksty', 'tekstów'])}</p>
+    <p class="series__intro">{typo(found.intro)}</p>
+    <ol class="series__list">
+      {items.map((item) => (
+        <li class:list={['series__item', `series__item--${item.state}`, { 'series__item--current': item.current }]}>
+          <p class="series__status"><span class="series__mark" aria-hidden="true"></span>{typo(item.status)}</p>
+          <div>
+            {item.current
+              ? <p class="series__name" aria-current="page">{typo(item.title)}</p>
+              : <a class="series__name" href={item.href}>{typo(item.title)}</a>}
+            <p class="series__note">{typo(item.note)}</p>
+          </div>
+          {item.current && <span class="series__here">Czytasz</span>}
+        </li>
+      ))}
+    </ol>
+    {found.href && <p class="series__all"><LinkArrow href={found.href}>Wszystkie na jednej stronie</LinkArrow></p>}
+  </nav>
+)}
+
+<style>
+  .series { container-type: inline-size; padding: 20px 24px 8px; background: var(--surface); border: 1px solid var(--line); }
+  .series__title { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .series__intro { margin-top: 8px; max-width: 60ch; font-size: 0.9375rem; line-height: 1.55; color: var(--text); }
+
+  .series__list { margin: 16px 0 0; padding: 0; list-style: none; }
+  .series__item {
+    position: relative; display: grid; grid-template-columns: 15rem minmax(0, 1fr) auto; gap: 4px 20px; align-items: baseline;
+    padding: 14px 0; border-top: 1px solid var(--line);
+  }
+  /* bieżący tekst: kobaltowa linia na lewej krawędzi ramki */
+  .series__item--current::before { content: ""; position: absolute; top: -1px; bottom: 0; left: -24px; width: 2px; background: var(--blue); }
+
+  .series__status { display: flex; align-items: baseline; gap: 10px; font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .series__mark { flex: none; width: 10px; height: 10px; transform: translateY(1px); }
+  .series__item--law .series__mark { background: var(--ink); }
+  .series__item--bill .series__mark { border: 2px solid var(--blue); box-shadow: 0 0 0 3px var(--blue-100); }
+  .series__item--proposal .series__mark { border: 1.5px dashed var(--muted); }
+
+  .series__name { font: 500 1.0625rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  a.series__name { color: var(--blue); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; transition: text-decoration-color .2s; }
+  a.series__name:hover { text-decoration-color: currentColor; }
+  .series__note { margin-top: 2px; font-size: 0.875rem; line-height: 1.5; color: var(--muted); }
+  .series__all { padding: 14px 0 12px; border-top: 1px solid var(--line); }
+  .series__here { font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--blue); }
+
+  @container (max-width: 640px) {
+    .series__item { grid-template-columns: minmax(0, 1fr) auto; }
+    .series__status { grid-column: 1 / -1; }
+    .series__here { grid-row: 2; grid-column: 2; }
+  }
+</style>

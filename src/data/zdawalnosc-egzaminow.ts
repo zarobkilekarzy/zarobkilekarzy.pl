@@ -8,9 +8,10 @@
  * (2583 z 2690, ta sama tabela CEM). Egzaminy na uprawnienia budowlane (test i ustny) liczymy
  * jak IARP: zdało całość / (zdało + nie zdało na którymkolwiek etapie).
  *
- * Doradcy podatkowego tu nie ma: za 2025 r. MF nie opublikowało liczb (wyniki części pisemnej
- * zdjęte ze strony, ustnej nie publikuje); jest tylko „nie przekroczyła 35%” od 2014 r.
- * (uzasadnienie projektu, druk Sejmu nr 1729) — górna granica z 12 lat, nie pomiar za rok.
+ * Doradca podatkowy jest wyjątkiem: za 2025 r. MF nie opublikowało liczb (wyniki części pisemnej
+ * zdjęte ze strony, ustnej nie publikuje). Pokazujemy 25,0% („ok. 25%”) z wystąpienia wiceministra
+ * finansów w Sejmie (8.10.2025) — szacunek bez liczb, roku i definicji miary, podpisany pod liczbą jako szacunek.
+ * Uzasadnienie projektu (druk nr 1729) podaje tylko górną granicę: „od 2014 r. nie przekroczyła 35%”.
  */
 
 export interface ExamPassRate {
@@ -23,6 +24,8 @@ export interface ExamPassRate {
   passed?: number;
   /** odsetek podany przez źródło (gdy nie ma liczb) */
   percent?: number;
+  /** szacunek, nie pomiar za 2025 r. — bez obrazka OG z nagłówkiem „w 2025 r.” */
+  approx?: boolean;
   source: { publisher: string; title: string; url: string };
 }
 
@@ -101,6 +104,20 @@ export const EXAMS_2025: ExamPassRate[] = [
       publisher: 'Ministerstwo Infrastruktury',
       title: 'Odpowiedź na interpelację nr 14849 (2.02.2026)',
       url: 'https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDQXK99/i14849-o1.pdf',
+    },
+  },
+  {
+    // „niska zdawalność egzaminu, ok. 25%” — I czytanie druku nr 1729; później w tej samej debacie
+    // pada też „20-procentowa zdawalność”, więc bierzemy liczbę z wystąpienia otwierającego
+    key: 'doradca-podatkowy',
+    name: 'Doradca podatkowy',
+    note: 'MF w Sejmie · 8.10.2025',
+    percent: 25,
+    approx: true,
+    source: {
+      publisher: 'Sejm RP',
+      title: 'Stenogram 42. posiedzenia Sejmu (8.10.2025), wystąpienie podsekretarza stanu w MF',
+      url: 'https://api.sejm.gov.pl/sejm/term10/proceedings/42/2025-10-08/transcripts/127',
     },
   },
 ];

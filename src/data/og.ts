@@ -237,7 +237,7 @@ export const ogPages: Record<string, OgPage> = {
     bars: {
       head: 'Zdało egzamin w 2025 r., wszystkie podejścia',
       unit: '%',
-      rows: EXAMS_2025.map((e) => ({ label: e.name, value: passRate(e), display: formatPL(passRate(e), 1), marked: e.key === 'lek' })),
+      rows: EXAMS_2025.filter((e) => !e.approx).map((e) => ({ label: e.name, value: passRate(e), display: formatPL(passRate(e), 1), marked: e.key === 'lek' })),
     },
   },
   // etap i wersja z projekt-ustawy.ts — zmiana etapu zmienia obrazek

@@ -68,12 +68,13 @@ const odpowiedzialnosc: InfographicSet = {
   ],
 };
 
-// odsetki z jednym miejscem po przecinku — tak podają je źródła (CEM liczymy z dwóch liczb)
+// odsetki z jednym miejscem po przecinku — tak podają je źródła (CEM liczymy z dwóch liczb); szacunek MF z dopiskiem pod liczbą
 const examRows: ComparisonRow[] = EXAMS_2025.map((e) => ({
   label: e.name,
   sub: e.note,
   value: passRate(e),
   display: formatPL(passRate(e), 1),
+  valueNote: e.approx ? 'szacunek' : undefined,
   highlight: e.key === 'lek',
 }));
 
@@ -88,8 +89,8 @@ const egzamin: InfographicSet = {
       measure: 'odsetek przystępujących z wynikiem pozytywnym · 2025',
       unit: '%',
       rows: examRows,
-      sources: 'Źródła: CEM, Min. Sprawiedliwości, PIIB, IARP, Min. Infrastruktury · wszystkie podejścia',
-      alt: `Infografika: odsetek zdających, którzy zdali egzamin w 2025 r. (wszystkie podejścia): ${EXAMS_2025.map((e) => `${e.name} ${formatPL(passRate(e), 1)}% (${e.note})`).join(', ')}. Źródła: CEM, Ministerstwo Sprawiedliwości, PIIB, Izba Architektów RP, Ministerstwo Infrastruktury.`,
+      sources: 'Źródła: CEM, Min. Sprawiedliwości, PIIB, IARP, Min. Infrastruktury, Min. Finansów · wszystkie podejścia',
+      alt: `Infografika: odsetek zdających, którzy zdali egzamin w 2025 r. (wszystkie podejścia): ${EXAMS_2025.map((e) => `${e.name} ${formatPL(passRate(e), 1)}%${e.approx ? ' (szacunek)' : ''} (${e.note})`).join(', ')}. Doradca podatkowy: szacunek Ministerstwa Finansów podany w Sejmie, bez liczb za 2025 r. Źródła: CEM, Ministerstwo Sprawiedliwości, PIIB, Izba Architektów RP, Ministerstwo Infrastruktury, Ministerstwo Finansów.`,
     },
   ],
 };

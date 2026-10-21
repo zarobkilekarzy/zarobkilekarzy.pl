@@ -59,6 +59,8 @@ export interface ComparisonRow {
   value: number;
   /** wartość do druku (np. zaokrąglona) */
   display: string;
+  /** dopisek pod liczbą (np. „szacunek”), wersaliki, mono */
+  valueNote?: string;
   highlight?: boolean;
 }
 
@@ -255,10 +257,16 @@ function layout(set: InfographicSet, i: Infographic, rows: ComparisonRow[], f: F
 
   const subLine = (r: ComparisonRow) =>
     r.sub ? h('span', { style: { fontFamily: MONO, fontSize: g.sub, letterSpacing: '0.06em', textTransform: 'uppercase', color: r.highlight ? C.blue : C.muted } }, typo(r.sub)) : null;
-  const number = (r: ComparisonRow) =>
-    h('div', { style: { width: numW, flexShrink: 0, alignItems: 'baseline', fontFamily: DISPLAY, fontWeight: 300, fontSize: g.num, lineHeight: 1, letterSpacing: '-0.05em', color: r.highlight ? C.blue : C.ink } },
+  const figure = (r: ComparisonRow) =>
+    h('div', { style: { alignItems: 'baseline', fontFamily: DISPLAY, fontWeight: 300, fontSize: g.num, lineHeight: 1, letterSpacing: '-0.05em', color: r.highlight ? C.blue : C.ink } },
       r.display,
       i.unit && h('span', { style: { marginLeft: 8, fontSize: Math.round(g.num * UNIT_SCALE), letterSpacing: '-0.02em' } }, i.unit));
+  const number = (r: ComparisonRow) =>
+    r.valueNote
+      ? h('div', { style: { width: numW, flexShrink: 0, flexDirection: 'column' } },
+          figure(r),
+          h('span', { style: { marginTop: 4, fontFamily: MONO, fontSize: g.sub, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.muted } }, typo(r.valueNote)))
+      : h('div', { style: { width: numW, flexShrink: 0 } }, figure(r));
   const bar = (r: ComparisonRow, w: number) =>
     h('div', { style: { width: Math.max(8, (r.value / max) * w), height: g.bar, background: r.highlight ? C.blue : C.bar } });
 

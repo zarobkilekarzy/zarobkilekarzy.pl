@@ -1,0 +1,212 @@
+---
+title: Jak działają sądy lekarskie
+category: Mechanizm
+date: 2026-10-21
+topic: jawnosc
+order: 3
+cover: ../../assets/img/sad-lekarski-sala.jpg
+coverAlt: Pusta sala. Za stołem trzy krzesła i związane sznurkiem akta, naprzeciw jedno krzesło z przewieszonym białym fartuchem lekarskim
+summary: "Od zgłoszenia do prawomocnego orzeczenia: kto oskarża, kto orzeka i jak rzadko zapadają najsurowsze kary — z przykładami z orzeczeń."
+description: "Droga sprawy przed sądem lekarskim krok po kroku: rzecznik, dwie instancje, kasacja, przedawnienie, siedem kar i jawność — z przykładami z orzeczeń."
+keyPoints:
+  - "Lekarzy sądzą lekarze: rzecznik oskarża, orzekają okręgowy sąd lekarski i Naczelny Sąd Lekarski."
+  - "86% kar z lat 2020–2025 to upomnienie, nagana albo kara pieniężna; prawo do zawodu w latach 2010–2025 straciło 20 lekarzy."
+  - "Poza samorząd sprawa trafia tylko z kasacją do Sądu Najwyższego; proces karny toczy się osobno."
+related:
+  - odpowiedzialnosc-zawodowa-lekarzy
+  - brak-jawnosci
+---
+import Steps from '@/components/blocks/Steps.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import UnitChart from '@/components/blocks/UnitChart.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import {
+  FIRST_YEAR, LAST_YEAR, LINKS as NIL_LINKS, PENALTIES, PENALTIES_MILD, PENALTIES_TOTAL, PL_ZERO_YEARS, RATIO_ROUNDED, RATIO_UK, WINDOW, YEARS_COUNT,
+  penalty, ratePer100k, total,
+} from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
+import { formatPL } from '@/lib/format';
+
+{/* Ustawa o izbach lekarskich, t.j. Dz.U. 2021 poz. 1342 (ELI); po t.j. jedyna nowelizacja, Dz.U. 2023 poz. 1234, nie dotyczy odpowiedzialności zawodowej */}
+export const LINKS = { ustawa: 'https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf' };
+
+{/* liczby kar i porównanie krajów — te same dane co analiza odpowiedzialnosc-zawodowa-lekarzy */}
+export const span = `${WINDOW.from}–${WINDOW.to}`;
+export const allYears = `${FIRST_YEAR}–${LAST_YEAR}`;
+export const mildPct = Math.round((PENALTIES_MILD / PENALTIES_TOTAL) * 100);
+export const suspension = penalty('Zawieszenie prawa wykonywania zawodu');
+export const revocation = penalty('Pozbawienie prawa wykonywania zawodu');
+export const plTotal = total('pl');
+export const rates = { pl: ratePer100k('pl'), no: ratePer100k('no'), se: ratePer100k('se'), uk: ratePer100k('uk') };
+
+Gdy lekarz źle leczy, zaniedbuje dokumentację albo zachowuje się nieetycznie, o jego odpowiedzialności zawodowej nie orzeka sąd powszechny, tylko samorząd lekarski. Oskarża rzecznik odpowiedzialności zawodowej, a orzekają okręgowe sądy lekarskie i Naczelny Sąd Lekarski — **lekarzy sądzą lekarze**.[^uil-droga] Najsurowsze kary zapadają w tym systemie rzadko: w latach {allYears} prawo do zawodu prawomocnie straciło **{plTotal} lekarzy**, a w {PL_ZERO_YEARS} z {YEARS_COUNT} lat — nikt.[^nil-sady]
+
+Poniżej droga sprawy krok po kroku, z przykładami z [katalogu orzeczeń](/sad-lekarski/orzeczenia/) — streszczeń prawomocnych orzeczeń, które Naczelna Izba Lekarska publikuje bez nazwisk.[^portal] Liczby kar opisuje analiza [Najwyższa kara, której prawie się nie orzeka](/analizy/odpowiedzialnosc-zawodowa-lekarzy/).
+
+## Za co lekarz odpowiada
+
+Ustawa o izbach lekarskich stanowi: „Członkowie izb lekarskich podlegają odpowiedzialności zawodowej za naruszenie zasad etyki lekarskiej oraz przepisów związanych z wykonywaniem zawodu lekarza”. Takie naruszenie to **przewinienie zawodowe**.[^uil-zakres] Zasady etyki spisuje Kodeks Etyki Lekarskiej, przyjmowany przez Krajowy Zjazd Lekarzy.[^kel]
+
+Przewinienie nie musi dotyczyć leczenia. W katalogu są sprawy o [tytuł psychiatry w serwisie internetowym](/sad-lekarski/orzeczenia/psychiatra-portal/) u lekarza bez specjalizacji (kara pieniężna), o [nieopłacone składki na izbę](/sad-lekarski/orzeczenia/skladki/) (upomnienie) i o [reklamę w programie telewizyjnym](/sad-lekarski/orzeczenia/telewizja-metoda/) (upomnienie).
+
+Postępowanie toczy się niezależnie od postępowania karnego dotyczącego tego samego czynu. Można je zawiesić do końca sprawy karnej, jeśli jej wynik może wpłynąć na rozstrzygnięcie. Organy samorządu wiąże prawomocne rozstrzygnięcie sądu „kształtujące prawo lub stosunek prawny”.[^uil-zakres]
+
+**Wyrok karny nie zamyka sprawy w samorządzie.** [Lekarkę z karetki](/sad-lekarski/orzeczenia/karetka-aorta/), która rozpoznała kręcz szyi u pacjentki z poszerzoną aortą, sąd karny skazał na grzywnę, a sąd lekarski ukarał naganą. Naczelny Sąd Lekarski dodał, że wyrok karny nie czyni kary samorządu niecelową. W innych sprawach sądy oceniały to inaczej — o tym niżej.
+
+## Droga sprawy
+
+Ustawa dzieli postępowanie na cztery etapy: czynności sprawdzające, postępowanie wyjaśniające, postępowanie przed sądem lekarskim i postępowanie wykonawcze.[^uil-droga]
+
+<Steps>
+
+1. **Zgłoszenie.** Po otrzymaniu „informacji wskazującej na możliwość popełnienia przewinienia zawodowego” rzecznik odpowiedzialności zawodowej musi niezwłocznie wszcząć postępowanie wyjaśniające albo odmówić jego wszczęcia.[^uil-droga] Pacjentów kieruje do niego Rzecznik Praw Pacjenta.[^rpp] W katalogu sprawy zaczynały się m.in. od [skargi matki pacjentki](/sad-lekarski/orzeczenia/okulistka-badanie/), [skargi innego lekarza](/sad-lekarski/orzeczenia/wypowiedz-zgony/) i [notatki policji](/sad-lekarski/orzeczenia/nietrzezwa-gabinet/). O skardze pisze przewodnik [Prawa pacjenta](/prawa-pacjenta/).
+2. **Czynności sprawdzające.** Rzecznik wstępnie bada, czy są podstawy do postępowania; na tym etapie nie powołuje biegłych. Gdy sprawdza fakty, decyzję o wszczęciu albo odmowie musi wydać najpóźniej w 3 miesiące od otrzymania informacji. Pokrzywdzony może zaskarżyć odmowę do okręgowego sądu lekarskiego.[^uil-droga] W sprawie [badań pracowników bez uprawnień](/sad-lekarski/orzeczenia/medycyna-pracy-uprawnienia/) rzecznik odmówił wszczęcia, sąd lekarski uchylił tę decyzję po zażaleniu, a lekarka dostała w końcu upomnienie.
+3. **Postępowanie wyjaśniające.** Rzecznik przesłuchuje świadków, powołuje biegłych i przedstawia lekarzowi zarzuty — od tej chwili lekarz jest obwinionym. Powinien skończyć w 6 miesięcy; Naczelny Rzecznik może przedłużyć ten czas o 6 miesięcy, a dalej decyduje Naczelny Sąd Lekarski. Na przewlekłość przysługuje zażalenie. Postępowanie kończy się umorzeniem albo wnioskiem o ukaranie.[^uil-droga]
+4. **Pierwsza instancja.** Sprawę rozpoznaje okręgowy sąd lekarski izby, do której należy obwiniony, w składzie trzech osób. Rzecznik występuje przed nim jako strona, obok pokrzywdzonego i obwinionego.[^uil-droga]
+5. **Odwołanie.** W ciągu 14 dni od doręczenia orzeczenia strony mogą się odwołać do Naczelnego Sądu Lekarskiego. Orzeka on w składzie pięciu osób i może orzeczenie utrzymać, zmienić albo uchylić. Nie może jednak sam uznać winnym lekarza, którego pierwsza instancja uniewinniła albo wobec którego umorzyła postępowanie. Jego orzeczenie jest prawomocne z chwilą ogłoszenia.[^uil-instancje] W sprawie [trzech zbędnych ekstrakcji](/sad-lekarski/orzeczenia/ortodontka-ekstrakcje/) NSL zamienił roczne zawieszenie prawa do zawodu na naganę. W sprawie [konsultacji na SOR](/sad-lekarski/orzeczenia/rtg-pulmonolog/) utrzymał uniewinnienie, od którego odwołała się rodzina pacjenta.
+6. **Kasacja i wznowienie.** Od prawomocnego orzeczenia NSL strony, minister zdrowia i Prezes Naczelnej Rady Lekarskiej mogą w ciągu 2 miesięcy wnieść kasację do Sądu Najwyższego — z powodu rażącego naruszenia prawa albo niewspółmierności kary.[^uil-instancje] Po wyroku SN wróciła do NSL np. sprawa [ozonoterapii](/sad-lekarski/orzeczenia/ozonoterapia/): Sąd Najwyższy kazał zasięgnąć opinii biegłych. Zakończoną sprawę można też wznowić, gdy wyjdą na jaw nowe fakty lub dowody.[^uil-instancje] Tak sąd [uniewinnił lekarkę](/sad-lekarski/orzeczenia/skladki-wznowienie/) zawieszoną za nieopłacone składki: nowym faktem było jej przekonanie, że składki odprowadza pracodawca.
+
+</Steps>
+
+**Pokrzywdzony jest stroną postępowania**, a nie tylko świadkiem. Może ustanowić do dwóch pełnomocników, zaskarżyć odmowę wszczęcia i umorzenie, odwołać się od orzeczenia i wnieść kasację. Po jego śmierci te prawa mogą wykonywać bliscy. Obwiniony może mieć do dwóch obrońców, w razie potrzeby z urzędu.[^uil-strony] W sprawie [badania psychiatrycznego bez zgody](/sad-lekarski/orzeczenia/badanie-bez-zgody/) pełnomocniczka pokrzywdzonej odwołała się, żądając pozbawienia lekarza prawa do zawodu. W sprawie [opisu zdjęcia RTG](/sad-lekarski/orzeczenia/rtg-radiolog/) odwołanie wniosła rodzina zmarłego pacjenta.
+
+## Kiedy sprawa kończy się bez kary
+
+Lekarza nie można ukarać, dopóki przewinienie nie zostanie stwierdzone prawomocnym orzeczeniem. „Wszelkie wątpliwości, których w postępowaniu w przedmiocie odpowiedzialności zawodowej lekarzy nie da się usunąć, należy tłumaczyć na korzyść obwinionego”.[^uil-bez-kary] Bez kary sprawa może się skończyć na trzy sposoby.
+
+<Figure
+  title="Uniewinnienie znaczy, że przewinienia nie było. Umorzenie może zapaść także wtedy, gdy było."
+  source={{ label: 'Ustawa o izbach lekarskich, art. 63 i 82', href: LINKS.ustawa }}
+>
+  <Comparison
+    table={{
+      columns: ['', 'Kiedy', 'Przepis'],
+      rows: [
+        { cells: ['Uniewinnienie', 'czynu nie popełniono, brak danych dostatecznie uzasadniających podejrzenie albo czyn nie stanowi przewinienia zawodowego', 'art. 82 ust. 1 i art. 63 pkt 1–2'] },
+        { cells: ['Umorzenie obowiązkowe', 'ustała karalność (przedawnienie), obwiniony zmarł albo postępowanie o ten sam czyn zostało już prawomocnie zakończone lub wcześniej wszczęte toczy się', 'art. 82 ust. 1 i art. 63 pkt 3–5'] },
+        { cells: ['Umorzenie, o którym decyduje sąd', 'przewinienie mniejszej wagi albo kara byłaby oczywiście niecelowa wobec kary prawomocnie orzeczonej za ten sam czyn w innym postępowaniu — jeśli nie sprzeciwia się temu interes pokrzywdzonego', 'art. 82 ust. 2'] },
+      ],
+    }}
+  />
+</Figure>
+
+**Uniewinnienie.** W sprawie [operacji nosa](/sad-lekarski/orzeczenia/rynoplastyka/) sąd pierwszej instancji zakazał lekarzowi na 12 miesięcy operacji głowy, a NSL go uniewinnił: nie znalazł obiektywnego dowodu na złą technikę, a wątpliwości rozstrzygnął na korzyść obwinionego. W sprawie [zgonu po operacji wyrostka](/sad-lekarski/orzeczenia/dyzur-chirurgia-zgon/) NSL zaznaczył, że wpis niezgodny z prawdą musi być „niewątpliwy, a nie tylko prawdopodobny”.
+
+**Przedawnienie.** Postępowania nie wszczyna się, jeśli od czynu minęły 3 lata; każda czynność rzecznika przerywa ten termin. Karalność ustaje po 5 latach od czynu, a gdy czyn jest zarazem przestępstwem — nie wcześniej niż karalność przestępstwa.[^uil-bez-kary] W katalogu NSL umorzył z tego powodu cztery sprawy, w których pierwsza instancja wymierzyła kary, i w każdej zaznaczył, że materiał nie uzasadniał uniewinnienia albo że czyn pozostaje przewinieniem. Przy [leczeniu ortodontycznym, które trwało około 11 lat](/sad-lekarski/orzeczenia/ortodoncja-11-lat/), NSL „ubolewa nad długotrwałością” takich spraw. W sprawie [badania bez zgody](/sad-lekarski/orzeczenia/badanie-bez-zgody/) nie było postępowania karnego, które przedłużyłoby termin.
+
+**Mniejsza waga.** [Lekarz z zagraniczną specjalizacją](/sad-lekarski/orzeczenia/endokrynolog-bez-uprawnien/), który z warunkowym prawem do zawodu przyjmował pacjentów jako endokrynolog, nie dostał kary. Sąd uznał czyn za „wyraz pewnej lekkomyślności”, a samo stwierdzenie przewinienia za przestrogę.
+
+**Kara z innego postępowania.** W pięciu sprawach katalogu sąd lekarski umorzył postępowanie, bo za ten sam czyn orzekł już sąd karny. Tak było przy [przeoczonym zawale na SOR](/sad-lekarski/orzeczenia/sor-zawal/), za który lekarz dostał grzywnę, i przy [fikcyjnych ciążach i zwolnieniach](/sad-lekarski/orzeczenia/ciaza-fikcyjna/), za które lekarka dostała m.in. rok pozbawienia wolności w zawieszeniu i rok zakazu wykonywania zawodu ginekologa. W tej drugiej sprawie NSL podkreślił, że umorzenie to nie uniewinnienie: czyn przypisano, ale kara karna była już dolegliwa.
+
+## Siedem kar i ich skutki
+
+Ustawa daje sądowi siedem kar, od upomnienia do pozbawienia prawa wykonywania zawodu. Przepisy przy każdej z nich są zebrane przy skali w [grze](/sad-lekarski/). Kilka reguł widać dopiero w konkretnych sprawach:
+
+- **Kara pieniężna** wynosi od jednej trzeciej do czterokrotności przeciętnego miesięcznego wynagrodzenia w sektorze przedsiębiorstw i trafia na cel społeczny związany z ochroną zdrowia.[^uil-kary] Górną granicę dostał [biegły, który przez dwa lata nie oddał opinii ani akt](/sad-lekarski/orzeczenia/biegly-akta/).
+- **Kary można łączyć.** Do ograniczenia zakresu czynności albo do zawieszenia sąd może dodać zakaz pełnienia funkcji kierowniczych, a do kar od czwartej do szóstej — karę pieniężną.[^uil-kary] [Ordynator, który wypisał pacjentkę przed zakończeniem diagnostyki](/sad-lekarski/orzeczenia/oddzial-ordynator/), dostał 2 lata zawieszenia i 5 lat zakazu; [lekarz z transmisji o DMSO i perhydrolu](/sad-lekarski/orzeczenia/dmso-transmisja/) — rok zawieszenia i karę pieniężną.
+- **Ograniczenie zakresu czynności** wymaga wskazania czynności, których lekarz nie może wykonywać.[^uil-kary] W katalogu to np. zakaz samodzielnych zabiegów ortodontycznych na 6 miesięcy ([ortodoncja z dietą](/sad-lekarski/orzeczenia/ortodoncja-dieta/)) i zakaz leczenia osób poniżej 18 lat ([nastolatek leczony bez wskazań](/sad-lekarski/orzeczenia/nastolatek-leki/)).
+- **Publikacja w biuletynie izby.** Przy karach od czwartej do siódmej sąd może ją zarządzić.[^uil-kary] Tak było przy [pięcioletnim zawieszeniu lekarza SOR](/sad-lekarski/orzeczenia/sor-symulant/), który uznał pacjenta za symulanta.
+- **Zawieszony lekarz nie może wykonywać zawodu „w żadnej formie”.** Zawieszenie i pozbawienie są podstawą do rozwiązania umowy o pracę albo umowy cywilnoprawnej bez wypowiedzenia.[^uil-kary]
+- **Zatarcie.** Upomnienie zaciera się po roku, nagana po 3 latach od uprawomocnienia, kary od trzeciej do piątej po 3 latach od wykonania, zawieszenie po 5 latach od wykonania. **Pozbawienie prawa do zawodu nie ulega zatarciu.**[^uil-kary] U tego lekarza sąd nie znalazł okoliczności łagodzących m.in. dlatego, że wcześniejsza kara nie uległa zatarciu. [Lekarz, który drugi raz pełnił dyżur na SOR po alkoholu](/sad-lekarski/orzeczenia/sor-alkohol-powtorny/), stracił prawo do zawodu. NSL wskazał m.in., że nie skorzystał z „szansy poprawy”, którą dawało mu wcześniejsze orzeczenie.
+
+## Jak często zapadają najsurowsze kary
+
+W latach {PENALTIES.period} okręgowe sądy lekarskie orzekły w pierwszej instancji {formatPL(PENALTIES_TOTAL)} kar. **{mildPct}% z nich to upomnienie, nagana albo kara pieniężna.** Zawieszenie prawa wykonywania zawodu zapadło {suspension} razy, pozbawienie — {revocation} razy.[^nil-sady]
+
+<UnitChart
+  title={`Na ${formatPL(PENALTIES_TOTAL)} kar orzeczonych przez sądy lekarskie w latach ${PENALTIES.period} zawieszenie prawa do zawodu zapadło ${suspension} razy, a pozbawienie — ${revocation}`}
+  unit={1}
+  exact
+  unitLabel="kara orzeczona w pierwszej instancji"
+  cols={68}
+  groups={[
+    { value: PENALTIES_TOTAL - suspension - revocation, kind: 'off', label: 'pozostałe kary — od upomnienia po ograniczenie zakresu czynności' },
+    { value: suspension, kind: 'mid', label: 'zawieszenie prawa wykonywania zawodu na 1–5 lat' },
+    { value: revocation, kind: 'on', label: 'pozbawienie prawa wykonywania zawodu' },
+  ]}
+  source={`NIL, sprawozdania okręgowych sądów lekarskich ${PENALTIES.period} (zestawienie własne)`}
+  href={NIL_LINKS.nilCourts}
+/>
+
+To kary pierwszej instancji — część zmienia się po odwołaniu. Prawomocnie w latach {allYears} prawo do zawodu straciło {plTotal} lekarzy, nieco ponad jeden rocznie.[^nil-sady]
+
+W Norwegii i Szwecji o prawie do zawodu decydują urzędy państwowe, a w Wielkiej Brytanii trybunał oddzielony od regulatora zawodu.[^helse][^hsan][^gmc] W przeliczeniu na liczbę lekarzy[^lekarze][^gmc-kadry] odbierały one w latach {span} prawo do zawodu **od ok. {Math.round(RATIO_UK)} do ok. {RATIO_ROUNDED} razy częściej** niż polskie sądy lekarskie.
+
+<Figure
+  title={`W przeliczeniu na liczbę lekarzy urzędy w Norwegii i Szwecji odbierały prawo do zawodu ok. ${RATIO_ROUNDED} razy częściej, niż robiły to polskie sądy lekarskie.`}
+  note={`Średnio rocznie w latach ${span}, na 100 tys. lekarzy. Systemy różnią się zakresem spraw i definicjami, a przestępstwa lekarzy w Polsce osądzają osobno sądy karne — to porównanie rzędu wielkości, nie co do jednego przypadku.`}
+  source={{ label: 'obliczenie własne; dane i metoda w analizie „Najwyższa kara, której prawie się nie orzeka”', href: '/analizy/odpowiedzialnosc-zawodowa-lekarzy/' }}
+>
+  <BarChart
+    rows={[
+      { label: 'Norwegia', note: 'urząd państwowy', value: rates.no, display: `≈${formatPL(rates.no, 1)}` },
+      { label: 'Szwecja', note: 'urząd państwowy', value: rates.se, display: `≈${formatPL(rates.se, 1)}` },
+      { label: 'Wielka Brytania', note: 'trybunał', value: rates.uk, display: `≈${formatPL(rates.uk, 1)}` },
+      { label: 'Polska', note: 'sądy lekarskie', value: rates.pl, display: `≈${formatPL(rates.pl, 1)}`, highlight: true },
+    ]}
+    max={Math.max(rates.no, rates.se)}
+    unit="na 100 tys. lekarzy"
+    caption={`Odebrania prawa wykonywania zawodu lekarzom średnio rocznie na 100 tys. lekarzy, ${span}: Norwegia ok. ${formatPL(rates.no, 1)}, Szwecja ok. ${formatPL(rates.se, 1)}, Wielka Brytania ok. ${formatPL(rates.uk, 1)}, Polska ok. ${formatPL(rates.pl, 1)}.`}
+  />
+</Figure>
+
+Rok po roku, z rozbiciem na kraje i źródłami, liczby pokazuje analiza [Najwyższa kara, której prawie się nie orzeka](/analizy/odpowiedzialnosc-zawodowa-lekarzy/).
+
+## Tymczasowe zawieszenie
+
+Zanim zapadnie orzeczenie, sąd lekarski może na wniosek rzecznika tymczasowo zawiesić lekarzowi prawo do zawodu albo ograniczyć zakres czynności — na okres do roku. Warunki są dwa: dowody wskazują „z dużym prawdopodobieństwem” na ciężkie przewinienie, a jego rodzaj wskazuje, że dalsza praca lekarza zagraża bezpieczeństwu pacjentów lub grozi kolejnym przewinieniem. Postanowienie jest natychmiast wykonalne, nawet po zażaleniu do NSL. Jeśli w tym czasie nie zapadnie prawomocne orzeczenie, sąd z urzędu bada, czy zawieszenie ma trwać dalej. Okres zawieszenia zalicza się na poczet kary.[^uil-zawieszenie]
+
+W 2024 r. okręgowe sądy lekarskie wydały **36 postanowień o tymczasowym zawieszeniu** prawa wykonywania zawodu i 3 o tymczasowym ograniczeniu zakresu czynności.[^osl-2024]
+
+## Co jest jawne
+
+„Postępowanie przed sądem lekarskim odbywa się na rozprawie jawnej”. Sąd wyłącza jednak jawność, jeżeli mogłaby ona m.in. naruszyć tajemnicę lekarską albo ważny interes prywatny. Ogłoszenie orzeczenia jest jawne, a przewodniczący przytacza ustnie jego główne motywy.[^uil-jawnosc]
+
+Uniewinniony lekarz może zażądać, by izba opublikowała uniewinnienie w swoim biuletynie na swój koszt. Rejestr Ukaranych Lekarzy, który prowadzi Naczelna Rada Lekarska, jest jawny tylko dla osób i instytucji, które wykażą interes prawny.[^uil-jawnosc]
+
+Od 2024 r. Naczelna Izba Lekarska publikuje też prawomocne orzeczenia z uzasadnieniami na portalu, który prowadzi Prezes Naczelnej Rady Lekarskiej. Trafiają tam orzeczenia Naczelnego Sądu Lekarskiego doręczone Prezesowi NRL po 1 stycznia 2024 r. i okręgowych sądów — po 1 lipca 2024 r. Wersja z węższą anonimizacją jest dostępna tylko dla członków sądów lekarskich i rzeczników.[^regulamin]
+
+W wersji publicznej zaciera się m.in. sygnaturę, daty orzeczenia i przewinienia, nazwę sądu, imiona i nazwiska, numery prawa wykonywania zawodu i kwoty, a nazwy miejscowości zastępuje wielokropek. Jeśli przewodniczący sądu w ciągu 7 dni nie zatwierdzi anonimizacji ani nie odeśle jej do poprawy, orzeczenie publikuje się automatycznie. Regulamin pozwala wykorzystywać orzeczenia „jedynie w celach naukowych, dydaktycznych i informacyjnych”.[^regulamin]
+
+Z tego portalu pochodzą sprawy w katalogu. Dlatego przy karach pieniężnych nie ma w nim kwot: w sprawie [badania OCT bez wskazań](/sad-lekarski/orzeczenia/okulistka-oct/) wiadomo tylko, że kara wyniosła dwukrotność przeciętnego wynagrodzenia.
+
+## Argumenty i granice
+
+Konstytucja pozwala tworzyć w drodze ustawy samorządy zawodowe, które reprezentują osoby wykonujące zawody zaufania publicznego i sprawują „pieczę nad należytym wykonywaniem tych zawodów w granicach interesu publicznego i dla jego ochrony”.[^konst] Ustawa o izbach lekarskich powierza tę pieczę samorządowi lekarzy, a okręgowy sąd lekarski i rzecznik odpowiedzialności zawodowej są organami każdej izby.[^uil-zakres]
+
+Samorząd nie orzeka bez kontroli z zewnątrz. Kasację do Sądu Najwyższego może wnieść także minister zdrowia, a o odszkodowaniu dla lekarza uniewinnionego po wznowieniu albo kasacji orzeka sąd powszechny.[^uil-instancje] Pokrzywdzony ma prawa strony, w tym prawo do odwołania i kasacji.[^uil-strony] Pierwszą przesłanką wyłączenia jawności rozprawy jest tajemnica lekarska, która chroni informacje o pacjentach.[^uil-jawnosc]
+
+<Aside variant="warn" title="Katalog to wybór spraw, a nie próba reprezentatywna">
+
+W katalogu **19 z 59 rozstrzygnięć (32%) zapadło bez kary**. W prawomocnych orzeczeniach sądów lekarskich od I półrocza 2024 r. do I półrocza 2025 r. umorzenia i uniewinnienia stanowiły 24% (200 z 827).[^nil-prawomocne] Pozbawienie prawa do zawodu jest w katalogu jedno. Gra losuje rozstrzygnięcia tak, by ich rozkład był zbliżony do danych NIL; katalog pokazuje wszystkie opisane sprawy.
+
+Od 1 stycznia 2025 r. obowiązuje znowelizowany Kodeks Etyki Lekarskiej.[^kel] Orzeczenia w katalogu powołują artykuły kodeksu w brzmieniu sprzed tej zmiany i tak podają je opisy spraw.
+
+</Aside>
+
+## Katalog i gra
+
+[Katalog orzeczeń](/sad-lekarski/orzeczenia/) zawiera 59 rozstrzygnięć z 55 prawomocnych orzeczeń opublikowanych na portalu NIL. Każde ma osobną stronę ze stanem faktycznym, zarzutem i rozstrzygnięciem, a większość — także ze streszczeniem uzasadnienia. W grze [Czy orzekasz jak sąd lekarski](/sad-lekarski/) przeczytasz stan faktyczny, wybierzesz karę ze skali i zobaczysz, co orzekł sąd.
+
+[^uil-droga]: [Ustawa z 2 grudnia 2009 r. o izbach lekarskich](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf), tekst jednolity Dz.U. 2021 poz. 1342 (PDF): art. 55 (etapy postępowania, czynności sprawdzające), art. 56 (strony), art. 58 ust. 1 (obwiniony), art. 67 (wszczęcie postępowania wyjaśniającego), art. 68 (zażalenie na odmowę wszczęcia i umorzenie), art. 71–74 (postępowanie wyjaśniające, zarzuty, umorzenie, wniosek o ukaranie), art. 76 (terminy i zażalenie na przewlekłość), art. 78 (sądy lekarskie i ich właściwość), art. 80 ust. 1 (skład okręgowego sądu lekarskiego).
+[^portal]: Naczelna Izba Lekarska, [Portal prawomocnych orzeczeń sądów lekarskich](https://nil.org.pl/orzeczenia), kategoria I (publiczna). Opisy spraw w katalogu to streszczenia tych orzeczeń.
+[^uil-zakres]: [Ustawa o izbach lekarskich](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (PDF): art. 2 ust. 2 (reprezentacja zawodu i piecza nad jego wykonywaniem), art. 21 (organy okręgowej izby), art. 53 (przewinienie zawodowe), art. 54 (niezależność od postępowania karnego i dyscyplinarnego, zawieszenie postępowania), art. 62 (związanie prawomocnym rozstrzygnięciem sądu).
+[^kel]: Naczelna Izba Lekarska, [Kodeks Etyki Lekarskiej](https://nil.org.pl/dokumenty/kodeks-etyki-lekarskiej): historia kodeksu i nowelizacja z 2024 r. przyjęta na Nadzwyczajnym XVI Krajowym Zjeździe Lekarzy; [tekst obowiązujący od 1 stycznia 2025 r.](https://nil.org.pl/uploaded_images/1723037323_kel-2305.pdf) (PDF).
+[^rpp]: Rzecznik Praw Pacjenta, [Izba lekarska — kiedy i jak może pomóc](https://www.gov.pl/web/rpp/izba-lekarska-kiedy-i-jak-moze-pomoc).
+[^uil-instancje]: [Ustawa o izbach lekarskich](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (PDF): art. 80 ust. 2 (skład Naczelnego Sądu Lekarskiego), art. 90 (odwołanie), art. 92 (rozstrzygnięcia NSL i zakaz skazania uniewinnionego), art. 94 ust. 1 (prawomocność), art. 95–96 (kasacja do Sądu Najwyższego), art. 99 (wznowienie), art. 106 (odszkodowanie po wznowieniu lub kasacji — orzeka sąd powszechny).
+[^uil-strony]: [Ustawa o izbach lekarskich](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (PDF): art. 56–57 (strony, pokrzywdzony, pełnomocnicy, prawa bliskich po śmierci pokrzywdzonego), art. 58 ust. 2–5 (obrońcy), art. 68 ust. 1 (zażalenia), art. 90 ust. 1 (odwołanie), art. 95 ust. 1 (kasacja).
+[^uil-bez-kary]: [Ustawa o izbach lekarskich](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (PDF): art. 61 (domniemanie niewinności, wątpliwości na korzyść obwinionego), art. 63 (przesłanki umorzenia i odmowy wszczęcia), art. 64 (przedawnienie), art. 82 (uniewinnienie i umorzenie).
+[^uil-kary]: [Ustawa o izbach lekarskich](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (PDF): art. 83 (katalog kar i łączenie z zakazem pełnienia funkcji kierowniczych), art. 84 (publikacja w biuletynie), art. 85 (kara pieniężna), art. 86 (ograniczenie zakresu czynności), art. 108 (skutki zawieszenia i pozbawienia), art. 110 ust. 3–5 (zatarcie kar).
+[^uil-zawieszenie]: [Ustawa o izbach lekarskich](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (PDF): art. 77 (tymczasowe zawieszenie i ograniczenie), art. 87 ust. 3–4 (zaliczenie na poczet kary).
+[^osl-2024]: Naczelna Izba Lekarska, [sprawozdanie okręgowych sądów lekarskich za 2024 r.](https://nil.org.pl/uploaded_files/1764064972_sprawozdanie-osl-2024.xlsx) (XLSX), wiersze 5.1–5.2 (postanowienia wydane na wniosek rzeczników na podstawie art. 77), suma 24 izb.
+[^uil-jawnosc]: [Ustawa o izbach lekarskich](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (PDF): art. 79 (jawność rozprawy i jej wyłączenie), art. 88 (ogłoszenie orzeczenia), art. 109 (publikacja uniewinnienia), art. 110 ust. 1 (Rejestr Ukaranych Lekarzy).
+[^regulamin]: Naczelna Izba Lekarska, [Regulamin portalu prawomocnych orzeczeń sądów lekarskich](https://nil.org.pl/uploaded_files/art_1714140785_doc-1712063049-ru-010-24-ix-zal-regulamin-portalu-prawomocnych-orzeczen-sadow-lekarskich-tekst-jedn.pdf) (PDF, tekst jednolity): § 1 (prowadzenie portalu), § 2 ust. 3–4 (kategorie i zakres), § 4 (anonimizacja i terminy), § 5 ust. 3 (cele wykorzystania), § 7 ust. 5 (wejście w życie 1 maja 2024 r.).
+[^konst]: [Konstytucja Rzeczypospolitej Polskiej](https://api.sejm.gov.pl/eli/acts/DU/1997/483/text.pdf), Dz.U. 1997 nr 78 poz. 483 (PDF), art. 17 ust. 1.
+[^nil-prawomocne]: Naczelna Izba Lekarska, [Prawomocne orzeczenia sądów lekarskich](https://nil.org.pl/rejestry/rejestr-ukaranych-lekarzy/prawomocne-orzeczenia-sadow-lekarskich): tabele za I i II półrocze 2024 r. oraz I półrocze 2025 r., wiersz SUMA — 827 orzeczeń, w tym 200 umorzeń i uniewinnień.
+[^nil-sady]: Naczelna Izba Lekarska, [Dane liczbowe dotyczące sądów lekarskich](https://nil.org.pl/izba/naczelny-sad-lekarski/sprawozdania/dane-liczbowe-dotyczace-sadow-lekarskich): roczne sprawozdania okręgowych sądów lekarskich i Naczelnego Sądu Lekarskiego 2010–2025 oraz zestawienie orzeczeń OSL i NSL z lat 2000–2014. Sumy dla 24 izb i podział na lata — zestawienie własne (zob. „Metoda”). Udział specjalności stomatologicznych we wnioskach o ukaranie — arkusze „Specjalizacje” sprawozdań OSL za lata 2020–2025.
+[^helse]: Helsetilsynet, [statystyka reakcji wobec personelu ochrony zdrowia](https://www.helsetilsynet.no/tilsyn/om-tilsynssaker/statistikk-reaksjoner-mot-helsepersonell/): roczne komunikaty o odebraniu autoryzacji lub licencji lekarzom; lata 2010–2018 z archiwum komunikatów i raportów „Tilsynsmelding”, lata 2019–2024 z bieżących komunikatów.
+[^hsan]: Hälso- och sjukvårdens ansvarsnämnd (HSAN), [sprawozdanie z działalności za 2025 r.](https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/dokument-webb/ovrigt/hsan-verksamhetsredogorelse-2025.pdf) (PDF), tab. 6: odebrania legitymacji lekarzom — 2023: 55, 2024: 48, 2025: 64 (w tym 4 tymczasowe); dentyści w osobnym wierszu; lata 2010–2017 z wcześniejszych sprawozdań. Wnioski o odebranie legitymacji składa m.in. inspektorat IVO, a HSAN rozpatruje też wnioski samych lekarzy.
+[^gmc]: General Medical Council, roczne statystyki postępowań w sprawie zdolności do wykonywania zawodu: [raport za 2025 r.](https://www.gmc-uk.org/cdn/documents/concerns-about-fitness-to-practise-annual-statistical-report-2025-english_pdf-115384449.pdf) (PDF), tab. 3b (wyniki trybunałów 2020–2025, wiersz „Impairment – erasure”; rola MPTS; sprawy wyłącznie zdrowotne nie kończą się skreśleniem; publikacja informacji o rozprawach), [raport za 2024 r.](https://www.gmc-uk.org/cdn/documents/fitness-to-practise-statistics-report-2024_pdf-112202260.pdf) (PDF), tab. 6, oraz wcześniejsze raporty roczne (lata 2010–2019; spadek liczby rozpraw w 2020 r. z powodu pandemii — raport za 2020 r.). Rok kalendarzowy decyzji; bez skreśleń po ponownym rozpatrzeniu sankcji i bez skreśleń na wniosek lekarza.
+[^lekarze]: Liczba lekarzy: Polska — 164 892 lekarzy wykonujących zawód, bez lekarzy dentystów, [Centralny Rejestr Lekarzy NIL, zestawienie według wieku](https://nil.org.pl/uploaded_files/1768208069_31122025-zestawienie-nr-3.pdf), stan na 31.12.2025; Norwegia — [SSB, tabela 07938](https://www.ssb.no/statbank/table/07938/), zatrudnieni lekarze ze specjalizacją i bez, 4. kwartał: 31 753 w 2020 r., 35 997 w 2025 r., średnia z lat 2020–2025 ok. 34 tys.; Szwecja — [Socialstyrelsen, 2026](https://www.socialstyrelsen.se/contentassets/8f0d27a18c394508bb609d03d5153dc2/2026-2-10048.pdf) (PDF), tab. 1: 46 020 lekarzy, łącznie ze specjalistami, zatrudnionych w ochronie zdrowia w maju 2025 r., o 13% więcej niż w maju 2020 r.; średnią z lat 2020–2025 (ok. 43 tys.) szacujemy jako średnią tych dwóch stanów, czyli przy założeniu równomiernego wzrostu.
+[^gmc-kadry]: General Medical Council, [The state of medical education and practice in the UK: workforce report 2025](https://www.gmc-uk.org/cdn/documents/wfr25-report-251117_pdf-112967442.pdf) (PDF), cz. 2: 328 149 lekarzy z licencją w 2024 r. wobec 272 255 w 2020 r.

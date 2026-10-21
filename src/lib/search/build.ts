@@ -5,6 +5,7 @@
 import type { SearchDoc, SearchHit, SearchIndex } from '@/types';
 import { articleHref, getAllArticles, getGlossary, getSections, isPublished, plainText, termHref, type Article } from '@/lib/content';
 import { popularSearchIds, searchExtras } from '@/data/navigation';
+import { series, seriesStates } from '@/data/serie';
 import { toHit } from './engine';
 import { words } from './text';
 
@@ -20,13 +21,32 @@ const FIELDS: { weight: number; text: (doc: SearchDoc) => string | undefined }[]
 /** Powtórzenia słowa w jednym polu liczą się najwyżej tyle razy, więc długi tekst nie wygrywa samą objętością. */
 const MAX_REPEATS = 3;
 
+/** Słowa serii, do których należy tekst (np. „ustawa” i „Ustawa kominowa” dla tekstu o kominie płacowym). */
+const seriesKeywords = (id: string) =>
+  series.flatMap((s) => s.items.filter((item) => item.ref === id).flatMap((item) => [s.title, item.title, ...(s.keywords ?? [])]));
+
+/** Strony serii (np. /ustawy/) jako cele wyszukiwania; działy według stanu = sekcje z kotwicami. */
+const seriesDocs: SearchDoc[] = series.flatMap((s) =>
+  s.href
+    ? [{
+        id: `seria-${s.href.replaceAll('/', '')}`,
+        title: s.title,
+        category: 'Przepisy',
+        href: s.href,
+        summary: s.intro,
+        keywords: s.keywords,
+        sections: Object.entries(seriesStates).map(([state, info]) => ({ title: info.label, anchor: state })),
+      }]
+    : [],
+);
+
 const articleDoc = (article: Article): SearchDoc => ({
   id: article.id,
   title: article.data.title,
   category: article.data.category,
   href: articleHref(article),
-  // Adres to redakcyjna, krótka nazwa tematu, której może nie być w tekście
-  keywords: article.id.split('-'),
+  // Adres to redakcyjna, krótka nazwa tematu, której może nie być w tekście; do tego słowa serii
+  keywords: [...article.id.split('-'), ...seriesKeywords(article.id)],
   summary:[article.data.summary, ...(article.data.keyPoints ?? [])].join(' '),
 });
 
@@ -57,6 +77,7 @@ async function collectDocs(describe: (article: Article) => SearchDoc | Promise<S
       href: termHref(g),
       summary: g.def,
     })),
+    ...seriesDocs,
     ...searchExtras,
   ];
 }

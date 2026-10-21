@@ -25,6 +25,8 @@ export interface Series {
   items: SeriesItem[];
   /** strona z całą serią pogrupowaną według stanu (link „Wszystkie” w ramce) */
   href?: string;
+  /** słowa dla wyszukiwarki: trafiają do każdego tekstu serii i do jej strony (lib/search/build.ts) */
+  keywords?: string[];
 }
 
 /** Działy strony serii (np. /ustawy/) — jeden na stan, w kolejności ramki. */
@@ -48,6 +50,7 @@ export const series: Series[] = [
     title: 'Ustawy na stronie',
     intro: 'Teksty o przepisach, które opisujemy: od obowiązujących ustaw, przez projekty w Sejmie, po projekt obywatelski tej strony.',
     href: '/ustawy/',
+    keywords: ['ustawa', 'ustawy', 'projekt ustawy', 'przepisy', 'prawo'],
     items: [
       {
         ref: 'komin-placowy',

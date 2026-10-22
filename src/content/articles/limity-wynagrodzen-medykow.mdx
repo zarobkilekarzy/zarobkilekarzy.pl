@@ -1,21 +1,24 @@
 ---
-title: "Limity płac medyków: rządowy projekt z 28 września 2026 r. przed głosowaniem w Sejmie"
-seoTitle: "Limity płac lekarzy — projekt ustawy"
+title: "Limity płac medyków: co zawiera ustawa uchwalona przez Sejm"
+seoTitle: "Limity płac lekarzy — ustawa uchwalona"
 og:
-  title: "Limity płac medyków\nw rządowym projekcie ustawy"
+  title: "Limity płac medyków\nw ustawie uchwalonej przez Sejm"
 category: Analiza
 topic: rejestr
 order: 2
 stat: { value: "16×", unit: płacy minimalnej miesięcznie — łączny pułap }
 date: 2026-10-20
-summary: "Rządowy projekt ustawy ustala najwyższą stawkę godzinową i miesięczną medyków w placówkach z umową z NFZ. Wprowadza też limit dwóch etatów, zakaz płacy liczonej jako procent kontraktu i umowy wyłącznie z osobami, nie ze spółkami."
-description: "Projekt ustawy (druk nr 3157): stawka 1/20 płacy minimalnej za godzinę, 8–16× miesięcznie, najwyżej dwa etaty, zakaz płacy jako procentu kontraktu z NFZ."
+updated: 2026-10-22
+summary: "Ustawa uchwalona przez Sejm ustala najwyższą stawkę godzinową i miesięczną medyków w placówkach z umową z NFZ. Wprowadza też limit dwóch etatów, zakaz płacy liczonej jako procent kontraktu, umowy wyłącznie z osobami i zakaz pracy na NFZ za poświadczenie nieprawdy."
+description: "Ustawa uchwalona przez Sejm (druk nr 3157): 1/20 płacy minimalnej za godzinę, 8–16× miesięcznie, dwa etaty, rejestr zakazów NFZ i głosowanie klubów."
 keyPoints:
   - Stawka godzinowa wynagrodzenia zasadniczego nie może przekroczyć 1/20 płacy minimalnej, czyli 240,30 zł w 2026 r. Limit obejmuje umowę o pracę i kontrakt, ale tylko za świadczenia finansowane przez NFZ.
   - Miesięczny pułap u jednego świadczeniodawcy to 8-krotność płacy minimalnej na pełny etat (38 448 zł), z dodatkami 12-krotność (57 672 zł). Łącznie u wszystkich nie więcej niż 16-krotność, czyli 76 896 zł.
   - Łączny czas pracy nie może przekroczyć dwóch etatów. W szpitalu trzeba mieć co najmniej pół etatu, umowę zawiera się z osobą, nie ze spółką, a płaca nie może być procentem kontraktu z NFZ.
-  - Przestrzeganie limitów opiera się na oświadczeniach składanych pod groźbą odpowiedzialności karnej i na kontrolach NFZ. Sumę z kilku placówek zna tylko osoba, która ją deklaruje.
+  - Limity egzekwują oświadczenia i kontrole NFZ, bez wspólnego rejestru płac. Jawny będzie tylko rejestr lekarzy z zakazem pracy na NFZ.
 changelog:
+  - date: 2026-10-22
+    text: "Sejm uchwalił ustawę: 229 posłów za, 144 przeciw, 67 wstrzymało się. Dopisane: wyniki głosowań według klubów, poprawki przyjęte w trzecim czytaniu ([druk nr 3193-A](https://api.sejm.gov.pl/sejm/term10/prints/3193-A/3193-A.pdf)) — m.in. okres wypowiedzenia i ochrona z kodeksu pracy, wyjątki od wymogu pół etatu — oraz przyjęty wniosek mniejszości o zakazie udzielania świadczeń z NFZ i jawnym rejestrze zakazów."
   - date: 2026-10-20
     text: "Pierwsza wersja: projekt w brzmieniu przyjętym przez Komisję Zdrowia ([druk nr 3193](https://api.sejm.gov.pl/sejm/term10/prints/3193/3193.pdf)). Tego dnia, po drugim czytaniu, projekt wrócił do komisji z poprawkami i wnioskami mniejszości."
 related:
@@ -35,16 +38,22 @@ import Verdict from '@/components/blocks/Verdict.astro';
 import Actions from '@/components/layout/Actions.astro';
 import Button from '@/components/ui/Button.astro';
 import LimitCalculator from '@/components/limity/LimitCalculator.astro';
+import Hemicycle from '@/components/sejm/Hemicycle.astro';
+import { limityVoting, SEJM_CLUBS, CLUBS_LAST } from '@/data/glosowania';
 import { formatPL } from '@/lib/format';
 
 export const LINKS = {
   proces: 'https://www.sejm.gov.pl/Sejm10.nsf/PrzebiegProc.xsp?nr=3157',
   druk: 'https://api.sejm.gov.pl/sejm/term10/prints/3157/3157.pdf',
   sprawozdanie: 'https://api.sejm.gov.pl/sejm/term10/prints/3193/3193.pdf',
+  dodatkowe: 'https://api.sejm.gov.pl/sejm/term10/prints/3193-A/3193-A.pdf',
   min2026: 'https://api.sejm.gov.pl/eli/acts/DU/2025/1242/text.pdf',
   min2027: 'https://api.sejm.gov.pl/eli/acts/DU/2026/1213/text.pdf',
   przecietne: 'https://api.sejm.gov.pl/eli/acts/MP/2026/192/text.pdf',
 };
+
+export const vote = (nr) => `https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=glosowania&NrKadencji=10&NrPosiedzenia=67&NrGlosowania=${nr}`;
+
 
 {/* Płaca minimalna 2026: Dz.U. 2025 poz. 1242; 2027: Dz.U. 2026 poz. 1213; przeciętne wynagrodzenie 2025: M.P. 2026 poz. 192.
     Mnożniki z art. 132ab w brzmieniu z druku nr 3193. */}
@@ -74,18 +83,19 @@ export const CALC_ROWS = [
   { label: 'Łącznie u wszystkich', factor: 16, ratio: '16×', unit: 'zł', marked: true },
 ];
 
-Rządowy projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych (druk nr 3157) wprowadza górną granicę wynagrodzenia lekarzy, pielęgniarek i innych medyków w placówkach, które mają umowę z NFZ.[^druk] Limit ma dwie części: najwyższą stawkę za godzinę i najwyższą kwotę za miesiąc. Obie są liczone jako wielokrotność płacy minimalnej, więc rosną razem z nią.
+Ustawa o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych, uchwalona przez Sejm 22 października 2026 r. z rządowego projektu (druk nr 3157), wprowadza górną granicę wynagrodzenia lekarzy, pielęgniarek i innych medyków w placówkach, które mają umowę z NFZ.[^druk][^glosowanie] Limit ma dwie części: najwyższą stawkę za godzinę i najwyższą kwotę za miesiąc. Obie są liczone jako wielokrotność płacy minimalnej, więc rosną razem z nią.
 
-Projekt zmienia też zasady zatrudniania: ogranicza łączny czas pracy, wymaga co najmniej pół etatu w szpitalu, zakazuje zawierania umów przez spółki-pośredników i ustalania płacy jako procentu kontraktu. Poniżej każdą zmianę opisujemy osobno, w brzmieniu przyjętym przez sejmową Komisję Zdrowia.[^sprawozdanie]
+Ustawa zmienia też zasady zatrudniania: ogranicza łączny czas pracy, wymaga co najmniej pół etatu w szpitalu, zakazuje zawierania umów przez spółki-pośredników i ustalania płacy jako procentu kontraktu. W trzecim czytaniu Sejm dopisał do niej zakaz udzielania świadczeń z NFZ dla lekarza, który umyślnie poświadczył nieprawdę. Poniżej każdą zmianę opisujemy osobno: w brzmieniu przyjętym przez Komisję Zdrowia, z poprawkami przyjętymi przez Sejm.[^sprawozdanie][^dodatkowe] Tekstu ustawy w brzmieniu uchwalonym Sejm jeszcze nie opublikował.
 
 <Actions gap="sm" stack="mobile">
-  <Button href={LINKS.sprawozdanie} variant="primary">Pełny tekst projektu (druk nr 3193, PDF)</Button>
+  <Button href={LINKS.sprawozdanie} variant="primary">Tekst projektu przyjęty przez komisję (druk nr 3193, PDF)</Button>
+  <Button href={LINKS.dodatkowe} variant="ghost">Poprawki z drugiego czytania (druk nr 3193-A, PDF)</Button>
   <Button href={LINKS.druk} variant="ghost">Projekt z uzasadnieniem (druk nr 3157, PDF)</Button>
   <Button href={LINKS.proces} variant="ghost">Przebieg prac w Sejmie</Button>
 </Actions>
 
 <StatRow
-  label="Limity wynagrodzenia w projekcie, kwoty z 2026 r."
+  label="Limity wynagrodzenia w ustawie, kwoty z 2026 r."
   items={[
     { value: 240.3, decimals: 2, unit: 'zł za godzinę = 1/20 płacy minimalnej', desc: 'najwyższa stawka wynagrodzenia zasadniczego, na etacie i na kontrakcie', accuracy: 'exact', source: 'Druk nr 3193, art. 132ab ust. 1 i 6', href: LINKS.sprawozdanie },
     { value: 38448, unit: 'zł miesięcznie = 8× płacy minimalnej', desc: 'pułap u jednego świadczeniodawcy przy pełnym etacie', accuracy: 'exact', source: 'Druk nr 3193, art. 132ab ust. 7', href: LINKS.sprawozdanie },
@@ -93,35 +103,82 @@ Projekt zmienia też zasady zatrudniania: ogranicza łączny czas pracy, wymaga 
   ]}
 />
 
-## Na jakim etapie jest projekt
+## Na jakim etapie jest ustawa
 
-Projekt wpłynął do Sejmu 28 września 2026 r. Komisja Zdrowia przeprowadziła pierwsze czytanie 7 października i zarekomendowała jego uchwalenie. 20 października, po drugim czytaniu na posiedzeniu Sejmu, projekt wrócił do komisji, bo posłowie zgłosili poprawki i wnioski mniejszości.[^proces] Komisja musi je zaopiniować, zanim Sejm zagłosuje nad całością.
+Projekt wpłynął do Sejmu 28 września 2026 r. Komisja Zdrowia przeprowadziła pierwsze czytanie 7 października i zarekomendowała jego uchwalenie. 20 października, po drugim czytaniu, projekt wrócił do komisji z 29 poprawkami i 9 wnioskami mniejszości. Komisja zaopiniowała je 21 października.[^proces][^dodatkowe]
+
+22 października Sejm uchwalił ustawę: **229 posłów było za, 144 przeciw, 67 wstrzymało się**.[^glosowanie] Teraz ustawą zajmie się Senat. Ma na to 30 dni: może ją przyjąć bez zmian, wprowadzić poprawki albo ją odrzucić. Potem ustawę podpisuje prezydent, w ciągu 21 dni, albo kieruje ją do Trybunału Konstytucyjnego lub zwraca Sejmowi.[^konstytucja]
 
 <StatusTrack
-  label="Etapy prac nad projektem"
+  label="Etapy prac nad ustawą"
   stages={[
     { label: 'Projekt w Sejmie', note: 'druk nr 3157', date: new Date('2026-09-28'), state: 'done', href: LINKS.druk },
     { label: 'Pierwsze czytanie', note: 'Komisja Zdrowia, druk nr 3193', date: new Date('2026-10-07'), state: 'done', href: LINKS.sprawozdanie },
-    { label: 'Drugie czytanie', note: 'poprawki, powrót do komisji', date: new Date('2026-10-20'), state: 'current', href: LINKS.proces },
-    { label: 'Trzecie czytanie', note: 'głosowanie w Sejmie', state: 'next' },
-    { label: 'Senat i prezydent', state: 'next' },
+    { label: 'Drugie czytanie', note: 'poprawki, druk nr 3193-A', date: new Date('2026-10-20'), state: 'done', href: LINKS.dodatkowe },
+    { label: 'Trzecie czytanie', note: '229 za, 144 przeciw, 67 wstrzymało się', date: new Date('2026-10-22'), state: 'done', href: vote(149) },
+    { label: 'Senat', note: '30 dni na stanowisko', state: 'current' },
+    { label: 'Prezydent', note: '21 dni na podpis', state: 'next' },
   ]}
 />
 
-Tekst opisuje wersję z druku nr 3193. Poprawki z drugiego czytania mogą ją jeszcze zmienić — każdą zmianę po kolejnym etapie dopisujemy w [historii zmian](#historia-zmian) pod artykułem.
+Senat może tekst jeszcze zmienić — każdą zmianę po kolejnym etapie dopisujemy w [historii zmian](#historia-zmian) pod artykułem.
+
+## Jak głosowały kluby
+
+Za ustawą głosowali posłowie KO, Lewicy, Centrum, Polski 2050 i większość PSL. Przeciw był klub PiS. Wstrzymali się posłowie Rozwoju Plus, Konfederacji, Konfederacji Korony Polskiej, Razem i Demokracji Bezpośredniej.[^glosowanie]
+
+<Figure
+  title="Za ustawą głosowały KO, Lewica, Centrum, Polska 2050 i większość PSL, przeciw PiS"
+  note="Jedna kropka = jeden poseł. Kluby od najwyższego do najniższego poparcia, w klinie klubu: za, wstrzymał się, nie głosował, przeciw. Najedź albo dotknij kropki, żeby zobaczyć, kto jak głosował; karta klubu pokazuje jego wynik. Liczby na kartach: za · przeciw · wstrzymało się · nie głosowało."
+  source={{ label: 'Sejm RP, głosowanie nr 149 na 67. posiedzeniu, wyniki imienne', href: vote(149) }}
+>
+  <Hemicycle voting={limityVoting} clubs={SEJM_CLUBS} last={CLUBS_LAST} />
+</Figure>
+
+O kształcie ustawy zdecydowały też głosowania nad poprawkami i wnioskami mniejszości. Najważniejsze z nich zestawiamy poniżej, z autorem wniosku według sprawozdań komisji.[^sprawozdanie][^dodatkowe]
+
+<Figure
+  title="Zakaz pracy na NFZ przeszedł przy 20 głosach przeciw, niższe limity i wspólny system oświadczeń odpadły"
+  note="Liczby: za / przeciw / wstrzymało się. Klub wymieniony, gdy tak głosowała cała jego obecna część albo zdecydowana większość; pełne wyniki imienne na stronach głosowań."
+  source={[
+    { label: 'Sejm RP, głosowania na 67. posiedzeniu, 22.10.2026', links: [
+      { label: 'nr 125', href: vote(125) }, { label: 'nr 126', href: vote(126) }, { label: 'nr 130', href: vote(130) },
+      { label: 'nr 133', href: vote(133) }, { label: 'nr 142', href: vote(142) }, { label: 'nr 145', href: vote(145) }, { label: 'nr 147', href: vote(147) },
+    ] },
+    { label: 'Dodatkowe sprawozdanie Komisji Zdrowia, druk nr 3193-A (autorzy poprawek)', href: LINKS.dodatkowe },
+  ]}
+>
+  <Comparison
+    table={{
+      caption: 'Wybrane głosowania nad poprawkami i wnioskami mniejszości do ustawy o limitach płac medyków',
+      columns: ['', 'Wynik', 'Za', 'Przeciw lub wstrzymali się'],
+      rows: [
+        { cells: ['Zakaz udzielania świadczeń z NFZ i jawny rejestr zakazów (wnioski mniejszości nr 1, 3–6, 8–9; poseł Rozwoju Plus)', 'Przyjęte, 416 / 20 / 0', 'Wszystkie kluby i koła poza obiema Konfederacjami', 'Przeciw: Konfederacja (16), Konfederacja Korony Polskiej (2)'] },
+        { cells: ['Oświadczenia o czasie pracy w systemie P1 (wnioski mniejszości nr 2 i 7; poseł Rozwoju Plus)', 'Odrzucone, 188 / 231 / 18', 'PiS, Rozwój Plus, Razem', 'Przeciw: KO, PSL, Lewica, Centrum, Polska 2050; Konfederacja się wstrzymała'] },
+        { cells: ['Skreślenie wymogu pół etatu w szpitalu i zgody pracodawcy (poprawka nr 7, PSL)', 'Odrzucona, 179 / 203 / 43', 'PiS, Konfederacja, 17 posłów PSL', 'Przeciw: KO, Lewica, Centrum, Polska 2050, 9 posłów PSL; Rozwój Plus się wstrzymał'] },
+        { cells: ['Niższe pułapy: 10× zamiast 12× i 13× zamiast 16× płacy minimalnej (poprawka nr 21, PiS)', 'Odrzucona, 187 / 246 / 0', 'PiS, Rozwój Plus, Razem', 'Przeciw: KO, PSL, Lewica, Konfederacja, Centrum, Polska 2050'] },
+        { cells: ['Limity liczone od przeciętnego wynagrodzenia, np. 3× i 6× miesięcznie (poprawki nr 12–14 i 16–19, Razem)', 'Odrzucone, za 5–7 posłów', 'Razem i część niezrzeszonych', 'Przeciw: pozostałe kluby'] },
+        { cells: ['Wypowiedzenie z zachowaniem okresu wypowiedzenia, gdy medyk nie zgodzi się na zmianę umowy mieszczącą płacę w limicie (poprawka nr 24, Lewica)', 'Przyjęta, 228 / 208 / 2', 'PiS, Rozwój Plus, Lewica, Konfederacja, Razem', 'Przeciw: KO, PSL, Centrum, Polska 2050'] },
+        { cells: ['Ochrona z kodeksu pracy przy wypowiedzeniach w okresie przejściowym (poprawka nr 27, KO i Lewica)', 'Przyjęta, 404 / 9 / 19', 'Wszystkie kluby i koła poza obiema Konfederacjami', 'Obie Konfederacje się wstrzymały; przeciw 7 posłów KO'] },
+      ],
+    }}
+  />
+</Figure>
+
+Komisja rekomendowała przyjęcie poprawek KO (jednej zgłoszonej razem z Lewicą), które doprecyzowują wyjątki i procedury opisane niżej, a odrzucenie pozostałych.[^dodatkowe] Sejm poszedł za tą rekomendacją z dwoma wyjątkami: przyjął poprawkę Lewicy o okresie wypowiedzenia i wnioski mniejszości o zakazie pracy na NFZ, które komisja wcześniej odrzuciła.
 
 ## Co zmienia się względem dzisiejszych przepisów
 
 <Comparison
   table={{
-    caption: 'Zasady zatrudniania i wynagradzania medyków dziś i w projekcie (druk nr 3193). Wyróżnione: zasady, których dziś nie ma',
-    columns: ['', 'Dziś', 'W projekcie'],
+    caption: 'Zasady zatrudniania i wynagradzania medyków dziś i w ustawie uchwalonej przez Sejm (druk nr 3193 z poprawkami). Wyróżnione: zasady, których dziś nie ma',
+    columns: ['', 'Dziś', 'W ustawie'],
     rows: [
       { cells: ['Stawka za godzinę', 'Ustalają strony umowy, ustawa nie wyznacza górnej granicy', 'Najwyżej 1/20 płacy minimalnej (240,30 zł w 2026 r.) za świadczenia z NFZ'], marked: true },
       { cells: ['Płaca miesięczna', 'Bez górnej granicy', '8× płacy minimalnej na etat u jednego świadczeniodawcy, 12× z dodatkami, łącznie najwyżej 16×'], marked: true },
       { cells: ['Czas pracy na etacie', 'Przeciętnie 48 godzin tygodniowo, więcej za pisemną zgodą pracownika', 'Najwyżej dwa etaty łącznie u wszystkich świadczeniodawców'], marked: true },
       { cells: ['Czas pracy na kontrakcie', 'Limity czasu pracy dla pracowników go nie obejmują', 'Liczy się do limitu dwóch etatów'], marked: true },
-      { cells: ['Wymiar w szpitalu', 'Dowolny', 'Co najmniej pół etatu, kolejne miejsce za zgodą dotychczasowych pracodawców'], marked: true },
+      { cells: ['Wymiar w szpitalu', 'Dowolny', 'Co najmniej pół etatu (poza m.in. geriatrami, patomorfologami i psychiatrami), kolejne miejsce za zgodą dotychczasowych pracodawców'], marked: true },
       { cells: ['Kto przyjmuje zlecenie szpitala', 'Każdy podmiot wykonujący działalność leczniczą, także spółka, albo osoba', 'Osoba z jednoosobową praktyką; inny podmiot tylko we własnym zakładzie'], marked: true },
       { cells: ['Płaca jako procent kontraktu z NFZ', 'Dopuszczalna', 'Zakazana'], marked: true },
     ],
@@ -132,7 +189,7 @@ Stan dzisiejszy opisują art. 26 i art. 96 ustawy o działalności leczniczej, a
 
 ## Kogo dotyczą limity
 
-Projekt mówi o „osobie wykonującej zawód medyczny”, a więc nie tylko o lekarzach. To pojęcie z ustawy o działalności leczniczej obejmuje osoby uprawnione do udzielania świadczeń zdrowotnych, m.in. pielęgniarki, położne, ratowników medycznych i fizjoterapeutów.[^sprawozdanie]
+Ustawa mówi o „osobie wykonującej zawód medyczny”, a więc nie tylko o lekarzach. To pojęcie z ustawy o działalności leczniczej obejmuje osoby uprawnione do udzielania świadczeń zdrowotnych, m.in. pielęgniarki, położne, ratowników medycznych i fizjoterapeutów.[^sprawozdanie]
 
 Zakres dwóch głównych limitów jest różny:
 
@@ -145,7 +202,7 @@ Za pracę finansowaną prywatnie placówka może więc płacić bez tych limitó
 
 Stawka godzinowa brutto wynagrodzenia zasadniczego za świadczenia objęte umową z NFZ nie może przekroczyć **1/20 płacy minimalnej**. W 2026 r. płaca minimalna wynosi 4806 zł, więc limit to **240,30 zł za godzinę**.[^min2026] Przepis dotyczy umowy o pracę, a przez odesłanie w ust. 6 także kontraktu i innych umów cywilnoprawnych.[^sprawozdanie] W opisie wersji skierowanej w lipcu do konsultacji stawka godzinowa dotyczyła osób na kontraktach.[^rz-projekt]
 
-Projekt wiąże limity z płacą minimalną, a nie z przeciętnym wynagrodzeniem. Dla porównania: przeciętne wynagrodzenie w gospodarce w 2025 r. wyniosło 8903,56 zł,[^przecietne] więc stawka 240,30 zł to ok. 4,3 razy więcej niż przeciętna płaca za godzinę przy 160 godzinach w miesiącu (55,65 zł).
+Ustawa wiąże limity z płacą minimalną, a nie z przeciętnym wynagrodzeniem. Sejm odrzucił poprawki, które liczyłyby je od przeciętnego wynagrodzenia.[^dodatkowe] Dla porównania: przeciętne wynagrodzenie w gospodarce w 2025 r. wyniosło 8903,56 zł,[^przecietne] więc stawka 240,30 zł to ok. 4,3 razy więcej niż przeciętna płaca za godzinę przy 160 godzinach w miesiącu (55,65 zł).
 
 Limit dotyczy wynagrodzenia zasadniczego. Ponad nie placówka może przyznać:
 
@@ -153,9 +210,9 @@ Limit dotyczy wynagrodzenia zasadniczego. Ponad nie placówka może przyznać:
 - dodatki należne z mocy ustawy, do kwoty, jaką ta ustawa wyznacza;
 - dodatek za wysługę lat, w placówkach publicznych;
 - wynagrodzenie dodatkowe za funkcję kierowniczą, np. ordynatora, oraz za zadania dydaktyczne i naukowe;
-- wynagrodzenie dodatkowe za transplantologię kliniczną, świadczenia wysokospecjalistyczne i pracę w centrach urazowych.
+- wynagrodzenie dodatkowe za pobieranie i przeszczepianie narządów w transplantologii klinicznej, za świadczenia wysokospecjalistyczne i za pracę w centrach urazowych.
 
-Wszystkie te dodatki mieszczą się jednak w pułapie miesięcznym.
+Zawężenie transplantologii do pobierania i przeszczepiania narządów dodała poprawka przyjęta w trzecim czytaniu.[^dodatkowe][^alert] Wszystkie te dodatki mieszczą się jednak w pułapie miesięcznym.
 
 ## Pułap miesięczny: trzy progi
 
@@ -165,7 +222,7 @@ Drugi limit to najwyższe średnie wynagrodzenie miesięczne. Średnią liczy si
   title="Łączny pułap to 16 płac minimalnych, czyli ok. 8,6 przeciętnego wynagrodzenia"
   note="Kwoty przy płacy minimalnej z 2026 r. (4806 zł). Pułap jednego świadczeniodawcy mnoży się przez wymiar etatu z umowy; łączny pułap obowiązuje niezależnie od dodatków. Szare słupki to punkty odniesienia, nie limity."
   source={[
-    { label: 'Sprawozdanie Komisji Zdrowia, druk nr 3193, art. 132ab ust. 7–8', href: LINKS.sprawozdanie },
+    { label: 'Sprawozdanie Komisji Zdrowia, druk nr 3193, art. 132ab ust. 7–8, z poprawkami z druku nr 3193-A', href: LINKS.sprawozdanie },
     { label: 'Rozporządzenie RM, Dz.U. 2025 poz. 1242 (płaca minimalna 2026)', href: LINKS.min2026 },
     { label: 'Komunikat Prezesa GUS, M.P. 2026 poz. 192 (przeciętne wynagrodzenie 2025)', href: LINKS.przecietne },
   ]}
@@ -180,11 +237,11 @@ Drugi limit to najwyższe średnie wynagrodzenie miesięczne. Średnią liczy si
 
 <Comparison
   table={{
-    caption: 'Pułapy średniego miesięcznego wynagrodzenia za świadczenia objęte umową z NFZ (art. 132ab ust. 7–8 w brzmieniu z druku nr 3193). Kwoty przy płacy minimalnej 4806 zł z 2026 r.',
+    caption: 'Pułapy średniego miesięcznego wynagrodzenia za świadczenia objęte umową z NFZ (art. 132ab ust. 7–8 w brzmieniu uchwalonym przez Sejm). Kwoty przy płacy minimalnej 4806 zł z 2026 r.',
     columns: ['', 'Kiedy obowiązuje', 'Kwota w 2026 r.'],
     rows: [
       { cells: ['8× płacy minimalnej', 'U jednego świadczeniodawcy, pomnożona przez wymiar etatu z umowy', '38 448 zł przy pełnym etacie (8×), 19 224 zł przy pół etatu (4×)'] },
-      { cells: ['12× płacy minimalnej', 'U jednego świadczeniodawcy, gdy osoba dostaje dodatki ustawowe, za wysługę lat albo wynagrodzenie za funkcję kierowniczą, dydaktykę lub naukę', '57 672 zł przy pełnym etacie (12×)'] },
+      { cells: ['12× płacy minimalnej', 'U jednego świadczeniodawcy, gdy osoba dostaje dodatki ustawowe, za wysługę lat albo wynagrodzenie dodatkowe: za funkcję kierowniczą, dydaktykę, naukę, transplantologię, świadczenia wysokospecjalistyczne lub centra urazowe', '57 672 zł przy pełnym etacie (12×)'] },
       { cells: ['16× płacy minimalnej', 'Łącznie u wszystkich świadczeniodawców z umową z NFZ, niezależnie od dodatków', '76 896 zł (16×), rocznie 922 752 zł'], marked: true },
     ],
   }}
@@ -193,7 +250,7 @@ Drugi limit to najwyższe średnie wynagrodzenie miesięczne. Średnią liczy si
 
 Oba limity są ze sobą spójne. Pełny etat to ok. 160 godzin w miesiącu, a 160 × 240,30 zł daje dokładnie 38 448 zł, czyli 8-krotność płacy minimalnej. Dwa etaty to 320 godzin i 76 896 zł, czyli 16-krotność. Tak tę kwotę wylicza uzasadnienie projektu.[^druk]
 
-Uzasadnienie zalicza do grupy z 12-krotnością także transplantologię, świadczenia wysokospecjalistyczne i centra urazowe.[^druk] Sam przepis ust. 8 wymienia wprost tylko dodatki ustawowe, wysługę lat oraz funkcje kierownicze, dydaktyczne i naukowe.[^sprawozdanie]
+Uzasadnienie zaliczało do grupy z 12-krotnością także transplantologię, świadczenia wysokospecjalistyczne i centra urazowe,[^druk] ale przepis ust. 8 w wersji komisji wymieniał wprost tylko dodatki ustawowe, wysługę lat oraz funkcje kierownicze, dydaktyczne i naukowe.[^sprawozdanie] Poprawka przyjęta w trzecim czytaniu dopisała do ust. 8 wynagrodzenie z ust. 5, więc te trzy rodzaje pracy też mieszczą się w progu 12×.[^dodatkowe]
 
 <Verdict
   label="Przykład"
@@ -206,21 +263,21 @@ Uzasadnienie zalicza do grupy z 12-krotnością także transplantologię, świad
   text="Przykład poglądowy, kwoty z 2026 r. bez dodatków. Do limitu dwóch etatów zostaje pół etatu, a do łącznego pułapu — dokładnie tyle, ile zarobiłby na nim przy najwyższej stawce."
 />
 
-Przed zatrudnieniem medyk składa oświadczenie o łącznym maksymalnym wynagrodzeniu we wszystkich placówkach. Każdą zmianę, która wpływa na tę sumę, zgłasza w ciągu 7 dni. Kierownik placówki ma wtedy 3 dni robocze, żeby zaproponować zmianę umowy, która utrzyma sumę w limicie. Jeśli medyk w ciągu kolejnych 3 dni roboczych się nie zgodzi, kierownik rozwiązuje umowę bez okresu wypowiedzenia.[^sprawozdanie]
+Przed zatrudnieniem medyk składa oświadczenie o łącznym maksymalnym wynagrodzeniu we wszystkich placówkach. Każdą zmianę, która wpływa na tę sumę, zgłasza w ciągu 7 dni. Kierownik placówki ma wtedy 3 dni robocze, żeby zaproponować zmianę umowy, która utrzyma sumę w limicie. Jeśli medyk w ciągu kolejnych 3 dni roboczych się nie zgodzi, kierownik wypowiada umowę.[^sprawozdanie] Komisja chciała, by działo się to bez zachowania okresu wypowiedzenia. Sejm skreślił te słowa poprawką Lewicy, więc obowiązuje zwykły okres wypowiedzenia.[^dodatkowe]
 
 <Aside variant="warn" title="Dwa limity, nie jeden">
 
-W mediach krąży skrót „8-krotność płacy minimalnej, czyli 240 zł za godzinę”. To dwa różne limity: 240,30 zł to stawka za godzinę (1/20 płacy minimalnej), a 8-krotność to pułap miesięczny u jednego świadczeniodawcy na pełny etat. Kwota 76 800 zł, podawana czasem jako pułap łączny, wynika z zaokrąglenia stawki do 240 zł. Projekt liczy od płacy minimalnej, co w 2026 r. daje 76 896 zł (16×).[^druk]
+W mediach krąży skrót „8-krotność płacy minimalnej, czyli 240 zł za godzinę”. To dwa różne limity: 240,30 zł to stawka za godzinę (1/20 płacy minimalnej), a 8-krotność to pułap miesięczny u jednego świadczeniodawcy na pełny etat. Kwota 76 800 zł, podawana czasem jako pułap łączny, wynika z zaokrąglenia stawki do 240 zł. Ustawa liczy od płacy minimalnej, co w 2026 r. daje 76 896 zł (16×).[^druk]
 
 </Aside>
 
 ### Kalkulator: jak zmieniają się limity
 
-Wszystkie limity to stałe ułamki albo wielokrotności jednej kwoty, więc rosną i maleją razem z nią. Od 1 stycznia 2027 r. płaca minimalna wyniesie 4950 zł,[^min2027] a z nią wzrosną limity. Przeciętne wynagrodzenie to wariant „co gdyby” — projekt go nie używa.
+Wszystkie limity to stałe ułamki albo wielokrotności jednej kwoty, więc rosną i maleją razem z nią. Od 1 stycznia 2027 r. płaca minimalna wyniesie 4950 zł,[^min2027] a z nią wzrosną limity. Przeciętne wynagrodzenie to wariant „co gdyby” — ustawa go nie używa.
 
 <Figure
   title="Limity rosną razem z kwotą, od której są liczone"
-  note="Wybierz kwotę albo wpisz własną. Projekt odnosi limity do płacy minimalnej; przeciętne wynagrodzenie to scenariusz, nie zapis projektu. Kwoty miesięczne bez stawki godzinowej."
+  note="Wybierz kwotę albo wpisz własną. Ustawa odnosi limity do płacy minimalnej; przeciętne wynagrodzenie to scenariusz, nie zapis ustawy. Kwoty miesięczne bez stawki godzinowej."
   source={{ label: 'Mnożniki: druk nr 3193, art. 132ab ust. 1, 7 i 8', href: LINKS.sprawozdanie }}
 >
   <LimitCalculator bases={CALC_BASES} rows={CALC_ROWS} reference={MIN} />
@@ -230,15 +287,15 @@ Wszystkie limity to stałe ułamki albo wielokrotności jednej kwoty, więc rosn
 
 Łączny czas pracy medyka u wszystkich świadczeniodawców nie może przekroczyć dwukrotności pełnego wymiaru czasu pracy w miesiącu. Pełny wymiar to 8 godzin pomnożone przez liczbę dni roboczych w miesiącu, pomniejszone o święta wypadające w dni powszednie. Na umowie cywilnoprawnej liczy się odpowiednik etatu, czyli liczba godzin z umowy.[^sprawozdanie]
 
-Do limitu nie wlicza się gotowości do udzielania świadczeń poza szpitalem, czyli czasu, w którym lekarz jest pod telefonem i przyjeżdża na wezwanie (art. 98 ustawy o działalności leczniczej).
+Do limitu nie wlicza się czasu gotowości poza zakładem leczniczym do udzielania świadczeń z umowy z NFZ: gotowości „pod telefonem”, z przyjazdem na wezwanie (art. 98 ustawy o działalności leczniczej), oraz gotowości w miejscu zamieszkania lub pobytu pacjenta. Drugi przypadek i zawężenie do świadczeń z umowy z NFZ dodała poprawka przyjęta w trzecim czytaniu.[^dodatkowe]
 
 Przed zatrudnieniem medyk składa kierownikowi placówki oświadczenie o łącznym wymiarze pracy we wszystkich miejscach. Każdą zmianę wymiaru u innego pracodawcy zgłasza w ciągu 7 dni.[^sprawozdanie]
 
 ## Szpital i poradnie: co najmniej pół etatu i zgoda pierwszego pracodawcy
 
-W szpitalach i ambulatoryjnej opiece specjalistycznej (AOS) prowadzonych przez placówki z umową z NFZ na leczenie szpitalne lekarz, pielęgniarka, położna, fizjoterapeuta i ratownik muszą mieć co najmniej pół etatu albo jego odpowiednik.[^sprawozdanie] Cel podaje uzasadnienie: częsta rotacja osób na cząstkowych etatach utrudnia prowadzenie leczenia jednego pacjenta i zwiększa ryzyko błędów.[^druk]
+Przy leczeniu szpitalnym i w poradniach przyszpitalnych ambulatoryjnej opieki specjalistycznej (AOS), w ramach umowy z NFZ, lekarz, pielęgniarka, położna, fizjoterapeuta i ratownik muszą mieć co najmniej pół etatu albo jego odpowiednik na kontrakcie.[^sprawozdanie][^dodatkowe] Cel podaje uzasadnienie: częsta rotacja osób na cząstkowych etatach utrudnia prowadzenie leczenia jednego pacjenta i zwiększa ryzyko błędów.[^druk]
 
-Kolejne takie zatrudnienie wymaga zgody kierowników wszystkich szpitali, w których medyk już pracuje. Procedura ma cztery kroki:[^sprawozdanie]
+Kolejne takie zatrudnienie wymaga zgody kierowników wszystkich szpitali, w których medyk już pracuje. Procedura ma cztery kroki:[^sprawozdanie][^dodatkowe]
 
 <NumberedList
   layout="columns"
@@ -246,21 +303,24 @@ Kolejne takie zatrudnienie wymaga zgody kierowników wszystkich szpitali, w któ
     { title: 'Wniosek.', text: 'Medyk prosi kierowników szpitali, w których pracuje, o zgodę na kolejne zatrudnienie, co najmniej na pół etatu.' },
     { title: '14 dni.', text: 'Kierownik odpowiada w 14 dni. Brak odpowiedzi oznacza zgodę — medyk składa o tym oświadczenie u nowego pracodawcy.' },
     { title: 'Odmowa z ofertą.', text: 'Odmówić można tylko z powodu niezaspokojonych potrzeb kadrowych: na piśmie, z ofertą większego wymiaru pracy u siebie.' },
-    { title: 'Pół etatu albo odejście.', text: 'Kto pracował dotąd w jednym szpitalu poniżej pół etatu, dostaje ofertę zwiększenia wymiaru. Jeśli jej nie przyjmie i chce pracy w drugim szpitalu, kierownik odmawia zgody i wypowiada umowę.' },
+    { title: 'Pół etatu albo odejście.', text: 'Kto pracował dotąd w jednym szpitalu poniżej pół etatu, a szpitalowi brakuje ludzi, dostaje ofertę zwiększenia wymiaru. Jeśli jej nie przyjmie i chce pracy w drugim szpitalu, kierownik odmawia zgody i wypowiada umowę. Gdy szpital nie potrzebuje więcej jego pracy, kierownik odmawia zgody bez oferty.' },
   ]}
 />
 
 Wymóg pół etatu nie obejmuje:
 
 - dyżurów medycznych i pracy zmianowej poza normalnymi godzinami pracy, z wyjątkiem planowych zabiegów;
+- świadczeń udzielanych przez lekarzy geriatrów, patomorfologów i psychiatrów — ten wyjątek dodała poprawka przyjęta w trzecim czytaniu;[^dodatkowe]
 - poradni, w których krótszy wymiar wynika z harmonogramu umowy z NFZ;
 - osoby, która pracuje tylko w jednym takim szpitalu i złoży o tym oświadczenie.
+
+Sejm odrzucił poprawkę PSL, która skreślała cały wymóg pół etatu i zgody pracodawcy, stosunkiem głosów 179 do 203.[^glosowanie]
 
 Gdy w danej dziedzinie brakuje ludzi albo trzeba obsadzić dyżury, prezes NFZ może na wniosek placówki zgodzić się na odstępstwo od limitu dwóch etatów i od wymogu pół etatu, na najwyżej 6 miesięcy. Brak odpowiedzi w ciągu 14 dni oznacza zgodę. W razie nagłej śmierci, długiej nieobecności pracownika albo siły wyższej kierownik może odstąpić od tych wymogów sam, na 21 dni.[^sprawozdanie]
 
 ## Umowa z osobą, nie ze spółką
 
-Projekt zmienia art. 26 ustawy o działalności leczniczej, który pozwala szpitalowi zlecać udzielanie świadczeń na zewnątrz. Dziś zlecenie może przyjąć każdy podmiot wykonujący działalność leczniczą, także spółka.[^udl] Po zmianie zlecenie na pracę w szpitalu będzie można dać tylko osobie z jednoosobową praktyką zawodową. Innemu podmiotowi leczniczemu szpital zleci świadczenia tylko wtedy, gdy ten udzieli ich we własnym zakładzie albo w miejscu wezwania.[^sprawozdanie]
+Ustawa zmienia art. 26 ustawy o działalności leczniczej, który pozwala szpitalowi zlecać udzielanie świadczeń na zewnątrz. Dziś zlecenie może przyjąć każdy podmiot wykonujący działalność leczniczą, także spółka.[^udl] Po zmianie zlecenie na pracę w szpitalu będzie można dać tylko osobie z jednoosobową praktyką zawodową. Innemu podmiotowi leczniczemu szpital zleci świadczenia tylko wtedy, gdy ten udzieli ich we własnym zakładzie albo w miejscu wezwania.[^sprawozdanie]
 
 Uzasadnienie nazywa obecną praktykę „leasingiem pracowniczym”. Szpital zleca świadczenia spółce, która formalnie jest podmiotem leczniczym, ale w praktyce tylko dostarcza personel. Gdy stroną umowy jest spółka, ograniczenia czasu pracy jej nie dotyczą i trudno ustalić łączny czas pracy konkretnej osoby.[^druk]
 
@@ -274,7 +334,7 @@ Wynagrodzenia medyka za świadczenia objęte umową z NFZ nie wolno określić j
 
 Oświadczenia o czasie pracy i wynagrodzeniu medyk składa pod groźbą odpowiedzialności karnej za fałszywe oświadczenie (art. 233 § 6 kodeksu karnego). Placówka przechowuje je przez 10 lat.[^sprawozdanie]
 
-Kierownik placówki, który narusza wymogi dotyczące limitów, popełnia wykroczenie zagrożone grzywną do 30 000 zł (nowy art. 193). Projekt rozszerza też uprawnienia kontrolne NFZ:[^sprawozdanie]
+Kierownik placówki, który narusza wymogi dotyczące limitów, popełnia wykroczenie zagrożone grzywną do 30 000 zł (nowy art. 193). Ustawa rozszerza też uprawnienia kontrolne NFZ:[^sprawozdanie]
 
 - placówki z umową z NFZ muszą udostępniać informacje, także o świadczeniach spoza umowy, oraz dokumentację kadrową: umowy, kwalifikacje i ewidencję czasu pracy;
 - NFZ może żądać takiej dokumentacji również od placówek bez umowy z NFZ;
@@ -285,15 +345,17 @@ Według oceny skutków regulacji NFZ zatrudni do kontroli ok. 400 dodatkowych os
 
 ## Terminy i dostosowanie umów
 
-Ustawa ma wejść w życie miesiąc po ogłoszeniu. Obowiązujące umowy trzeba dostosować do nowych wymogów w ciągu 6 miesięcy od tego dnia.[^sprawozdanie] Wersja z konsultacji dawała na to czas do 31 grudnia 2026 r.[^rz-projekt] Rząd zastąpił ten termin półrocznym okresem przejściowym.[^rz-rzad]
+Ustawa ma wejść w życie miesiąc po ogłoszeniu. Obowiązujące umowy trzeba dostosować do nowych wymogów w ciągu 6 miesięcy od tego dnia.[^sprawozdanie] Wersja z konsultacji dawała na to czas do 31 grudnia 2026 r.[^rz-projekt] Rząd zastąpił ten termin półrocznym okresem przejściowym.[^rz-rzad] Przepisy o zakazie udzielania świadczeń z NFZ wejdą w życie później, 6 miesięcy po ogłoszeniu.[^sprawozdanie]
 
-Jeśli umowy nie da się dostosować, kierownik ją wypowiada: umowę o pracę z okresem wypowiedzenia z kodeksu pracy, kontrakt z najwyżej miesięcznym. Przepisy chroniące pracownika przed wypowiedzeniem, m.in. konsultacja ze związkiem zawodowym i ochrona przedemerytalna (art. 38, 39 i 41 kodeksu pracy), nie mają wtedy zastosowania. Układy zbiorowe i regulaminy wynagradzania niezgodne z limitami tracą moc po 6 miesiącach.[^sprawozdanie]
+Jeśli umowy nie da się dostosować, kierownik ją wypowiada: umowę o pracę z okresem wypowiedzenia nie dłuższym niż w kodeksie pracy, kontrakt z najwyżej miesięcznym.[^sprawozdanie] Komisja proponowała, by przy tych wypowiedzeniach nie stosować przepisów chroniących pracownika, m.in. konsultacji ze związkiem zawodowym i ochrony przedemerytalnej (art. 38, 39 i 41 kodeksu pracy). Sejm skreślił ten przepis poprawką KO i Lewicy, więc ochrona obowiązuje.[^dodatkowe]
+
+Układy zbiorowe i regulaminy wynagradzania trzeba dostosować w ciągu 6 miesięcy. W wersji komisji niedostosowane traciły moc w całości. Po poprawce przyjętej przez Sejm są nieważne tylko w części sprzecznej z limitami, a w tej części stosuje się przepisy prawa pracy.[^dodatkowe]
 
 Kto pracuje w kilku szpitalach, przy dostosowaniu wskazuje jeden jako „świadczeniodawcę podstawowego”. Jego kierownik decyduje o zgodzie na pozostałe zatrudnienia.[^sprawozdanie]
 
-## Pozostałe zmiany w projekcie
+## Pozostałe zmiany w ustawie
 
-Projekt zmienia też przepisy, które nie dotyczą wynagrodzeń medyków:[^sprawozdanie]
+Ustawa zmienia też przepisy, które nie dotyczą wynagrodzeń medyków:[^sprawozdanie]
 
 <NumberedList
   items={[
@@ -306,17 +368,41 @@ Projekt zmienia też przepisy, które nie dotyczą wynagrodzeń medyków:[^spraw
   ]}
 />
 
-## Wnioski mniejszości
+## Zakaz udzielania świadczeń z NFZ i rejestr zakazów
 
-Komisja odrzuciła dwie grupy poprawek. Sejm zagłosuje nad nimi jako nad wnioskami mniejszości.[^sprawozdanie]
+Komisja odrzuciła dwie grupy poprawek zgłoszonych przez posła Rozwoju Plus, więc Sejm głosował nad nimi jako nad wnioskami mniejszości.[^sprawozdanie][^rz-zakaz] Pierwszą przyjął 416 głosami przy 20 przeciw, drugą odrzucił.[^glosowanie]
 
-Pierwsza grupa wprowadza **zakaz udzielania świadczeń finansowanych przez NFZ** dla lekarza, który umyślnie poświadczył nieprawdę: o wykonanym świadczeniu, o czasie albo miejscu pracy, w zwolnieniu lekarskim lub w innym zaświadczeniu. Zakaz orzekałby prezes NFZ, na od miesiąca do 8 lat, a przy ponownym naruszeniu dożywotnio. Od decyzji przysługiwałoby odwołanie do sądu pracy. Zakazy trafiałyby do rejestru, który placówki sprawdzałyby codziennie, a pacjent miałby prawo wiedzieć, że lekarz jest nim objęty.
+Przyjęta grupa wprowadza **zakaz udzielania świadczeń finansowanych ze środków publicznych**. Prezes NFZ orzeka go decyzją wobec lekarza lub lekarza dentysty, jeśli kontrola NFZ albo informacje z ZUS wykażą, że umyślnie:[^sprawozdanie]
 
-Druga grupa przenosi oświadczenia o czasie pracy do systemu teleinformatycznego P1. Medyk wskazywałby w nim wszystkie placówki, w których pracuje, a ich kierownicy widzieliby jego oświadczenia. Do 30 czerwca 2027 r. oświadczenia składano by na papierze, a do 31 lipca 2027 r. trzeba by je przenieść do systemu.
+- poświadczył nieprawdę o udzieleniu świadczenia, np. o wykonaniu procedury, w dokumentacji albo w dokumencie, na podstawie którego placówka rozlicza się z NFZ;
+- poświadczył nieprawdę o czasie lub miejscu pracy, np. w ewidencji czasu pracy, grafiku albo rachunku;
+- wystawił zwolnienie lekarskie niezgodne ze stanem faktycznym;
+- wystawił inne zaświadczenie lub orzeczenie niezgodne ze stanem faktycznym, żeby pacjent albo ktoś inny osiągnął korzyść.
 
-<Aside title="Czego projekt nie przewiduje">
+Zakaz trwa od miesiąca do 8 lat. Prezes NFZ bierze pod uwagę wagę i liczbę naruszeń, ich czas, kwotę nienależnie wydanych pieniędzy i skutki dla pacjentów. Kto naruszy przepisy ponownie, w czasie zakazu albo w ciągu 10 lat od jego końca, dostaje zakaz dożywotni. Zakazu nie orzeka się za oczywistą omyłkę ani za samą różnicę w ocenie medycznej, a po 5 latach od naruszenia postępowania się nie wszczyna. Zakaz obejmuje też z mocy prawa lekarza, któremu ZUS cofnął upoważnienie do wystawiania zwolnień za umyślnie fałszywe zaświadczenie.[^sprawozdanie]
 
-Projekt nie zawiera przepisu o publikacji wynagrodzeń ani łącznych kwot wypłacanych jednej osobie.[^sprawozdanie] W wersji przyjętej przez komisję nie tworzy też wspólnego rejestru oświadczeń. Każda placówka przechowuje oświadczenia swoich pracowników, a sumę z kilku miejsc zna tylko osoba, która ją deklaruje.
+Decyzja obowiązuje od doręczenia. Lekarz może się od niej odwołać do sądu pracy i ubezpieczeń społecznych, który ma na rozpoznanie sprawy 30 dni. Odwołanie nie wstrzymuje zakazu, ale sąd może go wstrzymać na wniosek. Zakaz nie dotyczy pomocy w nagłym zagrożeniu życia lub zdrowia, gdy nie ma innego lekarza.[^sprawozdanie]
+
+Prezes NFZ prowadzi **jawny rejestr zakazów** w Biuletynie Informacji Publicznej, z interfejsem do automatycznego sprawdzania. Rejestr podaje imię i nazwisko, numer prawa wykonywania zawodu, podstawę i okres zakazu oraz informację o odwołaniu. Dane trafiają też do Centralnego Rejestru Lekarzy prowadzonego przez Naczelną Radę Lekarską. Po zakończeniu zakazu wpis znika z części jawnej.[^sprawozdanie]
+
+<NumberedList
+  items={[
+    { title: 'Placówka z umową z NFZ.', text: 'Codziennie przed rozpoczęciem pracy sprawdza w rejestrze swoich lekarzy. NFZ nie płaci za świadczenia lekarza objętego zakazem i żąda zwrotu, a za powierzenie mu świadczeń albo niesprawdzanie rejestru grozi kara umowna do 1% rocznej kwoty umowy z NFZ.' },
+    { title: 'Pacjent.', text: 'Ma prawo wiedzieć, że lekarz jest objęty zakazem: przy rejestracji, przed wizytą i w serwisach rezerwacji wizyt. Obowiązek informowania ma każdy podmiot leczniczy, także prywatny. Za jego naruszenie Rzecznik Praw Pacjenta może nałożyć karę do 1 mln zł.' },
+    { title: 'ZUS.', text: 'Na czas zakazu zawiesza lekarzowi upoważnienie do wystawiania zwolnień lekarskich i blokuje je w systemie.' },
+    { title: 'Wykroczenie.', text: 'Udzielanie świadczeń z NFZ mimo zakazu i świadome dopuszczenie do nich lekarza z zakazem to nowe wykroczenia z art. 193.' },
+  ]}
+/>
+
+Zakaz dotyczy tylko pracy finansowanej ze środków publicznych, więc lekarz z zakazem może dalej leczyć prywatnie. Przepisy stosuje się do naruszeń popełnionych po ich wejściu w życie, 6 miesięcy po ogłoszeniu ustawy.[^sprawozdanie]
+
+Druga, odrzucona grupa przenosiła oświadczenia o czasie pracy do systemu teleinformatycznego P1. Medyk wskazywałby w nim wszystkie placówki, w których pracuje, a ich kierownicy widzieliby jego oświadczenia.[^sprawozdanie] Za głosowały PiS, Rozwój Plus i Razem, przeciw KO, PSL, Lewica, Centrum i Polska 2050.[^glosowanie]
+
+<Aside title="Czego ustawa nie przewiduje">
+
+Ustawa nie zawiera przepisu o publikacji wynagrodzeń ani łącznych kwot wypłacanych jednej osobie.[^sprawozdanie] Nie tworzy też wspólnego rejestru oświadczeń — Sejm odrzucił wniosek o przeniesieniu ich do systemu P1. Każda placówka przechowuje oświadczenia swoich pracowników, a sumę z kilku miejsc zna tylko osoba, która ją deklaruje.
+
+Jawny, z imieniem i nazwiskiem, będzie tylko rejestr lekarzy objętych zakazem pracy na NFZ. Zasad jawności kwot, które placówki wypłacają medykom z pieniędzy NFZ, ustawa nie zmienia.
 
 Dane o płacy każdej osoby, oznaczone numerem PESEL i numerem prawa wykonywania zawodu, minister zdrowia może zbierać od sierpnia 2026 r. na podstawie innej ustawy. Ona również nie przewiduje ich publikacji. Opisujemy ją w tekście o [ustawie o danych płacowych](/analizy/ustawa-o-danych-a-jawny-rejestr/).
 
@@ -324,9 +410,19 @@ Dane o płacy każdej osoby, oznaczone numerem PESEL i numerem prawa wykonywania
 
 [^druk]: Rządowy projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych oraz niektórych innych ustaw, [druk nr 3157](https://api.sejm.gov.pl/sejm/term10/prints/3157/3157.pdf), 28.09.2026 — uzasadnienie (cele limitów, „leasing pracowniczy”, płaca procentowa, rotacja personelu) i ocena skutków regulacji (wyliczenie 76 896 zł, zatrudnienie i koszty NFZ).
 
-[^sprawozdanie]: Sprawozdanie Komisji Zdrowia o rządowym projekcie, [druk nr 3193](https://api.sejm.gov.pl/sejm/term10/prints/3193/3193.pdf), 7.10.2026 — tekst projektu przyjęty przez komisję (art. 1 pkt 7–8, 9, 14, 20–24, 26–27; art. 2–7) oraz wnioski mniejszości nr 1–9.
+[^sprawozdanie]: Sprawozdanie Komisji Zdrowia o rządowym projekcie, [druk nr 3193](https://api.sejm.gov.pl/sejm/term10/prints/3193/3193.pdf), 7.10.2026 — tekst projektu przyjęty przez komisję (art. 1 pkt 7–8, 9, 14, 20–24, 26–27; art. 2–7) oraz wnioski mniejszości nr 1–9 (nr 1, 3–6, 8–9: zakaz udzielania świadczeń z NFZ, rejestr zakazów, obowiązki placówek, prawa pacjenta, ZUS, wejście w życie po 6 miesiącach; nr 2 i 7: system P1).
 
-[^proces]: Sejm RP, [przebieg procesu legislacyjnego, druk nr 3157](https://www.sejm.gov.pl/Sejm10.nsf/PrzebiegProc.xsp?nr=3157) — wpływ 28.09.2026, pierwsze czytanie w Komisji Zdrowia 7.10.2026, drugie czytanie 20.10.2026 i ponowne skierowanie do komisji.
+[^dodatkowe]: Dodatkowe sprawozdanie Komisji Zdrowia, [druk nr 3193-A](https://api.sejm.gov.pl/sejm/term10/prints/3193-A/3193-A.pdf), 21.10.2026 — 29 poprawek z drugiego czytania z autorami i rekomendacją komisji. Przyjęte przez Sejm: nr 4 (gotowość poza zakładem), 8 (wymóg pół etatu, wyjątki dla geriatrów, patomorfologów i psychiatrów), 9 (procedura zgody), 15 (transplantologia), 20 i 25 (stosunek służbowy, ust. 5 w progu 12×), 24 (okres wypowiedzenia), 27 (skreślenie wyłączenia art. 38, 39 i 41 kodeksu pracy) i 28 (nieważność niezgodnych postanowień układów i regulaminów).
+
+[^glosowanie]: Sejm RP, 67. posiedzenie, 22.10.2026 — [głosowanie nr 149](https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=glosowania&NrKadencji=10&NrPosiedzenia=67&NrGlosowania=149) nad całością projektu (229 za, 144 przeciw, 67 wstrzymało się, wyniki według klubów) oraz głosowania nr 125–148 nad wnioskami mniejszości i poprawkami, m.in. [nr 125](https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=glosowania&NrKadencji=10&NrPosiedzenia=67&NrGlosowania=125) (wnioski nr 1, 3–6, 8–9: 416 za, 20 przeciw), [nr 126](https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=glosowania&NrKadencji=10&NrPosiedzenia=67&NrGlosowania=126) (wnioski nr 2 i 7: 188 za, 231 przeciw) i [nr 130](https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=glosowania&NrKadencji=10&NrPosiedzenia=67&NrGlosowania=130) (poprawka nr 7: 179 za, 203 przeciw).
+
+[^proces]: Sejm RP, [przebieg procesu legislacyjnego, druk nr 3157](https://www.sejm.gov.pl/Sejm10.nsf/PrzebiegProc.xsp?nr=3157) — wpływ 28.09.2026, pierwsze czytanie w Komisji Zdrowia 7.10.2026, drugie czytanie 20.10.2026 i ponowne skierowanie do komisji, dodatkowe sprawozdanie 21.10.2026, uchwalenie 22.10.2026.
+
+[^konstytucja]: [Konstytucja RP](https://api.sejm.gov.pl/eli/acts/DU/1997/483/text.pdf) (Dz.U. 1997 nr 78 poz. 483) — art. 121 (Senat: 30 dni na przyjęcie ustawy bez zmian, poprawki albo odrzucenie) i art. 122 (prezydent: 21 dni na podpis, wniosek do Trybunału Konstytucyjnego albo zwrot ustawy Sejmowi).
+
+[^rz-zakaz]: Rynek Zdrowia, [Prezes NFZ będzie mógł zakazać lekarzowi dożywotnio pracy w publicznym systemie](https://www.rynekzdrowia.pl/Prawo/Prezes-NFZ-bedzie-mogl-zakazac-lekrzowi-dozywotnio-pracy-w-publicznym-systemie-Nieoczekiwany-zwrot-akcji-w-Sejmie,290302,2.html), 22.10.2026 — wniosek mniejszości klubu Rozwój Plus przyjęty przez Sejm.
+
+[^alert]: Alert Medyczny, [Sejm uchwalił ustawę o limitach wynagrodzeń medyków](https://alertmedyczny.pl/sejm-uchwalil-ustawe-o-limitach-wynagrodzen-medykow-maksymalnie-240-zl-za-godzine/), 22.10.2026 — opis przyjętych poprawek, m.in. transplantologii ograniczonej do pobierania i przeszczepiania narządów. Wyniku głosowania nad poprawką nr 15 (nr 136) Sejm nie opublikował do 22.10.2026.
 
 [^udl]: [Ustawa o działalności leczniczej](https://api.sejm.gov.pl/eli/acts/DU/2026/156/text.pdf) (t.j. Dz.U. 2026 poz. 156) — art. 26 ust. 1 (zamówienie dla podmiotu wykonującego działalność leczniczą albo osoby) i art. 96 ust. 1 (praca ponad przeciętnie 48 godzin tygodniowo za pisemną zgodą pracownika).
 

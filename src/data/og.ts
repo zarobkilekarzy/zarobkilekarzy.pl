@@ -16,7 +16,10 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { simulatorOgPanels } from '@/lib/podaz/og';
 import { nurseSimulatorOgPanels } from '@/lib/podaz/pielegniarki/og';
-import { columnChart, lineChart, sumSchema, svg } from '@/lib/og/charts';
+import { columnChart, label, lineChart, sumSchema, svg } from '@/lib/og/charts';
+import { hemicycle, tallyClubs } from '@/lib/sejm/hemicycle';
+import { tokenColor } from '@/lib/tokens';
+import { CLUBS_LAST, limityVoting } from '@/data/glosowania';
 import { ageRows, dayRows } from '@/data/ciecie-limitow-na-medycyne';
 import { INDEX_CHART } from '@/data/kolejki';
 import { BUDGET } from '@/data/budzet-nfz';
@@ -101,11 +104,33 @@ const LIMITY_BARS: OgPage['bars'] = {
   ],
 };
 
+/** Półkole głosowania nad ustawą o limitach płac (jak `sejm/Hemicycle` na stronie) — barwy dzienne, podpisy przez label(). */
+function hemicyclePanel(): string {
+  const W = MEDIA_W, ARC_H = 250, H = 300;
+  const tok = (name: string) => tokenColor(name, false);
+  const { seats, dot } = hemicycle(limityVoting.votes, tallyClubs(limityVoting.votes, CLUBS_LAST), { width: W, height: ARC_H });
+  const f = (n: number) => n.toFixed(1);
+  const mark = (vote: string, x: number, y: number, r = dot) =>
+    vote === 'YES' ? `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${tok('blue')}"/>`
+    : vote === 'NO' ? `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r * 0.78)}" fill="none" stroke="${tok('ink')}" stroke-width="1.3"/>`
+    : vote === 'ABSTAIN' ? `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r * 0.5)}" fill="${tok('text')}"/>`
+    : `<path d="M${f(x - r * 0.55)} ${f(y)}h${f(r * 1.1)}M${f(x)} ${f(y - r * 0.55)}v${f(r * 1.1)}" stroke="${tok('chart')}" stroke-width="1.2"/>`;
+  const { yes, no, abstain, absent } = limityVoting.totals;
+  const legend = [['YES', `za ${yes}`], ['NO', `przeciw ${no}`], ['ABSTAIN', `wstrz. ${abstain}`], ['ABSENT', `nie gł. ${absent}`]]
+    .map(([v, text], i) => mark(v, 8 + i * 118, H - 14, 6) + label(20 + i * 118, H - 9, text));
+  return svg(W, H, seats.map((s) => mark(s.vote.vote, s.x, s.y)).join('')
+    + label(W / 2, ARC_H - 40, `${yes} : ${no}`, ['big', 'strong'], 'middle')
+    + label(W / 2, ARC_H - 12, 'za : przeciw', [], 'middle')
+    + legend.join(''));
+}
+
 export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps'>> = {
   // wpis w aktualnościach: pieczątki jak na obrazku katalogu (okładka wpisu przycięta pokazałaby tylko tytuł)
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },
   // wpis o analizie limitów płac: paski jak na obrazku analizy (zdjęciem wpisu jest obrazek OG analizy)
   '/aktualnosci/limity-plac-medykow-w-sejmie/': { bars: LIMITY_BARS },
+  // wpis o uchwaleniu ustawy: półkole głosowania nr 149 (jak w analizie i we wpisie)
+  '/aktualnosci/sejm-uchwalil-limity-plac-medykow/': { panels: [{ head: 'Sejm, 22.10.2026 — głosowanie nad całością', height: 300, svg: hemicyclePanel() }] },
   // mapy krajów z kropek (lib/siatka/kraje.ts); kolor = to, co o danej prowincji mówi artykuł
   '/analizy/kanada-lekarze-ustawa-specjalna/': {
     dots: {
@@ -154,7 +179,8 @@ export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'do
       rows: funnelRows.map((r) => ({ label: r.label, value: r.value, display: r.display, marked: r.highlight })),
     },
   },
-  '/analizy/limity-wynagrodzen-medykow/': { bars: LIMITY_BARS },
+  // po uchwaleniu ustawy: półkole głosowania nr 149 zamiast pasków 4×–16× (paski zostają na wpisie z 20.10)
+  '/analizy/limity-wynagrodzen-medykow/': { panels: [{ head: 'Sejm, 22.10.2026 — głosowanie nad całością', height: 300, svg: hemicyclePanel() }] },
   '/analizy/odpowiedzialnosc-zawodowa-lekarzy/': {
     bars: {
       head: `Odebrania prawa do zawodu na 100 tys. lekarzy rocznie, ${WINDOW.from}–${WINDOW.to}`,

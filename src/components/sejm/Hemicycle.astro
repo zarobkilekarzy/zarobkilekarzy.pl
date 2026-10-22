@@ -1,0 +1,294 @@
+---
+/**
+ * Półkole sejmowe z wynikiem głosowania (`<zl-hemicycle>`): jedna kropka = jeden poseł, kluby jako kliny
+ * od najwyższego poparcia do najniższego. Kształt niesie głos (motyw siatki): za = pełne kółko w kobalcie,
+ * przeciw = pierścień, wstrzymał się = mała kropka, nie głosował = plus.
+ *
+ * - Najechanie albo dotknięcie kropki: dymek z imieniem i nazwiskiem posła, klubem z logo i głosem;
+ *   pozostałe kluby przygasają. Karty klubów pod półkolem (przyciski) robią to samo dla całego klubu —
+ *   także z klawiatury.
+ * - Bez JS: półkole, karty z liczbami i pełna lista posłów w <details> (to też wersja dla czytników).
+ *
+ *   <Hemicycle voting={limityVoting} clubs={SEJM_CLUBS} last={CLUBS_LAST} />
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import { hemicycle, tallyClubs, type Vote, type Voting } from '@/lib/sejm/hemicycle';
+import type { ClubInfo } from '@/data/glosowania';
+import { formatPL, plural, typo } from '@/lib/format';
+import { raw } from '@/lib/images';
+import { uid } from '@/lib/uid';
+
+interface Props {
+  voting: Voting;
+  clubs: Record<string, ClubInfo>;
+  /** kluby stawiane na końcu grupy o tym samym poparciu (np. niezrzeszeni) */
+  last?: string[];
+}
+
+const { voting, clubs, last = [] } = Astro.props;
+const W = 1000;
+const H = 520;
+const tallies = tallyClubs(voting.votes, last);
+const { seats, dot } = hemicycle(voting.votes, tallies, { width: W, height: H });
+const id = uid('hc');
+const info = (club: string) => clubs[club] ?? { name: club, short: club };
+
+const VOTES: { key: Vote; label: string; field: 'yes' | 'no' | 'abstain' | 'absent' }[] = [
+  { key: 'YES', label: 'za', field: 'yes' },
+  { key: 'NO', label: 'przeciw', field: 'no' },
+  { key: 'ABSTAIN', label: 'wstrzymał się', field: 'abstain' },
+  { key: 'ABSENT', label: 'nie głosował', field: 'absent' },
+];
+const f1 = (n: number) => n.toFixed(1);
+const mark = (vote: Vote, x: number, y: number, r = dot) =>
+  vote === 'YES' ? `<circle class="hc__m hc__m--yes" cx="${f1(x)}" cy="${f1(y)}" r="${f1(r)}"/>`
+  : vote === 'NO' ? `<circle class="hc__m hc__m--no" cx="${f1(x)}" cy="${f1(y)}" r="${f1(r * 0.82)}"/>`
+  : vote === 'ABSTAIN' ? `<circle class="hc__m hc__m--abstain" cx="${f1(x)}" cy="${f1(y)}" r="${f1(r * 0.5)}"/>`
+  : `<path class="hc__m hc__m--absent" d="M${f1(x - r * 0.5)} ${f1(y)}h${f1(r)}M${f1(x)} ${f1(y - r * 0.5)}v${f1(r)}"/>`;
+
+const clubIndex = new Map(tallies.map((t, i) => [t.club, i]));
+const groups = tallies.map((t) => {
+  const own = seats.map((s, i) => ({ ...s, i })).filter((s) => s.vote.club === t.club);
+  const cx = own.reduce((s, p) => s + p.x, 0) / own.length;
+  const cy = own.reduce((s, p) => s + p.y, 0) / own.length;
+  const svg = own.map((s) => mark(s.vote.vote, s.x, s.y) + `<circle class="hc__hit" data-i="${s.i}" cx="${f1(s.x)}" cy="${f1(s.y)}" r="${f1(dot * 1.4)}"/>`).join('');
+  return { ...t, ...info(t.club), cx, cy, svg };
+});
+// dane dymków: [imię i nazwisko, indeks klubu, głos]
+const tipData = seats.map((s) => [s.vote.name, clubIndex.get(s.vote.club), s.vote.vote]);
+
+const logoBox = (logo: ImageMetadata, maxW: number, maxH: number) => {
+  const { width, height } = raw(logo);
+  const fit = Math.min(maxW / width, maxH / height);
+  return { w: Math.round(width * fit), h: Math.round(height * fit) };
+};
+const { totals } = voting;
+const names = (club: string, vote: Vote) => voting.votes.filter((v) => v.club === club && v.vote === vote).map((v) => v.name).sort((a, b) => a.localeCompare(b, 'pl'));
+---
+<zl-hemicycle class="hc" id={id}>
+  <div class="hc__arc">
+    <svg class="hc__svg" viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
+      {groups.map((g) => <g class="hc__club" data-club={g.club} set:html={g.svg} />)}
+    </svg>
+    <div class="hc__total">
+      <span class="hc__kicker">Głosowanie nad całością</span>
+      <span class="hc__big"><span class="hc__yes">{totals.yes}</span> : {totals.no}</span>
+      <span class="hc__sub">{typo(`za : przeciw · ${totals.abstain} ${plural(totals.abstain, ['wstrzymał się', 'wstrzymało się', 'wstrzymało się'])} · ${totals.absent} nie ${plural(totals.absent, ['głosował', 'głosowało', 'głosowało'])}`)}</span>
+    </div>
+    <div class="hc__tip" role="status" hidden></div>
+  </div>
+
+  <ul class="hc__legend" aria-hidden="true">
+    {VOTES.map((v) => <li><svg viewBox="-10 -10 20 20" set:html={mark(v.key, 0, 0, 8.5)} />{v.label}</li>)}
+  </ul>
+
+  <div class="hc__clubs">
+    {groups.map((g) => (
+      <button type="button" class="hc__chip" data-club={g.club} data-cx={f1(g.cx / W * 100)} data-cy={f1(g.cy / H * 100)}
+        aria-label={`${g.name}: za ${g.yes}, przeciw ${g.no}, wstrzymało się ${g.abstain}, nie głosowało ${g.absent}`}>
+        <span class="hc__logo">
+          {g.logo ? <Image src={g.logo} {...(({ w, h }) => ({ width: w, height: h }))(logoBox(g.logo, 40, 26))} densities={[1, 2]} alt="" /> : <span class="hc__nologo">—</span>}
+        </span>
+        <span class="hc__name">{g.short} <span class="hc__seats">({g.members})</span></span>
+        <span class="hc__nums">{g.yes} · {g.no} · {g.abstain} · {g.absent}</span>
+      </button>
+    ))}
+  </div>
+
+  <details class="hc__list">
+    <summary>Jak głosował każdy poseł</summary>
+    {groups.map((g) => (
+      <div class="hc__group">
+        <h4 class="hc__gname">{g.name} <span class="hc__seats">({g.members})</span></h4>
+        <dl>
+          {VOTES.filter((v) => g[v.field] > 0).map((v) => (
+            <>
+              <dt>{v.label}: {formatPL(g[v.field])}</dt>
+              <dd>{names(g.club, v.key).join(', ')}</dd>
+            </>
+          ))}
+        </dl>
+      </div>
+    ))}
+  </details>
+
+  <script type="application/json" class="hc__data" set:html={JSON.stringify({ seats: tipData, clubs: groups.map((g) => ({ club: g.club, name: g.name, members: g.members, yes: g.yes, no: g.no, abstain: g.abstain, absent: g.absent })), w: W, h: H })} />
+</zl-hemicycle>
+
+<style>
+  .hc { display: block; }
+  .hc__arc { position: relative; }
+  .hc__svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .hc__svg :global(.hc__club) { transition: opacity .15s var(--ease); }
+  .hc.is-active .hc__svg :global(.hc__club) { opacity: .2; }
+  .hc.is-active .hc__svg :global(.hc__club.is-on) { opacity: 1; }
+  .hc :global(.hc__m--yes) { fill: var(--blue); }
+  .hc :global(.hc__m--no) { fill: none; stroke: var(--ink); stroke-width: 2; }
+  .hc :global(.hc__m--abstain) { fill: var(--text); }
+  .hc :global(.hc__m--absent) { fill: none; stroke: var(--chart); stroke-width: 1.6; }
+  .hc :global(.hc__hit) { fill: transparent; cursor: pointer; }
+  .hc :global(.hc__hit.is-on) { stroke: var(--ink); stroke-width: 1.5; }
+
+  .hc__total { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); display: grid; justify-items: center; text-align: center; pointer-events: none; }
+  .hc__kicker { margin-bottom: 8px; font: 500 0.6875rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .hc__big { font: 300 clamp(2rem, 7cqi, 3.5rem)/1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+  .hc__yes { color: var(--blue); }
+  .hc__sub { margin-top: 6px; font: 400 0.8125rem/1.4 var(--f-body); color: var(--text-strong); white-space: nowrap; }
+
+  .hc__tip {
+    position: absolute; z-index: 3; width: max-content; max-width: 260px; padding: 12px 14px;
+    color-scheme: light dark;
+    background: light-dark(var(--surface), var(--inverse-2));
+    color: light-dark(var(--text-strong), rgba(255, 255, 255, .82)); /* kolor-stały: w nocy tekst na granatowym dymku, jak ui/Popover */
+    font: 400 0.84375rem/1.45 var(--f-body);
+    box-shadow:
+      inset 0 0 0 1px light-dark(var(--line-2), transparent),
+      0 20px 40px -16px light-dark(rgba(4, 11, 27, .18), rgba(4, 11, 27, .5)),
+      0 2px 6px light-dark(rgba(4, 11, 27, .06), transparent);
+    pointer-events: none;
+  }
+  :global(:root[data-theme="light"]) .hc__tip { color-scheme: light; }
+  :global(:root[data-theme="dark"]) .hc__tip { color-scheme: dark; }
+  .hc__tip :global(.hc__tname) { display: block; font: 500 0.9375rem/1.3 var(--f-display); color: light-dark(var(--ink), #fff); } /* kolor-stały: w nocy biały na granacie */
+  .hc__tip :global(.hc__tclub) { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .hc__tip :global(.hc__tvote) { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid light-dark(var(--line), rgba(255, 255, 255, .16)); } /* kolor-stały: linia na granacie */
+  .hc__tip :global(svg) { width: 16px; height: 16px; flex: none; }
+  .hc__tip :global(dl) { display: grid; grid-template-columns: 16px 1fr auto; gap: 4px 8px; align-items: center; margin: 8px 0 0; padding-top: 8px; border-top: 1px solid light-dark(var(--line), rgba(255, 255, 255, .16)); } /* kolor-stały: linia na granacie */
+  .hc__tip :global(dd) { margin: 0; text-align: right; font: 400 0.8125rem var(--f-mono); }
+  .hc__tip :global(.hc__m--no) { stroke: light-dark(var(--ink), #fff); } /* kolor-stały: pierścień na granacie */
+
+  .hc__legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 24px 0 0; padding: 0; list-style: none; font: 400 0.875rem/1.4 var(--f-body); color: var(--text-strong); }
+  .hc__legend li { display: flex; align-items: center; gap: 8px; }
+  .hc__legend svg { width: 18px; height: 18px; }
+
+  .hc__clubs { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; margin-top: 20px; }
+  .hc__chip {
+    display: grid; grid-template-columns: 48px 1fr; column-gap: 10px; align-items: center; padding: 8px;
+    border: 0; box-shadow: inset 0 0 0 1px var(--line-2); background: var(--surface); color: var(--ink); text-align: left; font: inherit; cursor: pointer;
+  }
+  .hc__chip:hover, .hc__chip.is-on { box-shadow: inset 0 0 0 2px var(--blue); }
+  .hc__chip:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .hc__logo, .hc__tip :global(.hc__logo) { grid-row: 1 / 3; display: grid; place-items: center; width: 48px; height: 34px; background: #fff; } /* kolor-stały: logotypy partii zawsze na białym, jak w barometrze */
+  .hc__logo :global(img) { display: block; }
+  .hc__nologo { font-size: 0.875rem; color: #666E80; } /* kolor-stały: na białej plakietce */
+  .hc__name { font: 500 0.8125rem/1.25 var(--f-body); }
+  .hc__seats { font-weight: 400; color: var(--muted); }
+  .hc__nums { font: 400 0.6875rem/1.4 var(--f-mono); color: var(--muted); }
+
+  .hc__list { margin-top: 20px; border-top: 1px solid var(--line); }
+  .hc__list summary { padding: 12px 0; cursor: pointer; font: 500 0.875rem/1.4 var(--f-body); color: var(--ink); }
+  .hc__group { padding: 12px 0; border-top: 1px solid var(--line); }
+  .hc__gname { margin: 0 0 6px; font: 500 0.9375rem/1.3 var(--f-display); color: var(--ink); }
+  .hc__group dl { margin: 0; font-size: 0.8125rem; line-height: 1.5; }
+  .hc__group dt { margin-top: 6px; font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .hc__group dd { margin: 2px 0 0; color: var(--text); }
+
+  /* wąsko otwór półkola jest za mały na wynik — wynik idzie pod łuk */
+  @container (max-width: 560px) {
+    .hc__total { position: static; transform: none; margin-top: 12px; }
+    .hc__sub { white-space: normal; }
+    .hc__kicker { display: none; }
+    .hc__clubs { grid-template-columns: 1fr 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { .hc__svg :global(.hc__club) { transition: none; } }
+</style>
+
+<script>
+  type Data = {
+    seats: [string, number, 'YES' | 'NO' | 'ABSTAIN' | 'ABSENT'][];
+    clubs: { club: string; name: string; members: number; yes: number; no: number; abstain: number; absent: number }[];
+    w: number;
+    h: number;
+  };
+  const LABEL = { YES: 'za', NO: 'przeciw', ABSTAIN: 'wstrzymał się', ABSENT: 'nie głosował' } as const;
+  const SYMBOL = {
+    YES: '<circle class="hc__m hc__m--yes" r="7"/>',
+    NO: '<circle class="hc__m hc__m--no" r="6"/>',
+    ABSTAIN: '<circle class="hc__m hc__m--abstain" r="4"/>',
+    ABSENT: '<path class="hc__m hc__m--absent" d="M-4.5 0h9M0 -4.5v9"/>',
+  };
+  const sym = (k: keyof typeof SYMBOL) => `<svg viewBox="-9 -9 18 18" aria-hidden="true">${SYMBOL[k]}</svg>`;
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+  class ZlHemicycle extends HTMLElement {
+    connectedCallback() {
+      const data = JSON.parse(this.querySelector('.hc__data')?.textContent ?? '{}') as Data;
+      const svg = this.querySelector<SVGSVGElement>('.hc__svg');
+      const tip = this.querySelector<HTMLElement>('.hc__tip');
+      const arc = this.querySelector<HTMLElement>('.hc__arc');
+      if (!svg || !tip || !arc || !data.seats) return;
+      const groups = [...this.querySelectorAll<SVGGElement>('.hc__club')];
+      const chips = [...this.querySelectorAll<HTMLButtonElement>('.hc__chip')];
+      const logo = (club: string) => this.querySelector(`.hc__chip[data-club="${CSS.escape(club)}"] .hc__logo`)?.outerHTML ?? '';
+      let current: Element | null = null;
+
+      const highlight = (club: string | null) => {
+        this.classList.toggle('is-active', club !== null);
+        groups.forEach((g) => g.classList.toggle('is-on', g.dataset.club === club));
+        chips.forEach((c) => c.classList.toggle('is-on', c.dataset.club === club));
+      };
+      // x, y w procentach szerokości i wysokości półkola
+      const place = (x: number, y: number) => {
+        tip.hidden = false;
+        const box = arc.getBoundingClientRect();
+        const px = (x / 100) * box.width;
+        const py = (y / 100) * (box.width * data.h / data.w);
+        const left = Math.max(0, Math.min(box.width - tip.offsetWidth, px - tip.offsetWidth / 2));
+        const above = py - tip.offsetHeight - 14;
+        tip.style.left = `${left}px`;
+        tip.style.top = `${above >= 0 ? above : py + 14}px`;
+      };
+      const hide = () => {
+        tip.hidden = true;
+        current?.classList.remove('is-on');
+        current = null;
+        highlight(null);
+      };
+
+      const showSeat = (hit: SVGCircleElement) => {
+        const [name, ci, vote] = data.seats[Number(hit.dataset.i)];
+        const club = data.clubs[ci];
+        current?.classList.remove('is-on');
+        current = hit;
+        hit.classList.add('is-on');
+        highlight(club.club);
+        tip.innerHTML = `<span class="hc__tname">${esc(name)}</span>`
+          + `<span class="hc__tclub">${logo(club.club)}<span>${esc(club.name)}</span></span>`
+          + `<span class="hc__tvote">${sym(vote)}<span>${LABEL[vote]}</span></span>`;
+        place((Number(hit.getAttribute('cx')) / data.w) * 100, (Number(hit.getAttribute('cy')) / data.h) * 100);
+      };
+      const showClub = (chip: HTMLButtonElement) => {
+        const club = data.clubs.find((c) => c.club === chip.dataset.club);
+        if (!club) return;
+        current?.classList.remove('is-on');
+        current = null;
+        highlight(club.club);
+        const row = (k: keyof typeof SYMBOL, n: number) => `<dt>${sym(k)}</dt><dd style="text-align:left">${LABEL[k]}</dd><dd>${n}</dd>`;
+        tip.innerHTML = `<span class="hc__tclub" style="margin-top:0">${logo(club.club)}<span class="hc__tname">${esc(club.name)}</span></span>`
+          + `<dl>${row('YES', club.yes)}${row('NO', club.no)}${row('ABSTAIN', club.abstain)}${row('ABSENT', club.absent)}</dl>`;
+        place(Number(chip.dataset.cx), Number(chip.dataset.cy));
+      };
+
+      svg.addEventListener('mouseover', (e) => {
+        const hit = (e.target as Element).closest<SVGCircleElement>('.hc__hit');
+        if (hit && hit !== current) showSeat(hit);
+      });
+      svg.addEventListener('mouseleave', hide);
+      svg.addEventListener('click', (e) => {
+        const hit = (e.target as Element).closest<SVGCircleElement>('.hc__hit');
+        if (hit) showSeat(hit); else hide();
+      });
+      chips.forEach((chip) => {
+        chip.addEventListener('mouseenter', () => showClub(chip));
+        chip.addEventListener('mouseleave', hide);
+        chip.addEventListener('focus', () => showClub(chip));
+        chip.addEventListener('blur', hide);
+        chip.addEventListener('click', () => showClub(chip));
+      });
+      document.addEventListener('click', (e) => { if (!this.contains(e.target as Node)) hide(); });
+      this.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
+    }
+  }
+  if (!customElements.get('zl-hemicycle')) customElements.define('zl-hemicycle', ZlHemicycle);
+</script>

@@ -73,6 +73,7 @@ function hero({ session, result: r, threshold }: ResultContext) {
         <p class="r-verdict r-verdict--${verdict[0]}">${icon(verdict[0] === 'fail' ? 'close' : 'check', 14)}${verdict[1]}</p>
         <p class="r-score"><b>${r.points}</b><span>/ ${r.max} pkt · ${pct(you * 100)}</span></p>
         <p class="r-line">${line}</p>
+        ${r.max ? `<button type="button" class="r-btn r-btn--primary r-hero__share" data-act="share-top">${icon('share')}Udostępnij wynik</button>` : ''}
       </div>
       <div class="r-scale" role="img" aria-label="Twój wynik ${pct(you * 100, 0)}, próg ${pct(thr * 100, 0)}, przeciętny zdający ${pct(avg * 100, 0)}">
         <div class="r-scale__track"><span class="r-scale__fill${r.passed ? '' : ' r-scale__fill--fail'}" style="--v:${you}"></span></div>
@@ -169,8 +170,12 @@ function shareCard({ result: r }: ResultContext) {
   return `<section class="r-card" aria-labelledby="r-share" data-share>
     <h3 class="r-h" id="r-share">Udostępnij wynik <small>obrazek powstaje w tej przeglądarce</small></h3>
     <div class="r-share">
-      <div class="r-share__frame"><img class="r-share__img" data-share-img alt="Obrazek z Twoim wynikiem" width="1200" height="630" hidden /></div>
+      <div class="r-share__frame"><img class="r-share__img" data-share-img alt="Obrazek z Twoim wynikiem" hidden /></div>
       <div class="r-share__side">
+        <div class="r-share__formats" role="group" aria-label="Format obrazka">
+          <button type="button" class="r-filter" data-share-format="pion" aria-pressed="false">${icon('format-pion', 16)}Pion<b>1080×1350</b></button>
+          <button type="button" class="r-filter" data-share-format="poziom" aria-pressed="false">${icon('format-poziom', 16)}Poziom<b>1200×630</b></button>
+        </div>
         <div class="r-share__acts">
           <button type="button" class="r-btn r-btn--primary" data-act="share-native" hidden>${icon('arrow-ne')}Udostępnij…</button>
           <a class="r-btn" data-share-x href="https://x.com/" target="_blank" rel="noopener noreferrer">Udostępnij na X</a>
@@ -178,7 +183,7 @@ function shareCard({ result: r }: ResultContext) {
           <button type="button" class="r-btn" data-act="share-download">Pobierz obrazek</button>
           <button type="button" class="r-btn" data-act="share-copy">Kopiuj tekst</button>
         </div>
-        <p class="r-note">Obrazek pokazuje tylko wynik — bez żadnych danych o Tobie. X i Facebook nie dołączają obrazka z linku: pobierz go i dodaj do posta.</p>
+        <p class="r-note">Obrazek pokazuje tylko wynik — bez żadnych danych o Tobie. Pion pasuje do relacji i komunikatorów na telefonie, poziom do posta na X i Facebooku. X i Facebook nie dołączają obrazka z linku: pobierz go i dodaj do posta.</p>
       </div>
     </div>
   </section>`;

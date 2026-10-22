@@ -16,7 +16,7 @@ import * as R from './render';
 import { initBank } from './bank';
 import { historyBody } from './history';
 import * as Res from './result';
-import { canvasFile, drawShareImage } from './share-image';
+import { SHARE_FORMATS, canvasFile, drawShareImage, type ShareFormat } from './share-image';
 
 export interface ClientConfig {
   rules: { questions: number; minutes: number; threshold: number };
@@ -33,6 +33,8 @@ declare global {
 const MAP_PAGE = 200;
 const REVIEW_PAGE = 25;
 const WIDE = '(min-width: 1181px)';
+/** Telefon i tablet: obrazek w pionie, „Udostępnij wynik” przy wyniku od razu otwiera arkusz systemu */
+const TOUCH = '(pointer: coarse)';
 type MapFilter = 'all' | 'blank' | 'flag' | 'note' | 'wrong';
 
 const STATUS_LABEL: Record<Status, string> = {
@@ -498,6 +500,9 @@ class ZlExam extends HTMLElement {
     const mp = t.closest<HTMLElement>('[data-map-page]');
     if (mp) { this.mapPage = Number(mp.dataset.mapPage); return this.renderMap(); }
 
+    const sf = t.closest<HTMLElement>('[data-share-format]');
+    if (sf) { this.shareFormat = sf.dataset.shareFormat as ShareFormat; return this.showShareFormat(); }
+
     const rf = t.closest<HTMLElement>('[data-review-filter]');
     if (rf) {
       this.reviewFilter = rf.dataset.reviewFilter as Res.ReviewFilter;
@@ -535,6 +540,7 @@ class ZlExam extends HTMLElement {
       case 'new': return this.newTest();
       case 'retry': return void this.retryWrong();
       case 'share': return this.q('[data-share]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      case 'share-top': return this.shareTop();
       case 'share-native': return this.shareNative();
       case 'share-download': return this.shareDownload();
       case 'share-copy': return this.shareCopy(t.closest<HTMLElement>('[data-act]')!);
@@ -885,7 +891,13 @@ class ZlExam extends HTMLElement {
      Udostępnianie wyniku: obrazek (canvas), tekst, X, Facebook
      ====================================================================== */
 
-  private shareImage: { url: string; file: File | null; text: string; name: string } | null = null;
+  private shareFormat: ShareFormat = matchMedia(TOUCH).matches ? 'pion' : 'poziom';
+  private shareSet: { text: string; images: Record<ShareFormat, { url: string; file: File | null; name: string }> } | null = null;
+
+  /** Obrazek w wybranym formacie z tekstem do udostępnienia. */
+  private get shareImage() {
+    return this.shareSet && { ...this.shareSet.images[this.shareFormat], text: this.shareSet.text };
+  }
 
   private shareText(withLink = true) {
     const s = this.session!;
@@ -901,10 +913,10 @@ class ZlExam extends HTMLElement {
     const s = this.session!;
     const box = this.q('[data-share]');
     if (!box) return;
-    this.shareImage = null;
+    this.shareSet = null;
     const r = s.result();
     const exam = s.state.config.exam;
-    const canvas = await drawShareImage({
+    const input = {
       eyebrow: `${this.examLabel(exam)} · ${this.sessionLabel(s.state.config.session)} · ${s.mode.label}`,
       headline: `Mój wynik z ${{ egzamin: 'próbnego egzaminu', szybki: 'szybkiego testu', nauka: 'nauki na pytaniach' }[s.mode.id]} ${this.examLabel(exam)}`,
       result: r,
@@ -916,19 +928,43 @@ class ZlExam extends HTMLElement {
         average: f.max ? f.average / f.max : null,
       })),
       agent: Boolean(s.state.agent),
-    });
+    };
+    const draw = async (format: ShareFormat) => {
+      const canvas = await drawShareImage({ ...input, format });
+      const name = `wynik-${exam}-${format}.png`;
+      return { url: canvas.toDataURL('image/png'), file: await canvasFile(canvas, name), name };
+    };
+    const [pion, poziom] = await Promise.all([draw('pion'), draw('poziom')]);
     if (this.session !== s) return; // w międzyczasie ruszył nowy test
-    const name = `wynik-${exam}.png`;
-    const file = await canvasFile(canvas, name);
-    this.shareImage = { url: canvas.toDataURL('image/png'), file, text: this.shareText(), name };
-    const img = box.querySelector<HTMLImageElement>('[data-share-img]')!;
-    img.src = this.shareImage.url;
-    img.hidden = false;
+    this.shareSet = { text: this.shareText(), images: { pion, poziom } };
     const page = `${location.origin}/egzamin/`;
     box.querySelector<HTMLAnchorElement>('[data-share-x]')!.href =
       `https://x.com/intent/post?text=${encodeURIComponent(this.shareText(false))}&url=${encodeURIComponent(page)}`;
     box.querySelector<HTMLAnchorElement>('[data-share-fb]')!.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(page)}`;
-    box.querySelector<HTMLElement>('[data-act="share-native"]')!.hidden = !(file && navigator.canShare?.({ files: [file] }));
+    this.showShareFormat();
+  }
+
+  /** Podgląd, przełącznik formatu i „Udostępnij…” dla wybranego formatu. */
+  private showShareFormat() {
+    const box = this.q('[data-share]');
+    const img = this.shareImage;
+    if (!box || !img) return;
+    const { width, height } = SHARE_FORMATS[this.shareFormat];
+    box.dataset.format = this.shareFormat;
+    box.querySelectorAll<HTMLElement>('[data-share-format]').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b.dataset.shareFormat === this.shareFormat)));
+    const el = box.querySelector<HTMLImageElement>('[data-share-img]')!;
+    el.width = width; el.height = height;
+    el.src = img.url;
+    el.hidden = false;
+    box.querySelector<HTMLElement>('[data-act="share-native"]')!.hidden = !(img.file && navigator.canShare?.({ files: [img.file] }));
+  }
+
+  /** Przycisk przy wyniku: na dotykowym ekranie od razu arkusz udostępniania z obrazkiem, inaczej przewija do karty. */
+  private shareTop() {
+    const file = this.shareImage?.file;
+    if (file && matchMedia(TOUCH).matches && navigator.canShare?.({ files: [file] })) return this.shareNative();
+    this.q('[data-share]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   private shareNative() {

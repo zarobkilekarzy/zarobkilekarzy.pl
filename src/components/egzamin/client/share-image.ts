@@ -1,13 +1,22 @@
 /**
- * Obrazek z wynikiem testu (1200×630, PNG) rysowany w przeglądarce na <canvas> — bez serwera
- * i bez danych o czytelniku. Układ jak karty OG (lib/og/render.ts): logo, etykieta w kobalcie,
- * duża liczba, linia i stopka monospace. Obrazek jest zawsze jasny — kolory to dzienne wartości
- * tokenów z styles/tokens.css. Pobranie i podgląd przez data: URL (nie fetch(data:) — CSP connect-src).
+ * Obrazek z wynikiem testu (PNG) rysowany w przeglądarce na <canvas> — bez serwera i bez danych
+ * o czytelniku. Dwa formaty jak infografiki: pion 1080×1350 (telefon: relacje, komunikatory, posty)
+ * i poziom 1200×630 (X, Facebook z komputera). Układ jak karty OG (lib/og/render.ts): logo, etykieta
+ * w kobalcie, duża liczba, linia i stopka monospace. Obrazek jest zawsze jasny — kolory to dzienne
+ * wartości tokenów z styles/tokens.css. Pobranie i podgląd przez data: URL (nie fetch(data:) — CSP connect-src).
  */
 import type { TestResult } from '@/lib/egzamin/types';
 import { formatPL } from '@/lib/format';
 
+export type ShareFormat = 'pion' | 'poziom';
+
+export const SHARE_FORMATS = {
+  pion: { width: 1080, height: 1350 },
+  poziom: { width: 1200, height: 630 },
+} as const;
+
 export interface ShareImageInput {
+  format: ShareFormat;
   /** „LEK · jesień 2026 · Pełny egzamin” */
   eyebrow: string;
   /** „Mój wynik z próbnego egzaminu LEK” */
@@ -21,11 +30,40 @@ export interface ShareImageInput {
   agent: boolean;
 }
 
-const W = 1200, H = 630, PAD_X = 64;
 // Dzienne wartości tokenów (tokens.css)
 const C = {
   bg: '#FFFFFF', blue: '#2664EC', ink: '#040B1B', text: '#4B5466', muted: '#666E80', line: '#E6E9EF',
   soft: '#F6F7FA', chart: '#A3ADBD', ok: '#0F7B4F', okBg: '#E7F5EE', bad: '#B42318', badBg: '#FDECEA', amber: '#8A5A00',
+};
+
+/** Rozmieszczenie elementów w danym formacie (y = linia bazowa tekstu, chyba że opisano inaczej). */
+const G = {
+  poziom: {
+    padX: 64,
+    logo: { top: 50, size: 30, gap: 14, name: 26, nameY: 75 },
+    verdict: { top: 46, h: 36, font: 15, y: 69, spacing: 1.2 },
+    eyebrow: { y: 152, square: 10, font: 16, spacing: 1.3 },
+    headline: { y: 206, font: 32, w: 580 },
+    big: { x: -6, y: 342, font: 140, unit: 68, gap: 4 },
+    points: { y: 386, font: 24 },
+    scale: { y: 446, w: 520, h: 12, up: 10, down: 22, font: 15, below: 42, above: 18, ticks: [1.5, 2, 3], dash: [4, 3] },
+    fields: { x: 680, head: 152, headFont: 14, top: 190, area: 330, step: 36, font: 16, val: 15, bar: 8, valW: 70 },
+    tiles: { x: 680, top: 170, row: 150, label: 13, labelY: 32, value: 64, valueY: 100 },
+    foot: { line: 548, y: 588, font: 15 },
+  },
+  pion: {
+    padX: 72,
+    logo: { top: 64, size: 40, gap: 18, name: 34, nameY: 97 },
+    verdict: { top: 62, h: 44, font: 18, y: 90, spacing: 1.4 },
+    eyebrow: { y: 204, square: 12, font: 19, spacing: 1.5 },
+    headline: { y: 266, font: 42, w: 936 },
+    big: { x: -8, y: 498, font: 230, unit: 110, gap: 6 },
+    points: { y: 554, font: 30 },
+    scale: { y: 650, w: 936, h: 16, up: 12, down: 28, font: 18, below: 54, above: 22, ticks: [2, 2.5, 4], dash: [5, 4] },
+    fields: { x: 72, head: 782, headFont: 16, top: 830, area: 380, step: 54, font: 20, val: 19, bar: 10, valW: 90 },
+    tiles: { x: 72, top: 790, row: 210, label: 15, labelY: 36, value: 84, valueY: 120 },
+    foot: { line: 1250, y: 1298, font: 17 },
+  },
 };
 
 /** Stos fontu z Fonts API Astro (zmienna CSS z nazwą rodziny i zapasowymi). */
@@ -42,6 +80,9 @@ export async function drawShareImage(input: ShareImageInput): Promise<HTMLCanvas
   } catch { /* czcionki systemowe */ }
 
   const { result: r, threshold } = input;
+  const L = G[input.format];
+  const { width: W, height: H } = SHARE_FORMATS[input.format];
+  const PAD_X = L.padX;
   const you = r.max ? r.points / r.max : 0;
   const avg = r.max ? r.average / r.max : 0;
 
@@ -66,99 +107,109 @@ export async function drawShareImage(input: ShareImageInput): Promise<HTMLCanvas
   g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
 
   // Logo: kwadrat z linią EKG (icons.ts → logo) + nazwa
+  const lg = L.logo;
   g.save();
-  g.translate(PAD_X, 50); g.scale(30 / 24, 30 / 24);
+  g.translate(PAD_X, lg.top); g.scale(lg.size / 24, lg.size / 24);
   g.fillStyle = C.blue; g.fillRect(0, 0, 24, 24);
   g.strokeStyle = '#fff'; g.lineWidth = 2; g.miterLimit = 5;
   g.stroke(new Path2D('M0 14H7.5L10 5.5 13.5 18.5 15.5 14H24'));
   g.restore();
-  const nameW = text('zarobkilekarzy', PAD_X + 44, 75, `500 26px ${DISPLAY}`, C.ink);
-  text('.pl', PAD_X + 44 + nameW, 75, `500 26px ${DISPLAY}`, C.muted);
+  const nameX = PAD_X + lg.size + lg.gap;
+  const nameW = text('zarobkilekarzy', nameX, lg.nameY, `500 ${lg.name}px ${DISPLAY}`, C.ink);
+  text('.pl', nameX + nameW, lg.nameY, `500 ${lg.name}px ${DISPLAY}`, C.muted);
 
   // Werdykt w prawym górnym rogu
+  const vd = L.verdict;
   const verdict = (r.passed ? (input.exam ? 'Zdany' : 'Powyżej progu') : 'Poniżej progu') + ` · próg ${formatPL(threshold * 100, 0)}%`;
-  g.font = `500 15px ${MONO}`;
-  const vw = [...verdict.toUpperCase()].reduce((w, ch) => w + g.measureText(ch).width + 1.2, 0) + 28;
-  g.fillStyle = r.passed ? C.okBg : C.badBg; g.fillRect(W - PAD_X - vw, 46, vw, 36);
-  tracked(verdict.toUpperCase(), W - PAD_X - vw + 14, 69, `500 15px ${MONO}`, r.passed ? C.ok : C.bad, 1.2);
+  g.font = `500 ${vd.font}px ${MONO}`;
+  const vw = [...verdict.toUpperCase()].reduce((w, ch) => w + g.measureText(ch).width + vd.spacing, 0) + 28;
+  g.fillStyle = r.passed ? C.okBg : C.badBg; g.fillRect(W - PAD_X - vw, vd.top, vw, vd.h);
+  tracked(verdict.toUpperCase(), W - PAD_X - vw + 14, vd.y, `500 ${vd.font}px ${MONO}`, r.passed ? C.ok : C.bad, vd.spacing);
 
   // Etykieta: egzamin · sesja · tryb
-  g.fillStyle = C.blue; g.fillRect(PAD_X, 141, 10, 10);
-  tracked(input.eyebrow.toUpperCase(), PAD_X + 22, 152, `500 16px ${MONO}`, C.blue, 1.3);
+  const eb = L.eyebrow;
+  g.fillStyle = C.blue; g.fillRect(PAD_X, eb.y - eb.square - 1, eb.square, eb.square);
+  tracked(input.eyebrow.toUpperCase(), PAD_X + eb.square + 12, eb.y, `500 ${eb.font}px ${MONO}`, C.blue, eb.spacing);
 
   // Nagłówek i duży wynik
-  const LEFT_W = 520;
-  g.font = `500 32px ${DISPLAY}`;
-  text(fit(input.headline, LEFT_W + 60), PAD_X, 206, g.font, C.ink);
-  const pctW = text(formatPL(you * 100, 1), PAD_X - 6, 342, `300 140px ${DISPLAY}`, C.ink);
-  text('%', PAD_X - 6 + pctW + 4, 342, `300 68px ${DISPLAY}`, C.blue);
-  text(`${r.points} / ${r.max} pkt`, PAD_X, 386, `400 24px ${BODY}`, C.text);
+  g.font = `500 ${L.headline.font}px ${DISPLAY}`;
+  text(fit(input.headline, L.headline.w), PAD_X, L.headline.y, g.font, C.ink);
+  const bg = L.big;
+  const pctW = text(formatPL(you * 100, 1), PAD_X + bg.x, bg.y, `300 ${bg.font}px ${DISPLAY}`, C.ink);
+  text('%', PAD_X + bg.x + pctW + bg.gap, bg.y, `300 ${bg.unit}px ${DISPLAY}`, C.blue);
+  text(`${r.points} / ${r.max} pkt`, PAD_X, L.points.y, `400 ${L.points.font}px ${BODY}`, C.text);
 
   // Skala 0–100% z progiem i przeciętnym zdającym
-  const SX = PAD_X, SW = LEFT_W, SY = 446;
-  g.fillStyle = C.soft; g.fillRect(SX, SY, SW, 12);
-  g.strokeStyle = C.line; g.lineWidth = 1; g.strokeRect(SX + 0.5, SY + 0.5, SW - 1, 11);
-  g.fillStyle = r.passed ? C.blue : C.bad; g.fillRect(SX, SY, SW * you, 12);
+  const sc = L.scale;
+  const SX = PAD_X, SW = sc.w, SY = sc.y;
+  g.fillStyle = C.soft; g.fillRect(SX, SY, SW, sc.h);
+  g.strokeStyle = C.line; g.lineWidth = 1; g.strokeRect(SX + 0.5, SY + 0.5, SW - 1, sc.h - 1);
+  g.fillStyle = r.passed ? C.blue : C.bad; g.fillRect(SX, SY, SW * you, sc.h);
   const tick = (v: number, color: string, width: number, dashed = false) => {
     const x = Math.round(SX + SW * v) + 0.5;
-    g.strokeStyle = color; g.lineWidth = width; g.setLineDash(dashed ? [4, 3] : []);
-    g.beginPath(); g.moveTo(x, SY - 10); g.lineTo(x, SY + 22); g.stroke(); g.setLineDash([]);
+    g.strokeStyle = color; g.lineWidth = width; g.setLineDash(dashed ? sc.dash : []);
+    g.beginPath(); g.moveTo(x, SY - sc.up); g.lineTo(x, SY + sc.down); g.stroke(); g.setLineDash([]);
     return x;
   };
   // Etykiety pod osią: wyśrodkowane pod kreską; gdy dwie się stykają — lewa na lewo od swojej kreski, prawa na prawo
+  const [thrW, avgW, youTickW] = sc.ticks;
   const below = [
-    { v: threshold, label: `próg ${formatPL(threshold * 100, 0)}%`, color: C.text, x: tick(threshold, C.ink, 1.5, true), w: 0 },
-    ...(r.max ? [{ v: avg, label: `przeciętny ${formatPL(avg * 100, 0)}%`, color: C.amber, x: tick(avg, C.amber, 2), w: 0 }] : []),
+    { v: threshold, label: `próg ${formatPL(threshold * 100, 0)}%`, color: C.text, x: tick(threshold, C.ink, thrW, true), w: 0 },
+    ...(r.max ? [{ v: avg, label: `przeciętny ${formatPL(avg * 100, 0)}%`, color: C.amber, x: tick(avg, C.amber, avgW), w: 0 }] : []),
   ].sort((a, b) => a.v - b.v);
-  g.font = `400 15px ${MONO}`;
+  g.font = `400 ${sc.font}px ${MONO}`;
   for (const b of below) b.w = g.measureText(b.label).width;
   const clamp = (x: number, w: number) => Math.min(Math.max(x, SX), SX + SW - w);
   const centred = below.map((b) => clamp(b.x - b.w / 2, b.w));
   const clash = below.length === 2 && centred[0] + below[0].w + 12 > centred[1];
   below.forEach((b, k) => {
     const x = !clash ? centred[k] : k === 0 ? clamp(b.x - b.w - 6, b.w) : clamp(b.x + 6, b.w);
-    text(b.label, x, SY + 42, `400 15px ${MONO}`, b.color);
+    text(b.label, x, SY + sc.below, `400 ${sc.font}px ${MONO}`, b.color);
   });
-  const youX = tick(you, C.ink, 3);
-  g.font = `500 15px ${MONO}`;
+  const youX = tick(you, C.ink, youTickW);
+  g.font = `500 ${sc.font}px ${MONO}`;
   const youLabel = `Ty ${formatPL(you * 100, 0)}%`;
   const youW = g.measureText(youLabel).width;
-  text(youLabel, clamp(youX - youW / 2, youW), SY - 18, g.font, C.ink);
+  text(youLabel, clamp(youX - youW / 2, youW), SY - sc.above, g.font, C.ink);
 
-  // Prawa kolumna: dziedziny albo kafelki
-  const RX = 680, RW = W - PAD_X - RX;
+  // Dziedziny albo kafelki: w poziomie prawa kolumna, w pionie pod skalą na całą szerokość
   if (input.fields.length > 1) {
-    tracked('WEDŁUG DZIEDZIN', RX, 152, `500 14px ${MONO}`, C.muted, 1.2);
+    const fl = L.fields;
+    const RX = fl.x, RW = W - PAD_X - RX;
+    tracked('WEDŁUG DZIEDZIN', RX, fl.head, `500 ${fl.headFont}px ${MONO}`, C.muted, 1.2);
     const rows = input.fields.slice(0, 10);
-    const step = Math.min(36, 330 / rows.length);
-    let y = 190;
+    const step = Math.min(fl.step, fl.area / rows.length);
+    let y = fl.top;
     for (const f of rows) {
-      g.font = `400 16px ${BODY}`;
-      text(fit(f.label, RW - 70), RX, y, g.font, C.ink);
-      text(`${formatPL(f.share * 100, 0)}%`, RX + RW, y, `500 15px ${MONO}`, C.ink, 'right');
-      g.fillStyle = C.soft; g.fillRect(RX, y + 8, RW, 8);
-      g.fillStyle = f.share < threshold ? C.bad : C.chart; g.fillRect(RX, y + 8, Math.max(2, RW * f.share), 8);
-      if (f.average !== null) { g.fillStyle = C.amber; g.fillRect(Math.round(RX + RW * f.average) - 1, y + 4, 2, 16); }
+      g.font = `400 ${fl.font}px ${BODY}`;
+      text(fit(f.label, RW - fl.valW), RX, y, g.font, C.ink);
+      text(`${formatPL(f.share * 100, 0)}%`, RX + RW, y, `500 ${fl.val}px ${MONO}`, C.ink, 'right');
+      g.fillStyle = C.soft; g.fillRect(RX, y + fl.bar, RW, fl.bar);
+      g.fillStyle = f.share < threshold ? C.bad : C.chart; g.fillRect(RX, y + fl.bar, Math.max(2, RW * f.share), fl.bar);
+      if (f.average !== null) { g.fillStyle = C.amber; g.fillRect(Math.round(RX + RW * f.average) - 1, y + fl.bar / 2, 2, fl.bar * 2); }
       y += step;
     }
   } else {
+    const tl = L.tiles;
+    const RX = tl.x, RW = W - PAD_X - RX;
     const tiles: [string, string, string][] = [
       ['Dobrze', String(r.correct), C.ok], ['Źle', String(r.wrong), C.bad],
       ['Bez odpowiedzi', String(r.blank), C.ink], ['Przeciętny zdający', r.max ? `${formatPL(avg * 100, 0)}%` : '—', C.amber],
     ];
     tiles.forEach(([label, value, color], i) => {
-      const x = RX + (i % 2) * (RW / 2), y = 170 + Math.floor(i / 2) * 150;
+      const x = RX + (i % 2) * (RW / 2), y = tl.top + Math.floor(i / 2) * tl.row;
       g.fillStyle = C.line; g.fillRect(x, y, RW / 2 - 24, 1);
-      tracked(label.toUpperCase(), x, y + 32, `500 13px ${MONO}`, C.muted, 1.1);
-      text(value, x, y + 100, `300 64px ${DISPLAY}`, color);
+      tracked(label.toUpperCase(), x, y + tl.labelY, `500 ${tl.label}px ${MONO}`, C.muted, 1.1);
+      text(value, x, y + tl.valueY, `300 ${tl.value}px ${DISPLAY}`, color);
     });
   }
 
   // Stopka
-  g.fillStyle = C.line; g.fillRect(PAD_X, 548, W - 2 * PAD_X, 1);
+  const ft = L.foot;
+  g.fillStyle = C.line; g.fillRect(PAD_X, ft.line, W - 2 * PAD_X, 1);
   text(input.agent ? 'Rozwiązane z asystentem AI · pytania z jawnej bazy CEM' : 'Pytania i statystyka sali z jawnej bazy CEM',
-    PAD_X, 588, `400 15px ${MONO}`, input.agent ? C.amber : C.muted);
-  text(`${location.host}/egzamin`, W - PAD_X, 588, `500 15px ${MONO}`, C.blue, 'right');
+    PAD_X, ft.y, `400 ${ft.font}px ${MONO}`, input.agent ? C.amber : C.muted);
+  text(`${location.host}/egzamin`, W - PAD_X, ft.y, `500 ${ft.font}px ${MONO}`, C.blue, 'right');
   return c;
 }
 

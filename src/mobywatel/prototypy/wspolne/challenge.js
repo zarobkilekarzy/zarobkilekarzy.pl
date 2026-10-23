@@ -6,7 +6,11 @@
  const app=document.getElementById('app');if(!app)return;
  const wRamce=window.top!==window.self;
  document.documentElement.classList.toggle('ch-ramka',wRamce);
- if(wRamce)return;
+ if(wRamce){
+  /* w ramce na stronie konkursu: cały telefon bazy (390×844 z obręczą 11 px) w skali okna ramki */
+  const ramka=()=>{app.style.transform=`scale(${Math.min(innerWidth/(390+24),innerHeight/(844+24))})`};
+  ramka();addEventListener('resize',ramka);return;
+ }
  const JEZYKI=[['pl','Polski'],['en','English'],['de','Deutsch'],['fr','Français'],['es','Español'],['it','Italiano'],['pt','Português'],['nl','Nederlands'],
   ['cs','Čeština'],['sk','Slovenčina'],['sl','Slovenščina'],['hu','Magyar'],['ro','Română'],['el','Ελληνικά'],['sv','Svenska'],['uk','Українська']];
  const STRONA='/mobywatel/';

@@ -29,6 +29,11 @@ const ZD_PORADNIE={
  poz:{u:'u lekarza rodzinnego',poradnia:'Poradnia lekarza rodzinnego (POZ)',miejsce:ZD_POZ+', gabinet 2',lekarz:'lek. Ewa Bąk'},
  usg:{u:'na badaniu USG',poradnia:'Pracownia USG',miejsce:ZD_SZPITAL+', budynek A, pracownia 1',lekarz:'lek. Tomasz Ryś'}
 };
+/* położenie placówki do „Pokaż na mapie” — przykładowe punkty w mieście osoby (placówki są fikcyjne) */
+for(const p of Object.values(ZD_PORADNIE)){
+ const o=p.miejsce.startsWith(ZD_SZPITAL)?[.0062,-.0118]:p.miejsce.startsWith(ZD_POZ)?[.0087,.0049]:[-.0041,.0083];
+ p.geo=[ZD_MIASTO.gps[0]+o[0],ZD_MIASTO.gps[1]+o[1]];
+}
 const ZD_LEKI={
  statyna:{n:'Atorwastatyna 20 mg',op:'30 tabl.',d:'1 tabletka wieczorem',odp:'30%',cena:1890,ty:567},
  ramipril:{n:'Ramipril 5 mg',op:'28 kaps.',d:'1 kapsułka rano',odp:'ryczałt',cena:1420,ty:320},
@@ -67,26 +72,28 @@ const ZDROWIE={
   {...zdP(ZD_PROFIL.umowione[0]),data:ZD_DATA(ZD_DZIEN(2)),godz:'09:00',kolejka:4,potwierdzona:false},
   {...zdP(ZD_PROFIL.umowione[1]),data:ZD_DATA(ZD_DZIEN(23)),godz:'12:15',kolejka:9,potwierdzona:true}
  ],
- /* historia wizyt zapisanych na karcie (od najnowszej): pozycje w groszach, null = poza rozliczeniem za wizytę */
+ /* historia wizyt zapisanych na karcie (od najnowszej): pozycje w groszach, null = poza rozliczeniem za wizytę;
+    kod = godzina potwierdzenia obecności kodem z karty w rejestracji */
  wizyty:[
-  {nr:147,...zdP('derma'),data:ZD_DATA(ZD_DZIEN(-3)),pozycje:[['Porada specjalistyczna',12000],['Badanie dermatoskopowe',4500],['E-recepta',0]],doplata:0},
-  {nr:146,...zdP('poz'),data:ZD_DATA(ZD_DZIEN(-24)),pozycje:[['Porada lekarza rodzinnego',null],['E-recepta',null]],doplata:0,
+  {nr:147,...zdP('derma'),data:ZD_DATA(ZD_DZIEN(-3)),kod:'10:12',pozycje:[['Porada specjalistyczna',12000],['Badanie dermatoskopowe',4500],['E-recepta',0]],doplata:0},
+  {nr:146,...zdP('poz'),data:ZD_DATA(ZD_DZIEN(-24)),kod:'08:47',pozycje:[['Porada lekarza rodzinnego',null],['E-recepta',null]],doplata:0,
    poz:'Lekarz rodzinny: NFZ płaci przychodni stałą stawkę za każdego zapisanego pacjenta, a nie za wizytę — dlatego ta wizyta nie ma osobnej kwoty.'},
-  {nr:145,...zdP('usg'),data:ZD_DATA(ZD_DZIEN(-41)),pozycje:[['USG jamy brzusznej',9500]],doplata:0},
-  {nr:144,...zdP(ZD_PROFIL.hist144),data:ZD_DATA(ZD_DZIEN(-58)),pozycje:{
+  /* bez kodu: placówka rozliczyła wizytę, której pacjent nie potwierdził kodem z karty (do sprawdzenia) */
+  {nr:145,...zdP('usg'),data:ZD_DATA(ZD_DZIEN(-41)),kod:null,pozycje:[['USG jamy brzusznej',9500]],doplata:0},
+  {nr:144,...zdP(ZD_PROFIL.hist144),data:ZD_DATA(ZD_DZIEN(-58)),kod:'14:05',pozycje:{
     kardio:[['Porada specjalistyczna',14000],['EKG spoczynkowe',3500],['Badania krwi (lipidogram)',2800]],
     endo:[['Porada specjalistyczna',13000],['Badania krwi (TSH, fT4)',4200],['USG tarczycy',7000]],
     orto:[['Porada specjalistyczna',12500],['RTG stawu kolanowego',6000]]}[ZD_PROFIL.hist144],doplata:0},
-  {nr:143,...zdP('stom'),data:ZD_DATA(ZD_DZIEN(-97)),pozycje:[['Przegląd stomatologiczny',6800],['Wypełnienie (1 ząb)',11200]],doplata:0}
+  {nr:143,...zdP('stom'),data:ZD_DATA(ZD_DZIEN(-97)),kod:'16:31',pozycje:[['Przegląd stomatologiczny',6800],['Wypełnienie (1 ząb)',11200]],doplata:0}
  ],
  /* e-recepty: cena w aptece, Twoja dopłata i dopłata NFZ (w groszach); kwoty przykładowe */
  recepty:[
   {kod:'4821',data:ZD_DATA(ZD_DZIEN(-24)),lekarz:ZD_PORADNIE[ZD_PROFIL.recepta[0]].lekarz,wazna:ZD_DATA(ZD_DZIEN(341)),zrealizowana:false,
    leki:ZD_PROFIL.recepta[1].map(k=>ZD_LEKI[k])},
   {kod:'7306',data:ZD_DATA(ZD_DZIEN(-3)),lekarz:'lek. Marek Lis',wazna:ZD_DATA(ZD_DZIEN(27)),zrealizowana:false,leki:[ZD_LEKI.krem]},
-  /* archiwum: zrealizowane w aptece (data, apteka); kody fikcyjne */
+  /* archiwum: zrealizowane w aptece (data, apteka, godzina potwierdzenia kodem z karty); kody fikcyjne */
   ...ZD_PROFIL.archiwum.map(([p,l,d],i)=>({kod:String(5170+i*913).slice(-4),data:ZD_DATA(ZD_DZIEN(d)),lekarz:ZD_PORADNIE[p].lekarz,wazna:ZD_DATA(ZD_DZIEN(d+30)),
-   zrealizowana:{data:ZD_DATA(ZD_DZIEN(d+1)),apteka:'Apteka Rodzinna '+ZD_MIASTO.w},leki:l.map(k=>ZD_LEKI[k])}))
+   zrealizowana:{data:ZD_DATA(ZD_DZIEN(d+1)),apteka:'Apteka Rodzinna '+ZD_MIASTO.w,kod:['11:24','17:52'][i%2]},leki:l.map(k=>ZD_LEKI[k])}))
  ],
  /* wpłaty i koszty (ostatnie 12 miesięcy): składka zdrowotna 9% podstawy (art. 79 ustawy o świadczeniach);
     u pracownika podstawa = brutto − składki społeczne pracownika 13,71% (art. 81), w działalności na skali — 9% dochodu;
@@ -143,6 +150,66 @@ ZDROWIE.ostatnia=ZDROWIE.wizyty[0];
  ].sort((a,b)=>naDate(b.data)-naDate(a.data));
 }
 
+/* szczepienia dorosłego: wykonane (z elektronicznej karty szczepień), zaplanowane i do powtórzenia według Programu
+   Szczepień Ochronnych na 2026 r. (komunikat GIS, Dz. Urz. MZ 2025 poz. 85, skrócony kalendarz dla dorosłych):
+   błonica i tężec — 1 dawka co 10 lat; grypa i COVID-19 — 1 dawka przed sezonem infekcyjnym i w jego trakcie.
+   Daty szczepień fikcyjne; plan = [szczepienie, za ile dni]. */
+{
+ const s={marta:{td:'18.03.2010',grypa:'14.10.2025',covid:'14.10.2025',plan:9},jan:{td:'04.06.2019',grypa:'21.10.2025'},
+  ewa:{td:'22.09.2014',grypa:'09.10.2025',covid:'09.10.2025',plan:5},kacper:{td:'11.05.2025'}}[OS.id]||{td:'18.03.2010'};
+ const rok=new Date().getFullYear(),gdzie=ZD_PORADNIE.poz.miejsce,tdDo=+s.td.slice(-4)+10;
+ const naDate=t=>{const [d,m,r]=t.split('.').map(Number);return new Date(r,m-1,d)};
+ ZDROWIE.szczepienia={
+  wyk:[{n:'Błonica i tężec (Td)',data:s.td,gdzie,dawka:'dawka przypominająca'},
+   ...(s.grypa?[{n:'Grypa, sezon 2025/2026',data:s.grypa,gdzie,dawka:'1 dawka'}]:[]),
+   ...(s.covid?[{n:'COVID-19, sezon 2025/2026',data:s.covid,gdzie,dawka:'1 dawka'}]:[])].sort((a,b)=>naDate(b.data)-naDate(a.data)),
+  zapl:s.plan?[{n:'Grypa, sezon 2026/2027',data:ZD_DATA(ZD_DZIEN(s.plan)),godz:'16:00',gdzie}]:[],
+  powt:[...(tdDo<=rok+1?[{n:'Błonica i tężec (Td)',kiedy:tdDo<=rok?'zaległe od '+tdDo:'w '+tdDo,zalegle:tdDo<=rok,zal:'1 dawka co 10 lat'}]:[]),
+   ...(s.plan?[]:[{n:'Grypa, sezon 2026/2027',kiedy:'w tym sezonie',zalegle:false,zal:'1 dawka przed sezonem i w jego trakcie'}])],
+  zrodlo:'https://dziennikmz.mz.gov.pl/DUM_MZ/2025/85/akt.pdf'
+ };
+}
+/* profilaktyka: bezpłatne programy NFZ według wieku (rocznikowo) i płci osoby.
+   Moje Zdrowie — od 20 lat, co 5 lat (20–49) i co 3 lata (50+): pacjent.gov.pl/program-moje-zdrowie;
+   mammografia 45–74 lata co 2 lata, kolonoskopia 50–65 lat co 10 lat: nfz.gov.pl, programy profilaktyczne;
+   test HPV HR 25–64 lata co 5 lat (od 1.08.2026 zamiast cytologii): komunikat NFZ. Daty ostatnich badań fikcyjne. */
+{
+ const ost={jan:{mz:'06.2025'},ewa:{mz:'09.2025',mammo:'03.2025'}}[OS.id]||{};
+ const rok=new Date().getFullYear(),wiek=rok-+OS.moje.data_urodzenia.slice(-4),K=OS.plec==='K';
+ const nast=(o,lat)=>o?+o.slice(-4)+lat:null;
+ const NFZ='https://www.nfz.gov.pl/dla-pacjenta/programy-profilaktyczne/';
+ ZDROWIE.profilaktyka=[
+  {n:'Program Moje Zdrowie — bilans zdrowia',dla:'od 20 lat',co:wiek>=50?'co 3 lata':'co 5 lat',ost:ost.mz,nast:nast(ost.mz,wiek>=50?3:5),
+   krok:'ankieta w przychodni POZ',src:'https://pacjent.gov.pl/program-moje-zdrowie',zr:'Program Moje Zdrowie'},
+  ...(K&&wiek>=25&&wiek<=64?[{n:'Test HPV HR — rak szyjki macicy',dla:'kobiety 25–64 lata',co:'co 5 lat',ost:ost.hpv,nast:nast(ost.hpv,5),
+   krok:'poradnia ginekologiczna',src:'https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/wybierany-przez-tysiace-polek-teraz-standardem-dla-wszystkich-kobiet,8990.html',zr:'Test HPV HR'}]:[]),
+  ...(K&&wiek>=45&&wiek<=74?[{n:'Mammografia — rak piersi',dla:'kobiety 45–74 lata',co:'co 2 lata',ost:ost.mammo,nast:nast(ost.mammo,2),
+   krok:'pracownia mammografii',src:NFZ,zr:'Mammografia'}]:[]),
+  ...(wiek>=50&&wiek<=65?[{n:'Kolonoskopia — rak jelita grubego',dla:'50–65 lat',co:'co 10 lat',ost:ost.kolono,nast:nast(ost.kolono,10),
+   krok:'pracownia endoskopii',src:NFZ,zr:'Kolonoskopia'}]:[])
+ ];
+}
+/* karty dzieci: w mObywatelu rodzica, który zgłosił dziecko do ubezpieczenia (drugi rodzic — po upoważnieniu, od 16 lat
+   dziecko samo przegląda swoje konto — jak w Internetowym Koncie Pacjenta). Każde dziecko ma własny kod wizyty.
+   Szczepienia obowiązkowe według PSO na 2026 r. (skrócony kalendarz dla dzieci): DTP/IPV/Hib w 16.–18. miesiącu,
+   DTaP, IPV i MMR w 6. roku życia, Tdap w 14., Td w 19. Dzieci, daty i kwoty fikcyjne. */
+{
+ const rok=new Date().getFullYear();
+ const dzieci={marta:[['Zofia','Kowalska',2016],['Stanisław','Kowalski',2021],['Hanna','Kowalska',2024]],
+  jan:[['Aleksandra','Wiśniewska',2013],['Franciszek','Wiśniewski',2015],['Tymon','Wiśniewski',2019]]}[OS.id]||[];
+ /* etap: [wiek w latach, szczepienia, rok życia] — rok życia n = wiek n−1 */
+ const ETAPY=[[1,'DTP, IPV i Hib','16.–18. miesiąc życia'],[5,'DTaP, IPV i MMR','6. rok życia'],[13,'Tdap','14. rok życia'],[18,'Td','19. rok życia']];
+ ZDROWIE.dzieci=dzieci.map(([imie,nazwisko,ur],i)=>{
+  const wiek=rok-ur,wiz=19+i*8;
+  const zrob=ETAPY.filter(e=>e[0]<wiek).slice(-1),teraz=ETAPY.filter(e=>e[0]===wiek),potem=ETAPY.filter(e=>e[0]>wiek).slice(0,teraz.length?0:1);
+  return {imie,nazwisko,wiek,karta:'4471 8820 '+(11+i),wizytNaKarcie:wiz,
+   szczep:[...zrob.map(e=>({n:e[1],kiedy:e[2]+' · '+(ur+e[0]),stan:'ok'})),...teraz.map(e=>({n:e[1],kiedy:e[2]+' · do zrobienia w '+rok,stan:'teraz'})),
+    ...potem.map(e=>({n:e[1],kiedy:e[2]+' · w '+(ur+e[0]),stan:'potem'}))],
+   wizyty:[['Poradnia lekarza rodzinnego (POZ)',null,-40-i*25,'08:52'],['Poradnia laryngologiczna',12000,-130-i*30,'15:40']]
+    .map(([poradnia,kwota,dni,kod],j)=>({nr:wiz-j,poradnia,data:ZD_DATA(ZD_DZIEN(dni)),kwota,poz:kwota===null,kod}))};
+ });
+}
+
 {
  const holder=(OS.imie+' '+OS.nazwisko).toUpperCase();
  const zd=ZDROWIE,o=zd.umowione[0],w=zd.ostatnia;
@@ -156,5 +223,8 @@ ZDROWIE.ostatnia=ZDROWIE.wizyty[0];
   {i:'check',h:'Czy wizyta się odbyła?',d:w.poradnia+', '+w.data,k:'zdPoWizycie',u:1,
    s:'Potwierdź wizytę i oceń lekarza',q:'Wizyta '+w.u+' '+w.data}
  );
+ /* przypomnienie o szczepieniu do powtórzenia (MZ nie planuje takich przypomnień dla dorosłych — tu jest) */
+ const zal=zd.szczepienia.powt.find(x=>x.zalegle);
+ if(zal)OS.tiles.push({i:'bell',h:'Szczepienie do powtórzenia',d:zal.n+' · '+zal.kiedy,k:'zdSzczepPrzyp',u:1,s:zal.zal,q:'Szczepienie '+zal.n});
  OS.ask.zdrowie='Co jest na mojej karcie zdrowia?';
 }

@@ -4,6 +4,7 @@
    i Face ID. Numerek i recepta mają wygląd papierowego wydruku. Korzysta z funkcji bazy (core.js,
    scenarios.js), samej bazy nie zmienia. */
 Object.assign(I,{
+ strzykawka:'<path d="m14.5 4.5 5 5M17 7l-9.5 9.5-3 .5.5-3L14.5 4.5M9.5 9.5l2 2M11.5 7.5l2 2M4 20l2.5-2.5"/>',
  heart:'<path d="M12 20s-7.5-4.3-7.5-9.7A4 4 0 0 1 12 8.6a4 4 0 0 1 7.5 1.7C19.5 15.7 12 20 12 20z"/>',
  ticket:'<path d="M4 7.5h16v3a1.8 1.8 0 0 0 0 3.6v3H4v-3a1.8 1.8 0 0 0 0-3.6z"/><path d="M14.5 8v1.5M14.5 11.25v1.5M14.5 14.5V16"/>',
  bill:'<path d="M6.5 3.5h11v17l-2.2-1.4-2.1 1.4-2.2-1.4-2.2 1.4-2.3-1.4z"/><path d="M9.5 8h5M9.5 11.5h5M9.5 15h3"/>',
@@ -30,6 +31,8 @@ const zdRxSum=r=>r.leki.reduce((s,l)=>({cena:s.cena+l.cena,ty:s.ty+l.ty}),{cena:
 const zdN=n=>`<span data-t="0">${n}</span>`;
 /* lista nazw jako osobne węzły — każda nazwa to jeden klucz tłumaczenia, nie sklejka kombinacji */
 const zdLista=a=>a.map(x=>`<span>${x}</span>`).join(', ');
+/* mapa placówki w aplikacji map telefonu (link uniwersalny) */
+const zdMapaH=v=>`<a class="zd-link" href="https://www.google.com/maps/search/?api=1&query=${v.geo[0].toFixed(5)},${v.geo[1].toFixed(5)}" target="_blank" rel="noopener">Pokaż na mapie ${svg('pin')}</a>`;
 const zdLekH=n=>`<button class="zd-lek" data-zd-lek="${n}" data-t="0">${n}</button>`;
 
 /* ---------- kolejka w poczekalni: co 30 s wchodzi następna osoba ---------- */
@@ -59,11 +62,11 @@ function zdArkusz(tytul,tresc,wstecz,rysuj){
 const zdQueueH=()=>`<div class="zd-q"><div><small>Teraz</small><b data-zd="teraz">${zdNr(ZQ.teraz)}</b></div><div class="me"><small>Twój numerek</small><b>${ZD_D.numerek}</b></div><div><small>Przed Tobą</small><b data-zd="przed">${zdPrzed()}</b></div></div><div class="note" data-zd="czas"></div>`;
 const zdPodpisH=()=>`<div class="valid zd-okaz">${svg('id')}<span>Okazanie tej karty w rejestracji jest niezbędne, żeby wizyta się odbyła. Karta zapisuje każdą wizytę pod kolejnym numerem.</span></div>`;
 const zdDzisH=()=>`<div class="ui" id="zd-dzis">${hd('ticket','Dziś, '+ZD_D.godz+' · '+ZD_D.poradnia)}${zdQueueH()}
- <div class="rows">${rowsH([['Gdzie',ZD_D.miejsce],['Lekarz',zdLekH(ZD_D.lekarz)]])}</div>
+ <div class="rows">${rowsH([['Gdzie',ZD_D.miejsce],['Lekarz',zdLekH(ZD_D.lekarz)]])}</div>${zdMapaH(ZD_D)}
  <div class="actions"><button class="btn ghost" data-zd-a="brak">Zgłoś brak lekarza</button><button class="btn primary" data-zd-a="bilet">Pokaż bilecik</button></div></div>`;
 const zdWizytyH=()=>`<div class="ui list" id="zd-wizyty">${hd('cal','Umówione wizyty')}
- ${ZD.umowione.map(v=>`<div class="it"><span class="pip${v.potwierdzona||v.odwolana?' g':''}"></span><span class="x"><b>${v.poradnia}</b><small>${v.data}, ${v.godz} · ${v.kolejka}. w kolejce tego dnia</small></span>${v.odwolana?'<span class="zd-st">Odwołana</span>':v.potwierdzona?'<span class="zd-st ok">Potwierdzona</span>':'<button class="go" data-zd-a="potwierdz">Potwierdź</button>'}</div>`).join('')}</div>`;
-const zdWizytaRowH=(v,i)=>`<button class="it" data-zd-wiz="${i}"><span class="zd-nr">${v.nr}</span><span class="x"><b>${v.poradnia}</b><small>${v.data} · ${zdN(v.lekarz)}</small></span><span class="zd-kw">${v.poz?'stawka POZ':zdZl(zdNfz(v))}</span></button>`;
+ ${ZD.umowione.map(v=>`<div class="it"><span class="pip${v.potwierdzona||v.odwolana?' g':''}"></span><span class="x"><b>${v.poradnia}</b><small>${v.data}, ${v.godz} · ${v.kolejka}. w kolejce tego dnia</small></span><a class="zd-mapa-ic" href="https://www.google.com/maps/search/?api=1&query=${v.geo[0].toFixed(5)},${v.geo[1].toFixed(5)}" target="_blank" rel="noopener" aria-label="Pokaż na mapie">${svg('pin')}</a>${v.odwolana?'<span class="zd-st">Odwołana</span>':v.potwierdzona?'<span class="zd-st ok">Potwierdzona</span>':'<button class="go" data-zd-a="potwierdz">Potwierdź</button>'}</div>`).join('')}</div>`;
+const zdWizytaRowH=(v,i)=>`<button class="it" data-zd-wiz="${i}"><span class="zd-nr">${v.nr}</span><span class="x"><b>${v.poradnia}</b><small>${v.data} · ${zdN(v.lekarz)}${v.kod?'':' · <span class="zd-warn">bez kodu</span>'}</small></span><span class="zd-kw">${v.poz?'stawka POZ':zdZl(zdNfz(v))}</span></button>`;
 const zdHistSumH=()=>`<div class="zd-hsum"><small>W ostatnich 12 miesiącach placówki rozliczyły z NFZ za Twoje wizyty</small><b>${zdZl(ZD.wizyty.reduce((s,v)=>s+(zdNfz(v)||0),0))}</b></div>`;
 const ZD_PRAWA_GR={wizyta:'Przy wizycie',sor:'Na SOR',dok:'Dokumentacja i tajemnica'};
 /* prawa w kontekście (bilecik, wizyty, SOR): kilka praw i link do wszystkich */
@@ -74,12 +77,13 @@ const zdPrawaBoxH=(k,ile=9)=>`<div class="ui">${hd('scale','Twoje prawa '+(k==='
 
 /* ---------- ekran karty: karta, podpis, sekcje (ikony jak szybkie akcje bazy), dzisiejsza wizyta ---------- */
 const ZD_SEKCJE=[['ticket','Mój numerek','bilet'],['cal','Wizyty','wizyty'],['rx','E-recepty','recepty'],['hist','Historia','historia'],['probowka','Badania','badania'],
- ['portfel','Wpłaty i koszty','koszty'],['user','Moi lekarze','lekarze'],['scale','Moje prawa','prawa'],['hosp','SOR na żywo','sor'],['pobierz','Pobierz dane','eksport']];
+ ['strzykawka','Szczepienia','szczepienia'],['shield','Profilaktyka','profilaktyka'],['portfel','Wpłaty i koszty','koszty'],['user','Moi lekarze','lekarze'],['scale','Moje prawa','prawa'],['hosp','SOR na żywo','sor'],['pobierz','Pobierz dane','eksport']];
 function zdOpen(){
  const d=DOCS.find(x=>x.id==='zdrowie');
  zdArkusz(d.name,`<div class="bigcard" style="background-image:url(${d.img})">${faceHTML(d)}</div>${zdPodpisH()}
+  <div class="ui zd-kod-cta"><div class="actions"><button class="btn primary" data-zd-a="kod">Pokaż kod do rejestracji i apteki</button></div></div>
   <div class="quick zd-sekcje">${ZD_SEKCJE.map(x=>`<button data-zd-a="${x[2]}"><i>${svg(x[0])}</i>${x[1]}</button>`).join('')}</div>
-  ${zdDzisH()}`,null,zdOpen);
+  ${zdDzisH()}${zdDzieciH()}`,null,zdOpen);
 }
 function zdOdswiez(){const x=$('#zd-wizyty');if(x)x.replaceWith(el(zdWizytyH()))}
 
@@ -102,8 +106,82 @@ function zdBilet(){
    <div class="zd-qr">${qrSVG(14)}</div>
    <p class="zd-p-mt">${ZD_D.miejsce.split(', ').slice(1).join(', ')} · ${zdN(ZD_D.lekarz)}</p>
    <p class="zd-p-st">Pokaż w rejestracji razem z kartą Moje zdrowie</p></div>
-  <div class="ui zd-pod"><div class="actions"><button class="btn ghost" data-zd-a="brak">Zgłoś brak lekarza</button></div></div>
+  <div class="ui zd-pod">${zdMapaH(ZD_D)}<div class="actions"><button class="btn ghost" data-zd-a="brak">Zgłoś brak lekarza</button></div></div>
   ${zdPrawaBoxH('wizyta',3)}`,zdOpen,zdBilet);
+}
+
+/* ---------- kod wizyty: jednorazowy QR i PIN (60 s) do pokazania w rejestracji i w aptece ----------
+   Rejestracja skanuje go przy wizycie (wizyta zapisuje się na karcie), apteka przy wydaniu leków z dopłatą NFZ.
+   Kod niesie tylko jednorazowy numer; bez potwierdzenia nie ma rozliczenia z NFZ. Przyciski „W rejestracji” /
+   „W aptece” pokazują, co pacjent dostaje po zeskanowaniu. */
+const ZD_KOD={pin:'',do:0,seed:1,t:0};
+function zdKodNowy(){ZD_KOD.pin=String(100000+Math.floor(Math.random()*900000)).replace(/(\d{3})(\d{3})/,'$1 $2');ZD_KOD.seed=1+Math.floor(Math.random()*999);ZD_KOD.do=Date.now()+60000}
+function zdKodTick(){
+ const k=$('#zd-kod');if(!k){clearInterval(ZD_KOD.t);ZD_KOD.t=0;return}
+ let s=Math.ceil((ZD_KOD.do-Date.now())/1000);
+ if(s<=0){zdKodNowy();k.querySelector('.qr svg').outerHTML=qrSVG(ZD_KOD.seed);k.querySelector('.code').textContent=ZD_KOD.pin;s=60}
+ k.querySelector('.zd-kod-czas i').style.width=(s/60*100)+'%';
+ k.querySelector('[data-zd="kodczas"]').textContent=`Kod ważny jeszcze ${s} s, potem pojawi się nowy.`;
+}
+function zdKod(dz){
+ const d=ZD.dzieci[dz];
+ if(Date.now()>ZD_KOD.do||ZD_KOD.dz!==dz){zdKodNowy();ZD_KOD.dz=dz}
+ zdArkusz('Kod wizyty',`<div class="ui" id="zd-kod">${hd('scan',d?'Kod dziecka: '+zdN(d.imie+' '+d.nazwisko):'Pokaż w rejestracji albo w aptece')}
+   <div class="qr">${qrSVG(ZD_KOD.seed)}<div class="code" data-t="0">${ZD_KOD.pin}</div></div>
+   <div class="zd-kod-czas"><i></i></div><div class="note" data-zd="kodczas"></div>
+   <div class="zd-prs">
+    <div class="zd-pr"><b>W rejestracji</b><span>Rejestracja skanuje kod albo wpisuje PIN. Wizyta zapisuje się na karcie pod kolejnym numerem.</span></div>
+    <div class="zd-pr"><b>W aptece</b><span>Farmaceuta skanuje kod przy wydaniu leków z recepty. Recepta trafia do archiwum z godziną wydania.</span></div>
+    <div class="zd-pr"><b>Jednorazowy</b><span>Kod działa raz i tylko przez 60 sekund. Nie zawiera Twoich danych, tylko numer, który system łączy z kartą.</span></div></div>
+   <div class="note">Placówka nie rozliczy z NFZ wizyty, a apteka leku z dopłatą NFZ, jeśli nie potwierdzisz ich kodem.</div></div>
+  <div class="ui">${hd('doc','Pokaz: co się dzieje po zeskanowaniu')}
+   <div class="actions"><button class="btn ghost" data-zd-skan="rej"${d?` data-zd-dz="${dz}"`:''}>W rejestracji</button>${d?'':'<button class="btn ghost" data-zd-skan="apt">W aptece</button>'}</div></div>`,d?()=>zdDziecko(dz):zdOpen,()=>zdKod(dz));
+ clearInterval(ZD_KOD.t);ZD_KOD.t=setInterval(zdKodTick,1000);zdKodTick();
+}
+
+/* ---------- szczepienia: do zrobienia, zaplanowane, wykonane i książeczka (wyciąg z elektronicznej karty) ---------- */
+function zdSzczepienia(){
+ const s=ZD.szczepienia;
+ zdArkusz('Szczepienia',`<div class="ui list">${hd('strzykawka','Do zrobienia')}
+   ${s.powt.length?s.powt.map((x,i)=>`<div class="it"><span class="pip"></span><span class="x"><b>${x.n}</b><small>${x.zalegle?`<span class="zd-warn">${x.kiedy}</span>`:x.kiedy} · ${x.zal}</small></span><button class="go" data-zd-szcz="${i}">Umów</button></div>`).join('')
+    :'<div class="note">Nie masz zaległych szczepień.</div>'}</div>
+  ${s.zapl.length?`<div class="ui list">${hd('cal','Zaplanowane')}${s.zapl.map(x=>`<div class="it"><span class="pip g"></span><span class="x"><b>${x.n}</b><small>${x.data}, ${x.godz} · <span>${x.gdzie}</span></small></span></div>`).join('')}</div>`:''}
+  <div class="ui list">${hd('check','Wykonane')}${s.wyk.map(x=>`<div class="it"><span class="pip g"></span><span class="x"><b>${x.n}</b><small>${x.data} · ${x.dawka}</small></span></div>`).join('')}
+   <button class="zd-link" data-zd-a="ksiazeczka">Książeczka szczepień ${svg('chev')}</button></div>
+  <div class="ui"><div class="note">Zalecenia dla dorosłych z Programu Szczepień Ochronnych na 2026 r.: błonica i tężec — 1 dawka co 10 lat, grypa i COVID-19 — przed sezonem infekcyjnym i w jego trakcie. Widać szczepienia, które przychodnia wpisała do elektronicznej karty szczepień.</div>
+   ${srcH('Komunikat GIS, Dz. Urz. MZ 2025 poz. 85')}<a class="zd-link" href="${s.zrodlo}" target="_blank" rel="noopener">Program Szczepień Ochronnych na 2026 r. (PDF) ${svg('chev')}</a></div>`,zdOpen,zdSzczepienia);
+}
+function zdKsiazeczka(){
+ const s=ZD.szczepienia;
+ zdArkusz('Książeczka szczepień',`<div class="zd-papier zd-rxp">
+   <p class="zd-p-gl">Karta szczepień</p><p class="zd-p-mt">Wyciąg z elektronicznej karty szczepień</p>
+   <div class="zd-p-row"><span>Pacjent</span><b>${(OS.imie+' '+OS.nazwisko).toUpperCase()}</b></div>
+   <div class="zd-p-row"><span>PESEL</span><b>${OS.moje.pesel}</b></div><div class="zd-p-hr"></div>
+   ${s.wyk.map(x=>`<div class="zd-p-lek"><b>${x.n}</b><span>${x.data} · ${x.dawka}</span><span>${x.gdzie}</span></div>`).join('<div class="zd-p-hr zd-p-hr-s"></div>')}
+   <div class="zd-p-hr"></div><p class="zd-p-st">Szczepienia, których przychodnia nie wpisała elektronicznie, są tylko w papierowej karcie.</p></div>`,zdSzczepienia,zdKsiazeczka);
+}
+
+/* ---------- profilaktyka: bezpłatne programy NFZ według wieku i płci ---------- */
+function zdProfilaktyka(){
+ const rok=new Date().getFullYear();
+ zdArkusz('Profilaktyka',`<div class="ui list zd-prof">${hd('shield','Programy NFZ dla Ciebie')}
+   ${ZD.profilaktyka.map((p,i)=>{const moze=!p.nast||p.nast<=rok;return `<div class="it"><span class="pip${moze?'':' g'}"></span><span class="x"><b>${p.n}</b><small>${p.dla}, ${p.co}${p.ost?' · ostatnio '+p.ost:''}</small><small>${moze?'Możesz się zgłosić':'Kolejne badanie od '+p.nast}</small></span>${moze?`<button class="go" data-zd-prof="${i}">Zgłoś się</button>`:''}</div>`}).join('')}</div>
+  <div class="ui"><div class="note">Programy są bezpłatne i nie wymagają skierowania. Lista zależy od Twojego wieku i płci.</div>${srcH('NFZ i pacjent.gov.pl')}
+   ${ZD.profilaktyka.map(p=>`<a class="zd-link" href="${p.src}" target="_blank" rel="noopener">${p.zr} ${svg('chev')}</a>`).join('')}</div>`,zdOpen,zdProfilaktyka);
+}
+
+/* ---------- karty dzieci: lista na ekranie karty i karta dziecka z własnym kodem ---------- */
+const zdLat=n=>n===1?'rok':n%10>=2&&n%10<=4&&!(n%100>=12&&n%100<=14)?'lata':'lat';
+const zdDzieciH=()=>ZD.dzieci.length?`<div class="ui list">${hd('baby','Karty dzieci')}${ZD.dzieci.map((d,i)=>`<button class="it" data-zd-dziecko="${i}"><span class="x"><b>${zdN(d.imie+' '+d.nazwisko)}</b><small>${d.wiek} ${zdLat(d.wiek)} · karta ${d.karta}</small></span><span class="go">Pokaż</span></button>`).join('')}</div>`:'';
+function zdDziecko(i){
+ const d=ZD.dzieci[i],doc=DOCS.find(x=>x.id==='zdrowie');
+ const karta={...doc,photo:0,holder:(d.imie+' '+d.nazwisko).toUpperCase(),f:[['Nr karty',d.karta],['Zapisane wizyty',String(d.wizytNaKarcie)]]};
+ zdArkusz(zdN(d.imie),`<div class="bigcard" style="background-image:url(${doc.img})">${faceHTML(karta)}</div>
+  <div class="valid zd-okaz">${svg('baby')}<span>Kartę dziecka widzi rodzic, który zgłosił je do ubezpieczenia, a drugi rodzic — po upoważnieniu. Od 16 lat dziecko samo przegląda swoje dane.</span></div>
+  <div class="ui zd-kod-cta"><div class="actions"><button class="btn primary" data-zd-dzkod="${i}">Pokaż kod dziecka</button></div></div>
+  <div class="ui list">${hd('strzykawka','Szczepienia obowiązkowe')}${d.szczep.map(x=>`<div class="it"><span class="pip${x.stan==='teraz'?'':' g'}"></span><span class="x"><b>${x.n}</b><small>${x.kiedy}</small></span>${x.stan==='ok'?'<span class="zd-st ok">Wykonane</span>':x.stan==='teraz'?`<button class="go" data-zd-dzszcz="${i}">Umów</button>`:''}</div>`).join('')}</div>
+  <div class="ui list">${hd('hist','Ostatnie wizyty')}${d.wizyty.map(v=>`<div class="it"><span class="zd-nr">${v.nr}</span><span class="x"><b>${v.poradnia}</b><small>${v.data} · kod z karty, ${v.kod}</small></span><span class="zd-kw">${v.poz?'stawka POZ':zdZl(v.kwota)}</span></div>`).join('')}
+   <div class="note">Szczepienia według Programu Szczepień Ochronnych na 2026 r. Wizyty dziecka potwierdzasz kodem z jego karty.</div></div>`,zdOpen,()=>zdDziecko(i));
 }
 
 /* ---------- e-recepty: bieżące i archiwum z wyszukiwarką ---------- */
@@ -128,7 +206,7 @@ function zdReceptyEkran(){
 function zdRecepta(i){
  const r=ZD.recepty[i],s=zdRxSum(r);
  zdArkusz('E-recepta',`<div class="zd-papier zd-rxp">
-   ${r.zrealizowana?`<div class="zd-p-stamp"><span>Zrealizowana</span><small>${r.zrealizowana.data}</small><small>${r.zrealizowana.apteka}</small></div>`:''}
+   ${r.zrealizowana?`<div class="zd-p-stamp"><span>Zrealizowana</span><small>${r.zrealizowana.data}</small><small>${r.zrealizowana.apteka}</small>${r.zrealizowana.kod?`<small>kod z karty, ${r.zrealizowana.kod}</small>`:''}</div>`:''}
    <p class="zd-p-gl">Recepta</p><p class="zd-p-mt">Informacja dla pacjenta</p>
    <div class="zd-p-kod"><span>Kod dostępu</span><b>${r.kod}</b></div>
    <div class="zd-p-row"><span>Pacjent</span><b>${(OS.imie+' '+OS.nazwisko).toUpperCase()}</b></div>
@@ -157,7 +235,9 @@ function zdHistoria(){
 function zdRachunek(i){
  const v=ZD.wizyty[i];
  zdArkusz('Wizyta nr '+v.nr,`<div class="ui">${hd('bill','Rachunek za wizytę nr '+v.nr)}
-  <div class="rows">${rowsH([['Wizyta',v.poradnia+', '+v.data],['Gdzie',v.miejsce],['Lekarz',zdLekH(v.lekarz)]])}</div>
+  <div class="rows">${rowsH([['Wizyta',v.poradnia+', '+v.data],['Gdzie',v.miejsce],['Lekarz',zdLekH(v.lekarz)],
+   ['Obecność',v.kod?'kod z karty, '+v.kod:'<span class="zd-warn">bez potwierdzenia kodem</span>']])}</div>
+  ${v.kod?'':'<div class="flag zd-ostrzezenie">Placówka rozliczyła tę wizytę z NFZ, ale wizyta nie ma potwierdzenia Twoim kodem z karty. Jeśli Cię tam nie było, zgłoś to.</div>'}
   <div class="rows zd-poz">${rowsH(v.pozycje.map(([n,g])=>[n,v.poz?'w stawce POZ':zdZl(g)]))}</div>
   <div class="rows zd-sum">${rowsH([['Placówka rozlicza z NFZ',v.poz?'stawka za pacjenta':zdZl(zdNfz(v))],['Twoja dopłata',zdZl(v.doplata)]])}</div>
   <div class="note">${v.poz||'Rachunek przychodzi po każdej wizycie, a wizyta zapisuje się na karcie z kolejnym numerem. Kwoty w prototypie są przykładowe.'}</div>
@@ -422,11 +502,20 @@ $('#detail').addEventListener('click',e=>{
  const adr=e.target.closest('[data-zd-adr]');if(adr){const i=+adr.dataset.zdAdr;zdTemat('Zgłaszam działanie niepożądane leku',()=>S.zdNiepozadane(i));return}
  const nb=e.target.closest('[data-zd-niebylo]');
  if(nb){const v=ZD.wizyty[+nb.dataset.zdNiebylo];zdTemat('Wizyty '+v.u+' '+v.data+' nie było',()=>S.zdNieOdbyla(v));return}
+ const sk=e.target.closest('[data-zd-skan]');
+ if(sk){const dz=sk.dataset.zdDz;sk.dataset.zdSkan==='rej'?zdTemat('Rejestracja skanuje '+(dz?'kod dziecka':'mój kod'),()=>S.zdSkanRej(dz==null?undefined:+dz)):zdTemat('Apteka skanuje mój kod',S.zdSkanApt);return}
+ const dzi=e.target.closest('[data-zd-dziecko]');if(dzi){zdDziecko(+dzi.dataset.zdDziecko);return}
+ const dzk=e.target.closest('[data-zd-dzkod]');if(dzk){zdKod(+dzk.dataset.zdDzkod);return}
+ const dzs=e.target.closest('[data-zd-dzszcz]');
+ if(dzs){const d=ZD.dzieci[+dzs.dataset.zdDzszcz],x=d.szczep.find(y=>y.stan==='teraz');zdTemat('Umawiam szczepienie dziecka',()=>S.zdSzczepUmow(x.n,d.imie+' '+d.nazwisko,()=>{x.stan='plan'}));return}
+ const sz=e.target.closest('[data-zd-szcz]');
+ if(sz){const s=ZD.szczepienia,x=s.powt[+sz.dataset.zdSzcz];zdTemat('Umawiam szczepienie',()=>S.zdSzczepUmow(x.n,null,(t)=>{s.powt.splice(s.powt.indexOf(x),1);s.zapl.push({n:x.n,data:t.data,godz:t.godz,gdzie:ZD_PORADNIE.poz.miejsce})}));return}
+ const pf=e.target.closest('[data-zd-prof]');if(pf){zdTemat('Zgłaszam się do programu profilaktyki',()=>S.zdProfZapis(+pf.dataset.zdProf));return}
  const oc=e.target.closest('[data-zd-ocen]');
  if(oc){const v=ZD.wizyty[+oc.dataset.zdOcen];zdTemat('Ocena wizyty',()=>S.zdOcena(v));return}
  const b=e.target.closest('[data-zd-a]');if(!b)return;
  const a=b.dataset.zdA,o=ZD.umowione[0];
- const ekrany={badania:zdBadania,eksport:zdEksport,bilet:zdBilet,wizyty:zdWizytyEkran,recepty:zdReceptyEkran,historia:zdHistoria,koszty:zdKoszty,lekarze:zdLekarzeEkran,prawa:()=>zdPrawa(),sor:zdSor};
+ const ekrany={kod:()=>zdKod(),szczepienia:zdSzczepienia,ksiazeczka:zdKsiazeczka,profilaktyka:zdProfilaktyka,badania:zdBadania,eksport:zdEksport,bilet:zdBilet,wizyty:zdWizytyEkran,recepty:zdReceptyEkran,historia:zdHistoria,koszty:zdKoszty,lekarze:zdLekarzeEkran,prawa:()=>zdPrawa(),sor:zdSor};
  if(ekrany[a])ekrany[a]();
  else if(a==='brak')zdTemat('Lekarz nie przyjmuje — zgłaszam brak lekarza',S.zdBrakLekarza);
  else if(a==='potwierdz')zdTemat('Wizyta '+o.u+' '+o.data,S.zdPrzypomnienie);
@@ -472,6 +561,45 @@ Object.assign(S,{
   confirmCard({icon:'alert',title:'Zgłoszenie: wizyty nie było',source:'NFZ, kontrola rozliczeń',rows:[['Wizyta',v.poradnia+', '+v.data],['Na karcie','wizyta nr '+v.nr],['Rozliczona z NFZ',v.poz?'w stawce POZ':zdZl(zdNfz(v))]],
    note:'NFZ sprawdzi rozliczenie placówki. Nie musisz niczego dołączać.',label:'Wyślij zgłoszenie',
    then:()=>result({title:'Zgłoszenie wysłane do NFZ',rows:[['Numer zgłoszenia','NFZ/2026/'+(41000+Math.floor(Math.random()*900))],['Odpowiedź','w skrzynce mObywatela']]})});
+ },
+ async zdSkanRej(dz){
+  const g=new Date().toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}),d=ZD.dzieci[dz];
+  if(d){
+   await say('Rejestracja zeskanowała kod z karty dziecka. Wizyta zapisała się na jego karcie.');
+   result({title:'Wizyta dziecka potwierdzona kodem',rows:[['Pacjent',zdN(d.imie+' '+d.nazwisko)],['Wizyta',ZD_PORADNIE.poz.poradnia+', dziś'],['Gdzie',ZD_PORADNIE.poz.miejsce],['Potwierdzono',g],['Na karcie dziecka','wizyta nr '+(d.wizytNaKarcie+1)]],
+    note:'Każde dziecko ma własny kod — potwierdza tylko jego wizyty.'});return}
+  await say('Rejestracja zeskanowała Twój kod. Wizyta zapisała się na karcie.');
+  result({title:'Wizyta potwierdzona kodem',rows:[['Wizyta',ZD_D.poradnia+', dziś '+ZD_D.godz],['Gdzie',ZD_D.miejsce],['Potwierdzono',g],['Na karcie','wizyta nr '+(ZD.wizytNaKarcie+1)]],
+   note:'Tylko potwierdzoną kodem wizytę placówka może rozliczyć z NFZ. Rachunek przyjdzie po wizycie.'});
+ },
+ /* umówienie szczepienia (dorosły albo dziecko) w przychodni POZ; po = co zmienić po umówieniu */
+ async zdSzczepUmow(n,kto,po){
+  const t={data:ZD_DATA(ZD_DZIEN(4)),godz:'15:30'},poz=ZD_PORADNIE.poz;
+  await say('Umówię szczepienie w Twojej przychodni rodzinnej. Pierwszy wolny termin:');
+  confirmCard({icon:'cal',title:'Umówienie szczepienia',source:'e-rejestracja, przychodnia POZ',rows:[['Szczepienie',n],...(kto?[['Dla',zdN(kto)]]:[]),['Gdzie',poz.miejsce],['Termin',t.data+', '+t.godz],...(/^Grypa/.test(n)?[['Odpłatność','zależy od wieku i grupy ryzyka']]:[])],label:'Umów',
+   then:()=>{po&&po(t);result({title:'Szczepienie umówione',rows:[['Szczepienie',n],['Termin',t.data+', '+t.godz]],note:'Dzień wcześniej przyjdzie przypomnienie. Na szczepienie pokaż kod z karty.'})}});
+ },
+ async zdSzczepPrzyp(){
+  const s=ZD.szczepienia,x=s.powt.find(y=>y.zalegle);
+  if(!x){await say('Nie masz już zaległych szczepień.');return}
+  await info({icon:'alert',title:'Szczepienie do powtórzenia',source:'Program Szczepień Ochronnych na 2026 r.',rows:[['Szczepienie',x.n],['Zalecenie',x.zal],['Ostatnia dawka',s.wyk.find(y=>y.n===x.n).data],['Stan',x.kiedy]]});
+  await say('Umówić szczepienie w Twojej przychodni rodzinnej?');
+  chips([{label:'Tak, umów',go:()=>S.zdSzczepUmow(x.n,null,t=>{s.powt.splice(s.powt.indexOf(x),1);s.zapl.push({n:x.n,data:t.data,godz:t.godz,gdzie:ZD_PORADNIE.poz.miejsce})})},{label:'Nie teraz',go:()=>say('Dobrze. Szczepienie zostaje na liście „Do zrobienia” w karcie Moje zdrowie.')}]);
+ },
+ async zdProfZapis(i){
+  const p=ZD.profilaktyka[i],t={data:ZD_DATA(ZD_DZIEN(11)),godz:'10:20'};
+  await say('Program jest bezpłatny i nie wymaga skierowania. Pierwszy krok: '+p.krok+'.');
+  confirmCard({icon:'shield',title:p.n,source:'NFZ, program profilaktyczny',rows:[['Dla',p.dla+', '+p.co],['Pierwszy krok',p.krok],['Termin',t.data+', '+t.godz]],label:'Zapisz mnie',
+   then:()=>{p.ost=null;p.nast=new Date().getFullYear()+1;result({title:'Zapisano do programu',rows:[['Program',p.n],['Termin',t.data+', '+t.godz]],note:'Wynik badania trafi na Twoje konto pacjenta. Przypomnienie przyjdzie dzień wcześniej.'})}});
+ },
+ async zdSkanApt(){
+  const r=ZD.recepty.find(x=>!x.zrealizowana);
+  if(!r){await say('Nie masz już recepty do wykupienia — wszystkie są w archiwum.');return}
+  const g=new Date().toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}),s=zdRxSum(r),apteka='Apteka Rodzinna '+ZD_MIASTO.w;
+  r.zrealizowana={data:ZD_DATA(ZD_DZIEN(0)),apteka,kod:g};
+  await say('Apteka zeskanowała Twój kod przy wydaniu leków z recepty '+r.kod+'.');
+  result({title:'Wydanie leków potwierdzone kodem',rows:[['Apteka',apteka],['Leki',zdLista(r.leki.map(l=>l.n))],['Płacisz',zdZl(s.ty)],['NFZ dopłaci aptece',zdZl(s.cena-s.ty)],['Potwierdzono',g]],
+   note:'NFZ dopłaca aptece tylko do leków wydanych z Twoim kodem. Recepta jest teraz w archiwum e-recept.'});
  },
  async zdBrakLekarza(){
   await say('Przykro mi. Zgłoszę to rejestracji i do NFZ, a Twoje miejsce w kolejce zostanie zachowane.');

@@ -84,6 +84,11 @@ async function osoba(id) {
   await ekran('zdLekarzeEkran()', 'lekarze');
   await ekran('zdHistoria()', 'historia');
   for (let i = 0; i < 5; i++) await ekran(`zdRachunek(${i})`, 'rachunek');
+  await ekran('zdKod()', 'kod');
+  await ekran('zdSzczepienia()', 'szczepienia');
+  await ekran('zdKsiazeczka()', 'szczepienia');
+  await ekran('zdProfilaktyka()', 'profilaktyka');
+  for (let i = 0; i < ev('ZD.dzieci.length'); i++) { await ekran(`zdDziecko(${i})`, 'dziecko'); await ekran(`zdKod(${i})`, 'dziecko'); }
   await ekran('zdPrawa()', 'prawa');
   for (const n of Object.keys(ev('ZD.lekarze'))) await ekran(`zdLekarz(${JSON.stringify(n)})`, 'lekarz');
   await ekran('zdSor()', 'sor'); await sleep(400); zbierz(w.document, 'sor');
@@ -110,6 +115,19 @@ async function osoba(id) {
   await temat('Wizyta', 'S.zdPoWizycie'); await klik('Tak'); for (const n of ['5', '4', '3']) await klik(n);
   await temat('Wizyta', 'S.zdPoWizycie'); await klik('Nie'); await potwierdz();
   await temat('Ocena wizyty', '()=>S.zdOcena(ZD.wizyty[1])'); for (const n of ['5', '4', '3']) await klik(n);
+  await temat('Rejestracja skanuje mój kod', 'S.zdSkanRej');
+  for (let i = 0; i < 3; i++) await temat('Apteka skanuje mój kod', 'S.zdSkanApt');
+  await ekran('zdRecepta(0)', 'recepta');
+  if (ev('ZD.szczepienia.powt.some((x) => x.zalegle)')) {
+   await temat('Szczepienie', 'S.zdSzczepPrzyp'); await klik('Nie teraz');
+   await temat('Szczepienie', 'S.zdSzczepPrzyp'); await klik('Tak'); await potwierdz();
+  }
+  await temat('Szczepienie', 'S.zdSzczepPrzyp');
+  for (let i = 0; i < ev('ZD.profilaktyka.length'); i++) { await temat('Profilaktyka', `()=>S.zdProfZapis(${i})`); await potwierdz(); }
+  if (ev('ZD.dzieci.length')) {
+   await temat('Rejestracja skanuje kod dziecka', '()=>S.zdSkanRej(0)');
+   await temat('Umawiam szczepienie dziecka', "()=>S.zdSzczepUmow('Tdap','Jan Test')"); await potwierdz();
+  }
   await temat('Brak', 'S.zdBrakLekarza'); await potwierdz();
   for (const s of ['Odmówiono mi informacji', 'Odmówiono mi dokumentacji', 'Zabrakło szacunku']) { await temat('Skarga', 'S.zdSkarga'); await klik(s); await potwierdz(); }
   await temat('Co mam do załatwienia?', 'S.todo');

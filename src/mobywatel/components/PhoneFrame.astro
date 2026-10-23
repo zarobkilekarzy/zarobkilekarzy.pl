@@ -3,27 +3,82 @@
  * Prototyp na stronie serwisu: <iframe> do /mobywatel/<slug>/ (wyjątek od frame-ancestors
  * w integrations/seo/headers.ts). Telefon z obręczą rysuje sam prototyp (wspolne/challenge.js, tryb ramki):
  * 390×844 + obręcz, w skali ramki — tu tylko ramka o tych proporcjach, bez własnego telefonu.
+ * Podskakujący dymek „Kliknij…” mówi, że telefon działa (ludzie brali go za grafikę); kliknięcie przechodzi
+ * przez dymek do aplikacji, a dymek znika przy pierwszym dotknięciu telefonu.
  */
 interface Props {
   src: string;
   /** nazwa dla czytnika ekranu, np. „Prototyp: Moje zdrowie” */
   title: string;
+  /** tekst dymka nad telefonem */
+  hint?: string;
 }
 
-const { src, title } = Astro.props;
+const { src, title, hint = 'Kliknij, aby sprawdzić prototyp' } = Astro.props;
 ---
-<iframe class="phone-frame" src={src} title={title} loading="lazy"></iframe>
+<phone-frame class="phone-frame">
+  <iframe class="phone-frame__app" src={src} title={title} loading="lazy"></iframe>
+  <span class="phone-frame__hint" aria-hidden="true">{hint}</span>
+</phone-frame>
+
+<script>
+  class PhoneFrame extends HTMLElement {
+    connectedCallback() {
+      const frame = this.querySelector<HTMLIFrameElement>('iframe')!;
+      const hide = () => this.classList.add('is-used');
+      // ta sama domena: dotknięcie w aplikacji; zapasowo — fokus przechodzi do ramki
+      const listen = () => { try { frame.contentWindow?.addEventListener('pointerdown', hide, { once: true }); } catch { /* inna domena */ } };
+      frame.addEventListener('load', listen);
+      listen();
+      addEventListener('blur', () => { if (document.activeElement === frame) hide(); });
+    }
+  }
+  customElements.define('phone-frame', PhoneFrame);
+</script>
 
 <style>
   /* cały telefon na ekranie: wysokość do okna pod nagłówkiem strony (laptop), szerokość z proporcji 414×868;
      na wąskim ekranie ogranicza go szerokość kolumny */
   .phone-frame {
+    position: relative;
     display: block;
     height: max(480px, min(868px, calc(100dvh - var(--header-h) - 48px), calc((100vw - 2 * var(--gutter)) * 868 / 414)));
-    width: auto;
     aspect-ratio: 414 / 868;
+  }
+  .phone-frame__app {
+    display: block;
+    width: 100%; height: 100%;
     border: 0;
     /* ten sam schemat co dokument w ramce — przy różnych przeglądarka maluje pod ramką nieprzezroczyste tło */
     color-scheme: light;
+  }
+
+  /* dymek nad kartami w portfelu, strzałka wskazuje kartę „Moje zdrowie”; kliknięcie przechodzi do telefonu */
+  .phone-frame__hint {
+    position: absolute; left: 50%; top: 35%;
+    padding: 12px 18px;
+    background: var(--blue-fill);
+    color: #fff; /* kolor-stały: tekst na kobaltowym dymku, jak w ui/Button */
+    font: 500 0.9375rem/1.3 var(--f-body);
+    white-space: nowrap;
+    box-shadow: 0 12px 28px -10px rgb(4 11 27 / .55); /* kolor-stały: cień dymka nad telefonem */
+    pointer-events: none;
+    translate: -50% 0;
+    animation: phone-hint 1.6s var(--ease) infinite;
+    transition: opacity .3s var(--ease), visibility .3s;
+  }
+  .phone-frame__hint::after {
+    content: ''; position: absolute; left: 50%; top: 100%;
+    border: 8px solid transparent; border-top-color: var(--blue-fill);
+    translate: -50% 0;
+  }
+  .phone-frame.is-used .phone-frame__hint { opacity: 0; visibility: hidden; }
+
+  @keyframes phone-hint {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .phone-frame__hint { animation: none; }
   }
 </style>

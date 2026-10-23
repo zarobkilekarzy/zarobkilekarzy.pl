@@ -434,6 +434,6 @@ export const ogPages: Record<string, OgPage> = {
   // Podprojekt „Prototypy mObywatela” (src/mobywatel/) — usunąć razem z nim. Gotowa grafika ze zrzutem
   // telefonu (src/mobywatel/prototypy/narzedzia/og.mjs); wariant pod /mobywatel/<wariant>/ to statyczna
   // aplikacja spoza BaseLayout — tagi og:* dopisuje mu zloz.mjs.
-  '/mobywatel/': { image: mobywatelOg, title: 'Prototypy mObywatela — mObywatel Challenge' },
+  '/mobywatel/': { image: mobywatelOg, title: 'Moje zdrowie w mObywatelu — prototyp na mObywatel Challenge' },
   '/mobywatel/moje-zdrowie/': { image: mobywatelOg, title: 'Moje zdrowie w mObywatelu — klikalny prototyp' },
 };

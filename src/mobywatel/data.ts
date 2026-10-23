@@ -63,15 +63,18 @@ export const prototypes: MobPrototype[] = [
 
 export const prototypeHref = (p: MobPrototype) => p.src ?? `${MOB_BASE}${p.slug}/`;
 
+/** Prototyp, któremu poświęcona jest strona /mobywatel/ (pozostałe działają tylko pod swoim adresem). */
+export const featured = prototypes.find((p) => p.slug === 'moje-zdrowie')!;
+
 /**
- * Treść strony konkursu /mobywatel/. Opis wyłącznie rzeczowy: zasady z mobywatel.ai, bez organizatora,
- * patronów i nazwisk (decyzja usera 23.10.2026: „tylko apolityczny opis”).
+ * Treść strony /mobywatel/: prototyp „Moje zdrowie” i konkurs. Opis konkursu wyłącznie rzeczowy: zasady
+ * z mobywatel.ai, bez organizatora, patronów i nazwisk (decyzja usera 23.10.2026: „tylko apolityczny opis”).
  */
 export const contestPage = {
-  title: 'Prototypy mObywatela',
-  eyebrow: 'Konkurs mObywatel Challenge',
-  description: 'Klikalne prototypy aplikacji mObywatel przygotowane przez zarobkilekarzy.pl na konkurs mObywatel Challenge.',
-  lead: 'Klikalne prototypy aplikacji mObywatel, które strona przygotowuje na konkurs mObywatel Challenge. Każdy działa w przeglądarce — na komputerze i w telefonie — pod własnym adresem.',
+  title: 'Moje zdrowie w mObywatelu',
+  eyebrow: 'Prototyp · mObywatel Challenge',
+  description: 'Klikalny prototyp karty „Moje zdrowie” w aplikacji mObywatel, przygotowany przez zarobkilekarzy.pl na konkurs mObywatel Challenge.',
+  lead: featured.description,
   about: {
     title: 'O konkursie',
     paragraphs: [
@@ -88,11 +91,10 @@ export const contestPage = {
   why: {
     title: 'Dlaczego strona bierze udział',
     paragraphs: [
-      'zarobkilekarzy.pl zajmuje się jawnością pieniędzy publicznych w ochronie zdrowia. mObywatel to miejsce, w którym państwo już pokazuje obywatelowi dane z rejestrów — prototypy sprawdzają, jak mogłaby tam wyglądać jawność wydatków na leczenie.',
-      'Prototypy są koncepcjami, nie aplikacją administracji publicznej. Osoby i dane w prototypach są fikcyjne.',
+      'zarobkilekarzy.pl zajmuje się jawnością pieniędzy publicznych w ochronie zdrowia. mObywatel to miejsce, w którym państwo już pokazuje obywatelowi dane z rejestrów — prototyp sprawdza, jak mogłaby tam wyglądać jawność wydatków na leczenie.',
+      'Prototyp jest koncepcją, nie aplikacją administracji publicznej. Osoby i dane w prototypie są fikcyjne.',
     ],
   },
-  catalogTitle: 'Katalog prototypów',
 };
 
 /** Dolne menu wspólne dla prototypów — prototyp może podać własne. */

@@ -1,8 +1,8 @@
 ---
 /**
- * /mobywatel/ — strona konkursu mObywatel Challenge: opis inicjatywy (rzeczowy, bez polityki) i katalog
- * prototypów, każdy w ramce telefonu (mobywatel/components/PhoneFrame) i pod własnym adresem do zgłoszenia.
- * SZKIC: poza indeksem i menu do akceptacji. Treść i lista prototypów: src/mobywatel/data.ts.
+ * /mobywatel/ — strona prototypu „Moje zdrowie” na konkurs mObywatel Challenge: prototyp w ramce telefonu
+ * (mobywatel/components/PhoneFrame) z funkcjami i instrukcją, pod nim opis konkursu (rzeczowy, bez polityki).
+ * Poza indeksem i menu. Treść: src/mobywatel/data.ts.
  */
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Section from '@/components/layout/Section.astro';
@@ -10,7 +10,7 @@ import PageHeader from '@/components/layout/PageHeader.astro';
 import Heading from '@/components/ui/Heading.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import PhoneFrame from '@/mobywatel/components/PhoneFrame.astro';
-import { contestPage as page, prototypeHref, prototypes } from '@/mobywatel/data';
+import { contestPage as page, featured as p, prototypeHref } from '@/mobywatel/data';
 import type { Crumb, SeoInput } from '@/lib/seo';
 import { inline } from '@/lib/inline';
 import { typo } from '@/lib/format';
@@ -21,6 +21,28 @@ const seo: SeoInput = { title: page.title, description: page.description, breadc
 <BaseLayout seo={seo}>
   <Section space="bottom" class="contest-intro">
     <PageHeader eyebrow={page.eyebrow} title={page.title} lead={page.lead} crumbs={crumbs} />
+  </Section>
+
+  <Section space="bottom" aria-label="Prototyp">
+    <div class="proto">
+      <PhoneFrame src={prototypeHref(p)} title={`Prototyp: ${p.title}`} />
+      <div class="proto__text">
+        {p.opis && (
+          <div class="proto__cols">
+            <div>
+              <h2 class="proto__h mono-label">Funkcje</h2>
+              <ul class="proto__list">{p.opis.funkcje.map((f) => <li>{typo(f.t)}{f.link && <> <a class="proto__art" href={f.link.href}>{typo(f.link.tekst)}</a></>}</li>)}</ul>
+            </div>
+            <div>
+              <h2 class="proto__h mono-label">Jak przejść pokaz</h2>
+              <ol class="proto__list proto__list--steps">{p.opis.instrukcja.map((f) => <li>{typo(f)}</li>)}</ol>
+            </div>
+          </div>
+        )}
+        {p.opis && <p class="proto__note">{typo(p.opis.uwaga)}</p>}
+        <LinkArrow href={prototypeHref(p)}>Otwórz na pełnym ekranie</LinkArrow>
+      </div>
+    </div>
   </Section>
 
   <Section tone="soft" aria-labelledby="o-konkursie">
@@ -44,40 +66,22 @@ const seo: SeoInput = { title: page.title, description: page.description, breadc
       {page.why.paragraphs.map((p) => <p set:html={inline(p)} />)}
     </div>
   </Section>
-
-  <Section aria-labelledby="katalog">
-    <Heading id="katalog">{page.catalogTitle}</Heading>
-    <ol class="catalog" role="list">
-      {prototypes.filter((p) => p.listed !== false).map((p, i) => (
-        <li class="catalog__item" id={p.slug}>
-          <PhoneFrame src={prototypeHref(p)} title={`Prototyp: ${p.title}`} />
-          <div class="catalog__text">
-            <p class="catalog__num mono-label">{String(i + 1).padStart(2, '0')} · {p.status}</p>
-            <h3 class="catalog__title">{typo(p.title)}</h3>
-            <p class="catalog__lead">{typo(p.description)}</p>
-            {p.opis && (
-              <div class="catalog__cols">
-                <div>
-                  <h4 class="catalog__h mono-label">Funkcje</h4>
-                  <ul class="catalog__list">{p.opis.funkcje.map((f) => <li>{typo(f.t)}{f.link && <> <a class="catalog__art" href={f.link.href}>{typo(f.link.tekst)}</a></>}</li>)}</ul>
-                </div>
-                <div>
-                  <h4 class="catalog__h mono-label">Jak przejść pokaz</h4>
-                  <ol class="catalog__list catalog__list--steps">{p.opis.instrukcja.map((f) => <li>{typo(f)}</li>)}</ol>
-                </div>
-              </div>
-            )}
-            {p.opis && <p class="catalog__note">{typo(p.opis.uwaga)}</p>}
-            <LinkArrow href={prototypeHref(p)}>Otwórz na pełnym ekranie</LinkArrow>
-          </div>
-        </li>
-      ))}
-    </ol>
-  </Section>
 </BaseLayout>
 
 <style>
   .contest-intro { padding-top: clamp(32px, 4vw, 56px); }
+
+  .proto {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 40px clamp(40px, 5vw, 72px);
+    align-items: start;
+  }
+  .proto__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 40px; }
+  .proto__h { margin: 0 0 10px; padding-bottom: 8px; color: var(--muted); border-bottom: 1px solid var(--line-2); }
+  .proto__list { margin: 0; padding-left: 1.2em; color: var(--text-strong); font-size: 0.9375rem; }
+  .proto__list li { margin: 0 0 8px; }
+  .proto__list--steps li::marker { color: var(--blue); font-weight: 600; }
+  .proto__art { color: var(--blue); }
+  .proto__note { max-width: 46em; margin: 24px 0 20px; color: var(--muted); font-size: 0.875rem; }
 
   .contest-about {
     display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 40px clamp(40px, 6vw, 96px);
@@ -91,30 +95,12 @@ const seo: SeoInput = { title: page.title, description: page.description, breadc
   .contest-why { margin-top: clamp(40px, 5vw, 64px); }
   .contest-why :global(h3) { font-size: clamp(1.5rem, 2.4vw, 2rem); }
 
-  .catalog { margin: 32px 0 0; padding: 0; list-style: none; }
-  .catalog__item {
-    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 40px clamp(40px, 5vw, 72px);
-    align-items: start;
-    padding-block: 32px;
-    border-top: 1px solid var(--line-2);
-  }
-  .catalog__num { margin: 0 0 12px; color: var(--muted); }
-  .catalog__title { margin: 0; color: var(--ink); font: 400 clamp(1.5rem, 2.4vw, 2rem)/1.15 var(--f-display); }
-  .catalog__lead { max-width: 40em; margin: 16px 0 24px; font-size: 1.0625rem; }
-  .catalog__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 40px; }
-  .catalog__h { margin: 0 0 10px; padding-bottom: 8px; color: var(--muted); border-bottom: 1px solid var(--line-2); }
-  .catalog__list { margin: 0; padding-left: 1.2em; color: var(--text-strong); font-size: 0.9375rem; }
-  .catalog__list li { margin: 0 0 8px; }
-  .catalog__list--steps li::marker { color: var(--blue); font-weight: 600; }
-  .catalog__art { color: var(--blue); }
-  .catalog__note { max-width: 46em; margin: 24px 0 20px; color: var(--muted); font-size: 0.875rem; }
-
   @media (max-width: 1024px) {
     .contest-about { grid-template-columns: 1fr; }
-    .catalog__item { grid-template-columns: 1fr; justify-items: center; }
-    .catalog__text { justify-self: stretch; }
+    .proto { grid-template-columns: 1fr; justify-items: center; }
+    .proto__text { justify-self: stretch; }
   }
   @media (max-width: 720px) {
-    .catalog__cols { grid-template-columns: 1fr; }
+    .proto__cols { grid-template-columns: 1fr; }
   }
 </style>

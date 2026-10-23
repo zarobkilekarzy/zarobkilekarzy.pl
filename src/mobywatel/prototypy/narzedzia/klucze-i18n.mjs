@@ -88,6 +88,8 @@ async function osoba(id) {
   await ekran('zdSzczepienia()', 'szczepienia');
   await ekran('zdKsiazeczka()', 'szczepienia');
   await ekran('zdProfilaktyka()', 'profilaktyka');
+  await ekran('zdUpowaznieni()', 'upowaznienia'); await ekran('zdUpowaznieni(true)', 'upowaznienia');
+  for (let i = 0; i < ev('ZD.upowaznienia.osoby.length'); i++) { await ekran(`zdUpowOsoba(${i})`, 'upowaznienia'); await ekran(`zdUpowOsoba(${i}, true)`, 'upowaznienia'); }
   for (let i = 0; i < ev('ZD.dzieci.length'); i++) { await ekran(`zdDziecko(${i})`, 'dziecko'); await ekran(`zdKod(${i})`, 'dziecko'); }
   await ekran('zdPrawa()', 'prawa');
   for (const n of Object.keys(ev('ZD.lekarze'))) await ekran(`zdLekarz(${JSON.stringify(n)})`, 'lekarz');
@@ -124,6 +126,12 @@ async function osoba(id) {
   }
   await temat('Szczepienie', 'S.zdSzczepPrzyp');
   for (let i = 0; i < ev('ZD.profilaktyka.length'); i++) { await temat('Profilaktyka', `()=>S.zdProfZapis(${i})`); await potwierdz(); }
+  await temat('Upoważnienie', 'S.zdUpowDodaj'); { const c = [...w.document.querySelectorAll('#chat .chips button')].pop(); c.click(); await sleep(400); zbierz(w.document, 'rozmowa');
+   const ms = [...w.document.querySelectorAll('#chat .chips button')].filter((x) => !x.classList.contains('next')); ms.slice(-4).forEach((x) => x.click());
+   [...w.document.querySelectorAll('#chat .chips .next')].pop().click(); await sleep(400); zbierz(w.document, 'rozmowa'); await potwierdz(); }
+  await temat('Upoważnienie', 'S.zdUpowDodaj');
+  await temat('Cofam upoważnienie', '()=>S.zdUpowCofnij(0)'); await potwierdz();
+  await temat('Cofam upoważnienie', '()=>S.zdUpowCofnij(9)');
   if (ev('ZD.dzieci.length')) {
    await temat('Rejestracja skanuje kod dziecka', '()=>S.zdSkanRej(0)');
    await temat('Umawiam szczepienie dziecka', "()=>S.zdSzczepUmow('Tdap','Jan Test')"); await potwierdz();

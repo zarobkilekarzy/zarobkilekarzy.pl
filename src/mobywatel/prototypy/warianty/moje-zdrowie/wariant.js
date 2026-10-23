@@ -83,7 +83,7 @@ function zdOpen(){
  zdArkusz(d.name,`<div class="bigcard" style="background-image:url(${d.img})">${faceHTML(d)}</div>${zdPodpisH()}
   <div class="ui zd-kod-cta"><div class="actions"><button class="btn primary" data-zd-a="kod">Pokaż kod do rejestracji i apteki</button></div></div>
   <div class="quick zd-sekcje">${ZD_SEKCJE.map(x=>`<button data-zd-a="${x[2]}"><i>${svg(x[0])}</i>${x[1]}</button>`).join('')}</div>
-  ${zdDzisH()}${zdDzieciH()}`,null,zdOpen);
+  ${zdDzisH()}${zdDzieciH()}${zdUpowH()}`,null,zdOpen);
 }
 function zdOdswiez(){const x=$('#zd-wizyty');if(x)x.replaceWith(el(zdWizytyH()))}
 
@@ -182,6 +182,39 @@ function zdDziecko(i){
   <div class="ui list">${hd('strzykawka','Szczepienia obowiązkowe')}${d.szczep.map(x=>`<div class="it"><span class="pip${x.stan==='teraz'?'':' g'}"></span><span class="x"><b>${x.n}</b><small>${x.kiedy}</small></span>${x.stan==='ok'?'<span class="zd-st ok">Wykonane</span>':x.stan==='teraz'?`<button class="go" data-zd-dzszcz="${i}">Umów</button>`:''}</div>`).join('')}</div>
   <div class="ui list">${hd('hist','Ostatnie wizyty')}${d.wizyty.map(v=>`<div class="it"><span class="zd-nr">${v.nr}</span><span class="x"><b>${v.poradnia}</b><small>${v.data} · kod z karty, ${v.kod}</small></span><span class="zd-kw">${v.poz?'stawka POZ':zdZl(v.kwota)}</span></div>`).join('')}
    <div class="note">Szczepienia według Programu Szczepień Ochronnych na 2026 r. Wizyty dziecka potwierdzasz kodem z jego karty.</div></div>`,zdOpen,()=>zdDziecko(i));
+}
+
+/* ---------- osoby upoważnione: kto dostaje informację, dokumentację, wgląd w kartę i dokumentację po śmierci ----------
+   Zakresy osobno dla każdej osoby; zmiana po potwierdzeniu twarzą działa od razu we wszystkich placówkach. */
+const ZD_ZAKRESY=[
+ ['info','Informacja o stanie zdrowia','Lekarz i pielęgniarka mogą tej osobie powiedzieć, co Ci jest, jak przebiega leczenie i jakie jest rokowanie.','art. 9 ust. 3'],
+ ['dok','Dokumentacja medyczna','Może odebrać kopię Twojej dokumentacji w każdej placówce.','art. 26 ust. 1'],
+ ['karta','Wgląd w kartę Moje zdrowie','Widzi w swoim mObywatelu Twoje wizyty, e-recepty i wyniki badań.','jak upoważnienie w Internetowym Koncie Pacjenta'],
+ ['smierc','Także po mojej śmierci','Dostanie Twoją dokumentację, gdy Ciebie zabraknie.','art. 26 ust. 2']];
+const zdZakresTxt=o=>{const z=ZD_ZAKRESY.filter(([k])=>o[k]).map(x=>x[1]);return z.length?zdLista(z):'bez dostępu'};
+const zdUpowH=()=>{const u=ZD.upowaznienia;return `<div class="ui list">${hd('id','Osoby upoważnione')}
+ ${u.osoby.map((o,i)=>`<button class="it" data-zd-upo="${i}"><span class="x"><b>${zdN(o.imie)}</b><small>${o.kto} · ${zdZakresTxt(o)}</small></span>${svg('chev')}</button>`).join('')||'<div class="note">Nikt nie jest upoważniony. Bez upoważnienia placówki nie udzielą nikomu informacji o Twoim zdrowiu.</div>'}
+ <button class="zd-link" data-zd-a="upow">Zarządzaj upoważnieniami ${svg('chev')}</button></div>`};
+function zdUpowaznieni(zapis){
+ const u=ZD.upowaznienia;
+ zdArkusz('Osoby upoważnione',`<div class="ui"><div class="note zd-sor-opis">Ty decydujesz, kto dostaje informacje o Twoim zdrowiu i Twoją dokumentację. Każdej osobie ustawiasz zakres osobno, a zmiana działa od razu we wszystkich placówkach.</div></div>
+  <div class="ui list">${hd('id','Upoważnione osoby')}
+   ${u.osoby.map((o,i)=>`<button class="it" data-zd-upo="${i}"><span class="x"><b>${zdN(o.imie)}</b><small>${o.kto} · <span data-t="0">${o.tel}</span></small><small>${zdZakresTxt(o)}</small></span>${svg('chev')}</button>`).join('')}
+   <div class="actions"><button class="btn primary" data-zd-a="upowdodaj">Dodaj osobę</button></div></div>
+  <div class="ui">${hd('doc','Po mojej śmierci')}
+   <div class="zd-zak"><span><b>Sprzeciw wobec udostępnienia dokumentacji osobom bliskim</b><small>Po Twojej śmierci dokumentację dostaną osoby upoważnione z zakresem „Także po mojej śmierci”, a pozostali bliscy — nie. Bez sprzeciwu może ją dostać także osoba bliska.</small><small>art. 26 ust. 2 ustawy o prawach pacjenta</small></span>
+    <button class="zd-sw" role="switch" aria-checked="${u.sprzeciw}" aria-label="Sprzeciw wobec udostępnienia dokumentacji osobom bliskim" data-zd-a="sprzeciw"></button></div>
+   ${zapis?`<div class="valid">${svg('check')}Zapisano. Zmiana działa od razu we wszystkich placówkach.</div>`:''}</div>
+  <div class="ui">${srcH('Ustawa o prawach pacjenta i Rzeczniku Praw Pacjenta')}<a class="zd-link" href="${u.ustawa}" target="_blank" rel="noopener">Tekst ustawy ${svg('chev')}</a></div>`,zdOpen,()=>zdUpowaznieni());
+}
+function zdUpowOsoba(i,zapis){
+ const o=ZD.upowaznienia.osoby[i];
+ zdArkusz('Upoważnienie',`<div class="ui">${hd('id',zdN(o.imie))}
+   <div class="rows">${rowsH([['Kim jest',o.kto],['Telefon',`<a class="zd-tel" href="tel:${o.tel.replace(/\s/g,'')}" data-t="0">${o.tel}</a>`]])}</div></div>
+  <div class="ui">${hd('scale','Zakres upoważnienia')}
+   ${ZD_ZAKRESY.map(([k,t,op,pod])=>`<div class="zd-zak"><span><b>${t}</b><small>${op}</small><small>${pod}</small></span><button class="zd-sw" role="switch" aria-checked="${!!o[k]}" aria-label="${t}" data-zd-sw="${k}"></button></div>`).join('')}
+   ${zapis?`<div class="valid">${svg('check')}Zapisano. Zmiana działa od razu we wszystkich placówkach.</div>`:''}
+   <div class="actions"><button class="btn ghost" data-zd-upocof="${i}">Cofnij upoważnienie</button><button class="btn primary" data-zd-upozap="${i}">Zapisz zmiany</button></div></div>`,zdUpowaznieni,()=>zdUpowOsoba(i));
 }
 
 /* ---------- e-recepty: bieżące i archiwum z wyszukiwarką ---------- */
@@ -510,12 +543,20 @@ $('#detail').addEventListener('click',e=>{
  if(dzs){const d=ZD.dzieci[+dzs.dataset.zdDzszcz],x=d.szczep.find(y=>y.stan==='teraz');zdTemat('Umawiam szczepienie dziecka',()=>S.zdSzczepUmow(x.n,d.imie+' '+d.nazwisko,()=>{x.stan='plan'}));return}
  const sz=e.target.closest('[data-zd-szcz]');
  if(sz){const s=ZD.szczepienia,x=s.powt[+sz.dataset.zdSzcz];zdTemat('Umawiam szczepienie',()=>S.zdSzczepUmow(x.n,null,(t)=>{s.powt.splice(s.powt.indexOf(x),1);s.zapl.push({n:x.n,data:t.data,godz:t.godz,gdzie:ZD_PORADNIE.poz.miejsce})}));return}
+ const upo=e.target.closest('[data-zd-upo]');if(upo){zdUpowOsoba(+upo.dataset.zdUpo);return}
+ const sw=e.target.closest('[data-zd-sw]');if(sw){sw.setAttribute('aria-checked',String(sw.getAttribute('aria-checked')!=='true'));return}
+ const uz=e.target.closest('[data-zd-upozap]');
+ if(uz){const i=+uz.dataset.zdUpozap,o=ZD.upowaznienia.osoby[i],st={};document.querySelectorAll('#detail [data-zd-sw]').forEach(b=>st[b.dataset.zdSw]=b.getAttribute('aria-checked')==='true');
+  act(async()=>{await faceid();Object.assign(o,st);zdUpowOsoba(i,true)});return}
+ const uc=e.target.closest('[data-zd-upocof]');if(uc){const i=+uc.dataset.zdUpocof;zdTemat('Cofam upoważnienie',()=>S.zdUpowCofnij(i));return}
  const pf=e.target.closest('[data-zd-prof]');if(pf){zdTemat('Zgłaszam się do programu profilaktyki',()=>S.zdProfZapis(+pf.dataset.zdProf));return}
  const oc=e.target.closest('[data-zd-ocen]');
  if(oc){const v=ZD.wizyty[+oc.dataset.zdOcen];zdTemat('Ocena wizyty',()=>S.zdOcena(v));return}
  const b=e.target.closest('[data-zd-a]');if(!b)return;
  const a=b.dataset.zdA,o=ZD.umowione[0];
- const ekrany={kod:()=>zdKod(),szczepienia:zdSzczepienia,ksiazeczka:zdKsiazeczka,profilaktyka:zdProfilaktyka,badania:zdBadania,eksport:zdEksport,bilet:zdBilet,wizyty:zdWizytyEkran,recepty:zdReceptyEkran,historia:zdHistoria,koszty:zdKoszty,lekarze:zdLekarzeEkran,prawa:()=>zdPrawa(),sor:zdSor};
+ const ekrany={upow:()=>zdUpowaznieni(),kod:()=>zdKod(),szczepienia:zdSzczepienia,ksiazeczka:zdKsiazeczka,profilaktyka:zdProfilaktyka,badania:zdBadania,eksport:zdEksport,bilet:zdBilet,wizyty:zdWizytyEkran,recepty:zdReceptyEkran,historia:zdHistoria,koszty:zdKoszty,lekarze:zdLekarzeEkran,prawa:()=>zdPrawa(),sor:zdSor};
+ if(a==='sprzeciw'){const u=ZD.upowaznienia;act(async()=>{await faceid();u.sprzeciw=!u.sprzeciw;zdUpowaznieni(true)});return}
+ if(a==='upowdodaj'){zdTemat('Chcę upoważnić kolejną osobę',S.zdUpowDodaj);return}
  if(ekrany[a])ekrany[a]();
  else if(a==='brak')zdTemat('Lekarz nie przyjmuje — zgłaszam brak lekarza',S.zdBrakLekarza);
  else if(a==='potwierdz')zdTemat('Wizyta '+o.u+' '+o.data,S.zdPrzypomnienie);
@@ -600,6 +641,26 @@ Object.assign(S,{
   await say('Apteka zeskanowała Twój kod przy wydaniu leków z recepty '+r.kod+'.');
   result({title:'Wydanie leków potwierdzone kodem',rows:[['Apteka',apteka],['Leki',zdLista(r.leki.map(l=>l.n))],['Płacisz',zdZl(s.ty)],['NFZ dopłaci aptece',zdZl(s.cena-s.ty)],['Potwierdzono',g]],
    note:'NFZ dopłaca aptece tylko do leków wydanych z Twoim kodem. Recepta jest teraz w archiwum e-recept.'});
+ },
+ async zdUpowDodaj(){
+  const u=ZD.upowaznienia,[imie,kto,tel]=u.kandydat;
+  if(u.osoby.some(o=>o.imie===imie)){await say('Ta osoba jest już na liście upoważnionych. Zakres zmienisz w karcie Moje zdrowie.');return}
+  await say('Kogo upoważniasz? Wybierz osobę z kontaktów albo wpisz imię, nazwisko i telefon.');
+  chips([{label:imie+' ('+kto+')',go:async()=>{
+   await say('Do czego upoważniasz tę osobę? Możesz wybrać kilka zakresów.');
+   multi(ZD_ZAKRESY.map(x=>x[1]),wyb=>{
+    const z=Object.fromEntries(ZD_ZAKRESY.map(([k,t])=>[k,wyb.includes(t)]));
+    confirmCard({icon:'id',title:'Nowe upoważnienie',source:'Rejestr upoważnień pacjenta',rows:[['Osoba',zdN(imie)],['Kim jest',kto],['Telefon',zdN(tel)],['Zakres',zdLista(wyb)]],label:'Podpisz i zapisz',
+     then:()=>{u.osoby.push({imie,kto,tel,...z});result({title:'Upoważnienie zapisane',rows:[['Osoba',zdN(imie)],['Zakres',zdLista(wyb)]],note:'Działa od razu we wszystkich placówkach. Zmienisz je albo cofniesz w każdej chwili w karcie Moje zdrowie.'})}});
+   });
+  }}]);
+ },
+ async zdUpowCofnij(i){
+  const o=ZD.upowaznienia.osoby[i];
+  if(!o){await say('Tej osoby nie ma już na liście upoważnionych.');return}
+  await say('Po cofnięciu placówki nie udzielą tej osobie informacji ani dokumentacji.');
+  confirmCard({icon:'alert',title:'Cofnięcie upoważnienia',source:'Rejestr upoważnień pacjenta',rows:[['Osoba',zdN(o.imie)],['Kim jest',o.kto],['Traci dostęp do',zdZakresTxt(o)]],label:'Cofnij upoważnienie',
+   then:()=>{ZD.upowaznienia.osoby.splice(i,1);result({title:'Upoważnienie cofnięte',rows:[['Osoba',zdN(o.imie)]],note:'Działa od razu we wszystkich placówkach.'})}});
  },
  async zdBrakLekarza(){
   await say('Przykro mi. Zgłoszę to rejestracji i do NFZ, a Twoje miejsce w kolejce zostanie zachowane.');

@@ -210,6 +210,21 @@ ZDROWIE.ostatnia=ZDROWIE.wizyty[0];
  });
 }
 
+/* osoby upoważnione: kto dostaje informację o stanie zdrowia (art. 9 ust. 3 ustawy o prawach pacjenta), dokumentację
+   medyczną (art. 26 ust. 1), wgląd w kartę w aplikacji (jak upoważnienie w Internetowym Koncie Pacjenta) i dokumentację
+   po śmierci pacjenta (art. 26 ust. 2). sprzeciw = pacjent za życia sprzeciwia się udostępnieniu dokumentacji osobom
+   bliskim po śmierci (art. 26 ust. 2). Osoby i numery fikcyjne; kandydat = propozycja w „Dodaj osobę”. */
+{
+ const u=(imie,kto,tel,info,dok,karta,smierc)=>({imie,kto,tel,info,dok,karta,smierc});
+ const o={
+  marta:{osoby:[u('Tomasz Kowalski','mąż','+48 500 100 218',1,1,1,1),u('Barbara Nowicka','mama','+48 500 100 341',1,0,0,0)],kandydat:['Anna Kowalska','siostra','+48 500 100 467']},
+  jan:{osoby:[u('Agnieszka Wiśniewska','żona','+48 500 100 207',1,1,1,0)],kandydat:['Krzysztof Wiśniewski','brat','+48 500 100 583']},
+  ewa:{osoby:[u('Paweł Nowak','syn','+48 500 100 744',1,1,1,1),u('Katarzyna Nowak','córka','+48 500 100 615',1,0,0,0)],kandydat:['Teresa Lis','przyjaciółka','+48 500 100 392']},
+  kacper:{osoby:[u('Małgorzata Zielińska','mama','+48 500 100 932',1,0,0,0)],kandydat:['Piotr Zieliński','tata','+48 500 100 851']}
+ }[OS.id]||{osoby:[],kandydat:['Anna Kowalska','siostra','+48 500 100 467']};
+ ZDROWIE.upowaznienia={...o,sprzeciw:false,ustawa:'https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20240000581'};
+}
+
 {
  const holder=(OS.imie+' '+OS.nazwisko).toUpperCase();
  const zd=ZDROWIE,o=zd.umowione[0],w=zd.ostatnia;

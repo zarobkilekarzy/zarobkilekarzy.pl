@@ -25,21 +25,24 @@ const seo: SeoInput = { title: page.title, description: page.description, breadc
 
   <Section space="bottom" aria-label="Prototyp">
     <div class="proto">
-      <PhoneFrame src={prototypeHref(p)} title={`Prototyp: ${p.title}`} />
+      <div class="proto__phone"><PhoneFrame src={prototypeHref(p)} title={`Prototyp: ${p.title}`} /></div>
       <div class="proto__text">
         {p.opis && (
-          <div class="proto__cols">
-            <div>
-              <h2 class="proto__h mono-label">Funkcje</h2>
-              <ul class="proto__list">{p.opis.funkcje.map((f) => <li>{typo(f.t)}{f.link && <> <a class="proto__art" href={f.link.href}>{typo(f.link.tekst)}</a></>}</li>)}</ul>
-            </div>
-            <div>
-              <h2 class="proto__h mono-label">Jak przejść pokaz</h2>
-              <ol class="proto__list proto__list--steps">{p.opis.instrukcja.map((f) => <li>{typo(f)}</li>)}</ol>
-            </div>
-          </div>
+          <>
+            <h2 class="proto__h">Funkcje</h2>
+            <ul class="proto__list" role="list">
+              {p.opis.funkcje.map((f) => (
+                <li>
+                  {typo(f.t)}
+                  {f.link && <a class="proto__art" href={f.link.href}>{typo(f.link.tekst)}</a>}
+                </li>
+              ))}
+            </ul>
+            <h2 class="proto__h">Jak przejść pokaz</h2>
+            <ol class="proto__steps">{p.opis.instrukcja.map((f) => <li>{typo(f)}</li>)}</ol>
+            <p class="proto__note">{typo(p.opis.uwaga)}</p>
+          </>
         )}
-        {p.opis && <p class="proto__note">{typo(p.opis.uwaga)}</p>}
         <LinkArrow href={prototypeHref(p)}>Otwórz na pełnym ekranie</LinkArrow>
       </div>
     </div>
@@ -71,17 +74,25 @@ const seo: SeoInput = { title: page.title, description: page.description, breadc
 <style>
   .contest-intro { padding-top: clamp(32px, 4vw, 56px); }
 
+  /* telefon zostaje na ekranie, obok jedna kolumna tekstu o długości wiersza jak w artykule */
   .proto {
-    display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 40px clamp(40px, 5vw, 72px);
+    display: grid; grid-template-columns: auto minmax(0, 760px); gap: 40px clamp(48px, 6vw, 96px);
     align-items: start;
   }
-  .proto__cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 40px; }
-  .proto__h { margin: 0 0 10px; padding-bottom: 8px; color: var(--muted); border-bottom: 1px solid var(--line-2); }
-  .proto__list { margin: 0; padding-left: 1.2em; color: var(--text-strong); font-size: 0.9375rem; }
-  .proto__list li { margin: 0 0 8px; }
-  .proto__list--steps li::marker { color: var(--blue); font-weight: 600; }
-  .proto__art { color: var(--blue); }
-  .proto__note { max-width: 46em; margin: 24px 0 20px; color: var(--muted); font-size: 0.875rem; }
+  .proto__phone { position: sticky; top: calc(var(--header-h) + 24px); }
+  .proto__h {
+    margin: 0 0 20px; color: var(--ink);
+    font: 400 clamp(1.5rem, 2.4vw, 2rem)/1.15 var(--f-display); letter-spacing: -0.02em;
+  }
+  .proto__h:not(:first-child) { margin-top: 56px; }
+  .proto__list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line-2); }
+  .proto__list li { padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--text-strong); font-size: 1.0625rem; line-height: 1.55; }
+  /* link do artykułu w osobnej linii */
+  .proto__art { display: block; width: fit-content; margin-top: 4px; color: var(--blue); font-size: 0.9375rem; }
+  .proto__steps { margin: 0; padding-left: 1.4em; list-style: decimal; color: var(--text-strong); font-size: 1.0625rem; line-height: 1.55; }
+  .proto__steps li { margin: 0 0 12px; padding-left: 0.3em; }
+  .proto__steps li::marker { color: var(--blue); font-weight: 600; }
+  .proto__note { margin: 40px 0 20px; color: var(--muted); font-size: 0.9375rem; }
 
   .contest-about {
     display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 40px clamp(40px, 6vw, 96px);
@@ -98,9 +109,7 @@ const seo: SeoInput = { title: page.title, description: page.description, breadc
   @media (max-width: 1024px) {
     .contest-about { grid-template-columns: 1fr; }
     .proto { grid-template-columns: 1fr; justify-items: center; }
+    .proto__phone { position: static; }
     .proto__text { justify-self: stretch; }
-  }
-  @media (max-width: 720px) {
-    .proto__cols { grid-template-columns: 1fr; }
   }
 </style>

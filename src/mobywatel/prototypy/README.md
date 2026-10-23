@@ -8,9 +8,11 @@ Klikalne prototypy na konkurs mObywatel Challenge. Każdy wariant to statyczna a
 
 `baza/` to front prototypu z paczki `mobywatel-ai.zip` ze strony konkursu (https://mobywatel.ai/pobierz/,
 pobrana 23.10.2026), bez zmian; `baza-i18n/` to słowniki interfejsu z tej samej paczki (`serwer/i18n/`).
-README paczki mówi: „Licencja: do ustalenia przez autora”, a FAQ konkursu pozwala prototyp pobrać i ulepszyć.
-**Licencja repozytorium (MIT / CC BY 4.0) nie obejmuje `baza/` ani `baza-i18n/`** — prawa do nich ma ich autor.
-Nasze są: `wspolne/`, `warianty/`, `narzedzia/`, `zloz.mjs`.
+Według strony konkursu kod prototypu jest na **licencji MIT** „poza godłem, oznaczeniami mObywatela i zdjęciami
+osób z pokazu”. Nota praw autorskich i tekst licencji: `baza/LICENSE` — trafia też do każdego złożonego wariantu
+(`/mobywatel/<wariant>/LICENSE`), bo MIT wymaga jej przy każdej kopii. Prawa autorskie do `baza/` i `baza-i18n/`
+mają autorzy prototypu mObywatel.ai, nie zarobkilekarzy.pl. Nasze (MIT repozytorium): `wspolne/`, `warianty/`,
+`narzedzia/`, `zloz.mjs`.
 
 ## Układ
 

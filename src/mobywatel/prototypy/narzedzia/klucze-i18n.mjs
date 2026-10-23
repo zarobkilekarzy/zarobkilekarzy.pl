@@ -109,6 +109,7 @@ async function osoba(id) {
   await temat('Wizyta', 'S.zdPrzypomnienie');
   await temat('Wizyta', 'S.zdPoWizycie'); await klik('Tak'); for (const n of ['5', '4', '3']) await klik(n);
   await temat('Wizyta', 'S.zdPoWizycie'); await klik('Nie'); await potwierdz();
+  await temat('Ocena wizyty', '()=>S.zdOcena(ZD.wizyty[1])'); for (const n of ['5', '4', '3']) await klik(n);
   await temat('Brak', 'S.zdBrakLekarza'); await potwierdz();
   for (const s of ['Odmówiono mi informacji', 'Odmówiono mi dokumentacji', 'Zabrakło szacunku']) { await temat('Skarga', 'S.zdSkarga'); await klik(s); await potwierdz(); }
   await temat('Co mam do załatwienia?', 'S.todo');

@@ -161,7 +161,7 @@ function zdRachunek(i){
   <div class="rows zd-poz">${rowsH(v.pozycje.map(([n,g])=>[n,v.poz?'w stawce POZ':zdZl(g)]))}</div>
   <div class="rows zd-sum">${rowsH([['Placówka rozlicza z NFZ',v.poz?'stawka za pacjenta':zdZl(zdNfz(v))],['Twoja dopłata',zdZl(v.doplata)]])}</div>
   <div class="note">${v.poz||'Rachunek przychodzi po każdej wizycie, a wizyta zapisuje się na karcie z kolejnym numerem. Kwoty w prototypie są przykładowe.'}</div>
-  <div class="actions"><button class="btn ghost" data-zd-niebylo="${i}">Tej wizyty nie było</button></div>${srcH('Rozliczenie placówki z NFZ')}</div>`,zdHistoria,()=>zdRachunek(i));
+  <div class="actions"><button class="btn ghost" data-zd-niebylo="${i}">Tej wizyty nie było</button><button class="btn primary" data-zd-ocen="${i}">Oceń wizytę</button></div>${srcH('Rozliczenie placówki z NFZ')}</div>`,zdHistoria,()=>zdRachunek(i));
 }
 
 /* ---------- wpłaty i koszty: składka zdrowotna a leczenie widoczne na karcie (12 miesięcy) ---------- */
@@ -422,6 +422,8 @@ $('#detail').addEventListener('click',e=>{
  const adr=e.target.closest('[data-zd-adr]');if(adr){const i=+adr.dataset.zdAdr;zdTemat('Zgłaszam działanie niepożądane leku',()=>S.zdNiepozadane(i));return}
  const nb=e.target.closest('[data-zd-niebylo]');
  if(nb){const v=ZD.wizyty[+nb.dataset.zdNiebylo];zdTemat('Wizyty '+v.u+' '+v.data+' nie było',()=>S.zdNieOdbyla(v));return}
+ const oc=e.target.closest('[data-zd-ocen]');
+ if(oc){const v=ZD.wizyty[+oc.dataset.zdOcen];zdTemat('Ocena wizyty',()=>S.zdOcena(v));return}
  const b=e.target.closest('[data-zd-a]');if(!b)return;
  const a=b.dataset.zdA,o=ZD.umowione[0];
  const ekrany={badania:zdBadania,eksport:zdEksport,bilet:zdBilet,wizyty:zdWizytyEkran,recepty:zdReceptyEkran,historia:zdHistoria,koszty:zdKoszty,lekarze:zdLekarzeEkran,prawa:()=>zdPrawa(),sor:zdSor};
@@ -452,15 +454,15 @@ Object.assign(S,{
  async zdPoWizycie(){
   await info({icon:'doc',title:'Wizyta nr '+ZD_W.nr+' na Twojej karcie',source:'Karta Moje zdrowie, rozliczenie z NFZ',rows:[['Kiedy',ZD_W.data],['Gdzie',ZD_W.poradnia+', '+ZD_W.miejsce],['Lekarz',zdN(ZD_W.lekarz)],['Placówka rozlicza z NFZ',zdZl(zdNfz(ZD_W))]]});
   await say('Czy ta wizyta się odbyła?');
-  chips([{label:'Tak, odbyła się',go:S.zdOcena},{label:'Nie, nie było jej',go:()=>S.zdNieOdbyla(ZD_W)}]);
+  chips([{label:'Tak, odbyła się',go:()=>S.zdOcena(ZD_W)},{label:'Nie, nie było jej',go:()=>S.zdNieOdbyla(ZD_W)}]);
  },
  /* ocena w trzech kategoriach: pytanie po pytaniu, odpowiedź przyciskiem 1–5 (jak inne wybory w rozmowie) */
- async zdOcena(){
+ async zdOcena(v=ZD_W){
   const val=[];
   const pytaj=async i=>{
    if(i===ZD.oceny.length){
-    await result({title:'Ocena wysłana: '+zdN(ZD_W.lekarz),rows:ZD.oceny.map((k,j)=>[k,val[j]+' / 5']),note:'Ocena trafia do placówki i do NFZ bez Twojego imienia.'});return}
-   await say(i===0?`Dziękuję. Oceń wizytę w trzech sprawach, od 1 (źle) do 5 (bardzo dobrze). Ocena jest anonimowa.<br><br><b>${ZD.oceny[0]}</b>`:`<b>${ZD.oceny[i]}</b>`);
+    await result({title:'Ocena wysłana: '+zdN(v.lekarz),rows:ZD.oceny.map((k,j)=>[k,val[j]+' / 5']),note:'Ocena trafia do placówki i do NFZ bez Twojego imienia.'});return}
+   await say(i===0?`Oceń wizytę w trzech sprawach, od 1 (źle) do 5 (bardzo dobrze). Ocena jest anonimowa.<br><br><b>${ZD.oceny[0]}</b>`:`<b>${ZD.oceny[i]}</b>`);
    chips([1,2,3,4,5].map(n=>({label:String(n),say:ZD.oceny[i]+': '+n,go:()=>{val[i]=n;pytaj(i+1)}})));
   };
   await pytaj(0);

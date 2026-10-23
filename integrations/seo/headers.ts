@@ -19,7 +19,8 @@ import { SOR_DATA_ORIGIN } from '../../src/lib/sor/source';
  * HSTS celowo nie tutaj — ustawione strefowo w panelu Cloudflare (jedno źródło nagłówka).
  * Pułapka: `astro preview` nie nakłada `_headers` — CSP sprawdza `npm run preview:cf`.
  */
-export function contentSecurityPolicy(): string {
+/** `frames` = strona może być osadzana w ramce z tej domeny i sama osadza ramki z tej domeny (podprojekt /mobywatel/). */
+export function contentSecurityPolicy(frames = false): string {
   const TURNSTILE = 'https://challenges.cloudflare.com';
   const connect = ["'self'", TURNSTILE, 'https://cloudflareinsights.com', SOR_DATA_ORIGIN];
   if (newsletterOn) connect.push(new URL(newsletter.endpoint).origin);
@@ -27,14 +28,14 @@ export function contentSecurityPolicy(): string {
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
-    "frame-ancestors 'none'",
+    `frame-ancestors ${frames ? "'self'" : "'none'"}`,
     "form-action 'self'",
     "img-src 'self' data:",
     `script-src 'self' 'unsafe-inline' ${TURNSTILE} https://static.cloudflareinsights.com`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
     `connect-src ${connect.join(' ')}`,
-    `frame-src ${TURNSTILE}`,
+    `frame-src ${frames ? "'self' " : ''}${TURNSTILE}`,
     "manifest-src 'self'",
     'upgrade-insecure-requests',
   ].join('; ');
@@ -57,6 +58,16 @@ export function headersFile(files: Iterable<string>): string {
       'X-Content-Type-Options: nosniff',
       'Referrer-Policy: strict-origin-when-cross-origin',
       'X-Frame-Options: DENY',
+    ],
+    // Podprojekt „Prototypy mObywatela” (src/mobywatel/, src/pages/mobywatel/): strona konkursu osadza prototypy
+    // (/mobywatel/<wariant>/) w ramce telefonu — ramka tylko z tej domeny. Przy usuwaniu podprojektu usuń tę regułę.
+    // Musi stać po regule /*: odpina jej nagłówki i podaje swoje.
+    [
+      '/mobywatel/*',
+      '! Content-Security-Policy',
+      '! X-Frame-Options',
+      `Content-Security-Policy: ${contentSecurityPolicy(true)}`,
+      'X-Frame-Options: SAMEORIGIN',
     ],
     ...json.map((file) => [file, 'X-Robots-Tag: noindex']),
   ];

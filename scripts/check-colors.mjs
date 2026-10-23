@@ -65,7 +65,8 @@ function listFiles() {
   }
   return readdirSync(join(ROOT, 'src'), { recursive: true })
     .map((p) => join('src', p).split(sep).join('/'))
-    .filter((p) => /\.(astro|css)$/.test(p) && p !== TOKENS)
+    // prototypy mObywatela: aplikacja z mobywatel.ai z własną paletą, poza tokenami strony (src/mobywatel/prototypy/README.md)
+    .filter((p) => /\.(astro|css)$/.test(p) && p !== TOKENS && !p.startsWith('src/mobywatel/prototypy/'))
     .sort();
 }
 

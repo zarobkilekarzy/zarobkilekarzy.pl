@@ -1,0 +1,212 @@
+---
+/**
+ * Powłoka prototypu aplikacji (`<zl-mob-app>`): pasek „Prototyp”, ekrany (mobywatel/Screen) i dolne menu.
+ * Ekran = adres `#id`, więc każdy da się podlinkować, osadzić (/mobywatel/<slug>/#ekran) i cofnąć
+ * przyciskiem przeglądarki. Bez JS ekrany przełącza `:target`; skrypt dodaje stan karty w menu,
+ * przejścia (View Transitions: dalej / wstecz / karta), powrót przez historię i zamykanie arkuszy.
+ * Arkusze (mobywatel/Sheet) otwiera `commandfor` — skrypt uzupełnia go w przeglądarkach bez wsparcia.
+ */
+import MobIcon from '@/mobywatel/components/MobIcon.astro';
+import type { MobTab } from '@/mobywatel/data';
+
+interface Props {
+  tabs: MobTab[];
+  /** strona inicjatywy — link z paska „Prototyp” (otwiera się poza ramką) */
+  about: string;
+  /** jedyny <h1> strony (dla czytnika) — tytuły ekranów są <h2> */
+  title: string;
+}
+
+const { tabs, about, title } = Astro.props;
+---
+<zl-mob-app class="mob">
+  <h1 class="sr-only">{title}</h1>
+  <p class="mob__ribbon">
+    <span>Prototyp · nieoficjalny</span>
+    <a href={about} target="_top">zarobkilekarzy.pl</a>
+  </p>
+  <div class="mob__screens">
+    <slot />
+  </div>
+  <nav class="mob__tabs" aria-label="Menu aplikacji">
+    {tabs.map((t) => (
+      <a class="mob__tab" href={`#${t.id}`} data-tab={t.id}>
+        <MobIcon name={t.icon} size={24} />
+        <span>{t.label}</span>
+      </a>
+    ))}
+  </nav>
+  <slot name="sheets" />
+</zl-mob-app>
+
+<style>
+  .mob {
+    --mob-r: 16px;
+    --mob-pad: 16px;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 100dvh;
+    max-width: 480px;
+    margin-inline: auto;
+    background: var(--bg-soft);
+    color: var(--text-strong);
+    overflow: hidden;
+  }
+  @media (min-width: 520px) {
+    .mob { border-inline: 1px solid var(--line); }
+  }
+
+  .mob__ribbon {
+    display: flex; justify-content: space-between; gap: 12px;
+    margin: 0;
+    padding: calc(6px + env(safe-area-inset-top)) var(--mob-pad) 6px;
+    background: var(--inverse);
+    color: rgb(255 255 255 / .72); /* kolor-stały: pasek zawsze ciemny */
+    font: 500 0.6875rem/1.3 var(--f-mono);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .mob__ribbon a { color: #fff; /* kolor-stały: pasek zawsze ciemny */ text-transform: none; letter-spacing: 0; white-space: nowrap; }
+
+  .mob__screens { position: relative; overflow: hidden; }
+
+  .mob__tabs {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+  .mob__tab {
+    display: grid; justify-items: center; gap: 2px;
+    padding: 6px 2px;
+    color: var(--muted);
+    font: 500 0.6875rem/1.2 var(--f-body);
+    text-decoration: none;
+    border-radius: 10px;
+  }
+  .mob__tab[aria-current='page'] { color: var(--blue); }
+  .mob__tab:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+
+  /* ekrany: jeden widoczny; bez JS — :target albo ekran startowy */
+  .mob :global(.mob-screen) { display: none; }
+  .mob:not([data-ready]) :global(.mob-screen:target),
+  .mob:not([data-ready]):not(:has(:global(.mob-screen:target))) :global(.mob-screen[data-home]),
+  .mob[data-ready] :global(.mob-screen[data-current]) { display: flex; }
+  .mob[data-ready] :global(.mob-screen[data-current]) { view-transition-name: mob-screen; }
+
+  /* przejścia: dalej — wjazd z prawej, wstecz — z lewej, zmiana karty — przenikanie */
+  :global(:root[data-mob-dir]::view-transition-old(root)),
+  :global(:root[data-mob-dir]::view-transition-new(root)) { animation: none; }
+  :global(:root[data-mob-dir]::view-transition-group(mob-screen)) { animation-duration: .28s; animation-timing-function: var(--ease); }
+  :global(:root[data-mob-dir='forward']::view-transition-new(mob-screen)) { animation: mob-in-right .28s var(--ease); }
+  :global(:root[data-mob-dir='forward']::view-transition-old(mob-screen)) { animation: mob-out-left .28s var(--ease); }
+  :global(:root[data-mob-dir='back']::view-transition-new(mob-screen)) { animation: mob-in-left .28s var(--ease); }
+  :global(:root[data-mob-dir='back']::view-transition-old(mob-screen)) { animation: mob-out-right .28s var(--ease); }
+  :global(:root[data-mob-dir='tab']::view-transition-group(mob-screen)) { animation-duration: .16s; }
+
+  @keyframes mob-in-right { from { transform: translateX(100%); } }
+  @keyframes mob-out-left { to { transform: translateX(-30%); opacity: 0; } }
+  @keyframes mob-in-left { from { transform: translateX(-30%); opacity: 0; } }
+  @keyframes mob-out-right { to { transform: translateX(100%); } }
+</style>
+
+<script>
+  /** Przeglądarka bez `commandfor` (starsze Safari/Firefox): otwieranie i zamykanie <dialog> skryptem. */
+  const nativeCommands = 'commandForElement' in HTMLButtonElement.prototype;
+
+  class MobApp extends HTMLElement {
+    private screens = new Map<string, HTMLElement>();
+    private home!: HTMLElement;
+    private current?: HTMLElement;
+    /** odwiedzone ekrany — „wstecz” do rodzica cofa historię zamiast dopisywać nowy wpis */
+    private stack: string[] = [];
+
+    connectedCallback() {
+      for (const s of this.querySelectorAll<HTMLElement>('.mob-screen')) this.screens.set(s.id, s);
+      this.home = this.querySelector<HTMLElement>('.mob-screen[data-home]') ?? [...this.screens.values()][0];
+      window.addEventListener('hashchange', () => this.show(true));
+      this.addEventListener('click', (e) => this.onClick(e));
+      this.show(false);
+      this.dataset.ready = '';
+    }
+
+    private target(): HTMLElement {
+      return this.screens.get(decodeURIComponent(location.hash.slice(1))) ?? this.home;
+    }
+
+    private parentOf(s: HTMLElement) {
+      return s.dataset.parent ? this.screens.get(s.dataset.parent) : undefined;
+    }
+
+    private rootOf(s: HTMLElement) {
+      let r = s;
+      for (let p = this.parentOf(r); p; p = this.parentOf(r)) r = p;
+      return r;
+    }
+
+    private depth(s: HTMLElement) {
+      let d = 0;
+      for (let p = this.parentOf(s); p; p = this.parentOf(p)) d++;
+      return d;
+    }
+
+    private show(animate: boolean) {
+      const next = this.target();
+      const prev = this.current;
+      if (next === prev) return;
+      for (const d of this.querySelectorAll<HTMLDialogElement>('dialog[open]')) d.close();
+
+      if (this.stack.at(-2) === next.id) this.stack.pop();
+      else this.stack.push(next.id);
+
+      const dir = !prev ? '' : this.rootOf(next) !== this.rootOf(prev) ? 'tab' : this.depth(next) > this.depth(prev) ? 'forward' : 'back';
+      const swap = () => {
+        prev?.removeAttribute('data-current');
+        next.setAttribute('data-current', '');
+        const tab = this.rootOf(next).id;
+        for (const a of this.querySelectorAll<HTMLElement>('.mob__tab')) {
+          if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page');
+          else a.removeAttribute('aria-current');
+        }
+        if (dir !== 'back') next.querySelector('.mob-screen__body')?.scrollTo(0, 0);
+      };
+
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!animate || !dir || reduced || !document.startViewTransition) swap();
+      else {
+        const root = document.documentElement;
+        root.dataset.mobDir = dir;
+        // przy ukrytej karcie przeglądarka pomija animację (odrzuca ready/finished) — swap i tak się wykonuje
+        const t = document.startViewTransition(swap);
+        t.ready.catch(() => {});
+        t.finished.catch(() => {}).finally(() => delete root.dataset.mobDir);
+      }
+      this.current = next;
+      // czytnik ekranu: po przejściu fokus na tytule nowego ekranu
+      if (animate) next.querySelector<HTMLElement>('.mob-screen__title')?.focus({ preventScroll: true });
+    }
+
+    private onClick(e: MouseEvent) {
+      const el = e.target as Element;
+      // „wstecz” to przycisk (nie link): cofa historię, gdy rodzic jest poprzednim ekranem, inaczej przechodzi do rodzica
+      const back = el.closest<HTMLButtonElement>('button[data-back]');
+      if (back) {
+        const parent = back.dataset.back!;
+        if (this.stack.at(-2) === parent) history.back();
+        else location.hash = parent;
+        return;
+      }
+      if (nativeCommands) return;
+      const btn = el.closest<HTMLButtonElement>('button[commandfor]');
+      const dialog = btn && document.getElementById(btn.getAttribute('commandfor')!);
+      if (!(dialog instanceof HTMLDialogElement)) return;
+      const command = btn!.getAttribute('command');
+      if (command === 'show-modal') dialog.showModal();
+      else if (command === 'close') dialog.close();
+    }
+  }
+
+  customElements.define('zl-mob-app', MobApp);
+</script>

@@ -33,6 +33,7 @@ import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
 import { CASES as COURT_CASES, CATALOG_HREF, GAME_HREF, SCALE as COURT_SCALE, caseHref, verdictLabel } from '@/data/sad-lekarski';
 
 import barometrOg from '@/assets/img/barometr-polityczny-og.png';
+import mobywatelOg from '@/assets/mobywatel/og-moje-zdrowie.png';
 import { newsIllustration } from '@/lib/news';
 import { barometrProfiles } from '@/data/barometr-polityczny';
 
@@ -430,4 +431,9 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Szukaj w serwisie',
     lead: 'Artykuły, zestawienia danych i pojęcia ze słowniczka.',
   },
+  // Podprojekt „Prototypy mObywatela” (src/mobywatel/) — usunąć razem z nim. Gotowa grafika ze zrzutem
+  // telefonu (src/mobywatel/prototypy/narzedzia/og.mjs); wariant pod /mobywatel/<wariant>/ to statyczna
+  // aplikacja spoza BaseLayout — tagi og:* dopisuje mu zloz.mjs.
+  '/mobywatel/': { image: mobywatelOg, title: 'Prototypy mObywatela — mObywatel Challenge' },
+  '/mobywatel/moje-zdrowie/': { image: mobywatelOg, title: 'Moje zdrowie w mObywatelu — klikalny prototyp' },
 };

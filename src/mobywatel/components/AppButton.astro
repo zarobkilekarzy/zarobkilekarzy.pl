@@ -1,0 +1,40 @@
+---
+/**
+ * Przycisk prototypu: link do ekranu (`href="#id"`), otwarcie arkusza (`sheet`) albo zamknięcie
+ * arkusza, w którym stoi (`close`). Arkusze obsługuje `commandfor` (uzupełnia go mobywatel/App).
+ */
+interface Props {
+  href?: string;
+  /** id arkusza (mobywatel/Sheet) do otwarcia */
+  sheet?: string;
+  /** id arkusza do zamknięcia */
+  close?: string;
+  variant?: 'primary' | 'secondary';
+}
+
+const { href, sheet, close, variant = 'primary' } = Astro.props;
+const cls = ['mob-btn', `mob-btn--${variant}`];
+---
+{href ? (
+  <a class:list={cls} href={href}><slot /></a>
+) : (
+  <button class:list={cls} type="button" commandfor={sheet ?? close} command={sheet ? 'show-modal' : 'close'}><slot /></button>
+)}
+
+<style>
+  .mob-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%;
+    min-height: 50px;
+    padding: 12px 20px;
+    font: 500 1rem/1.2 var(--f-body);
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .mob-btn--primary { color: #fff; /* kolor-stały: biały na kobalcie */ background: var(--blue-fill); }
+  .mob-btn--primary:hover { background: var(--blue-600); }
+  .mob-btn--secondary { color: var(--ink); background: var(--surface); border-color: var(--line-2); }
+  .mob-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+</style>

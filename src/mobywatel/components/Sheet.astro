@@ -1,0 +1,54 @@
+---
+/**
+ * Arkusz wysuwany od dołu (<dialog>), np. potwierdzenie przed wysłaniem sprawy. Wstawiany w slot
+ * `sheets` mobywatel/App; otwiera go mobywatel/AppButton `sheet={id}`. Zamyka: tło, Esc, przycisk
+ * `close={id}` albo przejście do innego ekranu (link `#id` w slocie `actions`).
+ */
+interface Props {
+  id: string;
+  title: string;
+}
+
+const { id, title } = Astro.props;
+const titleId = `${id}-tytul`;
+---
+<dialog class="mob-sheet" id={id} aria-labelledby={titleId} closedby="any">
+  <span class="mob-sheet__handle" aria-hidden="true"></span>
+  <h2 class="mob-sheet__title" id={titleId}>{title}</h2>
+  <div class="mob-sheet__body"><slot /></div>
+  {Astro.slots.has('actions') && <div class="mob-sheet__actions"><slot name="actions" /></div>}
+</dialog>
+
+<style>
+  .mob-sheet {
+    width: 100%;
+    max-width: 480px;
+    max-height: 85dvh;
+    margin: auto auto 0;
+    padding: 8px var(--mob-pad, 16px) calc(16px + env(safe-area-inset-bottom));
+    color: var(--text-strong);
+    background: var(--surface);
+    border: 0;
+    border-radius: 20px 20px 0 0;
+    box-sizing: border-box;
+  }
+  .mob-sheet::backdrop { background: rgb(4 11 27 / .45); /* kolor-stały: przyciemnienie tła */ }
+  .mob-sheet[open] { animation: mob-sheet-in .3s var(--ease); }
+  .mob-sheet[open]::backdrop { animation: mob-fade .3s ease; }
+  .mob-sheet__handle {
+    display: block;
+    width: 40px; height: 4px;
+    margin: 0 auto 16px;
+    background: var(--line-2);
+    border-radius: 2px;
+  }
+  .mob-sheet__title { margin: 0 0 12px; color: var(--ink); font: 500 1.375rem/1.2 var(--f-display); }
+  .mob-sheet__body { display: grid; gap: 16px; }
+  .mob-sheet__actions { display: grid; gap: 8px; margin-top: 24px; }
+
+  @keyframes mob-sheet-in { from { transform: translateY(100%); } }
+  @keyframes mob-fade { from { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .mob-sheet[open], .mob-sheet[open]::backdrop { animation: none; }
+  }
+</style>

@@ -8,6 +8,7 @@ import { footnotes } from './src/lib/markdown/footnotes';
 import { typography } from './src/lib/markdown/typography';
 import seo, { astroRedirects } from './integrations/seo';
 import markdown from './integrations/markdown';
+import mobywatel from './src/mobywatel/integracja';
 import { fontFamilies, localVariants } from './src/lib/fonts';
 
 // SEO: _redirects, sitemap z faktów HTML i audyt po buildzie
@@ -41,6 +42,9 @@ export default defineConfig({
   },
 
   integrations: [
+    // Pierwsza: warianty prototypów mObywatela (statyczne, /mobywatel/<wariant>/) — składane przed audytem SEO,
+    // który sprawdza też je (noindex, tytuł, opis, canonical) i linki do nich ze strony konkursu
+    mobywatel(),
     // Artykuły w .mdx mogą używać bloków z src/components (np. <BarChart />)
     mdx(),
     // sitemap-index.xml + sitemap-0.xml przy każdym buildzie

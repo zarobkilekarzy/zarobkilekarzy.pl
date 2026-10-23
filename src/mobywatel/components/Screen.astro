@@ -1,0 +1,87 @@
+---
+/**
+ * Ekran prototypu (w mobywatel/App). Ekran karty dolnego menu ma duży tytuł; ekran z `parent` —
+ * pasek z „wstecz” do rodzica i tytułem. Slot `actions` — przyklejony pod treścią (główny przycisk).
+ */
+import MobIcon from '@/mobywatel/components/MobIcon.astro';
+
+interface Props {
+  /** adres ekranu (#id) */
+  id: string;
+  title: string;
+  /** ekran nadrzędny — „wstecz” prowadzi do niego; brak = ekran karty dolnego menu */
+  parent?: string;
+  /** ekran startowy aplikacji (pokazywany bez #id w adresie) */
+  home?: boolean;
+  /** drobny tekst nad dużym tytułem ekranu karty */
+  kicker?: string;
+}
+
+const { id, title, parent, home = false, kicker } = Astro.props;
+const titleId = `${id}-tytul`;
+---
+<section class="mob-screen" id={id} data-parent={parent} data-home={home ? '' : undefined} aria-labelledby={titleId}>
+  {parent ? (
+    <header class="mob-screen__bar">
+      <button class="mob-screen__back" type="button" data-back={parent} aria-label="Wstecz"><MobIcon name="arrow-left" size={22} /></button>
+      <h2 class="mob-screen__title mob-screen__title--bar" id={titleId} tabindex="-1">{title}</h2>
+    </header>
+  ) : (
+    <header class="mob-screen__head">
+      {kicker && <p class="mob-screen__kicker">{kicker}</p>}
+      <h2 class="mob-screen__title" id={titleId} tabindex="-1">{title}</h2>
+    </header>
+  )}
+  <div class="mob-screen__body">
+    <slot />
+  </div>
+  {Astro.slots.has('actions') && <div class="mob-screen__actions"><slot name="actions" /></div>}
+</section>
+
+<style>
+  .mob-screen {
+    position: absolute; inset: 0;
+    flex-direction: column;
+    background: var(--bg-soft);
+  }
+  .mob-screen__head { padding: 20px var(--mob-pad) 8px; }
+  .mob-screen__kicker { margin: 0 0 2px; color: var(--muted); font-size: 0.875rem; }
+  .mob-screen__title {
+    margin: 0;
+    color: var(--ink);
+    font: 500 1.75rem/1.15 var(--f-display);
+    letter-spacing: -.01em;
+    outline: none;
+  }
+  .mob-screen__bar {
+    display: grid; grid-template-columns: 44px 1fr 44px; align-items: center;
+    min-height: 52px;
+    padding-inline: 4px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mob-screen__title--bar { font-size: 1.0625rem; font-weight: 500; text-align: center; }
+  .mob-screen__back {
+    display: grid; place-items: center;
+    width: 44px; height: 44px;
+    color: var(--ink);
+    background: none;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .mob-screen__back:focus-visible { outline: 2px solid var(--blue); outline-offset: -4px; }
+  .mob-screen__body {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 12px var(--mob-pad) 32px;
+    display: flex; flex-direction: column; gap: 24px;
+  }
+  .mob-screen__actions {
+    display: grid; gap: 8px;
+    padding: 12px var(--mob-pad);
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+</style>

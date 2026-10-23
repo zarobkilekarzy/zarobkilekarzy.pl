@@ -1,0 +1,64 @@
+---
+/**
+ * Karta dokumentu w telefonie (np. mDowód): nazwa dokumentu, inicjały zamiast zdjęcia, imię i link
+ * do danych. Zawsze kobaltowa (stałe wypełnienie pod białym tekstem), w dzień i w nocy.
+ */
+interface Props {
+  title: string;
+  firstName: string;
+  lastName: string;
+  href: string;
+  /** drobny tekst pod imieniem, np. „Ważny do 02.06.2031” */
+  note?: string;
+}
+
+const { title, firstName, lastName, href, note } = Astro.props;
+---
+<a class="mob-doc" href={href}>
+  <span class="mob-doc__title">{title}</span>
+  <span class="mob-doc__person">
+    <span class="mob-doc__photo" aria-hidden="true">{firstName[0]}{lastName[0]}</span>
+    <span class="mob-doc__who">
+      <span class="mob-doc__name">{firstName}</span>
+      {note && <span class="mob-doc__note">{note}</span>}
+      <span class="mob-doc__more">Pokaż dane</span>
+    </span>
+  </span>
+</a>
+
+<style>
+  /* kolor-stały: początek — karta zawsze kobaltowa z białym tekstem */
+  .mob-doc {
+    display: grid; gap: 40px;
+    padding: 20px;
+    color: #fff;
+    text-decoration: none;
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgb(255 255 255 / .18), transparent 60%),
+      var(--blue-fill);
+    border-radius: calc(var(--mob-r) + 4px);
+    box-shadow: 0 10px 24px -12px rgb(28 82 212 / .55);
+  }
+  .mob-doc:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .mob-doc__title { font: 500 1.25rem/1.2 var(--f-display); }
+  .mob-doc__person { display: flex; align-items: flex-end; gap: 16px; }
+  .mob-doc__photo {
+    display: grid; place-items: center;
+    width: 76px; height: 96px;
+    color: var(--blue-fill);
+    background: #fff;
+    border-radius: 10px;
+    font: 500 1.5rem/1 var(--f-display);
+  }
+  .mob-doc__who { display: grid; gap: 4px; justify-items: start; }
+  .mob-doc__name { font: 500 1.25rem/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .02em; }
+  .mob-doc__note { color: rgb(255 255 255 / .8); font-size: 0.8125rem; }
+  .mob-doc__more {
+    margin-top: 6px;
+    padding: 6px 12px;
+    font: 500 0.8125rem/1 var(--f-body);
+    background: rgb(255 255 255 / .18);
+    border-radius: 999px;
+  }
+  /* kolor-stały: koniec */
+</style>

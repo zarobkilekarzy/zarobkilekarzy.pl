@@ -1,0 +1,61 @@
+---
+/**
+ * Prototyp aplikacji w ramce telefonu na stronie serwisu: <iframe> do /mobywatel/<slug>/ (wyjątek
+ * od frame-ancestors w integrations/seo/headers.ts). Pasek stanu jest dekoracją. Na wąskim ekranie
+ * ramka znika — zostaje sama aplikacja na całą szerokość kolumny.
+ */
+interface Props {
+  src: string;
+  /** nazwa dla czytnika ekranu, np. „Prototyp: baza” */
+  title: string;
+}
+
+const { src, title } = Astro.props;
+---
+<div class="phone">
+  <div class="phone__screen">
+    <div class="phone__status" aria-hidden="true">
+      <span>9:41</span>
+      <span class="phone__island"></span>
+      <span class="phone__icons"><i></i><i></i><i></i></span>
+    </div>
+    <iframe class="phone__app" src={src} title={title} loading="lazy"></iframe>
+  </div>
+</div>
+
+<style>
+  .phone {
+    width: min(100%, 392px);
+    padding: 12px;
+    background: var(--inverse);
+    border-radius: 54px;
+    box-shadow: 0 30px 60px -30px rgb(4 11 27 / .5), inset 0 0 0 1px rgb(255 255 255 / .08); /* kolor-stały: cień urządzenia */
+    box-sizing: border-box;
+  }
+  .phone__screen {
+    display: grid; grid-template-rows: auto minmax(0, 1fr);
+    height: 800px;
+    overflow: hidden;
+    background: var(--inverse);
+    border-radius: 42px;
+  }
+  .phone__status {
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    padding: 12px 28px 8px;
+    color: #fff; /* kolor-stały: pasek stanu na ciemnej ramce */
+    font: 600 0.9375rem/1 var(--f-body);
+  }
+  .phone__island { width: 96px; height: 28px; background: #000; /* kolor-stały: wycięcie ekranu */ border-radius: 14px; }
+  .phone__icons { display: flex; justify-content: flex-end; gap: 5px; }
+  .phone__icons i { width: 16px; height: 10px; background: #fff; /* kolor-stały: ikony paska stanu */ border-radius: 2px; }
+  .phone__icons i:nth-child(1) { width: 14px; clip-path: polygon(0 100%, 100% 0, 100% 100%); }
+  .phone__icons i:nth-child(2) { width: 12px; border-radius: 6px 6px 2px 2px; }
+  .phone__icons i:nth-child(3) { width: 22px; }
+  .phone__app { width: 100%; height: 100%; border: 0; display: block; }
+
+  @media (max-width: 720px) {
+    .phone { width: 100%; padding: 0; border-radius: 0; box-shadow: none; background: none; }
+    .phone__screen { height: min(780px, 85dvh); border-radius: 0; border: 1px solid var(--line); }
+    .phone__status { display: none; }
+  }
+</style>

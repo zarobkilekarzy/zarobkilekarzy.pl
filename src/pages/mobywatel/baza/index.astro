@@ -1,0 +1,108 @@
+---
+/**
+ * /mobywatel/baza/ — prototyp bazowy: wszystkie elementy powłoki (mobywatel/components/) w jednym
+ * miejscu. Kolejny prototyp zaczyna się od kopii tej strony i wpisu w src/mobywatel/data.ts.
+ */
+import AppLayout from '@/mobywatel/AppLayout.astro';
+import App from '@/mobywatel/components/App.astro';
+import Screen from '@/mobywatel/components/Screen.astro';
+import List from '@/mobywatel/components/List.astro';
+import Row from '@/mobywatel/components/Row.astro';
+import DocCard from '@/mobywatel/components/DocCard.astro';
+import AppButton from '@/mobywatel/components/AppButton.astro';
+import Sheet from '@/mobywatel/components/Sheet.astro';
+import MobIcon from '@/mobywatel/components/MobIcon.astro';
+import { MOB_BASE, defaultTabs, persona } from '@/mobywatel/data';
+import { typo } from '@/lib/format';
+
+const p = persona;
+const id = p.idCard;
+---
+<AppLayout seo={{ title: 'Prototyp mObywatela: baza', description: 'Szkielet klikalnego prototypu aplikacji mObywatel, na którym zarobkilekarzy.pl buduje kolejne koncepcje.' }}>
+  <App tabs={defaultTabs} about={MOB_BASE} title="Prototyp mObywatela: baza">
+    <Screen id="pulpit" title={`Dzień dobry, ${p.firstName}`} kicker="Pulpit" home>
+      <DocCard title="mDowód" firstName={p.firstName} lastName={p.lastName} href="#mdowod" note={`Ważny do ${id.validUntil}`} />
+      <List title="Twoje sprawy">
+        <Row icon="clock" title="Przykładowa sprawa" text="Czeka na Twoje potwierdzenie" href="#sprawa" />
+      </List>
+    </Screen>
+
+    <Screen id="dokumenty" title="Dokumenty">
+      <DocCard title="mDowód" firstName={p.firstName} lastName={p.lastName} href="#mdowod" />
+      <List>
+        <Row icon="doc" title="Dodaj dokument" text="Prawo jazdy, legitymacja, karta pojazdu" badge="poza prototypem" />
+      </List>
+    </Screen>
+
+    <Screen id="mdowod" title="mDowód" parent="dokumenty">
+      <List title="Dane osobowe">
+        <Row title="Imię" value={p.firstName} />
+        <Row title="Nazwisko" value={p.lastName} />
+        <Row title="Data urodzenia" value={p.birthDate} />
+      </List>
+      <List title="Dokument">
+        <Row title="Seria i numer" value={id.series} />
+        <Row title="Data wydania" value={id.issued} />
+        <Row title="Termin ważności" value={id.validUntil} />
+        <Row title="Organ wydający" text={id.issuer} />
+      </List>
+    </Screen>
+
+    <Screen id="uslugi" title="Usługi">
+      <List title="Przykłady">
+        <Row icon="shield" title="Przykładowa sprawa" text="Ekran, potwierdzenie i wynik" href="#sprawa" />
+      </List>
+      <List title="W przygotowaniu">
+        <Row icon="chart" title="Jawne wynagrodzenia" text="Ile zarabiają lekarze z pieniędzy publicznych" badge="wkrótce" />
+      </List>
+    </Screen>
+
+    <Screen id="sprawa" title="Przykładowa sprawa" parent="uslugi">
+      <p class="txt">{typo('Tak wygląda sprawa w prototypie: opis, dane z rejestru i jeden główny przycisk. Zanim cokolwiek zostanie wysłane, aplikacja prosi o potwierdzenie.')}</p>
+      <List title="Dane z rejestru">
+        <Row title="Wnioskodawca" value={`${p.firstName} ${p.lastName}`} />
+        <Row title="Miejscowość" value={p.city} />
+      </List>
+      <AppButton slot="actions" sheet="potwierdz">Dalej</AppButton>
+    </Screen>
+
+    <Screen id="sprawa-gotowe" title="Gotowe" parent="sprawa">
+      <div class="done">
+        <span class="done__mark" aria-hidden="true"><MobIcon name="check" size={36} /></span>
+        <p class="done__title">Sprawa wysłana</p>
+        <p class="txt">{typo('To ekran wyniku. W prawdziwym prototypie tu jest numer sprawy i to, co dzieje się dalej.')}</p>
+      </div>
+      <AppButton slot="actions" href="#pulpit" variant="secondary">Wróć na pulpit</AppButton>
+    </Screen>
+
+    <Screen id="wiecej" title="Więcej">
+      <List title="O prototypie">
+        <Row icon="info" title="Prototyp zarobkilekarzy.pl" text="Koncepcja na konkurs mObywatel Challenge. To nie jest aplikacja administracji publicznej." />
+        <Row icon="shield" title="Dane fikcyjne" text={`${p.firstName} ${p.lastName} nie istnieje. Żadne dane w prototypie nie należą do prawdziwej osoby.`} />
+      </List>
+    </Screen>
+
+    <Fragment slot="sheets">
+      <Sheet id="potwierdz" title="Potwierdź sprawę">
+        <p class="txt">Wyślesz przykładową sprawę w imieniu: <strong>{p.firstName} {p.lastName}</strong>.</p>
+        <Fragment slot="actions">
+          <AppButton href="#sprawa-gotowe">Potwierdzam</AppButton>
+          <AppButton close="potwierdz" variant="secondary">Anuluj</AppButton>
+        </Fragment>
+      </Sheet>
+    </Fragment>
+  </App>
+</AppLayout>
+
+<style>
+  .txt { margin: 0; color: var(--text-strong); font-size: 0.9375rem; line-height: 1.5; }
+  .done { display: grid; justify-items: center; gap: 12px; padding-top: 32px; text-align: center; }
+  .done__mark {
+    display: grid; place-items: center;
+    width: 72px; height: 72px;
+    color: #fff; /* kolor-stały: biały na kobalcie */
+    background: var(--blue-fill);
+    border-radius: 50%;
+  }
+  .done__title { margin: 0; color: var(--ink); font: 500 1.5rem/1.2 var(--f-display); }
+</style>

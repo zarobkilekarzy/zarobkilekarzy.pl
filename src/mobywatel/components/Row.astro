@@ -1,0 +1,68 @@
+---
+/**
+ * Wiersz listy (w mobywatel/List): ikona, tytuł, opis, wartość albo plakietka po prawej.
+ * Z `href` — cały wiersz jest linkiem ze strzałką; bez — wiersz danych (etykieta + wartość).
+ */
+import MobIcon from '@/mobywatel/components/MobIcon.astro';
+import type { MobIconName } from '@/mobywatel/icons';
+
+interface Props {
+  title: string;
+  text?: string;
+  /** wartość po prawej (np. data, kwota) */
+  value?: string;
+  /** plakietka po prawej, np. „wkrótce” */
+  badge?: string;
+  icon?: MobIconName;
+  href?: string;
+}
+
+const { title, text, value, badge, icon, href } = Astro.props;
+const Tag = href ? 'a' : 'div';
+---
+<li>
+  <Tag class:list={['mob-row', { 'mob-row--link': href }]} href={href}>
+    {icon && <span class="mob-row__icon"><MobIcon name={icon} size={22} /></span>}
+    <span class="mob-row__main">
+      <span class="mob-row__title">{title}</span>
+      {text && <span class="mob-row__text">{text}</span>}
+    </span>
+    {value && <span class="mob-row__value">{value}</span>}
+    {badge && <span class="mob-row__badge">{badge}</span>}
+    {href && <MobIcon name="chevron" size={18} class="mob-row__chevron" />}
+  </Tag>
+</li>
+
+<style>
+  .mob-row {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 56px;
+    padding: 10px 14px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .mob-row--link:hover { background: var(--bg-soft); }
+  .mob-row--link:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .mob-row__icon {
+    display: grid; place-items: center; flex: none;
+    width: 38px; height: 38px;
+    color: var(--blue);
+    background: var(--blue-50);
+    border-radius: 12px;
+  }
+  .mob-row__main { display: grid; gap: 2px; flex: 1; min-width: 0; }
+  .mob-row__title { color: var(--ink); font: 500 0.9375rem/1.3 var(--f-body); }
+  .mob-row__text { color: var(--muted); font-size: 0.8125rem; line-height: 1.35; }
+  .mob-row__value { color: var(--ink); font: 500 0.9375rem/1.3 var(--f-body); text-align: right; }
+  .mob-row__badge {
+    padding: 3px 8px;
+    color: var(--muted);
+    font: 500 0.6875rem/1.2 var(--f-mono);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .mob-row :global(.mob-row__chevron) { color: var(--muted); }
+</style>

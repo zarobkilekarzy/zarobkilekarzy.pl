@@ -1,0 +1,61 @@
+---
+/**
+ * Szkielet strony prototypu aplikacji (mobywatel/components/App): bez nagłówka, stopki i wyszukiwarki
+ * serwisu — cały ekran zajmuje aplikacja. Zawsze poza indeksem. Strona jest osadzana w ramce telefonu
+ * na /mobywatel/ (wyjątek od frame-ancestors w integrations/seo/headers.ts) i działa sama na telefonie.
+ */
+import { Font, fontData } from 'astro:assets';
+import { fontFamilies } from '../lib/fonts';
+
+import '@/styles/tokens.css';
+import '@/styles/base.css';
+
+import Analytics from '@/components/site/Analytics.astro';
+import SeoHead from '@/components/seo/SeoHead.astro';
+
+import { identity } from '@/data/seo/identity';
+import { resolveSeo, type SeoInput } from '@/lib/seo';
+
+interface Props {
+  /** tytuł i opis prototypu; `index` jest zawsze false */
+  seo: Omit<SeoInput, 'index'>;
+}
+
+const seo = resolveSeo(
+  { ...Astro.props.seo, index: false },
+  { site: Astro.site!, pathname: Astro.url.pathname, siteName: identity.name },
+);
+---
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <SeoHead seo={seo} siteName={identity.name} locale={identity.locale} twitter={identity.twitter} />
+    <meta name="theme-color" content={identity.themeColor} />
+    <meta name="color-scheme" content="light dark" />
+    {/* motyw i „Większy tekst” z ustawień serwisu (ta sama domena) — przed pierwszym malowaniem */}
+    <script is:inline>
+      try {
+        const t = localStorage.getItem('zl-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        if (localStorage.getItem('zl-text-size') === 'lg') document.documentElement.dataset.textSize = 'lg';
+      } catch {}
+    </script>
+    {fontFamilies.map(({ cssVariable }) => <Font cssVariable={cssVariable} />)}
+    {fontFamilies.flatMap(({ cssVariable, variants }) =>
+      fontData[cssVariable]
+        .filter((_, i) => variants[i]?.preload)
+        .map(({ src }) => <link rel="preload" href={src[0].url} as="font" type="font/woff2" crossorigin />),
+    )}
+    <Analytics />
+  </head>
+  <body class="app-page">
+    <main>
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  .app-page { background: var(--bg); }
+</style>

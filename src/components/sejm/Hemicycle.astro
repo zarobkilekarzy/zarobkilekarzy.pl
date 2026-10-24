@@ -5,7 +5,8 @@
  * przeciw = pierścień, wstrzymał się = mała kropka, nie głosował = plus.
  *
  * - Najechanie albo dotknięcie kropki: dymek z imieniem i nazwiskiem posła, klubem z logo i głosem;
- *   pozostałe kluby przygasają. Karty klubów pod półkolem (przyciski) robią to samo dla całego klubu —
+ *   pozostałe kluby przygasają. Karty klubów pod półkolem (przyciski, w grupach za / przeciw /
+ *   wstrzymali się wg przeważającego głosu klubu) robią to samo dla całego klubu —
  *   także z klawiatury.
  * - Bez JS: półkole, karty z liczbami i pełna lista posłów w <details> (to też wersja dla czytników).
  *
@@ -55,6 +56,15 @@ const groups = tallies.map((t) => {
   const svg = own.map((s) => mark(s.vote.vote, s.x, s.y) + `<circle class="hc__hit" data-i="${s.i}" cx="${f1(s.x)}" cy="${f1(s.y)}" r="${f1(dot * 1.4)}"/>`).join('');
   return { ...t, ...info(t.club), cx, cy, svg };
 });
+// karty klubów w trzech grupach wg przeważającego głosu (remis → wstrzymali się)
+const lean = (g: { yes: number; no: number; abstain: number }): Vote =>
+  g.yes > Math.max(g.no, g.abstain) ? 'YES' : g.no > Math.max(g.yes, g.abstain) ? 'NO' : 'ABSTAIN';
+const SIDES: { key: Vote; label: string }[] = [
+  { key: 'YES', label: 'Za' },
+  { key: 'NO', label: 'Przeciw' },
+  { key: 'ABSTAIN', label: 'Wstrzymali się' },
+];
+const sides = SIDES.map((s) => ({ ...s, groups: groups.filter((g) => lean(g) === s.key) })).filter((s) => s.groups.length);
 // dane dymków: [imię i nazwisko, indeks klubu, głos]
 const tipData = seats.map((s) => [s.vote.name, clubIndex.get(s.vote.club), s.vote.vote]);
 
@@ -83,18 +93,23 @@ const names = (club: string, vote: Vote) => voting.votes.filter((v) => v.club ==
     {VOTES.map((v) => <li><svg viewBox="-10 -10 20 20" set:html={mark(v.key, 0, 0, 8.5)} />{v.label}</li>)}
   </ul>
 
-  <div class="hc__clubs">
-    {groups.map((g) => (
-      <button type="button" class="hc__chip" data-club={g.club} data-cx={f1(g.cx / W * 100)} data-cy={f1(g.cy / H * 100)}
-        aria-label={`${g.name}: za ${g.yes}, przeciw ${g.no}, wstrzymało się ${g.abstain}, nie głosowało ${g.absent}`}>
-        <span class="hc__logo">
-          {g.logo ? <Image src={g.logo} {...(({ w, h }) => ({ width: w, height: h }))(logoBox(g.logo, 40, 26))} densities={[1, 2]} alt="" /> : <span class="hc__nologo">—</span>}
-        </span>
-        <span class="hc__name">{g.short} <span class="hc__seats">({g.members})</span></span>
-        <span class="hc__nums">{g.yes} · {g.no} · {g.abstain} · {g.absent}</span>
-      </button>
-    ))}
-  </div>
+  {sides.map((s) => (
+    <div class="hc__side">
+      <h4 class="hc__sname"><svg viewBox="-10 -10 20 20" aria-hidden="true" set:html={mark(s.key, 0, 0, 8.5)} />{s.label}</h4>
+      <div class="hc__clubs">
+        {s.groups.map((g) => (
+          <button type="button" class="hc__chip" data-club={g.club} data-cx={f1(g.cx / W * 100)} data-cy={f1(g.cy / H * 100)}
+            aria-label={`${g.name}: za ${g.yes}, przeciw ${g.no}, wstrzymało się ${g.abstain}, nie głosowało ${g.absent}`}>
+            <span class="hc__logo">
+              {g.logo ? <Image src={g.logo} {...(({ w, h }) => ({ width: w, height: h }))(logoBox(g.logo, 40, 26))} densities={[1, 2]} alt="" /> : <span class="hc__nologo">—</span>}
+            </span>
+            <span class="hc__name">{g.short} <span class="hc__seats">({g.members})</span></span>
+            <span class="hc__nums">{g.yes} · {g.no} · {g.abstain} · {g.absent}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  ))}
 
   <details class="hc__list">
     <summary>Jak głosował każdy poseł</summary>
@@ -162,7 +177,10 @@ const names = (club: string, vote: Vote) => voting.votes.filter((v) => v.club ==
   .hc__legend li { display: flex; align-items: center; gap: 8px; }
   .hc__legend svg { width: 18px; height: 18px; }
 
-  .hc__clubs { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; margin-top: 20px; }
+  .hc__side { margin-top: 20px; }
+  .hc__sname { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .hc__sname svg { width: 14px; height: 14px; }
+  .hc__clubs { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 8px; }
   .hc__chip {
     display: grid; grid-template-columns: 48px 1fr; column-gap: 10px; align-items: center; padding: 8px;
     border: 0; box-shadow: inset 0 0 0 1px var(--line-2); background: var(--surface); color: var(--ink); text-align: left; font: inherit; cursor: pointer;

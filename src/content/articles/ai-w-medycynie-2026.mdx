@@ -5,6 +5,7 @@ category: Analiza
 topic: porownania
 order: 4
 date: "2026-10-17"
+updated: 2026-10-24
 summary: "Modele językowe trafnie rozpoznają choroby z opisu objawów, roboty operują coraz częściej, a polskie zespoły budują własne modele. Do leczenia pacjentów dopuszczono jednak głównie wąskie algorytmy — hamulcem jest certyfikacja."
 description: "Co AI w medycynie potrafi w 2026 r., jak sobie radzi w niezależnych badaniach i dlaczego najwęższym gardłem jest certyfikacja. Świat i Polska."
 keyPoints:
@@ -20,6 +21,8 @@ og:
   illustration: ../../assets/img/ai-w-medycynie-og.png
 ---
 import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Figure from '@/components/blocks/Figure.astro';
 import XProfile from '@/components/blocks/XProfile.astro';
 import kinasAvatar from '@/assets/people/kinasremek.jpg';
 import obuchowskiAvatar from '@/assets/people/alexobuchowski.jpg';
@@ -50,7 +53,29 @@ Badanie oksfordzkie, przywołane na początku, pokazuje, gdzie leży problem. Uc
 
 Najszerzej używaną wyszukiwarką wiedzy medycznej jest amerykańskie OpenEvidence. Odpowiada na pytania kliniczne na podstawie publikacji naukowych, jest bezpłatne dla zweryfikowanych lekarzy i utrzymuje się głównie z reklam, w dużej części farmaceutycznych.[^medcity] W styczniu 2026 r. spółka pozyskała 250 mln USD przy wycenie 12 mld USD i podała, że w grudniu 2025 r. jej narzędzie obsłużyło ok. 18 mln konsultacji klinicznych — to dane samej firmy.[^openevidence] Utrzymywanie się z reklam przywołuje stare w medycynie pytanie: kto płaci za informację, z której lekarz korzysta przy pacjencie.
 
-Producenci chętnie porównują modele z lekarzami. Microsoft podał, że jego system MAI-DxO trafnie rozpoznał 85,5% z 304 trudnych przypadków opisanych w *New England Journal of Medicine*, a 21 lekarzy — średnio 20%. Lekarze nie mogli jednak konsultować się z kolegami ani korzystać z podręczników i innych narzędzi, wynik nie przeszedł recenzji naukowej, a sam Microsoft zastrzega, że system nie jest dopuszczony do użytku klinicznego.[^maidxo] Takie porównania mówią więcej o możliwościach modelu niż o tym, jak sprawdziłby się w gabinecie.
+Producenci chętnie porównują modele z lekarzami. Najdokładniej opisane porównanie przygotował zespół Microsoftu, a w październiku 2026 r. opublikował je recenzowany tygodnik *Science*. Badacze zamienili 304 trudne przypadki opisane w *New England Journal of Medicine* (NEJM) i 325 przyjęć do szpitala z SOR w Bostonie w zadania krok po kroku: lekarz albo AI dostaje krótki opis pacjenta i sam decyduje, o co dopytać i jakie badania zlecić. Każde badanie ma cenę, więc oprócz trafności liczy się koszt diagnostyki. System MAI-DxO, działający na modelu GPT-5, symuluje zespół lekarzy, którzy omawiają możliwe rozpoznania i wybierają tańsze badania. Trafił w rozpoznanie w **83,2%** trudnych przypadków i w **80,3%** przypadków z SOR. Lekarze z USA i Wielkiej Brytanii — lekarze rodzinni i szpitalni bez wąskiej specjalizacji, z medianą 12 lat doświadczenia — w **36,1%** i **46,8%**.[^maidxo]
+
+<Figure
+  title="W symulacji AI trafiała w rozpoznanie częściej niż lekarze"
+  note="629 przypadków w symulacji, bez udziału pacjentów. W przypadkach z SOR przewaga jest mniejsza: 1,7×."
+  source={{ label: 'H. Nori i in., Science, 22.10.2026', href: 'https://doi.org/10.1126/science.aeh7930' }}
+>
+  <BarChart
+    size="lg"
+    lead={{ value: '2,3×', text: 'częściej trafne rozpoznanie w trudnych przypadkach z NEJM' }}
+    rows={[
+      { group: 'Trafne rozpoznania · trudne przypadki z NEJM', label: 'AI (MAI-DxO)', value: 83.2, display: '83,2%', highlight: true },
+      { label: 'Lekarze', value: 36.1, display: '36,1%' },
+      { group: 'Trafne rozpoznania · pacjenci przyjęci z SOR', label: 'AI (MAI-DxO)', value: 80.3, display: '80,3%', highlight: true },
+      { label: 'Lekarze', value: 46.8, display: '46,8%' },
+    ]}
+    max={100}
+    unit="%"
+    caption="AI trafiała w rozpoznanie 2,3 raza częściej niż lekarze w trudnych przypadkach z NEJM: 83,2% wobec 36,1%. Pacjenci przyjęci z SOR: AI 80,3%, lekarze 46,8% (1,7 raza częściej)."
+  />
+</Figure>
+
+Wynik pochodzi z symulacji, a nie z pracy z pacjentami — autorzy sami to zastrzegają. Lekarze mogli korzystać z podręczników i wytycznych, np. UpToDate, ale nie z narzędzi AI ani z pomocy kolegów, a przypadki z NEJM wybiera się właśnie dlatego, że są nietypowe. Lekarze rozwiązywali tylko część zadań: 56 najnowszych przypadków z NEJM i 71 z SOR. Taniej od lekarzy wypada tylko wariant z limitem kosztów (2241 USD przy trafności 80,9%) — najtrafniejszy wariant zlecał badania za 5430 USD na przypadek, więcej niż lekarze (4725 USD). Koszty to wycena zleconych badań według cennika amerykańskiego systemu szpitalnego, a nie rzeczywiste wydatki.[^maidxo-pelna] Badanie przeprowadzili pracownicy Microsoftu, a firma zastrzega, że system nie jest dopuszczony do użytku klinicznego.[^maidxo-blog] Takie porównania mówią więcej o możliwościach modelu niż o tym, jak sprawdziłby się w gabinecie.
 
 Obok usług zamkniętych rozwijają się modele otwarte. Google udostępnia model MedGemma, ale zaznacza, że nie jest on jeszcze gotowy do zastosowań klinicznych i przed użyciem trzeba go zweryfikować.[^medgemma] Politechnika Federalna w Lozannie (EPFL) wydała w czerwcu 2026 r. modele MeditronFO i opublikowała razem z nimi dane, kod, procedurę treningu i sposób oceny.[^meditron] Taki model może sprawdzić każdy — także szpital, który chciałby go wdrożyć.
 
@@ -147,7 +172,9 @@ Wspólny mianownik jest ten sam co przy pieniądzach publicznych: zaufanie wymag
 
 [^openevidence]: Komunikat OpenEvidence (Business Wire) z 21.01.2026, [przedruk](https://www.rutlandherald.com/news/business/openevidence-raises-250-million-to-build-medical-superintelligence-for-doctors/article_0960939c-ca41-5321-8417-54f84800ece6.html). Liczba konsultacji to dane spółki, niezweryfikowane niezależnie.
 
-[^maidxo]: Microsoft AI, [The Path to Medical Superintelligence](https://microsoft.ai/news/the-path-to-medical-superintelligence/), 30.06.2025. Wyniki podaje producent.
+[^maidxo]: H. Nori i in., [Sequential diagnosis with language models](https://doi.org/10.1126/science.aeh7930), *Science*, 22.10.2026. Autorzy to zespół Microsoft AI. Trafność, liczba przypadków i wyniki lekarzy — według streszczenia pracy.
+[^maidxo-pelna]: H. Nori i in., [Sequential Diagnosis with Language Models](https://erichorvitz.com/sequential_diagnosis_LM.pdf), pełna wersja pracy udostępniona przez współautora, 8.11.2025, s. 2 i 13–17. Stąd pochodzą koszty i opis grupy lekarzy; streszczenie w *Science* podaje te same wyniki trafności.
+[^maidxo-blog]: Microsoft AI, [The Path to Medical Superintelligence](https://microsoft.ai/news/the-path-to-medical-superintelligence/), 30.06.2025.
 
 [^medgemma]: Google, [MedGemma — opis modelu](https://developers.google.com/health-ai-developer-foundations/medgemma).
 

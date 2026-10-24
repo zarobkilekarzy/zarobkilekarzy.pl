@@ -20,23 +20,31 @@ interface Props {
   note?: string;
   /** pełny opis danych dla czytników ekranu */
   caption: string;
+  /** grube słupki i duże wartości — dla jednego, mocnego porównania */
+  size?: 'lg';
+  /** liczba prowadząca nad wykresem (np. „2,3×”) z dopiskiem */
+  lead?: { value: string; text: string };
 }
 
-const { rows, max, unit, average, note, caption } = Astro.props;
+const { rows, max, unit, average, note, caption, size, lead } = Astro.props;
 // miejsce na wartość za najdłuższym słupkiem: co najmniej 96px, a dla długich etykiet („243,8 mld zł”)
 // ok. 0,7rem na znak w foncie wartości + odstęp — w rem, więc rośnie razem z „Większym tekstem”
 const longest = Math.max(...rows.map((row) => row.display.length));
 ---
-<figure class="bars" data-reveal="grow" style={`--max: ${max}; --chars: ${longest}${average !== undefined ? `; --avg: ${average}` : ''}`}>
+<figure class:list={['bars', { 'bars--lg': size === 'lg' }]} data-reveal="grow" style={`--max: ${max}; --chars: ${longest}${average !== undefined ? `; --avg: ${average}` : ''}`}>
+  {lead && <p class="bars__lead" aria-hidden="true"><span class="bars__lead-value">{lead.value}</span> <span>{typo(lead.text)}</span></p>}
   {average !== undefined && (
     <p class="bars__avg" aria-hidden="true"><span>{typo(`średnio ${formatPL(average, 1)} ${unit}`)}</span></p>
   )}
   <ol class:list={['bars__rows', { 'has-avg': average !== undefined }]} aria-hidden="true">
     {rows.map((row, i) => (
+      <>
+      {row.group && <li class="bars__group">{typo(row.group)}</li>}
       <li class:list={['bars__row', { 'bars__row--hi': row.highlight, 'bars__row--secondary': row.secondary }]} style={`--v: ${row.value}; --i: ${i}`}>
         <span class="bars__label">{typo(row.label)}{row.note && <em> {typo(row.note)}</em>}</span>
         <span class="bars__track"><span class="bars__bar"></span><span class="bars__value">{typo(row.display)}</span></span>
       </li>
+      </>
     ))}
   </ol>
   {note && <p class="bars__note">{typo(note)}</p>}
@@ -50,10 +58,22 @@ const longest = Math.max(...rows.map((row) => row.display.length));
     /* pozycja wartości v na skali (w szerokości wykresu) */
     --scale: calc(100% - var(--reserve));
   }
+  /* Wariant duży: grube słupki, wartość w foncie nagłówków; liczba prowadząca w kobalcie */
+  .bars--lg { --bar: 36px; --reserve: max(120px, calc(var(--chars) * 1.25rem + 16px)); }
+  .bars--lg .bars__rows { --gap: 24px; }
+  .bars--lg .bars__value { font-size: 2.25rem; font-weight: 300; }
+  .bars--lg .bars__row:not(.bars__row--hi) .bars__value { color: var(--text-strong); }
+  .bars__lead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 0 0 28px; font-size: 0.9375rem; line-height: 1.4; color: var(--text-strong); }
+  .bars__lead-value { font: 300 clamp(3rem, 9cqi, 4.5rem)/1 var(--f-display); letter-spacing: -0.03em; color: var(--blue); }
+  /* dwa wykresy w jednej ramce (różne miary, każda z własną skalą) */
+  .bars + .bars { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line); }
   .bars__rows { --gap: 20px; display: grid; gap: var(--gap); }
   .bars__row { position: relative; display: grid; gap: 8px; }
   .bars__label { font-size: 0.90625rem; line-height: 1.3; color: var(--ink); }
   .bars__label em { font-style: normal; color: var(--muted); }
+  /* Nagłówek grupy: mono wersalikami, odstęp od poprzedniej grupy */
+  .bars__group { margin-bottom: -8px; font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .bars__group:not(:first-child) { margin-top: 12px; }
 
   .bars__track { position: relative; display: flex; align-items: center; gap: 12px; }
   .bars__bar {
@@ -98,5 +118,7 @@ const longest = Math.max(...rows.map((row) => row.display.length));
     .bars__rows { --gap: 16px; }
     .bars__label { font-size: 0.875rem; }
     .bars__value { font-size: 1.125rem; }
+    .bars--lg { --bar: 26px; --reserve: max(96px, calc(var(--chars) * 1rem + 12px)); }
+    .bars--lg .bars__value { font-size: 1.75rem; }
   }
 </style>

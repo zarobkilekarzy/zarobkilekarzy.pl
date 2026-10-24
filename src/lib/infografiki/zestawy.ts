@@ -16,7 +16,7 @@ import { AGE_BASE, AGE_LADDER } from '@/data/pielegniarstwo-w-polsce';
 import { FIRST_YEAR as STUDENTS_FIRST_YEAR, LINKS as ODSIEW_LINKS, PES_2025, PES_2025_ALL, PES_LINK, funnelRows, pesYear } from '@/data/odsiew-na-medycynie';
 import { DEFAULTS, LIMIT_TODAY, PRESETS, REGISTER_TOTAL, YEAR0, YEAR_MIN, seats, simulate } from '@/lib/podaz/model';
 import { AOS_FIRST, AOS_LAST, LINKS as WIZYTA_LINKS, NIL_N, NO_CLINICAL, WHC_2022, WHC_2024, WORK_MODEL, combined, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
-import { BEAN } from '@/data/ai-w-medycynie-2026';
+import { BEAN, NORI } from '@/data/ai-w-medycynie-2026';
 import { formatPL } from '@/lib/format';
 import { monitoring } from '@/lib/monitoring';
 import { monitoringMap, opennessP } from '@/lib/monitoring/map';
@@ -540,6 +540,21 @@ const ai: InfographicSet = {
   page: 'Analiza: Sztuczna inteligencja w medycynie — stan na 2026',
   filePrefix: 'zarobkilekarzy',
   items: [
+    {
+      id: 'ai-a-lekarze',
+      // mnożnik w tytule tylko dla trudnych przypadków; w SOR przewaga mniejsza — widać to w wierszach
+      title: `W trudnych przypadkach AI trafiała w rozpoznanie ${formatPL(NORI.nejm.ai / NORI.nejm.doctors, 1)} raza częściej niż lekarze`,
+      measure: 'trafne rozpoznania w symulacji · odsetek przypadków',
+      unit: '%',
+      rows: [
+        { label: 'AI (MAI-DxO)', sub: 'trudne przypadki z NEJM', value: NORI.nejm.ai, display: formatPL(NORI.nejm.ai, 1), highlight: true },
+        { label: 'Lekarze', sub: 'trudne przypadki z NEJM', value: NORI.nejm.doctors, display: formatPL(NORI.nejm.doctors, 1) },
+        { label: 'AI (MAI-DxO)', sub: 'pacjenci przyjęci z SOR', value: NORI.sor.ai, display: formatPL(NORI.sor.ai, 1), highlight: true },
+        { label: 'Lekarze', sub: 'pacjenci przyjęci z SOR', value: NORI.sor.doctors, display: formatPL(NORI.sor.doctors, 1) },
+      ],
+      sources: `Źródło: Nori i in., Science (2026), Microsoft AI · symulacja na ${formatPL(NORI.cases)} przypadkach, bez pacjentów`,
+      alt: `Infografika: w symulacji opisanej w Science (2026) system AI Microsoftu MAI-DxO trafiał w rozpoznanie w ${formatPL(NORI.nejm.ai, 1)}% trudnych przypadków z New England Journal of Medicine, a lekarze w ${formatPL(NORI.nejm.doctors, 1)}% — ${formatPL(NORI.nejm.ai / NORI.nejm.doctors, 1)} raza rzadziej. U pacjentów przyjętych z SOR: AI ${formatPL(NORI.sor.ai, 1)}%, lekarze ${formatPL(NORI.sor.doctors, 1)}%. ${formatPL(NORI.cases)} przypadków, bez udziału pacjentów. Źródło: H. Nori i in., ${NORI.href}.`,
+    },
     {
       id: 'model-a-pacjent',
       title: 'Sam model trafia częściej niż człowiek, który go używa',

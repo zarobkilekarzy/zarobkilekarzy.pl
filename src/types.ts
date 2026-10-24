@@ -119,6 +119,8 @@ export interface BarRow {
   highlight?: boolean;
   /** cieńszy słupek do porównań (np. „prywatnie”) */
   secondary?: boolean;
+  /** nagłówek grupy nad tym wierszem (np. „Trudne przypadki”) — pary słupków w jednej skali */
+  group?: string;
 }
 
 /** Element listy: tytuł + tekst (kroki, zasady, prawa). */

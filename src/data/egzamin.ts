@@ -82,6 +82,7 @@ export const egzaminPage = {
   // Ten sam interfejs co window.lek (lib/egzamin/api.ts) — przy zmianie API aktualizuj oba miejsca.
   agentPrompt: `Rozwiąż pełny egzamin LEK (200 pytań) na https://zarobkilekarzy.pl/egzamin/ przez window.lek (JavaScript w karcie; funkcje zwracają Promise).
 
+0. Otwórz stronę pod adresem https://zarobkilekarzy.pl/egzamin/?agent=MODEL&reasoning=POZIOM — MODEL to Twój dokładny identyfikator modelu, POZIOM to poziom rozumowania (np. low, medium, high; unknown, jeśli go nie znasz). Bez spacji. Dzięki temu wynik trafi do osobnych statystyk asystentów AI, a nie ludzi.
 1. Najnowsza sesja: const [s] = await lek.sesje(); await lek.rozpocznij("egzamin", s.id)
 2. Partiami po 25: await lek.pytania(1, 25), potem await lek.odpowiedzi({ 1: "A", 2: "C", … }); dalej 26–50 itd.
 3. Gdy await lek.bezOdpowiedzi() zwróci [], await lek.zakoncz() zwraca wynik.

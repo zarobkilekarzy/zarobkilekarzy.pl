@@ -18,6 +18,7 @@ export interface LekHost {
 
 const OPIS =
   'Moduł egzaminacyjny LEK/LDEK na jawnej bazie CEM (zarobkilekarzy.pl). Wszystkie funkcje zwracają Promise. ' +
+  'Otwórz stronę z ?agent=MODEL&reasoning=POZIOM (Twój identyfikator modelu i poziom rozumowania), żeby wynik trafił do osobnych statystyk asystentów AI. ' +
   'Start: await rozpocznij(tryb, sesja, { egzamin, dziedzina, losowo }) — tryby: nauka, szybki, egzamin; sesje: sesje(). ' +
   'Pytania partiami: pytania(od, do); odpowiedzi partiami: odpowiedzi({ nr: litera }); pojedynczo: pytanie(nr), odpowiedz(litera, nr). ' +
   'Numery 1–N w kolejności testu. Pytania unieważnione przez CEM (uniewaznione: true) pomija się: odpowiedzi() je odrzuca, bezOdpowiedzi() ich nie zwraca. Na koniec zakoncz(), potem wynik(). Odpowiadaj z własnej wiedzy.';

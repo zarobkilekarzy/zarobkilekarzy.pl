@@ -6,6 +6,8 @@
 //   POST /api/egzamin {sesja, tryb, pkt, max, czas, turnstileToken}
 //        -> 200 { grupa: [{kubel, n, zdane, sumaProc}] }  — statystyki WŁASNEJ grupy, już z tym wynikiem
 //        -> 400 | 403
+//   POST /api/egzamin {…, agent, reasoning}  — wynik asystenta AI (strona otwarta z ?agent=model&reasoning=poziom):
+//        osobna tabela `agenci` z identyfikatorem modelu, poza agregatami ludzi -> 200 {}
 //   GET  /api/egzamin -> { grupy: [{tryb, sesja, kubel, n, zdane, sumaProc}] }  — tylko gdy front nic nie zapisuje
 //
 // Koszt (darmowy plan): zapis to JEDNO wywołanie Workera — POST od razu zwraca
@@ -27,6 +29,7 @@ const TRYBY = new Set(['egzamin', 'szybki']);
 const SESJA_RE = /^(ldek-)?(\d{4}[12]|wszystkie)$/;
 const PROG = 0.56; // art. 14f ustawy o zawodach lekarza — 56% maksymalnej liczby punktów
 const SEK_NA_PYTANIE = 72; // 4 h na 200 pytań (Dz.U. 2021 poz. 828, § 10 ust. 5)
+const AGENT_RE = /^[\w.:/@+-]{1,64}$/; // identyfikator modelu / poziom rozumowania — jak w lib/egzamin/stats.ts
 const BROWSER_TTL = 600; // cache przeglądarki
 const EDGE_TTL = 300; // cache brzegu dla GET (caches.default)
 
@@ -51,6 +54,12 @@ const ensureSchema = async (db) => {
         'tryb TEXT NOT NULL, sesja TEXT NOT NULL, kubel INTEGER NOT NULL, ' +
         'n INTEGER NOT NULL, zdane INTEGER NOT NULL, suma_proc REAL NOT NULL, ' +
         'PRIMARY KEY (tryb, sesja, kubel))'
+    ),
+    db.prepare(
+      'CREATE TABLE IF NOT EXISTS agenci (' +
+        'dzien TEXT NOT NULL, tryb TEXT NOT NULL, sesja TEXT NOT NULL, ' +
+        'pkt INTEGER NOT NULL, max INTEGER NOT NULL, czas_min INTEGER NOT NULL, ' +
+        'zdany INTEGER NOT NULL, model TEXT NOT NULL, reasoning TEXT NOT NULL)'
     ),
   ]);
   // Jednorazowe odtworzenie agregatów z surowych wierszy (np. po dodaniu tabeli do
@@ -84,16 +93,19 @@ const verifyTurnstile = async (token, secret) => {
 };
 
 // Walidacja wiarygodności: tylko testy, które dało się realnie ukończyć w module.
+// Agent AI odpowiada partiami, więc u niego nie ma dolnej granicy czasu.
 const sprawdz = (b) => {
   if (!b || !TRYBY.has(b.tryb) || !SESJA_RE.test(String(b.sesja))) return null;
+  const agent = b.agent !== undefined;
+  if (agent && !(AGENT_RE.test(String(b.agent)) && AGENT_RE.test(String(b.reasoning)))) return null;
   const pkt = Number(b.pkt), max = Number(b.max), czas = Number(b.czas);
   if (![pkt, max, czas].every(Number.isInteger)) return null;
   // Egzamin = cała sesja (200 minus pytania unieważnione); szybki test = 20 pytań.
   if (b.tryb === 'egzamin' ? max < 150 || max > 200 : max !== 20) return null;
   if (pkt < 0 || pkt > max) return null;
   // Czas w sekundach: nie szybciej niż 2 s na pytanie, nie dłużej niż limit + 2 min zapasu.
-  if (czas < max * 2 || czas > max * SEK_NA_PYTANIE + 120) return null;
-  return { tryb: b.tryb, sesja: String(b.sesja), pkt, max, czas };
+  if ((!agent && czas < max * 2) || czas < 0 || czas > max * SEK_NA_PYTANIE + 120) return null;
+  return { tryb: b.tryb, sesja: String(b.sesja), pkt, max, czas, ...(agent && { model: String(b.agent), reasoning: String(b.reasoning) }) };
 };
 
 export async function handleEgzamin(request, env, ctx) {
@@ -138,6 +150,13 @@ export async function handleEgzamin(request, env, ctx) {
       const proc = w.pkt / w.max;
       const zdany = w.pkt >= Math.ceil(w.max * PROG) ? 1 : 0;
       const kubel = Math.min(9, Math.floor(proc * 10));
+      if (w.model) {
+        await db
+          .prepare('INSERT INTO agenci (dzien, tryb, sesja, pkt, max, czas_min, zdany, model, reasoning) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)')
+          .bind(new Date().toISOString().slice(0, 10), w.tryb, w.sesja, w.pkt, w.max, Math.round(w.czas / 60), zdany, w.model, w.reasoning)
+          .run();
+        return json({}, 200, 'no-store');
+      }
       // Zapis surowego wiersza + aktualizacja agregatu + odczyt grupy — jedna transakcja.
       const [, , grupa] = await db.batch([
         db

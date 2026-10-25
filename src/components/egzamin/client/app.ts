@@ -9,7 +9,7 @@ import { ExamSession, type Change } from '@/lib/egzamin/session';
 import { codeOfQuestion, parseSessionCode } from '@/lib/egzamin/ids';
 import { loadByIds, loadSessions } from '@/lib/egzamin/source';
 import { notes, prefs, results, testStore, weak, type ResultV1 } from '@/lib/egzamin/storage';
-import { MIN_RESULTS, comparable, groupStats } from '@/lib/egzamin/stats';
+import { MIN_RESULTS, agentFromUrl, comparable, groupStats, sendAgentResult } from '@/lib/egzamin/stats';
 import type { ExamId, ExamQuestion, FieldInfo, ModeInfo, SessionInfo, TestConfig, TestState } from '@/lib/egzamin/types';
 import { formatPL, plural } from '@/lib/format';
 import * as R from './render';
@@ -355,7 +355,10 @@ class ZlExam extends HTMLElement {
       const questions = selectQuestions(pool, config, mode);
       if (questions.length === 0) throw new Error('Brak pytań w tym zakresie.');
       const state = createTest(questions, config, mode);
-      if (agent) state.agent = true;
+      // Adres z ?agent= oznacza test asystenta AI także wtedy, gdy klika w interfejs zamiast window.lek
+      const tag = agentFromUrl();
+      if (agent || tag) state.agent = true;
+      if (tag) state.agentTag = tag;
       this.attach(new ExamSession(state, questions, mode, this.cfg.rules.threshold));
       this.session!.save();
       this.open();
@@ -839,7 +842,9 @@ class ZlExam extends HTMLElement {
   private async renderCompare() {
     const s = this.session!;
     const box = this.q('[data-compare]');
-    if (!box || !s.finished || s.mode.instant || s.state.agent || !comparable(s.state)) return;
+    if (!box || !s.finished || s.mode.instant) return;
+    if (s.state.agent) return void sendAgentResult(s.state, s.result(), this.q('[data-turnstile]'), () => s.save());
+    if (!comparable(s.state)) return;
     const r = s.result();
     const stats = await groupStats(s.state, r, this.q('[data-turnstile]'), () => s.save()).catch(() => null);
     if (this.session !== s || !box.isConnected) return; // w międzyczasie ruszył nowy test

@@ -10,7 +10,7 @@
  * (lub wszystkich sesji), bez zawężenia do dziedziny, bez powtórki i bez udziału agenta.
  */
 import { sessionCode } from './ids';
-import type { TestConfig, TestResult, TestState } from './types';
+import type { AgentTag, TestConfig, TestResult, TestState } from './types';
 
 const API = '/api/egzamin';
 /** Poniżej tej liczby wyników grupy nie pokazujemy rozkładu (za mało, żeby coś znaczył). */
@@ -48,6 +48,17 @@ const acceptable = (mode: TestConfig['mode'], r: TestResult) => {
   const sizeOk = mode === 'egzamin' ? r.max >= 150 && r.max <= 200 : r.max === 20;
   return sizeOk && sec >= r.max * 2 && sec <= r.max * 72 + 120;
 };
+
+/** Ta sama walidacja co w worker/egzamin.js: krótki identyfikator bez spacji. */
+const AGENT_RE = /^[\w.:/@+-]{1,64}$/;
+
+/** Asystent AI z adresu strony (?agent=model&reasoning=poziom) albo null. */
+export function agentFromUrl(): AgentTag | null {
+  const p = new URLSearchParams(location.search);
+  const model = p.get('agent')?.trim() ?? '';
+  const reasoning = p.get('reasoning')?.trim() || 'unknown';
+  return AGENT_RE.test(model) && AGENT_RE.test(reasoning) ? { model, reasoning } : null;
+}
 
 /** Klucz grupy po stronie serwera: „20262”, „ldek-20262”, „wszystkie”, „ldek-wszystkie”. */
 const groupKey = (c: TestConfig) =>
@@ -156,4 +167,27 @@ export async function groupStats(state: TestState, result: TestResult, turnstile
   }
   const rows = (await fetchAll()).filter((g) => g.tryb === state.config.mode && g.sesja === key);
   return summarize(rows, false);
+}
+
+/**
+ * Wynik asystenta AI przedstawionego w adresie strony — do osobnej tabeli agentów, nigdy do
+ * statystyk ludzi. Ten sam zakres testów co u ludzi, bez dolnej granicy czasu i bez odstępu 5 minut.
+ */
+export async function sendAgentResult(state: TestState, result: TestResult, turnstileBox: HTMLElement, persist: () => void) {
+  const tag = state.agentTag;
+  const c = state.config;
+  if (!tag || state.sent || state.incomparable || c.ids || c.field !== 'all') return;
+  if (c.mode === 'egzamin' ? result.max < 150 || result.max > 200 : c.mode !== 'szybki' || result.max !== 20) return;
+  state.sent = true;
+  persist();
+  const token = await turnstileToken(turnstileBox);
+  await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    keepalive: true,
+    body: JSON.stringify({
+      sesja: groupKey(c), tryb: c.mode, pkt: result.points, max: result.max,
+      czas: Math.round(result.elapsed / 1000), agent: tag.model, reasoning: tag.reasoning, turnstileToken: token,
+    }),
+  }).catch(() => { /* sieć — wynik agenta przepada */ });
 }

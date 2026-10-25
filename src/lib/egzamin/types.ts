@@ -99,6 +99,12 @@ export interface TestConfig {
   weak?: boolean;
 }
 
+/** Asystent AI przedstawiony w adresie strony: identyfikator modelu i poziom rozumowania. */
+export interface AgentTag {
+  model: string;
+  reasoning: string;
+}
+
 /** Stan rozwiązywanego testu — zapisywany w przeglądarce po każdej zmianie. */
 export interface TestState {
   v: 1;
@@ -120,6 +126,8 @@ export interface TestState {
   finishedAt: number | null;
   /** test rozwiązywał asystent AI przez window.lek — nie trafia do statystyk */
   agent?: boolean;
+  /** model i poziom rozumowania z adresu (?agent=…&reasoning=…) — wynik trafia do osobnej tabeli agentów */
+  agentTag?: AgentTag;
   /** wynik przekazany (albo celowo pominięty) do anonimowych statystyk — lib/egzamin/stats.ts */
   sent?: boolean;
   /** test nieporównywalny z innymi mimo `field: 'all'` (np. zakres kilku dziedzin z pierwszej wersji modułu) */

@@ -14,10 +14,12 @@ import KeyFacts from '@/components/blocks/KeyFacts.astro';
 import Faq from '@/components/blocks/Faq.astro';
 import Eyebrow from '@/components/ui/Eyebrow.astro';
 import ExamApp from '@/components/egzamin/ExamApp.astro';
+import SiteStats from '@/components/egzamin/SiteStats.astro';
 import {
   BANK, EXAMS, FIELDS, GAP_YEARS, MODES, ORIGIN_TABLE, RULES, SESSIONS,
-  egzaminFaq, egzaminPage, egzaminSources,
+  egzaminFaq, egzaminPage, egzaminSiteStats, egzaminSources,
 } from '@/data/egzamin';
+import { siteStats } from '@/lib/egzamin/site-stats';
 import { plain } from '@/lib/inline';
 import type { Crumb, SeoInput } from '@/lib/seo';
 import { formatPL, typo } from '@/lib/format';
@@ -28,6 +30,9 @@ const facts = [
   { value: String(RULES.minutes / 60), unit: 'godziny', label: 'na cały egzamin' },
   { value: String(Math.round(RULES.threshold * 100)), unit: '%', label: 'próg zdania' },
 ];
+
+// Wyniki użytkowników z D1, odczyt raz przy buildzie; bez dostępu do bazy sekcja znika
+const stats = siteStats();
 
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Egzamin LEK' }];
 // Frazy z wyszukiwarki („darmowy egzamin LEK”, „egzamin lekarski online”) w tytule, opisie i nagłówku;
@@ -146,6 +151,19 @@ const seo: SeoInput = {
       <p class="sources__note">{typo('Moduł nie jest powiązany z CEM. CEM zastrzega, że treść pytań może nie odpowiadać aktualnej wiedzy medycznej i nie może być podstawą decyzji diagnostyczno-terapeutycznych; pytania zgłoszone w bazie CEM jako niezgodne z aktualną wiedzą oznaczamy.')}</p>
     </div>
   </Section>
+
+  {stats && (
+    <Section aria-labelledby="wyniki-strony">
+      <SiteStats
+        stats={stats}
+        threshold={RULES.threshold}
+        quickSize={MODES.find((m) => m.id === 'szybki')?.size ?? 20}
+        examMinutes={RULES.minutes}
+        lead={egzaminSiteStats.lead}
+        source={egzaminSiteStats.source}
+      />
+    </Section>
+  )}
 
   <Section id="pytania" aria-labelledby="pytania-title">
     <div class="faq-sec">

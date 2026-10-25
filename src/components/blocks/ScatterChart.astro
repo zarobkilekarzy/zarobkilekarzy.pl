@@ -1,0 +1,78 @@
+---
+/**
+ * Wykres rozrzutu: każda kropka to jedna obserwacja (np. egzamin: czas × wynik). Skale od zera.
+ * Siatka i linie odniesienia to SVG rozciągnięty na pole (`preserveAspectRatio="none"`,
+ * `non-scaling-stroke`), a kropki i podpisy to HTML — nie skalują się z polem.
+ * Kropki `highlight` w akcencie (--blue), pozostałe w --chart z lekką przezroczystością,
+ * żeby nakładające się punkty było widać jako gęstsze miejsce.
+ */
+import { typo } from '@/lib/format';
+
+interface Tick { value: number; label: string }
+
+interface Props {
+  points: { x: number; y: number; highlight?: boolean }[];
+  /** zakres i podpisy osi poziomej */
+  x: { max: number; ticks: Tick[] };
+  /** zakres osi pionowej i podpisy linii siatki */
+  y: { max: number; ticks: Tick[] };
+  /** poziome linie odniesienia: `ink` przerywana (np. próg), `muted` kropkowana (np. poziom zgadywania) */
+  lines?: { value: number; label: string; tone?: 'ink' | 'muted' }[];
+  /** pełny opis danych dla czytników ekranu */
+  caption: string;
+}
+
+const { points, x, y, lines = [], caption } = Astro.props;
+const px = (v: number) => ((v / x.max) * 100).toFixed(2);
+const py = (v: number) => (100 - (v / y.max) * 100).toFixed(2);
+---
+<figure class="sc">
+  <div class="sc__plot" aria-hidden="true">
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+      {y.ticks.map((t) => <line x1="0" x2="100" y1={py(t.value)} y2={py(t.value)} class="sc__grid" />)}
+      {lines.map((l) => <line x1="0" x2="100" y1={py(l.value)} y2={py(l.value)} class:list={['sc__line', `sc__line--${l.tone ?? 'ink'}`]} />)}
+    </svg>
+    {y.ticks.filter((t) => t.value > 0).map((t) => <span class="sc__y" style={`top: ${py(t.value)}%`}>{t.label}</span>)}
+    {lines.map((l) => <span class:list={['sc__line-label', `sc__line-label--${l.tone ?? 'ink'}`]} style={`top: ${py(l.value)}%`}>{typo(l.label)}</span>)}
+    {points.map((p) => <span class:list={['sc__dot', { 'is-hi': p.highlight }]} style={`left: ${px(p.x)}%; top: ${py(p.y)}%`}></span>)}
+  </div>
+  <div class="sc__x" aria-hidden="true">
+    {x.ticks.map((t) => <span style={`left: ${px(t.value)}%`} class:list={{ 'is-first': t.value === 0, 'is-last': t.value === x.max }}>{typo(t.label)}</span>)}
+  </div>
+  <figcaption class="sr-only">{caption}</figcaption>
+</figure>
+
+<style>
+  .sc { container-type: inline-size; margin: 0; }
+  .sc__plot { position: relative; height: clamp(240px, 52cqi, 340px); margin-top: 8px; border-bottom: 1px solid var(--line-2); }
+  .sc__plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .sc__grid { stroke: var(--line); vector-effect: non-scaling-stroke; }
+  .sc__line { vector-effect: non-scaling-stroke; }
+  .sc__line--ink { stroke: var(--ink); stroke-dasharray: 4 3; }
+  .sc__line--muted { stroke: var(--muted); stroke-dasharray: 1 3; }
+
+  /* Podpis linii siatki nad nią, przy lewej krawędzi */
+  .sc__y { position: absolute; left: 0; translate: 0 calc(-100% - 3px); font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  /* Podpis linii odniesienia przy prawej krawędzi, wycięty tłem */
+  .sc__line-label {
+    position: absolute; right: 0; translate: 0 -50%; z-index: 1; padding: 2px 0 2px 6px; background: var(--under);
+    font: 500 0.65625rem/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+  }
+  .sc__line-label--ink { color: var(--ink); }
+  .sc__line-label--muted { color: var(--muted); }
+
+  .sc__dot {
+    position: absolute; width: 9px; height: 9px; translate: -50% -50%; border-radius: 50%;
+    background: var(--chart); opacity: .85;
+  }
+  .sc__dot.is-hi { z-index: 2; background: var(--blue); opacity: 1; }
+
+  .sc__x { position: relative; height: 1.4rem; margin-top: 6px; }
+  .sc__x span { position: absolute; top: 0; translate: -50% 0; font: 400 0.6875rem/1.2 var(--f-mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .sc__x span.is-first { translate: 0 0; }
+  .sc__x span.is-last { translate: -100% 0; }
+  @container (max-width: 420px) {
+    .sc__dot { width: 7px; height: 7px; }
+    .sc__line-label { font-size: 0.5625rem; }
+  }
+</style>

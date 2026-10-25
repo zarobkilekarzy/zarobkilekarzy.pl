@@ -141,6 +141,12 @@ export const egzaminFaq: FaqItem[] = [
   },
 ];
 
+/** Sekcja „Wyniki na tej stronie” (components/egzamin/SiteStats) — liczby z D1 przy buildzie (lib/egzamin/site-stats.ts). */
+export const egzaminSiteStats = {
+  lead: `Każdy ukończony egzamin i szybki test z całej sesji trafia **anonimowo** do zbiorczej statystyki: tryb, sesja, punkty i czas. Test może rozwiązać każdy, więc to **nie są wyniki lekarzy ani studentów**, tylko osób odwiedzających stronę. Prawdziwy LEK w sesji jesiennej 2025 r. zdało **${formatPL(passRate(LEK_2025), 1)}%** podchodzących ([CEM](${LEK_2025.source.url})).`,
+  source: 'Źródło: anonimowe wyniki zapisane przez stronę, przeliczane raz na dobę. Bez adresu IP i identyfikatorów.',
+};
+
 /** Źródła zasad i jawności — wspólne dla sekcji „Skąd te pytania” i stopki źródeł. */
 export const egzaminSources = [
   { label: 'Baza pytań LEK — Centrum Egzaminów Medycznych', href: 'https://cem.edu.pl/pytcem/eula_lek_p.php' },

@@ -16,6 +16,8 @@ interface Props {
   max: number;
   unit: string;
   average?: number;
+  /** podpis linii zamiast „średnio X”, gdy to inna wartość odniesienia (np. „zgadywanie 20%”) */
+  averageLabel?: string;
   /** dopisek pod wykresem */
   note?: string;
   /** pełny opis danych dla czytników ekranu */
@@ -26,7 +28,7 @@ interface Props {
   lead?: { value: string; text: string };
 }
 
-const { rows, max, unit, average, note, caption, size, lead } = Astro.props;
+const { rows, max, unit, average, averageLabel, note, caption, size, lead } = Astro.props;
 // miejsce na wartość za najdłuższym słupkiem: co najmniej 96px, a dla długich etykiet („243,8 mld zł”)
 // ok. 0,7rem na znak w foncie wartości + odstęp — w rem, więc rośnie razem z „Większym tekstem”
 const longest = Math.max(...rows.map((row) => row.display.length));
@@ -34,7 +36,7 @@ const longest = Math.max(...rows.map((row) => row.display.length));
 <figure class:list={['bars', { 'bars--lg': size === 'lg' }]} data-reveal="grow" style={`--max: ${max}; --chars: ${longest}${average !== undefined ? `; --avg: ${average}` : ''}`}>
   {lead && <p class="bars__lead" aria-hidden="true"><span class="bars__lead-value">{lead.value}</span> <span>{typo(lead.text)}</span></p>}
   {average !== undefined && (
-    <p class="bars__avg" aria-hidden="true"><span>{typo(`średnio ${formatPL(average, 1)} ${unit}`)}</span></p>
+    <p class="bars__avg" aria-hidden="true"><span>{typo(averageLabel ?? `średnio ${formatPL(average, 1)} ${unit}`)}</span></p>
   )}
   <ol class:list={['bars__rows', { 'has-avg': average !== undefined }]} aria-hidden="true">
     {rows.map((row, i) => (

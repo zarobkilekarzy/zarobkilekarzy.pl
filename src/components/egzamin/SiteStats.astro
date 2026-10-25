@@ -1,0 +1,190 @@
+---
+/**
+ * „Wyniki na tej stronie” pod testem: liczby, rozkład szybkiego testu, egzamin czas × wynik,
+ * szybki test według czasu i tabela asystentów AI. Dane z D1 czyta build (lib/egzamin/site-stats.ts);
+ * strona przebudowuje się codziennie, więc liczby są „stan na” chwilę buildu.
+ * Tytuły wykresów liczone z danych, żeby teza nie rozjechała się z liczbami po kolejnym przeliczeniu.
+ */
+import Heading from '@/components/ui/Heading.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import ColumnChart from '@/components/blocks/ColumnChart.astro';
+import ScatterChart from '@/components/blocks/ScatterChart.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import type { SiteStats } from '@/lib/egzamin/site-stats';
+import { formatDate, formatPL, plural, typo } from '@/lib/format';
+import { inline } from '@/lib/inline';
+import type { Stat } from '@/types';
+
+interface Props {
+  stats: SiteStats;
+  /** próg zdania jako ułamek (RULES.threshold) */
+  threshold: number;
+  /** pytań w szybkim teście */
+  quickSize: number;
+  /** limit pełnego egzaminu w minutach */
+  examMinutes: number;
+  lead: string;
+  source: string;
+}
+
+const { stats, threshold, quickSize, examMinutes, lead, source } = Astro.props;
+const { exam, quick, agents } = stats;
+/** pięć odpowiedzi do wyboru: losowe zgadywanie trafia średnio co piąte pytanie */
+const GUESS = 0.2;
+const passPoints = Math.ceil(quickSize * threshold);
+const pct = (share: number, decimals = 0) => `${formatPL(share * 100, decimals)}%`;
+const quickPassed = quick.n ? quick.passed / quick.n : 0;
+const exactSource = { accuracy: 'exact' as const, source: 'wyniki zapisane przez stronę', href: '#prywatnosc' };
+
+const items: Stat[] = [
+  {
+    value: exam.n + quick.n, unit: plural(exam.n + quick.n, ['test', 'testy', 'testów']),
+    desc: `ukończonych od ${formatDate(new Date(stats.since))} — pełne egzaminy i szybkie testy, LEK i LDEK`, ...exactSource,
+  },
+  {
+    value: exam.n, unit: plural(exam.n, ['egzamin', 'egzaminy', 'egzaminów']),
+    desc: `pełnych, ${examMinutes / 60} godziny na 200 pytań; powyżej progu ${pct(threshold)}: ${formatPL(exam.passed)}`, ...exactSource,
+  },
+  {
+    value: quick.median, unit: `z ${quickSize} pkt`,
+    desc: `mediana szybkiego testu; samo zgadywanie daje średnio ${quickSize * GUESS}`, ...exactSource,
+  },
+  {
+    value: quickPassed * 100, decimals: 1, unit: '%',
+    desc: `szybkich testów z wynikiem co najmniej ${passPoints} z ${quickSize} pkt, czyli powyżej progu ${pct(threshold)}`, ...exactSource,
+  },
+];
+
+const shares = quick.byPoints.map((c) => (quick.n ? c / quick.n : 0));
+const columns = shares.map((s, i) => ({
+  label: String(i),
+  value: s * 100,
+  display: s === 0 ? '0' : s < 0.01 ? '<1' : formatPL(s * 100),
+}));
+
+// Pełny egzamin: kropka = egzamin; oś czasu do limitu (dłużej się nie da)
+const points = exam.points.map((p) => ({ x: Math.min(p.minutes, examMinutes), y: p.share * 100, highlight: p.share >= threshold }));
+const hourTicks = Array.from({ length: examMinutes / 60 + 1 }, (_, h) => ({
+  value: h * 60, label: h === 0 ? '0 min' : h === examMinutes / 60 ? `${h} h — limit` : `${h} h`,
+}));
+
+const timed = quick.byTime.filter((b) => b.n > 0);
+const best = timed.reduce((a, b) => (b.mean > a.mean ? b : a), timed[0]);
+const rows = timed.map((b) => ({
+  label: b.label, note: `${formatPL(b.n)} ${plural(b.n, ['test', 'testy', 'testów'])}`,
+  value: b.mean * 100, display: pct(b.mean, 1), highlight: b === best,
+}));
+const fastest = timed[0];
+const timeNote = [
+  'Linia pokazuje wynik przy losowym zgadywaniu: jedna z pięciu odpowiedzi.',
+  fastest && fastest.mean < GUESS && `Testy kończone ${fastest.label.replace('do ', 'w ')} mają średnio mniej, niż daje zgadywanie — zapewne część pytań zostaje w nich bez odpowiedzi.`,
+].filter(Boolean).join(' ');
+
+const MODE_LABEL: Record<string, string> = { egzamin: 'egzamin', szybki: 'szybki test' };
+---
+<div class="ss">
+  <header class="ss__head">
+    <p class="mono-label">Aktualizacja raz na dobę · stan na {stats.asOf}</p>
+    <Heading as="h2" size="h2" id="wyniki-strony" class="ss__title">Wyniki osób, które rozwiązały test na tej stronie</Heading>
+    <p class="ss__lead" set:html={inline(lead)} />
+  </header>
+
+  <StatRow items={items} label="Wyniki na tej stronie" class="ss__stats" />
+
+  <div class="ss__figs">
+    <Figure
+      class="ss__wide"
+      title={`Połowa szybkich testów kończy się wynikiem ${quick.median} pkt z ${quickSize} lub niższym`}
+      note={`Szybki test, ${quickSize} pytań · odsetek z ${formatPL(quick.n)} testów według zdobytych punktów. Próg ${pct(threshold)} to ${passPoints} z ${quickSize} punktów.`}
+    >
+      <ColumnChart
+        columns={columns}
+        max={Math.ceil(Math.max(...shares) * 100) + 1}
+        gap={{ from: passPoints, to: quickSize, label: 'powyżej progu', sub: pct(quickPassed, 1) }}
+        caption={`Rozkład punktów w szybkim teście (${formatPL(quick.n)} testów): ${columns.map((c) => `${c.label} pkt — ${c.display}%`).join(', ')}.`}
+      />
+    </Figure>
+
+    <Figure
+      title="W pełnym egzaminie wynik rośnie z czasem rozwiązywania"
+      note={`Każda kropka to jeden z ${formatPL(exam.n)} ${plural(exam.n, ['egzaminu', 'egzaminów', 'egzaminów'])}: czas rozwiązywania i wynik. Kobaltem wyniki powyżej progu.`}
+    >
+      <ScatterChart
+        points={points}
+        x={{ max: examMinutes, ticks: hourTicks }}
+        y={{ max: 100, ticks: [0, 25, 50, 75, 100].map((v) => ({ value: v, label: `${v}%` })) }}
+        lines={[
+          { value: threshold * 100, label: `próg ${pct(threshold)}` },
+          { value: GUESS * 100, label: `zgadywanie ${pct(GUESS)}`, tone: 'muted' },
+        ]}
+        caption={`Pełne egzaminy (${exam.n}), czas w minutach i wynik: ${exam.points.map((p) => `${p.minutes} min — ${pct(p.share, 1)}`).join('; ')}.`}
+      />
+    </Figure>
+
+    <Figure title={`Najlepiej wypadają szybkie testy rozwiązywane ${best?.label.replace(/^do /, 'w ') ?? ''}`} note={timeNote}>
+      <BarChart
+        rows={rows}
+        max={Math.ceil(Math.max(...rows.map((r) => r.value)) / 10) * 10}
+        unit="%"
+        average={GUESS * 100}
+        averageLabel={`zgadywanie ${pct(GUESS)}`}
+        caption={`Średni wynik szybkiego testu według czasu: ${rows.map((r) => `${r.label} — ${r.display} (${r.note})`).join(', ')}.`}
+      />
+    </Figure>
+
+    <Figure class="ss__wide" title="Asystenci AI" note="Testy rozwiązane przez polecenie dla asystenta, liczone osobno od ludzi (od 25.10.2026). Model i poziom rozumowania podaje sam asystent.">
+      {agents.length ? (
+        <table class="ss__agents">
+          <thead><tr><th scope="col">Model</th><th scope="col">Rozumowanie</th><th scope="col">Tryb</th><th scope="col" class="num">Testy</th><th scope="col" class="num">Średni wynik</th><th scope="col" class="num">Najlepszy</th></tr></thead>
+          <tbody>
+            {agents.map((a) => (
+              <tr>
+                <th scope="row">{a.model}</th>
+                <td>{a.reasoning}</td>
+                <td>{MODE_LABEL[a.mode] ?? a.mode}</td>
+                <td class="num">{formatPL(a.n)}</td>
+                <td class="num">{pct(a.mean, 1)}</td>
+                <td class="num">{pct(a.best, 1)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p class="ss__empty">{typo('Na razie żaden asystent nie zgłosił wyniku.')}</p>
+      )}
+    </Figure>
+  </div>
+
+  <p class="ss__source">{typo(source)}</p>
+</div>
+
+<style>
+  .ss__head { max-width: 52em; }
+  .ss :global(.ss__title) { margin: 14px 0 20px; }
+  .ss__lead { font-size: 1.03125rem; line-height: 1.7; max-width: 46em; }
+  .ss__lead :global(strong) { color: var(--ink); font-weight: 600; }
+  .ss__lead :global(a) { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .ss__lead :global(a:hover) { color: var(--blue); text-decoration-color: currentColor; }
+  .ss :global(.ss__stats) { margin-top: 40px; }
+
+  .ss__figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 64px 48px; margin-top: 56px; }
+  .ss__figs :global(.ss__wide) { grid-column: 1 / -1; }
+
+  .ss__agents { width: 100%; margin-top: 16px; border-collapse: collapse; font-size: 0.9375rem; }
+  .ss__agents th, .ss__agents td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; }
+  .ss__agents thead th { padding-top: 0; border-bottom-color: var(--line-2); font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .ss__agents tbody th { color: var(--ink); font-family: var(--f-mono); font-size: 0.875rem; }
+  .ss__agents td { color: var(--text-strong); font-variant-numeric: tabular-nums; }
+  .ss__agents .num { text-align: right; padding-right: 0; padding-left: 12px; }
+  .ss__empty { margin-top: 16px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 0.9375rem; color: var(--muted); }
+
+  .ss__source { margin-top: 48px; font: 400 0.71875rem/1.4 var(--f-mono); color: var(--muted); }
+
+  @media (max-width: 1024px) {
+    .ss__figs { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .ss__agents { display: block; overflow-x: auto; }
+  }
+</style>

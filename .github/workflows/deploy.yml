@@ -3,9 +3,13 @@ name: Deploy to Cloudflare Workers
 # Deploy: automatycznie po pushu na `main` oraz ręcznie (Actions → Run workflow) — tylko z `main`.
 # Worker nie ma adresów podglądu (wrangler.jsonc: preview_urls false), więc każdy deploy jest
 # produkcyjny; ręczny run z innej gałęzi kończy się na buildzie, bez wdrożenia.
+# Codziennie o 1:00 UTC (3:00 latem, 2:00 zimą w Polsce) przebudowa `main`: statystyki wyników
+# na /egzamin/ czyta z D1 build (src/lib/egzamin/site-stats.ts), więc strona ich nie odpytuje.
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '0 1 * * *'
   workflow_dispatch:
 
 jobs:
@@ -42,8 +46,11 @@ jobs:
         # przerywają build.
         # Token Cloudflare Web Analytics jest publiczny (trafia do HTML jako data-cf-beacon);
         # bez niego Analytics.astro nie renderuje beaconu i pomiar znika.
+        # Token API: odczyt statystyk /egzamin/ z D1 (wrangler d1 execute); bez dostępu sekcja znika.
         env:
           CF_WEB_ANALYTICS_TOKEN: 41998160098a4fd3965151cf1b67f440
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npm run build:release
 
       - name: Deploy to Cloudflare Workers

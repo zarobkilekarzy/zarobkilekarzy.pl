@@ -56,7 +56,7 @@ export default defineConfig({
     }),
     // Po sitemapie: audyt czyta gotowe pliki mapy
     seoIntegration,
-    // index.md obok każdej strony — treść w Markdownie dla agentów (llms.txt)
+    // strona.md dla każdej strony — treść w Markdownie dla agentów (llms.txt)
     markdown(),
   ],
 

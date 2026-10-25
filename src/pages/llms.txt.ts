@@ -6,7 +6,7 @@ import { getFeedItems } from '@/lib/seo/feeds';
 /**
  * llms.txt (llmstxt.org): spis serwisu dla modeli językowych — H1, streszczenie, sekcje z linkami.
  * Generowany z kolekcji, więc nie rozjedzie się z treścią. Treść każdej strony w Markdownie leży pod
- * adresem strony + `index.md` (integrations/markdown, po buildzie). Accept: text/markdown nie działa:
+ * adresem strony bez końcowego ukośnika + `.md` (integrations/markdown, po buildzie). Accept: text/markdown nie działa:
  * Markdown for Agents Cloudflare jest od planu Pro, a strefa jest na Free. llms-full.txt nie robimy.
  */
 const SECTION_ORDER = ['Dane', 'Mechanizmy', 'Analizy'];
@@ -33,7 +33,7 @@ export const GET: APIRoute = async ({ site }) => {
     '',
     'Zasady: każda liczba ma ogólnodostępne źródło podane przy tekście; opisujemy mechanizmy systemu, nie konkretne osoby. Treść na licencji CC BY 4.0.',
     '',
-    `Wersja Markdown: każda strona poniżej ma treść w Markdownie pod swoim adresem z dopiskiem index.md, np. ${url('/slownik/index.md')}.`,
+    `Wersja Markdown: każda strona poniżej ma treść w Markdownie pod swoim adresem bez końcowego ukośnika z dopiskiem .md, np. ${url('/slownik.md')} (strona główna: ${url('/index.md')}).`,
     '',
     ...blocks.flatMap((b) => [b, '']),
     '## Działy serwisu',

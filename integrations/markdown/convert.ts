@@ -24,8 +24,9 @@ const UI = [
   // obrazki dekoracyjne (bez opisu)
   'img[alt=""]', 'img:not([alt])',
   '[aria-hidden="true"]', '[hidden]',
-  // pod treścią: „Czytaj dalej” i stanowisko redakcji
-  'main > section.section--space-both',
+  // pod treścią: „Czytaj dalej” i stanowisko redakcji (PostulatCta w ostatniej sekcji layoutu);
+  // nie całe `section--space-both` — z takich sekcji są zbudowane strony jak /postulat/
+  'main > section:has(#related-title)', 'main > section:last-child:has(.cta-status)',
 ].join(', ');
 
 /** Elementy inline, które CSS układa jak bloki — w tekście sklejają się z sąsiadem („240,30zł”). */

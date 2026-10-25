@@ -302,9 +302,9 @@ export interface OgPage extends OgOverride {
   };
   /**
    * wykresy strony w miejscu zdjęcia, jeden pod drugim: nagłówek + gotowy <svg> o szerokości kolumny mediów;
-   * podpisy (<text>) szablon przepisuje na tekst Satori, żeby miały krój serwisu
+   * podpisy (<text>) szablon przepisuje na tekst Satori, żeby miały krój serwisu; bez nagłówka = ilustracja
    */
-  panels?: { head: string; svg: string; height: number }[];
+  panels?: { head?: string; svg: string; height: number }[];
   /**
    * logo w miejscu zdjęcia, na białym polu (barometr: logo partii, ta sama powierzchnia dla każdej);
    * 'serwis' = logo serwisu w miejscu logo partii (wzór na fikcyjnej partii)
@@ -318,6 +318,8 @@ export interface OgPage extends OgOverride {
   cover?: OgCover;
   /** pieczątki w miejscu zdjęcia, jak ui/Stamp (np. kary sądów lekarskich): jedna duża albo kilka jedna pod drugą */
   stamps?: OgStamp[];
+  /** ostatnie słowo tytułu zaczernione, na pasku podany identyfikator (postulat: pseudonim zamiast nazwiska); tytuł na całą szerokość */
+  redact?: string;
 }
 
 /** Pieczątka na obrazku OG — te same pola co ui/Stamp. */

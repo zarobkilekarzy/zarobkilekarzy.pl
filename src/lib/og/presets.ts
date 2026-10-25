@@ -39,6 +39,8 @@ export interface OgSpec {
   media: OgMedia;
   /** okładka na cały kadr — szablon pomija wtedy tytuł, media i stopkę */
   cover?: OgCover;
+  /** identyfikator na zaczernionym ostatnim słowie tytułu (OgPage.redact) */
+  redact?: string;
 }
 
 /** Obrazek jednej trasy: generowany ze `spec` albo gotowy plik (`file`). */
@@ -69,6 +71,7 @@ interface Defaults {
   /** piktogram, gdy obrazek nie ma innej grafiki */
   pictogram?: PictogramName | 'ekg';
   leadAlways?: boolean;
+  redact?: string;
 }
 
 /** Siatka z kropek w kolumnie mediów (470×518): 20×22 pola po ~23 px. */
@@ -106,7 +109,7 @@ function compose(route: string, d: Defaults, o: OgOverride & { cover?: OgCover }
   const mode = o.media ?? 'auto';
   // grafika z kropek zabiera kolumnę mediów — za długi tytuł zostaje na całą szerokość, bez niej
   const fitsNarrow = title.includes('\n') || title.length <= NARROW_TITLE_MAX;
-  const kind = mode === 'auto' ? (o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : d.panels ? 'panels' : d.logo ? 'logo' : d.stamps ? 'stamps' : fitsNarrow || d.dots ? 'dots' : 'none') : mode;
+  const kind = mode === 'auto' ? (d.redact ? 'none' : o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : d.panels ? 'panels' : d.logo ? 'logo' : d.stamps ? 'stamps' : fitsNarrow || d.dots ? 'dots' : 'none') : mode;
 
   let media: OgMedia = { kind: 'none' };
   if (kind === 'stat' && o.stat) {
@@ -141,6 +144,7 @@ function compose(route: string, d: Defaults, o: OgOverride & { cover?: OgCover }
       lead: o.lead === false ? undefined : (o.lead ?? d.lead),
       footer: d.footer,
       leadAlways: d.leadAlways,
+      redact: d.redact,
       media,
       cover: o.cover,
     },
@@ -183,6 +187,6 @@ export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels
 }
 
 /** Strona spoza kolekcji (src/data/og.ts): wszystko podane wprost; stopka domyślnie z hasłem serwisu. */
-export function pageOg(route: string, { footer = { text: 'Bez emocji, ze źródłami.' }, badgeIcon, map, bars, panels, logo, dots, stamps, leadAlways, ...page }: OgPage): OgEntry {
-  return compose(route, { title: page.title, footer, icon: badgeIcon, map, bars, panels, logo, dots, stamps, leadAlways }, page);
+export function pageOg(route: string, { footer = { text: 'Bez emocji, ze źródłami.' }, badgeIcon, map, bars, panels, logo, dots, stamps, leadAlways, redact, ...page }: OgPage): OgEntry {
+  return compose(route, { title: page.title, footer, icon: badgeIcon, map, bars, panels, logo, dots, stamps, leadAlways, redact }, page);
 }

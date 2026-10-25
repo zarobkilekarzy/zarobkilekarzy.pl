@@ -16,7 +16,7 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { simulatorOgPanels } from '@/lib/podaz/og';
 import { nurseSimulatorOgPanels } from '@/lib/podaz/pielegniarki/og';
-import { columnChart, label, lineChart, sumSchema, svg } from '@/lib/og/charts';
+import { columnChart, label, lineChart, svg, virus } from '@/lib/og/charts';
 import { hemicycle, tallyClubs } from '@/lib/sejm/hemicycle';
 import { tokenColor } from '@/lib/tokens';
 import { CLUBS_LAST, limityVoting } from '@/data/glosowania';
@@ -47,12 +47,7 @@ const MEDIA_W = 470; // kolumna mediów w lib/og/render.ts
 const PANEL_H = 440;
 const TWO_PANELS_H = 196;
 
-// Postulat: trzy umowy jednej osoby (udziały poglądowe, bez kwot) i identyfikator z przykładu na /postulat/
-const POSTULAT_PIECES = [
-  { label: 'Szpital — etat', share: 5 },
-  { label: 'Poradnia z umową z NFZ — kontrakt', share: 3 },
-  { label: 'Dyżury w innym mieście — zlecenie', share: 2 },
-];
+// Postulat: identyfikator z przykładu na /postulat/ na zaczernionym nazwisku
 const demoId = `${createHmac('sha256', pseudonymDemo.key).update(pseudonymDemo.pwz).digest('hex').slice(0, 8)}…`;
 
 // Cięcie limitów: rok naboru skrócony do podpisu pod kolumną („2015/16” → „2015”, „1994–2000” → „94–00”)
@@ -126,6 +121,7 @@ function hemicyclePanel(): string {
 }
 
 export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps'>> = {
+  '/analizy/covid-pieniadz-publiczny/': { panels: [{ height: MEDIA_W, svg: svg(MEDIA_W, MEDIA_W, virus(MEDIA_W)) }] },
   // wpis w aktualnościach: pieczątki jak na obrazku katalogu (okładka wpisu przycięta pokazałaby tylko tytuł)
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },
   // wpis o analizie limitów płac: paski jak na obrazku analizy (zdjęciem wpisu jest obrazek OG analizy)
@@ -274,13 +270,12 @@ export const ogPages: Record<string, OgPage> = {
       rows: EXAMS_2025.filter((e) => !e.approx).map((e) => ({ label: e.name, value: passRate(e), display: formatPL(passRate(e), 1), marked: e.key === 'lek' })),
     },
   },
-  // etap i wersja z projekt-ustawy.ts — zmiana etapu zmienia obrazek
+  // bez wersji i etapu projektu: na obrazku nic, co się zmienia
   '/postulat/': {
     eyebrow: 'Postulat',
     title: 'Jawne kwoty,\nchronione nazwiska',
-    lead: 'Łączne wynagrodzenie każdej osoby z placówek z umową z NFZ — co kwartał, jako otwarte dane, bez nazwisk.',
-    panels: [{ head: 'Wynagrodzenie jednej osoby', height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, sumSchema(MEDIA_W, PANEL_H, POSTULAT_PIECES, demoId)) }],
-    footer: { text: `Projekt ustawy · wersja ${projekt.version} · ${currentStage.label.toLowerCase()}` },
+    redact: demoId,
+    footer: { text: 'Łączna kwota każdej osoby · co kwartał · stały identyfikator' },
   },
   '/postulat/projekt-ustawy/': {
     eyebrow: 'Postulat · projekt ustawy',

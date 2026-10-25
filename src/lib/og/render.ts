@@ -164,7 +164,7 @@ const noWidow = (text: string) => (text.split(' ').length > 2 ? text.replace(/ (
  * Słowa są osobnymi elementami flex-wrap: tylko tak Satori stawia kolorowy znak zaraz za ostatnim
  * słowem zawiniętego wiersza. Dzielimy po zwykłych spacjach, więc twarde spacje z typo() sklejają sierotki.
  */
-function titleLines(title: string): Child[] {
+function titleLines(title: string, redact?: string): Child[] {
   const [, body, end] = title.match(/^(.*?)([.?!…]?)$/s)!;
   const lines = body.split('\n');
   return lines.map((line, i) => {
@@ -174,9 +174,19 @@ function titleLines(title: string): Child[] {
     const tail = isLast ? h('span', { style: { color: C.blue } }, end || '.') : null;
     return h('div', { style: { flexWrap: 'wrap' } },
       ...words.map((w) => h('span', { style: { marginRight: '0.2em' } }, w)),
-      tail ? h('div', {}, last, tail) : h('span', {}, last));
+      tail ? h('div', { style: redact ? { alignItems: 'flex-end' } : {} }, redact ? redacted(last, redact) : last, tail) : h('span', {}, last));
   });
 }
+
+/**
+ * Słowo zaczernione jak w udostępnionym dokumencie: pasek ma szerokość słowa (to samo słowo w przezroczystym
+ * kolorze), w prawym dolnym rogu identyfikator, który je zastępuje.
+ */
+const redacted = (word: string, id: string) =>
+  // niższy niż wiersz, żeby nie zahaczał o przecinek z wiersza wyżej
+  h('div', { style: { position: 'relative', lineHeight: 0.84, background: C.ink, color: 'transparent', marginRight: '0.06em' } },
+    word,
+    h('div', { style: { position: 'absolute', right: 18, bottom: 12, fontFamily: MONO, fontSize: 22, letterSpacing: '0.02em', lineHeight: 1, color: '#fff', opacity: 0.85 } }, id));
 
 /** „1 358 placówek” → pogrubiona liczba + reszta (jak ui/Badge). */
 const splitBadge = (text: string): [string | undefined, string] => {
@@ -321,7 +331,7 @@ function panel({ head, svg, height }: Extract<OgMedia, { kind: 'panels' }>['pane
   });
   const src = `data:image/svg+xml;base64,${Buffer.from(svg.replace(TEXT_RE, '')).toString('base64')}`;
   return h('div', { style: { flexDirection: 'column' } },
-    h('div', { style: { paddingBottom: 12, fontFamily: MONO, fontWeight: 500, fontSize: 15, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted } }, typo(head)),
+    head && h('div', { style: { paddingBottom: 12, fontFamily: MONO, fontWeight: 500, fontSize: 15, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted } }, typo(head)),
     h('div', { style: { position: 'relative', width: MEDIA_W, height } },
       h('img', { src, width: MEDIA_W, height }),
       ...labels));
@@ -489,7 +499,7 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
       h('div', { style: { flexDirection: 'column', marginTop: 'auto', marginBottom: 'auto', paddingTop: 24, paddingBottom: 24 } },
         spec.eyebrow && eyebrow(spec.eyebrow),
         h('div', { style: { flexDirection: 'column', marginTop: spec.eyebrow ? 26 : 0, maxWidth: wide ? WIDE_W : '100%', fontFamily: DISPLAY, fontWeight: 400, fontSize: size, lineHeight: 1, letterSpacing: '-0.04em', color: C.ink } },
-          ...titleLines(title)),
+          ...titleLines(title, spec.redact)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
       spec.footer && footer(spec.footer, wide)),
     spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : spec.media.kind === 'dots' ? dots(spec.media) : spec.media.kind === 'stamps' ? stamps(spec.media) : null);

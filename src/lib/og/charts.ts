@@ -4,6 +4,7 @@
  * `--strong` (atrament), `--blue` (kobalt), `--big` (duża liczba krojem tytułowym).
  */
 import { tokenColor } from '@/lib/tokens';
+import { GEOMETRY } from '@/lib/siatka';
 
 const c = (name: string) => tokenColor(name, false);
 const f1 = (n: number) => n.toFixed(1);
@@ -114,40 +115,35 @@ export function columnChart(cols: Column[], width: number, height: number, max =
   return s;
 }
 
-/* ---------- Postulat: kawałki z kilku placówek składają się w jedną sumę ---------- */
+/* ---------- COVID-19: wirus ---------- */
 
 /**
- * Schemat bez kwot: umowy jednej osoby w kilku placówkach (każda widzi tylko swoją), pod spodem te same
- * odcinki złożone w jeden pasek — suma pod identyfikatorem zamiast zaczernionego nazwiska.
+ * Ilustracja wirusa na kwadracie `size`: kobaltowa kula z dwunastoma kolcami na polu z plusów (siatka 20×20,
+ * geometria lib/siatka); w kuli biała siatka jak DotGrid na kobalcie, z kilkoma zapalonymi polami.
  */
-export function sumSchema(width: number, height: number, pieces: { label: string; share: number }[], id: string): string {
-  const total = pieces.reduce((a, p) => a + p.share, 0);
-  const rowH = 80;
-  const barH = 22;
-  const sumY = height - 64;
-  const personY = sumY - 52;
-  let s = label(0, 14, 'Każda placówka widzi swoją część');
-  let x = 0;
-  pieces.forEach((p, i) => {
-    const w = (p.share / total) * width;
-    const y = 52 + i * rowH;
-    s += label(0, y, p.label, ['strong']);
-    s += `<rect x="${f1(x)}" y="${y + 10}" width="${f1(w - 4)}" height="${barH}" fill="${c('chart')}"/>`;
-    // prowadnica do miejsca tego kawałka w sumie
-    s += `<line x1="${f1(x + 1)}" x2="${f1(x + 1)}" y1="${y + 10 + barH}" y2="${sumY}" stroke="${c('line-2')}" stroke-width="1.5" stroke-dasharray="2 4"/>`;
-    x += w;
-  });
-  // osoba: zaczernione nazwisko → identyfikator
-  s += `<rect x="0" y="${personY - 17}" width="150" height="22" fill="${c('ink')}"/>`;
-  s += `<path d="M164,${personY - 6}H204M197,${personY - 13}L205,${personY - 6}L197,${personY + 1}" fill="none" stroke="${c('muted')}" stroke-width="2" stroke-linejoin="miter"/>`;
-  s += label(218, personY + 4, id, ['big', 'blue']);
-  // suma: te same odcinki obok siebie, w kobalcie
-  x = 0;
-  pieces.forEach((p, i) => {
-    const w = (p.share / total) * width;
-    s += `<rect x="${f1(x)}" y="${sumY}" width="${f1(w - (i < pieces.length - 1 ? 4 : 0))}" height="30" fill="${c('blue')}"/>`;
-    x += w;
-  });
-  s += label(0, sumY + 54, 'Jedna suma, co kwartał, bez nazwiska', ['blue']);
-  return s;
+export function virus(size: number): string {
+  const cell = size / 20, mid = size / 2, R = cell * 6;
+  const stemEnd = R + cell * 1.7, headR = cell * 0.62, spikes = 12;
+  // każde zapalone pole w innym wierszu, żeby nie złożyły się w twarz
+  const lit = new Set(['9,7', '12,8', '14,9', '7,10', '11,11', '13,12', '9,13']);
+  const arm = cell * GEOMETRY.arm, stroke = f1(cell * GEOMETRY.stroke);
+  const plus = (x: number, y: number) => `M${f1(x)} ${f1(y - arm)}v${f1(2 * arm)}M${f1(x - arm)} ${f1(y)}h${f1(2 * arm)}`;
+  let field = '', inner = '', dots = '', spk = '';
+  for (let r = 0; r < 20; r++) for (let q = 0; q < 20; q++) {
+    const x = q * cell + cell / 2, y = r * cell + cell / 2, d = Math.hypot(x - mid, y - mid);
+    if (d < R - cell * 0.55) {
+      if (lit.has(`${q},${r}`)) dots += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(cell * GEOMETRY.on)}" fill="#fff"/>`;
+      else inner += plus(x, y);
+    } else if (d > stemEnd + headR + cell * 0.4) field += plus(x, y);
+  }
+  for (let k = 0; k < spikes; k++) {
+    const a = ((k + 0.5) * 2 * Math.PI) / spikes;
+    const at = (d: number) => [f1(mid + d * Math.cos(a)), f1(mid + d * Math.sin(a))];
+    const [x1, y1] = at(R - 4), [x2, y2] = at(stemEnd), [hx, hy] = at(stemEnd + headR * 0.6);
+    spk += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c('blue')}" stroke-width="${f1(cell * 0.3)}"/>`;
+    spk += `<circle cx="${hx}" cy="${hy}" r="${f1(headR)}" fill="${c('blue')}"/>`;
+  }
+  return `<path d="${field}" stroke="${c('blue')}" stroke-opacity=".4" stroke-width="${stroke}" fill="none"/>${spk}`
+    + `<circle cx="${f1(mid)}" cy="${f1(mid)}" r="${f1(R)}" fill="${c('blue')}"/>`
+    + `<path d="${inner}" stroke="#fff" stroke-opacity=".45" stroke-width="${stroke}" fill="none"/>${dots}`;
 }

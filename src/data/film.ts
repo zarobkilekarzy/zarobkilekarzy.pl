@@ -1,6 +1,7 @@
 /**
- * Film „Brak odczytu” (49 s, z lektorem) — strona główna (components/home/Film.astro) i /media/.
- * Pliki leżą w public/film/: MP4 (Chrome, Firefox, pobieranie), ten sam film pocięty na HLS
+ * Filmy serwisu. „Brak odczytu” (49 s) — strona główna (components/home/Film.astro) i /media/;
+ * „Doba” (2 min 37 s) — /media/ i wpis w aktualnościach. Lista `films` = kolejność na /media/.
+ * Pliki leżą w public/film/ („Doba” w public/film/doba/): MP4 (Chrome, Firefox, pobieranie), ten sam film pocięty na HLS
  * w hls/ (Safari, także na iOS) i okładka. HLS jest potrzebny, bo statyczne pliki Workera
  * ignorują nagłówek Range, a Safari bez odpowiedzi 206 nie odtwarza MP4 — kawałki HLS pobiera
  * w całości. Odtwarzacz podaje HLS jako pierwsze źródło; przeglądarki bez HLS biorą MP4.
@@ -20,6 +21,24 @@ export interface FilmSource {
   href: string;
 }
 
+export interface FilmData {
+  title: string;
+  /** opis nad filmem na /media/ */
+  lead: string;
+  src: string;
+  /** lista odtwarzania HLS (kawałki po 4 s, fMP4) */
+  hls: string;
+  /** pierwsza klatka filmu */
+  poster: string;
+  /** nazwa pliku przy pobieraniu */
+  download: string;
+  width: number;
+  height: number;
+  seconds: number;
+  size: string;
+  transcript: FilmBeat[];
+}
+
 export interface FilmBeat {
   /** słowa lektora */
   text: string;
@@ -37,8 +56,9 @@ const REZYDENT: FilmSource[] = [
   { label: 'Polsat News', href: 'https://www.polsatnews.pl/wiadomosc/2026-06-15/16-mln-zl-w-rok-dla-lekarza-bez-specjalizacji-warszawa-zapowiada-kontrole/' },
 ];
 
-export const film = {
+export const film: FilmData = {
   title: 'Brak odczytu',
+  lead: '49 sekund, z lektorem i dźwiękiem monitora pracy serca. Jeden rezydent, cztery szpitale i suma, której żaden rejestr nie zsumował.',
   src: '/film/brak-odczytu.mp4',
   /** lista odtwarzania HLS (kawałki po 4 s, fMP4) */
   hls: '/film/hls/brak-odczytu.m3u8',
@@ -92,5 +112,106 @@ export const film = {
       sources: [],
       more: { label: 'Postulat', href: '/postulat/' },
     },
-  ] satisfies FilmBeat[],
+  ],
 };
+
+/** Pozostałe źródła „Doby” — te same adresy co w tekstach serwisu */
+const DOBA = {
+  druk3157: 'https://api.sejm.gov.pl/sejm/term10/processes/3157',
+  dlug: 'https://www.rp.pl/ochrona-zdrowia/art44638431-rosnie-zadluzenie-publicznych-szpitali-to-juz-34-mld-zlotych',
+  udl: 'https://api.sejm.gov.pl/eli/acts/DU/2026/156/text.pdf',
+  /** 73,16% podaje tekst z 27.05.2026 (por. kontrakt-vs-etat.mdx) */
+  aotmit73: 'https://www.rp.pl/ochrona-zdrowia/art44466691-625-lekarzy-w-polsce-zarabia-powyzej-100-tys-zl-dotarlismy-do-wyliczen',
+  ustawa972: 'https://api.sejm.gov.pl/eli/acts/DU/2026/972/text.pdf',
+};
+
+/**
+ * Film „Doba” (2 min 37 s): jeden lekarz z trzema umowami — 999 999 zł w roku i 72 godziny w jednej
+ * dobie. Lekarz jest przykładem modelowym; mechanizmy ilustrują prawdziwe sprawy. Kod filmu, lektor
+ * i scenariusz: social/film-doba/ (poza repo) — po zmianie lektora poprawić `transcript` ręcznie.
+ */
+export const filmDoba: FilmData = {
+  title: 'Doba',
+  lead: '2 min 37 s, z lektorem. Jeden lekarz, trzy umowy: 999 999 zł w roku i 72 godziny w jednej dobie. Lekarz jest przykładem modelowym, a każdy mechanizm ilustruje prawdziwa sprawa.',
+  src: '/film/doba/doba.mp4',
+  hls: '/film/doba/hls/doba.m3u8',
+  poster: '/film/doba/doba.webp',
+  download: 'zarobkilekarzy-doba.mp4',
+  width: 1920,
+  height: 1080,
+  seconds: 157,
+  size: '25,4 MB',
+  transcript: [
+    {
+      text: 'Ten lekarz ma etat za 20 tys. zł miesięcznie. Tyle widać na pasku. Ale to tylko jedna z trzech umów.',
+      note: 'Lekarz z filmu to przykład modelowy: nie istnieje, ale każda z jego umów jest zgodna z obowiązującymi przepisami. Wszystkie kwoty brutto.',
+      sources: [],
+    },
+    {
+      text: 'W drugim szpitalu ma kontrakt. Dostaje procent od każdej wykonanej procedury. Przez rok to prawie 400 tys. zł. Do tego umowa cywilnoprawna: 30 tys. zł miesięcznie.',
+      note: 'Płaca liczona jako procent od procedur rozliczanych z NFZ jest dziś dozwolona. Sejm uchwalił jej zakaz 22.10.2026 r.; ustawa czeka na Senat i prezydenta.',
+      sources: [{ label: 'Sejm, druk nr 3157 — przebieg prac', href: DOBA.druk3157 }],
+      more: { label: 'Limity płac medyków', href: '/analizy/limity-wynagrodzen-medykow/' },
+    },
+    {
+      text: 'Policzmy cały rok. Etat: 240 tys. Kontrakt: prawie 400. Umowa cywilnoprawna: 360. Razem: 999 999 zł. Do miliona brakuje złotówki. Formalnie nie jest „milionerem”.',
+      note: '240 000 + 399 999 + 360 000 zł. Procent od procedur zmienia się co miesiąc — średnio ok. 33 tys. zł.',
+      sources: [],
+    },
+    {
+      text: 'A tej sumy nie widzi nikt. Każde z trzech miejsc zna tylko swoją umowę.',
+      sources: [],
+    },
+    {
+      text: 'To był przykład modelowy. W prawdziwej sprawie z Białegostoku lekarz dostał za jeden rok prawie 3 mln zł. Szpital tłumaczył to procentem od procedur.',
+      note: 'Wynagrodzenie za 2024 r. w Białostockim Centrum Onkologii; kwotę ujawnił audyt urzędu marszałkowskiego.',
+      sources: [{ label: 'Kurier Poranny', href: REKORDY.poranny }],
+      more: { label: 'Rekordy wynagrodzeń', href: '/dane/rekordy/' },
+    },
+    {
+      text: 'Wszystko to jest legalne. I płaci za to ta sama kasa, z której leczy się pacjentów. Szpitale publiczne mają już 34 mld zł długu. System, który nie widzi własnych kosztów, nie wie, ile jeszcze udźwignie.',
+      note: 'Zobowiązania 562 publicznych szpitali na koniec 2025 r.: SPZOZ 27 mld, spółki 4,1 mld, instytuty 2,9 mld zł.',
+      sources: [{ label: 'Rzeczpospolita', href: DOBA.dlug }],
+      more: { label: 'Zadłużenie szpitali', href: '/dane/zadluzenie-szpitali/' },
+    },
+    {
+      text: 'Teraz czas. Dzień na etacie i dyżur po nim to pełna doba. W tej samej dobie: dyżur na kontrakcie i dyżur w karetce. Na każdej umowie rozlicza 24 godziny. Razem 72. W jednej dobie. Trzecia w nocy. Według grafików jest w trzech miejscach naraz. A gdzie znajdzie go pacjent?',
+      note: 'Etat 7 h 35 min i dyżur medyczny 16 h 25 min; czas dyżuru wlicza się do czasu pracy (art. 95 ustawy o działalności leczniczej).',
+      sources: [{ label: 'Ustawa o działalności leczniczej, t.j. Dz.U. 2026 poz. 156', href: DOBA.udl }],
+    },
+    {
+      text: 'Według doniesień w Braniewie lekarz rozliczał właśnie takie doby.',
+      note: 'W 2024 r. 11 577 godzin, przy 8760 godzinach w roku. Śledztwo dotyczy byłego prezesa spółki prowadzącej szpital, nie lekarza; zawieszone, bez zarzutów.',
+      sources: [
+        { label: 'Interia', href: REKORDY.interiaBraniewo },
+        { label: 'Dziennik Elbląski', href: REKORDY.deBraniewo },
+        { label: 'Prokuratura Rejonowa w Elblągu', href: REKORDY.prokElblag },
+      ],
+      more: { label: 'Rekordy wynagrodzeń', href: '/dane/rekordy/' },
+    },
+    {
+      text: 'Każde z tych miejsc widzi tylko swoje godziny. Całości nie widzi nikt. Na umowach cywilnoprawnych pracuje 73% lekarzy specjalistów. Ich godzin nie sumuje żaden rejestr.',
+      note: 'Dokładnie 73,16% specjalistów rozlicza się na kontrakcie B2B albo zleceniu (dane AOTMiT).',
+      sources: [{ label: 'Rzeczpospolita, dane AOTMiT', href: DOBA.aotmit73 }],
+      more: { label: 'Kontrakt czy etat', href: '/mechanizmy/kontrakt-vs-etat/' },
+    },
+    {
+      text: 'Państwo już wie, gdzie kto pracuje. GUS co roku łączy rejestr lekarzy z danymi ZUS i umowami NFZ. Kwot jednej osoby nikt nie sumuje.',
+      sources: [{ label: 'GUS, zasoby kadrowe w zawodach medycznych', href: BRAKI.gus2024 }],
+    },
+    {
+      text: 'Ustawa z czerwca pozwala ministrowi o te kwoty zapytać. Nie każe ich publikować ani zbierać regularnie. Dlatego potrzebna jest nowelizacja.',
+      note: 'Ustawa z 19 czerwca 2026 r.: dane przekazuje się „na wniosek ministra”, „w terminie i w sposób przez niego wskazany”. O publikacji nie ma w niej ani słowa.',
+      sources: [{ label: 'Dz.U. 2026 poz. 972', href: DOBA.ustawa972 }],
+      more: { label: 'Projekt nowelizacji', href: '/postulat/projekt-ustawy/' },
+    },
+    {
+      text: 'Wystarczy, żeby kwoty jednej osoby sumowały się w jednym miejscu. Pod stałym identyfikatorem, bez nazwiska. Jedna osoba. Jedna suma. Anonimowo. zarobkilekarzy.pl',
+      sources: [],
+      more: { label: 'Postulat', href: '/postulat/' },
+    },
+  ],
+};
+
+/** kolejność na /media/: od najnowszego */
+export const films: FilmData[] = [filmDoba, film];

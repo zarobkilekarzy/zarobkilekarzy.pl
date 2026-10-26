@@ -1,17 +1,17 @@
 /**
- * /media/ — materiały medialne: film (src/data/film.ts), infografiki do pobrania ze wszystkich zestawów
+ * /media/ — materiały medialne: filmy (src/data/film.ts), infografiki do pobrania ze wszystkich zestawów
  * (lib/infografiki/zestawy.ts), pliki CSV z danymi (lib/media/dane.ts) i pakiet logo
  * (lib/media/logo.ts). Kolejność infografik na stronie = kolejność kluczy w `sets`.
  */
 export const mediaPage = {
   href: '/media/',
   title: 'Materiały medialne',
-  docTitle: 'Materiały medialne: film, infografiki, dane i logo do pobrania',
+  docTitle: 'Materiały medialne: filmy, infografiki, dane i logo do pobrania',
   /** <title> — docTitle jest za długi dla wyszukiwarki; docTitle zostaje w udostępnianiu */
-  seoTitle: 'Materiały medialne: film i infografiki',
-  lead: 'Film, infografiki, dane i logo do artykułu, posta albo prezentacji. Liczby pochodzą z tych samych danych co teksty w serwisie, a źródła, adres strony i kod QR do niej są na każdej grafice.',
-  description: 'Film zarobkilekarzy.pl, infografiki w formatach pionowym i poziomym, dane w plikach CSV i logo do pobrania, ze źródłami. Licencja CC BY 4.0.',
-  updated: '21.10.2026',
+  seoTitle: 'Materiały medialne: filmy i infografiki',
+  lead: 'Filmy, infografiki, dane i logo do artykułu, posta albo prezentacji. Liczby pochodzą z tych samych danych co teksty w serwisie, a źródła, adres strony i kod QR do niej są na każdej grafice.',
+  description: 'Filmy zarobkilekarzy.pl, infografiki w formatach pionowym i poziomym, dane w plikach CSV i logo do pobrania, ze źródłami. Licencja CC BY 4.0.',
+  updated: '27.10.2026',
   /**
    * „Historia zmian” pod przeglądarką infografik: poprawki w grafikach, które już były do pobrania
    * (nie nowe grafiki). Zapis wpisu: lib/inline.
@@ -29,7 +29,7 @@ export const mediaPage = {
   /** klucze zestawów infografik, od najnowszego */
   sets: ['odsiew-na-medycynie', 'pielegniarstwo-w-polsce', 'zadluzenie-szpitali', 'kolejki', 'english-division', 'symulator-podazy-lekarzy', 'egzamin', 'odpowiedzialnosc-zawodowa-lekarzy'],
   film: {
-    lead: 'Brak odczytu: 49 sekund w formacie 16:9, z lektorem i dźwiękiem monitora pracy serca. Pasuje do posta na X albo Facebooku i do prezentacji. Źródło każdej liczby jest w stopce kadru i w napisach pod filmem.',
+    lead: 'Filmy w formacie 16:9, z lektorem. Pasują do posta na X albo Facebooku i do prezentacji. Źródło każdej liczby jest w stopce kadru i w napisach pod filmem. Licencja CC BY 4.0, jak cały serwis.',
   },
   data: {
     title: 'Dane do pobrania',

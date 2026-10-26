@@ -17,7 +17,7 @@ import InfographicBrowser from '@/components/blocks/InfographicBrowser.astro';
 import Film from '@/components/blocks/Film.astro';
 import Icon from '@/components/ui/Icon.astro';
 import { mediaPage } from '@/data/media';
-import { film } from '@/data/film';
+import { films } from '@/data/film';
 import { contact } from '@/data/o-serwisie';
 import { identity } from '@/data/seo/identity';
 import { infographicSets } from '@/lib/infografiki/zestawy';
@@ -106,14 +106,20 @@ const mail = `mailto:${contact.email}`;
   </Section>
 
   <Section space="bottom" aria-labelledby="film">
-    <SectionHead eyebrow="Do pobrania" title="Film" id="film" aside={mediaPage.film.lead} />
-    <Film id="film-media" />
-    <p class="file__links film-dl">
-      <a class="file__dl" href={film.src} download={film.download} aria-label={`Pobierz film: ${film.title}, MP4, ${film.size}`}>
-        <Icon name="play" size={18} />
-        <span>MP4 · {film.width}×{film.height} · {film.size}</span>
-      </a>
-    </p>
+    <SectionHead eyebrow="Do pobrania" title="Filmy" id="film" aside={mediaPage.film.lead} />
+    {films.map((f, i) => (
+      <div class="film-item">
+        <h3 class="film-item__title">{f.title}</h3>
+        <p class="film-item__lead">{typo(f.lead)}</p>
+        <Film id={`film-media-${i + 1}`} film={f} />
+        <p class="file__links film-dl">
+          <a class="file__dl" href={f.src} download={f.download} aria-label={`Pobierz film: ${f.title}, MP4, ${f.size}`}>
+            <Icon name="play" size={18} />
+            <span>MP4 · {f.width}×{f.height} · {f.size}</span>
+          </a>
+        </p>
+      </div>
+    ))}
   </Section>
 
   <Section space="bottom" aria-labelledby="zasady">
@@ -157,6 +163,10 @@ const mail = `mailto:${contact.email}`;
   /* kolor-stały: koniec */
   .logo__tile img { display: block; max-width: 100%; max-height: 56px; height: auto; }
   .logo-rules { margin-top: 32px; max-width: 46rem; }
+  /* Filmy: tytuł i opis nad odtwarzaczem, kolejne filmy oddzielone odstępem */
+  .film-item + .film-item { margin-top: 64px; }
+  .film-item__title { margin: 0; font: 600 1.375rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .film-item__lead { max-width: 46rem; margin: 8px 0 20px; font: 400 0.9375rem/1.55 var(--f-body); color: var(--text); }
   .logo-rules ul { margin-top: 8px; padding-left: 1.2em; list-style: disc; font: 400 0.9375rem/1.6 var(--f-body); color: var(--text); }
   .logo-rules li::marker { color: var(--muted); }
   .logo-rules li + li { margin-top: 4px; }

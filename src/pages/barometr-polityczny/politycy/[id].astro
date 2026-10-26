@@ -1,0 +1,167 @@
+---
+/**
+ * /barometr-polityczny/politycy/<id>/ — wypowiedź polityka pod własnym nazwiskiem: autor z logo partii (tylko tu,
+ * na liście sama nazwa), profilem w mediach społecznościowych i sześć obszarów barometru jak na podstronie partii (kadry w trzech częściach) —
+ * odpowiedź w nadesłanym brzmieniu z licznikiem znaków albo wprost „Bez odpowiedzi”, żeby dało się porównać
+ * dwóch polityków albo polityka z partią w tym samym obszarze.
+ * Ten sam szablon dla każdej osoby; wzór na fikcyjnej osobie to `barometrStatementExample` (zawsze noindex).
+ * Dane: src/data/barometr-polityczny.ts → barometrPoliticians.
+ */
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import JumpList from '@/components/blocks/JumpList.astro';
+import XProfile from '@/components/blocks/XProfile.astro';
+import PartyLogo from '@/components/barometr/PartyLogo.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { answerLength, barometrAreas, barometrContact, barometrPage, barometrPoliticians } from '@/data/barometr-polityczny';
+import { formatDate, formatPL, isoDate, pad2, plural, typo } from '@/lib/format';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+export const getStaticPaths = (() =>
+  barometrPoliticians.map((politician) => ({ params: { id: politician.id }, props: { politician } }))) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+const { politician: p } = Astro.props;
+
+// sześć obszarów jak na podstronie partii; obszar z częściami (kadry) — po jednej odpowiedzi na część
+const areas = barometrAreas.map((area, i) => ({
+  ...area,
+  n: i + 1,
+  name: area.title.replace(/\.$/, ''),
+  entry: p.statements.find((e) => e.area === area.id && !e.part),
+  parts: area.parts?.map((part) => ({ ...part, entry: p.statements.find((e) => e.area === area.id && e.part === part.id) })),
+}));
+// ile miejsc na odpowiedź (kadry liczą się jako trzy) i ile z nich ma odpowiedź
+const slots = areas.reduce((sum, a) => sum + (a.parts?.length ?? 1), 0);
+// jak „Partia nie odniosła się do tego obszaru / tej części” — bez rodzaju gramatycznego autora
+const missing = (part: boolean) => (part ? 'Bez odpowiedzi w tej części.' : 'Bez odpowiedzi w tym obszarze.');
+
+const length = (text: string[]) => {
+  const n = answerLength(text);
+  return `${formatPL(n)} ${plural(n, ['znak', 'znaki', 'znaków'])} ze spacjami`;
+};
+
+const crumbs: Crumb[] = [
+  { label: 'Start', href: '/' },
+  { label: barometrPage.title, href: barometrPage.href },
+  { label: 'Politycy', href: `${barometrPage.href}#politycy` },
+  { label: p.name },
+];
+const seo: SeoInput = {
+  title: `${p.name} — wypowiedź w barometrze`,
+  description: `${p.name} (${p.role}) pod własnym nazwiskiem o polityce zdrowotnej: wypowiedź w nadesłanym brzmieniu, w obszarach barometru politycznego.`,
+  breadcrumbs: crumbs,
+  index: !(p.example || barometrPage.draft),
+};
+// nagłówek: kim jest autor — wypowiedź „zdanie autora, nie stanowisko partii” podpisujemy przy każdym obszarze
+const lead = p.about;
+const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(`Barometr polityczny — poprawka: ${p.name}`)}`;
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="pp-top">
+    <PageHeader title={p.name} lead={lead} eyebrow={`${barometrPage.title} · politycy`} crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Funkcja', value: p.role },
+          ...(p.party ? [{ label: 'Partia', value: p.party.name }] : []),
+          { label: 'Odpowiedzi', value: `${p.statements.length} z ${slots}` },
+          { label: 'Aktualizacja', value: p.updated },
+        ]}
+      />
+      <div slot="aside" class="pp-aside">
+        {p.party?.logo && <PartyLogo class="pp-logo" logo={p.party.logo} name={p.party.name} area={5200} maxW={200} maxH={48} />}
+        <XProfile
+          name={p.name}
+          handle={p.x.handle}
+          avatar={p.x.avatar ?? p.photo}
+          eyebrow={p.example ? 'Wzór · osoba fikcyjna' : 'Profil autora'}
+          linked={!p.example}
+          class:list={[{ 'pp-x--example': p.example }]}
+        >
+          {p.example ? 'Tu będzie profil autora w mediach społecznościowych — po nim czytelnik sprawdza, kto mówi.' : 'Po tym profilu możesz sprawdzić, kto jest autorem wypowiedzi.'}
+        </XProfile>
+        <JumpList title="Obszary" items={areas.map((a) => ({ label: a.name, href: `#${a.id}` }))} />
+      </div>
+    </PageHeader>
+  </Section>
+
+  {p.example && (
+    <Section space="bottom" aria-label="To wzór">
+      <Aside variant="note" title="To wzór, a nie prawdziwy polityk">
+        <p>{p.name} nie istnieje, podobnie jak konto @{p.x.handle}. Ta strona pokazuje, jak będzie wyglądała wypowiedź polityka w barometrze: autor ze zdjęciem (opcjonalnie), logo partii i profilem w mediach społecznościowych, a pod nim te same sześć obszarów co u partii — z odpowiedzią albo z dopiskiem „Bez odpowiedzi”. Teksty w ramkach opisują, co znajdzie się w danym miejscu.</p>
+      </Aside>
+    </Section>
+  )}
+
+  {areas.map((a, i) => (
+    <Section id={a.id} tone={i % 2 ? 'default' : 'soft'} aria-labelledby={`${a.id}-title`}>
+      <SectionHead eyebrow={`Obszar ${pad2(a.n)}`} title={a.name} id={`${a.id}-title`} aside={a.text} />
+      {(a.parts ?? [{ id: '', title: '', text: '', entry: a.entry }]).map((part) => (
+        <div class:list={[{ 'pp-part': part.id }]} id={part.id ? `${a.id}-${part.id}` : undefined}>
+          {part.id && <h3 class="pp-part__title">{part.title}</h3>}
+          {part.entry ? (
+            <div class="pp-answer">
+              <p class="mono-label pp-label">Wypowiedź: {p.name}</p>
+              <blockquote class="pp-quote">{part.entry.text.map((t) => <p>{typo(t)}</p>)}</blockquote>
+              <p class="pp-note">Zdanie autora, nie stanowisko partii · bez zmian w treści · {length(part.entry.text)}</p>
+            </div>
+          ) : (
+            <p class="pp-missing">{missing(Boolean(part.id))}</p>
+          )}
+        </div>
+      ))}
+    </Section>
+  ))}
+
+  <Section id="zmiany" aria-labelledby="zmiany-title">
+    <SectionHead eyebrow="Historia" title="Zmiany w wypowiedzi" id="zmiany-title" aside="Autor może w każdej chwili uzupełnić albo sprostować swoją wypowiedź. Każdą zmianę oznaczamy tu datą." />
+    <ol class="pp-changes">
+      {p.changes.map((c) => (
+        <li><time datetime={isoDate(c.date)}>{formatDate(c.date)}</time><span>{typo(c.text)}</span></li>
+      ))}
+    </ol>
+    <p class="pp-fix">Poprawka albo uzupełnienie: <a href={mail}>{barometrContact.email}</a></p>
+    <LinkArrow href={`${barometrPage.href}#politycy`}>Wszyscy politycy w barometrze</LinkArrow>
+  </Section>
+</BaseLayout>
+
+<style>
+  .pp-top { padding-top: clamp(32px, 4vw, 56px); }
+  .pp-aside { display: grid; gap: 24px; }
+  .pp-aside :global(.pp-x--example) { border-style: dashed; }
+  /* logo partii nad profilem — niższe pole niż na podstronie partii, żeby nagłówek nie urósł */
+  .pp-aside :global(.pp-logo) { display: grid; height: 88px; padding: 12px; border: 1px solid var(--line-2); }
+  /* zdjęcie autora w miejscu awatara — czarno-białe jak wszystkie zdjęcia na stronie */
+  .pp-aside :global(.xp__avatar) { filter: grayscale(1) contrast(1.05); }
+
+  .pp-answer { max-width: 760px; }
+  .pp-part + .pp-part { margin-top: clamp(32px, 4vw, 48px); }
+  .pp-part { padding-top: 24px; border-top: 1px solid var(--line-2); }
+  .pp-part__title { margin-bottom: 16px; font: 500 1.375rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  /* jak „Partia nie odniosła się…” na podstronie partii */
+  .pp-missing { max-width: 72ch; padding: 16px 20px; border: 1px dashed var(--line-2); font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
+  .pp-label { color: var(--muted); margin-bottom: 14px; }
+  .pp-quote { margin: 0; padding-left: 24px; border-left: 2px solid var(--blue); }
+  .pp-quote p { font: 400 1.1875rem/1.55 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .pp-quote p + p { margin-top: 14px; }
+  .pp-note { margin-top: 14px; padding-left: 26px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+
+  .pp-changes { border-top: 1px solid var(--line-2); max-width: 72ch; }
+  .pp-changes li { display: grid; grid-template-columns: 120px 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line-2); font-size: 0.9375rem; color: var(--ink); }
+  .pp-changes time { font: 400 0.8125rem/1.5 var(--f-mono); color: var(--muted); }
+  .pp-fix { margin: 24px 0 16px; font-size: 0.9375rem; color: var(--ink-2); }
+  .pp-fix a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--muted); }
+
+  /* telefon: jak odpowiedź partii — mniejszy krój i węższe wcięcie */
+  @media (max-width: 720px) {
+    .pp-quote { padding-left: 16px; }
+    .pp-quote p { font-size: 1.03125rem; }
+    .pp-quote p + p { margin-top: 12px; }
+    .pp-note { padding-left: 18px; }
+  }
+</style>

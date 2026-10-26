@@ -22,6 +22,7 @@ import polska2050Logo from '@/assets/partie/polska2050.png';
 import pslLogo from '@/assets/partie/psl.svg';
 import razemLogo from '@/assets/partie/razem.svg';
 import rozwojLogo from '@/assets/partie/rozwoj.png';
+import wzorPhoto from '@/assets/barometr/wzor-zdjecie.png';
 
 export const barometrPage = {
   href: '/barometr-polityczny/',
@@ -32,10 +33,31 @@ export const barometrPage = {
   seoTitle: 'Barometr: polityka zdrowotna partii',
   lead: 'Co partie proponują w ochronie zdrowia — według tych samych pytań dla każdej z nich i ze źródłem przy każdej tezie. Zaczynamy od zaproszenia: każda partia może przedstawić nam swój program.',
   description: 'Polityka zdrowotna partii według tych samych pytań i ze źródłami. Zaproszenie dla partii do przesłania programu w ochronie zdrowia.',
-  updated: new Date('2026-10-19'),
+  updated: new Date('2026-10-26'),
   /** true = szkic: noindex (także podstron partii). Opublikowane 17.10.2026; wzór opisu zostaje noindex zawsze. */
   draft: false,
 };
+
+/**
+ * Historia zmian strony barometru (blok „Historia zmian” na końcu strony, od najnowszego): zmiany w zasadach
+ * i układzie, nie każda poprawka. Zapis wpisu: lib/inline (**b**, [a](href)). Nowy wpis = też `barometrPage.updated`.
+ */
+export const barometrChangelog: { date: Date; text: string }[] = [
+  {
+    date: new Date('2026-10-26'),
+    text: 'Nowa sekcja [„Politycy”](#politycy): posłowie, senatorowie i politycy partii z listy mogą wypowiedzieć się pod własnym nazwiskiem — na tych samych zasadach co partie. Wypowiedź podpisujemy jako zdanie tej osoby, nie stanowisko partii.',
+  },
+  // wcześniejsze wpisy odtworzone z historii zmian w repozytorium; pierwsza wersja razem z doprecyzowaniem zasad
+  // z 18.10 jako jeden wpis, dopisanie KORWiN pominięte jako mało istotne (decyzja redakcji 26.10.2026)
+  {
+    date: new Date('2026-10-18'),
+    text: 'Pytania wysłane do wszystkich 11 klubów i kół Sejmu oraz do Naczelnej Izby Lekarskiej — dzień przed zapowiedzianą datą. Termin odpowiedzi bez zmian: 02.11.2026. Więcej: [wpis w aktualnościach](/aktualnosci/pytania-barometru-wyslane/).',
+  },
+  {
+    date: new Date('2026-10-17'),
+    text: 'Pierwsza wersja barometru: 11 klubów i kół Sejmu X kadencji oraz Naczelna Izba Lekarska (samorząd zawodowy, nie partia), sześć obszarów pytań — kadry w trzech częściach: lekarze, pielęgniarki, inne zawody medyczne — z pytaniami pomocniczymi i [wzór opisu partii](/barometr-polityczny/wzor/). Zasady: do 1\u00a0500 znaków na każdy obszar (w kadrach — na każdą część); koszt, źródło pieniędzy i termin — jeśli propozycja tego dotyczy; obszar pominięty przez partię oznaczamy wprost. Na odpowiedź każdy ma dwa tygodnie od wysłania pytań.',
+  },
+];
 
 /** Programy partii przyjmujemy na ogólny adres serwisu (decyzja redakcji 17.10.2026); temat wiadomości je wyróżnia. */
 export const barometrContact = {
@@ -472,6 +494,160 @@ export const barometrExample: BarometrProfile = {
 /** Opisy z własną podstroną. Prawdziwy opis: id = id karty partii, dane partii z barometrParties. */
 export const barometrProfiles: BarometrProfile[] = [barometrExample];
 
+/* ---------- Politycy pod nazwiskiem (sekcja #politycy, podstrony /barometr-polityczny/politycy/<id>/) ---------- */
+
+/**
+ * Wypowiedź polityka pod własnym nazwiskiem — wyjątek od zasady „bez nazwisk” (decyzja redakcji 26.10.2026):
+ * polityk sam zabiera głos, my nie opisujemy osób. Zdanie tej osoby, nie stanowisko partii.
+ * Te same reguły co odpowiedzi partii: te same obszary, limit ANSWER_LIMIT na każdy, bez zmian w treści, z datą.
+ * Obszar bez odpowiedzi oznaczamy wprost („Bez odpowiedzi”, bez rodzaju gramatycznego) — jak u partii, żeby dało się
+ * porównać dwóch polityków albo polityka z partią w tym samym obszarze.
+ */
+export interface BarometrStatementEntry {
+  /** id obszaru z barometrAreas */
+  area: string;
+  /** id części obszaru (kadry); brak = obszar bez części */
+  part?: string;
+  /** wypowiedź w nadesłanym brzmieniu (akapity) */
+  text: string[];
+}
+
+export interface BarometrPolitician {
+  id: string;
+  href: string;
+  /** imię i nazwisko tak, jak podpisał się autor */
+  name: string;
+  /** funkcja publiczna, np. „Poseł na Sejm X kadencji” */
+  role: string;
+  /**
+   * partia albo klub, jeśli autor do niego należy: na karcie listy sama nazwa, logo tylko na podstronie.
+   * Logo: import z src/assets/partie/ (to samo co na karcie partii); 'serwis' = logo zarobkilekarzy.pl —
+   * tylko we wzorze na fikcyjnej partii, jak u Partii Przykładowej.
+   */
+  party?: { name: string; logo?: ImageMetadata | 'serwis' };
+  /**
+   * kim jest i czym się zajmuje — jedno, dwa zdania na karcie listy i w nagłówku podstrony.
+   * Same fakty z oficjalnych danych (np. strona Sejmu: zawód, komisje, okręg) albo od autora — bez ocen.
+   */
+  about: string;
+  /** zdjęcie (opcjonalne) — nadesłane przez autora albo oficjalne, bez metadanych; na stronie czarno-białe jak wszystkie zdjęcia */
+  photo?: ImageMetadata;
+  /** profil w mediach społecznościowych (na razie X) — po nim czytelnik sprawdza, kto mówi */
+  x: { handle: string; avatar?: ImageMetadata };
+  statements: BarometrStatementEntry[];
+  updated: Date;
+  changes: { date: Date; text: string }[];
+  /** wzór na fikcyjnej osobie: zawsze noindex, ramka „to wzór”, bez linku do profilu X */
+  example?: boolean;
+}
+
+export const barometrStatementsIntro = {
+  title: 'Politycy pod własnym nazwiskiem',
+  aside: `Stanowisko partii to jedno, zdanie jej polityków — drugie. Tu posłowie, senatorowie i politycy partii z listy mogą wypowiedzieć się pod własnym nazwiskiem w sprawach z sześciu obszarów. Zasady są te same co dla partii: te same obszary, do ${answerLimitLabel} w każdym, bez zmian w treści, z datą, a obszar bez odpowiedzi oznaczamy wprost. Wypowiedź podpisujemy jako zdanie tej osoby, nie partii. Przy każdej podajemy profil autora w mediach społecznościowych, żeby każdy mógł sprawdzić, kto mówi.`,
+  /** jak przesłać: z oficjalnego adresu, z profilem w mediach społecznościowych, który pokażemy przy wypowiedzi */
+  send: 'Wypowiedź prosimy przysłać z oficjalnego adresu (np. poselskiego) i podać profil w mediach społecznościowych, który pokażemy obok. Można dołączyć zdjęcie. Przed publikacją potwierdzamy autorstwo.',
+  subject: 'Barometr polityczny — wypowiedź polityka',
+};
+
+const politicianHref = (id: string) => `${barometrPage.href}politycy/${id}/`;
+
+/**
+ * Wzór wypowiedzi na fikcyjnej osobie — pokazuje układ; teksty opisują, co tu będzie, bez zmyślonych stanowisk.
+ * Nazwy kont X mają ponad 15 znaków (więcej, niż dopuszcza X), więc takie konta nie istnieją — nikogo prawdziwego nie wskazujemy.
+ */
+export const barometrStatementExample: BarometrPolitician = {
+  id: 'wzor',
+  href: politicianHref('wzor'),
+  name: 'Jan Przykładowy',
+  role: 'Poseł na Sejm — osoba fikcyjna',
+  party: { name: 'Partia Przykładowa', logo: 'serwis' },
+  photo: wzorPhoto,
+  about: 'Ekonomista, wcześniej w samorządzie powiatu. W Sejmie w komisji finansów publicznych; zajmuje się budżetem państwa i finansowaniem szpitali powiatowych.',
+  x: { handle: 'posel_przykladowy' },
+  statements: [
+    {
+      area: 'finansowanie',
+      text: [
+        'Tu polityk pisze własnymi słowami, co sądzi o sprawie z jednego z sześciu obszarów barometru — w tym miejscu o tym, ile publicznych pieniędzy przeznaczyć na ochronę zdrowia i skąd je wziąć. Ma na to tyle samo miejsca co partia w jednym obszarze.',
+        'Wypowiedź może zgadzać się ze stanowiskiem partii albo się od niego różnić — dlatego podpisujemy ją imieniem i nazwiskiem autora, a nie nazwą partii.',
+      ],
+    },
+    {
+      area: 'kadry',
+      part: 'lekarze',
+      text: ['Tu polityk odpowiada o lekarzach: o liczbie miejsc na studiach, specjalizacjach i czasie pracy. Każdy obszar i każda część kadr to osobna wypowiedź z własnym limitem znaków.'],
+    },
+    {
+      area: 'wynagrodzenia',
+      text: ['Tu polityk pisze o zasadach wynagradzania z publicznych pieniędzy — etacie, kontrakcie i jawności łącznych kwot. Obszar, w którym autor nie odpowiedział, oznaczamy wprost: „Bez odpowiedzi”.'],
+    },
+  ],
+  updated: new Date('2026-10-26'),
+  changes: [{ date: new Date('2026-10-26'), text: 'Wzór wypowiedzi polityka — pierwsza wersja.' }],
+  example: true,
+};
+
+/**
+ * Dodatkowe wzory tylko w podglądzie (npm run dev): jak wygląda lista z kilkoma osobami.
+ * W buildzie ich nie ma — na stronie zostaje jeden wzór, dopóki nie przyjdą prawdziwe wypowiedzi.
+ */
+const previewExamples: BarometrPolitician[] = [
+  {
+    id: 'wzor-senatorka',
+    href: politicianHref('wzor-senatorka'),
+    name: 'Anna Wzorcowa',
+    role: 'Senatorka — osoba fikcyjna',
+    party: { name: 'Partia Przykładowa', logo: 'serwis' },
+    photo: wzorPhoto,
+    about: 'Lekarka rodzinna, przez lata kierowała przychodnią na wsi. W Senacie w komisji zdrowia; zajmuje się prawami pacjenta i dostępem do lekarza.',
+    x: { handle: 'senatorka_wzorcowa' },
+    statements: [
+      { area: 'dostep', text: ['Tu senatorka pisze o kolejkach: czy państwo powinno gwarantować najdłuższy czas oczekiwania na świadczenia i co, gdy zostanie przekroczony.'] },
+      { area: 'pacjent', text: ['Tu pisze o prawach pacjenta: kto powinien orzekać w sprawach odpowiedzialności zawodowej lekarzy i kto ma odpowiadać za błędy sztucznej inteligencji w leczeniu.'] },
+    ],
+    updated: new Date('2026-10-26'),
+    changes: [{ date: new Date('2026-10-26'), text: 'Wzór — pierwsza wersja.' }],
+    example: true,
+  },
+  {
+    id: 'wzor-poslanka',
+    href: politicianHref('wzor-poslanka'),
+    name: 'Ewa Próbna',
+    role: 'Posłanka na Sejm — osoba fikcyjna',
+    party: { name: 'Inna Partia Przykładowa', logo: 'serwis' },
+    about: 'Pielęgniarka, wcześniej oddziałowa w szpitalu wojewódzkim. W Sejmie w komisji zdrowia; zajmuje się kształceniem kadr medycznych.',
+    x: { handle: 'poslanka_probna_x' },
+    statements: [
+      { area: 'kadry', part: 'pielegniarki', text: ['Tu posłanka odpowiada o pielęgniarkach: o liczbie miejsc na studiach i o zakresie samodzielnych uprawnień, np. wystawianiu recept.'] },
+      { area: 'kadry', part: 'inne-zawody', text: ['Tu pisze o innych zawodach medycznych — czy część zadań lekarzy mogliby przejąć np. farmaceuci albo ratownicy.'] },
+      { area: 'szpitale', text: ['Tu pisze o szpitalach: kto powinien je prowadzić i co robić z zadłużonymi.'] },
+    ],
+    updated: new Date('2026-10-26'),
+    changes: [{ date: new Date('2026-10-26'), text: 'Wzór — pierwsza wersja.' }],
+    example: true,
+  },
+  {
+    id: 'wzor-polityk',
+    href: politicianHref('wzor-polityk'),
+    name: 'Tomasz Testowy',
+    role: 'Członek władz partii — osoba fikcyjna',
+    party: { name: 'Inna Partia Przykładowa', logo: 'serwis' },
+    about: 'Przedsiębiorca, radny miasta. W partii odpowiada za program gospodarczy, w tym zasady zatrudniania w ochronie zdrowia.',
+    x: { handle: 'polityk_testowy_x' },
+    statements: [{ area: 'wynagrodzenia', text: ['Tu polityk spoza parlamentu pisze o wynagrodzeniach z publicznych pieniędzy. Na liście może być ktoś, kto wypowiedział się tylko w jednym obszarze.'] }],
+    updated: new Date('2026-10-26'),
+    changes: [{ date: new Date('2026-10-26'), text: 'Wzór — pierwsza wersja.' }],
+    example: true,
+  },
+];
+
+/** nazwisko = ostatni człon — do kolejności alfabetycznej */
+const surname = (name: string) => name.split(' ').at(-1) ?? name;
+
+/** Politycy na stronie — alfabetycznie według nazwiska (te same zasady dla wszystkich). */
+export const barometrPoliticians: BarometrPolitician[] = [barometrStatementExample, ...(import.meta.env.DEV ? previewExamples : [])]
+  .sort((a, b) => surname(a.name).localeCompare(surname(b.name), 'pl'));
+
 // Strażnik limitu: odpowiedź dłuższa niż ANSWER_LIMIT zatrzymuje build — nie publikujemy jej skróconej przez nas.
 for (const profile of barometrProfiles) {
   for (const entry of profile.areas) {
@@ -480,5 +656,12 @@ for (const profile of barometrProfiles) {
       const where = entry.part ? `${entry.area}/${entry.part}` : entry.area;
       throw new Error(`Barometr: odpowiedź „${profile.name}” w „${where}” ma ${n} znaków (limit ${ANSWER_LIMIT}) — odesłać partii do skrócenia`);
     }
+  }
+}
+for (const p of barometrPoliticians) {
+  for (const entry of p.statements) {
+    const n = answerLength(entry.text);
+    const where = entry.part ? `${entry.area}/${entry.part}` : entry.area;
+    if (n > ANSWER_LIMIT) throw new Error(`Barometr: wypowiedź „${p.name}” w „${where}” ma ${n} znaków (limit ${ANSWER_LIMIT}) — odesłać autorowi do skrócenia`);
   }
 }

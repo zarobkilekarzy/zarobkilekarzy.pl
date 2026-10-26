@@ -40,9 +40,11 @@ interface Props extends HTMLAttributes<'article'> {
   size?: 'full' | 'compact';
   /** szerokość karty — zob. opis wyżej; domyślnie fill (full) albo md (compact) */
   width?: 'fill' | 'md' | 'sm';
+  /** false = bez linków (wzór na fikcyjnym koncie — nie odsyłamy do cudzego ani nieistniejącego profilu) */
+  linked?: boolean;
 }
 
-const { name, handle, avatar, eyebrow, bio, link, size = 'full', width, class: className, ...rest } = Astro.props;
+const { name, handle, avatar, eyebrow, bio, link, size = 'full', width, linked = true, class: className, ...rest } = Astro.props;
 const compact = size === 'compact';
 const w = width ?? (compact ? 'md' : 'fill');
 const url = `https://x.com/${handle}`;
@@ -72,7 +74,7 @@ const REL = 'nofollow noopener';
   {Astro.slots.has('default') && <div class="xp__credit"><slot /></div>}
   {bio && !compact && <p class="xp__bio">{bio}</p>}
 
-  <div class="xp__actions">
+  {linked && <div class="xp__actions">
     {link && !compact && (
       <a class="xp__link" {...{ ...linkAttrs(link.href), rel: REL }}>
         <span class="xp__link-label">W profilu</span>
@@ -82,7 +84,7 @@ const REL = 'nofollow noopener';
     )}
     <LinkArrow href={url} rel={REL} class="xp__cta">{compact ? 'Profil na X' : `Profil @${handle} na X`}</LinkArrow>
     {link && compact && <LinkArrow href={link.href} rel={REL} class="xp__cta">{link.label}</LinkArrow>}
-  </div>
+  </div>}
 </article>
 
 <style>

@@ -117,13 +117,14 @@ export const searchExtras: SearchDoc[] = [
     href: barometrPage.href,
     summary: barometrPage.lead,
     keywords: [
-      'partie', 'programy partii', 'polityka zdrowotna', 'stanowiska partii', 'pytania do partii', 'wybory', 'kluby poselskie', 'Sejm',
+      'partie', 'programy partii', 'polityka zdrowotna', 'stanowiska partii', 'pytania do partii', 'wybory', 'kluby poselskie', 'Sejm', 'politycy', 'posłowie',
       ...[...barometrParties, ...barometrOthers].flatMap((p) => [p.name, p.club]),
       // powszechne skróty, których nie ma w nazwach
       'KO', 'PiS', 'PSL', 'NIL',
     ],
     sections: [
       { title: 'Partie', anchor: 'partie' },
+      { title: 'Politycy pod własnym nazwiskiem', anchor: 'politycy' },
       { title: 'O co pytamy partie', anchor: 'obszary' },
       { title: 'Zasady barometru', anchor: 'zasady' },
       { title: 'Zaproszenie dla partii', anchor: 'zaproszenie' },

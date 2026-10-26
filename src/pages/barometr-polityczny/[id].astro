@@ -7,7 +7,6 @@
  * Dane: src/data/barometr-polityczny.ts → barometrProfiles.
  */
 import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
-import { Image } from 'astro:assets';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Section from '@/components/layout/Section.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
@@ -18,6 +17,7 @@ import StatusTrack from '@/components/blocks/StatusTrack.astro';
 import Aside from '@/components/blocks/Aside.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import AreaAnswer from '@/components/barometr/AreaAnswer.astro';
+import PartyLogo from '@/components/barometr/PartyLogo.astro';
 import HintList from '@/components/barometr/HintList.astro';
 import { barometrAreas, barometrContact, barometrPage, barometrProfiles } from '@/data/barometr-polityczny';
 import { formatDate, isoDate, pad2, typo } from '@/lib/format';
@@ -69,18 +69,7 @@ const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(`Baro
         ]}
       />
       <div slot="aside" class="bp-aside">
-        <div class="bp-logo">
-          {profile.example ? (
-            <span class="bp-site-logo" role="img" aria-label="Logo zarobkilekarzy.pl w miejscu logo partii">
-              <svg class="bp-site-logo__mark" aria-hidden="true"><use href="#i-logo" /></svg>
-              <span class="bp-site-logo__word" aria-hidden="true">zarobkilekarzy<span>.pl</span></span>
-            </span>
-          ) : profile.logo ? (
-            <Image src={profile.logo} height={88} densities={[1, 2]} alt={`Logo: ${profile.name}`} />
-          ) : (
-            <span class="bp-logo__empty">Logo partii</span>
-          )}
-        </div>
+        <PartyLogo class="bp-logo" logo={profile.example ? 'serwis' : profile.logo} name={profile.name} height={88} />
         <JumpList title="Obszary" items={areas.map((a) => ({ label: a.name, href: `#${a.id}` }))} />
       </div>
     </PageHeader>
@@ -136,14 +125,9 @@ const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(`Baro
   .bp-top { padding-top: clamp(32px, 4vw, 56px); }
 
   .bp-aside { display: grid; gap: 24px; }
-  .bp-logo { display: grid; place-items: center; height: 136px; padding: 16px; background: #fff; border: 1px solid var(--line-2); } /* kolor-stały: logotypy partii mają własne, często ciemne kolory — zawsze na białym, jak na kartach listy */
-  .bp-logo :global(img) { display: block; max-width: 100%; height: auto; max-height: 88px; width: auto; }
-  /* wzór: logo serwisu na zawsze białym polu — napis w kolorach jasnego motywu, inaczej w nocnym by zniknął */
-  .bp-site-logo { display: inline-flex; align-items: center; gap: 14px; }
-  .bp-site-logo__mark { width: 40px; height: 40px; }
-  .bp-site-logo__word { font: 500 1.75rem/1 var(--f-display); letter-spacing: -0.03em; color: #040b1b; } /* kolor-stały: --ink jasnego motywu na białym polu logo */
-  .bp-site-logo__word span { color: #666e80; } /* kolor-stały: --muted jasnego motywu na białym polu logo */
-  .bp-logo__empty { font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: #6b7280; padding: 24px 32px; border: 1px dashed #c7ccd4; } /* kolor-stały: napis na zawsze białym polu logo */
+  /* pole logo: biel i ramka w PartyLogo + wysokość jak karta na liście */
+  .bp-aside :global(.bp-logo) { display: grid; height: 136px; padding: 16px; border: 1px solid var(--line-2); }
+  .bp-aside :global(.bp-logo img) { max-height: 88px; width: auto; }
 
   .bp-how { margin-top: 32px; max-width: 72ch; font-size: 1rem; line-height: 1.65; color: var(--ink-2); }
 

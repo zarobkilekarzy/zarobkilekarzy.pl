@@ -35,7 +35,7 @@ import { CASES as COURT_CASES, CATALOG_HREF, GAME_HREF, SCALE as COURT_SCALE, ca
 import barometrOg from '@/assets/img/barometr-polityczny-og.png';
 import mobywatelOg from '@/assets/mobywatel/og-moje-zdrowie.png';
 import { newsIllustration } from '@/lib/news';
-import { barometrProfiles } from '@/data/barometr-polityczny';
+import { barometrPoliticians, barometrProfiles } from '@/data/barometr-polityczny';
 
 // odpowiedzi placówek na wniosek o płace (monitoring Watchdog Polska)
 const answered = (...r: Response[]) => monitoring.facilities.filter((f) => r.includes(f.response)).length;
@@ -356,6 +356,19 @@ export const ogPages: Record<string, OgPage> = {
         lead: 'Stanowisko w sześciu obszarach polityki zdrowotnej, w nadesłanym brzmieniu.',
         leadAlways: true,
         logo: profile.example ? 'serwis' : profile.logo,
+        footer: { text: 'Pieniądz publiczny, nie polityka' },
+      },
+    ]),
+  ),
+  // Wypowiedź polityka pod nazwiskiem: imię i nazwisko, bez dat i liczby obszarów.
+  ...Object.fromEntries(
+    barometrPoliticians.map((politician): [string, OgPage] => [
+      politician.href,
+      {
+        eyebrow: politician.example ? 'Barometr polityczny · wzór' : 'Barometr polityczny · politycy',
+        title: politician.name,
+        lead: 'Wypowiedź pod własnym nazwiskiem o polityce zdrowotnej, w nadesłanym brzmieniu.',
+        leadAlways: true,
         footer: { text: 'Pieniądz publiczny, nie polityka' },
       },
     ]),

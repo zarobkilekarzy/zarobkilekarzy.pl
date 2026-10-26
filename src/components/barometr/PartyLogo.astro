@@ -1,0 +1,63 @@
+---
+/**
+ * Logo partii na zawsze białym polu — podstrona partii, karta i podstrona polityka.
+ * logo = plik → obrazek; 'serwis' → logo zarobkilekarzy.pl (wzór na fikcyjnej partii); brak → napis „Logo partii”.
+ *
+ * Rozmiar: `height` (stała wysokość, podstrona partii) albo `area` (ta sama powierzchnia dla każdego logo, jak na
+ * liście partii — szerokie są niższe, wysokie węższe; `maxW`/`maxH` to ramka). Logo serwisu skaluje się z `maxH`/`height`.
+ */
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+import { raw } from '@/lib/images';
+
+interface Props {
+  logo?: ImageMetadata | 'serwis';
+  /** nazwa partii — do tekstu alternatywnego */
+  name: string;
+  height?: number;
+  area?: number;
+  maxW?: number;
+  maxH?: number;
+  class?: string;
+}
+
+const { logo, name, height, area, maxW = 230, maxH = 92, class: className } = Astro.props;
+
+// wymiary obrazka: stała wysokość albo równa powierzchnia w ramce
+let size: { width?: number; height: number } = { height: height ?? maxH };
+if (logo && logo !== 'serwis' && area) {
+  const { width: rw, height: rh } = raw(logo);
+  const ratio = rw / rh;
+  let w = Math.sqrt(area * ratio);
+  let h = w / ratio;
+  const fit = Math.min(1, maxW / w, maxH / h);
+  size = { width: Math.round(w * fit), height: Math.round(h * fit) };
+}
+/** wysokość, z której liczy się logo serwisu */
+const base = height ?? maxH;
+---
+<span class:list={['plogo', className]} style={`--plogo-h: ${base}px`}>
+  {logo === 'serwis' ? (
+    <span class="plogo__site" role="img" aria-label="Logo zarobkilekarzy.pl w miejscu logo partii">
+      <svg class="plogo__mark" aria-hidden="true"><use href="#i-logo" /></svg>
+      <span class="plogo__word" aria-hidden="true">zarobkilekarzy<span>.pl</span></span>
+    </span>
+  ) : logo ? (
+    <Image src={logo} {...size} densities={[1, 2]} alt={`Logo: ${name}`} />
+  ) : (
+    <span class="plogo__empty">Logo partii</span>
+  )}
+</span>
+
+<style>
+  .plogo { display: inline-grid; place-items: center; background: #fff; } /* kolor-stały: logotypy partii mają własne, często ciemne kolory — zawsze na białym, w obu motywach */
+  .plogo img { display: block; max-width: 100%; height: auto; }
+
+  /* logo serwisu na zawsze białym polu — napis w kolorach jasnego motywu, inaczej w nocnym by zniknął.
+     Napis ok. 1/3 wysokości ramki (28 px przy 88 px), nie mniej niż 13 px, znak 1,43 × napis. */
+  .plogo__site { --word: max(13px, calc(var(--plogo-h) * 0.32)); display: inline-flex; align-items: center; gap: calc(var(--word) * 0.5); }
+  .plogo__mark { flex: none; width: calc(var(--word) * 1.43); height: calc(var(--word) * 1.43); }
+  .plogo__word { font: 500 var(--word)/1 var(--f-display); letter-spacing: -0.03em; color: #040b1b; white-space: nowrap; } /* kolor-stały: --ink jasnego motywu na białym polu logo */
+  .plogo__word span { color: #666e80; } /* kolor-stały: --muted jasnego motywu na białym polu logo */
+  .plogo__empty { font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: #6b7280; padding: 24px 32px; border: 1px dashed #c7ccd4; } /* kolor-stały: napis na zawsze białym polu logo */
+</style>

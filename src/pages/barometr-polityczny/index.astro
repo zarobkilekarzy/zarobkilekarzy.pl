@@ -2,7 +2,8 @@
 /**
  * /barometr-polityczny/ — polityka zdrowotna partii według tych samych obszarów.
  * Na start: wstęp, obszary (zarazem pytania do partii), zasady i zaproszenie z adresem.
- * Partie (i NIL, oznaczona jako „nie partia”) — sekcja #partie; opisy dojdą w kartach. Treść: src/data/barometr-polityczny.ts.
+ * Partie (i NIL, oznaczona jako „nie partia”) — sekcja #partie; opisy dojdą w kartach. Politycy pod własnym
+ * nazwiskiem — sekcja #politycy (wyjątek od „bez nazwisk”). Treść: src/data/barometr-polityczny.ts.
  */
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Section from '@/components/layout/Section.astro';
@@ -15,11 +16,13 @@ import JumpList from '@/components/blocks/JumpList.astro';
 import NumberedList from '@/components/blocks/NumberedList.astro';
 import CheckList from '@/components/blocks/CheckList.astro';
 import Callout from '@/components/blocks/Callout.astro';
+import Changelog from '@/components/article/Changelog.astro';
 import Button from '@/components/ui/Button.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import PartyList from '@/components/barometr/PartyList.astro';
 import AreaList from '@/components/barometr/AreaList.astro';
-import { answerDeadline, answerTime, barometrAreas, barometrContact, barometrExample, barometrOthers, barometrPage, barometrParties, barometrRules, barometrSchedule, barometrToSend } from '@/data/barometr-polityczny';
+import StatementList from '@/components/barometr/StatementList.astro';
+import { answerDeadline, answerTime, barometrAreas, barometrChangelog, barometrContact, barometrExample, barometrOthers, barometrPage, barometrParties, barometrRules, barometrSchedule, barometrPoliticians, barometrStatementsIntro, barometrToSend } from '@/data/barometr-polityczny';
 import { formatDate } from '@/lib/format';
 import { CURRENT, CURRENT_PLAN, formatMld } from '@/data/budzet-nfz';
 import type { Crumb, SeoInput } from '@/lib/seo';
@@ -37,13 +40,18 @@ const invite = sent === 0
   ? `Pytania z sześciu obszarów wyślemy do wszystkich z listy tego samego dnia — ${formatDate(barometrSchedule.sendOn)}. Na odpowiedź każdy ma ${answerTime}, do ${formatDate(answerDeadline)}; spóźnioną odpowiedź też opublikujemy. Program można przysłać wcześniej, z oficjalnego adresu partii albo jej biura prasowego. Danych osoby kontaktowej nie publikujemy.`
   : `Pytania z sześciu obszarów wysłaliśmy do wszystkich z listy — datę wysyłki podajemy przy każdej karcie. Na odpowiedź każdy ma czas do ${formatDate(answerDeadline)}; spóźnioną odpowiedź też opublikujemy. Odpowiedź albo program można przysłać z oficjalnego adresu partii albo jej biura prasowego. Danych osoby kontaktowej nie publikujemy.`;
 const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(barometrContact.subject)}`;
+const statementMail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(barometrStatementsIntro.subject)}`;
+// licznik w spisie: tylko prawdziwi politycy, bez wzorów
+const statements = barometrPoliticians.filter((p) => !p.example).length;
 
 const jump = [
   { label: 'Po co barometr', href: '#po-co' },
   { label: 'Partie', href: '#partie', count: parties.length },
+  { label: 'Politycy', href: '#politycy', count: statements },
   { label: 'O co pytamy', href: '#obszary', count: barometrAreas.length },
   { label: 'Zasady', href: '#zasady' },
   { label: 'Zaproszenie dla partii', href: '#zaproszenie' },
+  { label: 'Historia zmian', href: '#historia-zmian' },
 ];
 ---
 <BaseLayout seo={seo}>
@@ -66,7 +74,7 @@ const jump = [
     <Prose>
       <p>Plan finansowy NFZ na {CURRENT.year} r. przewiduje <strong>{formatMld(CURRENT.costs)} mld zł</strong> kosztów (<a href={CURRENT_PLAN.href}>zarządzenie Prezesa NFZ nr {CURRENT_PLAN.ordinance}</a>, <a href="/dane/budzet-nfz/">więcej o budżecie NFZ</a>). To publiczne pieniądze, a zasady ich podziału — między szpitale, przychodnie, leki i wynagrodzenia — wyznaczają ustawy i rozporządzenia. Decyduje o nich polityczna większość w Sejmie i rząd.</p>
       <p>Programy partii mówią o zdrowiu w różnych miejscach, różnym językiem i z różną szczegółowością, więc trudno postawić je obok siebie. Barometr ma to ułatwić: zestawić stanowiska partii w jednym miejscu, według tych samych sześciu obszarów, tak żeby dało się je porównać — i sprawdzić, na ile są policzone.</p>
-      <p>Opisujemy programy i decyzje, nie osoby — bez nazwisk polityków, <a href="/o-projekcie/#zasady">jak w całym serwisie</a>. Nie wskazujemy, na kogo głosować. Pokazujemy, co kto proponuje i co z tego da się sprawdzić w dokumentach.</p>
+      <p>Opisujemy programy i decyzje, nie osoby — w opisach partii nie ma nazwisk polityków, <a href="/o-projekcie/#zasady">jak w całym serwisie</a>. Wyjątek to <a href="#politycy">sekcja „Politycy”</a>: tam polityk może sam zabrać głos pod własnym nazwiskiem. Nie wskazujemy, na kogo głosować. Pokazujemy, co kto proponuje i co z tego da się sprawdzić w dokumentach.</p>
       <p>Jeden z obszarów dotyczy sprawy, którą serwis zajmuje się od początku: jawności łącznych wynagrodzeń z publicznych pieniędzy. Mamy w niej własne stanowisko i nie ukrywamy go — opisujemy je osobno, w <a href="/postulat/">postulacie</a>. W barometrze pytamy o nią wszystkie partie tak samo jak o resztę.</p>
     </Prose>
   </Section>
@@ -79,6 +87,20 @@ const jump = [
       aside="Każda partia dostanie własną podstronę z opisem według tych samych sześciu obszarów. Najpierw partie z klubem albo kołem w Sejmie, potem KORWiN — partia bez klubu i koła w Sejmie. Na końcu Naczelna Izba Lekarska: to nie partia, tylko samorząd zawodowy lekarzy. Stanowisko każdej z nich opiszemy na tych samych zasadach."
     />
     <PartyList />
+  </Section>
+
+  <Section id="politycy" aria-labelledby="politycy-title">
+    <SectionHead
+      eyebrow="Politycy"
+      title={barometrStatementsIntro.title}
+      id="politycy-title"
+      aside={barometrStatementsIntro.aside}
+    />
+    <StatementList />
+    <div class="bar-statement">
+      <p>{barometrStatementsIntro.send}</p>
+      <LinkArrow href={statementMail}>Wyślij wypowiedź</LinkArrow>
+    </div>
   </Section>
 
   <Section id="obszary" tone="soft" aria-labelledby="obszary-title">
@@ -120,12 +142,19 @@ const jump = [
     </div>
   </Section>
 
+  <Section>
+    <Changelog entries={barometrChangelog} />
+  </Section>
+
 </BaseLayout>
 
 <style>
   .bar-top { padding-top: clamp(32px, 4vw, 56px); }
 
   .bar-mail { font: 500 0.9375rem/1.4 var(--f-mono); color: var(--ink); overflow-wrap: anywhere; }
+
+  .bar-statement { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px 32px; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--line-2); }
+  .bar-statement p { max-width: 72ch; font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
 
   .bar-send { margin-top: clamp(40px, 5vw, 64px); }
   .bar-send__title { color: var(--muted); margin-bottom: 16px; }

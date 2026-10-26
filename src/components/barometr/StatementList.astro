@@ -1,0 +1,48 @@
+---
+/**
+ * /barometr-polityczny/ — politycy, którzy wypowiedzieli się pod własnym nazwiskiem (sekcja #politycy).
+ * Karta jak karta partii: zdjęcie (opcjonalne), nazwisko, funkcja, nazwa partii, krótko kim jest i czym się zajmuje,
+ * link do podstrony. Logo partii, profil w mediach społecznościowych i odpowiedzi w obszarach są dopiero
+ * na podstronie — karta na liście ma tylko przedstawić osobę i prowadzić do wypowiedzi (decyzja redakcji 26.10.2026).
+ * Wzór na fikcyjnej osobie: przerywana ramka i etykieta „Wzór · osoba fikcyjna”.
+ */
+import { Image } from 'astro:assets';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { barometrPoliticians } from '@/data/barometr-polityczny';
+import { typo } from '@/lib/format';
+---
+<ul class="st-list">
+  {barometrPoliticians.map((p) => (
+    <li id={`polityk-${p.id}`} class:list={['st', { 'st--example': p.example }]}>
+      {p.example && <p class="st__tag">Wzór · osoba fikcyjna</p>}
+      <div class:list={['st__head', { 'st__head--photo': p.photo }]}>
+        {p.photo && <Image class="st__photo" src={p.photo} width={72} height={72} densities={[1, 2]} alt="" />}
+        <div>
+          <h3 class="st__name"><a href={p.href}>{p.name}</a></h3>
+          <p class="st__role">{typo(p.role)}</p>
+          {p.party && <p class="st__party">{typo(p.party.name)}</p>}
+        </div>
+      </div>
+      <p class="st__about">{typo(p.about)}</p>
+      <LinkArrow href={p.href} class="st__more">Cała wypowiedź</LinkArrow>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .st-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+  .st { display: flex; flex-direction: column; padding: 20px 20px 22px; border: 1px solid var(--line-2); background: var(--surface); }
+  .st--example { border-style: dashed; }
+
+  .st__tag { align-self: flex-start; margin-bottom: 14px; padding: 3px 8px; border: 1px solid var(--line-2); font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+  .st__head--photo { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 14px; align-items: center; }
+  /* zdjęcia na stronie są czarno-białe — osoba nie wyróżnia się kolorem */
+  .st__photo { display: block; width: 72px; height: 72px; object-fit: cover; background: var(--bg-soft); filter: grayscale(1) contrast(1.05); }
+  .st__name { font: 500 1.1875rem/1.3 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .st__name a:hover { color: var(--blue); }
+  .st__role { margin-top: 4px; font-size: 0.84375rem; line-height: 1.45; font-weight: 600; color: var(--ink); }
+  .st__party { margin-top: 2px; font-size: 0.84375rem; line-height: 1.45; color: var(--muted); }
+  .st__about { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-2); font-size: 0.9375rem; line-height: 1.55; color: var(--text); }
+
+  .st :global(.st__more) { align-self: flex-start; margin-top: auto; padding-top: 16px; }
+</style>

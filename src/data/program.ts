@@ -177,7 +177,7 @@ export const programGroups: ProgramGroup[] = [
           source: { label: 'Onet', href: 'https://wiadomosci.onet.pl/kraj/polacy-chca-wiedziec-ile-zarabiaja-lekarze-sa-wyniki-nowego-sondazu/v840y3y' },
         },
         dispute: 'Najmocniejszy zarzut: limit w czasie niedoboru wypchnie lekarzy do sektora prywatnego. Dlatego stoi na końcu — o tym, czy i gdzie postawić próg, mogą przesądzić dopiero jawne dane.',
-        refs: ['komin-placowy'],
+        refs: ['zarobki-dyrektorow-szpitali'],
       },
     ],
   },

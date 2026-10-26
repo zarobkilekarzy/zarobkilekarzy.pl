@@ -58,6 +58,7 @@ const allRedirects: Redirect[] = [
   { from: '/dane/patologia-w-liczbach/', to: '/dane/', note: `${MERGE}: kompilacja liczb z innych zestawień, rolę przejął hub` },
   { from: '/mechanizmy/dyzury-i-gotowosc/', to: '/mechanizmy/wieloetatowosc/', note: `${MERGE}: gotowość (art. 98) to sekcja wieloetatowości` },
   { from: '/mechanizmy/samorzad-nil/', to: '/analizy/odpowiedzialnosc-zawodowa-lekarzy/', note: `${MERGE}: ustrój samorządu to sekcja „Kto sądzi lekarzy”` },
+  { from: '/analizy/komin-placowy/', to: '/analizy/zarobki-dyrektorow-szpitali/', note: `${MERGE} (27.10.2026): ustawa kominowa, trzy reżimy i oświadczenia były w obu tekstach` },
 
   // Baza linków prasowych (/artykuly/ z paginacją i kategoriami): każdy adres ze starej sitemapy → hub analiz
   ...legacyUrls
@@ -70,6 +71,7 @@ const allRedirects: Redirect[] = [
       ['/og/home.png', '/og/index.png'],
       ['/og/artykuly.png', '/og/analizy.png'],
       ['/og/analizy/jedno-pwz.png', '/og/dane/rozklad-wynagrodzen.png'],
+      ['/og/analizy/komin-placowy.png', '/og/analizy/zarobki-dyrektorow-szpitali.png'],
       ['/og/analizy/lejek-ksztalcenia.png', '/og/analizy/dlaczego-brakuje-lekarzy.png'],
       ['/og/analizy/monitor-reformy-zdrowia.png', '/og/mechanizmy/wieloetatowosc.png'],
       ['/og/dane/patologia-w-liczbach.png', '/og/dane.png'],

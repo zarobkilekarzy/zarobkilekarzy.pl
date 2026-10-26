@@ -53,7 +53,7 @@ export const series: Series[] = [
     keywords: ['ustawa', 'ustawy', 'projekt ustawy', 'przepisy', 'prawo'],
     items: [
       {
-        ref: 'komin-placowy',
+        ref: 'zarobki-dyrektorow-szpitali',
         title: 'Ustawa kominowa',
         note: 'Sufit pensji kierownika szpitala, który nie obejmuje kontraktów lekarzy',
         state: 'law',

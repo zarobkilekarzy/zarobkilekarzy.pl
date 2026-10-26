@@ -71,9 +71,9 @@ const monthly = (yearly: number) => `ok. ${formatPL(yearly / 12 / 1000, 1)} tys.
 export const CASES: DirectorCase[] = [
   {
     place: 'Grójec i Nowe Miasto nad Pilicą',
-    role: 'prezes szpitala w Grójcu i p.o. dyrektora SPZOZ w Nowym Mieście, praktykujący lekarz',
+    role: 'prezes szpitala-spółki w Grójcu od października 2025 r., od 2026 r. także p.o. dyrektora SPZOZ w Nowym Mieście; praktykujący lekarz',
     year: 2025,
-    management: { text: 'ok. 161 tys. zł', note: 'z umowy o pracę za rok według rp.pl; WP podaje 22 i 18 tys. zł miesięcznie w dwóch szpitalach' },
+    management: { text: 'ok. 161 tys. zł', note: 'dochodu z umowy o pracę za 2025 r., m.in. jako prezes (od października) — źródła nie wydzielają samego kierowania; dziś według WP 22 i 18 tys. zł miesięcznie w dwóch szpitalach' },
     other: { text: '2,8 mln zł', note: 'przychodu z praktyki lekarskiej (dochód ponad 2,4 mln zł)' },
     total: { text: 'ponad 3 mln zł', note: 'przychodu; dochód ok. 2,6 mln zł' },
     hospital: 'oba szpitale z długiem ok. 20 mln zł każdy (według starosty)',

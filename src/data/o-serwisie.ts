@@ -40,7 +40,7 @@ export const editorialRules: TextItem[] = [
   },
   {
     title: 'Mechanizmy, nie nazwiska',
-    text: 'Opisujemy, jak działa system. Nie wskazujemy konkretnych lekarzy i nie publikujemy danych osobowych.',
+    text: 'Opisujemy, jak działa system. Nie wskazujemy konkretnych lekarzy i nie publikujemy danych osobowych. Wyjątek to sekcja „Politycy” w barometrze politycznym: polityk sam zabiera tam głos pod własnym nazwiskiem.',
   },
   {
     title: 'Prawo cytatu',

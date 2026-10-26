@@ -497,7 +497,7 @@ export const barometrProfiles: BarometrProfile[] = [barometrExample];
 /* ---------- Politycy pod nazwiskiem (sekcja #politycy, podstrony /barometr-polityczny/politycy/<id>/) ---------- */
 
 /**
- * Wypowiedź polityka pod własnym nazwiskiem — wyjątek od zasady „bez nazwisk” (decyzja redakcji 26.10.2026):
+ * Wypowiedź polityka pod własnym nazwiskiem — nie wyjątek od zasady „bez nazwisk” (decyzja redakcji 26.10.2026):
  * polityk sam zabiera głos, my nie opisujemy osób. Zdanie tej osoby, nie stanowisko partii.
  * Te same reguły co odpowiedzi partii: te same obszary, limit ANSWER_LIMIT na każdy, bez zmian w treści, z datą.
  * Obszar bez odpowiedzi oznaczamy wprost („Bez odpowiedzi”, bez rodzaju gramatycznego) — jak u partii, żeby dało się

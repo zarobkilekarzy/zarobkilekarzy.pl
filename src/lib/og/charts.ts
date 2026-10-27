@@ -147,3 +147,33 @@ export function virus(size: number): string {
     + `<circle cx="${f1(mid)}" cy="${f1(mid)}" r="${f1(R)}" fill="${c('blue')}"/>`
     + `<path d="${inner}" stroke="#fff" stroke-opacity=".45" stroke-width="${stroke}" fill="none"/>${dots}`;
 }
+
+/* ---------- Oś etapów: ten sam kształt co blocks/StatusTrack (oś pionowa) ---------- */
+
+export interface TrackRow {
+  state: 'done' | 'current' | 'next';
+  /** linia nad etykietą: stan, ewentualnie z datą */
+  kicker: string;
+  label: string;
+  note?: string;
+}
+
+/**
+ * Etapy jeden pod drugim, znacznik z lewej: zakończony = pełny kwadrat w kobalcie, bieżący = obrys z poświatą,
+ * przed nami = szary obrys. Odcinek do następnego etapu niebieski, gdy etap jest za nami.
+ */
+export function stageTrack(rows: TrackRow[], width: number, height: number): string {
+  const step = height / rows.length, m = 14, x = m / 2 + 4, text = 40;
+  let s = '';
+  rows.forEach((r, i) => {
+    const y = i * step + 4;
+    if (i < rows.length - 1) s += `<line x1="${x}" x2="${x}" y1="${f1(y + m)}" y2="${f1(y + step)}" stroke="${c(r.state === 'done' ? 'blue' : 'line-2')}" stroke-width="2"/>`;
+    if (r.state === 'current') s += `<rect x="${x - m / 2 - 5}" y="${f1(y - 5)}" width="${m + 10}" height="${m + 10}" fill="${c('blue-100')}"/>`;
+    const filled = r.state === 'done';
+    s += `<rect x="${x - m / 2 + 1}" y="${f1(y + 1)}" width="${m - 2}" height="${m - 2}" fill="${filled ? c('blue') : '#fff'}" stroke="${c(r.state === 'next' ? 'line-2' : 'blue')}" stroke-width="2"/>`;
+    s += label(text, y + 11, r.kicker.toUpperCase(), r.state === 'current' ? ['blue'] : []);
+    s += label(text, y + 44, r.label, ['big', ...(r.state === 'current' ? ['blue'] : r.state === 'done' ? ['strong'] : [])]);
+    if (r.note) s += label(text, y + 68, r.note);
+  });
+  return s;
+}

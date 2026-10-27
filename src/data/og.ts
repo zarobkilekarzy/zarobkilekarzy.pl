@@ -7,7 +7,8 @@ import type { OgPage, OgStamp } from '@/types';
 import { site } from '@/data/navigation';
 import { formatDate, formatPL, plural } from '@/lib/format';
 import { monitoring, type Response } from '@/lib/monitoring';
-import { currentStage, projekt } from '@/data/projekt-ustawy';
+import { currentStage, projekt, stages } from '@/data/projekt-ustawy';
+import { ui } from '@/i18n/ui';
 import { adresaci } from '@/data/adresaci';
 import { writeToolOn } from '@/data/dzialaj';
 import { helpline } from '@/data/prawa-pacjenta';
@@ -16,7 +17,7 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { simulatorOgPanels } from '@/lib/podaz/og';
 import { nurseSimulatorOgPanels } from '@/lib/podaz/pielegniarki/og';
-import { columnChart, label, svg, virus } from '@/lib/og/charts';
+import { columnChart, label, stageTrack, svg, virus } from '@/lib/og/charts';
 import { hemicycle, tallyClubs } from '@/lib/sejm/hemicycle';
 import { tokenColor } from '@/lib/tokens';
 import { CLUBS_LAST, limityVoting } from '@/data/glosowania';
@@ -47,6 +48,15 @@ const fullLists = monitoring.facilities.filter((f) => f.payroll).length;
 const MEDIA_W = 470; // kolumna mediów w lib/og/render.ts
 const PANEL_H = 440;
 const TWO_PANELS_H = 196;
+
+// Projekt ustawy: droga do Sejmu z projekt-ustawy.ts — przestawienie etapu zmienia obrazek
+const STAGE_STATE = ui.pl.blocks.stage;
+const TRACK_H = 470;
+const billTrack = stageTrack(
+  stages.map((s) => ({ state: s.state, kicker: s.date ? `${STAGE_STATE[s.state]} · ${formatDate(s.date)}` : STAGE_STATE[s.state], label: s.label, note: s.note })),
+  MEDIA_W,
+  TRACK_H,
+);
 
 // Postulat: identyfikator z przykładu na /postulat/ na zaczernionym nazwisku
 const demoId = `${createHmac('sha256', pseudonymDemo.key).update(pseudonymDemo.pwz).digest('hex').slice(0, 8)}…`;
@@ -286,6 +296,7 @@ export const ogPages: Record<string, OgPage> = {
     eyebrow: 'Postulat · projekt ustawy',
     title: 'Nowelizacja art. 27a\nustawy o działalności\nleczniczej',
     lead: 'Co kwartał, bez nazwisk, z sankcją — dwa nowe punkty, bez zmian w obowiązujących przepisach.',
+    panels: [{ head: 'Droga projektu do Sejmu', height: TRACK_H, svg: svg(MEDIA_W, TRACK_H, billTrack) }],
     footer: { text: `Wersja ${projekt.version} · ${formatDate(projekt.date)} · ${currentStage.label.toLowerCase()}` },
   },
   '/postulat/petycja/': {

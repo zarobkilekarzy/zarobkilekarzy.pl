@@ -3,12 +3,14 @@
  * Wiersz rachunku (tajwan/Receipt): podpis chiński + polski, kwota i numer objaśnienia.
  * Na szerokim rachunku numer otwiera dymek (ui/Popover), na wąskim jest zwykłym znakiem
  * odsyłającym do listy pod rachunkiem. Próg: kontener figury (.fig), jak w Receipt.
+ * Na stronach /en/ liczby w zapisie angielskim i bez złotych (TWD nie ma w tabeli A NBP).
  */
 import type { HTMLAttributes } from 'astro/types';
 import Popover from '@/components/ui/Popover.astro';
 import type { ReceiptLine } from '@/data/tajwan';
 import { zl } from '@/data/tajwan';
-import { formatPL, typo } from '@/lib/format';
+import { formatNumber, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props extends HTMLAttributes<'li'> {
   line: ReceiptLine;
@@ -20,16 +22,18 @@ interface Props extends HTMLAttributes<'li'> {
 
 const { line, n, due = false, class: className, ...rest } = Astro.props;
 const heading = line.pl.charAt(0).toUpperCase() + line.pl.slice(1);
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
 ---
 <li class:list={['row', { 'row--due': due }, className]} {...rest}>
   <span class="row__label"><span lang="zh-Hant">{line.zh}</span> {line.pl}</span>
   <span class="row__amount">
-    {formatPL(line.amount)}{due && <> <small>TWD</small></>}
+    {formatNumber(line.amount, 0, locale)}{due && <> <small>TWD</small></>}
   </span>
   {line.note && n ? (
     <span class="row__note">
       <span class="row__live">
-        <Popover label={`Objaśnienie ${n}: ${line.pl}`} heading={heading}>
+        <Popover label={`${en ? 'Explanation' : 'Objaśnienie'} ${n}: ${line.pl}`} heading={heading}>
           <Fragment slot="trigger">{n}</Fragment>
           {typo(line.note)}
         </Popover>
@@ -37,7 +41,7 @@ const heading = line.pl.charAt(0).toUpperCase() + line.pl.slice(1);
       <span class="row__n" aria-hidden="true">{n}</span>
     </span>
   ) : <span></span>}
-  {due && <span class="row__zl">{zl(line.amount)}</span>}
+  {due && !en && <span class="row__zl">{zl(line.amount)}</span>}
 </li>
 
 <style>

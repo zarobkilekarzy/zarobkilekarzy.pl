@@ -59,6 +59,15 @@ const allRedirects: Redirect[] = [
   { from: '/mechanizmy/dyzury-i-gotowosc/', to: '/mechanizmy/wieloetatowosc/', note: `${MERGE}: gotowość (art. 98) to sekcja wieloetatowości` },
   { from: '/mechanizmy/samorzad-nil/', to: '/analizy/odpowiedzialnosc-zawodowa-lekarzy/', note: `${MERGE}: ustrój samorządu to sekcja „Kto sądzi lekarzy”` },
   { from: '/analizy/komin-placowy/', to: '/analizy/zarobki-dyrektorow-szpitali/', note: `${MERGE} (27.10.2026): ustawa kominowa, trzy reżimy i oświadczenia były w obu tekstach` },
+  { from: '/dane/kolejki/', to: '/dane/budzet-nfz/', note: `${MERGE} (27.10.2026): ta sama seria kosztów NFZ; kolejki to część „Pieniądze a kolejka” budżetu` },
+  // Infografiki zestawu kolejek: adres pliku bierze się z trasy strony (/infografiki/<ostatni człon>/…)
+  ...['pieniadze-a-kolejka', 'kolejki-do-specjalistow'].flatMap((id) =>
+    ['1080x1350', '1080x1350-ciemny', '1200x675', '1200x675-ciemny'].map((v): Redirect => ({
+      from: `/infografiki/kolejki/${id}-${v}.png`,
+      to: `/infografiki/budzet-nfz/${id}-${v}.png`,
+      note: `${MERGE} (27.10.2026): infografiki kolejek przeszły do zestawienia budżetu NFZ`,
+    })),
+  ),
 
   // Baza linków prasowych (/artykuly/ z paginacją i kategoriami): każdy adres ze starej sitemapy → hub analiz
   ...legacyUrls
@@ -72,6 +81,7 @@ const allRedirects: Redirect[] = [
       ['/og/artykuly.png', '/og/analizy.png'],
       ['/og/analizy/jedno-pwz.png', '/og/dane/rozklad-wynagrodzen.png'],
       ['/og/analizy/komin-placowy.png', '/og/analizy/zarobki-dyrektorow-szpitali.png'],
+      ['/og/dane/kolejki.png', '/og/dane/budzet-nfz.png'],
       ['/og/analizy/lejek-ksztalcenia.png', '/og/analizy/dlaczego-brakuje-lekarzy.png'],
       ['/og/analizy/monitor-reformy-zdrowia.png', '/og/mechanizmy/wieloetatowosc.png'],
       ['/og/dane/patologia-w-liczbach.png', '/og/dane.png'],

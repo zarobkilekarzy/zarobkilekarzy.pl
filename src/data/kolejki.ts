@@ -1,5 +1,5 @@
 /**
- * /dane/kolejki/ („Pieniądze a kolejka”): Barometr WHC, inflacja, płaca minimalna, wydatki z własnej
+ * Część „Pieniądze a kolejka” zestawienia /dane/budzet-nfz/ (do 27.10.2026 osobna strona /dane/kolejki/): Barometr WHC, inflacja, płaca minimalna, wydatki z własnej
  * kieszeni (GUS NRZ) i składka dla mediany (nasz rachunek). Budżet NFZ NIE jest tu wpisany — pochodzi
  * z jedynej serii w data/budzet-nfz.ts (koszty ogółem w planie ostatecznym).
  *

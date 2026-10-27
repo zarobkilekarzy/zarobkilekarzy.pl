@@ -11,13 +11,14 @@ import type { Redirect } from '../redirects';
 import type { AuditContext, Finding, Rule } from './context';
 import { content } from './rules/content';
 import { head } from './rules/head';
+import { hreflang } from './rules/hreflang';
 import { legacy } from './rules/legacy';
 import { links } from './rules/links';
 import { redirects } from './rules/redirects';
 import { sitemap } from './rules/sitemap';
 import { structuredData } from './rules/structured-data';
 
-const RULES: Rule[] = [head, content, structuredData, links, sitemap, redirects, legacy];
+const RULES: Rule[] = [head, content, structuredData, links, sitemap, redirects, legacy, hreflang];
 
 export interface AuditReport {
   generated: string;

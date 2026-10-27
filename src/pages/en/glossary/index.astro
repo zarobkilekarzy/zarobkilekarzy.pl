@@ -1,0 +1,245 @@
+---
+/**
+ * /en/glossary/ — tłumaczenie /slownik/ (src/pages/slownik/index.astro): ten sam układ, hasła z getGlossary()
+ * (src/content/glossary.yaml), teksty EN z src/data/en/glossary.ts. Hasło zostaje po polsku (`lang="pl"`), pod nim
+ * angielskie objaśnienie; kotwice hasła (#kontrakt) jak w PL. Kolejność alfabetyczna po polskim haśle, jak w oryginale.
+ * „More”: tłumaczenie artykułu, jeśli istnieje (adres i tytuł z kolekcji articlesEn), inaczej `more` z modułu EN;
+ * link do strony tylko po polsku dostaje „(in Polish)”. Para i stempel w src/i18n/pages.json.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import Actions from '@/components/layout/Actions.astro';
+import Button from '@/components/ui/Button.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import { articleHref, getGlossary } from '@/lib/content';
+import { enHref, getTranslations } from '@/i18n/translations';
+import { pagePairOf } from '@/i18n/pages';
+import { uiOf } from '@/i18n/ui';
+import { contact } from '@/data/o-serwisie';
+import { glossaryEn, glossaryPage as page } from '@/data/en/glossary';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import type { Link } from '@/types';
+
+const t = uiOf(Astro.url);
+const translations = await getTranslations();
+
+interface Source extends Link {
+  /** opis po polsku (brak `sources` w module EN) */
+  polishLabel: boolean;
+  english: boolean;
+}
+interface Entry {
+  id: string;
+  term: string;
+  full: string;
+  def: string;
+  more: Link[];
+  sources: Source[];
+}
+
+/** „Więcej” z wersji PL → tłumaczenie artykułu; kotwica albo brak tłumaczenia wymagają `more` w module EN. */
+function moreEn(id: string, link: Link): Link {
+  const [path, anchor] = link.href.split('#');
+  const translated = translations.find((tr) => articleHref(tr.source) === path);
+  if (anchor || !translated) {
+    throw new Error(`[i18n] /en/glossary/: hasło „${id}” — „${link.href}” ${anchor ? 'ma kotwicę' : 'nie ma tłumaczenia'}; podaj \`more\` w src/data/en/glossary.ts`);
+  }
+  return { href: enHref(translated), label: translated.article.data.title };
+}
+
+const termsPl = await getGlossary();
+const missing = termsPl.filter((term) => !glossaryEn[term.id]).map((term) => term.id);
+const extra = Object.keys(glossaryEn).filter((id) => !termsPl.some((term) => term.id === id));
+if (missing.length || extra.length) {
+  throw new Error(`[i18n] /en/glossary/: src/data/en/glossary.ts nie zgadza się z glossary.yaml — brak: ${missing.join(', ') || '—'}; zbędne: ${extra.join(', ') || '—'}`);
+}
+
+const terms: Entry[] = termsPl.map((term) => {
+  const en = glossaryEn[term.id];
+  if (en.sources && en.sources.map((s) => s.href).join('\n') !== term.sources.map((s) => s.href).join('\n')) {
+    throw new Error(`[i18n] /en/glossary/: hasło „${term.id}” — źródła EN mają inne adresy albo kolejność niż w PL`);
+  }
+  const sources: Source[] = en.sources
+    ? en.sources.map((s) => ({ label: s.label, href: s.href, polishLabel: false, english: s.english ?? false }))
+    : term.sources.map((s) => ({ ...s, polishLabel: true, english: false }));
+  return {
+    id: term.id,
+    term: term.term,
+    full: en.full,
+    def: en.def,
+    more: en.more ?? term.more.map((link) => moreEn(term.id, link)),
+    sources,
+  };
+});
+
+const isPolishPage = (href: string) => href.startsWith('/') && !href.startsWith('/en/');
+
+/** Hasła pogrupowane po pierwszej literze polskiego hasła (kolejność alfabetyczna z getGlossary). */
+const groups = terms.reduce<{ letter: string; terms: Entry[] }[]>((acc, term) => {
+  const letter = term.term.charAt(0).toLocaleUpperCase('pl');
+  const last = acc.at(-1);
+  if (last?.letter === letter) last.terms.push(term);
+  else acc.push({ letter, terms: [term] });
+  return acc;
+}, []);
+const letterId = (letter: string) => `letter-${letter.toLowerCase()}`;
+
+const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: page.title }];
+const seo: SeoInput = {
+  title: page.docTitle,
+  description: page.description,
+  index: !pagePairOf(Astro.url.pathname)?.draft,
+  breadcrumbs: crumbs,
+  entities: [
+    {
+      kind: 'termSet',
+      name: page.title,
+      terms: terms.map((term) => ({ id: term.id, name: term.term, alternateName: term.full, description: term.def })),
+    },
+  ],
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="gl-top">
+    <PageHeader title={page.title} lead={page.lead} eyebrow={page.eyebrow} crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Entries', value: terms.length },
+          { label: 'Updated', value: page.updated },
+        ]}
+      />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom">
+    <PageTranslationNote />
+    <nav class="gl-index" aria-label="Index of entries">
+      <ul class="gl-index__groups">
+        {groups.map((g) => (
+          <li class="gl-index__group">
+            <a class="gl-index__letter" href={`#${letterId(g.letter)}`} aria-label={`Letter ${g.letter}`}>{g.letter}</a>
+            <ul class="gl-index__terms">
+              {g.terms.map((term) => <li><a href={`#${term.id}`} lang="pl">{term.term}</a></li>)}
+            </ul>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="gl-list">
+      {groups.map((g) => (
+        <section class="gl-group" id={letterId(g.letter)} aria-labelledby={`${letterId(g.letter)}-title`}>
+          <h2 class="gl-group__letter" id={`${letterId(g.letter)}-title`} data-no-anchor>{g.letter}</h2>
+          <div class="gl-group__entries">
+            {g.terms.map((term) => (
+              <article class="gl-entry" id={term.id} aria-labelledby={`${term.id}-term`}>
+                <header class="gl-entry__head">
+                  <h3 class="gl-entry__term" id={`${term.id}-term`}><span lang="pl">{term.term}</span></h3>
+                  <p class="gl-entry__full">{typo(term.full)}</p>
+                </header>
+                <div class="gl-entry__body">
+                  <p class="gl-entry__def">{typo(term.def)}</p>
+                  <dl class="gl-entry__meta">
+                    <div>
+                      <dt>More</dt>
+                      <dd>
+                        <ul>
+                          {term.more.map((l) => isPolishPage(l.href)
+                            ? <li><a href={l.href} hreflang="pl">{typo(l.label)}</a>{t.inPolish}</li>
+                            : <li><a href={l.href}>{typo(l.label)}</a></li>)}
+                        </ul>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{term.sources.length > 1 ? 'Sources' : 'Source'}</dt>
+                      <dd>
+                        <ul>
+                          {term.sources.map((s) => (
+                            <li>
+                              <a {...linkAttrs(s.href)}>{s.polishLabel ? <span lang="pl">{typo(s.label)}</span> : typo(s.label)}</a>{!s.english && t.inPolish}
+                            </li>
+                          ))}
+                        </ul>
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+
+    <p class="gl-note">
+      The definitions describe terms; they do not judge them. Amounts and rates that change every year are given in the texts
+      linked under “More”. Missing a term or spotted an error? Write to <a href={`mailto:${contact.email}`}>{contact.email}</a>.
+    </p>
+    <Actions class="gl-actions">
+      <Button href="/en/mechanisms/">See the mechanisms</Button>
+      <Button href="/en/demand/" variant="ghost">Our demand</Button>
+    </Actions>
+  </Section>
+</BaseLayout>
+
+<style>
+  .gl-top { padding-top: clamp(32px, 4vw, 56px); }
+
+  /* Indeks: litery z hasłami w siatce na całą szerokość kolumny */
+  .gl-index { border-block: 1px solid var(--line-2); padding-block: 24px; }
+  .gl-index__groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr)); gap: 20px 24px; }
+  .gl-index__group { display: grid; grid-template-columns: 2rem minmax(0, 1fr); align-items: baseline; }
+  .gl-index__letter { font: 400 1.25rem/1.2 var(--f-display); color: var(--blue); text-decoration: none; }
+  .gl-index__terms { display: grid; gap: 4px; }
+  .gl-index__terms a { font-size: 0.9375rem; line-height: 1.4; color: var(--ink); text-decoration: none; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .2s, color .2s; }
+  .gl-index__terms a:hover { color: var(--blue); background-size: 100% 1px; }
+
+  /* Lista: litera w lewej kolumnie, hasła do prawej krawędzi siatki */
+  .gl-group { display: grid; grid-template-columns: minmax(0, 5rem) minmax(0, 1fr); gap: 0 clamp(24px, 4vw, 56px); border-bottom: 1px solid var(--line-2); }
+  .gl-group__letter {
+    font: 300 clamp(2.5rem, 4vw, 3.5rem)/1 var(--f-display); letter-spacing: -0.04em; color: var(--blue);
+    padding-top: 28px; align-self: start; position: sticky; top: calc(var(--header-h) + 16px);
+  }
+  .gl-group { scroll-margin-top: calc(var(--header-h) + 16px); }
+
+  .gl-entry {
+    display: grid; grid-template-columns: minmax(0, 17rem) minmax(0, 1fr); gap: 12px clamp(24px, 4vw, 56px);
+    padding-block: 32px; scroll-margin-top: calc(var(--header-h) + 16px);
+  }
+  .gl-entry + .gl-entry { border-top: 1px solid var(--line); }
+  .gl-entry:target { box-shadow: inset 0 3px 0 var(--blue); }
+
+  .gl-entry__term { font: 400 clamp(1.5rem, 2.2vw, 1.875rem)/1.15 var(--f-display); letter-spacing: -0.02em; color: var(--ink); overflow-wrap: anywhere; }
+  .gl-entry__full { font: 500 0.75rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 10px; }
+
+  .gl-entry__def { font-size: 1.125rem; line-height: 1.65; color: var(--text-strong); max-width: 780px; }
+
+  .gl-entry__meta { display: grid; gap: 10px; margin-top: 18px; max-width: 780px; }
+  .gl-entry__meta > div { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 12px; align-items: baseline; }
+  .gl-entry__meta dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .gl-entry__meta ul { display: grid; gap: 6px; }
+  .gl-entry__meta li { font-size: 0.9375rem; line-height: 1.45; color: var(--muted); }
+  .gl-entry__meta a { font-size: 0.9375rem; line-height: 1.45; color: var(--blue); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; overflow-wrap: anywhere; }
+  .gl-entry__meta a:hover { text-decoration-thickness: 2px; }
+
+  .gl-note { margin-top: 40px; max-width: 780px; font-size: 1rem; line-height: 1.6; color: var(--text); }
+  .gl-note a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+  .gl-actions { margin-top: 32px; }
+
+  @media (max-width: 1024px) {
+    .gl-entry { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .gl-group { grid-template-columns: minmax(0, 1fr); }
+    .gl-group__letter { position: static; padding-top: 32px; font-size: 2.25rem; }
+    .gl-entry { padding-block: 20px 28px; }
+    .gl-group__letter + .gl-group__entries .gl-entry:first-child { padding-top: 12px; }
+    .gl-entry__def { font-size: 1.0625rem; }
+    .gl-entry__meta > div { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+    .gl-index__group { grid-template-columns: 1.5rem minmax(0, 1fr); }
+  }
+</style>

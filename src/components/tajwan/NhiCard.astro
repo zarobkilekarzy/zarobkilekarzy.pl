@@ -5,13 +5,34 @@
  * są zwykłymi znakami, a objaśnienia stoją listą pod kartą — jak na rachunku (tajwan/Receipt).
  * Ilustracja przedmiotu — zawsze w jasnych barwach karty, także w trybie nocnym.
  * Znak w rogu jest umowny (nie godło NHI), dane — przykładowego pacjenta z rachunku.
+ * Na stronach /en/ objaśnienia z src/data/en/tajwan.ts.
  */
 import { getImage } from 'astro:assets';
 import Figure from '@/components/blocks/Figure.astro';
 import Popover from '@/components/ui/Popover.astro';
-import { CARD_PARTS } from '@/data/tajwan';
+import { CARD_PARTS as CARD_PARTS_PL } from '@/data/tajwan';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 import portrait from '@/assets/articles/tajwan-ochrona-zdrowia/nosacz-portret.webp';
+
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { CARD_PARTS: CARD_PARTS_EN } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/tajwan') : {}) as typeof import('@/data/en/tajwan');
+const CARD_PARTS = locale === 'en' ? CARD_PARTS_EN : CARD_PARTS_PL;
+const T = {
+  pl: {
+    note: 'Uproszczona ilustracja karty. Znak w lewym górnym rogu jest umowny — to nie godło NHI.',
+    svg: 'Ilustracja karty ubezpieczenia NHI: chip, imię i nazwisko chińskimi znakami, numer identyfikacyjny, data urodzenia, zdjęcie i numer karty',
+    part: 'Element karty',
+    hint: 'Kliknij numer na karcie, żeby zobaczyć, co oznacza.',
+  },
+  en: {
+    note: 'Simplified illustration of the card. The mark in the upper left corner is symbolic — it is not the NHI emblem.',
+    svg: 'Illustration of an NHI insurance card: chip, name in Chinese characters, identification number, date of birth, photo and card number',
+    part: 'Card element',
+    hint: 'Click a number on the card to see what it means.',
+  },
+}[locale];
 
 const W = 856;
 const H = 540;
@@ -28,11 +49,11 @@ const MARKS: [number, number][] = [
 ];
 const at = ([x, y]: [number, number]) => `left: ${((x / W) * 100).toFixed(2)}%; top: ${((y / H) * 100).toFixed(2)}%`;
 ---
-<Figure note="Uproszczona ilustracja karty. Znak w lewym górnym rogu jest umowny — to nie godło NHI.">
+<Figure note={T.note}>
   <div class="nhi">
     <div class="card">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="nhi-card-title">
-        <title id="nhi-card-title">Ilustracja karty ubezpieczenia NHI: chip, imię i nazwisko chińskimi znakami, numer identyfikacyjny, data urodzenia, zdjęcie i numer karty</title>
+        <title id="nhi-card-title">{T.svg}</title>
         <defs>
           <linearGradient id="nhi-bg" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stop-color="#e4f1f7" /><stop offset=".55" stop-color="#f6faf3" /><stop offset="1" stop-color="#dcefe6" />
@@ -85,7 +106,7 @@ const at = ([x, y]: [number, number]) => `left: ${((x / W) * 100).toFixed(2)}%; 
       {MARKS.map((m, i) => (
         <span class="card__mark" style={at(m)}>
           <span class="card__live">
-            <Popover variant="pin" label={`Element karty ${i + 1}: ${CARD_PARTS[i].title}`} heading={CARD_PARTS[i].title}>
+            <Popover variant="pin" label={`${T.part} ${i + 1}: ${CARD_PARTS[i].title}`} heading={CARD_PARTS[i].title}>
               <Fragment slot="trigger">{i + 1}</Fragment>
               {CARD_PARTS[i].text && typo(CARD_PARTS[i].text)}
             </Popover>
@@ -95,7 +116,7 @@ const at = ([x, y]: [number, number]) => `left: ${((x / W) * 100).toFixed(2)}%; 
       ))}
     </div>
 
-    <p class="nhi__hint">Kliknij numer na karcie, żeby zobaczyć, co oznacza.</p>
+    <p class="nhi__hint">{T.hint}</p>
 
     <ol class="parts">
       {CARD_PARTS.map((p, i) => (

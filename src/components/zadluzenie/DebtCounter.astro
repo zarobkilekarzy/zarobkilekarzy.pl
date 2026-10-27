@@ -8,21 +8,81 @@
  *
  * Czytnik ekranu nie dostaje migających cyfr: liczba jest aria-hidden, a jej zaokrąglony
  * odpowiednik w zdaniu sr-only odświeża się razem z wartościami pomocniczymi.
+ *
+ * Dwujęzyczny: na stronie /en/ (trasa wstawia licznik obok tytułu tak samo) napisy po angielsku.
+ * Skrypt dostaje wtedy zapis liczb w `data-locale="en"` i wzory napisów z miejscami {n}, {f}, {lo}, {hi},
+ * {date} w `data-t`; na stronie polskiej obu atrybutów nie ma i skrypt pisze po polsku jak wcześniej.
  */
 import { DEBT, POPULATION } from '@/data/zadluzenie';
 import { mld, pct, perSecond, valueAt, YEAR_MS } from '@/lib/zadluzenie/model';
-import { formatDate, formatPL, typo } from '@/lib/format';
+import { formatDate, formatEN, formatPL, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
+const en = localeOf(Astro.url.pathname) === 'en';
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { bn, dateEn, enDate, pct: pctEN } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/zadluzenie-szpitali') : {}) as typeof import('@/data/en/zadluzenie-szpitali');
 const { params: p, last, overdueRate, lowSpan } = DEBT;
 const now = Date.now();
 const value = valueAt(p, now);
-const [int, frac] = formatPL(value, 2).split(',');
+const [int, frac] = en ? formatEN(value, 2).split('.') : formatPL(value, 2).split(',');
 const sec = perSecond(p, now);
 const lastDate = formatDate(new Date(last.end));
+
+/** Wzory napisów dla skryptu na stronie angielskiej (twarde spacje jak w polskich napisach skryptu). */
+const NB = ' ';
+const TPL_EN = {
+  frac: `.{f}${NB}PLN`,
+  sec: `PLN${NB}{n}`,
+  day: `PLN${NB}{n}${NB}million`,
+  year: `PLN${NB}{lo}–{hi}${NB}billion`,
+  capita: `PLN${NB}{n}`,
+  since: `PLN${NB}{n}${NB}billion`,
+  sr: 'About PLN {n} billion as of {date}.',
+};
 ---
 <section class="debt" id="licznik" aria-labelledby="licznik-title">
-  <zl-debt-counter class="debt__panel" data-params={JSON.stringify(p)}>
-    <div class="debt__top">
+  <zl-debt-counter class="debt__panel" data-params={JSON.stringify(p)} data-locale={en ? 'en' : undefined} data-t={en ? JSON.stringify(TPL_EN) : undefined}>
+    {en ? (
+    <><div class="debt__top">
+      <p class="debt__live"><span class="debt__pulse" aria-hidden="true"></span>Live · estimate</p>
+      <a class="debt__how" href="#how-we-calculate">How we calculate</a>
+    </div>
+
+    <h2 class="debt__label" id="licznik-title">Public hospitals’ debt right now</h2>
+    <p class="debt__value" aria-hidden="true"><span data-d="int">{int}</span><span class="debt__frac" data-d="frac">.{frac}&nbsp;PLN</span></p>
+    <p class="sr-only" data-d="sr">About PLN {bn(value)} billion as of {dateEn(now)}.</p>
+    <p class="debt__rate">
+      growing by <strong data-d="sec">PLN&nbsp;{formatEN(sec)}</strong> a second,
+      i.e. about <strong data-d="day">PLN&nbsp;{formatEN((sec * 86400) / 1e6)}&nbsp;million</strong> a day
+    </p>
+
+    <dl class="debt__cells">
+      <div class="debt__cell">
+        <dt>In 12 months</dt>
+        <dd data-d="year">PLN&nbsp;{bn(valueAt(p, now + YEAR_MS, p.low), 0)}–{bn(valueAt(p, now + YEAR_MS), 0)}&nbsp;billion</dd>
+        <p>{`at last year’s rate (+${pctEN(p.rate)}%) or slower, at the ${lowSpan} average (+${pctEN(p.low)}%)`}</p>
+      </div>
+      <div class="debt__cell">
+        <dt>Per inhabitant</dt>
+        <dd data-d="capita">PLN&nbsp;{formatEN(value / p.population)}</dd>
+        <p>{`${formatEN(POPULATION.value / 1e6, 2)} million inhabitants (Statistics Poland, ${enDate(POPULATION.date)})`}</p>
+      </div>
+      <div class="debt__cell">
+        <dt>Overdue</dt>
+        <dd>PLN&nbsp;{bn(last.overdue, 2)}&nbsp;billion</dd>
+        <p>{`SPZOZ liabilities past their due date on ${dateEn(last.end)} — ${pctEN(overdueRate, 0)}% more than a year earlier`}</p>
+      </div>
+      <div class="debt__cell">
+        <dt>Last reading</dt>
+        <dd>PLN&nbsp;{bn(last.total)}&nbsp;billion</dd>
+        <p>
+          {`${dateEn(last.end)}: SPZOZ PLN ${bn(last.spzoz)} billion (Ministry of Health) + companies and institutes about PLN ${bn(last.others ?? 0)} billion. Since that day we have added`}{' '}
+          <span data-d="since">PLN&nbsp;{bn(value - last.total)}&nbsp;billion</span>
+        </p>
+      </div>
+    </dl></>
+    ) : (
+    <><div class="debt__top">
       <p class="debt__live"><span class="debt__pulse" aria-hidden="true"></span>Na żywo · szacunek</p>
       <a class="debt__how" href="#jak-liczymy">Jak to liczymy</a>
     </div>
@@ -59,15 +119,19 @@ const lastDate = formatDate(new Date(last.end));
           <span data-d="since">{mld(value - last.total)}&nbsp;mld&nbsp;zł</span>
         </p>
       </div>
-    </dl>
+    </dl></>
+    )}
   </zl-debt-counter>
 </section>
 
 <script>
   import { mld, perSecond, valueAt, YEAR_MS, type DebtParams } from '@/lib/zadluzenie/model';
-  import { formatDate, formatPL } from '@/lib/format';
+  import { formatDate, formatDateIn, formatEN, formatPL } from '@/lib/format';
 
   const NB = ' ';
+
+  /** {n}, {f}… we wzorze z data-t → wartości */
+  const fill = (tpl: string, v: Record<string, string>) => tpl.replace(/\{(\w+)\}/g, (_, k: string) => v[k] ?? '');
 
   class DebtCounter extends HTMLElement {
     #frame = 0;
@@ -75,12 +139,22 @@ const lastDate = formatDate(new Date(last.end));
 
     connectedCallback() {
       const p: DebtParams = JSON.parse(this.dataset.params ?? '{}');
+      // Strona angielska: zapis liczb z data-locale, napisy z data-t (bez atrybutów — po polsku)
+      const en = this.dataset.locale === 'en';
+      const t: Record<string, string> | null = this.dataset.t ? JSON.parse(this.dataset.t) : null;
+      const bn = (zl: number, d = 1) => formatEN(zl / 1e9, d);
       const slot = (key: string) => this.querySelector<HTMLElement>(`[data-d="${key}"]`);
       const [int, frac, sr, sec, day, year, capita, since] =
         ['int', 'frac', 'sr', 'sec', 'day', 'year', 'capita', 'since'].map(slot);
       const set = (el: HTMLElement | null, text: string) => { if (el && el.textContent !== text) el.textContent = text; };
 
       const digits = () => {
+        if (en && t) {
+          const [i, f] = formatEN(valueAt(p, Date.now()), 2).split('.');
+          set(int, i);
+          set(frac, fill(t.frac, { f }));
+          return;
+        }
         const [i, f] = formatPL(valueAt(p, Date.now()), 2).split(',');
         set(int, i);
         set(frac, `,${f}${NB}zł`);
@@ -90,6 +164,15 @@ const lastDate = formatDate(new Date(last.end));
         const now = Date.now();
         const v = valueAt(p, now);
         const s = perSecond(p, now);
+        if (en && t) {
+          set(sec, fill(t.sec, { n: formatEN(s) }));
+          set(day, fill(t.day, { n: formatEN((s * 86400) / 1e6) }));
+          set(year, fill(t.year, { lo: bn(valueAt(p, now + YEAR_MS, p.low), 0), hi: bn(valueAt(p, now + YEAR_MS), 0) }));
+          set(capita, fill(t.capita, { n: formatEN(v / p.population) }));
+          set(since, fill(t.since, { n: bn(v - p.base) }));
+          set(sr, fill(t.sr, { n: bn(v), date: formatDateIn(new Date(now), 'en') }));
+          return;
+        }
         set(sec, `${formatPL(s)}${NB}zł`);
         set(day, `${formatPL((s * 86400) / 1e6)}${NB}mln${NB}zł`);
         set(year, `${mld(valueAt(p, now + YEAR_MS, p.low), 0)}–${mld(valueAt(p, now + YEAR_MS), 0)}${NB}mld${NB}zł`);

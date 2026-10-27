@@ -122,7 +122,13 @@ export interface PointLayer extends LayerBase {
    * wartości, wielkości i dymki punktów, liczebność klas, podsumowanie i listę `top`. Do czasu
    * wczytania (i bez JavaScriptu) punkty są szare, a panel pokazuje `pending`.
    */
-  live?: { url: string; adapter: LiveAdapterId; pending: string };
+  live?: {
+    url: string;
+    adapter: LiveAdapterId;
+    pending: string;
+    /** napisy dla adaptera w przeglądarce (np. wersja angielska) — trafiają do danych mapy w stronie */
+    text?: object;
+  };
   /** lista wyróżnionych punktów pod legendą (np. najdłuższe kolejki); przy warstwie na żywo wypełnia ją adapter */
   top?: { title: string };
   /** wyszukiwarka nad mapą: szuka po tytule i podpisie dymków, wybór przypina dymek i podświetla punkt */

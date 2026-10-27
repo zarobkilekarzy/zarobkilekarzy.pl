@@ -6,34 +6,68 @@
  * rozdzielone szczeliną w kolorze tła. Każda sesja ma własne źródło (link pod słupkiem),
  * więc Figure nie ma jednego źródła w podpisie. Statycznie, bez JS.
  * Dane i arytmetyka: data/dlaczego-brakuje-lekarzy.ts (AUTUMN, sessionStats).
+ * Dwujęzyczny: na stronach /en/ napisy z T.en i liczby w zapisie angielskim; wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
-import { AUTUMN, sessionStats } from '@/data/dlaczego-brakuje-lekarzy';
-import { formatPL, typo } from '@/lib/format';
+import { AUTUMN, sessionStats, type Session } from '@/data/dlaczego-brakuje-lekarzy';
+import { formatNumber, typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
+import { localeOf } from '@/i18n/locales';
+
+const locale = localeOf(Astro.url.pathname);
+const num = (n: number) => formatNumber(n, 0, locale);
 
 const rows = AUTUMN.map((s) => ({ ...s, ...sessionStats(s) }));
+type Row = (typeof rows)[number];
 const max = Math.max(...rows.map((r) => r.offered));
 const lo = Math.min(...rows.map((r) => r.emptyPct));
 const hi = Math.max(...rows.map((r) => r.emptyPct));
 const width = (n: number) => `${((100 * n) / max).toFixed(2)}%`;
 
-const title = `W sesjach jesiennych pustych zostaje od ${lo} do ${hi}% miejsc specjalizacyjnych — głównie pozarezydenckich`;
-const note =
-  'Sesje jesienne postępowania kwalifikacyjnego, lekarze i lekarze dentyści. Obsadzone — miejsca, których przyjęcie lekarz potwierdził na liście ostatecznej. Długość słupka odpowiada liczbie oferowanych miejsc; odsetek pustych w nawiasie liczony od miejsc danego trybu. Odsetki — obliczenia własne.';
+/** „Jesień 2025” → „Autumn 2025” */
+const autumn = (s: Session) => {
+  const m = /^Jesień (\d{4})$/.exec(s.label);
+  if (!m) throw new Error(`[en] nieznana etykieta sesji „${s.label}”`);
+  return `Autumn ${m[1]}`;
+};
+
+const T = {
+  pl: {
+    title: `W sesjach jesiennych pustych zostaje od ${lo} do ${hi}% miejsc specjalizacyjnych — głównie pozarezydenckich`,
+    note: 'Sesje jesienne postępowania kwalifikacyjnego, lekarze i lekarze dentyści. Obsadzone — miejsca, których przyjęcie lekarz potwierdził na liście ostatecznej. Długość słupka odpowiada liczbie oferowanych miejsc; odsetek pustych w nawiasie liczony od miejsc danego trybu. Odsetki — obliczenia własne.',
+    filled: 'obsadzone',
+    rez: 'puste rezydenckie',
+    non: 'puste pozarezydenckie',
+    label: (r: Row) => r.label,
+    pct: (r: Row) => `${r.emptyPct}% pustych`,
+    nums: (r: Row) =>
+      `${num(r.offered)} miejsc, obsadzone ${num(r.filled)}. Puste: ${num(r.emptyRez)} rezydenckich (${r.emptyRezPct}%) i ${num(r.emptyNon)} pozarezydenckich (${r.emptyNonPct}%).`,
+  },
+  en: {
+    title: `In autumn sessions ${lo} to ${hi}% of specialist training places remain empty — mostly non-residency places`,
+    note: 'Autumn sessions of the qualification procedure, doctors and dentists. Filled — places whose acceptance the doctor confirmed on the final list. The length of the bar corresponds to the number of places offered; the share of empty places in brackets is calculated from the places of the given type. Percentages — our calculations.',
+    filled: 'filled',
+    rez: 'empty residency places',
+    non: 'empty non-residency places',
+    label: (r: Row) => autumn(r),
+    pct: (r: Row) => `${r.emptyPct}% empty`,
+    nums: (r: Row) =>
+      `${num(r.offered)} places, ${num(r.filled)} filled. Empty: ${num(r.emptyRez)} residency places (${r.emptyRezPct}%) and ${num(r.emptyNon)} non-residency places (${r.emptyNonPct}%).`,
+  },
+}[locale];
 ---
-<Figure title={title} note={note}>
+<Figure title={T.title} note={T.note}>
   <ul class="ep-legend" aria-hidden="true">
-    <li><span class="ep-key ep-key--filled"></span>obsadzone</li>
-    <li><span class="ep-key ep-key--rez"></span>puste rezydenckie</li>
-    <li><span class="ep-key ep-key--non"></span>puste pozarezydenckie</li>
+    <li><span class="ep-key ep-key--filled"></span>{T.filled}</li>
+    <li><span class="ep-key ep-key--rez"></span>{T.rez}</li>
+    <li><span class="ep-key ep-key--non"></span>{T.non}</li>
   </ul>
   <ol class="ep">
     {rows.map((r) => (
       <li class="ep__row">
         <p class="ep__head">
-          <span class="ep__label">{r.label}</span>
-          <span class="ep__pct">{r.emptyPct}% pustych</span>
+          <span class="ep__label">{T.label(r)}</span>
+          <span class="ep__pct">{T.pct(r)}</span>
         </p>
         <div class="ep__bar" style={`--w: ${width(r.offered)}`} aria-hidden="true">
           <span class="ep__seg ep__seg--filled" style={`--s: ${r.filled}`}></span>
@@ -41,7 +75,7 @@ const note =
           <span class="ep__seg ep__seg--non" style={`--s: ${r.emptyNon}`}></span>
         </div>
         <p class="ep__nums">
-          {typo(`${formatPL(r.offered)} miejsc, obsadzone ${formatPL(r.filled)}. Puste: ${formatPL(r.emptyRez)} rezydenckich (${r.emptyRezPct}%) i ${formatPL(r.emptyNon)} pozarezydenckich (${r.emptyNonPct}%).`)}{' '}
+          {typo(T.nums(r))}{' '}
           <a class="ep__src" {...linkAttrs(r.source.href)}>{r.source.label}</a>
         </p>
       </li>

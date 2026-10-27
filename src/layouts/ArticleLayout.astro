@@ -5,6 +5,8 @@
  * (gdy w lib/infografiki/zestawy.ts jest zestaw o kluczu = id artykułu),
  * sprostowania, udostępnianie, powiązane materiały i stanowisko redakcji.
  * SEO z frontmattera: Article (+ Dataset dla działu Dane), okruszki, daty — graf buduje lib/seo.
+ * Tłumaczenia (/en/…, z `source`) dostają notę o tłumaczeniu, linijkę o kursie euro i hreflang do oryginału;
+ * bez serii, infografik i powiązanych, które są polskie.
  */
 import type { MarkdownHeading } from 'astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
@@ -17,30 +19,45 @@ import Prose from '@/components/article/Prose.astro';
 import ShareLinks from '@/components/article/ShareLinks.astro';
 import Changelog from '@/components/article/Changelog.astro';
 import Series from '@/components/article/Series.astro';
+import TranslationNote from '@/components/article/TranslationNote.astro';
 import ArticleList from '@/components/blocks/ArticleList.astro';
 import Aside from '@/components/blocks/Aside.astro';
 import InfographicsSection from '@/components/blocks/InfographicsSection.astro';
 import PostulatCta from '@/components/site/PostulatCta.astro';
-import { getFootnotes, getRelated, readingMinutes, sectionOf, type Article } from '@/lib/content';
+import { articleHref, getFootnotes, getRelated, readingMinutes, sectionOf, type Article } from '@/lib/content';
 import { mainNav } from '@/data/navigation';
-import { typo } from '@/lib/format';
+import { formatDateIn, typo } from '@/lib/format';
 import { infographicSets } from '@/lib/infografiki/zestawy';
 import type { Crumb, Entity, SeoInput } from '@/lib/seo';
+import { uiOf } from '@/i18n/ui';
+import { getRates } from '@/i18n/rates';
+import { ratesNote } from '@/i18n/money';
+import { SECTIONS_EN, enHref, freshnessOf, translationOf, usesEuro, type ArticleEn } from '@/i18n/translations';
 
-interface Props {
-  article: Article;
-  headings: MarkdownHeading[];
-}
+type Props =
+  | { article: Article; headings: MarkdownHeading[] }
+  /** tłumaczenie (/en/…): dział, daty i adres oryginału z polskiego `source` */
+  | { article: ArticleEn; headings: MarkdownHeading[]; source: Article };
 
-const { article, headings } = Astro.props;
-const { title, summary, updated, date, keyPoints, editorial, changelog } = article.data;
+const props = Astro.props;
+const { article, headings } = props;
+const { title, summary, keyPoints, editorial } = article.data;
+const t = uiOf(Astro.url);
+const en = 'source' in props;
+const source = 'source' in props ? props.source : (article as Article);
+const { updated, date } = source.data;
+const changelog = article.data.changelog;
 
-const section = sectionOf(article);
-// Okruszek sekcji linkuje tam, gdzie prowadzi pozycja menu tej sekcji
-const sectionHref = mainNav.find((link) => link.match === `/${section.path}/`)?.href;
-const related = await getRelated(article);
+const sectionEn = en ? SECTIONS_EN[source.data.category] : undefined;
+const section = sectionEn ?? sectionOf(source);
+// Okruszek sekcji linkuje tam, gdzie prowadzi pozycja menu tej sekcji; po angielsku — strona działu /en/<dział>/, jeśli jest
+const sectionHref = sectionEn
+  ? sectionEn.page === false ? undefined : `/en/${sectionEn.path}/`
+  : mainNav.find((link) => link.match === `/${section.path}/`)?.href;
+// Powiązane materiały, seria i infografiki są polskie — tłumaczenie ich nie pokazuje
+const related = en ? [] : await getRelated(source);
 // infografiki artykułu: zestaw o kluczu = id artykułu (ostatni człon trasy)
-const graphics = infographicSets[article.id]?.items.length ?? 0;
+const graphics = en ? 0 : (infographicSets[article.id]?.items.length ?? 0);
 // Źródła artykułu to przypisy (`[^id]`): liczba do nagłówka, adresy do JSON-LD
 const footnotes = getFootnotes(article);
 const url = new URL(Astro.url.pathname, Astro.site).href;
@@ -48,12 +65,26 @@ const url = new URL(Astro.url.pathname, Astro.site).href;
 // zawsze — o tym, czy jest, decyduje dopiero wyrenderowana treść.
 const aside = Astro.slots.has('aside') ? (await Astro.slots.render('aside')).trim() : '';
 
-const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: section.label, href: sectionHref }, { label: title }];
+const crumbs: Crumb[] = [{ label: t.nav.home, href: t.nav.homeHref }, { label: section.label, href: sectionHref }, { label: title }];
 const citations = footnotes.urls;
 
 // Zestawienia działu Dane to zarazem zbiory danych (schema.org/Dataset) — jak na dotychczasowej stronie
 const entities: Entity[] = [{ kind: 'article', citations }];
-if (article.data.category === 'Dane') entities.push({ kind: 'dataset', isBasedOn: citations, ...article.data.dataset });
+if (source.data.category === 'Dane') entities.push({ kind: 'dataset', isBasedOn: citations, ...source.data.dataset });
+
+// Para językowa: przełącznik pokazuje też tłumaczenie-szkic, hreflang dostają tylko pary w indeksie (lib/seo/meta.ts)
+const pair = en ? undefined : await translationOf(source);
+const translations: SeoInput['translations'] = en
+  ? [{ locale: 'pl', path: articleHref(source), indexable: !source.data.noindex }]
+  : pair
+    ? [{ locale: 'en', path: enHref(pair), indexable: !pair.article.data.noindex }]
+    : undefined;
+
+// Tłumaczenie: stan względem oryginału i kurs euro z buildu
+const freshness = en ? freshnessOf({ article: article as ArticleEn, source }) : undefined;
+const translated = en ? (article as ArticleEn).data.translation.date : undefined;
+// linijka o kursie tylko na stronach, które coś przeliczają na euro
+const rates = en && usesEuro(article as ArticleEn) ? await getRates() : undefined;
 
 const seo: SeoInput = {
   title: article.data.seoTitle ?? title,
@@ -61,10 +92,12 @@ const seo: SeoInput = {
   social: { title, description: summary },
   type: 'article',
   index: !article.data.noindex,
-  dates: { published: date, modified: updated ?? date },
+  // tłumaczenie zmienia się, gdy powstaje albo jest poprawiane — to jego data modyfikacji
+  dates: { published: date, modified: translated ?? updated ?? date },
   section: section.label,
   breadcrumbs: crumbs,
   entities,
+  translations,
 };
 ---
 <BaseLayout seo={seo}>
@@ -88,11 +121,14 @@ const seo: SeoInput = {
       <aside class="article__toc"><Toc headings={headings} /></aside>
 
       <div class="article__main">
-        <Series current={article.id} class="article__series" />
+        {freshness && translated && (
+          <TranslationNote original={articleHref(source)} translated={translated} stale={freshness.stale} changed={freshness.changed} />
+        )}
+        {!en && <Series current={article.id} class="article__series" />}
         <Prose><slot /></Prose>
 
         {editorial && (
-          <Aside variant="editorial" title="Dlaczego to nasz temat" class="article__editorial">
+          <Aside variant="editorial" title={t.article.editorial} class="article__editorial">
             {editorial.map((paragraph) => <p>{typo(paragraph)}</p>)}
           </Aside>
         )}
@@ -103,10 +139,11 @@ const seo: SeoInput = {
 
         <footer class="article__foot">
           <div class="article__fix">
-            <p><strong>Widzisz błąd?</strong> Poprawki publikujemy w rejestrze sprostowań z datą i opisem zmiany. Opisujemy mechanizmy, a nie konkretne osoby.</p>
-            <LinkArrow href="/#zasady">Zgłoś sprostowanie</LinkArrow>
+            <p><strong>{t.article.fixTitle}</strong> {t.article.fixText}</p>
+            <LinkArrow href={t.article.fixHref}>{t.article.fixLink}</LinkArrow>
           </div>
-          <ShareLinks url={url} title={title} label="Pomóż nagłośnić" />
+          {rates && <p class="article__rates">{ratesNote(rates, formatDateIn(new Date(rates.date), 'en'))}</p>}
+          <ShareLinks url={url} title={title} label={t.article.share} />
         </footer>
       </div>
     </div>
@@ -115,7 +152,7 @@ const seo: SeoInput = {
   {related.length > 0 && (
     <Section tone="soft" aria-labelledby="related-title">
       <div class="article__related">
-        <SectionHead eyebrow="Czytaj dalej" title="Powiązane mechanizmy" id="related-title" />
+        <SectionHead eyebrow={t.article.relatedEyebrow} title={t.article.relatedTitle} id="related-title" />
         <ArticleList articles={related} />
       </div>
     </Section>
@@ -151,6 +188,7 @@ const seo: SeoInput = {
   }
   .article__fix p { max-width: 52ch; font-size: 0.9375rem; line-height: 1.6; }
   .article__fix strong { color: var(--ink); }
+  .article__rates { font-size: 0.8125rem; line-height: 1.55; color: var(--muted); }
 
   .article__related { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 40px clamp(40px, 6vw, 96px); align-items: start; }
 

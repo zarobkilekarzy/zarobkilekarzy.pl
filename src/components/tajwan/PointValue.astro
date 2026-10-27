@@ -2,10 +2,37 @@
 /**
  * Wartość punktu NHI: wzór (budżet ÷ zgłoszone punkty) i przykładowe wartości na jednej skali.
  * Kropka to pojedyncza wartość, odcinek — przedział (np. średnie roczne z kilku lat).
+ * Na stronach /en/ podpisy z src/data/en/tajwan.ts, liczby w zapisie angielskim.
  */
 import Figure from '@/components/blocks/Figure.astro';
-import { LINKS, POINT_VALUES } from '@/data/tajwan';
-import { formatPL, typo } from '@/lib/format';
+import { LINKS, POINT_VALUES, type PointValue } from '@/data/tajwan';
+import { formatNumber, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { POINT_VALUES: POINT_VALUES_EN } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/tajwan') : {}) as typeof import('@/data/en/tajwan');
+const rows: PointValue[] = locale === 'en' ? POINT_VALUES_EN : POINT_VALUES;
+const T = {
+  pl: {
+    title: 'Punkt z cennika nie ma stałej ceny. Ile jest wart, wychodzi dopiero po rozliczeniu kwartału.',
+    note: 'Wartości pływających punktów usług ogólnych. Punkty o stałej wartości (leki, zabiegi operacyjne, część świadczeń ratunkowych) płaci się 1:1.',
+    source: 'MOHW/NHIA, zestawienia wartości punktu 2019–2025',
+    formula: 'Wartość punktu równa się budżet sektora w regionie podzielony przez sumę punktów zgłoszonych przez wszystkie placówki',
+    result: 'wartość punktu',
+    budget: 'budżet sektora w regionie',
+    points: 'punkty zgłoszone przez wszystkie placówki',
+  },
+  en: {
+    title: 'A point in the fee schedule has no fixed price. What it is worth becomes clear only after the quarter is settled.',
+    note: 'Values of floating points for general services. Points with a fixed value (medicines, surgical procedures, some emergency services) are paid 1:1.',
+    source: 'MOHW/NHIA, point value tables 2019–2025',
+    formula: 'Point value equals the sector budget in the region divided by the sum of points claimed by all facilities',
+    result: 'point value',
+    budget: 'sector budget in the region',
+    points: 'points claimed by all facilities',
+  },
+}[locale];
 
 // Skala od 0,6 do 1 TWD — tu mieszczą się wszystkie opisane wartości
 const MIN = 0.6;
@@ -13,23 +40,23 @@ const MAX = 1;
 const TICKS = [0.6, 0.7, 0.8, 0.9, 1];
 const pos = (v: number) => `${((v - MIN) / (MAX - MIN)) * 100}%`;
 // Przedział — jak w tekście (0,95–0,98), pojedyncza wartość — jak w rozliczeniu (0,813)
-const fmt = (v: number, decimals: number) => formatPL(v, v === 1 ? 2 : decimals);
+const fmt = (v: number, decimals: number) => formatNumber(v, v === 1 ? 2 : decimals, locale);
 ---
 <Figure
-  title="Punkt z cennika nie ma stałej ceny. Ile jest wart, wychodzi dopiero po rozliczeniu kwartału."
-  note="Wartości pływających punktów usług ogólnych. Punkty o stałej wartości (leki, zabiegi operacyjne, część świadczeń ratunkowych) płaci się 1:1."
-  source={{ label: 'MOHW/NHIA, zestawienia wartości punktu 2019–2025', href: LINKS.pointValues }}
+  title={T.title}
+  note={T.note}
+  source={{ label: T.source, href: LINKS.pointValues }}
 >
-  <p class="pv__formula" aria-label="Wartość punktu równa się budżet sektora w regionie podzielony przez sumę punktów zgłoszonych przez wszystkie placówki">
-    <span class="pv__term pv__term--result">wartość punktu</span>
+  <p class="pv__formula" aria-label={T.formula}>
+    <span class="pv__term pv__term--result">{T.result}</span>
     <span class="pv__op" aria-hidden="true">=</span>
-    <span class="pv__term">budżet sektora w regionie</span>
+    <span class="pv__term">{T.budget}</span>
     <span class="pv__op" aria-hidden="true">÷</span>
-    <span class="pv__term">punkty zgłoszone przez wszystkie placówki</span>
+    <span class="pv__term">{T.points}</span>
   </p>
 
   <ul class="pv__rows">
-    {POINT_VALUES.map((p) => {
+    {rows.map((p) => {
       const [from, to] = Array.isArray(p.value) ? p.value : [p.value, p.value];
       const range = from !== to;
       return (
@@ -44,7 +71,7 @@ const fmt = (v: number, decimals: number) => formatPL(v, v === 1 ? 2 : decimals)
     })}
   </ul>
   <div class="pv__axis" aria-hidden="true">
-    {TICKS.map((t) => <span style={`--at: ${pos(t)}`}>{formatPL(t, 1)}</span>)}
+    {TICKS.map((t) => <span style={`--at: ${pos(t)}`}>{formatNumber(t, 1, locale)}</span>)}
   </div>
 </Figure>
 

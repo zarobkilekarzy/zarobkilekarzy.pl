@@ -16,10 +16,13 @@
  * Serwer renderuje stan końcowy, więc bez JS (i przy prefers-reduced-motion) wykres jest od razu
  * pełny, bez serii porównawczej. Skala stała w każdym akcie; każdy słupek ma podpis, więc bez osi
  * (README → Wykresy). Czytnik ekranu dostaje opis z `caption`, nie migające liczby.
+ * Na stronach angielskich (/en/) liczby w zapisie angielskim (skrypt dostaje `data-locale="en"`)
+ * i angielski napis przycisku; nazwy serii, jednostka i `caption` przychodzą w propsach.
  */
 import type { HTMLAttributes } from 'astro/types';
 import Icon from '@/components/ui/Icon.astro';
-import { formatPL, typo } from '@/lib/format';
+import { formatNumber, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Bar {
   year: number;
@@ -51,11 +54,16 @@ const { bars, name, compare, step = 750, flow = false, unit, caption, class: cla
 const then = Astro.slots.has('default');
 const refs = compare ? [compare].flat() : [];
 const max = Math.max(...bars.map((b) => b.value));
-const label = (v: number) => (v === 0 ? '0' : formatPL(v, 1));
+const locale = localeOf(Astro.url.pathname);
+const text = {
+  pl: { replay: 'Zrestartuj animację' },
+  en: { replay: 'Replay the animation' },
+}[locale];
+const label = (v: number) => (v === 0 ? '0' : formatNumber(v, 1, locale));
 const last = bars.at(-1)!;
 const data = { main: bars.map((b) => b.value), compare: refs.length ? refs.map((c) => c.values) : null, step, flow, then };
 ---
-<zl-subsidy-chart class:list={['sub', { 'sub--then': then }, className]} data-series={JSON.stringify(data)} {...rest}>
+<zl-subsidy-chart class:list={['sub', { 'sub--then': then }, className]} data-series={JSON.stringify(data)} data-locale={locale === 'en' ? locale : undefined} {...rest}>
   <div class="sub__plot" aria-hidden="true">
     <p class="sub__now">
       <span class="sub__year" data-year>{last.year}</span>
@@ -91,13 +99,13 @@ const data = { main: bars.map((b) => b.value), compare: refs.length ? refs.map((
   </div>
   {then && <div class="sub__then"><slot /></div>}
   <button type="button" class="sub__replay" hidden>
-    <Icon name="refresh" size={12} />Zrestartuj animację
+    <Icon name="refresh" size={12} />{text.replay}
   </button>
   <p class="sr-only">{caption}</p>
 </zl-subsidy-chart>
 
 <script>
-  import { formatPL } from '@/lib/format';
+  import { formatEN, formatPL } from '@/lib/format';
 
   /** pauza na pierwszym i ostatnim roku, ms (przy `flow` krótsza) */
   const HOLD_STEP = 700;
@@ -107,7 +115,6 @@ const data = { main: bars.map((b) => b.value), compare: refs.length ? refs.map((
   const ease = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
   /** tryb `flow`: od razu w ruchu, łagodne hamowanie na ostatnich latach */
   const easeOut = (t: number) => Math.sin((Math.PI * t) / 2);
-  const label = (v: number) => (v === 0 ? '0' : formatPL(v, 1));
 
   class SubsidyChart extends HTMLElement {
     #frame = 0;
@@ -120,6 +127,9 @@ const data = { main: bars.map((b) => b.value), compare: refs.length ? refs.map((
       const { main, compare, step: STEP, flow, then }: { main: number[]; compare: number[][] | null; step: number; flow: boolean; then: boolean } =
         JSON.parse(this.dataset.series ?? '{}');
       const HOLD = flow ? HOLD_FLOW : HOLD_STEP;
+      // zapis liczb języka strony (atrybut z serwera; bez niego — polski)
+      const format = this.dataset.locale === 'en' ? formatEN : formatPL;
+      const label = (v: number) => (v === 0 ? '0' : format(v, 1));
       const n = main.length;
       const top = Math.max(...main);
       // akt 1 ma wspólną skalę wszystkich serii, akt 2 — samej serii głównej
@@ -169,7 +179,7 @@ const data = { main: bars.map((b) => b.value), compare: refs.length ? refs.map((
         heroes.forEach((h) => {
           const v = h.values[s] + (h.values[s + 1] - h.values[s]) * e;
           h.el.style.setProperty('--k', (v / soloTop).toFixed(4));
-          set(h.val, e === 0 ? label(h.values[s]) : e === 1 ? label(h.values[s + 1]) : formatPL(v, 1));
+          set(h.val, e === 0 ? label(h.values[s]) : e === 1 ? label(h.values[s + 1]) : format(v, 1));
         });
         const y = pos - s < 0.5 ? s : s + 1;
         set(year, years[y]);
@@ -293,6 +303,9 @@ const data = { main: bars.map((b) => b.value), compare: refs.length ? refs.map((
     text-align: center; text-wrap: balance;
     font: 500 clamp(0.8125rem, 2.4cqi, 1rem)/1.25 var(--f-body); color: var(--text-strong);
   }
+  /* Angielskie nazwy („Social Insurance Fund”) mieszczą się w 150% w jednej linii i wchodzą na sąsiedni podpis —
+     w węższym polu łamią się na dwie linie jak polskie */
+  .sub__tag:lang(en) { width: 100%; }
   .sub__short { display: none; }
   @container (max-width: 480px) {
     .sub__full { display: none; }

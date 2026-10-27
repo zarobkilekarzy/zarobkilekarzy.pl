@@ -1,0 +1,59 @@
+---
+/**
+ * /en/faq/ — tłumaczenie /faq/ (src/pages/faq/index.astro): ten sam układ, teksty z src/data/en/faq.ts.
+ * Para i stempel w src/i18n/pages.json; nota o tłumaczeniu pod nagłówkiem (article/PageTranslationNote).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import Actions from '@/components/layout/Actions.astro';
+import Button from '@/components/ui/Button.astro';
+import Faq from '@/components/blocks/Faq.astro';
+import NoteList from '@/components/article/NoteList.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import { faqItems, faqNotes, faqPage } from '@/data/en/faq';
+import { pagePairOf } from '@/i18n/pages';
+import { plain } from '@/lib/inline';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: faqPage.title }];
+const seo: SeoInput = {
+  title: faqPage.docTitle,
+  description: faqPage.description,
+  index: !pagePairOf(Astro.url.pathname)?.draft,
+  breadcrumbs: crumbs,
+  page: {
+    type: 'FAQPage',
+    questions: faqItems.map((item) => ({ question: item.question, answer: plain(item.answer.join(' ')) })),
+  },
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="faq-top">
+    <PageHeader title={faqPage.title} lead={faqPage.lead} eyebrow="Questions and objections" crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Questions', value: faqItems.length },
+          { label: 'Updated', value: faqPage.updated },
+        ]}
+      />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom">
+    <PageTranslationNote />
+    <Faq items={faqItems} notes={faqNotes} openFirst />
+    <NoteList notes={faqNotes} class="faq-notes" />
+    <Actions class="faq-actions">
+      <Button href="/en/demand/">Our demand</Button>
+      <Button href="/en/mechanisms/" variant="ghost">See the mechanisms</Button>
+    </Actions>
+  </Section>
+</BaseLayout>
+
+<style>
+  .faq-top { padding-top: clamp(32px, 4vw, 56px); }
+  .faq-notes { margin-top: 40px; }
+  .faq-actions { margin-top: 40px; }
+</style>

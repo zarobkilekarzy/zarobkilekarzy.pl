@@ -1,0 +1,203 @@
+---
+title: "Doctor-councillors: annual income public by law"
+seoTitle: "Doctor-councillors: declared income"
+summary: "The asset declarations of local councillors are a rare place where a doctor’s annual income from a practice, employment and contracts can be seen at once. We checked 183 declarations collected by the X user @tomo9000p against the originals: for 2025 the median income from work was about PLN 633,000, and one person in eight exceeded a million."
+description: "Asset declarations of doctor-councillors checked against the originals: median income from work for 2025 about PLN 633,000. What is visible, what is not."
+keyPoints:
+  - "Every year a councillor files an asset declaration giving income from each source separately, and its public part is published in the Public Information Bulletin (BIP). That is why, for a doctor who is a councillor, the practice, employment and contracts can be seen at once. For a doctor who holds no office in local government, such a total is not visible anywhere."
+  - "For 2025 the median income from work in 113 confirmed declarations was about PLN 633,000, and 14 people declared at least a million. The practice alone gives a median of about PLN 500,000 — for many councillors a large part of income comes from employment and contracts."
+  - "The dataset, compiled by a member of the public, had an error in one row in four, most often revenue entered as income or the wrong year. We corrected 46 rows on the basis of the declarations, and 9 amounts could not be confirmed — these are not included in the statistics."
+  - "This is not a picture of a typical doctor. Councillors are people who stood for election and won, most of them with their own practice. The dataset shows how wide the spread of incomes is, not how much the average doctor earns."
+editorial:
+  - >-
+    Doctor-councillors have been showing their annual income for years, and nobody considers this
+    excessive interference. This transparency is, however, accidental: it covers whoever happened to win
+    an election, it is scattered across hundreds of bulletins, often in scans of handwritten forms, and it
+    shows more than necessary — with first name, surname and assets.
+  - >-
+    We call for a narrower tool that covers everyone: public total payments from public money to each
+    person, under a permanent identifier, without names. A councillor’s amount would then be one point
+    on a full distribution, not an exception.
+translation:
+  of: lekarze-radni
+  files: [src/data/lekarze-radni.ts]
+  hash: "8396d7d78bf0"
+  date: 2026-10-27
+noindex: true
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import TwoLists from '@/components/blocks/TwoLists.astro';
+import RadniTable from '@/components/radni/RadniTable.astro';
+import XProfile from '@/components/blocks/XProfile.astro';
+import Money from '@/components/ui/Money.astro';
+import tomoAvatar from '@/assets/people/tomo9000p.jpg';
+import { formatEN } from '@/lib/format';
+import { RADNI, STATS, STATUS, BLEDY, RODZAJ, WIERSZY, Z_BLEDEM, POZA_LATAMI, PRAKTYKA, STARE, ZBIOR, LATA, MAX_PRZYCHOD, statsTable, rozklad, statusTable, bledyTable } from '@/data/en/lekarze-radni';
+
+export const L25 = STATS.laczny[2025];
+export const L24 = STATS.laczny[2024];
+export const D25 = STATS.dzialalnosc[2025];
+export const tys = (n) => formatEN(n / 1000, 1);
+export const people = (n) => `${n} ${n === 1 ? 'person' : 'people'}`;
+export const rozklad25 = rozklad(2025);
+export const ZBIOR_SRC = { label: `asset declarations in BIP; compiled and checked by the editors, ${ZBIOR.sprawdzono}`, href: '#zbior' };
+
+{/* Tłumaczenie src/content/articles/lekarze-radni.mdx; tabele, rozkład i opisy wierszy liczy src/data/en/lekarze-radni.ts */}
+
+A doctor who becomes a member of a municipal, county or regional council files an asset declaration every year. In it the doctor enters income from each source separately: from the practice, from employment in a hospital, from contracts, from a company. The public part of the declaration is published in the Public Information Bulletin (BIP).[^oswiadczenia] For a councillor, then, one can see at once what nobody adds up for other doctors — income from many workplaces in a single year.
+
+The X user Tomo (@tomo9000p) collected {ZBIOR.wierszy} such declarations. We compared each amount with the declaration in BIP. Much of the dataset turned out to be wrong, so the figures below come from the corrected rows, separately for 2025 and 2024.[^zbior] We do not give names: we are interested in the mechanism, not in people.
+
+<StatRow
+  label="Doctor-councillors in figures"
+  items={[
+    { prefix: '~', value: Math.round(L25.mediana / 100) / 10, decimals: 1, unit: 'thousand PLN', desc: `median annual income from work for 2025 — from ${L25.n} declarations whose amount we confirmed`, accuracy: 'exact', source: ZBIOR_SRC.label, href: ZBIOR_SRC.href },
+    { value: L25.od1mln, unit: `of ${L25.n}`, desc: 'doctor-councillors declared at least a million zloty of income from work for 2025', accuracy: 'exact', source: ZBIOR_SRC.label, href: ZBIOR_SRC.href },
+    { value: STATUS.poprawione, unit: `of ${WIERSZY}`, desc: 'rows of the dataset had to be corrected after comparison with the declaration — the amount, the year or revenue entered as income', accuracy: 'exact', source: ZBIOR_SRC.label, href: ZBIOR_SRC.href },
+  ]}
+/>
+
+## Why a councillor’s income is public
+
+The obligation comes from three local government acts: on municipal self-government (Articles 24h and 24i), on county self-government (Articles 25c and 25d) and on regional self-government (Articles 27c and 27d). A councillor files a declaration every year by 30 April, as of the end of the previous year. The information in it is public, except for the address and the location of real estate.[^oswiadczenia] Income in a declaration filed in 2026 therefore concerns 2025 — and that is how we count the year in the dataset.
+
+The same provisions cover, among others, heads of local government units, including directors of local government hospitals. We describe their declarations in our analysis [How much hospital directors earn](/en/analysis/hospital-directors-pay/). A doctor who is neither a councillor nor a director does not file a declaration. No public source adds up such a doctor’s income from several facilities — we describe this mechanism in [Lack of transparency](/en/mechanisms/lack-of-transparency/).
+
+## What the declarations show
+
+For 2025 the dataset has {L25.wierszy} rows, and we confirmed the amount of income from work in {L25.n} of them. The median is <Money value={L25.mediana} />. The number of people with income of PLN 500,000 or more: {L25.od500}; of a million or more: {L25.od1mln}. The highest income is <Money value={L25.max} />.[^zbior] Rzeczpospolita gave the same highest amount for 2025 in its own analysis of councillors’ declarations.[^rp]
+
+For 2024 the dataset is smaller: of {L24.wierszy} rows we confirmed the amount in {L24.n}. The median is <Money value={L24.mediana} />, and the number of people with income of a million or more: {L24.od1mln}.[^zbior] We do not combine the years, because these are incomes from different periods, and some people are in the dataset for only one of them.
+
+<Figure
+  title={`Income from work: median PLN ${tys(L25.mediana)} thousand for 2025 and PLN ${tys(L24.mediana)} thousand for 2024`}
+  note="Income from work is the sum of the recorded sources: practice, employment, contracts, management board and dividend from a company. Excluding the councillor’s allowance, pensions, rental and the spouse’s income — it is a lower bound. Only rows whose amount and year are confirmed by the declaration are included in the statistics. “Single amount” means that for the practice the declaration gives one figure in the “revenue and income” box, and it is not known whether it is revenue or income."
+  source={ZBIOR_SRC}
+>
+  <Comparison table={statsTable('laczny')} />
+</Figure>
+
+Most confirmed incomes for 2025 are between PLN 250,000 and a million. Above a million the distribution thins out quickly: the highest amount, <Money value={L25.max} scale="million" decimals={2} />, is the only one above one and a half million.[^zbior]
+
+<Figure
+  title={`For 2025, ${L25.od1mln} of ${L25.n} doctor-councillors declared at least a million zloty of income from work`}
+  note="Number of people in each bracket of annual income from work for 2025; only rows with a confirmed amount."
+  source={ZBIOR_SRC}
+>
+  <BarChart
+    rows={rozklad25}
+    max={Math.max(...rozklad25.map((r) => r.value))}
+    unit="people"
+    caption={`Distribution of income from work for 2025, ${L25.n} declarations: ${rozklad25.map((r) => `${r.label}: ${r.value}`).join(', ')}.`}
+  />
+</Figure>
+
+## The practice is not everything
+
+The original dataset had a single “income” column, described as income from medical activity. In {BLEDY.suma} rows, however, it was the sum of several sources: the practice, employment in a hospital, a company and contracts.[^zbior] We separated them. Income from the practice alone — from a sole proprietorship, a medical office or a doctors’ partnership — looks different from total income from work.
+
+<Figure
+  title={`The practice alone: median PLN ${tys(D25.mediana)} thousand for 2025`}
+  note="Income from the doctor’s own practice or medical business (sole proprietorship, medical office, civil-law, general or professional partnership). Excluding rows in which the declaration gives only revenue for the practice, and councillors who do not run a practice."
+  source={ZBIOR_SRC}
+>
+  <Comparison table={statsTable('dzialalnosc')} />
+</Figure>
+
+In {PRAKTYKA.ponizejPolowy} of the {PRAKTYKA.zObiema} confirmed rows in which we know both amounts, the practice is less than half of income from work. The rest comes from employment or contracts in hospitals. Another {PRAKTYKA.bezPraktyki} councillors do not run a practice at all: their income is employment, contracts or a dividend from their own medical company.[^zbior] The same doctor is thus often both an entrepreneur and an employee of several facilities. What follows from this for transparency we describe in [Contract or employment](/en/mechanisms/contract-vs-employment/).
+
+### Revenue is not income
+
+Revenue is what the practice takes in before costs are deducted: staff pay, rent, equipment. It can be many times higher than income. In the dataset the highest revenue from a practice, <Money value={MAX_PRZYCHOD.przychod} scale="million" decimals={2} />, yielded <Money value={MAX_PRZYCHOD.dzialalnosc} /> of income.[^zbior] That is why we calculate the statistics on income only.
+
+In {RODZAJ.tylkoPrzychod} declarations only revenue is given for the practice — usually for doctors taxed at a flat rate on revenue (*ryczałt*), who do not calculate income. The original dataset then entered revenue as income. We leave income blank, and these rows are not included in the statistics. In another {RODZAJ.jednaKwota} declarations the practice has a single amount in the “revenue and income” box. We count it as income, but in the tables we state how many rows this applies to.[^zbior]
+
+## What the declarations do not show
+
+<TwoLists
+  yes={{
+    title: 'What is visible',
+    note: 'A councillor’s asset declaration for a given year.',
+    items: [
+      'income from each source separately: practice, employment, contracts, companies',
+      'revenue from the practice, if the councillor gives it',
+      'the councillor’s allowance, pension and rental — as separate items',
+      'the year the income concerns (filing date minus one)',
+    ],
+  }}
+  no={{
+    title: 'What is not visible',
+    note: 'The form does not ask about it directly.',
+    items: [
+      'how much of the income is NFZ money and how much comes from private visits',
+      'how many hours were worked and in how many facilities',
+      'income from the practice when the declaration gives only revenue',
+      'the income of doctors who are neither councillors nor directors',
+    ],
+  }}
+/>
+
+The form is filled in by hand, and everyone fills it in differently. The same amount goes once into the box on business activity, once into “other income”. Some declarations are internally contradictory or give a year in the text different from the filing date.[^zbior] Comparing declarations therefore requires reading each one separately.
+
+## Why this is not a picture of a typical doctor
+
+The dataset is selective. Councillors are doctors who stood for election and won, most of them with their own practice. The dataset was compiled by one person, and we do not know what share of all doctor-councillors it includes. Nor does it cover doctors who work only as employees and hold no office in local government.
+
+The result depends on whom the dataset covers. The Co w Zdrowiu website analysed a different dataset — 160 declarations of doctor-councillors — and obtained a median of about <Money value={285000} /> and a highest income of <Money value={4900000} scale="million" />.[^cowzdrowiu] Neither of these medians says how much the average doctor in Poland earns. They only show how wide the spread of incomes is among people whose income happens to be visible.
+
+We collect individual top settlements of doctors from other sources — pay lists, audits, hospitals’ answers — in [Record payments to doctors](/en/data/record-doctor-payments/). We do not repeat people from this dataset there.
+
+## How we checked the dataset
+
+The declarations were collected by Tomo (@tomo9000p); we checked each amount in the declaration.[^zbior] We opened the declaration at the link in each row, and where the link led to a list, we found the councillor’s file in BIP. Most files are scans of handwritten forms, so we read the amounts from the image of the page. We counted the year from the filing date: a declaration from April 2026 concerns 2025. We did not find three declarations — the dataset had no working link to them.
+
+<XProfile name="Tomo" handle="tomo9000p" avatar={tomoAvatar} eyebrow="Data collection" width="md">
+  Collected the asset declarations of doctor-councillors on which this analysis is based. Thank you!
+</XProfile>
+
+<Figure
+  title={`${STATUS.zgodne} of ${WIERSZY} rows matched the declaration, we corrected ${STATUS.poprawione}`}
+  note={`Published rows: ${WIERSZY}. Only matching and corrected rows for 2024 or 2025 are included in the statistics; ${POZA_LATAMI} rows have a different or unknown year.`}
+  source={ZBIOR_SRC}
+>
+  <Comparison table={statusTable} />
+</Figure>
+
+The errors were not random. A few types recurred, and one row could have several. Apart from merely calling a sum of sources “income from the practice”, {Z_BLEDEM} rows had an error, i.e. one in four.[^zbior]
+
+<Figure
+  title="The most common error: a sum of several sources or revenue instead of income"
+  note="Number of rows with a given type of error; one row may have several."
+  source={ZBIOR_SRC}
+>
+  <Comparison table={bledyTable} />
+</Figure>
+
+We excluded two rows from the compilation. One concerned the wife of a councillor rather than a councillor herself — the dataset’s author had already excluded it. The other concerned a person against whom criminal proceedings are pending: we exclude rows of people with pending proceedings. We do not publish names, and we give the specialty after the dataset’s author, because the declarations do not contain it. Each row in the table below links to the declaration in BIP, where the amount can be checked.
+
+An earlier version of this page treated {STARE.wierszy} declarations as one group and gave a median of about PLN 633,000 and {people(STARE.od1mln)} with income of a million or more. These figures mixed 2024 and 2025, revenue with income, and sums of different sources with income from the practice. After the corrections, the number of people with income from work of a million or more is {L25.od1mln} for 2025 and {L24.od1mln} for 2024. The median income from work for 2025 came out the same as the former median of the whole dataset, but that is a coincidence: it is calculated from different rows and with a different definition, and the median of the practice alone for 2025 is PLN {tys(D25.mediana)} thousand.[^zbior]
+
+See an error in a row? Write to [sprostowania@zarobkilekarzy.pl](mailto:sprostowania@zarobkilekarzy.pl) — we will correct it after checking the declaration.
+
+## Full dataset
+
+Rows grouped by income year, in each group from the highest income from work. For each row we give the amount from the original dataset and the verification status. Council names are given in Polish.
+
+<RadniTable id="zbior" rows={RADNI} years={LATA} caption="Asset declarations of doctor-councillors: income from practice, total income from work, verification status and link to the declaration" />
+
+## What follows
+
+Councillors’ declarations show that a doctor’s annual income from many workplaces can be gathered in one document and published. This is done, however, only for people who hold office in local government, and in a form that cannot be compared without reading each scan. For other doctors no such total exists in any public source.
+
+We call for the total payments from public money to each person working in facilities with an NFZ contract to be public under a permanent identifier, without names. We describe the details on the page of [our proposal](/en/demand/).
+
+[^oswiadczenia]: The obligation to file asset declarations and their public nature: [Act on municipal self-government](https://api.sejm.gov.pl/eli/acts/DU/2026/662/text.pdf) (in Polish; consolidated text Dz.U. 2026 item 662), Articles 24h and 24i; [Act on county self-government](https://api.sejm.gov.pl/eli/acts/DU/2025/1684/text.pdf) (in Polish; consolidated text Dz.U. 2025 item 1684), Articles 25c and 25d; [Act on regional self-government](https://api.sejm.gov.pl/eli/acts/DU/2026/720/text.pdf) (in Polish; consolidated text Dz.U. 2026 item 720), Articles 27c and 27d.
+
+[^zbior]: Editorial compilation from the asset declarations of councillors who are doctors, published in the BIP of local government units. Dataset compiled by the X user @tomo9000p (as of 14.08.2026), each row compared with the declaration on 15.10.2026; link to the declaration for each row in [the full dataset](#zbior).
+
+[^rp]: Rzeczpospolita, [“<span lang="pl">Ponad milion złotych za rok pracy dla lekarza radnego w Polsce. Wyniki analizy</span>”](https://www.rp.pl/polityka/art44928601-ponad-milion-zlotych-za-rok-pracy-dla-lekarza-radnego-w-polsce-wyniki-analizy) (“Over a million zloty for a year’s work for a doctor-councillor in Poland. Results of an analysis”, in Polish) — highest income: PLN 2.15 million (declaration for 2025).
+
+[^cowzdrowiu]: Co w Zdrowiu, [“<span lang="pl">Ile zarabiają lekarze-radni? Rekord to 4,9 mln zł</span>”](https://cowzdrowiu.pl/aktualnosci/post/ile-zarabiaja-lekarze-radni-rekord-to-49-mln-zl) (“How much do doctor-councillors earn? The record is PLN 4.9 million”, in Polish) — analysis of 160 asset declarations of doctor-councillors (a different dataset from ours).

@@ -5,11 +5,13 @@
  * z którego pochodzi wiersz. Jedna ilustracja zamiast wykresu i osobnej tabeli.
  * W wąskim kontenerze pasek znika, a z oznaczenia aktu zostaje sama pozycja (rok = rok naboru).
  * Nowelizacje z tego samego naboru (`amendments`) stoją po znaku + — suma w wierszu je obejmuje.
+ * Dwujęzyczny: na stronach /en/ napisy z T.en i liczby w zapisie angielskim; wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
 import { FIRST, LATEST, LIMITS, SUM, share } from '@/data/english-division';
-import { formatPL } from '@/lib/format';
+import { formatNumber } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   /** teza tabeli — zdanie nad nią */
@@ -18,43 +20,84 @@ interface Props {
 
 const { title } = Astro.props;
 const max = Math.max(...LIMITS.map((r) => r.total));
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
+const num = (n: number) => formatNumber(n, 0, locale);
+const pct = (foreign: number, total: number) => (en ? `${formatNumber((100 * foreign) / total, 1, 'en')}%` : share(foreign, total));
+
+const T = {
+  pl: {
+    note: `Limit to górna granica przyjęć ustalona w rozporządzeniu Ministra Zdrowia, a nie liczba przyjętych ani absolwentów. Liczymy wersję końcową: rozporządzenie razem z nowelizacjami z tego samego naboru, które w części lat dodawały miejsca po polsku (w tabeli po znaku +). Limit ogółem to suma czterech kolumn załącznika: studiów stacjonarnych po polsku (z odrębną pulą dla cudzoziemców), niestacjonarnych po polsku i studiów w języku innym niż polski. * Akt z 2015 r. ma w PDF rozjechany układ kolumn — sumy sprawdziliśmy ponownie w warstwie tekstowej dokumentu.`,
+    source: `rozporządzenia MZ w sprawie limitu przyjęć, zał. nr 1 — obliczenia własne; ostatni rok: Dz.U. ${LATEST.act.label}`,
+    keyPl: 'miejsca po polsku',
+    keyFx: 'w języku obcym',
+    caption: `Limit przyjęć na kierunek lekarski w latach ${FIRST.year}–${LATEST.year}: ogółem od ${num(FIRST.total)} do ${num(LATEST.total)} miejsc, w tym w języku obcym od ${num(FIRST.foreign)} do ${num(LATEST.foreign)}.`,
+    year: 'Rok akad.',
+    total: 'Limit ogółem',
+    totalSub: 'wersja końcowa, z nowelizacjami',
+    foreign: 'W języku obcym',
+    share: 'Udział',
+    flag: 'zastrzeżenie w podpisie',
+    yearSep: ', ',
+    pos: 'poz.',
+    amendment: (m: (typeof LATEST)['act']) => `nowelizacja: Dz.U. ${m.label}`,
+    sum: 'Razem',
+  },
+  en: {
+    note: `The limit is the upper bound on admissions set in a regulation of the Minister of Health, not the number of students admitted or of graduates. We count the final version: the regulation together with the amendments from the same admission round, which in some years added places in Polish-language programmes (shown after the + sign in the table). The total limit is the sum of the four columns of the annex: full-time programmes in Polish (with a separate pool for foreigners), part-time programmes in Polish, and programmes in a language other than Polish. * The 2015 act has a misaligned column layout in the PDF — we re-checked the totals in the document’s text layer.`,
+    source: `regulations of the Minister of Health on the admission limit, annex 1 — our calculations; latest year: Dz.U. ${LATEST.act.year} item ${LATEST.act.pos}`,
+    keyPl: 'places in Polish',
+    keyFx: 'in a foreign language',
+    caption: `Admission limit for medicine, ${FIRST.year}–${LATEST.year}: in total from ${num(FIRST.total)} to ${num(LATEST.total)} places, of which in a foreign language from ${num(FIRST.foreign)} to ${num(LATEST.foreign)}.`,
+    year: 'Acad. year',
+    total: 'Total limit',
+    totalSub: 'final version, with amendments',
+    foreign: 'In a foreign language',
+    share: 'Share',
+    flag: 'caveat in the note',
+    yearSep: ' ',
+    pos: 'item',
+    amendment: (m: (typeof LATEST)['act']) => `amendment: Dz.U. ${m.year} item ${m.pos}`,
+    sum: 'Total',
+  },
+}[locale];
 ---
 <Figure
   title={title}
-  note={`Limit to górna granica przyjęć ustalona w rozporządzeniu Ministra Zdrowia, a nie liczba przyjętych ani absolwentów. Liczymy wersję końcową: rozporządzenie razem z nowelizacjami z tego samego naboru, które w części lat dodawały miejsca po polsku (w tabeli po znaku +). Limit ogółem to suma czterech kolumn załącznika: studiów stacjonarnych po polsku (z odrębną pulą dla cudzoziemców), niestacjonarnych po polsku i studiów w języku innym niż polski. * Akt z 2015 r. ma w PDF rozjechany układ kolumn — sumy sprawdziliśmy ponownie w warstwie tekstowej dokumentu.`}
-  source={{ label: `rozporządzenia MZ w sprawie limitu przyjęć, zał. nr 1 — obliczenia własne; ostatni rok: Dz.U. ${LATEST.act.label}`, href: LATEST.act.href }}
+  note={T.note}
+  source={{ label: T.source, href: LATEST.act.href }}
 >
   <p class="lim__legend" aria-hidden="true">
-    <span class="lim__key lim__key--pl"></span>miejsca po polsku
-    <span class="lim__key lim__key--fx"></span>w języku obcym
+    <span class="lim__key lim__key--pl"></span>{T.keyPl}
+    <span class="lim__key lim__key--fx"></span>{T.keyFx}
   </p>
   <table class="lim" data-reveal="grow" style={`--max: ${max}`}>
     <caption class="sr-only">
-      Limit przyjęć na kierunek lekarski w latach {FIRST.year}–{LATEST.year}: ogółem od {formatPL(FIRST.total)} do {formatPL(LATEST.total)} miejsc, w tym w języku obcym od {formatPL(FIRST.foreign)} do {formatPL(LATEST.foreign)}.
+      {T.caption}
     </caption>
     <thead>
       <tr>
-        <th scope="col">Rok akad.</th>
-        <th scope="col">Limit ogółem<span class="lim__sub">wersja końcowa, z nowelizacjami</span></th>
-        <th scope="col">W języku obcym</th>
-        <th scope="col">Udział</th>
+        <th scope="col">{T.year}</th>
+        <th scope="col">{T.total}<span class="lim__sub">{T.totalSub}</span></th>
+        <th scope="col">{T.foreign}</th>
+        <th scope="col">{T.share}</th>
         <th scope="col">Dz.U.</th>
       </tr>
     </thead>
     <tbody>
       {LIMITS.map((r, i) => (
         <tr style={`--v: ${r.total}; --fx: ${r.foreign}; --i: ${i}`}>
-          <th scope="row">{r.year}{r.flag && <span class="lim__flag" aria-label="zastrzeżenie w podpisie">*</span>}</th>
+          <th scope="row">{r.year}{r.flag && <span class="lim__flag" aria-label={T.flag}>*</span>}</th>
           <td class="lim__total">
-            <span class="lim__v">{formatPL(r.total)}</span>
+            <span class="lim__v">{num(r.total)}</span>
             <span class="lim__bar" aria-hidden="true"><span></span></span>
           </td>
-          <td class="lim__fx">{formatPL(r.foreign)}</td>
-          <td>{share(r.foreign, r.total)}</td>
+          <td class="lim__fx">{num(r.foreign)}</td>
+          <td>{pct(r.foreign, r.total)}</td>
           <td class="lim__act">
-            <a {...linkAttrs(r.act.href)}><span class="lim__act-year">{r.act.year}, </span>poz. {r.act.pos}</a>
+            <a {...linkAttrs(r.act.href)}><span class="lim__act-year">{r.act.year}{T.yearSep}</span>{T.pos} {r.act.pos}</a>
             {r.amendments?.map((m) => (
-              <><span class="lim__plus"> + </span><a {...linkAttrs(m.href)} aria-label={`nowelizacja: Dz.U. ${m.label}`}>{m.pos}</a></>
+              <><span class="lim__plus"> + </span><a {...linkAttrs(m.href)} aria-label={T.amendment(m)}>{m.pos}</a></>
             ))}
           </td>
         </tr>
@@ -62,10 +105,10 @@ const max = Math.max(...LIMITS.map((r) => r.total));
     </tbody>
     <tfoot>
       <tr>
-        <th scope="row">Razem</th>
-        <td class="lim__total"><span class="lim__v">{formatPL(SUM.total)}</span></td>
-        <td class="lim__fx">{formatPL(SUM.foreign)}</td>
-        <td>{share(SUM.foreign, SUM.total)}</td>
+        <th scope="row">{T.sum}</th>
+        <td class="lim__total"><span class="lim__v">{num(SUM.total)}</span></td>
+        <td class="lim__fx">{num(SUM.foreign)}</td>
+        <td>{pct(SUM.foreign, SUM.total)}</td>
         <td></td>
       </tr>
     </tfoot>

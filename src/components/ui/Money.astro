@@ -1,0 +1,28 @@
+---
+/**
+ * Kwota w tekście angielskim z przybliżeniem w euro po kursie NBP z buildu (src/i18n/money.ts).
+ * Kwoty w euro idą bez nawiasu. Linijkę o kursie dokłada pod treścią ArticleLayout.
+ *
+ *   <Money value={12910.16} />                          → PLN 12,910.16 (≈ €2,930)
+ *   <Money value={126109} currency="CZK" />             → CZK 126,109 (≈ €5,180)
+ *   <Money value={1600000} scale="million" />          → PLN 1.6 million (≈ €363,000)
+ */
+import { getRates } from '@/i18n/rates';
+import { withEur, type Scale } from '@/i18n/money';
+
+interface Props {
+  value: number;
+  /** kod ISO waluty źródła */
+  currency?: string;
+  decimals?: number;
+  scale?: Scale;
+}
+
+const { value, currency = 'PLN', decimals, scale } = Astro.props;
+const rates = await getRates();
+---
+<span class="money">{withEur(value, currency, rates, { decimals, scale })}</span>
+
+<style>
+  .money { font-variant-numeric: tabular-nums; }
+</style>

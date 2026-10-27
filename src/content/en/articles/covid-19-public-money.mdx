@@ -1,0 +1,225 @@
+---
+title: "COVID-19: billions without a transparent account"
+seoTitle: "COVID-19 Fund without a public account"
+summary: "In 2020–2022 almost PLN 190 billion was spent from the COVID-19 Response Fund, outside the Public Finance Act. The Minister of Health spent 29% of the amount allocated to tasks. According to the Supreme Audit Office (NIK), almost PLN 9 billion in COVID-19 bonuses was paid out without control by the Minister of Health or the NFZ."
+description: "COVID-19 Fund: almost PLN 190 billion off-budget, 29% for health, PLN 9 billion in bonuses unchecked. What NIK found and what it means for transparency."
+keyPoints:
+  - "In 2020–2022 the COVID-19 Response Fund spent a total of PLN 189.8 billion, of which PLN 184.6 billion on tasks; the rest went on servicing bonds and the BGK commission. It operated outside the Public Finance Act and outside the Sejm’s scrutiny, and the money also went on things such as the coal allowance and roads."
+  - "The Minister of Health spent PLN 53.6 billion from the Fund, i.e. 29% of the amount for tasks. This part was not hidden: Statistics Poland (GUS) counts the Fund’s money for the NFZ as public spending on health, and health spending grew ever faster in the following years."
+  - "Ventilators and protective equipment were bought in 2020 bypassing the normal procedures. NIK described an advance payment without deliveries, equipment that did not meet standards and a purchase of masks in which the Ministry of Health took no part. Some cases are with the prosecutor’s office; there are no criminal convictions."
+  - "COVID-19 bonuses (PLN 8.98 billion) were paid without control. The PLN 15,000 limit was applied in each hospital separately, so one person could receive as much as PLN 41,500 a month, and neither the Minister of Health nor the NFZ checked this."
+translation:
+  of: covid-pieniadz-publiczny
+  files: [src/data/covid-pieniadz-publiczny.ts]
+  hash: "111068dcf465"
+  date: 2026-10-27
+noindex: true
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Money from '@/components/ui/Money.astro';
+import {
+  FUND,
+  LINKS,
+  NATIONAL_HOSPITAL,
+  UNIT,
+  fundCaption,
+  fundFmt,
+  fundRows,
+  nhPatients,
+  nhPerMonth,
+  nhPerMonthAll,
+  nrzCaption,
+  nrzRows,
+} from '@/data/en/covid-pieniadz-publiczny';
+
+{/* Tłumaczenie src/content/articles/covid-pieniadz-publiczny.mdx; wykresy liczy src/data/en/covid-pieniadz-publiczny.ts (z modułu polskiego) */}
+
+During the pandemic the state spent a large part of the public money for tackling its effects outside the regular budget. This text is not about vaccines or restrictions. We describe only public money: how much was spent, which way it flowed and whether anyone accounted for it.
+
+The figures come mainly from audits by the Supreme Audit Office (NIK), the National Health Account of Statistics Poland (GUS) and announcements by the National Health Fund (NFZ). Where we rely on press reports, we say so in the sentence.
+
+<StatRow
+  label="Public money in the pandemic"
+  items={[
+    { prefix: '~', value: 190, unit: 'PLN bn', desc: 'spending of the COVID-19 Response Fund in 2020–2022 (exactly PLN 189.8 billion, of which PLN 184.6 billion on tasks)', accuracy: 'exact', source: 'NIK, 28.09.2023', href: LINKS.nikFund },
+    { value: 29, unit: '%', desc: 'of the amount for tasks went to the Minister of Health: PLN 53.6 billion', accuracy: 'exact', source: 'NIK, 28.09.2023', href: LINKS.nikFund },
+    { value: 8.98, decimals: 2, unit: 'PLN bn', desc: 'in COVID-19 bonuses, paid according to NIK without control by the Minister of Health or the NFZ', accuracy: 'exact', source: 'NIK, 12.09.2023', href: LINKS.nikBonus },
+  ]}
+/>
+
+<Aside title="What we are not claiming">
+
+We do not assess medical decisions or whether the bonuses and the reserve of beds were needed. We describe how the money was spent and what the audits found. A notification to the prosecutor’s office and the opening of an investigation are not a verdict, which is why for each case we give its status and date, and we describe people holding public office by the position they held at the time.
+
+</Aside>
+
+## A fund outside the budget: almost PLN 190 billion
+
+The main channel for the money was the COVID-19 Response Fund (Fundusz Przeciwdziałania COVID-19) at Bank Gospodarstwa Krajowego (BGK), the state development bank. It was set up on 1 April 2020 as a state special-purpose fund, but 18 days later its form was changed and it was excluded from the public finance sector. From then on, the Fund’s spending was not covered by the provisions of the Public Finance Act or by the Sejm’s scrutiny provided for the budget act. The money came mainly from BGK bonds and payments from the state budget. The bonds do not increase the state’s public debt, but their redemption falls in 2024–2040.[^nik-fundusz]
+
+NIK gives two totals, and both are correct. Total spending in 2020–2022 amounted to <Money value={FUND.total * 1e6} scale="billion" />. Tasks alone took <Money value={FUND.tasks * 1e6} scale="billion" />: <Money value={FUND.tasksByYear[0].value * 1e6} scale="billion" /> in 2020, <Money value={FUND.tasksByYear[1].value * 1e6} scale="billion" /> in 2021 and <Money value={FUND.tasksByYear[2].value * 1e6} scale="billion" /> in 2022. The difference, <Money value={(FUND.total - FUND.tasks) * 1e6} scale="billion" decimals={2} />, is bond servicing and the BGK commission.[^nik-fundusz] We calculate the shares of the spending authorities from the amount for tasks.
+
+<Figure
+  title={`The Minister of Health spent PLN ${fundFmt.health} billion from the Fund, i.e. ${fundFmt.healthShare}% of the amount for tasks`}
+  note={`Spending on tasks in 2020–2022, PLN billion; percentages of PLN ${fundFmt.tasks} billion. Excluding bond servicing and the BGK commission.`}
+  source={{ label: 'NIK, audit of the COVID-19 Response Fund', href: LINKS.nikFundPdf }}
+>
+  <BarChart
+    rows={fundRows}
+    max={Math.max(...fundRows.map((r) => r.value))}
+    unit={UNIT}
+    caption={fundCaption}
+  />
+</Figure>
+
+The remaining {fundFmt.nonHealthShare}% was spent by other spending authorities, including the minister responsible for labour, the Social Insurance Institution (ZUS) and the Chancellery of the Prime Minister. The Fund also financed local government roads, office buildings and the purchase of refuse trucks, and from the second half of 2022 the coal and electricity allowances and compensation for energy and gas sellers. NIK found that with such a general purpose the Fund became a tool for financing practically any task, at the prime minister’s disposal. It summed up the whole as chaos, a lack of transparent and clear procedures and inefficient management of public funds.[^nik-fundusz]
+
+## What part of it was healthcare
+
+Of the <Money value={FUND.health * 1e6} scale="billion" /> allocated to the Minister of Health, most went to the NFZ. By mid-2022 the minister had spent <Money value={52.2e9} scale="billion" /> from the Fund, of which <Money value={40.8e9} scale="billion" /> (78.1%) on NFZ tasks and on refunding health contributions for the payers who had been exempted from them.[^nik-fundusz-pdf] In 2021 alone the NFZ spent <Money value={23.7e9} scale="billion" /> from the Fund, including <Money value={13e9} scale="billion" decimals={0} /> on COVID-19-related services together with medical transport and <Money value={2.5e9} scale="billion" /> on RT-PCR tests.[^prawo-nfz]
+
+This money shows up in the statistics. Under the method laid down in the Act on publicly funded healthcare services (Article 131c), public spending on health in 2021 was planned at <Money value={120.5e9} scale="billion" /> and amounted to <Money value={141.3e9} scale="billion" />, including <Money value={23.7e9} scale="billion" /> transferred to the NFZ from the Fund. That is about PLN 25 billion (21.5%) more than in 2020.[^gus-2019-2021] So only the non-health part of the Fund remains outside the health account.
+
+The National Health Account of Statistics Poland counts all current spending on health, public and private. The pandemic did not produce a one-off jump in it. Growth accelerated year after year: from 2.7% in 2020 to 24.3% in 2023.[^gus-2019-2021][^gus-2021][^gus-2021-2023][^gus-2023]
+
+<Figure
+  title="Spending on health grew ever faster in successive years"
+  note="Current spending on healthcare in total (public and private), final data. 2021: PLN 169.4 billion, i.e. 6.4% of GDP; the previously published PLN 172.9 billion was a preliminary estimate."
+  source={{ label: 'Statistics Poland (GUS), National Health Account', href: LINKS.gus2023 }}
+>
+  <BarChart rows={nrzRows} max={243.8} unit={UNIT} caption={nrzCaption} />
+</Figure>
+
+For a comparison with the NFZ budget alone over a longer period, see [The National Health Fund budget, year by year](/en/data/nfz-budget/).
+
+### Readiness and temporary hospitals
+
+From March 2020 to April 2022, keeping all the adapted hospitals ready to treat COVID-19 patients cost about <Money value={7e9} scale="billion" decimals={0} />, and treating infected patients just under <Money value={5e9} scale="billion" decimals={0} />. Neither amount includes COVID-19 bonuses. NIK found that the reserve of beds and staff was larger than needed, because action was not coordinated nationally.[^nik-szpitale]
+
+Setting up, running and closing 33 temporary hospitals cost <Money value={941.6e6} scale="million" />. More than <Money value={612.6e6} scale="million" />, i.e. two thirds, was spent on 14 facilities in halls, stadiums and exhibition centres. According to NIK, the reserve of COVID-19 beds would have been safe even without them. The hospital in the Netto Arena hall in Szczecin cost more than <Money value={29e6} scale="million" decimals={0} /> and did not admit a single patient.[^nik-szpitale]
+
+The best known was the National Hospital at the stadium in Warsaw. An answer to a parliamentary inspection shows that running the hospital from November 2020 to April 2021 cost <Money value={NATIONAL_HOSPITAL.operation} scale="million" decimals={2} />, and according to the Chancellery of the Prime Minister adapting the stadium cost another <Money value={NATIONAL_HOSPITAL.adaptation} scale="million" decimals={2} />. Together that is <Money value={NATIONAL_HOSPITAL.operation + NATIONAL_HOSPITAL.adaptation} scale="million" />, i.e. on average <Money value={nhPerMonth} scale="million" /> a month without the adaptation or <Money value={nhPerMonthAll} scale="million" /> with it. In that time the hospital admitted {nhPatients} patients.[^termedia-sn] For the period from June to November 2021, when the hospital was not admitting patients, rent and other charges cost more than a further <Money value={11e6} scale="million" decimals={0} />.[^nik-szpitale]
+
+## Purchases without tenders
+
+The special COVID-19 act made urgent purchases of equipment easier by bypassing public procurement. According to NIK, it also removed the mechanisms that ensure public money is spent properly.[^nik-covid] The most widely reported were the purchases of ventilators and masks.
+
+### Ventilators
+
+On 14 April 2020 the Ministry of Health concluded a framework agreement with E&K, a company from Lublin, for the supply of ventilators worth up to <Money value={250e6} scale="million" decimals={0} /> gross. Under the order the company was to deliver 1,241 devices for €44.4 million. On the same day the ministry transferred an advance payment of <Money value={161.3e6} scale="million" /> to it. 200 ventilators arrived, and 1,041 were not delivered. Those delivered had gaps in their documentation and equipment that had to be made good before they went to hospitals.[^nik-p20062]
+
+At the end of 2022 the ministry’s receivables from the company amounted, according to NIK, to <Money value={85.3e6} scale="million" />: <Money value={63.6e6} scale="million" /> of principal and <Money value={21.7e6} scale="million" /> of contractual penalties, interest and enforcement costs.[^nik-p23001] According to Ministry of Health information reported by Rzeczpospolita (article updated on 16.10.2026), the ministry recovered <Money value={38.19e6} scale="million" decimals={2} /> of the principal, and €4.6 million with interest remains to be repaid. Enforcement against the company proved ineffective, so the General Counsel to the Republic of Poland (Prokuratoria Generalna) is seeking the money from the estate of the owner, who died in 2022.[^rp-resp] In July 2026 the Regional Court in Warsaw awarded more than €3.6 million in contractual penalties against the company. A representative of the General Counsel’s office then assessed the chances of recovering this money as close to zero.[^polsat-2026]
+
+Status of proceedings: the investigation into failure to perform duties and abuse of power by public officials in connection with this agreement was discontinued, and the Regional Prosecutor’s Office in Warsaw reopened it on 16 May 2024.[^tvn-wznowienie] The sources do not mention charges; we do not know the status of the investigation after May 2024.
+
+This is not the only ventilator case. NIK calculated that the Chancellery of the Prime Minister and the Ministry of Health spent <Money value={82.3e6} scale="million" /> uneconomically on devices that were incomplete, faulty or did not meet Polish standards, and filed three notifications with the prosecutor’s office.[^nik-covid] One concerns the then deputy minister of health, who in April 2020 decided to buy 30 ventilators from a State Treasury company for more than <Money value={3.6e6} scale="million" /> without market research and without a written contract, and the devices were not fit for treating patients.[^nik-covid] The notification was reported in April 2022.[^polsat-2022] The sources mention no charges, and we have not found any further decisions by the prosecutor’s office.
+
+### Masks: two different purchases
+
+Masks are usually talked about as a single scandal, but these were two separate purchases.
+
+<Comparison
+  table={{
+    columns: ['', 'Purchase by the Ministry of Health', 'Purchase by the Chancellery of the Prime Minister'],
+    rows: [
+      { cells: ['When', 'March 2020', 'From April 2020 to January 2021'] },
+      { cells: ['How', 'Directly from an intermediary, without a tender', 'On the instructions of the then prime minister, through KGHM, Grupa Lotos and the Industrial Development Agency (ARP); suppliers were indicated by the Ministry of State Assets'] },
+      { cells: ['Role of the Ministry of Health', 'Buyer', 'According to NIK it took no part, although under the agreement it was to specify the needs and quality'] },
+      { cells: ['What tests showed', 'According to the ministry the masks did not meet standards; the ministry demanded its money back', 'Some of the masks and most of the face shields and almost half of the protective suits did not meet requirements'] },
+      { cells: ['Status of the case', 'Investigation discontinued in February 2024; the court dismissed the ministry’s appeal in June 2025', 'Investigation opened on 12.06.2024; the sources mention no charges'] },
+    ],
+  }}
+/>
+
+The ministry’s purchase: on 30 March 2020 the ministry bought, through an intermediary, 100,000 FFP2 masks at <Money value={39} /> net each, 20,000 surgical masks at <Money value={8} /> each, 3,000 face shields and 10,000 FFP2 masks from another manufacturer. According to the then deputy minister of health, the whole cost <Money value={4859640} /> gross.[^money-maski] In February 2024 the prosecutor’s office discontinued the investigation, finding that the act did not constitute an offence.[^wp-maski] At the end of June 2025 the Regional Court in Warsaw dismissed the ministry’s appeal. According to an account by Polityka Zdrowotna, a health policy news site, the court indicated that the State Treasury may pursue civil claims, and that later laboratory tests had confirmed that the masks complied with standards.[^pz-maski]
+
+The Chancellery’s purchase: according to NIK, the Chancellery of the Prime Minister spent almost <Money value={200e6} scale="million" decimals={0} /> on protective equipment in 2020–2021 in a way that was uneconomical, unreliable and inexpedient. The Central Institute for Labour Protection rejected 9.4 million of the 22.6 million medical masks tested (41.7%), 132,700 of the 154,300 face shields (86%) and 299,000 of the 641,800 protective suits (46.6%). Because of doubts about quality, the Chancellery did not pay 48% of the invoices, worth <Money value={27.8e6} scale="million" />, which in practice was a loss for Lotos, to which the Chancellery was to reimburse its expenses.[^nik-kprm] Following NIK’s notification, the Regional Prosecutor’s Office in Warsaw opened an investigation on 12 June 2024 into abuse of power by public officials, including the then prime minister. The prosecutor’s office indicated damage of great magnitude to Grupa Lotos.[^mp-sledztwo] The sources mention no charges, and we do not know the status of the investigation after June 2024.
+
+### Disinfectant: a stock that expired
+
+A similar question of sound management concerns reserves. In 2021 the Government Strategic Reserves Agency (RARS) ordered, under two contracts of about <Money value={1.2e6} scale="million" /> each, almost 2.5 million litres of disinfectant in total. Of the first batch, 86.5% reached recipients. Of the second, 53% was not made available to anyone: the agency disposed of almost 668,000 litres of expired fluid worth <Money value={646400} /> at a cost of <Money value={2.5e6} scale="million" />, almost four times more than the fluid was worth.[^nik-rars] Across both batches this is about 27% of the fluid (our calculation from NIK data). In total, disposing of denatured alcohol cost RARS <Money value={8.2e6} scale="million" /> in 2021–2024.[^nik-rars]
+
+## Pay in the pandemic: a lot of money, little insight
+
+Closest to the subject of this site is the COVID-19 bonus for staff who treated COVID-19 patients. From 1 November 2020 it amounted to 100% of pay, up to <Money value={15000} /> a month.[^nfz-dodatek] From May 2020 to March 2022, <Money value={8.98e9} scale="billion" decimals={2} /> was paid out on this basis.[^nik-dodatki]
+
+NIK found that neither the Minister of Health nor the President of the NFZ checked whether the bonuses were granted and paid correctly. According to NIK, there is a risk that it will be impossible to estimate how much was spent without justification, and that some of the Fund’s assets will have to be written off as lost. The audit showed, among other things:[^nik-dodatki]
+
+- **A limit counted in each hospital separately.** The minister’s rules allowed the same person to be paid the bonus in several facilities, so the PLN 15,000 limit did not work. The record was <Money value={41500} /> in a single month.
+- **The full bonus for incidental contact.** In one of the hospitals in Szczecin, 18 people received the bonus for 30 minutes of contact with patients in a month: three received PLN 15,000 each, and 15 between PLN 3,300 and 8,300.
+- **More people entitled than beds.** After corrections to the reports in the audited hospitals, there were as many as 31 people receiving the bonus per COVID-19 bed, and 23 per patient.
+- **Excessive transfers.** NFZ branches transferred to 15 hospitals a total of <Money value={13.8e6} scale="million" /> more than they paid out to staff.
+
+Wirtualna Polska, a news portal, describing the preliminary findings of the audit, gave the example of a doctor who worked in three facilities and received the bonus in each — almost <Money value={38000} /> a month in total.[^wp-dodatki] Rates for the work itself were also higher. The director of the National Institute of Public Health NIH – National Research Institute (NIZP PZH), a former NFZ vice-president, said in an interview that at the National Hospital one could get PLN 8,000–10,000 for a single on-call shift. This is the director’s assessment, not an amount from documents.[^rp-dyzury]
+
+### A vaccination point
+
+Fee-for-service payment shows a different problem. According to press reports from June 2026, a doctor who ran a mass vaccination point in a one-person practice had more than <Money value={4.3e6} scale="million" /> of income from medical activity in 2021, and <Money value={1.6e6} scale="million" /> in 2022. According to NFZ data, the practice reported more than 56,000 vaccinations in 2021, on average more than 150 a day. According to the doctor, the vaccinations were combined with on-call duty in the ambulance service, the taxes were paid and the practice passed NFZ and tax office inspections.[^wp-punkt]
+
+The NFZ paid the vaccination point <Money value={61.24} /> per vaccination without transporting the patient.[^nfz-stawka] If all 56,000 vaccinations had been billed at this rate, that would come to about <Money value={3.43e6} scale="million" decimals={2} />. This is our estimate: income from the practice is not the same as the amount paid by the NFZ, and we know only the figures from the press. We do not claim that the doctor broke the law, and we do not give the doctor’s name.
+
+## What this means for transparency
+
+The same pattern recurs in all these cases. The money came from many places at once: from the Fund outside the budget, through the NFZ, temporary hospitals and State Treasury companies. Each of these places knew only its own piece. Payments above the bonus limit for one person came to light only in an NIK audit, not in current accounting. We know the amount from the vaccination point from the press, not from a public account.
+
+This is the same gap that we describe outside the pandemic: nobody publishes the total amount of public money paid to one person — see [Lack of transparency](/en/mechanisms/lack-of-transparency/). That is why we call on the state to publish the total paid to each person from public money under a permanent identifier, without names. Such a dataset would show totals from many facilities straight away, not years later in an audit report. Details: [Our proposal](/en/demand/).
+
+[^nik-fundusz]: NIK, [“<span lang="pl">190 mld zł z Funduszu Przeciwdziałania COVID-19 – ekstra budżet rządu, który kiedyś trzeba będzie spłacić</span>”](https://www.nik.gov.pl/aktualnosci/finanse-publiczne/fundusz-przeciwdzialania-covid-19.html) (“PLN 190 billion from the COVID-19 Response Fund – an extra government budget that will have to be repaid one day”, in Polish), 28.09.2023 — total spending and spending on tasks, spending authorities, exclusion from the public finance sector, NIK’s assessment.
+
+[^nik-fundusz-pdf]: NIK, [report on the results of the audit of the COVID-19 Response Fund](https://www.nik.gov.pl/plik/id,28245,vp,31071.pdf) (PDF, in Polish), chapter on the use of the funds by the Minister of Health.
+
+[^prawo-nfz]: Prawo.pl, [“<span lang="pl">Wydatki na Covid-19 z funduszu covidowego</span>”](https://www.prawo.pl/zdrowie/wydatki-na-covid-19-z-funduszu-covidowego,516088.html) (“COVID-19 spending from the COVID fund”, in Polish), 8.07.2022 — based on the report on the NFZ’s activity in 2021.
+
+[^gus-2019-2021]: GUS, [“<span lang="pl">Wydatki na ochronę zdrowia w latach 2019–2021</span>”](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/27/2/1/wydatki_na_ochrone_zdrowia_w_latach_2019-2021.pdf) (“Healthcare expenditure in 2019–2021”, PDF, in Polish) — current spending in 2019 (PLN 147.8 billion) and 2020 (PLN 151.9 billion), and spending under Article 131c in 2021.
+
+[^gus-2021]: GUS, [notice on the National Health Account for 2021](https://stat.gov.pl/sygnalne/komunikaty-i-obwieszczenia/lista-komunikatow-i-obwieszczen/obwieszczenie-w-sprawie-narodowego-rachunku-zdrowia-za-2021-rok,283,10.html) (in Polish), 29.09.2023 — final data: PLN 169.4 billion, 6.4% of GDP.
+
+[^gus-2021-2023]: GUS, [“<span lang="pl">Wydatki na ochronę zdrowia w latach 2021–2023</span>”](https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/wydatki-na-ochrone-zdrowia-w-latach-2021-2023,27,4.html) (“Healthcare expenditure in 2021–2023”, in Polish) — 2022: PLN 196.2 billion.
+
+[^gus-2023]: GUS, [notice on the National Health Account for 2023](https://stat.gov.pl/sygnalne/komunikaty-i-obwieszczenia/lista-komunikatow-i-obwieszczen/obwieszczenie-w-sprawie-narodowego-rachunku-zdrowia-za-2023-r-,283,12.html) (in Polish), 30.09.2025 — final data: PLN 243.8 billion. Year-on-year changes are our calculation from GUS data.
+
+[^nik-szpitale]: NIK, [“<span lang="pl">14 zbędnych szpitali tymczasowych za ponad 600 mln zł</span>”](https://www.nik.gov.pl/najnowsze-informacje-o-wynikach-kontroli/14-zbednych-szpitali-tymczasowych.html) (“14 unnecessary temporary hospitals for more than PLN 600 million”, in Polish), 12.09.2023; [report on the results of the audit](https://www.nik.gov.pl/plik/id,28131,vp,30955.pdf) (PDF, in Polish).
+
+[^termedia-sn]: Menedżer Zdrowia, [“<span lang="pl">Ile kosztował Szpital Narodowy?</span>”](https://www.termedia.pl/mz/Ile-kosztowal-Szpital-Narodowy-,42694.html) (“How much did the National Hospital cost?”, in Polish), 10.06.2021 — citing TVN24: month-by-month running costs from the answer to a parliamentary inspection, the cost of adapting the stadium from the answer of the Chancellery of the Prime Minister. The monthly averages are our calculation.
+
+[^nik-covid]: NIK, [“<span lang="pl">COVID-19 w Polsce – na początku był chaos</span>”](https://www.nik.gov.pl/najnowsze-informacje-o-wynikach-kontroli/covid-19-w-polsce.html) (“COVID-19 in Poland – in the beginning there was chaos”, in Polish), 12.09.2023 — purchases of ventilators and three notifications to the prosecutor’s office.
+
+[^nik-p20062]: NIK, [post-audit statement at the Ministry of Health, audit P/20/062](https://www.nik.gov.pl/kontrole/wyniki-kontroli-nik/pobierz,lka~p_20_062_202101260955111611651311~id0~01,typ,kj.pdf) (PDF, in Polish), 2021 — the framework agreement of 14.04.2020, the advance payment, deliveries.
+
+[^nik-p23001]: NIK, [post-audit statement at the Ministry of Health, audit P/23/001](https://www.nik.gov.pl/kontrole/wyniki-kontroli-nik/pobierz,kzd~p_23_001_202303280951061679989866~id0~01,typ,kj.pdf) (PDF, in Polish), 2023 — receivables from the ventilator supplier as of 31.12.2022.
+
+[^rp-resp]: Rzeczpospolita, [“<span lang="pl">Finał sprawy handlarza respiratorami</span>”](https://www.rp.pl/kraj/art39422421-final-sprawy-handlarza-respiratorami) (“The end of the ventilator dealer case”, in Polish), 17.11.2023, updated 16.10.2026 — Ministry of Health and General Counsel data on the amounts recovered.
+
+[^polsat-2026]: Polsat News, [judgment on contractual penalties for undelivered ventilators](https://www.polsatnews.pl/wiadomosc/2026-07-17/musza-zaplacic-35-mln-euro-jest-wyrok-ws-afery-respiratorowej/) (in Polish), 17.07.2026 — the source does not say whether the judgment is final.
+
+[^tvn-wznowienie]: TVN24, [on the reopening of the investigation into the ventilator agreement](https://tvn24.pl/polska/prokuratura-wznawia-sledztwo-w-sprawie-afery-respiratorowej-st7929097) (in Polish), 22.05.2024 — decision of the Regional Prosecutor’s Office in Warsaw of 16.05.2024.
+
+[^polsat-2022]: Polsat News, [on NIK’s notifications concerning the purchase of ventilators](https://www.polsatnews.pl/wiadomosc/2022-04-22/zakup-respiratorow-nik-skierowala-zawiadomienie-do-prokuratury-jedno-dotyczy-janusza-cieszynskiego/) (in Polish), 22.04.2022.
+
+[^money-maski]: money.pl, [on the purchase of masks by the Ministry of Health](https://www.money.pl/gospodarka/ministerstwo-zdrowia-kupilo-maseczki-od-znajomego-ministra-szumowskiego-teraz-zada-zwrotu-pieniedzy-6509608986204289a.html) (in Polish), 12.05.2020 — breakdown of the transaction according to the deputy minister of health, citing “Gazeta Wyborcza”.
+
+[^wp-maski]: Wirtualna Polska, [on the discontinuation of the investigation into the purchase of masks](https://wiadomosci.wp.pl/zaskakujacy-final-afery-maseczkowej-decyzja-prokuratury-7121855084964640a) (in Polish), 5.02.2025 — citing Rzeczpospolita; grounds for discontinuation: Article 17 § 1(2) of the Code of Criminal Procedure.
+
+[^pz-maski]: Polityka Zdrowotna, [“<span lang="pl">Afera maseczkowa zakończona</span>”](https://politykazdrowotna.com/artykul/afera-maseczkowa-zakonczona-n1757280) (“The mask scandal is over”, in Polish), 18.07.2025.
+
+[^nik-kprm]: NIK, [“<span lang="pl">Rządowa maskarada z maseczkami</span>”](https://www.nik.gov.pl/najnowsze-informacje-o-wynikach-kontroli/kprm-srodki-ochrony-indywidualnej.html) (“The government’s masquerade with masks”, in Polish), 21.03.2024.
+
+[^mp-sledztwo]: Medycyna Praktyczna, [on the investigation into the purchase of protective equipment by the Chancellery of the Prime Minister](https://www.mp.pl/covid19/covid19-aktualnosci/350942,sledztwo-ws-przekroczenia-uprawnien-przez-bylego-premiera-i-szefa-kprm) (in Polish), 13.06.2024 — statement of the Regional Prosecutor’s Office in Warsaw.
+
+[^nik-rars]: NIK, [“<span lang="pl">Złote interesy z Rządową Agencją Rezerw Strategicznych</span>”](https://www.nik.gov.pl/aktualnosci/rzadowa-agencja-rezerw-strategicznych.html) (“Golden deals with the Government Strategic Reserves Agency”, in Polish), 8.04.2025 — record of a press conference.
+
+[^nfz-dodatek]: NFZ, [“<span lang="pl">Dodatkowe wynagrodzenie dla medyków – jak i kiedy będzie wypłacane</span>”](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/dodatkowe-wynagrodzenie-dla-medykow-jak-i-kiedy-bedzie-wyplacane,7863.html) (“Additional pay for medics – how and when it will be paid”, in Polish).
+
+[^nik-dodatki]: NIK, [“<span lang="pl">9 mld złotych na dodatki covidowe – poza kontrolą Ministra Zdrowia i NFZ</span>”](https://www.nik.gov.pl/najnowsze-informacje-o-wynikach-kontroli/9-mld-zlotych-na-dodatki-covidowe.html) (“PLN 9 billion for COVID-19 bonuses – beyond the control of the Minister of Health and the NFZ”, in Polish), 12.09.2023; [report on the results of the audit](https://www.nik.gov.pl/plik/id,28132,vp,30956.pdf) (PDF, in Polish) — PLN 8,979.5 million in total.
+
+[^wp-dodatki]: Wirtualna Polska, [“<span lang="pl">Dodatki covidowe, czyli górka pieniędzy, na którą nikt nie patrzył</span>”](https://wiadomosci.wp.pl/dodatki-covidowe-czyli-gorka-pieniedzy-na-ktora-nikt-nie-patrzyl-6770982795336672a) (“COVID-19 bonuses, or a pile of money nobody was watching”, in Polish), 20.05.2022.
+
+[^rp-dyzury]: Rzeczpospolita, [interview with the director of NIZP PZH – PIB on doctors’ contracts](https://www.rp.pl/ochrona-zdrowia/art44688761-ekspert-o-milionowych-kontraktach-lekarzy-w-czasie-pandemii-to-bylo-juz-kompletne-szalenstwo) (in Polish), 26.06.2026 — an expert’s opinion.
+
+[^wp-punkt]: Wirtualna Polska, [on the income of a doctor running a vaccination point](https://wiadomosci.wp.pl/niczego-nie-ukradlem-ujawnili-miliony-na-koncie-lekarza-7299843438430240a) (in Polish), 23.06.2026 — citing “Gazeta Wyborcza”; the NFZ and tax office inspections are the doctor’s own statement.
+
+[^nfz-stawka]: NFZ, [announcement of the President of the NFZ of 4.12.2020](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/aktualnosci/ogloszenie_prezesa_nfz_-_4.12.2020.pdf) (PDF, in Polish) — PLN 61.24 per vaccination at a vaccination point without transport; PLN 95.70 at the patient’s home, PLN 73.19 for more than five patients at one address.

@@ -12,6 +12,7 @@
  * 120 minut. W kategoriach czerwonej i pomarańczowej portal zawsze pokazuje tekst normy
  * („natychmiast”, „poniżej 10 minut”), więc tych dwóch nie da się porównać z normą.
  */
+import { fill, SOR_TEXT_PL, type SorText } from './text';
 
 export interface Stage {
   label: string;
@@ -34,7 +35,8 @@ export const STAGES: Stage[] = [
   { label: 'Najniższy', color: 'niebieski', norm: 240 },
 ];
 
-export const normText = (norm: number) => (norm === 0 ? 'natychmiast' : `do ${norm} min`);
+/** Norma tekstem: „natychmiast”, „do 60 min” — w języku napisów `t` (domyślnie po polsku, lib/sor/text). */
+export const normText = (norm: number, t: Pick<SorText, 'normNow' | 'normUpTo'> = SOR_TEXT_PL) => (norm === 0 ? t.normNow : fill(t.normUpTo, { n: norm }));
 
 /** Wpis jednego SOR w sor/teraz.json. */
 export interface Entry {

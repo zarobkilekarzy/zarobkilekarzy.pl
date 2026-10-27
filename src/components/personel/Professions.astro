@@ -4,6 +4,8 @@
  * Każda liczba ma pod sobą dopowiedzenie i link do źródła (adresy przychodzą z listy `sources`
  * artykułu, więc są zapisane tylko raz). Pole bez źródła to „—” z wyjaśnieniem.
  * W wąskim kontenerze wiersz staje się kartą: komórki z etykietą kolumny nad treścią.
+ * Dwujęzyczny: na stronach /en/ nagłówki kolumn po angielsku (treść komórek przychodzi z artykułu);
+ * wyjście polskie bez zmian.
  */
 import type { HTMLAttributes } from 'astro/types';
 import Flag from '@/components/ui/Flag.astro';
@@ -11,6 +13,7 @@ import Icon from '@/components/ui/Icon.astro';
 import type { Accuracy } from '@/types';
 import { linkAttrs } from '@/lib/links';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Cell {
   value: string;
@@ -23,7 +26,10 @@ interface Props extends HTMLAttributes<'div'> {
   items: { name: string; count: Cell; market: Cell; groups: string }[];
 }
 
-const COLUMNS = ['Zawód', 'Liczebność', 'Rynek: mediana lub widełki', 'Grupa w siatce'];
+const COLUMNS = {
+  pl: ['Zawód', 'Liczebność', 'Rynek: mediana lub widełki', 'Grupa w siatce'],
+  en: ['Profession', 'Number', 'Market: median or range', 'Group in the scale'],
+}[localeOf(Astro.url.pathname)];
 
 const { items, class: className, ...rest } = Astro.props;
 ---

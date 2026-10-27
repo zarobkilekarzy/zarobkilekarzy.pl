@@ -14,6 +14,8 @@
  * 2021 = 169 418,4 mln zł (obwieszczenie z 29.09.2023); 172,9 mld z wydania 2019–2021 było
  * szacunkiem wstępnym. 2023 = 243 798,9 mln zł (obwieszczenie z 30.09.2025); wydanie 2021–2023
  * podaje jeszcze wstępne 241,6 mld. Weryfikacja wszystkich wartości: 16.10.2026.
+ *
+ * Liczby (FUND, DISPONENTS, NRZ, NATIONAL_HOSPITAL) czyta też wersja angielska — src/data/en/covid-pieniadz-publiczny.ts.
  */
 
 import type { BarRow } from '@/types';
@@ -49,7 +51,7 @@ export const FUND = {
 } as const;
 
 /** Najwięksi dysponenci (NIK, infografika „Wydatki głównych dysponentów Funduszu w latach 2020-2022”). */
-const DISPONENTS = [
+export const DISPONENTS = [
   { label: 'Minister Zdrowia', value: 53_587.3, highlight: true },
   { label: 'Minister właściwy ds. pracy', value: 39_341.2 },
   { label: 'Zakład Ubezpieczeń Społecznych', value: 28_300.0 },
@@ -88,7 +90,7 @@ export const fundFmt = {
 
 /* ---------- Narodowy Rachunek Zdrowia (GUS, mln zł, dane ostateczne) ---------- */
 
-const NRZ = [
+export const NRZ = [
   { year: 2019, value: 147_838.5 },
   { year: 2020, value: 151_873.5 },
   { year: 2021, value: 169_418.4 },

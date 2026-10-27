@@ -1,12 +1,15 @@
 ---
 /** Udostępnianie: X, Facebook i kopiowanie linku (custom element <zl-share>). */
+import { uiOf } from '@/i18n/ui';
+
 interface Props {
   url: string;
   title: string;
   label?: string;
 }
 
-const { url, title, label = 'Udostępnij' } = Astro.props;
+const ui = uiOf(Astro.url);
+const { url, title, label = ui.share.label } = Astro.props;
 const u = encodeURIComponent(url);
 const t = encodeURIComponent(title);
 
@@ -15,11 +18,11 @@ const targets = [
   { name: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${u}` },
 ];
 ---
-<zl-share class="share" data-url={url}>
+<zl-share class="share" data-url={url} data-copied={ui.share.copied} data-failed={ui.share.failed}>
   <span class="share__label">{label}</span>
   <ul>
     {targets.map((s) => <li><a href={s.href} target="_blank" rel="noopener">{s.name}</a></li>)}
-    <li><button type="button" data-copy>Kopiuj link</button></li>
+    <li><button type="button" data-copy>{ui.share.copy}</button></li>
   </ul>
 </zl-share>
 
@@ -31,9 +34,9 @@ const targets = [
         const label = button.textContent;
         try {
           await navigator.clipboard.writeText(this.dataset.url ?? location.href);
-          button.textContent = 'Skopiowano ✓';
+          button.textContent = this.dataset.copied ?? '';
         } catch {
-          button.textContent = 'Nie udało się';
+          button.textContent = this.dataset.failed ?? '';
         }
         setTimeout(() => { button.textContent = label; }, 2000);
       });

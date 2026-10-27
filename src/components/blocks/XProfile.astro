@@ -24,6 +24,7 @@ import type { ImageMetadata } from 'astro';
 import { Image } from 'astro:assets';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import { linkAttrs } from '@/lib/links';
+import { uiOf } from '@/i18n/ui';
 
 interface Props extends HTMLAttributes<'article'> {
   name: string;
@@ -52,8 +53,9 @@ const host = link && new URL(link.href).host;
 /** etykieta = sam adres (np. „basal.si5.pl”) → bez powtórzenia hosta obok */
 const showHost = link && link.label.replace(/^www\./, '') !== host?.replace(/^www\./, '');
 const REL = 'nofollow noopener';
+const t = uiOf(Astro.url).xProfile;
 ---
-<article class:list={['xp', `xp--${w}`, { 'xp--compact': compact }, className]} aria-label={`${name} (@${handle}) w serwisie X`} {...rest}>
+<article class:list={['xp', `xp--${w}`, { 'xp--compact': compact }, className]} aria-label={t.card(name, handle)} {...rest}>
   <div class="xp__top">
     {eyebrow && <p class="xp__eyebrow">{eyebrow}</p>}
     <svg class="xp__x" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -77,12 +79,12 @@ const REL = 'nofollow noopener';
   {linked && <div class="xp__actions">
     {link && !compact && (
       <a class="xp__link" {...{ ...linkAttrs(link.href), rel: REL }}>
-        <span class="xp__link-label">W profilu</span>
+        <span class="xp__link-label">{t.inProfile}</span>
         <span class="xp__link-title">{link.label}</span>
         {showHost ? <span class="xp__link-host">{host} ↗</span> : <span class="xp__link-host" aria-hidden="true">↗</span>}
       </a>
     )}
-    <LinkArrow href={url} rel={REL} class="xp__cta">{compact ? 'Profil na X' : `Profil @${handle} na X`}</LinkArrow>
+    <LinkArrow href={url} rel={REL} class="xp__cta">{compact ? t.profile : t.profileOf(handle)}</LinkArrow>
     {link && compact && <LinkArrow href={link.href} rel={REL} class="xp__cta">{link.label}</LinkArrow>}
   </div>}
 </article>

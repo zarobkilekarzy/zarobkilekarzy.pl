@@ -1,22 +1,30 @@
 ---
-/** Lista materiałów: metadane, tytuł, dwuwierszowy lead. */
+/** Lista materiałów: metadane, tytuł, dwuwierszowy lead. Artykuły albo ich tłumaczenia (strony /en/). */
 import Meta from '@/components/ui/Meta.astro';
 import Icon from '@/components/ui/Icon.astro';
 import { articleHref, type Article } from '@/lib/content';
-import { formatDate, typo } from '@/lib/format';
+import { formatDateIn, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
+import { SECTIONS_EN, enHref, type Translated } from '@/i18n/translations';
 
-interface Props {
-  articles: Article[];
-}
-const { articles } = Astro.props;
+type Props = { articles: Article[] } | { translations: Translated[] };
+
+const props = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const t = uiOf(Astro.url).article;
+// Tłumaczenie: tytuł i lead po angielsku, dział i daty z polskiego oryginału
+const items = 'translations' in props
+  ? props.translations.map((tr) => ({ href: enHref(tr), source: tr.source, label: SECTIONS_EN[tr.source.data.category].label, title: tr.article.data.title, summary: tr.article.data.summary }))
+  : props.articles.map((a) => ({ href: articleHref(a), source: a, label: undefined, title: a.data.title, summary: a.data.summary }));
 ---
 <ol class="feed">
-  {articles.map((a) => (
+  {items.map((a) => (
     <li class="feed__item" data-reveal>
-      <a href={articleHref(a)}>
-        <Meta category={a.data.category} date={a.data.date} extra={a.data.updated && `aktualizacja ${formatDate(a.data.updated)}`} />
-        <h3 class="feed__title">{typo(a.data.title)}</h3>
-        <p class="feed__desc">{typo(a.data.summary)}</p>
+      <a href={a.href}>
+        <Meta category={a.source.data.category} label={a.label} date={a.source.data.date} extra={a.source.data.updated && t.updatedOn(formatDateIn(a.source.data.updated, locale))} />
+        <h3 class="feed__title">{typo(a.title)}</h3>
+        <p class="feed__desc">{typo(a.summary)}</p>
         <Icon name="arrow-ne" class="feed__arrow" />
       </a>
     </li>

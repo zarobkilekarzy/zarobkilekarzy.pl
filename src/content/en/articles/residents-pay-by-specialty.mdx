@@ -1,0 +1,187 @@
+---
+title: "By specialty: resident doctors’ pay and training places"
+seoTitle: "Resident doctors’ pay by specialty"
+summary: "Resident pay, the rate in job advertisements, the number of training places and candidates per place in 29 specialties. The most applicants are in specialties outside the priority list, in which residents earn less."
+description: "Resident doctors’ pay from 1 July 2026, rates in job ads, training places and candidates per place in 29 medical specialties in Poland."
+keyPoints:
+  - "A resident’s base salary is set by a regulation of the minister of health. From 1 July 2026 it is PLN 11,654.76 gross in 23 priority specialties and PLN 10,595.24 in the others — in the first two years of training."
+  - "In autumn 2025 the most candidates per place were in specialties outside the priority list — plastic surgery (7.47), dermatology (6.94) and endocrinology (5.88). In internal medicine, emergency medicine or geriatrics there were more places than applicants."
+  - "In job advertisements from 2023, specialties outside the list usually had higher rates than priority ones (median PLN 232 vs PLN 194 an hour). The highest rate, however, was for psychiatry, which is on the list."
+  - "After two stages of the autumn recruitment, 4,096 of 6,653 residency places and 1,387 of 7,945 non-residency places were taken. In cardiology and orthopaedics 96% of residencies were filled, in internal medicine — half."
+translation:
+  of: wedlug-specjalizacji
+  files: [src/data/wedlug-specjalizacji.ts, src/data/personel-medyczny.ts]
+  hash: "123cc9f5a17f"
+  date: 2026-10-27
+noindex: true
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Money from '@/components/ui/Money.astro';
+import SpecTable from '@/components/wedlug-specjalizacji/SpecTable.astro';
+import SimulatorBanner from '@/components/podaz/SimulatorBanner.astro';
+import {
+  AUTUMN_2025,
+  BASE,
+  COMMITMENT,
+  LINKS,
+  PAY_ACT_EN,
+  PRIORITY_AS_OF_EN,
+  PRIORITY_FIELDS,
+  PRIORITY_OUTSIDE_TABLE,
+  RATE_MEDIAN,
+  RESIDENT_COEF,
+  RESIDENT_PAY,
+  TABLE,
+  belowOther,
+  belowPriority,
+  count,
+  fillCaption,
+  fillRows,
+  forecastTable,
+  gaps,
+  gapsOutside,
+  nonRez,
+  pct,
+  priorityOutside,
+  spec,
+  top,
+  topList,
+  topRez,
+} from '@/data/en/wedlug-specjalizacji';
+import { formatEN } from '@/lib/format';
+
+{/* Tłumaczenie src/content/articles/wedlug-specjalizacji.mdx; liczby i wykres liczy src/data/en/wedlug-specjalizacji.ts (z modułu polskiego), tabelę rysuje SpecTable */}
+
+export const P = RESIDENT_PAY.priority;
+export const O = RESIDENT_PAY.other;
+export const tableRez = TABLE.priority.rez + TABLE.other.rez;
+
+This compilation brings together four figures for 29 medical specialties: how much a resident doctor earns during training, how much job advertisements offer per hour in the specialty, how many training places were opened in the latest autumn recruitment and how many doctors applied for one place. Resident pay comes from a regulation and is exact. The rate from advertisements is an estimate based on offers, not on payments.
+
+<Aside title="These are not the earnings of doctors in a given specialty">
+
+Resident pay is the base salary during training — without on-call duty and work elsewhere. The rate in an advertisement is the employer’s proposal, not an amount paid. Doctors often combine several contracts in several facilities (see [Multiple jobs](/en/mechanisms/multiple-jobs-parallel-contracts/)), and nobody publishes the total amounts paid to one person. That is why we call for open data: the total paid to each person from public money, under a permanent identifier, without names ([our proposal](/en/demand/)).
+
+</Aside>
+
+## The 29 specialties compared
+
+The specialties are divided into two groups according to the minister of health’s priority list, because resident pay depends on it. The Centre of Postgraduate Medical Education (CMKP), which runs the recruitment, gave the number of candidates per place only for the most sought-after specialties, and about the least sought-after it wrote that there were more places than applicants. For the others there is a dash.
+
+The last column concerns the end of training: what share of attempts at the test part of the State Specialisation Examination (PES) in 2023–2025 scored at least 60%, i.e. passed the test. Among the specialties in the table, the lowest share is in occupational medicine (**59.6%** of 166 attempts) and the highest in lung diseases (**94.4%** of 195). Repeat attempts are included. The examination also has an oral part, but the Medical Examinations Centre (CEM) does not publish its results, so this is not the share of people who became specialists.[^cem-pes]
+
+<SpecTable title="The most candidates per place were in specialties outside the priority list" />
+
+## Who is a resident
+
+A resident is a doctor or dentist undergoing specialist training in the residency mode. They have an employment contract with the facility providing the training, concluded for the period required by the specialisation programme.[^uzl-16h] Their base salary, the on-call duty covered by the programme and the contributions are financed by the minister of health from the state budget.[^uzl-16j]
+
+The minister allocates residency places for each qualification procedure. A doctor submits an application in the Training Monitoring System (System Monitorowania Kształcenia) and may list up to 15 options in it: specialty, voivodeship (region) and training mode. The order for residencies is decided by the result of the Medical Final Examination (LEK; for dentists — the Dental Final Examination, LDEK), and a doctorate and scientific publications give extra points.[^uzl-16c]
+
+Not every doctor in specialist training is a resident. In the non-residency mode, doctors train on vacant places outside the minister’s pool — among other things under an employment contract or a civil-law contract with a facility, on paid training leave or with a scholarship funded by a healthcare provider. They do not then receive pay from the minister’s budget, and a civil-law contract for training may not provide for less than the minimum hourly rate.[^uzl-16h]
+
+A resident may also work outside the residency. In specialist outpatient clinics financed by the NFZ, a doctor in specialist training may see patients independently after completing the first year of training — in ophthalmology and in dermatology and venereology after completing the second — once the head of the specialisation confirms their knowledge and skills.[^aos] In job advertisements from 2023, residents were offered on average <Money value={172} /> an hour. Offers for residents after the second or third year, mainly in outpatient clinics, were similar to offers for specialists.[^lop-2023]
+
+## Resident pay: two rates
+
+How much a resident earns is set by the minister of health in a regulation. The act requires this amount to differ by specialty, with particular regard to priority specialties, and by year of training.[^uzl-16j] From {PAY_ACT_EN.from} there are two rates.[^rozp-2026]
+
+<StatRow
+  label="Resident’s base salary"
+  items={[
+    { value: P.first, decimals: 2, unit: 'PLN', desc: `gross a month in ${PRIORITY_FIELDS.length} priority specialties, in the first two years of residency; later PLN ${formatEN(P.later, 2)}`, accuracy: 'exact', source: `Ministry of Health regulation, ${PAY_ACT_EN.label}`, href: PAY_ACT_EN.href },
+    { value: O.first, decimals: 2, unit: 'PLN', desc: `gross a month in the other specialties, in the first two years; later PLN ${formatEN(O.later, 2)}`, accuracy: 'exact', source: `Ministry of Health regulation, ${PAY_ACT_EN.label}`, href: PAY_ACT_EN.href },
+  ]}
+/>
+
+The starting point is the statutory minimum pay of a doctor without a specialisation: a coefficient of {formatEN(RESIDENT_COEF, 2)} times the base amount of <Money value={BASE.amount} />, i.e. <Money value={O.first} />.[^prawo-pl] The base amount is the average wage in the economy in the previous year and changes every year on 1 July (see [the pay scale in healthcare](/en/data/other-health-professions-pay/)).[^ustawa-placowa] The amounts in the regulation show that in a priority specialty a resident receives 10% more than this base, and after two years 20% more. In the other specialties pay rises by 3% after two years. The difference between the groups is therefore <Money value={P.first - O.first} /> a month at the start of training and <Money value={P.later - O.later} /> after two years.
+
+### The priority list: 23 specialties
+
+Priority specialties are named in a separate regulation of the minister of health of 27 December 2022. The only later change was the addition of neurology from 1 July 2023.[^priorytety] The list has {PRIORITY_FIELDS.length} items (as of {PRIORITY_AS_OF_EN}), and the regulation on pay repeats the same list.[^rozp-2026]
+
+The table includes {TABLE.priority.fields} specialties from this list. The remaining {PRIORITY_OUTSIDE_TABLE.length} are {priorityOutside} — paediatric and oncological specialties and a specialty for dentists.
+
+### Supplement for a commitment to work in Poland
+
+Every resident, not only in a priority specialty, may declare that after obtaining the specialisation they will work in Poland for a total of {COMMITMENT.years} years out of the following {COMMITMENT.window}, at least full-time, in a facility providing services financed from public funds. In return their base salary rises by <Money value={COMMITMENT.priority} /> a month in a priority specialty and by <Money value={COMMITMENT.other} /> in the others.[^uzl-2b] With the supplement, a resident in a priority specialty receives <Money value={P.first + COMMITMENT.priority} /> in the first two years, and in the other specialties — <Money value={O.first + COMMITMENT.other} />. The supplement is colloquially called the “patriotic voucher” (*bon patriotyczny*).
+
+If the doctor does not keep the commitment or breaks off the specialisation programme, the voivode (the government’s representative in the region) imposes a penalty equal to {formatEN(COMMITMENT.penaltyShare * 100)}% of the total supplements received. The penalty decreases in proportion to the period the doctor has worked in line with the declaration. Anyone who received the supplement for less time than the specialisation lasted has a proportionally shorter commitment, and the supplement can be given up — pay then falls from the following month.[^uzl-2l] An example: a resident in a priority specialty who received the supplement for 60 months and did not work a single day under the commitment will pay <Money value={COMMITMENT.penaltyShare * 60 * COMMITMENT.priority} />.
+
+## Candidates and rates in job advertisements
+
+None of the ten most sought-after specialties named by the director of the CMKP is on the priority list. The table includes {top.length} of them (candidates per place in brackets): {topList}.[^filipiak] Together they had {count(topRez, 'residency place', 'residency places')} — less than half the pool for paediatrics alone ({formatEN(spec('pediatria').rez)}).[^cmkp-miejsca]
+
+At the other end, the CMKP named ten specialties in which there were more places than applicants. Seven of them are on the priority list — in the table {belowPriority}, outside the table radiation oncology. Three are not on the list: {belowOther}, nuclear medicine and nephrology.[^filipiak]
+
+Rates in advertisements follow a similar pattern, though with exceptions. In 2023 the middle specialty outside the list had an average of <Money value={RATE_MEDIAN.other} decimals={0} /> an hour in advertisements, and the middle priority specialty — <Money value={RATE_MEDIAN.priority} decimals={0} /> an hour (the median of the average rates of the specialties in the table).[^lop-2023] The highest average, however, was for psychiatry, which is on the list: <Money value={spec('psychiatria').rate} decimals={0} /> an hour. The report’s authors note that it was pushed up by offers from one network of facilities at PLN 400 an hour. The lowest was for medical rehabilitation, which is not on the list: <Money value={spec('rehabilitacja-medyczna').rate} decimals={0} /> an hour. Lung diseases (<Money value={spec('choroby-pluc').rate} decimals={0} /> an hour) and occupational medicine (<Money value={spec('medycyna-pracy').rate} decimals={0} /> an hour) had higher rates than ophthalmology or gastroenterology, and they are not among the most sought-after specialties. For plastic surgery, which had the most candidates, the report gives no rate.
+
+The table shows a coincidence, not a cause. Higher pay in a priority specialty — by <Money value={P.first - O.first} /> a month at the start of training — does not reverse the proportions: the most candidates per place are in specialties outside the list. The data do not say, however, what decides the choice. They do not cover, for example, working conditions after the specialisation or how much doctors in a given specialty earn in total.
+
+## Specialist training places
+
+For the autumn 2025 session the CMKP listed {count(AUTUMN_2025.rez, 'residency place', 'residency places')} and {count(AUTUMN_2025.nonRez, 'non-residency place', 'non-residency places')}.[^cmkp-miejsca] Doctors submitted {count(AUTUMN_2025.applications, 'formally correct application', 'formally correct applications')}. After two stages, {formatEN(AUTUMN_2025.takenRez + AUTUMN_2025.takenNonRez)} doctors confirmed that they had accepted a place: {formatEN(AUTUMN_2025.takenRez)} in a residency and {formatEN(AUTUMN_2025.takenNonRez)} in the non-residency mode.[^cmkp-wyniki] So {pct(AUTUMN_2025.takenRez, AUTUMN_2025.rez)}% of residencies and {pct(AUTUMN_2025.takenNonRez, AUTUMN_2025.nonRez)}% of non-residency places were taken. In an additional, third stage — only for residencies in priority specialties — another {formatEN(AUTUMN_2025.thirdStageRez)} doctors accepted a place.[^filipiak]
+
+After two stages, {formatEN(AUTUMN_2025.applications - AUTUMN_2025.takenRez - AUTUMN_2025.takenNonRez)} applicants had not confirmed accepting any place, and {formatEN(AUTUMN_2025.rez - AUTUMN_2025.takenRez)} residencies remained vacant. The pool of residencies is concentrated in priority specialties: in the table they have {formatEN(TABLE.priority.rez)} of the {formatEN(tableRez)} residency places ({pct(TABLE.priority.rez, tableRez)}%). The largest pools were only partly filled. Among the ten specialties for which the CMKP gave the number of doctors accepted, almost all residencies were taken in three specialties outside the priority list and in anaesthesiology.
+
+<Figure
+  title="In cardiology, orthopaedics and gynaecology almost all residencies were filled, in internal medicine — half"
+  note="The ten specialties in which the most doctors accepted a residency after two stages of the autumn 2025 recruitment (that is all the CMKP published). The share is the doctors accepted for residency places out of the CMKP list for this session. Blue — specialties outside the priority list."
+  source={{ label: 'CMKP via Termedia, 20.11.2025; places — CMKP list; our calculations', href: LINKS.cmkpResults }}
+>
+  <BarChart rows={fillRows} max={100} unit="%" caption={fillCaption} />
+</Figure>
+
+Non-residency places mostly remain empty: in family medicine {nonRez('medycyna-rodzinna')} were taken, in cardiology {nonRez('kardiologia')}, in orthopaedics {nonRez('ortopedia')}. It is different in ophthalmology ({nonRez('okulistyka')}), occupational medicine ({nonRez('medycyna-pracy')}) and radiology ({nonRez('radiologia')}) — there doctors also take places without pay from the minister’s budget.[^cmkp-wyniki]
+
+The bottleneck is therefore not a lack of places in general, but how they are distributed. Most residencies are in specialties in which some of them remain empty, while in the most sought-after ones the pools are counted in tens. How admissions to medical school translate into the number of doctors in the following decades is shown by the [doctor supply simulator](/analizy/symulator-podazy-lekarzy/) (in Polish), and the causes of shortages are discussed in the analysis [Why Poland is short of doctors](/en/analysis/why-poland-is-short-of-doctors/).
+
+<SimulatorBanner kind="lekarze" />
+
+## The priority list and forecasts of shortages
+
+In its health needs maps, the Ministry of Health compares how many doctors will complete a specialisation in a given specialty with the number of those who will reach retirement age. By 2028 it forecasts the largest gap in internal medicine and general surgery. There is also to be a shortfall in specialties outside the priority list: occupational medicine, medical rehabilitation, lung diseases, balneology and otorhinolaryngology. In family medicine and paediatrics, which are on the list, more new specialists are expected than will reach retirement age.[^mapy]
+
+<Figure
+  title={`${gapsOutside.length} of ${gaps.length} specialties with a forecast gap are outside the priority list`}
+  note="The balance is the number of doctors who will complete a specialisation by 2028 minus the number reaching retirement age in that period. It measures generational replacement, not the full need. The source names specialties as examples, so the list is not complete. Highlighted — a gap in a specialty outside the priority list, in which a resident is paid at the lower rate."
+  source={{ label: 'Ministry of Health health needs maps via Rynek Zdrowia, 21.07.2025', href: LINKS.forecast }}
+>
+  <Comparison table={forecastTable} />
+</Figure>
+
+[^rozp-2026]: Regulation of the Minister of Health of 25 June 2026 on the amount of the basic monthly salary of doctors and dentists undergoing specialist training as residents, [Dz.U. 2026 item 856](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000856) (in Polish) — § 1 (23 priority specialties and their rates), § 2 (other specialties); in force from 1 July 2026.
+
+[^prawo-pl]: Prawo.pl, [“<span lang="pl">Od 1 lipca lekarze rezydenci zarobią więcej — jest projekt</span>”](https://www.prawo.pl/zdrowie/ile-zarabia-lekarz-rezydent-w-2026-r-rozporzadzenie,1544065.html) (“From 1 July resident doctors will earn more — there is a draft”, in Polish), 05.05.2026 — the ministry’s calculation in the draft: a coefficient of 1.19 times the average wage for 2025.
+
+[^ustawa-placowa]: [Act of 8 June 2017 on the method of setting the lowest base salary of certain employees of healthcare providers](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20170001473) (in Polish; ISAP) — the base amount and the coefficient of 1.19 for a doctor without a specialisation.
+
+[^priorytety]: Regulation of the Minister of Health of 27 December 2022 on designating priority fields of medicine, [Dz.U. 2022 item 2814](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20220002814) (in Polish); neurology added from 1 July 2023 — [Dz.U. 2023 item 1503](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20230001503); consolidated text — [Dz.U. 2024 item 791](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20240000791). There were no other changes in the Journal of Laws up to 15.10.2026.
+
+[^uzl-16j]: [Act of 5 December 1996 on the professions of physician and dentist](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000037) (in Polish; consolidated text Dz.U. 2026 item 37), Article 16j(1)–(5) — financing of residency and the rules for setting pay.
+
+[^uzl-16h]: Act on the professions of physician and dentist, [Article 16h(1)–(2)](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000037) (in Polish) — the employment contract in the residency mode and the forms of training in the non-residency mode.
+
+[^uzl-16c]: Act on the professions of physician and dentist, [Article 16c(1d) and (10)](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000037) (in Polish) — the options in the application and the criteria of the competitive procedure.
+
+[^uzl-2b]: Act on the professions of physician and dentist, [Article 16j(2b)](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000037) (in Polish) — the commitment to work in Poland and the pay supplement of PLN 700 or PLN 600.
+
+[^uzl-2l]: Act on the professions of physician and dentist, [Article 16j(2g), (2l), (2n), (2s) and (2t)](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260000037) (in Polish) — shortening of the commitment, the penalty of 75% of the supplements received, its reduction, the voivode’s decision and giving up the supplement.
+
+[^aos]: Regulation of the Minister of Health of 6 November 2013 on guaranteed services in specialist outpatient care, § 2(3)(b) and (c) ([consolidated text Dz.U. 2016 item 357](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20160000357), as amended; in Polish) — definition of a doctor in specialist training who may work in an outpatient clinic.
+
+[^lop-2023]: Report “<span lang="pl">PRACA. Lekarze – oferty pracy za cały 2023 rok</span>” (“WORK. Doctors – job offers for the whole of 2023”), by the Lekarze – oferty pracy group, partner: the All-Poland Doctors’ Trade Union (OZZL) ([PDF](https://www.termedia.pl/pobierz/28761ac10ff69d4055cd0f793cfa9175), in Polish) — 1,473 advertisements with an hourly rate; rates by career stage pp. 15–16, by specialty pp. 17–19.
+
+[^cmkp-miejsca]: CMKP, [“<span lang="pl">Liczba miejsc szkoleniowych dla lekarzy i lekarzy dentystów — sesja jesień 2025</span>”](https://www.cmkp.edu.pl/wp-content/uploads/2025/08/Liczba-miejsc-szkoleniowych-jesien-2025.pdf) (“Number of training places for doctors and dentists — autumn 2025 session”, in Polish), list of 28.08.2025; totals for specialties across the 16 voivodeships — our calculations.
+
+[^cmkp-wyniki]: Termedia, citing the CMKP, [“<span lang="pl">Ostateczne wyniki rekrutacji na specjalizacje w sesji jesiennej 2025</span>”](https://www.termedia.pl/wartowiedziec/Ostateczne-wyniki-rekrutacji-na-specjalizacje-w-sesji-jesiennej-2025,64937.html) (“Final results of the recruitment for specialisations in the autumn 2025 session”, in Polish), 20.11.2025 — places, applications and doctors accepted after two stages, the ten specialties with the most doctors accepted in each mode.
+
+[^filipiak]: Beauty Razem, [“<span lang="pl">Chirurgia plastyczna i dermatologia na czele najbardziej obleganych specjalizacji lekarskich</span>”](https://beautyrazem.pl/chirurgia-plastyczna-i-dermatologia-na-czele-najbardziej-obleganych-specjalizacji-lekarskich/) (“Plastic surgery and dermatology lead the most sought-after medical specialisations”, in Polish), 10.12.2025 — compilation by the director of the CMKP: candidates (first choice in the application) for all places in specialties with more than 10 places; results after the third stage.
+
+[^cem-pes]: Medical Examinations Centre, [results of the PES test part](https://www.cem.edu.pl/spece_results_h.php) (in Polish) — lists of results of the sessions from spring 2023 to autumn 2025 by specialty (one code number = one attempt); the share is our own calculation. The 60% threshold and the rule that the CEM publishes only test results: [Act on the professions of physician and dentist](https://eli.gov.pl/eli/DU/2026/37/ogl) (in Polish), Article 16s(4) and Article 16w(1).
+
+[^mapy]: Rynek Zdrowia, [“<span lang="pl">Choć kształcimy coraz więcej, w tych dziedzinach nadal będzie brakować lekarzy</span>”](https://www.rynekzdrowia.pl/Polityka-zdrowotna/Choc-ksztalcimy-coraz-wiecej-w-tych-dziedzinach-nadal-bedzie-brakowac-lekarzy,273691,14.html) (“Although we are training more and more, these specialties will still be short of doctors”, in Polish), 21.07.2025 — a summary of the Ministry of Health’s health needs maps.

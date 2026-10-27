@@ -1,15 +1,16 @@
 ---
-/** Wyróżniony materiał: zdjęcie z etykietą, metadane, tytuł, lead. */
+/** Wyróżniony materiał: zdjęcie z etykietą, metadane, tytuł, lead. Polski artykuł albo pozycja spisu (src/i18n/entries.ts). */
 import Photo from '@/components/ui/Photo.astro';
 import MonitorPhoto from '@/components/ui/MonitorPhoto.astro';
 import Badge from '@/components/ui/Badge.astro';
 import Meta from '@/components/ui/Meta.astro';
-import { articleHref, type Article } from '@/lib/content';
+import type { Article } from '@/lib/content';
 import { typo } from '@/lib/format';
 import type { MonitorEffect } from '@/lib/siatka';
+import { toEntry, type Entry } from '@/i18n/entries';
 
 interface Props {
-  article: Article;
+  article: Article | Entry;
   /** atrybut sizes zdjęcia — zależy od szerokości kolumny w danym układzie */
   sizes?: string;
   /** siatka monitora na najechanie (ui/MonitorPhoto) */
@@ -17,11 +18,11 @@ interface Props {
 }
 
 const { article, sizes = '(min-width: 1025px) 650px, calc(100vw - 32px)', effect } = Astro.props;
-const { title, summary, category, date, kicker, cover, coverAlt, coverPosition, badge } = article.data;
+const { href, hreflang, title, summary, category, label, date, kicker, cover, coverAlt, coverPosition, badge } = toEntry(article);
 const media = cover && { src: cover, alt: coverAlt ?? '', ratio: '16/10', position: coverPosition, widths: [480, 720, 1080, 1600], sizes, frame: true };
 ---
 <article class="feature" data-reveal>
-  <a class="feature__link" href={articleHref(article)}>
+  <a class="feature__link" href={href} hreflang={hreflang}>
     {media && (effect ? (
       <MonitorPhoto effect={effect} {...media}>
         {badge && <Badge variant="light" icon="pin" label={badge} />}
@@ -32,7 +33,7 @@ const media = cover && { src: cover, alt: coverAlt ?? '', ratio: '16/10', positi
       </Photo>
     ))}
     <div class="feature__body">
-      <Meta category={category} date={date} extra={kicker} />
+      <Meta category={category} label={label} date={date} extra={kicker} />
       <h3 class="feature__title">{typo(title)}</h3>
       <p class="feature__desc">{typo(summary)}</p>
     </div>

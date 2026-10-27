@@ -7,6 +7,8 @@
  * Bez dopisku: kopiowanie w polach formularzy oraz linki z przycisków serwisu (pasek zaznaczenia, kotwice
  * nagłówków, „Kopiuj link”) — te trafiają do schowka przez navigator.clipboard, bez zdarzenia copy.
  */
+import { uiOf } from '@/i18n/ui';
+
 interface Props {
   /** nazwa serwisu w dopisku */
   name: string;
@@ -14,7 +16,7 @@ interface Props {
 
 const { name } = Astro.props;
 ---
-<zl-copy-source data-name={name} hidden></zl-copy-source>
+<zl-copy-source data-name={name} data-label={uiOf(Astro.url).copySource} hidden></zl-copy-source>
 
 <script>
   // Twarde spacje z typo() — poza stroną tylko przeszkadzają
@@ -27,6 +29,8 @@ const { name } = Astro.props;
   class ZlCopySource extends HTMLElement {
     connectedCallback() {
       const name = this.dataset.name ?? location.host;
+      // „źródło: ” albo „source: ” — w atrybucie, bez importu słownika (skrypt zostaje wstawiony w HTML)
+      const label = this.dataset.label ?? '';
 
       document.addEventListener('copy', (event) => {
         const selection = getSelection();
@@ -52,10 +56,10 @@ const { name } = Astro.props;
         const link = document.createElement('a');
         link.href = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href ?? location.href;
         link.textContent = name;
-        source.append('źródło: ', link);
+        source.append(label, link);
         box.append(source);
 
-        event.clipboardData.setData('text/plain', `${text}\n\nźródło: ${name}`);
+        event.clipboardData.setData('text/plain', `${text}\n\n${label}${name}`);
         event.clipboardData.setData('text/html', box.innerHTML);
         event.preventDefault();
       });

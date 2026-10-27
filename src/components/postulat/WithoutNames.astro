@@ -1,21 +1,33 @@
 ---
-/** /postulat/ — zmiana postulatu: dlaczego publikacja bez nazwisk (i link do archiwum petycji). */
+/**
+ * /postulat/ — zmiana postulatu: dlaczego publikacja bez nazwisk (i link do archiwum petycji).
+ * Dwujęzyczny: na /en/demand/ teksty z src/data/en/postulat.ts, archiwum petycji z dopiskiem „(in Polish)”.
+ */
 import Section from '@/components/layout/Section.astro';
 import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import NumberedList from '@/components/blocks/NumberedList.astro';
-import { withoutNames } from '@/data/postulat';
+import { withoutNames as withoutNamesPl } from '@/data/postulat';
+import { withoutNames as withoutNamesEn, sectionIds } from '@/data/en/postulat';
 import { petycja } from '@/data/petycja';
+import { localeOf } from '@/i18n/locales';
 import { typo } from '@/lib/format';
+
+const locale = localeOf(Astro.url.pathname);
+const withoutNames = locale === 'en' ? withoutNamesEn : withoutNamesPl;
+const T = {
+  pl: { id: 'bez-nazwisk', eyebrow: 'Zmiana postulatu', archive: 'Petycja z lipca 2026 r. — archiwum', hreflang: undefined },
+  en: { id: sectionIds.bezNazwisk, eyebrow: 'A change to our demand', archive: 'The July 2026 petition — archive (in Polish)', hreflang: 'pl' },
+}[locale];
 ---
-<Section id="bez-nazwisk" tone="soft" aria-labelledby="bez-nazwisk-title">
+<Section id={T.id} tone="soft" aria-labelledby={`${T.id}-title`}>
   <div class="names">
     <div class="names__intro">
-      <Eyebrow>Zmiana postulatu</Eyebrow>
-      <Heading id="bez-nazwisk-title" class="names__title">{typo(withoutNames.title)}</Heading>
+      <Eyebrow>{T.eyebrow}</Eyebrow>
+      <Heading id={`${T.id}-title`} class="names__title">{typo(withoutNames.title)}</Heading>
       <p class="names__lead">{typo(withoutNames.lead)}</p>
-      <LinkArrow href={petycja.href}>Petycja z lipca 2026 r. — archiwum</LinkArrow>
+      <LinkArrow href={petycja.href} hreflang={T.hreflang}>{T.archive}</LinkArrow>
     </div>
     <NumberedList items={withoutNames.reasons} />
   </div>

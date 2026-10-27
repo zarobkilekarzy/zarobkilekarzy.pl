@@ -5,24 +5,31 @@
  * Wartości liczy lib/seo/meta.ts — komponent tylko je drukuje.
  */
 import type { ResolvedSeo } from '@/lib/seo';
+import { LOCALES, LOCALE_META } from '@/i18n/locales';
 
 interface Props {
   seo: ResolvedSeo;
   siteName: string;
-  locale: string;
+  /** og:locale; domyślnie z języka strony */
+  locale?: string;
   twitter: string;
 }
 
-const { seo, siteName, locale, twitter } = Astro.props;
+const { seo, siteName, twitter } = Astro.props;
 const { social } = seo;
+const locale = Astro.props.locale ?? LOCALE_META[seo.locale].og;
+// og:locale:alternate tylko przy stronach z odpowiednikiem w indeksie (te same pary co hreflang)
+const otherLocales = seo.alternates.length ? LOCALES.filter((l) => l !== seo.locale).map((l) => LOCALE_META[l].og) : [];
 ---
 <title>{seo.title}</title>
 <meta name="description" content={seo.description} />
 <link rel="canonical" href={seo.canonical} />
+{seo.alternates.map((a) => <link rel="alternate" hreflang={a.hreflang} href={a.href} />)}
 <meta name="robots" content={seo.robots} />
 
 <meta property="og:type" content={social.type} />
 <meta property="og:locale" content={locale} />
+{otherLocales.map((l) => <meta property="og:locale:alternate" content={l} />)}
 <meta property="og:site_name" content={siteName} />
 <meta property="og:url" content={seo.canonical} />
 <meta property="og:title" content={social.title} />
@@ -51,4 +58,4 @@ const { social } = seo;
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="manifest" href="/site.webmanifest" />
 <link rel="sitemap" href="/sitemap-index.xml" />
-<link rel="alternate" type="application/rss+xml" title={`${siteName} — nowe i zaktualizowane materiały`} href="/rss.xml" />
+{seo.locale === 'pl' && <link rel="alternate" type="application/rss+xml" title={`${siteName} — nowe i zaktualizowane materiały`} href="/rss.xml" />}

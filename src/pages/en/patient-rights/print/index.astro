@@ -1,0 +1,235 @@
+---
+/**
+ * /en/patient-rights/print/ — tłumaczenie /prawa-pacjenta/druk/ (src/pages/prawa-pacjenta/druk/index.astro):
+ * ten sam układ, karta i PDF-y z src/data/en/prawa-pacjenta.ts (lib/pacjent/downloads-en.ts).
+ * Para i stempel w src/i18n/pages.json; pod nagłówkiem nota o tłumaczeniu i o tym, że wiążą polskie teksty ustaw.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import Icon from '@/components/ui/Icon.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Intro from '@/components/pacjent/Intro.astro';
+import CardPreview from '@/components/pacjent/CardPreview.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import { card, emergency, helpline, page, translationNote } from '@/data/en/prawa-pacjenta';
+import { pagePairOf } from '@/i18n/pages';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { PDF_FILES_EN as PDF_FILES, pdfMetaEn as pdfMeta } from '@/lib/pacjent/downloads-en';
+import { typo } from '@/lib/format';
+
+const formats = [
+  {
+    id: 'card' as const,
+    title: 'Pocket card',
+    text: 'Two cards on one sheet of A4 — one for you, one for someone close to you. Cut and fold: you get a card printed on both sides, without double-sided printing.',
+    facts: ['A4, single-sided printing', '10.5 × 14.8 cm when folded', 'for your handbag and your medical records folder'],
+  },
+  {
+    id: 'large' as const,
+    title: 'Large print',
+    text: 'The same on two A4 pages, in 14 pt text. For an older person, for the fridge or for the notice board at a clinic.',
+    facts: ['2 A4 pages', '14 pt text', 'for a notice board'],
+  },
+];
+const metas = Object.fromEntries(await Promise.all(formats.map(async (f) => [f.id, await pdfMeta(f.id)])));
+
+const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: page.title, href: '/en/patient-rights/' }, { label: 'Print' }];
+// Osobna strona z plikami PDF, a nie duplikat /en/patient-rights/
+const seo: SeoInput = {
+  title: 'Patient rights in Poland: printable PDF',
+  description:
+    'The most important patient rights in Poland, deadlines and numbers to print: a pocket card (two on a sheet of A4) or large print on two pages. Black-and-white PDF.',
+  index: !pagePairOf(Astro.url.pathname)?.draft,
+  breadcrumbs: crumbs,
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="dr-top">
+    <PageHeader
+      title="Printable card"
+      eyebrow="Patient rights · to print"
+      lead="The most important rights, deadlines and numbers on paper — for when a phone is no help. Print it and hand it out without asking for permission."
+      crumbs={crumbs}
+    />
+
+    <div class="dr-tr">
+      <PageTranslationNote />
+      <p class="dr-tr__law"><strong>{translationNote.title}</strong> {typo(translationNote.text)}</p>
+    </div>
+
+    <ul class="formats">
+      {formats.map((f) => (
+        <li class="format">
+          <div class="format__art" aria-hidden="true">
+            {f.id === 'card' ? (
+              <svg viewBox="0 0 120 170" class="sheet">
+                <rect x="1" y="1" width="118" height="168" class="sheet__paper" />
+                <line x1="1" y1="85" x2="119" y2="85" class="sheet__cut" />
+                <line x1="60" y1="1" x2="60" y2="169" class="sheet__fold" />
+                {[0, 84].map((oy) => (
+                  <g transform={`translate(0 ${oy})`}>
+                    <rect x="8" y="9" width="30" height="5" class="sheet__ink" />
+                    <rect x="8" y="19" width="40" height="8" class="sheet__ink" />
+                    {[33, 39, 45, 51, 57, 63, 69].map((y, i) => <rect x="8" y={y} width={i % 3 === 2 ? 28 : 44} height="2.2" class="sheet__line" />)}
+                    {[10, 16, 22, 31, 37, 43, 52, 58, 64].map((y, i) => <rect x="68" y={y} width={i % 3 === 2 ? 30 : 44} height="2.2" class="sheet__line" />)}
+                  </g>
+                ))}
+              </svg>
+            ) : (
+              <svg viewBox="0 0 150 170" class="sheet">
+                <rect x="31" y="1" width="118" height="160" class="sheet__paper" />
+                <rect x="1" y="9" width="118" height="160" class="sheet__paper" />
+                <rect x="11" y="21" width="56" height="10" class="sheet__ink" />
+                <rect x="11" y="40" width="80" height="16" class="sheet__ink" />
+                {[66, 76, 86, 96, 106, 116, 126, 136, 146].map((y, i) => <rect x="11" y={y} width={i % 3 === 2 ? 60 : 96} height="4" class="sheet__line" />)}
+              </svg>
+            )}
+          </div>
+          <div class="format__copy">
+            <h2 class="format__title">{f.title}</h2>
+            <p class="format__text">{typo(f.text)}</p>
+            <ul class="format__facts">{f.facts.map((x) => <li>{typo(x)}</li>)}</ul>
+            <div class="format__actions">
+              <a class="dl dl--primary" href={PDF_FILES[f.id].href} download={PDF_FILES[f.id].download}>
+                <span class="dl__icon"><Icon name="doc" size={20} /></span>
+                <span class="dl__text"><span>Download PDF</span><span class="dl__meta">{metas[f.id]}</span></span>
+              </a>
+              <a class="dl" href={PDF_FILES[f.id].href} target="_blank" rel="noopener">
+                <span class="dl__icon"><Icon name="print" size={20} /></span>
+                <span class="dl__text"><span>Open and print</span><span class="dl__meta">in a new tab</span></span>
+              </a>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+    <p class="dr-ink"><Icon name="info" size={18} /> Both versions are black and white — your printer will not use any colour ink.</p>
+  </Section>
+
+  <Section tone="soft" aria-labelledby="how-title">
+    <Intro eyebrow="Pocket card" title="How to make a card from a sheet of A4" punct="" id="how-title" lead="No double-sided printing, no A6 paper and no hunting for printer settings. All you need is a pair of scissors." />
+    <ol class="howto">
+      {card.howTo.map((step, i) => (
+        <li>
+          <svg viewBox="0 0 96 96" class="howto__pic" aria-hidden="true">
+            {i === 0 && (
+              <g>
+                <path d="M22 40V14h52v26" class="pic" />
+                <rect x="12" y="40" width="72" height="30" class="pic" />
+                <rect x="26" y="58" width="44" height="32" class="pic pic--paper" />
+                <path d="M33 68h30M33 75h30M33 82h20" class="pic pic--thin" />
+                <circle cx="74" cy="50" r="2.5" class="pic--dot" />
+              </g>
+            )}
+            {i === 1 && (
+              <g>
+                <rect x="22" y="6" width="52" height="84" class="pic pic--paper" />
+                <path d="M14 48h68" class="pic pic--cut" />
+                <circle cx="20" cy="38" r="5" class="pic" />
+                <circle cx="20" cy="58" r="5" class="pic" />
+                <path d="m24 41 22 7M24 55l22-7" class="pic" />
+              </g>
+            )}
+            {i === 2 && (
+              <g>
+                <rect x="10" y="30" width="38" height="52" class="pic pic--paper" />
+                <path d="M48 30 70 22v52l-22 8" class="pic pic--paper" />
+                <path d="M48 30v52" class="pic pic--fold" />
+                <path d="M74 18c10 6 12 20 4 30" class="pic pic--thin" />
+                <path d="m74 46 4 3 1-5" class="pic pic--thin" />
+              </g>
+            )}
+          </svg>
+          <p class="howto__n">Step {i + 1}</p>
+          <p class="howto__text">{typo(step)}</p>
+        </li>
+      ))}
+    </ol>
+    <p class="howto__note">{typo('Has the card come out too small or off-centre? In the print dialogue, choose 100% scale (sometimes called “Actual size”) instead of “Fit to page”.')}</p>
+  </Section>
+
+  <Section aria-labelledby="what-title">
+    <div class="preview">
+      <div class="preview__copy">
+        <Intro eyebrow="Preview" title="What is on the card" punct="" id="what-title" lead="Only what can fairly be put in a single sentence, with the article of the act next to every point." />
+        <p class="preview__note">{typo('We deliberately left out the limitation period for court claims (a bare “3 years”, without explaining when it starts, would sound like a trap) and the helpline numbers for callers from abroad, which the Patient Ombudsman (RPP) and the NFZ give inconsistently. Both topics are on the full page.')}</p>
+        <p class="preview__note">{typo(`${card.stamp}. Amounts and fees change — before an important matter, check the full version of the page.`)}</p>
+        <LinkArrow href="/en/patient-rights/">Full version: patient rights</LinkArrow>
+      </div>
+      <CardPreview card={card} phones={{ helpline, emergency }} />
+    </div>
+  </Section>
+</BaseLayout>
+
+<style>
+  .dr-top { padding-top: clamp(32px, 4vw, 56px); }
+
+  .formats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; margin-top: clamp(40px, 5vw, 64px); }
+  .format {
+    display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 1.75rem; align-items: start;
+    padding: 1.75rem; border: 1px solid var(--line-2); background: var(--surface);
+  }
+  .format__art { padding-top: 0.25rem; }
+  /* Miniatura kartki to papier: w nocy zostaje dzienna, tokeny w środku też (obrys --ink, cięcie --blue) */
+  .sheet { width: 100%; height: auto; overflow: visible; color-scheme: light; }
+  /* kolor-stały: początek — papier */
+  .sheet__paper { fill: #fff; stroke: var(--ink); stroke-width: 1; }
+  .sheet__ink { fill: #111; }
+  .sheet__line { fill: #c4c9d2; }
+  /* kolor-stały: koniec */
+  .sheet__cut { stroke: var(--blue); stroke-width: 1.2; stroke-dasharray: 4 3; }
+  .sheet__fold { stroke: var(--blue); stroke-width: 1.4; stroke-dasharray: 0.1 3.5; stroke-linecap: round; }
+
+  .format__title { font: 500 1.5rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .format__text { margin-top: 0.625rem; font-size: 1rem; line-height: 1.6; color: var(--text); }
+  .format__facts { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 1rem; }
+  .format__facts li { padding: 0.3rem 0.5rem; background: var(--bg-soft); font: 400 0.75rem/1.2 var(--f-mono); color: var(--text); }
+  .format__actions { display: grid; gap: 0.5rem; margin-top: 1.5rem; }
+  .dl {
+    display: flex; align-items: center; gap: 0.875rem; min-height: 3.5rem; padding: 0.375rem 1rem 0.375rem 0.375rem;
+    border: 1px solid var(--line-2); color: var(--ink); transition: border-color .2s, background .2s;
+  }
+  .dl:hover { border-color: var(--ink); }
+  .dl__icon { display: grid; place-items: center; flex: none; width: 2.75rem; height: 2.75rem; background: var(--blue-50); color: var(--blue); }
+  .dl__text { display: grid; gap: 0.25rem; font: 500 1rem/1.2 var(--f-body); }
+  .dl__meta { font: 400 0.75rem/1.2 var(--f-mono); opacity: .8; }
+  .dl--primary { background: var(--blue-fill); border-color: var(--blue-fill); color: #fff; }
+  .dl--primary .dl__icon { background: #fff; color: var(--blue-fill); } /* kolor-stały: biały kwadrat na kobalcie */
+  .dl--primary:hover { background: var(--blue-600); border-color: var(--blue-600); }
+
+  /* nota o tłumaczeniu i o tym, że wiążą tylko polskie teksty ustaw */
+  .dr-tr { display: grid; gap: 0.75rem; max-width: 52em; margin-top: clamp(32px, 4vw, 48px); }
+  .dr-tr :global(.tnote) { margin-bottom: 0; }
+  .dr-tr__law { padding: 1rem 1.25rem; background: var(--bg-soft); border-left: 2px solid var(--ink); font-size: 1rem; line-height: 1.6; color: var(--ink-2); }
+  .dr-tr__law strong { color: var(--ink); }
+
+  .dr-ink { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; font-size: 0.9375rem; color: var(--text); }
+  .dr-ink :global(svg) { color: var(--blue); }
+
+  .howto { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; margin-top: clamp(2rem, 4vw, 3rem); }
+  .howto li { padding: 1.5rem; background: var(--surface); border: 1px solid var(--line-2); }
+  .howto__pic { width: 5.5rem; height: 5.5rem; color: var(--ink); }
+  .pic { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+  .pic--paper { fill: var(--surface); }
+  .pic--thin { stroke-width: 1.5; }
+  .pic--cut { stroke: var(--blue); stroke-dasharray: 5 4; }
+  .pic--fold { stroke: var(--blue); stroke-dasharray: 0.1 4; stroke-linecap: round; stroke-width: 2.5; }
+  .pic--dot { fill: var(--blue); }
+  .howto__n { margin-top: 1rem; font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue-700); }
+  .howto__text { margin-top: 0.375rem; font: 500 1.125rem/1.4 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .howto__note { margin-top: 1.25rem; max-width: 48em; font-size: 0.9375rem; line-height: 1.6; color: var(--text); }
+
+  .preview { display: grid; grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); gap: 2.5rem clamp(40px, 6vw, 96px); align-items: start; }
+  .preview__copy { display: grid; gap: 1.25rem; justify-items: start; }
+  .preview__note { font-size: 0.9375rem; line-height: 1.6; color: var(--text); max-width: 34em; }
+
+  @media (max-width: 1024px) {
+    .formats, .preview { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .format { grid-template-columns: minmax(0, 1fr); padding: 1.25rem; gap: 1rem; }
+    .format__art { width: 7rem; }
+    .howto { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

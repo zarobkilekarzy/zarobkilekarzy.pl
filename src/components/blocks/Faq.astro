@@ -10,6 +10,7 @@ import type { FaqItem } from '@/types';
 import { pad2, typo } from '@/lib/format';
 import { inline } from '@/lib/inline';
 import type { Notes } from '@/lib/notes';
+import { localeOf } from '@/i18n/locales';
 
 interface Props extends HTMLAttributes<'div'> {
   items: FaqItem[];
@@ -21,6 +22,7 @@ interface Props extends HTMLAttributes<'div'> {
 }
 
 const { items, numbered = false, openFirst = false, notes, class: className, ...rest } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
 ---
 <div class:list={['faq', { 'faq--numbered': numbered }, className]} {...rest}>
   {items.map((item, i) => (
@@ -30,7 +32,7 @@ const { items, numbered = false, openFirst = false, notes, class: className, ...
         <span class="faq__q">{typo(item.question)}</span>
       </summary>
       <div class="faq__a">
-        {item.answer.map((p) => <p set:html={inline(p, undefined, notes)} />)}
+        {item.answer.map((p) => <p set:html={inline(p, undefined, notes, locale)} />)}
       </div>
     </details>
   ))}

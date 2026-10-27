@@ -1,12 +1,14 @@
 ---
 /** Rząd metadanych strony (liczba materiałów, działy, data). Slot — np. legenda pod spodem. */
-import { formatDate, isoDate } from '@/lib/format';
+import { formatDateIn, isoDate } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   items: { label: string; value: string | number | Date }[];
 }
 
 const { items } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
 ---
 <div class="pmeta">
   <div class="pmeta__row">
@@ -14,7 +16,7 @@ const { items } = Astro.props;
       {items.map(({ label, value }) => (
         <div>
           <dt>{label}</dt>
-          <dd>{value instanceof Date ? <time datetime={isoDate(value)}>{formatDate(value)}</time> : value}</dd>
+          <dd>{value instanceof Date ? <time datetime={isoDate(value)}>{formatDateIn(value, locale)}</time> : value}</dd>
         </div>
       ))}
     </dl>

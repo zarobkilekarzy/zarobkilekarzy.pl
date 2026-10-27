@@ -4,12 +4,15 @@
  * mini-wykres dopływu z kropek (historia pełnymi, projekcja mniejszymi) i zdanie z wynikiem,
  * liczone tym samym kodem co narzędzie; drugi przycisk prowadzi do drugiego symulatora.
  *   <SimulatorBanner kind="lekarze" />  ·  <SimulatorBanner kind="pielegniarki" />
+ * Na stronach angielskich (/en/) napisy po angielsku; symulatory są tylko po polsku, więc przyciski
+ * mają dopisek „(in Polish)”. Wyjście dla stron polskich bez zmian.
  */
 import ToolCard, { type ToolBars } from '@/components/blocks/ToolCard.astro';
 import * as doctors from '@/lib/podaz/model';
 import * as nurses from '@/lib/podaz/pielegniarki/model';
 import { lowest } from '@/lib/podaz/pielegniarki/summary';
-import { formatPL } from '@/lib/format';
+import { formatEN, formatPL } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 import type { Tool } from '@/types';
 
 interface Props {
@@ -17,6 +20,7 @@ interface Props {
 }
 
 const { kind } = Astro.props;
+const en = localeOf(Astro.url.pathname) === 'en';
 const DOCTORS = '/analizy/symulator-podazy-lekarzy/';
 const NURSES = '/analizy/symulator-podazy-pielegniarek/';
 
@@ -24,7 +28,11 @@ const { tool, bars } = ((): { tool: Tool; bars: ToolBars } => {
   if (kind === 'lekarze') {
     const y2050 = doctors.simulate(doctors.BASE_INTAKE)[2050 - doctors.YEAR0].doctors;
     return {
-      tool: {
+      tool: en ? {
+        icon: 'chart', label: 'Tool · check for yourself', title: 'Doctor supply simulator', href: DOCTORS,
+        links: [{ label: 'Open the simulator (in Polish)', href: DOCTORS }, { label: 'Nurse supply (in Polish)', href: NURSES }],
+        desc: `At today’s limit (${formatEN(doctors.LIMIT_TODAY)} places), ${formatEN(y2050)} doctors will be practising in 2050. Change medical school admissions and see when the effect shows.`,
+      } : {
         icon: 'chart', label: 'Narzędzie · sprawdź sam', title: 'Symulator podaży lekarzy', href: DOCTORS,
         links: [{ label: 'Otwórz symulator', href: DOCTORS }, { label: 'Podaż pielęgniarek', href: NURSES }],
         desc: `Przy dzisiejszym limicie (${doctors.seats(doctors.LIMIT_TODAY)}) w 2050 r. zawód będzie wykonywać ${formatPL(y2050)} lekarzy. Zmień nabór na medycynę i zobacz, kiedy widać skutek.`,
@@ -36,7 +44,11 @@ const { tool, bars } = ((): { tool: Tool; bars: ToolBars } => {
   }
   const low = lowest(nurses.simulate(nurses.BASE_RIGHTS));
   return {
-    tool: {
+    tool: en ? {
+      icon: 'chart', label: 'Tool · check for yourself', title: 'Nurse supply simulator', href: NURSES,
+      links: [{ label: 'Open the simulator (in Polish)', href: NURSES }, { label: 'Doctor supply (in Polish)', href: DOCTORS }],
+      desc: `At today’s inflow into the profession, the number of working nurses will be lowest — ${formatEN(low.nurses)} — in ${low.year}. Change the inflow and the retirement age and see the age ladder.`,
+    } : {
       icon: 'chart', label: 'Narzędzie · sprawdź sam', title: 'Symulator podaży pielęgniarek', href: NURSES,
       links: [{ label: 'Otwórz symulator', href: NURSES }, { label: 'Podaż lekarzy', href: DOCTORS }],
       desc: `Przy dzisiejszym dopływie do zawodu najmniej pielęgniarek — ${formatPL(low.nurses)} — będzie pracować w ${low.year} r. Zmień dopływ i wiek odejścia, zobacz drabinę wieku.`,

@@ -10,6 +10,8 @@ import Icon from '@/components/ui/Icon.astro';
 import SearchResult from '@/components/site/SearchResult.astro';
 import SearchEmptyArchive from '@/components/site/SearchEmptyArchive.astro';
 import { searchPageHref } from '@/lib/search/engine';
+import { localeOf } from '@/i18n/locales';
+import { ui } from '@/i18n/ui';
 import type { SearchHit } from '@/types';
 
 interface Props extends HTMLAttributes<'div'> {
@@ -22,11 +24,15 @@ interface Props extends HTMLAttributes<'div'> {
 }
 
 const { id, popular, limit = 8, autofocus, class: className, ...rest } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const t = ui[locale].search;
+// Napisy skryptu: po polsku są w skrypcie, w innych językach przychodzą w atrybutach
+const labels = locale === 'pl' ? {} : { 'data-t-popular': t.popular, 'data-t-loading': t.loading, 'data-t-results': t.results, 'data-t-error': t.error };
 ---
-<zl-search id={id} class:list={['search-box', className]} data-limit={limit} {...rest}>
-  <form class="search-box__field" role="search" action={searchPageHref()} method="get">
+<zl-search id={id} class:list={['search-box', className]} data-limit={limit} {...labels} {...rest}>
+  <form class="search-box__field" role="search" action={searchPageHref('', locale)} method="get">
     <Icon name="search" class="search-box__icon" />
-    <label class="sr-only" for={`${id}-input`}>Szukaj w serwisie</label>
+    <label class="sr-only" for={`${id}-input`}>{ui[locale].nav.search}</label>
     <input
       id={`${id}-input`}
       name="q"
@@ -35,23 +41,23 @@ const { id, popular, limit = 8, autofocus, class: className, ...rest } = Astro.p
       aria-expanded="true"
       aria-controls={`${id}-results`}
       aria-autocomplete="list"
-      placeholder="Szukaj: stawki, rezydentura, prawa pacjenta…"
+      placeholder={t.placeholder}
       autocomplete="off"
       spellcheck="false"
       autofocus={autofocus}
     />
     <slot name="end" />
   </form>
-  <p class="mono-label search-box__label" aria-live="polite" data-label>Popularne</p>
-  <ul id={`${id}-results`} class="search-box__results" role="listbox" aria-label="Wyniki" data-results>
+  <p class="mono-label search-box__label" aria-live="polite" data-label>{t.popular}</p>
+  <ul id={`${id}-results`} class="search-box__results" role="listbox" aria-label={t.list} data-results>
     {popular.map((hit) => <SearchResult {...hit} />)}
   </ul>
   <template><SearchResult title="" category="" href="" /></template>
   <div class="search-box__empty" data-empty hidden>
     <SearchEmptyArchive />
     <div>
-      <p class="search-box__empty-title">Brak w kartotece.</p>
-      <p>Przetrząsnęliśmy szuflady i nic. Spróbuj krótszego słowa, np. {['kontrakt', 'NFZ', 'limit'].map((word, i) => <>{i > 0 && (i === 2 ? ' albo ' : ', ')}<a href={searchPageHref(word)}>{word}</a></>)}, albo zajrzyj do <a href="/slownik/">słownika pojęć</a>.</p>
+      <p class="search-box__empty-title">{t.emptyTitle}</p>
+      <p>{t.emptyBefore} {t.emptyWords.map((word, i) => <>{i > 0 && (i === 2 ? t.emptyOr : ', ')}<a href={searchPageHref(word, locale)}>{word}</a></>)}{t.emptyGlossary}<a href={t.glossaryHref}>{t.emptyGlossaryLink}</a>.</p>
     </div>
   </div>
 </zl-search>
@@ -60,6 +66,7 @@ const { id, popular, limit = 8, autofocus, class: className, ...rest } = Astro.p
   import type { SearchHit } from '@/types';
   import { loadSearch, prefetchSearch } from '@/lib/search/engine';
   import { markMatches, words } from '@/lib/search/text';
+  import { pageLocale } from '@/i18n/client';
 
   /** Tekst z podświetlonymi słowami zapytania, jako węzły DOM (bez innerHTML). */
   const highlighted = (text: string, roots: string[]) =>
@@ -76,6 +83,12 @@ const { id, popular, limit = 8, autofocus, class: className, ...rest } = Astro.p
       const empty = find<HTMLElement>('[data-empty]');
       const rowTemplate = find<HTMLTemplateElement>('template');
       const limit = Number(this.dataset.limit) || undefined;
+      const t = {
+        popular: this.dataset.tPopular ?? 'Popularne',
+        loading: this.dataset.tLoading ?? 'Szukam…',
+        results: this.dataset.tResults ?? 'Wyniki',
+        error: this.dataset.tError ?? 'Wyszukiwarka jest chwilowo niedostępna',
+      };
       const popular = [...list.children];
       const options = () => [...list.querySelectorAll<HTMLAnchorElement>('[role="option"]')];
       let active = 0;
@@ -116,16 +129,16 @@ const { id, popular, limit = 8, autofocus, class: className, ...rest } = Astro.p
       const render = async () => {
         const query = input.value.trim();
         // Pierwsza litera albo samo „się” to jeszcze nie zapytanie
-        if (!words(query).length) return show('Popularne', popular);
+        if (!words(query, pageLocale()).length) return show(t.popular, popular);
         // Poprzednie wiersze znikają od razu, żeby Enter w trakcie wczytywania nie otworzył nieaktualnego wyniku
-        show('Szukam…');
+        show(t.loading);
         try {
           const search = await loadSearch();
           if (query !== input.value.trim()) return; // w międzyczasie wpisano coś innego
           const { roots, hits } = search(query, limit);
-          show(`Wyniki (${hits.length})`, hits.map((hit) => row(hit, roots)), hits.length === 0);
+          show(`${t.results} (${hits.length})`, hits.map((hit) => row(hit, roots)), hits.length === 0);
         } catch {
-          show('Wyszukiwarka jest chwilowo niedostępna');
+          show(t.error);
         }
       };
 

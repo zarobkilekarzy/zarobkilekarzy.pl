@@ -9,7 +9,10 @@
  * dostają stan początkowy i animują się po wejściu w kadr. Zrzuty ekranu,
  * crawlery i czytniki nigdy nie widzą pustej strony ani liczb „w połowie”.
  */
-import { formatPL } from '@/lib/format';
+import { formatNumber } from '@/lib/format';
+import { pageLocale } from '@/i18n/client';
+
+const format = (n: number, decimals: number) => formatNumber(n, decimals, pageLocale());
 
 const below = (el: Element) => el.getBoundingClientRect().top > window.innerHeight;
 const decimalsOf = (el: HTMLElement) => parseInt(el.dataset.decimals ?? '0', 10);
@@ -22,7 +25,7 @@ function countUp(el: HTMLElement) {
   const start = performance.now();
   const tick = (now: number) => {
     const p = Math.min((now - start) / duration, 1);
-    el.textContent = formatPL(target * (1 - Math.pow(1 - p, 4)), decimals);
+    el.textContent = format(target * (1 - Math.pow(1 - p, 4)), decimals);
     if (p < 1) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -67,7 +70,7 @@ function arm() {
 
   document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
     if (!below(el)) return;
-    el.textContent = formatPL(0, decimalsOf(el));
+    el.textContent = format(0, decimalsOf(el));
     pending.add(el);
   });
 

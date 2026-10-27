@@ -7,6 +7,8 @@
 import SearchBox from '@/components/site/SearchBox.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import { searchPageHref } from '@/lib/search/engine';
+import { localeOf } from '@/i18n/locales';
+import { ui } from '@/i18n/ui';
 import type { SearchHit } from '@/types';
 
 interface Props {
@@ -15,16 +17,19 @@ interface Props {
 }
 
 const { popular } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const t = ui[locale].search;
 ---
-<dialog class="search" data-search aria-label="Wyszukiwarka">
+<dialog class="search" data-search aria-label={t.dialog}>
   <SearchBox id="search" popular={popular} class="search__box">
-    <button slot="end" type="button" data-search-close aria-label="Zamknij wyszukiwarkę"><kbd>Esc</kbd></button>
+    <button slot="end" type="button" data-search-close aria-label={t.close}><kbd>Esc</kbd></button>
   </SearchBox>
-  <p class="search__footer"><LinkArrow href={searchPageHref()} data-search-all>Wszystkie wyniki</LinkArrow></p>
+  <p class="search__footer"><LinkArrow href={searchPageHref('', locale)} data-search-all>{t.all}</LinkArrow></p>
 </dialog>
 
 <script>
   import { prefetchSearch, searchPageHref } from '@/lib/search/engine';
+  import { pageLocale } from '@/i18n/client';
 
   const dialog = document.querySelector<HTMLDialogElement>('[data-search]');
 
@@ -54,7 +59,7 @@ const { popular } = Astro.props;
     dialog.addEventListener('click', (e) => {
       if (e.target === dialog || (e.target as Element).closest('a')) close();
     });
-    input.addEventListener('input', () => (allResults.href = searchPageHref(input.value.trim())));
+    input.addEventListener('input', () => (allResults.href = searchPageHref(input.value.trim(), pageLocale())));
     // Esc zamyka okno od razu (w polu type="search" przeglądarka najpierw tylko czyściłaby tekst)
     input.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;

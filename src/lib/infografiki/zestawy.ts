@@ -246,8 +246,8 @@ const specialistRows: ComparisonRow[] = [
 ];
 
 const kolejki: InfographicSet = {
-  route: '/dane/kolejki/',
-  page: 'Dane: Pieniądze a kolejka',
+  route: '/dane/budzet-nfz/',
+  page: 'Dane: Budżet NFZ i kolejki',
   filePrefix: 'zarobkilekarzy',
   items: [
     {
@@ -657,7 +657,7 @@ export const infographicSets: Record<string, InfographicSet> = {
   'odpowiedzialnosc-zawodowa-lekarzy': odpowiedzialnosc,
   'english-division': englishDivision,
   'symulator-podazy-lekarzy': symulator,
-  kolejki,
+  'budzet-nfz': kolejki,
   'zadluzenie-szpitali': zadluzenie,
   'pielegniarstwo-w-polsce': pielegniarstwo,
   'odsiew-na-medycynie': odsiew,

@@ -3,36 +3,73 @@
  * Dziesięć szpitali z największą stratą netto (2024) — wiersze z paskiem na wspólnej skali,
  * dopowiedzenie pod wybranymi wierszami (z linkiem do źródła albo do zestawienia w serwisie).
  * Pod listą — przypadek odwrotny (Kalisz): zysk na papierze, zaległości wobec personelu.
+ * Dwujęzyczny: na stronie /en/ napisy po angielsku, dopowiedzenia z src/data/en/zadluzenie-szpitali.ts
+ * (nazwy szpitali zostają polskie); wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
-import { KALISZ, LINKS, LOSSES } from '@/data/zadluzenie';
-import { formatPL, typo } from '@/lib/format';
+import { KALISZ, LINKS, LOSSES as LOSSES_PL } from '@/data/zadluzenie';
+import { formatNumber, typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   title?: string;
 }
 
 const { title } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { LOSSES_EN } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/zadluzenie-szpitali') : {}) as typeof import('@/data/en/zadluzenie-szpitali');
+const en = locale === 'en';
+const LOSSES = en ? LOSSES_EN : LOSSES_PL;
 const max = LOSSES[0].loss;
-const mln = (zl: number) => formatPL(zl / 1e6, 1);
+const mln = (zl: number) => formatNumber(zl / 1e6, 1, locale);
+// polska typografia (twarde spacje po „a”, „i”, „w”…) nie dotyczy tekstów angielskich
+const ty = en ? (s: string) => s : typo;
+
+const T = {
+  pl: {
+    note: 'Strata netto za 2024 r. według wstępnych danych MZ. MZ nie publikuje długu pojedynczych szpitali — wyjątki znamy tylko wtedy, gdy ujawni je sam szpital albo organ, który go prowadzi.',
+    source: 'Menedżer Zdrowia, „Lista wstydu” (dane MZ)',
+    flip: 'Odwrotny przypadek',
+    result: 'wynik za 2024 r.',
+    arrears: 'zaległe pensje personelu',
+    flipNote: 'Sam wynik netto nie pokazuje długu wobec własnych pracowników — tego w rankingu strat nie widać.',
+    more: 'Cała historia niżej',
+    anchor: '#kalisz-jeden-szpital-cala-mechanika',
+  },
+  en: {
+    note: 'Net loss for 2024 according to preliminary Ministry of Health data. The ministry does not publish the debt of individual hospitals — we know of exceptions only when the hospital itself, or the body that runs it, discloses it.',
+    source: 'Menedżer Zdrowia, “Lista wstydu” (“List of shame”, Ministry of Health data)',
+    flip: 'The opposite case',
+    result: 'result for 2024',
+    arrears: 'unpaid staff wages',
+    flipNote: 'The net result alone does not show debt owed to the hospital’s own employees — it is not visible in the ranking of losses.',
+    more: 'The whole story below',
+    anchor: '#kalisz-one-hospital-the-whole-mechanism',
+  },
+}[locale];
 ---
 <Figure
   title={title}
-  note="Strata netto za 2024 r. według wstępnych danych MZ. MZ nie publikuje długu pojedynczych szpitali — wyjątki znamy tylko wtedy, gdy ujawni je sam szpital albo organ, który go prowadzi."
-  source={{ label: 'Menedżer Zdrowia, „Lista wstydu” (dane MZ)', href: LINKS.listaWstydu }}
+  note={T.note}
+  source={{ label: T.source, href: LINKS.listaWstydu }}
 >
   <ol class="loss" data-reveal="grow" style={`--max: ${max}`}>
     {LOSSES.map((r, i) => (
       <li class="loss__row" style={`--v: ${r.loss}`}>
         <span class="loss__rank">{String(i + 1).padStart(2, '0')}</span>
-        <p class="loss__name">{typo(r.name)} <span>{r.city}</span></p>
+        <p class="loss__name">{ty(r.name)} <span>{r.city}</span></p>
+        {en ? (
+          <p class="loss__value">{mln(r.loss)}<small>&nbsp;PLN&nbsp;m</small></p>
+        ) : (
         <p class="loss__value">{mln(r.loss)}<small>&nbsp;mln&nbsp;zł</small></p>
+        )}
         <span class="loss__bar" aria-hidden="true"></span>
         {r.note && (
           <p class="loss__note">
-            {typo(r.note)}
+            {ty(r.note)}
             {r.links && (
               <span class="loss__links">
                 {r.links.map((l) => <a {...linkAttrs(l.href)}>{l.label}</a>)}
@@ -45,14 +82,19 @@ const mln = (zl: number) => formatPL(zl / 1e6, 1);
   </ol>
 
   <div class="loss__flip">
-    <p class="loss__flip-label">Odwrotny przypadek</p>
-    <p class="loss__name">{typo(KALISZ.name)} <span>{KALISZ.city}</span></p>
+    <p class="loss__flip-label">{T.flip}</p>
+    <p class="loss__name">{ty(KALISZ.name)} <span>{KALISZ.city}</span></p>
     <dl class="loss__pair">
-      <div><dt>wynik za 2024 r.</dt><dd class="is-ok">+{mln(KALISZ.profit)}&nbsp;mln&nbsp;zł zysku</dd></div>
-      <div><dt>zaległe pensje personelu</dt><dd class="is-bad">{mln(KALISZ.arrears)}&nbsp;mln&nbsp;zł</dd></div>
+      {en ? (
+        <><div><dt>{T.result}</dt><dd class="is-ok">+PLN&nbsp;{mln(KALISZ.profit)}&nbsp;million in profit</dd></div>
+      <div><dt>{T.arrears}</dt><dd class="is-bad">PLN&nbsp;{mln(KALISZ.arrears)}&nbsp;million</dd></div></>
+      ) : (
+      <><div><dt>wynik za 2024 r.</dt><dd class="is-ok">+{mln(KALISZ.profit)}&nbsp;mln&nbsp;zł zysku</dd></div>
+      <div><dt>zaległe pensje personelu</dt><dd class="is-bad">{mln(KALISZ.arrears)}&nbsp;mln&nbsp;zł</dd></div></>
+      )}
     </dl>
-    <p class="loss__note">{typo('Sam wynik netto nie pokazuje długu wobec własnych pracowników — tego w rankingu strat nie widać.')}</p>
-    <LinkArrow href="#kalisz-jeden-szpital-cala-mechanika" class="loss__more">Cała historia niżej</LinkArrow>
+    <p class="loss__note">{ty(T.flipNote)}</p>
+    <LinkArrow href={T.anchor} class="loss__more">{T.more}</LinkArrow>
   </div>
 </Figure>
 

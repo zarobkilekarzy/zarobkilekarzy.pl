@@ -22,6 +22,8 @@ export interface LiveResult {
 export interface LiveInput {
   keys: (string | null)[];
   tips: Tip[];
+  /** napisy adaptera z buildu (PointLayer.live.text), np. w innym języku; bez nich adapter ma własne, polskie */
+  text?: object;
 }
 
 export type LiveAdapter = (data: unknown, input: LiveInput) => LiveResult;

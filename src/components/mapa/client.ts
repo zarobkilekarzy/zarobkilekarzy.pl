@@ -6,7 +6,7 @@
  * przepuszcza go przez adapter (lib/mapa/live), barwi koła, układa je od nowa i wypełnia panel.
  * Wyszukiwarka (PointLayer.search) szuka po tytule i podpisie dymków i przypina dymek wybranego punktu.
  */
-import { fold, formatPL, plural } from '@/lib/format';
+import { fold, formatEN, formatPL, plural } from '@/lib/format';
 import { liveAdapters, type LiveResult } from '@/lib/mapa/live';
 import { drawOrder, R_MISSING, radius, relax, type RelaxNode } from '@/lib/mapa/relax';
 import { toneOf } from '@/lib/mapa/scale';
@@ -19,7 +19,7 @@ interface LayerData {
   /** kod TERYT województwa → [klasa, podpis] */
   regions?: Record<string, [number, string]>;
   /** tylko warstwy na żywo */
-  live?: { url: string; adapter: LiveAdapterId };
+  live?: { url: string; adapter: LiveAdapterId; text?: object };
   scale?: { edges: number[]; tones?: number[] };
   radius?: Radius;
   /** identyfikatory punktów (po indeksie) */
@@ -151,11 +151,11 @@ class PolandMap extends HTMLElement {
       ]);
       const tips = this.tips?.[layer.id];
       if (!Array.isArray(tips)) throw new Error('brak dymków warstwy');
-      this.applyLive(layer, adapt(data, { keys: layer.keys ?? [], tips }));
+      this.applyLive(layer, adapt(data, { keys: layer.keys ?? [], tips, text: layer.live!.text }));
     } catch (error) {
       console.error('[mapa] dane na żywo:', error);
       const stamp = panel?.querySelector('.pm-stamp');
-      if (stamp) stamp.textContent = 'Nie udało się wczytać danych. Spróbuj odświeżyć stronę za kilka minut.';
+      if (stamp) stamp.textContent = this.dataset.error ?? 'Nie udało się wczytać danych. Spróbuj odświeżyć stronę za kilka minut.';
       this.dataset.live = 'error';
     }
   }
@@ -189,14 +189,16 @@ class PolandMap extends HTMLElement {
     (this.tips ??= {})[layer.id] = out.points.map((p) => p.tip);
 
     const panel = this.querySelector<HTMLElement>(`.pm-panel[data-layer="${layer.id}"]`);
+    // zapis liczb: data-locale stawia PolandMap tylko poza polską wersją
+    const num = this.dataset.locale === 'en' ? formatEN : formatPL;
     if (panel) {
       if (out.summary) {
         panel.querySelector('.pm-big b')!.textContent = out.summary.value;
         panel.querySelector('.pm-big span')!.textContent = out.summary.text;
       }
-      panel.querySelectorAll<HTMLElement>('[data-c]').forEach((n) => { n.textContent = formatPL(out.counts[Number(n.dataset.c)] ?? 0); });
+      panel.querySelectorAll<HTMLElement>('[data-c]').forEach((n) => { n.textContent = num(out.counts[Number(n.dataset.c)] ?? 0); });
       const missing = panel.querySelector('[data-missing]');
-      if (missing) missing.textContent = formatPL(out.missing);
+      if (missing) missing.textContent = num(out.missing);
       const stamp = panel.querySelector('.pm-stamp');
       if (stamp) stamp.textContent = out.stamp;
       this.fillTop(panel, out.top ?? []);
@@ -242,6 +244,9 @@ class PolandMap extends HTMLElement {
     const list = box.querySelector<HTMLUListElement>('[role="listbox"]')!;
     const status = box.querySelector('.pm-search__status');
     const layerId = box.dataset.layer!;
+    // formy „wynik / wyniki” z serwera (data-results, poza polską wersją: jedna | wiele)
+    const forms = box.dataset.results?.split('|');
+    const results = (n: number) => (forms ? (n === 1 ? forms[0] : forms[forms.length - 1]) : plural(n, ['wynik', 'wyniki', 'wyników']));
     let touch = false;
 
     const close = () => {
@@ -313,7 +318,7 @@ class PolandMap extends HTMLElement {
       list.hidden = false;
       input.setAttribute('aria-expanded', 'true');
       this.cursor = -1;
-      if (status) status.textContent = this.found.length ? `${this.found.length} ${plural(this.found.length, ['wynik', 'wyniki', 'wyników'])}` : box.dataset.empty ?? '';
+      if (status) status.textContent = this.found.length ? `${this.found.length} ${results(this.found.length)}` : box.dataset.empty ?? '';
     };
 
     input.addEventListener('input', () => void render());

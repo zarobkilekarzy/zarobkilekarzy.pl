@@ -57,6 +57,8 @@ export interface DocMeta {
   date: Date;
   /** pole Author; `null` — bez autora (dokument anonimowy, np. projekt ustawy) */
   author?: string | null;
+  /** język dokumentu (Lang w katalogu); domyślnie polski */
+  lang?: string;
 }
 
 export interface Pdf {
@@ -73,7 +75,7 @@ export async function createPdf(meta: DocMeta): Promise<Pdf> {
     margin: 0,
     pdfVersion: '1.7',
     tagged: true,
-    lang: 'pl-PL',
+    lang: meta.lang ?? 'pl-PL',
     displayTitle: true,
     info: {
       Title: meta.title,

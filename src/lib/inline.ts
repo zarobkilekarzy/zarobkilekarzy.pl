@@ -8,6 +8,8 @@
 import { typo } from './format';
 import { isExternal } from './links';
 import { noteRef, type Notes } from './notes';
+import { ui } from '../i18n/ui';
+import type { Locale } from '../i18n/locales';
 
 const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ESC[c]);
@@ -15,7 +17,8 @@ const NOTE = /\[\^([\w-]+)\]/g;
 
 export type Resolve = (href: string) => string | undefined;
 
-export function inline(text: string, resolve: Resolve = (href) => href, notes?: Notes): string {
+/** `locale` — język strony: podpis dla czytników ekranu przy linkach zewnętrznych („otwiera się w nowej karcie”). */
+export function inline(text: string, resolve: Resolve = (href) => href, notes?: Notes, locale: Locale = 'pl'): string {
   return esc(typo(text))
     // przed linkami: „[^id]” nie może zostać początkiem „[…](…)”
     .replace(NOTE, (_, id: string) => noteRef(notes, id))
@@ -24,7 +27,7 @@ export function inline(text: string, resolve: Resolve = (href) => href, notes?: 
       const target = resolve(href);
       if (!target || target === '#') return label;
       return isExternal(target)
-        ? `<a href="${target}" target="_blank" rel="noopener">${label}<span class="sr-only"> (otwiera się w nowej karcie)</span></a>`
+        ? `<a href="${target}" target="_blank" rel="noopener">${label}<span class="sr-only"> (${ui[locale].newTab})</span></a>`
         : `<a href="${target}">${label}</a>`;
     });
 }

@@ -6,6 +6,9 @@
  * z roku, którego dotyczy kwota — dla lat budżetowych z roku, w którym się zaczynają, dla przepisów
  * z roku uchwalenia ustawy. Tabele liczą złote same; kwoty „ok. … zł” w treści artykułu są wpisane
  * ręcznie tymi samymi kursami.
+ *
+ * Liczby (NBP_CAD, PAYMENTS, SPECIALISTS_BUDGET, PENALTIES) i daty osi zdarzeń czyta też wersja angielska —
+ * src/data/en/kanada-lekarze-ustawa-specjalna.ts.
  */
 import type { CompareTable } from '@/types';
 import { formatPL } from '@/lib/format';
@@ -66,7 +69,7 @@ export const LINKS = {
 
 /* ---------- Średnia płatność kliniczna brutto na lekarza, 2023–24 (CIHI, NPDB, tab. A.1.1–A.1.3, A.3.1) ---------- */
 
-const PAYMENTS = [
+export const PAYMENTS = [
   { name: 'Kanada', avg: 383_497, ffs: 71.8 },
   { name: 'Alberta', avg: 429_362, ffs: 87.4 },
   /** CIHI: dane Ontario za ten rok są niepełne (m.in. bez wypłat wyrównawczych) — dolna granica */
@@ -84,7 +87,7 @@ export const PAYMENTS_TABLE: CompareTable = {
 
 /* ---------- Ustawa nr 2 (LQ 2025, c. 25): główne elementy według pierwotnego tekstu ---------- */
 
-const SPECIALISTS_BUDGET = { from: 5_316_200_000, to: 4_578_600_000 };
+export const SPECIALISTS_BUDGET = { from: 5_316_200_000, to: 4_578_600_000 };
 
 export const LAW2_TABLE: CompareTable = {
   columns: ['', 'Co przewidywała', 'Przepis'],
@@ -137,7 +140,7 @@ export const LAW2_TABLE: CompareTable = {
 /* ---------- Kara za każdy dzień udziału w działaniach skoordynowanych ---------- */
 /* ustawa nr 114 (LQ 2002, c. 39), art. 20; ustawa nr 2 (LQ 2025, c. 25), art. 201 — każda kwota z 2025 r. = 4 × kwota z 2002 r. */
 
-const PENALTIES = [
+export const PENALTIES = [
   { who: 'Lekarz', y2002: [1_000, 5_000], y2025: [4_000, 20_000] },
   { who: 'Działacz lub pracownik organizacji lekarzy', y2002: [7_000, 35_000], y2025: [28_000, 140_000] },
   { who: 'Organizacja lekarzy (federacja)', y2002: [25_000, 125_000], y2025: [100_000, 500_000] },

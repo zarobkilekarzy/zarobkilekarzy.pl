@@ -1,0 +1,52 @@
+---
+/**
+ * /en/search/?q=… — wersja angielska strony wyników /szukaj/ (src/pages/szukaj/index.astro):
+ * ta sama wyszukiwarka, indeks tylko z tłumaczeń (lib/search/build-en.ts).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import SearchBox from '@/components/site/SearchBox.astro';
+import { getPopularSearchesEn } from '@/lib/search/build-en';
+import type { SeoInput } from '@/lib/seo';
+
+const popular = await getPopularSearchesEn();
+
+// Wyniki wyszukiwania to nie treść — poza indeksem i sitemapą
+const seo: SeoInput = {
+  title: 'Search',
+  description: 'Search the English articles, data pages and glossary.',
+  index: false,
+  translations: [{ locale: 'pl', path: '/szukaj/', indexable: false }],
+};
+---
+<BaseLayout seo={seo}>
+  <Section>
+    <div class="search-page">
+      <Eyebrow>Search</Eyebrow>
+      <Heading as="h1" size="display">Search the site</Heading>
+      <p class="lead search-page__lead">Articles, data pages and glossary terms available in English. More texts are available on the Polish site.</p>
+      <SearchBox id="szukaj" popular={popular} limit={30} autofocus class="search-page__box" />
+    </div>
+  </Section>
+</BaseLayout>
+
+<script>
+  import { searchPageHref } from '@/lib/search/engine';
+
+  // Zapytanie żyje w adresie (?q=): wyniki można podlinkować, a po powrocie przycisk Wstecz je odtwarza
+  const input = document.querySelector<HTMLInputElement>('#szukaj-input');
+  if (input) {
+    input.value = new URLSearchParams(location.search).get('q') ?? '';
+    input.dispatchEvent(new Event('input'));
+    input.addEventListener('input', () => history.replaceState(null, '', searchPageHref(input.value.trim(), 'en')));
+  }
+</script>
+
+<style>
+  .search-page { max-width: 760px; }
+  .search-page__lead { margin-top: 20px; max-width: 60ch; }
+  .search-page__box { margin-top: 40px; border: 1px solid var(--line-2); background: var(--surface); transition: border-color .2s; }
+  .search-page__box:focus-within { border-color: var(--ink); }
+</style>

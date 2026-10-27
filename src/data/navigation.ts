@@ -32,7 +32,6 @@ export const dataSections: IndexRef[] = [
   { ref: 'rozklad-wynagrodzen' },
   { ref: 'wedlug-specjalizacji', badge: '29', label: 'Według specjalizacji' },
   { ref: 'zarobki-ujawnione-listy' },
-  { ref: 'kolejki' },
   { ref: 'budzet-nfz' },
   { ref: 'zadluzenie-szpitali' },
   { ref: 'personel-medyczny' },

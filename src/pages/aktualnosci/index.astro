@@ -11,15 +11,20 @@ import { Image } from 'astro:assets';
 import Icon from '@/components/ui/Icon.astro';
 import { formatDate, isoDate, typo } from '@/lib/format';
 import { getNews, newsHref, newsIllustration, newsImage, newsPage, newsThumbWhole } from '@/lib/news';
+import { getPublishedNewsTranslations, newsPageEn } from '@/i18n/news';
 import type { Crumb, SeoInput } from '@/lib/seo';
 
 const news = await getNews();
+// /en/news/ jako odpowiednik dopiero, gdy ma jakiś wpis — inaczej przełącznik prowadzi do /en/
+const newsEn = await getPublishedNewsTranslations();
+const hasEn = newsEn.length > 0;
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: newsPage.title }];
 const seo: SeoInput = {
   title: newsPage.title,
   description: newsPage.description,
   breadcrumbs: crumbs,
   page: { type: 'CollectionPage', items: news.map((n) => ({ name: n.data.title, url: newsHref(n) })) },
+  translations: hasEn ? [{ locale: 'en', path: newsPageEn.href, indexable: newsEn.some((n) => !n.entry.data.noindex) }] : undefined,
 };
 ---
 <BaseLayout seo={seo}>

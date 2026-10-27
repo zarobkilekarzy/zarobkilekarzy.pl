@@ -14,6 +14,8 @@
  * liczb nie potwierdza akt prawny ani rocznik GUS, do których dotarliśmy (załączniki do rozporządzenia
  * z 2003 r., Dz.U. 2003 nr 99 poz. 917, nie są dostępne w ELI). Od 2015/16 to suma dwóch kolumn
  * rozporządzenia: studia stacjonarne po polsku + odrębna pula dla cudzoziemców na tych studiach.
+ *
+ * Liczby (dayRows, AGE, BEFORE, BOTTOM, RECOVERY) czyta też wersja angielska — src/data/en/ciecie-limitow-na-medycyne.ts.
  */
 import type { BarRow } from '@/types';
 import { formatPL } from '@/lib/format';
@@ -90,7 +92,7 @@ export const RECOVERY = {
  * wykonujący zawód, mężczyźni + kobiety (research.db: lekarze_wykonujacy, nil-finn-2026-01).
  * „Start studiów” to przybliżenie: rok urodzenia (2026 − wiek, rocznikowo) + 19 lat.
  */
-const AGE = [
+export const AGE = [
   { group: '26–30', value: 20346, start: '2015–19' },
   { group: '31–35', value: 19834, start: '2010–14' },
   { group: '36–40', value: 17008, start: '2005–09' },

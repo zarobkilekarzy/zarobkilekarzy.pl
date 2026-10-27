@@ -3,11 +3,15 @@
  * Przykład pseudonimizacji: numer PWZ + klucz tajny → HMAC-SHA-256 → identyfikator.
  * Custom element <zl-pseudonym> przelicza w przeglądarce (Web Crypto) przy każdej zmianie numeru
  * lub klucza; pierwszy widok (wartości z buildu) działa też bez JS. Nic nie jest wysyłane.
+ * Dwujęzyczny: na /en/demand/ teksty z src/data/en/postulat.ts i T.en; napisy skryptu na stronach EN
+ * w atrybutach data-* (na polskich ich nie ma — skrypt bierze wtedy polskie napisy wpisane w kod).
  */
 import type { HTMLAttributes } from 'astro/types';
 import Icon from '@/components/ui/Icon.astro';
 import { diffCount, groups } from '@/components/postulat/pseudonym';
-import { pseudonymDemo as demo } from '@/data/postulat';
+import { pseudonymDemo as demoPl } from '@/data/postulat';
+import { pseudonymDemo as demoEn } from '@/data/en/postulat';
+import { localeOf } from '@/i18n/locales';
 import { typo } from '@/lib/format';
 
 interface Props extends HTMLAttributes<'div'> {
@@ -18,10 +22,51 @@ interface Props extends HTMLAttributes<'div'> {
 }
 
 const { pseudonym, nearPwz, nearId, class: className, ...rest } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const demo = locale === 'en' ? demoEn : demoPl;
+// `hint*` (napisy dla skryptu) tylko po angielsku — polskie są w kodzie skryptu, a wyjście polskie bez zmian
+const T = {
+  pl: {
+    label: 'Przykład w Twojej przeglądarce',
+    pwz: 'Numer PWZ ',
+    fictional: '(fikcyjny)',
+    key: 'Klucz tajny ',
+    demoKey: '(pokazowy)',
+    hint: '7 cyfr',
+    newKey: 'Nowy klucz',
+    keyHint: 'W prawdziwym systemie zna go tylko Centrum e-Zdrowia',
+    fn: '(klucz, numer)',
+    back: 'w drugą stronę: nie da się',
+    result: 'Identyfikator',
+    nearBefore: 'Ten sam klucz, numer ',
+    nearAfter: ' — inna tylko ostatnia cyfra:',
+    diff: ' z 64 znaków jest innych',
+    hintMissing: undefined,
+    hintHttps: undefined,
+  },
+  en: {
+    label: 'Example in your browser',
+    pwz: 'PWZ number ',
+    fictional: '(fictitious)',
+    key: 'Secret key ',
+    demoKey: '(for demonstration)',
+    hint: '7 digits',
+    newKey: 'New key',
+    keyHint: 'In the real system only the e-Health Centre (Centrum e-Zdrowia) knows it',
+    fn: '(key, number)',
+    back: 'the other way: impossible',
+    result: 'Identifier',
+    nearBefore: 'Same key, number ',
+    nearAfter: ' — only the last digit differs:',
+    diff: ' of 64 characters are different',
+    hintMissing: '7 digits — {n} missing',
+    hintHttps: 'Recalculation requires an HTTPS connection',
+  },
+}[locale];
 ---
 <zl-pseudonym class:list={['demo', className]} {...rest}>
   <header class="demo__head">
-    <p class="demo__label">Przykład w Twojej przeglądarce</p>
+    <p class="demo__label">{T.label}</p>
     <h3 class="demo__title">{typo(demo.title)}</h3>
     <p class="demo__intro">{typo(demo.intro)}</p>
   </header>
@@ -29,33 +74,31 @@ const { pseudonym, nearPwz, nearId, class: className, ...rest } = Astro.props;
   <div class="demo__flow">
     <div class="demo__inputs">
       <label class="field">
-        <span class="field__label">Numer PWZ <em>(fikcyjny)</em></span>
+        <span class="field__label">{T.pwz}<em>{T.fictional}</em></span>
         <input name="pwz" value={demo.pwz} inputmode="numeric" maxlength="7" autocomplete="off" spellcheck="false" aria-describedby="pwz-hint" />
-        <span class="field__hint" id="pwz-hint" data-hint>7 cyfr</span>
+        <span class="field__hint" id="pwz-hint" data-hint data-ok={locale === 'en' ? T.hint : undefined} data-missing={T.hintMissing} data-https={T.hintHttps}>{T.hint}</span>
       </label>
       <label class="field">
-        <span class="field__label">Klucz tajny <em>(pokazowy)</em></span>
+        <span class="field__label">{T.key}<em>{T.demoKey}</em></span>
         <span class="field__row">
           <input name="key" value={demo.key} autocomplete="off" spellcheck="false" />
-          <button type="button" class="field__btn" data-new-key>Nowy klucz</button>
+          <button type="button" class="field__btn" data-new-key>{T.newKey}</button>
         </span>
-        <span class="field__hint">W prawdziwym systemie zna go tylko Centrum e-Zdrowia</span>
+        <span class="field__hint">{T.keyHint}</span>
       </label>
     </div>
 
     <div class="demo__fn" aria-hidden="true">
-      <span class="demo__arrow demo__arrow--forward"><code>{demo.algorithm}(klucz, numer)</code></span>
-      <span class="demo__arrow demo__arrow--back"><Icon name="close" size={14} />w drugą stronę: nie da się</span>
+      <span class="demo__arrow demo__arrow--forward"><code>{demo.algorithm}{T.fn}</code></span>
+      <span class="demo__arrow demo__arrow--back"><Icon name="close" size={14} />{T.back}</span>
     </div>
 
     <div class="demo__result">
-      <p class="field__label">Identyfikator</p>
+      <p class="field__label">{T.result}</p>
       <output class="hex" data-out aria-live="polite">{groups(pseudonym).map((g) => <span>{g}</span>)}</output>
-      <p class="demo__near-label">
-        Ten sam klucz, numer <strong data-near-pwz>{nearPwz}</strong> — inna tylko ostatnia cyfra:
-      </p>
+      <p class="demo__near-label">{T.nearBefore}<strong data-near-pwz>{nearPwz}</strong>{T.nearAfter}</p>
       <output class="hex hex--near" data-near>{groups(nearId).map((g) => <span>{g}</span>)}</output>
-      <p class="demo__diff"><strong data-diff>{diffCount(pseudonym, nearId)}</strong> z 64 znaków jest innych</p>
+      <p class="demo__diff"><strong data-diff>{diffCount(pseudonym, nearId)}</strong>{T.diff}</p>
     </div>
   </div>
 
@@ -99,13 +142,16 @@ const { pseudonym, nearPwz, nearId, class: className, ...rest } = Astro.props;
       const near = this.querySelector('[data-near]');
       const nearPwz = this.querySelector('[data-near-pwz]');
       const diff = this.querySelector('[data-diff]');
-      const hint = this.querySelector('[data-hint]');
+      const hint = this.querySelector<HTMLElement>('[data-hint]');
       if (!pwz || !key || !out || !near || !nearPwz || !diff || !hint) return;
+
+      // napisy: na stronach EN z atrybutów data-* (serwer), na polskich — wpisane tutaj
+      const { ok = '7 cyfr', missing = '7 cyfr — brakuje {n}', https = 'Przeliczanie wymaga połączenia HTTPS' } = hint.dataset;
 
       // Web Crypto działa tylko w bezpiecznym kontekście (HTTPS) — wtedy zostaje przykład z buildu
       if (!globalThis.crypto?.subtle) {
         pwz.disabled = key.disabled = true;
-        hint.textContent = 'Przeliczanie wymaga połączenia HTTPS';
+        hint.textContent = https;
         return;
       }
 
@@ -116,7 +162,7 @@ const { pseudonym, nearPwz, nearId, class: className, ...rest } = Astro.props;
 
         const ready = isPwz(number) && key.value.length > 0;
         this.toggleAttribute('data-incomplete', !ready);
-        hint.textContent = isPwz(number) ? '7 cyfr' : `7 cyfr — brakuje ${7 - number.length}`;
+        hint.textContent = isPwz(number) ? ok : missing.replace('{n}', String(7 - number.length));
         if (!ready) return;
 
         const other = neighbour(number);

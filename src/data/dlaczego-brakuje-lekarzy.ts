@@ -12,6 +12,8 @@
 export const LINKS = {
   /** Dz.U. 2025 poz. 1086 — limit przyjęć 2025/26 w pierwotnym brzmieniu (10 504, w tym 1 888 w języku obcym) */
   limit2025: 'https://api.sejm.gov.pl/eli/acts/DU/2025/1086/text.pdf',
+  /** Dz.U. 2026 poz. 1167 — limit przyjęć 2026/27 (10 730, w tym 1 838 w języku obcym; suma własna jak w english-division.ts) */
+  limit2026: 'https://api.sejm.gov.pl/eli/acts/DU/2026/1167/text.pdf',
   /** CMKP — ostateczne wyniki sesji jesiennej 2025 */
   cmkp2025: 'https://www.cmkp.edu.pl/aktualnosci/opublikowano-ostateczne-wyniki-rekrutacji-na-specjalizacje-w-sesji-jesiennej-2025',
   /** Barometr Fundacji Watch Health Care (IX–X 2025) za: Rynek Zdrowia / PAP */

@@ -1,0 +1,232 @@
+---
+title: "Pharmacies and prescriptions: public and private money"
+seoTitle: "Drug reimbursement and pharmacies"
+summary: "In 2025 the NFZ spent PLN 30 billion on reimbursement. Just under PLN 16 billion of this went through pharmacies; the rest went mainly to drug programmes and chemotherapy. Online prescription services run mostly on patients’ money, while public money was fraudulently obtained through prescriptions for compounded medicines."
+description: "Drug reimbursement in Poland in 2025: PLN 30 billion, PLN 15.8 billion of it via pharmacies. What patients pay, online prescription services and NFZ fraud."
+keyPoints:
+  - "The NFZ’s overall reimbursement budget was PLN 25.5 billion in 2024 and PLN 30.0 billion in 2025. Of this, PLN 13.6 billion and PLN 15.8 billion went through community pharmacies. The rest is mainly drug programmes and chemotherapy, which the patient receives in a hospital or outpatient clinic."
+  - "According to Statistics Poland (GUS), prescription medicines sold in pharmacies in 2025 were worth PLN 33.4 billion. The NFZ covered PLN 15.3 billion of this (45.9%), and patients paid PLN 18.1 billion."
+  - "Online prescription services run mainly on private money. In 2023 the medicines bought on their prescriptions were worth PLN 275 million, and reimbursed medicines accounted for 1.33% of that amount. The problem is patient safety: by August 2026 the Patient Ombudsman had issued 72 decisions against such services."
+  - "NFZ money was fraudulently obtained through prescriptions for compounded medicines. In a case revealed in July 2025 the Fund’s losses amount to at least PLN 82 million, and 21 people have been charged."
+translation:
+  of: apteka-pieniadz-publiczny
+  files: [src/data/apteka-pieniadz-publiczny.ts, src/data/budzet-nfz.ts]
+  hash: "6836bc238af2"
+  date: 2026-10-27
+noindex: true
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import TwoLists from '@/components/blocks/TwoLists.astro';
+import Money from '@/components/ui/Money.astro';
+import {
+  CONTROLS_Q2_2024, CONTROL_ERROR_SHARE, CONTROL_UNDUE_SHARE, GUS_2025, GUS_VS_DEF_2025, LINKS, NFZ_COSTS_2025,
+  OINTMENT_GROWTH, PLAN_SHARE_2025, RECEPTOMATY, RECEPTOMATY_GROWTH, RECEPTOMATY_REFUNDED_2023, RECEPTURA, REFUND_TABLE,
+  RPP, UNIT, bn, dateEN, fmt, mn, refundChannel, refundGrowth, refundPlan, refundRows, refundTotal,
+} from '@/data/en/apteka-pieniadz-publiczny';
+import { formatEN } from '@/lib/format';
+
+{/* Tłumaczenie src/content/articles/apteka-pieniadz-publiczny.mdx; wykres i tabelę liczy src/data/en/apteka-pieniadz-publiczny.ts. Kwoty w tekście: <Money value={bn(x)} scale="billion" /> — bn()/mn() zaokrąglają jak fmt w wersji polskiej. */}
+
+export const rows2025 = refundRows('2025');
+
+A prescription sets two streams of money in motion at once. Part of the price of a medicine is paid by the National Health Fund (NFZ) as reimbursement, and the rest by the patient at the pharmacy till. In this analysis we separate these streams and give their size according to the NFZ and Statistics Poland (GUS). We also describe two phenomena that are often lumped together. Online prescription services (*receptomaty*), which issue prescriptions on the basis of a questionnaire, earn mainly from patients’ money. Public money, by contrast, was fraudulently obtained through prescriptions for compounded medicines, prepared in the pharmacy.
+
+## How much reimbursement amounts to
+
+Every month the NFZ publishes an announcement on the execution of the “overall reimbursement budget”. These are the Fund’s costs of reimbursed medicines, foods for special medical purposes and medical devices. In 2024 they amounted to <Money value={bn(refundTotal('2024'), 2)} scale="billion" decimals={2} />, i.e. {formatEN(refundTotal('2024') / refundPlan('2024') * 100, 2)}% of the plan.[^def2024] In 2025 it was <Money value={bn(refundTotal('2025'), 2)} scale="billion" decimals={2} />, {formatEN(refundGrowth, 1)}% more than a year earlier (our calculation).[^def2025] From January to August 2026 the Fund spent <Money value={bn(refundTotal('2026'), 2)} scale="billion" decimals={2} /> on reimbursement.[^def2026]
+
+The planned reimbursement budget for 2025 (PLN {fmt(refundPlan('2025'))} billion) was about {formatEN(PLAN_SHARE_2025)}% of total costs in the final NFZ financial plan (PLN {fmt(NFZ_COSTS_2025)} billion). This is our calculation.[^def2025] We describe the NFZ plan in our overview of the [NFZ budget](/en/data/nfz-budget/).
+
+Not all of this amount goes through pharmacies. The largest item is medicines in drug programmes, to which chemotherapy and emergency access to drug technologies (RDTL) are added. The patient usually receives these in a hospital or an outpatient clinic, i.e. from a healthcare provider. Community pharmacies handle reimbursement of prescription medicines, free medicines for people aged 65 and over and children under 18 (since September 2023; before that, free medicines were available to people aged 75 and over)[^bezplatne] and free medicines for pregnant women. In 2025 this came to <Money value={bn(refundChannel('2025', 'apteka'))} scale="billion" /> in total, and in 2024 <Money value={bn(refundChannel('2024', 'apteka'))} scale="billion" />.[^def2024][^def2025]
+
+<Figure
+  title={`In 2025, PLN ${fmt(refundChannel('2025', 'apteka'))} billion of the PLN ${fmt(refundTotal('2025'))} billion of reimbursement went through pharmacies. The largest item is drug programmes.`}
+  note="Items of the NFZ “DEF” announcement, costs for January–December 2025. The highlighted items are delivered through community pharmacies; the announcement does not divide costs by channel, the division follows from the type of item. We show the three smallest pharmacy items together."
+  source={{ label: 'NFZ, DEF announcement for 2025', href: LINKS.def2025 }}
+>
+  <BarChart
+    rows={rows2025}
+    max={14}
+    unit={UNIT}
+    caption={`NFZ reimbursement costs in 2025, ${UNIT}: ${rows2025.map((r) => `${r.label} — ${r.display}`).join('; ')}.`}
+  />
+</Figure>
+
+The table shows all items of the announcement in three periods. The items add up to the overall reimbursement budget to the grosz. The reserve (item 5) was zero in all three periods, so we do not show it.
+
+<Figure
+  title="The NFZ’s overall reimbursement budget: all items"
+  note="Cumulative costs, PLN billion. 2024 and 2025: full year; 2026: January–August."
+  source={{ label: 'NFZ, DEF announcements for 2024, 2025 and Jan–Aug 2026', href: LINKS.def2026 }}
+>
+  <Comparison table={REFUND_TABLE} />
+</Figure>
+
+The draft act on prescriptions, which the Ministry of Health sent for pre-consultation on 30 April 2026, provides that the patient will be able to collect some medicines from drug programmes at a pharmacy, on a prescription marked “Rp PL”.[^dzp] If these provisions came into force, the division between pharmacy and hospital would change.
+
+## What is seen at the pharmacy till
+
+GUS measures something else: the value of prescription medicines sold in pharmacies and pharmacy outlets, based on data from the Medical Information System (SIM). In 2025 this was <Money value={bn(GUS_2025.sales)} scale="billion" />, {fmt(GUS_2025.salesGrowth)}% more than a year earlier. Pharmacies filled {fmt(GUS_2025.prescriptions)} million prescriptions, of which {fmt(GUS_2025.eShare)}% were e-prescriptions.[^gus]
+
+<StatRow
+  label="Prescription medicines in pharmacies, 2025"
+  items={[
+    { value: GUS_2025.sales, decimals: 1, unit: 'PLN bn', desc: 'value of sales of prescription medicines, reimbursed and full-price', accuracy: 'exact', source: 'GUS, 25.06.2026', href: LINKS.gus },
+    { value: GUS_2025.refund, decimals: 1, unit: 'PLN bn', desc: `covered by the NFZ — ${fmt(GUS_2025.refundShare)}% of the value of sales (in 2022, ${fmt(GUS_2025.refundShare2022)}%)`, accuracy: 'exact', source: 'GUS, 25.06.2026', href: LINKS.gus },
+    { value: GUS_2025.patients, decimals: 1, unit: 'PLN bn', desc: 'paid by patients: co-payments for reimbursed medicines and full prices of non-reimbursed medicines', accuracy: 'exact', source: 'GUS, 25.06.2026', href: LINKS.gus },
+  ]}
+/>
+
+The amount paid by patients includes both co-payments for reimbursed medicines and the full prices of medicines that the NFZ does not reimburse but that require a prescription. GUS does not separate these two parts in its release.[^gus]
+
+Reimbursement in the GUS data (PLN {fmt(GUS_2025.refund)} billion) is about PLN {fmt(GUS_VS_DEF_2025, 2)} billion lower than the sum of the two pharmacy items of the NFZ announcement: reimbursement of prescription medicines and free medicines for people aged 65 and over and children.[^gus][^def2025] The sources do not explain this difference, so we do not combine the two compilations.
+
+The frequently cited figure of “almost PLN 60 billion” is the value of the entire pharmacy market in 2025 according to the analytics firm PEX. It also includes medicines and products sold without a prescription, counted at retail prices.[^pex] This is a different measure from the GUS data, so we do not add these figures together or subtract them from each other.
+
+## Online prescription services: mainly private money
+
+An online prescription service (*receptomat*) is a service in which the patient fills in a questionnaire and a doctor issues a prescription on that basis, without an examination and without a real-time conversation. According to the report of a team appointed by the minister of health on 19 September 2023, the number of such companies grew from {RECEPTOMATY.firms[2019]} in 2019 to {RECEPTOMATY.firms[2023]} in 2023. In 2023 they issued {formatEN(RECEPTOMATY.prescriptions[2023])} prescriptions for {formatEN(RECEPTOMATY.people[2023])} people.[^mz-raport]
+
+<StatRow
+  label="Online prescription services in 2019 and 2023"
+  items={[
+    { value: RECEPTOMATY.value[2023] / 1e6, decimals: 1, unit: 'PLN million', desc: `value of medicines bought on prescriptions from online services in 2023; in 2019, PLN ${fmt(RECEPTOMATY.value[2019] / 1e6)} million`, accuracy: 'exact', source: 'Ministry of Health, team report, 2024', href: LINKS.mzRaport },
+    { value: RECEPTOMATY.refundedShare[2023], decimals: 2, unit: '%', desc: `of this value was accounted for by reimbursed medicines; in 2019, ${formatEN(RECEPTOMATY.refundedShare[2019], 2)}%`, accuracy: 'exact', source: 'Ministry of Health, team report, 2024', href: LINKS.mzRaport },
+    { value: RECEPTOMATY.prescriptions[2023] / 1e6, decimals: 2, unit: 'million prescriptions', desc: `in 2023, for ${formatEN(RECEPTOMATY.people[2023])} people; ${RECEPTOMATY.firms[2023]} companies`, accuracy: 'exact', source: 'Ministry of Health, team report, 2024', href: LINKS.mzRaport },
+  ]}
+/>
+
+The value of medicines on these prescriptions grew {formatEN(RECEPTOMATY_GROWTH, 1)} times between 2019 and 2023. At the same time the share of reimbursed medicines fell from {formatEN(RECEPTOMATY.refundedShare[2019], 2)}% to {formatEN(RECEPTOMATY.refundedShare[2023], 2)}%. The authors of the report conclude that users of these services are looking mainly for medicines that the NFZ does not reimburse.[^mz-raport] Reimbursed medicines from these prescriptions were worth about <Money value={mn(RECEPTOMATY_REFUNDED_2023)} scale="million" /> in 2023. This is our calculation and an upper bound on the cost to the NFZ, because patients paid part of this amount. It is a fraction of a percent of the reimbursement paid out through pharmacies.
+
+The problem with online prescription services therefore concerns above all patient safety, not the NFZ budget. The team’s report points to prescriptions for psychotropic medicines and opioids issued without a proper examination of the patient.[^mz-raport]
+
+### What has already been done
+
+- **Since 2023** the Patient Ombudsman (Rzecznik Praw Pacjenta) has conducted proceedings against online prescription services as practices infringing the collective rights of patients.[^rpp] In the same year the minister of health appointed a team on the prescribing and dispensing of prescriptions, which described the phenomenon in a 2024 report.[^mz-raport]
+- **Since 7 November 2024** fentanyl, morphine, oxycodone and non-fibre cannabis may not be prescribed after a teleconsultation alone. The doctor must examine the patient in person. The exception is continuation of treatment with a primary care doctor.[^prawo-zakaz] The ban covers these specified preparations, not all psychotropic medicines.
+- **On 20 February 2025** a reporter of the TVN programme “Uwaga!” showed that a prescription for fentanyl issued in the name of the then minister of health could be obtained within a few minutes, without an examination.[^fentanyl] This was more than three months after the ban came into force.
+- **Administrative courts** uphold the Ombudsman’s position: an online questionnaire, even supplemented by an exchange of text messages, is not an examination of the patient.[^wsa]
+
+<StatRow
+  label={`The Patient Ombudsman and online prescription services, as of ${dateEN(RPP.asOf)}`}
+  items={[
+    { value: RPP.decisions, unit: 'decisions', desc: 'ordering the cessation of practices infringing the collective rights of patients', accuracy: 'exact', source: 'Patient Ombudsman, 27.08.2026', href: LINKS.rpp },
+    { prefix: '~', value: RPP.fines, decimals: 1, unit: 'PLN million', desc: 'in fines for failure to comply with these decisions', accuracy: 'est', source: 'Patient Ombudsman, 27.08.2026', href: LINKS.rpp },
+    { value: RPP.complaints, unit: 'complaints', desc: `to the administrative court; ${RPP.judgments} judgments have been issued and none overturned the Ombudsman’s decision`, accuracy: 'exact', source: 'Patient Ombudsman, 27.08.2026', href: LINKS.rpp },
+  ]}
+/>
+
+The Ombudsman has also sent about {RPP.professional} notifications to the disciplinary prosecutors of the medical chambers (rzecznicy odpowiedzialności zawodowej) and {RPP.prosecutor} cases to the public prosecutor’s office.[^rpp]
+
+### What is still only planned
+
+- **Real-time contact.** In a reply to a parliamentary question of 29 July 2026, the Ministry of Health announced a standard for teleconsultations: if a teleconsultation ends with a prescription, it is to take place over an audio or audio-video connection. A form or questionnaire will not be able to be the sole basis for a prescription.[^mz-interp] The date of entry into force is not known.
+- **The act on prescriptions.** The draft, in pre-consultation since 30 April 2026, provides, among other things, for a reimbursement limit of up to 60 days of treatment per dispensing of a medicine. The Medical Information System would add up the medicines dispensed to a patient regardless of how many doctors issued the prescriptions, and keep a register of warnings about abuse.[^dzp]
+- **The amendment to the act on patients’ rights** (known as “lex szarlatan”) was meant to strengthen the Ombudsman’s instruments. The president did not sign it and on 20 August 2026 announced that it would be referred to the Constitutional Tribunal for preventive review.[^szarlatan] The provisions are not in force, and the Ombudsman operates under the existing rules.[^rpp]
+
+## Compounded medicines: here it was about public money
+
+A compounded medicine, for example an ointment, is prepared by a pharmacist in the pharmacy according to a prescription, and the NFZ may reimburse it. In July 2025 the Fund, the Central Bureau of Investigation of the Police (CBŚP) and the Regional Prosecutor’s Office in Zielona Góra announced that they had broken up groups which, according to investigators, fraudulently obtained reimbursement in this way. In 2022–2024 this was allegedly almost {formatEN(RECEPTURA.prescriptions)},000 prescriptions with false information about the need to prepare a compounded medicine. According to the Fund, the NFZ’s losses amount to at least <Money value={RECEPTURA.loss * 1e6} scale="million" decimals={0} />. {RECEPTURA.charged} people have been charged, among them doctors, owners and employees of pharmacies and entrepreneurs.[^nfz-receptura] These are charges, not judgments.
+
+The case was detected by an analysis of reimbursement data. In one primary care clinic, reimbursement of an ointment for pressure sores rose from <Money value={RECEPTURA.ointment2019} /> in 2019 to <Money value={mn(RECEPTURA.ointment2022 / 1e6)} scale="million" /> in 2022, i.e. about {formatEN(OINTMENT_GROWTH)}-fold. In February 2023 the clinic issued more than {RECEPTURA.febPrescriptions} prescriptions for this ointment, which accounted for {RECEPTURA.febShare}% of such prescriptions in the whole country.[^nfz-receptura] The NFZ is thus able to compare the prescriptions of one facility with data from the whole country. We have not found regularly published compilations of this kind; we know the results of such analyses from announcements made after arrests.
+
+Separately, the mgr.farm website described a notification filed by the NFZ on 27 March 2024. It concerned the fraudulent obtaining of more than <Money value={60000000} scale="million" decimals={0} /> of reimbursement for compounded medicines in 2022–2023. One pharmacy accounted for <Money value={6190000} scale="million" decimals={2} />. Prescriptions for social care homes from all over Poland were allegedly issued by one doctor, and the pharmacy allegedly reported production beyond its staffing capacity. According to this description, the mechanism also exploited a difference in VAT: raw materials were bought with 23% tax, and the finished medicine was sold with 8% tax. The notification went to the regional prosecutor’s office, which joined it to an investigation already under way.[^mgrfarm] The case is ongoing. The sources do not show whether it is part of the July 2025 case, so we do not add up the amounts of the two cases.
+
+The draft act on prescriptions provides that preparing compounded medicines will no longer be an obligation of every pharmacy and may be concentrated in specialised pharmacies.[^dzp]
+
+## Inspections of pharmacies
+
+The NFZ inspects pharmacies and prescribers. In the second quarter of 2024 it carried out {CONTROLS_Q2_2024.total} inspections and verification activities. Of these, {CONTROLS_Q2_2024.pharmacies} concerned the dispensing of prescriptions in pharmacies, {CONTROLS_Q2_2024.prescribing} the issuing of prescriptions for reimbursed medicines, and {CONTROLS_Q2_2024.contracts} the performance of contracts. In pharmacies, {formatEN(CONTROLS_Q2_2024.checked)} dispensed prescriptions were checked. Errors were found in {formatEN(CONTROLS_Q2_2024.withErrors)} of them ({formatEN(CONTROL_ERROR_SHARE)}%), and {formatEN(CONTROLS_Q2_2024.undueRefund)} ({formatEN(CONTROL_UNDUE_SHARE)}%) were challenged as undue reimbursement. For compounded medicines, inspectors pointed to inflated costs of raw materials. Penalties imposed on pharmacies amounted to <Money value={mn(CONTROLS_Q2_2024.fines / 1e6, 2)} scale="million" decimals={2} />.[^kontrole] In the first quarter of 2023, in 64 inspections of pharmacies, errors concerned 24% of the prescriptions checked.[^rz-2023]
+
+<Aside title="To be fair: what this percentage does not say">
+
+An inspection is not a random sample. The NFZ itself chooses the pharmacies and prescriptions to check, often where it expects problems, so the error rate among those inspected does not measure the scale of irregularities in the whole system. An error may also be a formal shortcoming rather than fraud. The same caveat applies to inspections of hospitals, which we describe in our text [How the NFZ pays hospitals](/en/mechanisms/nfz-payment-system/).
+
+</Aside>
+
+<Aside title="Reverse distribution chain">
+
+The reverse distribution chain is the export abroad of medicines intended for Polish patients: instead of reaching the patient, the medicine goes back from the pharmacy to the wholesaler and is sold where prices are higher. The result is shortages of medicines in pharmacies. The Chief Pharmaceutical Inspectorate (GIF) wrote that the scale of the phenomenon is difficult to determine reliably.[^gif]
+
+</Aside>
+
+## A prescription for a medicine taken regularly
+
+A chronically ill patient does not have to see a doctor for every prescription. The Act on the professions of doctor and dentist allows a prescription necessary to continue treatment to be issued without an examination, if this is justified by the state of health described in the medical records. A request for such a prescription may be made in person, by telephone, electronically or in writing.[^prawo-kontynuacja] Writing prescriptions and paperwork do, however, take up the doctor’s time. According to a 2021 NIK audit, records and administrative tasks take up almost one third of the time of a medical consultation.[^nik]
+
+The draft act on prescriptions is intended to change this process. A doctor could issue an e-prescription for treatment of up to 360 days, and a pharmacist, nurse or midwife a continued prescription for treatment of up to 120 days, on the basis of data from the Internet Patient Account (IKP). The doctor could block continuation of therapy by a pharmacist. The patient would collect successive parts of the prescription after three quarters of the period of use of the medicine had passed.[^dzp] This is still a draft. Today the NFZ funds in pharmacies a pilot of pharmacist services in reproductive health, extended until 30 June 2028.[^pilotaz]
+
+## What we do not claim
+
+<TwoLists
+  yes={{
+    title: 'The data show',
+    items: [
+      'How much the NFZ spends on reimbursement and what part goes through pharmacies',
+      'How much patients paid for prescription medicines',
+      'That online prescription services mainly sell non-reimbursed medicines',
+      'That for compounded medicines 21 people have been charged in a case in which the NFZ estimates its losses at no less than PLN 82 million',
+    ],
+  }}
+  no={{
+    title: 'The data do not show',
+    items: [
+      'That pharmacies as a whole abuse reimbursement',
+      'That online prescription services drain the NFZ budget',
+      'Whether those charged are guilty — the cases are ongoing',
+      'What share of all prescriptions is dispensed with errors',
+    ],
+  }}
+/>
+
+## What could be public
+
+The NFZ publishes totals: how much it spent on reimbursement and on which items. A prescription, however, carries more information — who issued it, where it was dispensed and how much the Fund paid. The case of compounded medicines shows that an anomaly can be read from such data when someone puts them side by side. We propose that the total payments from public money to each person be public under a permanent identifier, without names. We describe the details in [our proposal](/en/demand/). What we know today about doctors’ pay and what we do not know is shown in the overview [Pay distribution](/en/data/doctor-pay-distribution/), and how the NFZ pays clinics in the analysis [Money per patient in primary care](/en/analysis/primary-care-capitation/).
+
+[^def2024]: NFZ, [“<span lang="pl">Komunikat DEF</span>”](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/komunikat-def,8808.html) (“DEF announcement”, in Polish), 25.07.2025 — execution of the overall reimbursement budget for January–December 2024, PLN thousand: total 25,538,247.60 (plan 26,213,488, 97.42%).
+
+[^def2025]: NFZ, [“<span lang="pl">Komunikat DEF</span>”](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/komunkat-def,8972.html) (“DEF announcement”, in Polish), 01.07.2026 — execution of the overall reimbursement budget for January–December 2025, PLN thousand: total 30,038,673.16 (plan 31,013,210, 96.86%).
+
+[^def2026]: NFZ, [“<span lang="pl">Komunikat DEF</span>”](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/komunikat-def,9024.html) (“DEF announcement”, in Polish), 02.10.2026 — execution for January–August 2026, PLN thousand: total 20,473,321.41 (62.51% of the plan of 32,753,310).
+
+[^bezplatne]: Commissioner for Human Rights (RPO), [“<span lang="pl">Kolejny problem z receptami na darmowe leki dla dzieci i seniorów. Odpowiedź MZ</span>”](https://bip.brpo.gov.pl/pl/content/rpo-dzieci-seniorzy-darmowe-leki-mz-odpowiedz) (“Another problem with prescriptions for free medicines for children and seniors. The Ministry of Health’s reply”, in Polish), 20.09.2023, with the reply of the Ministry of Health of October 2023; Ministry of Health, [reply to parliamentary question No. 18028 on the programme of free medicines for seniors](https://sejm.gov.pl/sejm10.nsf/interpelacjaTresc.xsp?key=DXDJBR) (in Polish), 26.08.2026.
+
+[^dzp]: DZP, [“<span lang="pl">Alert prawny: projekt ustawy o receptach</span>”](https://www.dzp.pl/files/shares/Alerty/2026%2005%2005%20Alert%20prawny%20dot.%20ustawy%20o%20receptach_zg.pdf) (“Legal alert: draft act on prescriptions”, in Polish), 05.05.2026 — discussion of the draft submitted for pre-consultation on 30.04.2026.
+
+[^gus]: GUS, [“<span lang="pl">Sprzedaż leków na receptę w 2025 r.</span>”](https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/sprzedaz-lekow-na-recepte-w-2025-r-,29,4.html) (“Sales of prescription medicines in 2025”, in Polish), statistical release, 25.06.2026 — data from the Medical Information System.
+
+[^pex]: Monitor Zdrowotny OSOZ, [“<span lang="pl">Statystyki, luty 2026</span>”](https://api.kamsoft.pl/app-params/promos/000000/OSOZ_Polska_Luty_2026_Statystyki.pdf) (“Statistics, February 2026”, in Polish), p. 2 — summary of the pharmacy market in 2025 according to PEX.
+
+[^mz-raport]: Ministry of Health, [“<span lang="pl">Raport Zespołu ds. preskrypcji i realizacji recept</span>”](https://www.gov.pl/attachment/ef0cc14f-47c4-4af0-8073-c86a45a680ac) (“Report of the Team on the prescribing and dispensing of prescriptions”, in Polish), 2024 — team appointed by order of the Minister of Health of 19.09.2023 (p. 7); online prescription services pp. 40–42.
+
+[^rpp]: Patient Ombudsman, [“<span lang="pl">Rzecznik Praw Pacjenta reaguje na nadużycia w receptomatach</span>”](https://www.gov.pl/web/rpp/rzecznik-praw-pacjenta-reaguje-na-naduzycia-w-receptomatach) (“The Patient Ombudsman responds to abuses by online prescription services”, in Polish), 27.08.2026 — data as of 25.08.2026.
+
+[^prawo-zakaz]: Prawo.pl, [“<span lang="pl">Recepty bez wizyt lekarskich</span>”](https://www.prawo.pl/zdrowie/recepty-bez-wizyt-lekarskich,1537984.html) (“Prescriptions without doctor’s visits”, in Polish), 06.02.2026.
+
+[^fentanyl]: Poradnik Zdrowie, [“<span lang="pl">Recepta na fentanyl wystawiona na minister zdrowia</span>”](https://www.poradnikzdrowie.pl/aktualnosci/recepta-na-fentanyl-wystawiona-na-minister-zdrowia-to-skandal-ze-system-tego-nie-wychwycil-aa-UAve-6Y8o-yL3q.html) (“A fentanyl prescription issued in the name of the minister of health”, in Polish), 20.02.2025.
+
+[^wsa]: Patient Ombudsman, [“<span lang="pl">WSA po raz kolejny potwierdził stanowisko Rzecznika w sprawie tzw. receptomatów</span>”](https://www.gov.pl/web/rpp/wsa-po-raz-kolejny-potwierdzil-stanowisko-rzecznika-praw-pacjenta-w-sprawie-tzw-receptomatow-ankieta-internetowa-nawet-polaczona-z-wymiana-informacji-droga-tekstowa-nie-jest-badaniem) (“The Regional Administrative Court has once again confirmed the Ombudsman’s position on so-called online prescription services”, in Polish), 07.08.2026.
+
+[^mz-interp]: Sejm of the Republic of Poland, [reply of the Ministry of Health to parliamentary question No. 18219 on regulating the activity of so-called online prescription services](https://sejm.gov.pl/sejm10.nsf/interpelacjaTresc.xsp?key=DWLHPB) (in Polish), 29.07.2026.
+
+[^szarlatan]: XYZ, [“<span lang="pl">„Lex szarlatan” bez podpisu. Ustawa trafi do TK</span>”](https://xyz.pl/?p=240623) (“‘Lex szarlatan’ not signed. The act will go to the Constitutional Tribunal”, in Polish), 20.08.2026.
+
+[^nfz-receptura]: NFZ, [“<span lang="pl">Skoordynowana akcja organów ścigania i Narodowego Funduszu Zdrowia. Rozbito grupy przestępcze, które wyłudzały środki z NFZ</span>”](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/skoordynowana-akcja-organow-scigania-i-narodowego-funduszu-zdrowia-rozbito-grupy-przestepcze-ktore-wyludzaly-srodki-z-nfz,8812.html) (“A coordinated operation of law enforcement and the National Health Fund. Criminal groups that fraudulently obtained NFZ funds broken up”, in Polish), 30.07.2025; also the [Regional Prosecutor’s Office in Zielona Góra](https://www.gov.pl/web/po-zielona-gora/prokuratura-okregowa-w-zielonej-gorze-i-cbsp-uderzaja-w-mafie-refundacyjne--trzy-grupy-przestepcze-rozbite-straty-nfz-to-ponad-82-miliony-zlotych) (in Polish).
+
+[^mgrfarm]: mgr.farm, [“<span lang="pl">Apteka czy fabryka pustych faktur? Kulisy procederu wyłudzania refundacji i VAT na lekach recepturowych</span>”](https://mgr.farm/aktualnosci/apteka-czy-fabryka-pustych-faktur-kulisy-procederu-wyludzania-refundacji-i-vat-na-lekach-recepturowych/) (“A pharmacy or a factory of fake invoices? Behind the scheme of fraudulently obtaining reimbursement and VAT on compounded medicines”, in Polish), 16.04.2026.
+
+[^kontrole]: Prawo.pl, [“<span lang="pl">Prawie połowa recept zrealizowana z błędami. Posypały się kary</span>”](https://www.prawo.pl/zdrowie/prawie-polowa-recept-zawierala-bledy-kontrola-nfz,528905.html) (“Almost half of prescriptions dispensed with errors. Penalties imposed”, in Polish), 06.09.2024 — NFZ inspections in Q2 2024.
+
+[^rz-2023]: Rynek Zdrowia, [“<span lang="pl">NFZ skontrolował recepty. Posypały się kary</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/NFZ-skontrolowal-recepty-Posypaly-sie-kary-srednio-prawie-13-tys-zl-na-apteke,246913,1.html) (“The NFZ inspected prescriptions. Penalties imposed”, in Polish), 21.06.2023 — inspections of pharmacies in Q1 2023.
+
+[^gif]: Chief Pharmaceutical Inspectorate, [“<span lang="pl">Odwrócony łańcuch — pytania i odpowiedzi</span>”](https://archiwum.gif.gov.pl/pl/aktualnosci/731,Odwrocony-lancuch-pytania-i-odpowiedzi.html) (“Reverse chain — questions and answers”, in Polish) (archive of the GIF website).
+
+[^prawo-kontynuacja]: Prawo.pl, [“<span lang="pl">W jaki sposób pacjent może zamówić receptę w ramach kontynuacji</span>”](https://www.prawo.pl/zdrowie/w-jaki-sposob-pacjent-moze-zamowic-recepte-w-ramach-kontynuacji,371780.html) (“How a patient can order a prescription to continue treatment”, in Polish), 14.02.2019 — Article 42(2) of the Act on the professions of doctor and dentist.
+
+[^nik]: NIK, [“<span lang="pl">Obciążenia medyków pracami administracyjnymi</span>”](https://www.nik.gov.pl/aktualnosci/obciazenia-medykow-pracami-administracyjnymi.html) (“The burden of administrative work on medical staff”, in Polish), 28.09.2021.
+
+[^pilotaz]: NFZ, [“<span lang="pl">Komunikat w sprawie przedłużenia pilotażu usług farmaceuty w zakresie zdrowia reprodukcyjnego</span>”](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/komunikat-w-sprawie-przedluzenia-pilotazu-uslug-farmaceuty-w-zakresie-zdrowia-reprodukcyjnego,8966.html) (“Announcement on the extension of the pilot of pharmacist services in reproductive health”, in Polish), 30.06.2026.

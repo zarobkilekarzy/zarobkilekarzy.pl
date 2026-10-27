@@ -5,11 +5,13 @@
  * Pięć wąskich kolumn liczb mieści się także na telefonie, więc tabela zostaje tabelą (bez kart).
  * Kolumna Polski to temat tekstu — jedyny akcent (--blue); zera są wyciszone, żeby było widać lata z decyzjami.
  * Liczby pochodzą z czterech wydawców, więc źródła są tu, w podpisie, a nie w jednym linku Figure.
+ * Dwujęzyczny: na stronie /en/ napisy z obiektu TEXT.en i nazwy krajów z src/data/en/odpowiedzialnosc-zawodowa-lekarzy.ts;
+ * wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
 import Icon from '@/components/ui/Icon.astro';
 import {
-  COUNTRIES,
+  COUNTRIES as COUNTRIES_PL,
   FIRST_YEAR,
   LAST_YEAR,
   LINKS,
@@ -17,10 +19,18 @@ import {
   WINDOW,
   ratePer100k,
   total,
+  type Country,
   type CountryKey,
 } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
-import { formatPL, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+import { formatNumber, typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
+
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { COUNTRY_EN } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/odpowiedzialnosc-zawodowa-lekarzy') : {}) as typeof import('@/data/en/odpowiedzialnosc-zawodowa-lekarzy');
+const en = locale === 'en';
+const COUNTRIES: Country[] = en ? COUNTRIES_PL.map((c) => ({ ...c, ...COUNTRY_EN[c.key] })) : COUNTRIES_PL;
 
 const plWindow = total('pl', WINDOW.from, WINDOW.to);
 const doctors = (key: CountryKey) => {
@@ -29,8 +39,33 @@ const doctors = (key: CountryKey) => {
 };
 const span = `${WINDOW.from}–${WINDOW.to}`;
 
+const TEXT = {
+  pl: {
+    title: `W latach ${span} polskie sądy lekarskie prawomocnie odebrały prawo do zawodu ${plWindow} lekarzom. Urzędy w Norwegii i Szwecji oraz trybunał w Wielkiej Brytanii — po kilkadziesiąt rocznie.`,
+    caption: `Odebrania prawa wykonywania zawodu lekarzom w latach ${FIRST_YEAR}–${LAST_YEAR}: Polska (prawomocne), Norwegia, Szwecja, Wielka Brytania; sumy i średnia roczna na 100 tys. lekarzy w latach ${span}.`,
+    year: 'Rok',
+    total: 'Razem',
+    rate: 'Rocznie na 100 tys. lekarzy',
+    note: `Polska: pozbawienia prawa wykonywania zawodu, które się uprawomocniły — orzeczenia okręgowych sądów lekarskich bez odwołania oraz utrzymane albo wydane przez Naczelny Sąd Lekarski, suma 24 izb, w roku uprawomocnienia. Za lata 2021 i 2022 sumujemy kolumny izb, bo komórka sumy w plikach NIL podaje 0. Rok ${LAST_YEAR} bez izby w Koszalinie, a orzeczenia z tego roku mogą się jeszcze uprawomocnić. Norwegia i Szwecja: odebrania autoryzacji (legitymacji) lekarzom w roku decyzji urzędu. Wielka Brytania: skreślenia z rejestru orzeczone przez trybunał w roku decyzji, z prawem odwołania do sądu. Wskaźnik: średnia roczna z lat ${span} podzielona przez liczbę lekarzy (${doctors('pl')}; ${doctors('no')}; ${doctors('se')}; ${doctors('uk')}) — mianowniki pochodzą z różnych rejestrów, więc wynik jest przybliżony.`,
+    source: 'Źródło',
+    doctors: 'liczba lekarzy',
+    nil: 'NIL (zestawienie własne)',
+  },
+  en: {
+    title: `In ${span} Polish medical courts revoked the licence to practise of ${plWindow} doctors with final effect. The authorities in Norway and Sweden and the tribunal in the United Kingdom — dozens a year each.`,
+    caption: `Revocations of doctors’ licences to practise in ${FIRST_YEAR}–${LAST_YEAR}: Poland (final), Norway, Sweden, United Kingdom; totals and annual average per 100,000 doctors in ${span}.`,
+    year: 'Year',
+    total: 'Total',
+    rate: 'Per year per 100,000 doctors',
+    note: `Poland: revocations of the licence to practise that became final — decisions of regional medical courts that were not appealed and decisions upheld or issued by the Supreme Medical Court, total for the 24 chambers, in the year the decision became final. For 2021 and 2022 we add up the chambers’ columns, because the total cell in the NIL files shows 0. The year ${LAST_YEAR} excludes the Koszalin chamber, and decisions from that year may still become final. Norway and Sweden: withdrawals of doctors’ authorisation (licence) in the year of the authority’s decision. United Kingdom: erasures from the register ordered by the tribunal in the year of the decision, with a right of appeal to a court. Rate: annual average for ${span} divided by the number of doctors (${doctors('pl')}; ${doctors('no')}; ${doctors('se')}; ${doctors('uk')}) — the denominators come from different registers, so the result is approximate.`,
+    source: 'Source',
+    doctors: 'number of doctors',
+    nil: 'NIL (our compilation)',
+  },
+}[locale];
+
 const sources = [
-  { label: 'NIL (zestawienie własne)', href: LINKS.nilCourts },
+  { label: TEXT.nil, href: LINKS.nilCourts },
   { label: 'Helsetilsynet', href: LINKS.helsetilsynet },
   { label: 'HSAN', href: LINKS.hsan },
   { label: 'GMC', href: LINKS.gmc2025 },
@@ -43,15 +78,15 @@ const denominators = [
 ];
 ---
 <Figure
-  title={`W latach ${span} polskie sądy lekarskie prawomocnie odebrały prawo do zawodu ${plWindow} lekarzom. Urzędy w Norwegii i Szwecji oraz trybunał w Wielkiej Brytanii — po kilkadziesiąt rocznie.`}
+  title={TEXT.title}
 >
   <table class="revo">
     <caption class="sr-only">
-      Odebrania prawa wykonywania zawodu lekarzom w latach {FIRST_YEAR}–{LAST_YEAR}: Polska (prawomocne), Norwegia, Szwecja, Wielka Brytania; sumy i średnia roczna na 100 tys. lekarzy w latach {span}.
+      {TEXT.caption}
     </caption>
     <thead>
       <tr>
-        <th scope="col">Rok</th>
+        <th scope="col">{TEXT.year}</th>
         {COUNTRIES.map((c) => (
           <th scope="col" class:list={{ 'is-pl': c.key === 'pl' }}>
             {c.name}<span>{c.body}</span>
@@ -71,26 +106,26 @@ const denominators = [
     </tbody>
     <tfoot>
       <tr>
-        <th scope="row">Razem {FIRST_YEAR}–{LAST_YEAR}</th>
+        <th scope="row">{TEXT.total} {FIRST_YEAR}–{LAST_YEAR}</th>
         {COUNTRIES.map((c) => <td class:list={{ 'is-pl': c.key === 'pl' }}>{total(c.key)}</td>)}
       </tr>
       <tr>
-        <th scope="row">Razem {span}</th>
+        <th scope="row">{TEXT.total} {span}</th>
         {COUNTRIES.map((c) => <td class:list={{ 'is-pl': c.key === 'pl' }}>{total(c.key, WINDOW.from, WINDOW.to)}</td>)}
       </tr>
       <tr class="is-rate">
-        <th scope="row">Rocznie na 100 tys. lekarzy, {span}</th>
-        {COUNTRIES.map((c) => <td class:list={{ 'is-pl': c.key === 'pl' }}>≈{formatPL(ratePer100k(c.key), 1)}</td>)}
+        <th scope="row">{TEXT.rate}, {span}</th>
+        {COUNTRIES.map((c) => <td class:list={{ 'is-pl': c.key === 'pl' }}>≈{formatNumber(ratePer100k(c.key), 1, locale)}</td>)}
       </tr>
     </tfoot>
   </table>
 
   <div class="revo__caption">
     <p>
-      {typo(`Polska: pozbawienia prawa wykonywania zawodu, które się uprawomocniły — orzeczenia okręgowych sądów lekarskich bez odwołania oraz utrzymane albo wydane przez Naczelny Sąd Lekarski, suma 24 izb, w roku uprawomocnienia. Za lata 2021 i 2022 sumujemy kolumny izb, bo komórka sumy w plikach NIL podaje 0. Rok ${LAST_YEAR} bez izby w Koszalinie, a orzeczenia z tego roku mogą się jeszcze uprawomocnić. Norwegia i Szwecja: odebrania autoryzacji (legitymacji) lekarzom w roku decyzji urzędu. Wielka Brytania: skreślenia z rejestru orzeczone przez trybunał w roku decyzji, z prawem odwołania do sądu. Wskaźnik: średnia roczna z lat ${span} podzielona przez liczbę lekarzy (${doctors('pl')}; ${doctors('no')}; ${doctors('se')}; ${doctors('uk')}) — mianowniki pochodzą z różnych rejestrów, więc wynik jest przybliżony.`)}
+      {typo(TEXT.note)}
     </p>
     <p class="revo__source">
-      Źródło: {sources.map((s, i) => <>{i > 0 && ', '}<a {...linkAttrs(s.href)}>{s.label}<Icon name="arrow-ne" size={10} /></a></>)}; liczba lekarzy: {denominators.map((s, i) => <>{i > 0 && ', '}<a {...linkAttrs(s.href)}>{s.label}<Icon name="arrow-ne" size={10} /></a></>)}
+      {TEXT.source}: {sources.map((s, i) => <>{i > 0 && ', '}<a {...linkAttrs(s.href)}>{s.label}<Icon name="arrow-ne" size={10} /></a></>)}; {TEXT.doctors}: {denominators.map((s, i) => <>{i > 0 && ', '}<a {...linkAttrs(s.href)}>{s.label}<Icon name="arrow-ne" size={10} /></a></>)}
     </p>
   </div>
 </Figure>

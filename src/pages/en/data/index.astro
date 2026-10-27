@@ -1,0 +1,117 @@
+---
+/**
+ * /en/data/ — tłumaczenie /dane/ (src/pages/dane/index.astro): ten sam układ „Katalog” i te same zdjęcia,
+ * teksty z src/data/en/dane.ts, w spisie tylko materiały z tłumaczeniem (src/data/en/spis.ts).
+ * Wyróżnione narzędzie (przeglądarka monitoringu) jest tylko po polsku — karta z „(in Polish)”.
+ * SZKIC (noindex) do akceptacji usera, jak /en/ — spec: docs/spec-wersja-angielska.md.
+ */
+import IndexLayout from '@/layouts/IndexLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import AccuracyLegend from '@/components/ui/AccuracyLegend.astro';
+import ArticleFeature from '@/components/blocks/ArticleFeature.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import NumberTiles from '@/components/blocks/NumberTiles.astro';
+import TopicCatalog from '@/components/blocks/TopicCatalog.astro';
+import ToolTiles from '@/components/blocks/ToolTiles.astro';
+import TranslationNote from '@/components/article/TranslationNote.astro';
+import { hubTiles } from '@/data/en/narzedzia';
+import { danePage, dataTopics, keyNumbers, labels, polishTargets } from '@/data/en/dane';
+import { principles, translatedOn } from '@/data/en/home';
+import { countEntries, englishEntries, englishGroups, numberWord } from '@/data/en/spis';
+import { site } from '@/data/navigation';
+import { articleHref, getArticle, getTopicGroups } from '@/lib/content';
+import { enHref, getTranslations } from '@/i18n/translations';
+import { ui } from '@/i18n/ui';
+import { DATA_TOPICS, type KeyNumber } from '@/types';
+
+/** Szkic: strona poza indeksem. Po akceptacji — false. */
+const DRAFT = true;
+
+const toEntry = await englishEntries();
+const [groupsPl, flagshipPl, translations] = await Promise.all([
+  getTopicGroups(DATA_TOPICS, dataTopics),
+  getArticle(danePage.flagship),
+  getTranslations(),
+]);
+const groups = englishGroups(groupsPl, dataTopics, toEntry);
+const flagship = toEntry(flagshipPl);
+
+// Karty liczb: tłumaczenie celu, a bez niego — strona tylko po polsku z nazwą z polishTargets
+const numbers = (
+  await Promise.all(
+    keyNumbers.map(async ({ ref, ...n }): Promise<KeyNumber[]> => {
+      const translated = translations.find((t) => t.source.id === ref);
+      if (translated) return [{ ...n, href: enHref(translated), target: translated.article.data.title }];
+      if (polishTargets[ref]) return [{ ...n, href: articleHref(await getArticle(ref)), target: `${polishTargets[ref]}${ui.en.inPolish}` }];
+      console.warn(`[i18n] /en/data/: karta „${n.value}” prowadzi do „${ref}” bez tłumaczenia — dopisz polishTargets w src/data/en/dane.ts`);
+      return [];
+    }),
+  )
+).flat();
+const tiles = hubTiles.dane;
+---
+<IndexLayout
+  title={danePage.title}
+  docTitle={danePage.docTitle}
+  lead={danePage.lead}
+  description={danePage.description}
+  eyebrow={danePage.eyebrow}
+  meta={[
+    { label: labels.meta.items, value: countEntries(groups) },
+    { label: labels.meta.sections, value: groups.length },
+    { label: labels.meta.updated, value: site.updated },
+  ]}
+  jump={{ title: labels.jump, items: groups.map((g) => ({ label: g.info.label, href: `#${g.topic}`, count: g.articles.length })) }}
+  articles={[...(flagship ? [flagship] : []), ...groups.flatMap((g) => g.articles)]}
+  index={!DRAFT}
+  translations={[{ locale: 'pl', path: '/dane/', indexable: true }]}
+>
+  <AccuracyLegend slot="legend" />
+
+  <Section space="bottom">
+    <TranslationNote original="/dane/" translated={translatedOn} />
+    <div class="highlights">
+      {flagship && <ArticleFeature article={flagship} effect="pulse" sizes="(min-width: 1025px) 755px, calc(100vw - 32px)" />}
+      <div>
+        <p class="mono-label highlights__label">{labels.howToRead}</p>
+        <NumberedList items={principles.slice(0, 3)} />
+      </div>
+    </div>
+  </Section>
+
+  <Section space="bottom">
+    <TopicCatalog groups={groups} noun={labels.noun} />
+  </Section>
+
+  {tiles.length > 0 && (
+    <Section space="bottom" aria-labelledby="tools-title">
+      <SectionHead eyebrow={labels.tools.eyebrow} title={labels.tools.title} id="tools-title" aside={labels.tools.aside} />
+      <ToolTiles items={tiles} />
+    </Section>
+  )}
+
+  {numbers.length > 0 && (
+    <Section tone="soft" aria-labelledby="figures-title">
+      <SectionHead
+        eyebrow={labels.numbers.eyebrow}
+        title={labels.numbers.title(numberWord(numbers.length))}
+        id="figures-title"
+        aside={labels.numbers.aside}
+      />
+      <NumberTiles items={numbers} note={danePage.note} />
+    </Section>
+  )}
+</IndexLayout>
+
+<style>
+  .highlights {
+    display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 32px clamp(32px, 4vw, 56px); align-items: start;
+    padding-top: 48px; border-top: 1px solid var(--line);
+  }
+  .highlights__label { margin: 0; padding-bottom: 12px; }
+
+  @media (max-width: 1024px) {
+    .highlights { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

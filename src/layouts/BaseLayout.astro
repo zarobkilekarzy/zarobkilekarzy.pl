@@ -24,11 +24,15 @@ import SeoHead from '@/components/seo/SeoHead.astro';
 import JsonLd from '@/components/seo/JsonLd.astro';
 
 import { site, mainNav, mobileExtras, topbarLinks, footerNav } from '@/data/navigation';
+import * as navEn from '@/data/en/navigation';
 import { identity } from '@/data/seo/identity';
 import { newsletter, newsletterOn } from '@/data/newsletter';
 import { getPopularSearches } from '@/lib/search/build';
 import { OG_HEIGHT, OG_WIDTH, ogImageFor } from '@/lib/og/registry';
 import { buildGraph, resolveSeo, type SeoInput } from '@/lib/seo';
+import { LOCALE_META, localeOf } from '@/i18n/locales';
+import { ui } from '@/i18n/ui';
+import { pageTranslations } from '@/i18n/pages';
 
 interface Props {
   /** SEO strony: tytuł bez nazwy serwisu, opis, okruszki, rodzaj strony i byty — zob. lib/seo/types.ts */
@@ -43,6 +47,8 @@ const props = Astro.props;
 // Stare wywołania (title/description) działają dalej, ale bez okruszków i danych strukturalnych strony
 if (!props.seo) console.warn(`[seo] ${Astro.url.pathname}: BaseLayout bez propsa seo — przejdź z title/description na seo`);
 const input: SeoInput = props.seo ?? { title: props.title ?? site.name, titleAbsolute: true, description: props.description ?? '' };
+// Strony spoza kolekcji (FAQ, słownik…) biorą odpowiednik z rejestru src/i18n/pages.json — przed resolveSeo (hreflang)
+input.translations ??= pageTranslations(Astro.url.pathname);
 
 // Obrazek OG wynika ze ścieżki strony (lib/og/registry.ts) — strony niczego nie przekazują.
 // Strony poza indeksem dostają go tylko z własnym wpisem (np. prototyp udostępniany linkiem), bez domyślnego.
@@ -54,14 +60,22 @@ const seo = resolveSeo(input, {
   image: ogImage && { ...ogImage, width: OG_WIDTH, height: OG_HEIGHT },
 });
 const graph = buildGraph(input, seo, identity, Astro.site!);
-const popularSearches = await getPopularSearches();
+
+// Strony angielskie (/en/…): własna nawigacja, wyszukiwarka z indeksem tłumaczeń (lib/search/build-en.ts), bez ogłoszenia z paska
+const locale = localeOf(Astro.url.pathname);
+const t = ui[locale];
+const en = locale === 'en';
+const nav = en ? navEn : { mainNav, mobileExtras, topbarLinks, footerNav };
+const popularSearches = en ? await (await import('@/lib/search/build-en')).getPopularSearchesEn() : await getPopularSearches();
+// Przełącznik języka: odpowiednik strony, a gdy go nie ma — strona startowa drugiej wersji (dziś PL ↔ EN)
+const translation = input.translations?.[0] ?? (en ? { locale: 'pl' as const, path: '/' } : { locale: 'en' as const, path: '/en/' });
 ---
 <!doctype html>
-<html lang="pl">
+<html lang={LOCALE_META[locale].html}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <SeoHead seo={seo} siteName={identity.name} locale={identity.locale} twitter={identity.twitter} />
+    <SeoHead seo={seo} siteName={identity.name} twitter={identity.twitter} />
     <meta name="theme-color" content={identity.themeColor} />
     <meta name="color-scheme" content="light dark" />
     {/* Motyw (site/ThemeToggle.astro) i „Większy tekst” (site/TextSizeToggle.astro) z zapisu —
@@ -90,16 +104,16 @@ const popularSearches = await getPopularSearches();
     <slot name="head" />
   </head>
   <body>
-    <a class="skip-link" href="#tresc">Przejdź do treści</a>
+    <a class="skip-link" href="#tresc">{t.skipLink}</a>
     <Sprite />
-    <Topbar updated={site.updated} announcement={site.announcement} links={topbarLinks} />
-    <Header nav={mainNav} mobileExtras={mobileExtras} />
+    <Topbar updated={site.updated} announcement={en ? undefined : site.announcement} links={nav.topbarLinks} />
+    <Header nav={nav.mainNav} mobileExtras={en ? [] : mobileExtras} translation={translation} />
 
     <main id="tresc">
       <slot />
     </main>
 
-    <Footer groups={footerNav} newsletter={newsletterOn ? newsletter : undefined} />
+    <Footer groups={nav.footerNav} newsletter={newsletterOn && !en ? newsletter : undefined} />
     <SearchDialog popular={popularSearches} />
     {/* Linki do sekcji (ikona przy nagłówku) i do zaznaczonego fragmentu (pasek przy zaznaczeniu) */}
     <HeadingAnchors />

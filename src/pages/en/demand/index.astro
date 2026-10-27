@@ -1,0 +1,98 @@
+---
+/**
+ * /en/demand/ — tłumaczenie /postulat/ (src/pages/postulat/index.astro): ten sam układ i te same sekcje
+ * (components/postulat/* są dwujęzyczne), teksty z src/data/en/postulat.ts. Projekt ustawy i petycja
+ * zostają po polsku — linki z „(in Polish)”. Para i stempel w src/i18n/pages.json; nota o tłumaczeniu
+ * pod nagłówkiem (article/PageTranslationNote), linijka o kursie euro na dole strony.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import JumpList from '@/components/blocks/JumpList.astro';
+import Photo from '@/components/ui/Photo.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import photo from '@/assets/img/postulat-jawne-kwoty.jpg';
+import Problem from '@/components/postulat/Problem.astro';
+import Demands from '@/components/postulat/Demands.astro';
+import WithoutNames from '@/components/postulat/WithoutNames.astro';
+import Identifier from '@/components/postulat/Identifier.astro';
+import Route from '@/components/postulat/Route.astro';
+import Evidence from '@/components/postulat/Evidence.astro';
+import Objections from '@/components/postulat/Objections.astro';
+import { currentStage, postulatPage, projekt, ratesLine, sectionIds } from '@/data/en/postulat';
+import { pagePairOf } from '@/i18n/pages';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { formatDateIn, typo } from '@/lib/format';
+
+const jump = [
+  { label: 'The problem', href: `#${sectionIds.problem}` },
+  { label: 'What we call for', href: `#${sectionIds.postulat}` },
+  { label: 'Why without names', href: `#${sectionIds.bezNazwisk}` },
+  { label: 'How the identifier works', href: `#${sectionIds.identyfikator}` },
+  { label: 'The route to legislation', href: `#${sectionIds.droga}` },
+  { label: 'Evidence', href: `#${sectionIds.dowody}` },
+  { label: 'Objections', href: `#${sectionIds.zarzuty}` },
+];
+
+/** zdjęcie w prawej kolumnie nagłówka (PageHeader: 1,5fr / 1fr); poniżej 1025 px kolumny się składają */
+const PHOTO_SIZES = '(min-width: 1025px) 460px, calc(100vw - 32px)';
+
+const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: 'Our demand' }];
+const seo: SeoInput = {
+  title: postulatPage.docTitle,
+  description: postulatPage.description,
+  index: !pagePairOf(Astro.url.pathname)?.draft,
+  breadcrumbs: crumbs,
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="post-top">
+    <PageHeader
+      title={postulatPage.title}
+      lead={postulatPage.lead}
+      eyebrow={postulatPage.eyebrow}
+      crumbs={crumbs}
+    >
+      <blockquote class="post-quote">{typo(postulatPage.quote)}</blockquote>
+      <PageMeta
+        items={[
+          { label: 'Stage', value: currentStage.label },
+          { label: 'Draft act', value: `version ${projekt.version}` },
+          { label: 'Updated', value: formatDateIn(projekt.date, 'en') },
+        ]}
+      />
+      <div slot="aside" class="post-aside">
+        <Photo src={photo} alt="A clear plastic sleeve with three clipped sheets of paper and a blank name label" ratio="3/2" sizes={PHOTO_SIZES} priority frame />
+        <JumpList title="On this page" items={jump} />
+      </div>
+    </PageHeader>
+    <div class="post-note">
+      <PageTranslationNote />
+    </div>
+  </Section>
+
+  <Problem />
+  <Demands />
+  <WithoutNames />
+  <Identifier />
+  <Route />
+  <Evidence />
+  <Objections />
+
+  <Section space="none" class="post-rates">
+    <p>{ratesLine}</p>
+  </Section>
+</BaseLayout>
+
+<style>
+  .post-top { padding-top: clamp(32px, 4vw, 56px); }
+  .post-aside { display: grid; gap: 28px; }
+  .post-quote {
+    margin: 32px 0 0; padding-left: 20px; border-left: 2px solid var(--blue);
+    font: 400 1.3125rem/1.45 var(--f-display); letter-spacing: -0.015em; color: var(--ink); max-width: 34ch;
+  }
+  .post-note { margin-top: 40px; }
+  .post-rates { padding-block: 24px; }
+  .post-rates p { font-size: 0.8125rem; line-height: 1.55; color: var(--muted); max-width: 80ch; }
+</style>

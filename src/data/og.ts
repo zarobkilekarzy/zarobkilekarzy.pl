@@ -16,12 +16,11 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { simulatorOgPanels } from '@/lib/podaz/og';
 import { nurseSimulatorOgPanels } from '@/lib/podaz/pielegniarki/og';
-import { columnChart, label, lineChart, svg, virus } from '@/lib/og/charts';
+import { columnChart, label, svg, virus } from '@/lib/og/charts';
 import { hemicycle, tallyClubs } from '@/lib/sejm/hemicycle';
 import { tokenColor } from '@/lib/tokens';
 import { CLUBS_LAST, limityVoting } from '@/data/glosowania';
 import { ageRows, dayRows } from '@/data/ciecie-limitow-na-medycyne';
-import { INDEX_CHART } from '@/data/kolejki';
 import { BUDGET } from '@/data/budzet-nfz';
 import filmDobaOg from '@/assets/aktualnosci/film-doba-og.webp';
 import { AOS_FIRST, AOS_LAST, WHC_2022, WHC_2024, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
@@ -155,9 +154,6 @@ export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'do
       { head: 'Miejsca na I roku medycyny', height: TWO_PANELS_H, svg: svg(MEDIA_W, TWO_PANELS_H, columnChart(intakeCols, MEDIA_W, TWO_PANELS_H)) },
       { head: 'Lekarze dziś według wieku', height: TWO_PANELS_H, svg: svg(MEDIA_W, TWO_PANELS_H, columnChart(ageCols, MEDIA_W, TWO_PANELS_H)) },
     ],
-  },
-  '/dane/kolejki/': {
-    panels: [{ head: `Indeks, ${INDEX_CHART.base} = 100`, height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, lineChart(INDEX_CHART, MEDIA_W, PANEL_H, [INDEX_CHART.xMin, INDEX_CHART.xMin + 5, INDEX_CHART.xMax - 1])) }],
   },
   '/dane/budzet-nfz/': {
     panels: [{ head: 'Koszty w planie NFZ, mld zł', height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, columnChart(costCols, MEDIA_W, PANEL_H)) }],

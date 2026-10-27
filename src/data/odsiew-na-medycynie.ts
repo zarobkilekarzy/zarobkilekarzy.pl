@@ -11,6 +11,9 @@
  * Trzy przepływy z tej analizy (80% kończy studia, 5% absolwentów bez składki ZUS w Polsce,
  * ok. 1000 lekarzy z dyplomem zagranicznym rocznie) są domyślnymi ustawieniami symulatora podaży:
  * `MEASURED` w lib/podaz/model.ts. Zmiana tutaj nie przenosi się tam sama.
+ *
+ * Liczby (FIRST_YEAR, GRADUATES_PL, NIL_FIRST_YEAR, LEK, NO_ZUS, FATES_2016, sumy rachunku PWZ) czyta też
+ * wersja angielska — src/data/en/odsiew-na-medycynie.ts.
  */
 import type { BarRow } from '@/types';
 import { formatPL } from '@/lib/format';
@@ -58,7 +61,7 @@ export const FIRST_YEAR: { year: string; pl: Removed; foreign: Removed }[] = [
   { year: '2023/24', pl: { removed: 1457, first: 8710 }, foreign: { removed: 294, first: 1317 } },
 ];
 
-const rate = (r: Removed) => share(r.removed, r.first);
+export const rate = (r: Removed) => share(r.removed, r.first);
 
 /** Wykres: Polacy, wyróżniony ostatni rok; cudzoziemcy w dopisku przy roku. */
 export const firstYearRows: BarRow[] = FIRST_YEAR.map(({ year, pl, foreign }, i) => ({
@@ -174,13 +177,13 @@ export const lekDisplay = (diff: number) => signed(diff, 1);
 /* ---------- 5. Losy absolwentów (POL-on × ZUS × NFZ), Polacy ---------- */
 
 /** Absolwenci bez składki ZUS w Polsce wg roku kalendarzowego; `end` — rok kalendarzowy dyplomu. */
-const NO_ZUS: Record<string, { end: number; graduates: number; byYear: Record<number, number> }> = {
+export const NO_ZUS: Record<string, { end: number; graduates: number; byYear: Record<number, number> }> = {
   '2016/17': { end: 2017, graduates: 3305, byYear: { 2019: 79, 2020: 147, 2021: 153, 2022: 165, 2023: 166 } },
   '2018/19': { end: 2019, graduates: 3653, byYear: { 2019: 89, 2020: 54, 2021: 107, 2022: 139, 2023: 159 } },
   '2020/21': { end: 2021, graduates: 4064, byYear: { 2021: 92, 2022: 53, 2023: 89 } },
 };
 
-const noZusShare = (cohort: string, yearsAfter: number) => {
+export const noZusShare = (cohort: string, yearsAfter: number) => {
   const c = NO_ZUS[cohort];
   return share(c.byYear[c.end + yearsAfter], c.graduates);
 };
@@ -202,11 +205,11 @@ export const noZusNote =
   `To górna granica wyjazdów: obejmuje też przerwy w pracy, urlopy i braki w danych.`;
 
 /** Rocznik 2016/17 w 2023 r., sześć lat po dyplomie. */
-const FATES_2016 = { graduates: 3305, zus: 3135, clinics: 3044, nfz: 2866 } as const;
+export const FATES_2016 = { graduates: 3305, zus: 3135, clinics: 3044, nfz: 2866 } as const;
 
 /* ---------- 6. Na każde 100 rozpoczynających ---------- */
 
-const START_2018 = FIRST_YEAR.find((r) => r.year === '2018/19')!.pl.first;
+export const START_2018 = FIRST_YEAR.find((r) => r.year === '2018/19')!.pl.first;
 const finished = share(GRADUATES_PL['2023/24'], START_2018);
 
 /** Kroki 1–2: studenci I semestru 2018/19 i absolwenci 2023/24; kroki 3–5: losy rocznika 2016/17 w 2023 r. */
@@ -236,12 +239,12 @@ const LIMITS = Object.entries(FOREIGNERS).map(([year, foreigners]) => {
 export const PWZ_26_30 = 20457;
 
 const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
-const limitTotal = sum(LIMITS.map((l) => l.total));
-const foreignLanguage = sum(LIMITS.map((l) => l.foreignLanguage));
-const foreigners = sum(LIMITS.map((l) => l.foreigners));
-const seatsForPoles = limitTotal - foreignLanguage - foreigners;
-const firstSemesterPoles = sum(FIRST_YEAR.filter((r) => LIMITS.some((l) => l.year === r.year)).map((r) => r.pl.first));
-const graduatesPoles = sum(Object.values(GRADUATES_PL));
+export const limitTotal = sum(LIMITS.map((l) => l.total));
+export const foreignLanguage = sum(LIMITS.map((l) => l.foreignLanguage));
+export const foreigners = sum(LIMITS.map((l) => l.foreigners));
+export const seatsForPoles = limitTotal - foreignLanguage - foreigners;
+export const firstSemesterPoles = sum(FIRST_YEAR.filter((r) => LIMITS.some((l) => l.year === r.year)).map((r) => r.pl.first));
+export const graduatesPoles = sum(Object.values(GRADUATES_PL));
 
 export type LedgerKind = 'start' | 'step' | 'subtotal' | 'result';
 

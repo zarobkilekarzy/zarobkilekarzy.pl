@@ -6,6 +6,7 @@
  * jej pozycji (`#zrodla`, `#zrodla-2`) rozwija ją przed przewinięciem (scripts/open-target).
  */
 import type { Source } from '@/types';
+import { uiOf } from '@/i18n/ui';
 
 interface Props {
   sources: Source[];
@@ -14,11 +15,12 @@ interface Props {
 
 const { sources, id = 'zrodla' } = Astro.props;
 const publishers = [...new Set(sources.map((s) => s.publisher))];
+const t = uiOf(Astro.url).sources;
 ---
 {sources.length > 0 && (
   <details class="sources" id={id}>
     <summary class="sources__head">
-      <h2 class="sources__title">Źródła <span>{sources.length}</span></h2>
+      <h2 class="sources__title">{t.title} <span>{sources.length}</span></h2>
       <span class="sources__preview">{publishers.join(' · ')}</span>
     </summary>
     <ol>
@@ -29,7 +31,7 @@ const publishers = [...new Set(sources.map((s) => s.publisher))];
         </li>
       ))}
     </ol>
-    <p class="sources__note">Linkujemy wyłącznie do ogólnodostępnych dokumentów i publikacji.</p>
+    <p class="sources__note">{t.note}</p>
   </details>
 )}
 

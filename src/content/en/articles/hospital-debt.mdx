@@ -1,0 +1,158 @@
+---
+title: "Hospital debt in Poland: salaries paid on credit"
+seoTitle: "Polish hospital debt: pay on credit"
+summary: "Public hospitals owe more than PLN 40 billion, and their debt is growing at the fastest rate in more than twenty years. It goes mainly on current spending, above all salaries — pay funded on credit, which we repay with public money."
+description: "How much Poland’s public hospitals owe, how fast their debt is growing and what it pays for: mainly current spending, above all salaries paid on credit."
+editorial:
+  - >-
+    Hospital debt is public money that nobody sees as it accumulates. The ministry gives totals
+    once a quarter and only by voivodeship, and the debt of a specific hospital usually comes to light
+    when the management changes or a bailiff knocks at the door.
+  - >-
+    Since most of this money finances pay, it is worth knowing how it is divided. That is why we call
+    for the total paid to each person from public money to be made public — under a permanent
+    identifier, without names. The vast majority of doctors and facilities account honestly;
+    transparency protects them too.
+translation:
+  of: zadluzenie-szpitali
+  files: [src/data/zadluzenie.ts]
+  hash: "939e35d18f06"
+  date: 2026-10-27
+noindex: true
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Money from '@/components/ui/Money.astro';
+import DebtChart from '@/components/zadluzenie/DebtChart.astro';
+import RegionTable from '@/components/zadluzenie/RegionTable.astro';
+import LossRanking from '@/components/zadluzenie/LossRanking.astro';
+import { DEBT, LINKS, LOSSES, OTHER_HOSPITALS, POPULATION, dateEn, enDate, pct, quarterEn } from '@/data/en/zadluzenie-szpitali';
+import { formatEN } from '@/lib/format';
+
+{/* Tłumaczenie src/content/articles/zadluzenie-szpitali.mdx; liczby z src/data/zadluzenie.ts (zapis angielski: src/data/en/zadluzenie-szpitali.ts). Licznik obok tytułu wstawia trasa (components/zadluzenie/DebtCounter, dwujęzyczny). */}
+
+The counter above this text is an estimate, not a reading — there is simply no register that would show hospitals’ debt as it changes. The Ministry of Health publishes liabilities once a quarter, with a delay of several months. The latest data refer to {dateEn(DEBT.last.end)}; everything after that is our extrapolation — and only one year ahead.
+
+## Debt is growing ever faster
+
+For years the liabilities of hospitals operating as independent public healthcare facilities (SPZOZ) hardly moved: from 2010 to 2017 they hovered around PLN 10–12 billion. Since 2018 they have grown every year, and since 2025 — ever faster. As of {dateEn(DEBT.last.end)} they stood at <Money value={DEBT.last.spzoz} scale="billion" />, {pct(DEBT.rate)}% more than a year earlier. Such fast growth has not been seen in the ministry’s quarterly data since 2004.[^mz]
+
+Overdue liabilities, i.e. those whose payment date has already passed, are growing even faster: by {pct(DEBT.overdueRate, 0)}% in a year, to <Money value={DEBT.last.overdue} scale="billion" decimals={2} />. On top of this comes the debt of hospitals operating as companies or research institutes. Together with them, public hospitals owed about <Money value={DEBT.last.total} scale="billion" /> on that day.
+
+<DebtChart />
+
+## How we calculate
+
+- **The starting point** is the last quarter in the Ministry of Health data — {quarterEn(DEBT.last.label)}: the liabilities of all SPZOZ, <Money value={DEBT.last.spzoz} scale="billion" />. To this we add hospitals run as companies and institutes. The ministry gave their debt only once, for the end of 2025 (<Money value={OTHER_HOSPITALS.companies * 1e6} scale="billion" /> and <Money value={OTHER_HOSPITALS.institutes * 1e6} scale="billion" />), so we assume that since then it has grown at the same rate as SPZOZ debt. Together: <Money value={DEBT.last.total} scale="billion" />.
+- **The counter’s rate** is the growth of SPZOZ debt over the last four quarters: {pct(DEBT.rate)}% a year, compounded continuously. The counter therefore assumes that nothing changes — it neither speeds up nor slows down.
+- **The slower variant** is the average annual rate for {DEBT.lowSpan}: {pct(DEBT.low)}%. It sets the lower bound of the projection on the chart and in the counter.
+- **Only one year ahead.** A longer extrapolation would depend on decisions nobody has taken yet: further pay rises, the pricing of services, possible debt relief. Data from the last quarters say something real about the next 12 months — but not about the next ten years.
+- **Per inhabitant**, we divide the estimate by {formatEN(POPULATION.value / 1e6, 2)} million people — preliminary data from Statistics Poland (GUS) as of {enDate(POPULATION.date)}.[^ludnosc]
+
+When the ministry publishes the next quarter, we replace the starting point and the rate. The counter may then jump up or down — that is a correction of the estimate, not an event in the hospitals.
+
+One reservation about scope. According to Rynek Zdrowia, a healthcare news site, the ministry calculated that at the end of 2025, 562 public hospitals owed <Money value={OTHER_HOSPITALS.hospitalsTotal * 1e6} scale="billion" decimals={0} />, of which hospitals operating as SPZOZ owed <Money value={OTHER_HOSPITALS.hospitalsSpzoz * 1e6} scale="billion" decimals={0} />.[^szpitale-2025] The ministry’s quarterly series covers all SPZOZ, including those that are not hospitals, and for the same day shows <Money value={DEBT.quarters.find((q) => q.label === OTHER_HOSPITALS.quarter).spzoz} scale="billion" />. We leave the difference in the counter, because only this series is updated every quarter.
+
+## What the money goes on
+
+Hospital debt does not finance new buildings or equipment. According to the daily Rzeczpospolita, the liabilities cover current operations,[^rzeczpospolita] and within them people cost the most: in many hospitals pay accounts for 70–80% of costs.[^egospodarka] In May 2026 the minister of health spoke of facilities in which as much as 106% of the budget goes on pay.[^106-proc]
+
+Every year on 1 July these costs rise by the statutory pay increases. According to the 2026 recommendation of the Agency for Health Technology Assessment and Tariff System (AOTMiT), NFZ spending will rise for this reason by <Money value={9.25e9} scale="billion" decimals={2} /> over 12 months (about <Money value={4.5e9} scale="billion" /> by the end of 2026),[^podwyzki-2026] and the part not covered by higher NFZ rates adds directly to the debt.
+
+An indebted hospital loses its creditworthiness, so it borrows from financial companies to repay overdue liabilities.[^pozyczki] This closes the circle: part of current pay is paid out of debt, which has to be repaid from public money anyway — from local government subsidies or debt relief programmes. So we pay twice: for the work, and for interest on the fact that there was not enough money for it.
+
+## The scale in figures
+
+The national total hides how widespread the problem is. Debt is not an exception in a few badly managed facilities — it has become an ordinary way of financing a hospital.[^majatek]
+
+<StatRow
+  label="The scale of hospital debt"
+  items={[
+    { value: 298, unit: 'hospitals', desc: 'have overdue liabilities — more than half (53%) of public hospitals', accuracy: 'exact', source: 'Rzeczpospolita', href: LINKS.rzeczpospolita },
+    { value: 91, unit: '%', desc: 'of county hospitals ended 2025 with a loss on their core activity — 19 of 207 were in the black', accuracy: 'exact', source: 'Menedżer Zdrowia', href: LINKS.powiatowe },
+    { prefix: '~', value: 50, unit: '%', desc: 'of the hospitals studied have debt greater than the value of all their assets', accuracy: 'est', source: 'Rynek Zdrowia', href: LINKS.majatek },
+    { value: 344, unit: 'PLN m', desc: 'of interest was paid in 2025 by county hospitals alone — financial costs were 7 times financial revenue', accuracy: 'exact', source: 'Menedżer Zdrowia', href: LINKS.powiatowe },
+  ]}
+/>
+
+Relieving public hospitals of their debt will absorb between PLN 5.5 billion and PLN 10 billion of public money over a decade — according to an estimate in a report described by Prawo.pl.[^oddluzenie]
+
+The figures concern different groups: losses and interest — county hospitals in the sample of Menedżer Zdrowia, a healthcare management magazine;[^powiatowe] overdue liabilities — all public hospitals.[^rzeczpospolita] The picture is nevertheless consistent: debt is a permanent part of hospital finances, not a one-off accident.
+
+## Where the debt is: voivodeships
+
+The ministry shows debt only as totals — by the voivodeship (region) in which the body that founded the hospital has its seat (most often a local government), and separately for hospitals run by ministries. Hospitals in Masovia owe the most. In 2025, however, debt grew fastest in Ministry of Defence (MON) hospitals and in the Łódź voivodeship, which is also home to four of the ten hospitals with the largest losses.
+
+<RegionTable title="Masovia has the largest debt, but in 2025 it grew fastest in Ministry of Defence hospitals and in the Łódź voivodeship." />
+
+## Which hospitals? The “list of shame”
+
+The ministry does not publish the debt of individual hospitals.[^czestochowa] Their annual result, however, is visible. Below are the ten facilities with the largest net loss for 2024 according to preliminary Ministry of Health data, compiled by Menedżer Zdrowia.[^lista-wstydu]
+
+<LossRanking title={`Ten hospitals lost a total of PLN ${formatEN(LOSSES.reduce((s, r) => s + r.loss, 0) / 1e6)} million in 2024. Four of them are in the Łódź voivodeship.`} />
+
+Bełchatów is worth pausing on: the hospital with the fourth-largest loss in the country pays some of the highest documented rates, and we know this only because it happened to disclose them. How many similar comparisons are hidden by hospitals that do not publish their rates is not known.
+
+## Kalisz: one hospital, the whole mechanism
+
+Debt sounds abstract until you get down to a single facility. The Regional Integrated Hospital in Kalisz (Wojewódzki Szpital Zespolony) shows the whole mechanism at once: the same public money and two sharply different sides.
+
+<StatRow
+  label="Kalisz: arrears to staff and the cost of contracts"
+  items={[
+    { prefix: '~', value: 37, unit: 'PLN m', desc: 'of staff pay in arrears, mainly to nurses — back pay for years of understated rates and incorrect grading', accuracy: 'est', source: 'abcZdrowie', href: LINKS.kaliszZalegle },
+    { prefix: '~', value: 10, unit: 'PLN m a year', desc: 'is what, according to media reports, the contracts of four specialists cost each year', accuracy: 'est', source: 'Calisia.pl', href: LINKS.kaliszKontrakty },
+  ]}
+/>
+
+The arrears to nurses came to light only after the change of management in July 2025 — in an analysis by the new management and an audit by the marshal’s office (the regional government administration); earlier documents did not show them.[^kalisz-zalegle] The audit found irregularities from the time of the previous management, and the prosecutor’s office took up the matter.[^kalisz24] The last contracts with the four doctors were signed a few days before the change of management, at the end of June 2025.[^kalisz-kontrakty] For 2024 the hospital reported a net profit of about <Money value={2.2e6} scale="million" />: the result alone does not show the debt to its own employees.
+
+At the same time:
+
+- the NFZ owed the hospital more than <Money value={4e6} scale="million" decimals={0} /> for services already provided;[^kalisz24]
+- the urology ward was suspended from 1 August 2025 because there were not enough doctors. Its reopening was announced for June 2026,[^urologia] but it did not happen; the management wants to open the ward still in 2026, depending on the pace of construction work.[^urologia-2026] According to Latarnik Kaliski, a local news site, the suspension was extended until the end of November and the hospital announced a tender for the ward’s renovation; on 9 October 2026 the ward was still not operating.[^urologia-latarnik]
+
+Nurses told the media that for years they had not received the money they were owed, while several specialists earned millions.[^fronda]
+
+This is not a story about greedy doctors: the contracts were legal. It is about how the money was divided. In one hospital a few contracts cost as much in a year as had been owed for years to hundreds of nurses, and a ward was closed not because there was no money, but because it was divided without outside scrutiny. The scale of this comparison became known only when the new management worked it out by hand. Publishing total payments — under a permanent identifier, without names — would show such a picture in every hospital straight away. That is what [our proposal](/en/demand/) is about.
+
+We describe the facility and roles, not people.
+
+[^mz]: Ministry of Health, [“<span lang="pl">Zobowiązania ogółem i wymagalne SPZOZ</span>”](https://www.gov.pl/web/zdrowie/zadluzenie-spzoz) (“Total and overdue liabilities of SPZOZ”, in Polish) — quarterly data up to Q2 2026, also by voivodeship; page as of 02.10.2026.
+
+[^ludnosc]: Interia (GUS data), [population of Poland at the end of June 2026 — preliminary GUS data](https://biznes.interia.pl/gospodarka/news-w-rok-ubylo-159-tys-osob-w-polsce-zmiany-demograficzne-juz-p,nId,23518504) (in Polish).
+
+[^szpitale-2025]: Rynek Zdrowia, [“<span lang="pl">Szpitale toną w długach. Zadłużenie sięga blisko 40 mld zł</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Szpitale-tona-w-dlugach-Zadluzenie-siega-blisko-40-mld-zl,286396,1.html) (“Hospitals are drowning in debt. It is approaching PLN 40 billion”, in Polish), 08.07.2026.
+
+[^rzeczpospolita]: Rzeczpospolita, [“<span lang="pl">Rośnie zadłużenie publicznych szpitali. To już 34 mld złotych</span>”](https://www.rp.pl/ochrona-zdrowia/art44638431-rosnie-zadluzenie-publicznych-szpitali-to-juz-34-mld-zlotych) (“The debt of public hospitals is growing. It is already PLN 34 billion”, in Polish).
+
+[^egospodarka]: eGospodarka, [“<span lang="pl">Szpitale pod ścianą. Od 1 lipca rosną pensje medyków, a zadłużenie już dławi placówki</span>”](https://www.egospodarka.pl/197895,Szpitale-pod-sciana-Od-1-lipca-rosna-pensje-medykow-a-zadluzenie-juz-dlawi-placowki,1,24,1.html) (“Hospitals with their backs to the wall. Medics’ pay rises from 1 July, and debt is already choking facilities”, in Polish).
+
+[^106-proc]: Rynek Zdrowia, [“<span lang="pl">Ministra zdrowia — w niektórych szpitalach pensje pochłaniają 106 proc. budżetu</span>”](https://www.rynekzdrowia.pl/Polityka-zdrowotna/Ministra-zdrowia-w-niektorych-szpitalach-pensje-pochlaniaja-106-proc-budzetu-Resort-chce-limitu,284133,14.html) (“Minister of health — in some hospitals pay absorbs 106% of the budget”, in Polish), 05.2026.
+
+[^podwyzki-2026]: Menedżer Zdrowia, [“<span lang="pl">Na podwyżki NFZ ma wydać ponad 9 mld zł — rekomendacje AOTMiT na 2026 r.</span>”](https://www.termedia.pl/mz/Na-podwyzki-NFZ-ma-wydac-ponad-9-mld-zl-AOTMiT-publikuje-rekomendacje,68001.html) (“The NFZ is to spend more than PLN 9 billion on pay rises — AOTMiT recommendations for 2026”, in Polish).
+
+[^pozyczki]: Polityka Zdrowotna, [“<span lang="pl">Zadłużenie szpitali — zobowiązania wymagalne i pożyczki na ich spłatę</span>”](https://politykazdrowotna.com/artykul/zadluzenie-szpitali-n2230555) (“Hospital debt — overdue liabilities and loans to repay them”, in Polish).
+
+[^majatek]: Rynek Zdrowia, [“<span lang="pl">W połowie zbadanych szpitali dług przekracza wartość majątku</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Az-trudno-uwierzyc-W-polowie-zbadanych-szpitali-dlug-przekracza-wartosc-majatku,283326,1.html) (“In half of the hospitals studied, debt exceeds the value of their assets”, in Polish).
+
+[^oddluzenie]: Prawo.pl, [“<span lang="pl">Jak oddłużyć polskie szpitale — raport „Zdrowie ponad długi”</span>”](https://www.prawo.pl/zdrowie/jak-oddluzyc-polskie-szpitale-raport-zdrowie-ponad-dlugi,1543437.html) (“How to relieve Polish hospitals of debt — the ‘Health above debts’ report”, in Polish).
+
+[^powiatowe]: Menedżer Zdrowia, [“<span lang="pl">Finanse szpitali powiatowych — systematyczne narastanie strat</span>”](https://www.termedia.pl/mz/Finanse-szpitali-powiatowych-systematyczne-narastanie-strat-,66853.html) (“Finances of county hospitals — a steady build-up of losses”, in Polish).
+
+[^czestochowa]: The exception described in the table below — the debt of the NMP hospital in Częstochowa was disclosed by the marshal of the Silesian voivodeship: Dziennik.pl, [“<span lang="pl">Szpital NMP w Częstochowie wśród najbardziej zadłużonych w Polsce</span>”](https://zdrowie.dziennik.pl/aktualnosci/artykuly/599197,parkitka-szpital-czestochowa-lekarze-dyzury.html) (“The NMP hospital in Częstochowa among the most indebted in Poland”, in Polish); Życie Częstochowy, [“<span lang="pl">85 mln zł długu, zajęcia komornicze i plan ratunkowy — dyrekcja szpitala na Parkitce</span>”](https://zycieczestochowy.pl/85-mln-zl-dlugu-zajecia-komornicze-i-plan-ratunkowy-dyrekcja-szpitala-na-parkitce-rozmawiala-z-mediami/) (“PLN 85 million of debt, bailiff seizures and a rescue plan — the management of the hospital in Parkitka”, in Polish); [a parliamentary question with the marshal’s data](https://x.com/JerzyPolaczek/status/2074742367060394337) (a post on X, in Polish).
+
+[^lista-wstydu]: Menedżer Zdrowia, [“<span lang="pl">„Lista wstydu” — szpitale z największą stratą netto za 2024 r.</span>”](https://www.termedia.pl/mz/Lista-wstydu-,63573.html) (“‘List of shame’ — hospitals with the largest net loss for 2024”, in Polish).
+
+[^kalisz-zalegle]: abcZdrowie, [“<span lang="pl">Szpital w Kaliszu z 37 mln zł długu. Nowy dyrektor ujawnia skalę zaniedbań</span>”](https://portal.abczdrowie.pl/szpital-w-kaliszu-z-37-mln-zl-dlugu-nowy-dyrektor-ujawnia-skale-zaniedban/7183447202130688a) (“Hospital in Kalisz with PLN 37 million of debt. The new director reveals the scale of neglect”, in Polish).
+
+[^kalisz24]: kalisz24.info, [“<span lang="pl">40 mln zł długu, milionowe kontrakty lekarzy i zaległości NFZ</span>”](https://kalisz24.info.pl/40-mln-zl-dlugu-milionowe-kontrakty-lekarzy-i-zaleglosci-narodowego-funduszu-zdrowia/) (“PLN 40 million of debt, doctors’ contracts worth millions and NFZ arrears”, in Polish).
+
+[^kalisz-kontrakty]: Calisia.pl, [“<span lang="pl">Zadłużenie szpitala, wynagrodzenia lekarzy i zaległości NFZ — wyjaśnienia dyrektora szpitala w Kaliszu</span>”](https://calisia.pl/zadluzenie-szpitala-wysokie-wynagrodzenia-lekarzy-i-milionowe-zaleglosci-nfz-mamy-oficjalne-wyjasnienia-dyrektora-placowki,74768) (“Hospital debt, doctors’ pay and NFZ arrears — explanations from the director of the hospital in Kalisz”, in Polish).
+
+[^urologia]: ESKA Kalisz, [“<span lang="pl">Co dalej z urologią w szpitalu w Kaliszu — zawieszenie i plan odbudowy oddziału</span>”](https://kalisz.eska.pl/kalisz-co-dalej-z-urologia-w-szpitalu-jest-realna-mozliwosc-odbudowy-oddzialu-aa-pkvj-q84o-oRkB.html) (“What next for urology at the hospital in Kalisz — the suspension and a plan to rebuild the ward”, in Polish).
+
+[^urologia-2026]: Calisia.pl, [“<span lang="pl">Kiedy wróci urologia w Kaliszu? Dyrektor chce otworzyć oddział jeszcze w tym roku</span>”](https://calisia.pl/kiedy-wroci-urologia-w-kaliszu-dyrektor-chce-otworzyc-oddzial-jeszcze-w-tym-roku,79862) (“When will urology return in Kalisz? The director wants to open the ward this year”, in Polish), 02.10.2026.
+
+[^urologia-latarnik]: Latarnik Kaliski, [“<span lang="pl">Przełom w kaliskiej urologii. „Odnowię ten oddział w rozmiarach, jakich szpital nigdy nie posiadał”</span>”](https://latarnikkaliski.pl/przelom-w-kaliskiej-urologii-odnowie-ten-oddzial-w-rozmiarach-jakich-szpital-nigdy-nie-posiadal/) (“A breakthrough in Kalisz urology. ‘I will rebuild this ward on a scale the hospital has never had’”, in Polish), 09.10.2026 — a secondary source; only this site gives the suspension until the end of November.
+
+[^fronda]: Fronda, [“<span lang="pl">Miliony dla lekarzy, a szpital tonie w długach</span>”](https://www.fronda.pl/a/Miliony-dla-lekarzy-a-szpital-tonie-w-dlugach,249058.html) (“Millions for doctors while the hospital drowns in debt”, in Polish).

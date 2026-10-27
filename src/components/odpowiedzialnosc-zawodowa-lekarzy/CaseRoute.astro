@@ -6,67 +6,139 @@
  * Linie ciągłe = droga sprawy w samorządzie, przerywane = sprawy przed sądami spoza samorządu.
  * Na wąskim ekranie prawa kolumna wchodzi pod krok, do którego się odnosi.
  * Podstawa każdego elementu: ustawa o izbach lekarskich, t.j. Dz.U. 2021 poz. 1342.
+ * Dwujęzyczny: na stronie /en/ napisy z obiektu TEXT.en (przykład prowadzi do polskiej strony sprawy); wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
 import { caseHref } from '@/data/sad-lekarski';
+import { localeOf } from '@/i18n/locales';
 import { typo } from '@/lib/format';
 
 const USTAWA = 'https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf';
+
+const TEXT = {
+  pl: {
+    title: 'Sprawa lekarza przechodzi przez dwie instancje samorządu. Poza samorząd wychodzi tylko z kasacją do Sądu Najwyższego, a gdy czyn jest też przestępstwem, osobno toczy się sprawa karna.',
+    source: 'Ustawa o izbach lekarskich, art. 54, 68, 80, 90, 92, 94–97, 106 i 113a',
+    lane: 'Samorząd lekarski',
+    laneSide: 'Sądy powszechne — osobno',
+    prosecutorK: 'Oskarża',
+    prosecutorH: 'Rzecznik odpowiedzialności zawodowej',
+    prosecutorD: 'Sprawdza zgłoszenie, zbiera dowody, stawia zarzuty. Odmowę wszczęcia i umorzenie pokrzywdzony może zaskarżyć.',
+    request: 'wniosek o ukaranie',
+    firstK: 'I instancja',
+    firstH: 'Okręgowy sąd lekarski',
+    firstD: 'Skład 3 osób. Może zawiesić sprawę do końca procesu karnego, a po karze karnej umorzyć ją jako niecelową.',
+    criminalK: 'Gdy czyn jest przestępstwem',
+    criminalH: 'Sąd karny',
+    criminalD: 'Proces toczy się niezależnie od sprawy w samorządzie. Sąd może orzec m.in. zakaz wykonywania zawodu.',
+    example: 'Przykład: ',
+    exampleLink: 'fikcyjne ciąże i zwolnienia',
+    exampleAfter: '',
+    appeal: 'odwołanie · 14 dni',
+    secondK: 'II instancja',
+    secondH: 'Naczelny Sąd Lekarski',
+    secondD: 'Skład 5 osób. Utrzymuje, zmienia albo uchyla orzeczenie; jego orzeczenie jest prawomocne z chwilą ogłoszenia.',
+    border: 'Poza samorządem',
+    cassation: 'kasacja · 2 miesiące — strony, minister zdrowia, Prezes NRL',
+    supremeK: 'Kasacja',
+    supremeH: 'Sąd Najwyższy',
+    supremeD: 'Tylko rażące naruszenie prawa albo niewspółmierność kary. W katalogu dwie sprawy wróciły po wyroku SN do NSL.',
+    damagesK: 'Po uniewinnieniu w kasacji lub wznowieniu',
+    damagesH: 'Sąd powszechny — odszkodowanie',
+    damagesD: 'Lekarz może żądać od izby odszkodowania i zadośćuczynienia za wykonaną karę.',
+    legendSolid: 'droga sprawy w samorządzie',
+    legendDashed: 'sprawy przed sądami spoza samorządu',
+  },
+  en: {
+    title: 'A doctor’s case passes through two instances of the self-government. It leaves the self-government only with a cassation appeal to the Supreme Court, and if the act is also a crime, criminal proceedings run separately.',
+    source: 'Act on medical chambers, Articles 54, 68, 80, 90, 92, 94–97, 106 and 113a',
+    lane: 'Medical self-government',
+    laneSide: 'Common courts — separately',
+    prosecutorK: 'Brings the charges',
+    prosecutorH: 'Disciplinary prosecutor',
+    prosecutorD: 'Checks the complaint, gathers evidence, brings charges. The injured party may challenge a refusal to open proceedings and a discontinuation.',
+    request: 'request for a penalty',
+    firstK: 'First instance',
+    firstH: 'Regional medical court',
+    firstD: 'Panel of 3. May stay the case until the criminal trial ends and, after a criminal penalty, discontinue it as pointless.',
+    criminalK: 'If the act is a crime',
+    criminalH: 'Criminal court',
+    criminalD: 'The trial runs independently of the case in the self-government. The court may impose, among other things, a ban on practising the profession.',
+    example: 'Example: ',
+    exampleLink: 'fictitious pregnancies and sick notes',
+    exampleAfter: ' (in Polish)',
+    appeal: 'appeal · 14 days',
+    secondK: 'Second instance',
+    secondH: 'Supreme Medical Court',
+    secondD: 'Panel of 5. Upholds, amends or sets aside the decision; its decision is final once announced.',
+    border: 'Outside the self-government',
+    cassation: 'cassation appeal · 2 months — the parties, the minister of health, the President of the Supreme Medical Council',
+    supremeK: 'Cassation appeal',
+    supremeH: 'Supreme Court',
+    supremeD: 'Only a flagrant breach of the law or a disproportionate penalty. In the catalogue, two cases went back to the Supreme Medical Court after a Supreme Court judgment.',
+    damagesK: 'After acquittal on cassation or reopening',
+    damagesH: 'Common court — compensation',
+    damagesD: 'The doctor may claim damages and compensation for harm from the chamber for a penalty already served.',
+    legendSolid: 'path of the case in the self-government',
+    legendDashed: 'cases before courts outside the self-government',
+  },
+};
+const t = TEXT[localeOf(Astro.url.pathname) === 'en' ? 'en' : 'pl'];
 ---
 <Figure
-  title="Sprawa lekarza przechodzi przez dwie instancje samorządu. Poza samorząd wychodzi tylko z kasacją do Sądu Najwyższego, a gdy czyn jest też przestępstwem, osobno toczy się sprawa karna."
-  source={{ label: 'Ustawa o izbach lekarskich, art. 54, 68, 80, 90, 92, 94–97, 106 i 113a', href: USTAWA }}
+  title={t.title}
+  source={{ label: t.source, href: USTAWA }}
 >
   <div class="rt">
-    <p class="rt__lane">Samorząd lekarski</p>
-    <p class="rt__lane rt__lane--side">Sądy powszechne — osobno</p>
+    <p class="rt__lane">{t.lane}</p>
+    <p class="rt__lane rt__lane--side">{t.laneSide}</p>
 
     <div class="rt__node">
-      <p class="rt__k">Oskarża</p>
-      <p class="rt__h">Rzecznik odpowiedzialności zawodowej</p>
-      <p class="rt__d">{typo('Sprawdza zgłoszenie, zbiera dowody, stawia zarzuty. Odmowę wszczęcia i umorzenie pokrzywdzony może zaskarżyć.')}</p>
+      <p class="rt__k">{t.prosecutorK}</p>
+      <p class="rt__h">{t.prosecutorH}</p>
+      <p class="rt__d">{typo(t.prosecutorD)}</p>
     </div>
 
-    <p class="rt__arrow">wniosek o ukaranie</p>
+    <p class="rt__arrow">{t.request}</p>
 
     <div class="rt__node rt__node--court">
-      <p class="rt__k">I instancja</p>
-      <p class="rt__h">Okręgowy sąd lekarski</p>
-      <p class="rt__d">{typo('Skład 3 osób. Może zawiesić sprawę do końca procesu karnego, a po karze karnej umorzyć ją jako niecelową.')}</p>
+      <p class="rt__k">{t.firstK}</p>
+      <p class="rt__h">{t.firstH}</p>
+      <p class="rt__d">{typo(t.firstD)}</p>
     </div>
     <span class="rt__link" aria-hidden="true"></span>
     <div class="rt__side">
-      <p class="rt__k">Gdy czyn jest przestępstwem</p>
-      <p class="rt__h">Sąd karny</p>
-      <p class="rt__d">{typo('Proces toczy się niezależnie od sprawy w samorządzie. Sąd może orzec m.in. zakaz wykonywania zawodu.')}</p>
-      <p class="rt__ex">Przykład: <a href={caseHref('ciaza-fikcyjna')}>fikcyjne ciąże i zwolnienia</a></p>
+      <p class="rt__k">{t.criminalK}</p>
+      <p class="rt__h">{t.criminalH}</p>
+      <p class="rt__d">{typo(t.criminalD)}</p>
+      <p class="rt__ex">{t.example}<a href={caseHref('ciaza-fikcyjna')}>{t.exampleLink}</a>{t.exampleAfter}</p>
     </div>
 
-    <p class="rt__arrow">odwołanie · 14 dni</p>
+    <p class="rt__arrow">{t.appeal}</p>
 
     <div class="rt__node rt__node--court">
-      <p class="rt__k">II instancja</p>
-      <p class="rt__h">Naczelny Sąd Lekarski</p>
-      <p class="rt__d">{typo('Skład 5 osób. Utrzymuje, zmienia albo uchyla orzeczenie; jego orzeczenie jest prawomocne z chwilą ogłoszenia.')}</p>
+      <p class="rt__k">{t.secondK}</p>
+      <p class="rt__h">{t.secondH}</p>
+      <p class="rt__d">{typo(t.secondD)}</p>
     </div>
 
-    <p class="rt__border">Poza samorządem</p>
+    <p class="rt__border">{t.border}</p>
 
-    <p class="rt__arrow">kasacja · 2 miesiące — strony, minister zdrowia, Prezes NRL</p>
+    <p class="rt__arrow">{t.cassation}</p>
 
     <div class="rt__node">
-      <p class="rt__k">Kasacja</p>
-      <p class="rt__h">Sąd Najwyższy</p>
-      <p class="rt__d">{typo('Tylko rażące naruszenie prawa albo niewspółmierność kary. W katalogu dwie sprawy wróciły po wyroku SN do NSL.')}</p>
+      <p class="rt__k">{t.supremeK}</p>
+      <p class="rt__h">{t.supremeH}</p>
+      <p class="rt__d">{typo(t.supremeD)}</p>
     </div>
     <span class="rt__link" aria-hidden="true"></span>
     <div class="rt__side">
-      <p class="rt__k">Po uniewinnieniu w kasacji lub wznowieniu</p>
-      <p class="rt__h">Sąd powszechny — odszkodowanie</p>
-      <p class="rt__d">{typo('Lekarz może żądać od izby odszkodowania i zadośćuczynienia za wykonaną karę.')}</p>
+      <p class="rt__k">{t.damagesK}</p>
+      <p class="rt__h">{t.damagesH}</p>
+      <p class="rt__d">{typo(t.damagesD)}</p>
     </div>
   </div>
-  <p class="rt__legend" aria-hidden="true"><span>droga sprawy w samorządzie</span><span>sprawy przed sądami spoza samorządu</span></p>
+  <p class="rt__legend" aria-hidden="true"><span>{t.legendSolid}</span><span>{t.legendDashed}</span></p>
 </Figure>
 
 <style>

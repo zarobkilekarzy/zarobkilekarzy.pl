@@ -4,40 +4,65 @@
  * Jedna ilustracja zamiast tabeli i osobnego wykresu: kwota, złote i pasek na wspólnej skali
  * (do największej stawki), wyróżniona komórka to stawka z przykładowego rachunku.
  * W wąskim kontenerze wiersz staje się kartą z trzema stawkami.
+ * Na stronach /en/ podpisy z src/data/en/tajwan.ts i bez złotych (TWD nie ma w tabeli A NBP).
  */
 import Figure from '@/components/blocks/Figure.astro';
 import { COPAY, LINKS, TWD, zl } from '@/data/tajwan';
-import { formatPL } from '@/lib/format';
+import { formatNumber } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { COPAY_TEXT } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/tajwan') : {}) as typeof import('@/data/en/tajwan');
+const en = locale === 'en';
+const columns: readonly string[] = en ? COPAY_TEXT.columns : COPAY.columns;
 
 const max = Math.max(...COPAY.levels.flatMap((l) => l.values));
 const isReceipt = (row: number, col: number) => row === COPAY.receipt.level && col === COPAY.receipt.column;
 
 const cheapest = COPAY.levels[0].values[1];
 const priciest = COPAY.levels.at(-1)!.values[1];
-const ratio = formatPL(priciest / cheapest, 1);
+const ratio = formatNumber(priciest / cheapest, 1, locale);
+
+const T = {
+  pl: {
+    title: `Ta sama porada bez skierowania: ${cheapest} TWD w przychodni, ${priciest} TWD w centrum medycznym — ${ratio} raza więcej.`,
+    note: `Dopłata podstawowa za wizytę u lekarza medycyny zachodniej, bez zwolnień. Przychodnie nie mają SOR — 150 TWD to stawka za świadczenia rozliczane w trybie nagłym. Złote po kursie NBP z ${TWD.date}.`,
+    source: 'NHI Annual Report 2025–2026, tab. 3-3',
+    level: 'Poziom placówki',
+    mark: 'na rachunku niżej',
+  },
+  en: {
+    title: `The same visit without a referral: TWD ${cheapest} at a clinic, TWD ${priciest} at a medical centre — ${ratio} times as much.`,
+    note: 'Basic copayment for a visit to a doctor of Western medicine, without exemptions. Clinics have no emergency department — TWD 150 is the rate for services billed as emergency care.',
+    source: 'NHI Annual Report 2025–2026, table 3-3',
+    level: 'Facility level',
+    mark: 'on the receipt below',
+  },
+}[locale];
 ---
 <Figure
-  title={`Ta sama porada bez skierowania: ${cheapest} TWD w przychodni, ${priciest} TWD w centrum medycznym — ${ratio} raza więcej.`}
-  note={`Dopłata podstawowa za wizytę u lekarza medycyny zachodniej, bez zwolnień. Przychodnie nie mają SOR — 150 TWD to stawka za świadczenia rozliczane w trybie nagłym. Złote po kursie NBP z ${TWD.date}.`}
-  source={{ label: 'NHI Annual Report 2025–2026, tab. 3-3', href: LINKS.annualReport }}
+  title={T.title}
+  note={T.note}
+  source={{ label: T.source, href: LINKS.annualReport }}
 >
   <table class="copay" data-reveal="grow" style={`--max: ${max}`}>
     <thead>
       <tr>
-        <th scope="col">Poziom placówki</th>
-        {COPAY.columns.map((c) => <th scope="col">{c}</th>)}
+        <th scope="col">{T.level}</th>
+        {columns.map((c) => <th scope="col">{c}</th>)}
       </tr>
     </thead>
     <tbody>
       {COPAY.levels.map((l, row) => (
         <tr>
-          <th scope="row">{l.level} <span lang="zh-Hant">{l.zh}</span></th>
+          <th scope="row">{en ? COPAY_TEXT.level(l.zh) : l.level} <span lang="zh-Hant">{l.zh}</span></th>
           {l.values.map((v, col) => (
-            <td data-label={COPAY.columns[col]} class:list={{ 'is-receipt': isReceipt(row, col) }} style={`--v: ${v}`}>
+            <td data-label={columns[col]} class:list={{ 'is-receipt': isReceipt(row, col) }} style={`--v: ${v}`}>
               <span class="copay__v">{v}<small> TWD</small></span>
-              <span class="copay__zl">{zl(v)}</span>
+              {!en && <span class="copay__zl">{zl(v)}</span>}
               <span class="copay__bar" aria-hidden="true"></span>
-              {isReceipt(row, col) && <span class="copay__mark">na rachunku niżej</span>}
+              {isReceipt(row, col) && <span class="copay__mark">{T.mark}</span>}
             </td>
           ))}
         </tr>

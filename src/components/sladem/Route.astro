@@ -3,35 +3,62 @@
  * Droga publicznej złotówki w czterech przystankach z oceną jawności na każdym (statycznie, bez JS).
  * Cztery kolumny w szerokim kontenerze, lista pionowa w wąskim (container queries).
  * Skala 0–3 to ocena redakcji, a nie pomiar — mówi o tym podpis ramki.
+ * Na stronach /en/ przystanki z src/data/en/sladem-zlotowki.ts i angielskie podpisy z T.
  */
 import Figure from '@/components/blocks/Figure.astro';
-import { STOPS } from '@/data/sladem-zlotowki';
+import { STOPS as STOPS_PL } from '@/data/sladem-zlotowki';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 const MAX = 3;
+const en = localeOf(Astro.url.pathname) === 'en';
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { STOPS: STOPS_EN } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/sladem-zlotowki') : {}) as typeof import('@/data/en/sladem-zlotowki');
+const STOPS = en ? STOPS_EN : STOPS_PL;
+
+const T = {
+  pl: {
+    title: 'Im dalej od składki, tym mniej widać: sumy są jawne na każdym przystanku, kwota dla jednej osoby — na żadnym.',
+    note: 'Skala jawności to ocena redakcji: co da się sprawdzić w publicznych źródłach na danym etapie. Liczby i ich źródła podajemy w tekście przystanków.',
+    label: 'Cztery przystanki publicznej złotówki',
+    stop: 'Przystanek',
+    level: (level: number) => `Jawność ${level} na ${MAX}`,
+    visible: 'Widać',
+    hidden: 'Nie widać',
+  },
+  en: {
+    title: 'The further from the contribution, the less you can see: totals are public at every stop, the amount for one person — at none.',
+    note: 'The transparency scale is the editors’ assessment: what can be checked in public sources at a given stage. Figures and their sources are given in the text on each stop.',
+    label: 'Four stops of the public zloty',
+    stop: 'Stop',
+    level: (level: number) => `Transparency ${level} out of ${MAX}`,
+    visible: 'Visible',
+    hidden: 'Not visible',
+  },
+}[en ? 'en' : 'pl'];
 ---
 <Figure
-  title="Im dalej od składki, tym mniej widać: sumy są jawne na każdym przystanku, kwota dla jednej osoby — na żadnym."
-  note="Skala jawności to ocena redakcji: co da się sprawdzić w publicznych źródłach na danym etapie. Liczby i ich źródła podajemy w tekście przystanków."
+  title={T.title}
+  note={T.note}
 >
-  <ol class="route" aria-label="Cztery przystanki publicznej złotówki">
+  <ol class="route" aria-label={T.label}>
     {STOPS.map((stop, i) => (
       <li class="route__stop" data-level={stop.level}>
-        <p class="route__idx">Przystanek {i + 1}</p>
+        <p class="route__idx">{`${T.stop} ${i + 1}`}</p>
         <p class="route__name">{typo(stop.name)}</p>
         <p class="route__meter">
           <span class="route__dots" aria-hidden="true">
             {Array.from({ length: MAX }, (_, d) => <span class:list={['route__dot', { 'is-on': d < stop.level }]}></span>)}
           </span>
           <span class="route__level">
-            <span class="sr-only">Jawność {stop.level} na {MAX}: </span>{typo(stop.levelLabel)}
+            <span class="sr-only">{T.level(stop.level)}: </span>{typo(stop.levelLabel)}
           </span>
         </p>
         <p class="route__what">{typo(stop.what)}</p>
         <dl class="route__facts">
-          <dt>Widać</dt>
+          <dt>{T.visible}</dt>
           <dd>{typo(stop.visible)}</dd>
-          <dt>Nie widać</dt>
+          <dt>{T.hidden}</dt>
           <dd>{typo(stop.hidden)}</dd>
         </dl>
       </li>

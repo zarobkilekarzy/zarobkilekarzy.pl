@@ -5,10 +5,13 @@
  * (data/personel-medyczny.ts), więc 1 lipca wystarczy zmienić BASE.
  * Niebieski pasek — zawody opisane w zestawieniu, szary — lekarze dla porównania.
  * W wąskim kontenerze wiersz staje się kartą.
+ * Dwujęzyczny: na stronach /en/ nazwy grup z src/data/en/personel-medyczny.ts, napisy z T.en
+ * i kwoty w zapisie angielskim (same PLN, bez euro — tabela z wieloma kwotami); wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
-import { BASE, NON_MEDICAL, PAY_SCALE, minimum } from '@/data/personel-medyczny';
-import { formatPL, typo } from '@/lib/format';
+import * as PL from '@/data/personel-medyczny';
+import { formatNumber, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   /** publikacja z pełną siatką — z listy `sources` artykułu */
@@ -16,36 +19,67 @@ interface Props {
 }
 
 const { source } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const EN = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/personel-medyczny') : {}) as typeof import('@/data/en/personel-medyczny');
+const { BASE, NON_MEDICAL, PAY_SCALE, minimum } = locale === 'en' ? EN : PL;
+const num = (n: number, decimals = 0) => formatNumber(n, decimals, locale);
 
 const rows = PAY_SCALE.map((g) => ({ ...g, amount: minimum(g.coef) }));
 const amounts = rows.map((r) => r.amount);
 const max = Math.max(...amounts);
-const zl = (n: number, decimals = 0) => `${formatPL(n, decimals)} zł`;
+
+const T = {
+  pl: {
+    money: (n: number, decimals = 0) => `${num(n, decimals)} zł`,
+    title: (lo: string, hi: string) => `Od ${lo} do ${hi} — tyle co najmniej wynosi płaca zasadnicza na etacie od ${BASE.from}`,
+    note: (base: string, nonMedical: string) =>
+      `Minimum = współczynnik × kwota bazowa ${base} (${BASE.basis}). Bez dyżurów, nadgodzin i dodatków. Niżej w siatce są grupy niemedyczne, np. ${NON_MEDICAL.title} (grupa ${NON_MEDICAL.group}): ${nonMedical}. Niebieski pasek — zawody opisane w tym zestawieniu, szary — lekarze dla porównania.`,
+    colGroup: 'Grupa i zawody',
+    colCoef: 'Współczynnik',
+    colMin: 'Minimum zasadnicze',
+    labelMin: 'Minimum',
+    group: (n: number) => `Grupa ${n}`,
+    perMonth: 'zł/mies.',
+  },
+  en: {
+    money: (n: number, decimals = 0) => `PLN ${num(n, decimals)}`,
+    title: (lo: string, hi: string) => `From ${lo} to ${hi} — the minimum base pay of salaried staff from ${BASE.from}`,
+    note: (base: string, nonMedical: string) =>
+      `Minimum = coefficient × base amount of ${base} (${BASE.basis}). Excluding on-call duty, overtime and allowances. Lower in the scale are non-medical groups, e.g. ${NON_MEDICAL.title} (group ${NON_MEDICAL.group}): ${nonMedical}. Blue bar — professions described in this overview, grey — doctors for comparison.`,
+    colGroup: 'Group and professions',
+    colCoef: 'Coefficient',
+    colMin: 'Minimum base pay',
+    labelMin: 'Minimum',
+    group: (n: number) => `Group ${n}`,
+    perMonth: 'PLN/month',
+  },
+}[locale];
 ---
 <Figure
-  title={`Od ${zl(Math.min(...amounts))} do ${zl(max)} — tyle co najmniej wynosi płaca zasadnicza na etacie od ${BASE.from}`}
-  note={`Minimum = współczynnik × kwota bazowa ${zl(BASE.amount, 2)} (${BASE.basis}). Bez dyżurów, nadgodzin i dodatków. Niżej w siatce są grupy niemedyczne, np. ${NON_MEDICAL.title} (grupa ${NON_MEDICAL.group}): ${zl(minimum(NON_MEDICAL.coef))}. Niebieski pasek — zawody opisane w tym zestawieniu, szary — lekarze dla porównania.`}
+  title={T.title(T.money(Math.min(...amounts)), T.money(max))}
+  note={T.note(T.money(BASE.amount, 2), T.money(minimum(NON_MEDICAL.coef)))}
   source={source}
 >
   <table class="scale" data-reveal="grow" style={`--max: ${max}`}>
     <thead>
       <tr>
-        <th scope="col">Grupa i zawody</th>
-        <th scope="col">Współczynnik</th>
-        <th scope="col">Minimum zasadnicze</th>
+        <th scope="col">{T.colGroup}</th>
+        <th scope="col">{T.colCoef}</th>
+        <th scope="col">{T.colMin}</th>
       </tr>
     </thead>
     <tbody>
       {rows.map((r) => (
         <tr class:list={{ 'is-doctor': r.doctor }}>
           <th scope="row">
-            <span class="scale__group">Grupa {r.group}</span>
+            <span class="scale__group">{T.group(r.group)}</span>
             {typo(r.title)}
             {r.note && <span class="scale__note">{typo(r.note)}</span>}
           </th>
-          <td data-label="Współczynnik" class="scale__coef">×{formatPL(r.coef, 2)}</td>
-          <td data-label="Minimum" style={`--v: ${r.amount}`}>
-            <span class="scale__v">{formatPL(r.amount, 2)}<small> zł/mies.</small></span>
+          <td data-label={T.colCoef} class="scale__coef">×{num(r.coef, 2)}</td>
+          <td data-label={T.labelMin} style={`--v: ${r.amount}`}>
+            <span class="scale__v">{num(r.amount, 2)}<small> {T.perMonth}</small></span>
             <span class="scale__bar" aria-hidden="true"></span>
           </td>
         </tr>

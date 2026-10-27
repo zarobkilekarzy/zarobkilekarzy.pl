@@ -1,0 +1,291 @@
+---
+/**
+ * /en/patient-rights/ — tłumaczenie /prawa-pacjenta/ (src/pages/prawa-pacjenta/index.astro): ten sam układ,
+ * teksty z src/data/en/prawa-pacjenta.ts, komponenty components/pacjent (dwujęzyczne lokalnie).
+ * Para i stempel w src/i18n/pages.json; pod nagłówkiem nota o tłumaczeniu (article/PageTranslationNote)
+ * i nota, że wiążą tylko polskie teksty ustaw. Kotwice sekcji i odpowiedzi po angielsku.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import SourceList from '@/components/article/SourceList.astro';
+import ShareLinks from '@/components/article/ShareLinks.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import Icon from '@/components/ui/Icon.astro';
+import HelpCard from '@/components/pacjent/HelpCard.astro';
+import EntryCards from '@/components/pacjent/EntryCards.astro';
+import TextSize from '@/components/pacjent/TextSize.astro';
+import Intro from '@/components/pacjent/Intro.astro';
+import RightsGroup from '@/components/pacjent/RightsGroup.astro';
+import FirstSteps from '@/components/pacjent/FirstSteps.astro';
+import RouteFinder from '@/components/pacjent/RouteFinder.astro';
+import Deadlines from '@/components/pacjent/Deadlines.astro';
+import FundCompare from '@/components/pacjent/FundCompare.astro';
+import PrintPromo from '@/components/pacjent/PrintPromo.astro';
+import CallBar from '@/components/pacjent/CallBar.astro';
+import SorLive from '@/components/sor/SorLive.astro';
+import {
+  ACT, courtMyth, deadlines, editorial, emergency, entries, firstSteps, fund, helpline, legalBasis,
+  page, rightsGroups, routes, routesNote, sources, translationNote,
+} from '@/data/en/prawa-pacjenta';
+import { pagePairOf } from '@/i18n/pages';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { formatDateIn, isoDate, typo } from '@/lib/format';
+import { inline, plain } from '@/lib/inline';
+import { PDF_FILES_EN, pdfMetaEn } from '@/lib/pacjent/downloads-en';
+
+const act = { name: ACT.name, url: ACT.url };
+const [rightsNow, rightsDocs] = rightsGroups;
+const url = new URL(Astro.url.pathname, Astro.site).href;
+// linki w treści EN są gotowymi adresami (bez „ref:”), więc wystarcza domyślne rozwiązywanie z lib/inline
+const md = (text: string) => inline(text, undefined, undefined, 'en');
+
+const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: page.title }];
+// Pytania i odpowiedzi jako strona FAQ (schema.org/FAQPage) — graf buduje lib/seo
+const seo: SeoInput = {
+  title: page.seoTitle,
+  social: { title: page.docTitle },
+  description: page.description,
+  index: !pagePairOf(Astro.url.pathname)?.draft,
+  breadcrumbs: crumbs,
+  dates: { modified: page.checked },
+  page: {
+    type: 'FAQPage',
+    questions: rightsGroups.flatMap((g) => g.items).map((item) => ({
+      question: item.q,
+      answer: plain([`${item.verdict}. ${item.short}`, ...item.more, `Legal basis: ${item.basis} of the Act on Patient Rights.`].join(' ')),
+    })),
+  },
+};
+---
+<BaseLayout seo={seo}>
+  <div class="pp">
+    <Section space="bottom" class="pp-top">
+      <PageHeader title={page.title} lead={page.lead} eyebrow="For patients" crumbs={crumbs}>
+        <div class="pp-tools">
+          <TextSize />
+          <a class="pp-tool" href="#print"><Icon name="print" size={20} /><span>Printable card</span></a>
+          <p class="pp-checked">Checked against the sources on <time datetime={isoDate(page.checked)}>{formatDateIn(page.checked, 'en')}</time></p>
+        </div>
+        <HelpCard slot="aside" helpline={helpline} emergency={emergency} />
+      </PageHeader>
+
+      <div class="pp-tr">
+        <PageTranslationNote />
+        <p class="pp-disclaimer"><strong>{translationNote.title}</strong> {typo(translationNote.text)}</p>
+      </div>
+
+      <EntryCards class="pp-entries" title="What situation are you in?" items={entries} />
+      <SorLive variant="pas" class="pp-sor" />
+    </Section>
+
+    <Section id="now" aria-labelledby="now-title" class="pp-sec">
+      <RightsGroup group={rightsNow} act={act} />
+    </Section>
+
+    <Section id="documents" tone="soft" aria-labelledby="documents-title" class="pp-sec">
+      <RightsGroup group={rightsDocs} act={act} />
+    </Section>
+
+    <Section id="what-happened" aria-labelledby="what-happened-title" class="pp-sec">
+      <Intro
+        eyebrow="When something went wrong"
+        title="What happened?"
+        punct=""
+        id="what-happened-title"
+        lead="Choose the situation that fits — you will see where to take it, how to do it, how much time you have and whether it costs anything. Institutions do not pass cases on to each other, so the right address is half the battle."
+      />
+      <FirstSteps class="pp-steps" title="Before you report anything" steps={firstSteps} />
+      <div class="pp-routes">
+        <RouteFinder routes={routes} />
+        <p class="pp-routes__note"><Icon name="info" size={20} /><span>{typo(routesNote)}</span></p>
+      </div>
+    </Section>
+
+    <Section id="deadlines" tone="soft" aria-labelledby="deadlines-title" class="pp-sec">
+      <div class="pp-split">
+        <Intro
+          eyebrow="Watch the deadlines"
+          title="How much time you have"
+          id="deadlines-title"
+          lead="Most often a case is lost not because the patient was wrong, but because a deadline passed. Here they all are on one list — starting with the shortest."
+        />
+        <div>
+          <Deadlines items={deadlines} />
+          <Aside variant="info" title="Myth: “after 10 years it is time-barred anyway”" class="pp-myth">
+            <p>{typo(courtMyth)}</p>
+          </Aside>
+        </div>
+      </div>
+    </Section>
+
+    <Section id="fund" aria-labelledby="fund-title" class="pp-sec">
+      <Intro eyebrow="Harm suffered in hospital" title="The Fund or the court?" punct="" id="fund-title" lead={fund.lead} class="pp-fund-intro" />
+      <FundCompare
+        compare={fund.compare}
+        heads={['Compensation Fund', 'Civil court']}
+        catchBox={fund.catch}
+        conditions={fund.conditions}
+        how={fund.how}
+        notes={fund.notes}
+        amountsNote={fund.amountsNote}
+      />
+    </Section>
+
+    <Section id="print" tone="soft" aria-labelledby="druk-title" class="pp-sec">
+      <PrintPromo
+        title="Pocket card"
+        text="The most important rights, deadlines and numbers on a single card — for your handbag, for the folder with your medical records or for a parent. You print it on an ordinary sheet of A4, cut it and fold it. It can be handed out without asking for permission."
+        phone={helpline.phone.display}
+        actions={[
+          { label: 'Download the card', meta: `${await pdfMetaEn('card')} · 2 cards on A4`, href: PDF_FILES_EN.card.href, download: PDF_FILES_EN.card.download, icon: 'doc' },
+          { label: 'Large print', meta: `${await pdfMetaEn('large')} · 2 pages, 14 pt text`, href: PDF_FILES_EN.large.href, download: PDF_FILES_EN.large.download, icon: 'text-size' },
+          { label: 'How to print and fold it', meta: 'instructions and a preview of the card', href: '/en/patient-rights/print/', icon: 'print' },
+        ]}
+      />
+    </Section>
+
+    <Section aria-labelledby="sources-title" class="pp-sec">
+      <div class="pp-end">
+        <div class="pp-basis">
+          <h2 class="pp-basis__title" id="sources-title">Where this comes from</h2>
+          <p class="pp-disclaimer"><strong>This is not legal advice.</strong> {typo(page.disclaimer.replace(/^This is not legal advice\.\s*/, ''))}</p>
+          <ul class="pp-basis__list">
+            {legalBasis.map((p) => <li set:html={md(p)} />)}
+          </ul>
+          <SourceList sources={sources} id="sources" />
+        </div>
+        <Aside variant="editorial" title="Why a website about transparency writes about patient rights">
+          {editorial.map((p) => <p set:html={md(p)} />)}
+        </Aside>
+      </div>
+      <div class="pp-share">
+        <ShareLinks url={url} title={page.docTitle} label="Someone you know may need this" />
+      </div>
+    </Section>
+  </div>
+
+  <CallBar phone={helpline.phone} label="Helpline" />
+</BaseLayout>
+
+<script>
+  // Kotwica do odpowiedzi lub sytuacji otwiera ją (także przy wejściu z linku od kogoś)
+  const openTarget = (hash: string) => {
+    if (!hash || hash.length < 2) return;
+    const el = document.getElementById(decodeURIComponent(hash.slice(1)));
+    if (!el) return;
+    const details = el instanceof HTMLDetailsElement ? el : el.querySelector('details');
+    if (details) details.open = true;
+  };
+  openTarget(location.hash);
+  window.addEventListener('hashchange', () => openTarget(location.hash));
+  document.addEventListener('click', (e) => {
+    const link = (e.target as Element).closest<HTMLAnchorElement>('a[href^="#"]');
+    if (link && !link.hasAttribute('data-share')) openTarget(link.hash);
+  });
+
+  // „Send this answer”: arkusz udostępniania na telefonie, w innym razie kopia linku
+  document.addEventListener('click', async (e) => {
+    const link = (e.target as Element).closest<HTMLAnchorElement>('a[data-share]');
+    if (!link) return;
+    e.preventDefault();
+    const href = new URL(link.hash, location.href).href;
+    history.replaceState(null, '', link.hash);
+    const label = link.querySelector('[data-share-label]');
+    const original = label?.textContent;
+    const flash = (text: string) => {
+      if (!label) return;
+      label.textContent = text;
+      setTimeout(() => { label.textContent = original ?? ''; }, 2200);
+    };
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+      try { await navigator.share({ title: link.dataset.share, url: href }); } catch { /* anulowane */ }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(href);
+      flash('Link copied — paste it into a message');
+    } catch {
+      flash('Copy the address from the browser bar');
+    }
+  });
+
+  // Wydruk strony: wszystkie odpowiedzi rozwinięte, po wydruku stan jak przed nim
+  let opened: HTMLDetailsElement[] = [];
+  window.addEventListener('beforeprint', () => {
+    opened = [...document.querySelectorAll<HTMLDetailsElement>('.pp details:not([open])')];
+    opened.forEach((d) => { d.open = true; });
+  });
+  window.addEventListener('afterprint', () => {
+    opened.forEach((d) => { d.open = false; });
+    opened = [];
+  });
+</script>
+
+<style>
+  .pp-top { padding-top: clamp(32px, 4vw, 56px); }
+  .pp :global(.pp-sec) { scroll-margin-top: var(--header-h); }
+
+  .pp-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.625rem 0.75rem; margin-top: 1.75rem; }
+  .pp-tool {
+    display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0 1rem;
+    border: 1px solid var(--line-2); background: var(--surface);
+    font: 500 0.9375rem/1 var(--f-body); color: var(--ink);
+    transition: border-color .2s;
+  }
+  .pp-tool:hover { border-color: var(--ink); }
+  .pp-checked { font: 400 0.8125rem/1.4 var(--f-mono); color: var(--text); margin-left: 0.25rem; }
+
+  /* nota o tłumaczeniu i o tym, że wiążą tylko polskie teksty ustaw */
+  .pp-tr { display: grid; gap: 0.75rem; max-width: 52em; margin-top: clamp(32px, 4vw, 48px); }
+  .pp-tr :global(.tnote) { margin-bottom: 0; }
+
+  .pp :global(.pp-entries) { margin-top: clamp(48px, 6vw, 80px); }
+  .pp :global(.pp-sor) { margin-top: clamp(32px, 4vw, 48px); }
+
+  .pp :global(.pp-steps) { margin-top: clamp(2rem, 4vw, 3rem); }
+  .pp-routes { margin-top: clamp(2.5rem, 5vw, 4rem); }
+  .pp-routes__note {
+    display: flex; gap: 0.75rem; margin-top: 1.5rem; max-width: 52em;
+    font-size: 0.9375rem; line-height: 1.6; color: var(--ink-2);
+  }
+  .pp-routes__note :global(svg) { color: var(--blue); flex: none; margin-top: 0.125rem; }
+
+  .pp-split { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr); gap: 2rem clamp(40px, 6vw, 96px); align-items: start; }
+  .pp :global(.pp-myth) { margin-top: 2rem; }
+  .pp :global(.pp-fund-intro) { margin-bottom: clamp(2rem, 4vw, 3rem); }
+
+  .pp-end { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 2.5rem clamp(40px, 6vw, 96px); align-items: start; }
+  /* minmax(0, …): jednowierszowy podgląd źródeł nie może rozpychać kolumny */
+  .pp-basis { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+  .pp-basis__title { font: 400 clamp(1.75rem, 2.6vw, 2.25rem)/1.1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .pp-disclaimer { padding: 1rem 1.25rem; background: var(--bg-soft); border-left: 2px solid var(--ink); font-size: 1rem; line-height: 1.6; color: var(--ink-2); }
+  .pp-disclaimer strong { color: var(--ink); }
+  .pp-basis__list { display: grid; gap: 0.75rem; }
+  .pp-basis__list li { position: relative; padding-left: 1.125rem; font-size: 0.9375rem; line-height: 1.6; color: var(--text); }
+  .pp-basis__list li::before { content: "§"; position: absolute; left: 0; color: var(--blue); }
+  .pp-basis__list :global(a) { color: var(--blue-700); text-decoration: underline; text-underline-offset: 3px; }
+  .pp-share { margin-top: clamp(40px, 5vw, 64px); padding-top: 1.5rem; border-top: 1px solid var(--line-2); }
+
+  @media (max-width: 1024px) {
+    .pp-split, .pp-end { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .pp-checked { flex-basis: 100%; margin-left: 0; }
+    .pp-tools > :global(*:not(.pp-checked)) { flex: 1 1 0; justify-content: center; }
+    /* miejsce na przycisk infolinii przy dolnej krawędzi */
+    .pp { padding-bottom: 4rem; }
+  }
+
+  /* Wydruk całej strony: sama treść, bez nawigacji i elementów interaktywnych */
+  @media print {
+    :global(.topbar), :global(header.header), :global(footer.footer), :global(.skip-link),
+    .pp-tools, .pp :global(.pp-entries), .pp :global(.pp-sor), .pp-share, .pp :global(.qa__share),
+    .pp :global(#print), .pp :global(.route__toggle), .pp :global(.qa__toggle) { display: none !important; }
+    .pp :global(.section) { padding-block: 16px !important; background: none !important; border: 0 !important; }
+    .pp :global(.rights__intro) { position: static !important; }
+    .pp :global(.qa), .pp :global(.route), .pp :global(.dl) { break-inside: avoid; }
+    .pp :global(a[href^="http"])::after { content: " (" attr(href) ")"; font-size: 0.75em; color: var(--text); word-break: break-all; }
+  }
+</style>

@@ -4,11 +4,14 @@
  * odniesienia (płaca minimalna 2026/2027, przeciętne wynagrodzenie albo własną), a tabela przelicza
  * stawkę godzinową (1/20) i pułapy miesięczne (4×, 8×, 12×, 16×). Mnożniki i kwoty — w propsach.
  * Bez JS zostaje tabela dla pierwszej kwoty; skrypt tylko przelicza.
+ * Na stronach angielskich (/en/) napisy po angielsku, liczby w zapisie angielskim, „PLN” przed kwotą;
+ * skrypt dostaje `data-locale="en"` i szablony zdań w `data-*` (etykiety wierszy i kwot — w propsach).
  */
 import type { HTMLAttributes } from 'astro/types';
 import Icon from '@/components/ui/Icon.astro';
-import { formatPL, typo } from '@/lib/format';
+import { formatNumber, typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
+import { localeOf } from '@/i18n/locales';
 
 export interface LimitBase {
   id: string;
@@ -36,46 +39,78 @@ interface Props extends HTMLAttributes<'div'> {
 
 const { bases, rows, reference, class: className, ...rest } = Astro.props;
 const first = bases[0];
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
 // kwota do grosza; całe złote bez części dziesiętnej
-const money = (v: number) => formatPL(v, Number.isInteger(Math.round(v * 100) / 100) ? 0 : 2);
+const money = (v: number) => formatNumber(v, Number.isInteger(Math.round(v * 100) / 100) ? 0 : 2, locale);
+// kwota z walutą: „4 806 zł” po polsku, „PLN 4,806” po angielsku
+const cash = (v: number) => (en ? `PLN ${money(v)}` : `${money(v)} zł`);
+const text = {
+  pl: {
+    legend: 'Kwota odniesienia',
+    own: 'Własna kwota',
+    ownLabel: 'Własna kwota odniesienia w złotych',
+    ownUnit: 'zł',
+    caption: 'Limity wynagrodzenia przeliczone od wybranej kwoty odniesienia',
+    cols: ['Limit', 'Mnożnik', 'Kwota'],
+    status: (v: number) => `Kwota odniesienia: ${cash(v)}.`,
+  },
+  en: {
+    legend: 'Reference amount',
+    own: 'Your own amount',
+    ownLabel: 'Your own reference amount in zloty',
+    ownUnit: 'PLN',
+    caption: 'Pay limits calculated from the selected reference amount',
+    cols: ['Limit', 'Multiplier', 'Amount'],
+    status: (v: number) => `Reference amount: ${cash(v)}.`,
+  },
+}[locale];
+// szablony zdań dla skryptu (tylko po angielsku; polskie zdania skrypt składa sam)
+const script = en ? {
+  amount: 'Reference amount: PLN {v}.',
+  more: 'That is {p}% more than the 2026 minimum wage, so all the limits rise by the same percentage.',
+  less: 'That is {p}% less than the 2026 minimum wage, so all the limits fall by the same percentage.',
+} : undefined;
 ---
-<zl-limit-calc class:list={['lc', className]} data-reference={reference} {...rest}>
+<zl-limit-calc class:list={['lc', className]} data-reference={reference} data-locale={en ? locale : undefined} data-amount={script?.amount} data-more={script?.more} data-less={script?.less} {...rest}>
   <fieldset class="lc__bases">
-    <legend class="lc__legend">Kwota odniesienia</legend>
+    <legend class="lc__legend">{text.legend}</legend>
     {bases.map((b, i) => (
       <label class="lc__base">
         <input type="radio" name="lc-base" value={b.amount} checked={i === 0} />
         <span class="lc__base-label">{typo(b.label)}</span>
-        <span class="lc__base-amount">{money(b.amount)} zł</span>
+        <span class="lc__base-amount">{cash(b.amount)}</span>
       </label>
     ))}
     <label class="lc__base lc__base--own">
       <input type="radio" name="lc-base" value="own" />
-      <span class="lc__base-label">Własna kwota</span>
+      <span class="lc__base-label">{text.own}</span>
       <span class="lc__own">
-        <input class="lc__own-input" type="number" min="1000" max="100000" step="1" inputmode="decimal" value={first.amount} aria-label="Własna kwota odniesienia w złotych" />
-        <span aria-hidden="true">zł</span>
+        <input class="lc__own-input" type="number" min="1000" max="100000" step="1" inputmode="decimal" value={first.amount} aria-label={text.ownLabel} />
+        <span aria-hidden="true">{text.ownUnit}</span>
       </span>
     </label>
   </fieldset>
 
   <table class="lc__table">
-    <caption class="sr-only">Limity wynagrodzenia przeliczone od wybranej kwoty odniesienia</caption>
+    <caption class="sr-only">{text.caption}</caption>
     <thead>
-      <tr><th scope="col">Limit</th><th scope="col">Mnożnik</th><th scope="col">Kwota</th></tr>
+      <tr><th scope="col">{text.cols[0]}</th><th scope="col">{text.cols[1]}</th><th scope="col">{text.cols[2]}</th></tr>
     </thead>
     <tbody>
       {rows.map((r) => (
         <tr class:list={{ 'is-marked': r.marked }}>
           <th scope="row">{typo(r.label)}</th>
           <td class="lc__ratio">{r.ratio}</td>
-          <td class="lc__value"><span data-factor={r.factor}>{money(first.amount * r.factor)}</span> {r.unit}</td>
+          {en
+            ? <td class="lc__value">{r.unit} <span data-factor={r.factor}>{money(first.amount * r.factor)}</span></td>
+            : <td class="lc__value"><span data-factor={r.factor}>{money(first.amount * r.factor)}</span> {r.unit}</td>}
         </tr>
       ))}
     </tbody>
   </table>
 
-  <p class="lc__status" role="status" data-el="status">{typo(`Kwota odniesienia: ${money(first.amount)} zł.`)}</p>
+  <p class="lc__status" role="status" data-el="status">{typo(text.status(first.amount))}</p>
 
   <ul class="lc__sources">
     {bases.map((b) => (
@@ -85,12 +120,15 @@ const money = (v: number) => formatPL(v, Number.isInteger(Math.round(v * 100) / 
 </zl-limit-calc>
 
 <script>
-  import { formatPL } from '@/lib/format';
-
-  const money = (v: number) => formatPL(v, Number.isInteger(Math.round(v * 100) / 100) ? 0 : 2);
+  import { formatEN, formatPL } from '@/lib/format';
 
   class ZlLimitCalc extends HTMLElement {
     connectedCallback() {
+      // język z atrybutu serwera (bez niego — polski); angielskie zdania też w atrybutach
+      const en = this.dataset.locale === 'en';
+      const format = en ? formatEN : formatPL;
+      const money = (v: number) => format(v, Number.isInteger(Math.round(v * 100) / 100) ? 0 : 2);
+      const { amount = '', more = '', less = '' } = this.dataset;
       const reference = Number(this.dataset.reference);
       const radios = [...this.querySelectorAll<HTMLInputElement>('input[name="lc-base"]')];
       const own = this.querySelector<HTMLInputElement>('.lc__own-input');
@@ -106,6 +144,12 @@ const money = (v: number) => formatPL(v, Number.isInteger(Math.round(v * 100) / 
         if (!Number.isFinite(base) || base <= 0) return;
         cells.forEach((c) => (c.textContent = money(base * Number(c.dataset.factor))));
         const diff = (base / reference - 1) * 100;
+        if (en) {
+          const percent = formatEN(Math.abs(diff), 1);
+          const tail = Math.abs(diff) < 0.05 ? '' : ` ${(diff > 0 ? more : less).replace('{p}', percent)}`;
+          if (status) status.textContent = `${amount.replace('{v}', money(base))}${tail}`;
+          return;
+        }
         const change = Math.abs(diff) < 0.05 ? '' : ` To o ${formatPL(Math.abs(diff), 1)}% ${diff > 0 ? 'więcej' : 'mniej'} niż płaca minimalna z 2026 r., więc tyle samo ${diff > 0 ? 'rosną' : 'spadają'} wszystkie limity.`;
         if (status) status.textContent = `Kwota odniesienia: ${money(base)} zł.${change}`;
       };

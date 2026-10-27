@@ -1,10 +1,13 @@
 ---
 /** Kategoria + data (+ opcjonalny dopisek) nad tytułem materiału. */
 import type { Category } from '@/types';
-import { formatDate, isoDate } from '@/lib/format';
+import { formatDateIn, isoDate } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   category: Category;
+  /** nazwa kategorii do wyświetlenia, gdy inna niż `category` (np. po angielsku) */
+  label?: string;
   date?: Date;
   extra?: string;
 }
@@ -12,11 +15,12 @@ interface Props {
 /** Kategorie wyróżnione kolorem tekstu zamiast akcentu (akty prawne). */
 const NEUTRAL: Category[] = ['Projekt ustawy'];
 
-const { category, date, extra } = Astro.props;
+const { category, label, date, extra } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
 ---
 <p class="meta">
-  <span class:list={['meta__cat', { 'meta__cat--neutral': NEUTRAL.includes(category) }]}>{category}</span>
-  {date && <time datetime={isoDate(date)}>{formatDate(date)}</time>}
+  <span class:list={['meta__cat', { 'meta__cat--neutral': NEUTRAL.includes(category) }]}>{label ?? category}</span>
+  {date && <time datetime={isoDate(date)}>{formatDateIn(date, locale)}</time>}
   {extra && <span>{extra}</span>}
 </p>
 

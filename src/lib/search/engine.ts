@@ -5,13 +5,18 @@
  * Wynik musi zawierać wszystkie słowa zapytania.
  */
 import type { SearchHit, SearchIndex } from '@/types';
+import type { Locale } from '@/i18n/locales';
+import { pageLocale } from '@/i18n/client';
 import { hasMatch, stem, words } from './text';
 
-/** Adres indeksu: plik generuje src/pages/szukaj.json.ts. */
-const INDEX_URL = '/szukaj.json';
+/** Adres indeksu: pliki generują src/pages/szukaj.json.ts i src/pages/en/search.json.ts (tylko tłumaczenia). */
+const INDEX_URL: Record<Locale, string> = { pl: '/szukaj.json', en: '/en/search.json' };
 
-/** Strona wyników (src/pages/szukaj/index.astro); zapytanie żyje w parametrze `q`. */
-export const searchPageHref = (query = '') => (query ? `/szukaj/?q=${encodeURIComponent(query)}` : '/szukaj/');
+/** Strona wyników (src/pages/szukaj/index.astro, src/pages/en/search/index.astro); zapytanie żyje w parametrze `q`. */
+export function searchPageHref(query = '', locale: Locale = 'pl') {
+  const page = locale === 'en' ? '/en/search/' : '/szukaj/';
+  return query ? `${page}?q=${encodeURIComponent(query)}` : page;
+}
 
 /** Słowo indeksu, które tylko zaczyna się od rdzenia (inna forma, niedokończone słowo), waży o połowę mniej. */
 const PREFIX_MATCH = 0.5;
@@ -45,13 +50,13 @@ function lowerBound(list: string[], key: string): number {
   return lo;
 }
 
-export function createSearch({ docs, words: vocabulary, postings }: SearchIndex): Search {
+export function createSearch({ docs, words: vocabulary, postings }: SearchIndex, locale: Locale = 'pl'): Search {
   // Rzadkie słowo mówi o dokumencie więcej niż obecne wszędzie „lekarz” (IDF)
   const rarity = postings.map((list) => Math.log(1 + docs.length / (list.length / 2)));
 
   /** Punkty dokumentów za jedno słowo zapytania: najlepsze trafienie w każdym dokumencie. */
   function scoresFor(word: string): Map<number, number> {
-    const root = stem(word);
+    const root = stem(word, locale);
     const scores = new Map<number, number>();
     // Słowa o wspólnym początku leżą w posortowanym słowniku obok siebie
     for (let i = lowerBound(vocabulary, root); vocabulary[i]?.startsWith(root); i++) {
@@ -66,8 +71,8 @@ export function createSearch({ docs, words: vocabulary, postings }: SearchIndex)
   }
 
   return (query, limit = 8) => {
-    const terms = [...new Set(words(query))];
-    const roots = terms.map(stem);
+    const terms = [...new Set(words(query, locale))];
+    const roots = terms.map((term) => stem(term, locale));
     if (!terms.length) return { roots, hits: [] };
 
     const [first, ...rest] = terms.map(scoresFor);
@@ -85,11 +90,13 @@ export function createSearch({ docs, words: vocabulary, postings }: SearchIndex)
 
 let loading: Promise<Search> | undefined;
 
-/** Pobiera indeks raz na stronę; kolejne wywołania dostają tę samą obietnicę, a po błędzie można spróbować znowu. */
+/** Pobiera indeks raz na stronę (w języku strony); kolejne wywołania dostają tę samą obietnicę, a po błędzie można spróbować znowu. */
 export function loadSearch(): Promise<Search> {
-  loading ??= fetch(INDEX_URL)
-    .then((res) => (res.ok ? (res.json() as Promise<SearchIndex>) : Promise.reject(new Error(`${INDEX_URL}: ${res.status}`))))
-    .then(createSearch)
+  const locale = pageLocale();
+  const url = INDEX_URL[locale];
+  loading ??= fetch(url)
+    .then((res) => (res.ok ? (res.json() as Promise<SearchIndex>) : Promise.reject(new Error(`${url}: ${res.status}`))))
+    .then((index) => createSearch(index, locale))
     .catch((error: unknown) => {
       loading = undefined;
       throw error;

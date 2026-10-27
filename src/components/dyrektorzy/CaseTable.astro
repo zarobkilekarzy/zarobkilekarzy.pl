@@ -5,10 +5,13 @@
  * pierwsza z kwot, bo to ją trzeba odróżnić od sumy. W wąskim kontenerze wiersz staje się kartą
  * z etykietą kolumny nad komórką (jak english-division/SourcedTable). Statycznie, bez JS.
  * Ramę (teza, uwagi) daje blocks/Figure w artykule.
+ * Na stronach /en/ napisy z obiektu T; wiersze z angielskimi tekstami podaje artykuł
+ * (CASES z src/data/en/zarobki-dyrektorow-szpitali.ts).
  */
 import type { Amount, DirectorCase } from '@/data/zarobki-dyrektorow-szpitali';
 import { typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   cases: DirectorCase[];
@@ -17,8 +20,21 @@ interface Props {
 }
 
 const { cases, caption } = Astro.props;
-const COLS = { mgmt: 'Za kierowanie', other: 'Praca lekarska i inne', total: 'Łącznie', hospital: 'Szpital', src: 'Źródła' };
-const NONE = 'źródło nie podaje';
+const en = localeOf(Astro.url.pathname) === 'en';
+const T = {
+  pl: {
+    who: 'Gdzie i kto',
+    cols: { mgmt: 'Za kierowanie', other: 'Praca lekarska i inne', total: 'Łącznie', hospital: 'Szpital', src: 'Źródła' },
+    none: 'źródło nie podaje',
+  },
+  en: {
+    who: 'Where and who',
+    cols: { mgmt: 'For management', other: 'Medical work and other', total: 'Total', hospital: 'Hospital', src: 'Sources' },
+    none: 'not given in the source',
+  },
+}[en ? 'en' : 'pl'];
+const COLS = T.cols;
+const NONE = T.none;
 type Col = 'mgmt' | 'other' | 'total';
 const amounts = (c: DirectorCase): [Col, Amount | undefined][] => [['mgmt', c.management], ['other', c.other], ['total', c.total]];
 ---
@@ -27,7 +43,7 @@ const amounts = (c: DirectorCase): [Col, Amount | undefined][] => [['mgmt', c.ma
     <caption class="sr-only">{caption}</caption>
     <thead>
       <tr>
-        <th scope="col">Gdzie i kto</th>
+        <th scope="col">{T.who}</th>
         <th scope="col" class="ct__num">{COLS.mgmt}</th>
         <th scope="col" class="ct__num">{COLS.other}</th>
         <th scope="col" class="ct__num">{COLS.total}</th>
@@ -40,7 +56,7 @@ const amounts = (c: DirectorCase): [Col, Amount | undefined][] => [['mgmt', c.ma
         <tr>
           <th scope="row">
             <span class="ct__place">{typo(c.place)}</span>
-            <span class="ct__role">{typo(c.role)}, {c.year}&nbsp;r.</span>
+            <span class="ct__role">{typo(c.role)}, {c.year}{!en && <>&nbsp;r.</>}</span>
           </th>
           {amounts(c).map(([key, a]) => (
             <td class:list={['ct__num', key === 'mgmt' && 'ct__mgmt']} data-label={COLS[key]}>

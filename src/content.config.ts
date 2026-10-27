@@ -134,4 +134,62 @@ const news = defineCollection({
   }).refine((d) => !d.cover || d.coverAlt, { message: 'Zdjęcie wpisu (`cover`) wymaga opisu `coverAlt`.', path: ['coverAlt'] }),
 });
 
-export const collections = { articles, glossary, news };
+/**
+ * Tłumaczenia artykułów na angielski (/en/<dział>/<id>/). Id pliku = angielski slug adresu.
+ * Dział, daty i powiązania wynikają z polskiego oryginału (`translation.of`); tu tylko tekst.
+ * Stempel `translation.hash` porównuje build — po zmianie oryginału strona EN dostaje ramkę
+ * „oryginał się zmienił” (src/i18n/translations.ts). Odświeżenie: `npm run i18n:stamp <plik>`.
+ */
+const articlesEn = defineCollection({
+  loader: glob({ base: './src/content/en/articles', pattern: '**/*.{md,mdx}' }),
+  schema: z.object({
+    title: z.string(),
+    summary: z.string(),
+    keyPoints: z.array(z.string()).optional(),
+    editorial: z.array(z.string()).min(1).optional(),
+    /** „Change history” — tłumaczenie `changelog` oryginału (te same daty, tekst po angielsku) */
+    changelog: z.array(z.object({ date: z.coerce.date(), text: z.string() })).min(1).optional(),
+    seoTitle: z.string().optional(),
+    description: z.string().optional(),
+    translation: z.object({
+      /** polski oryginał */
+      of: reference('articles'),
+      /** inne polskie pliki, z których korzysta tłumaczenie (np. moduł danych strony) — też wchodzą do skrótu */
+      files: z.array(z.string()).default([]),
+      /** skrót źródła z chwili tłumaczenia (integrations/i18n/source.mjs) */
+      hash: z.string().regex(/^[0-9a-f]{12}$/),
+      /** dzień tłumaczenia albo ostatniego sprawdzenia oryginału */
+      date: z.coerce.date(),
+    }),
+    /** szkic albo tłumaczenie poza indeksem: noindex i bez hreflang (przełącznik języka działa) */
+    noindex: z.boolean().default(false),
+  }),
+});
+
+/**
+ * Tłumaczenia aktualności (/en/news/<id>/). Id pliku = angielski slug adresu. Data, zdjęcie i szkic
+ * wynikają z polskiego wpisu (`translation.of`); tu tylko tekst. Stempel jak przy artykułach (src/i18n/news.ts).
+ * Wpis EN powstaje razem z polskim; wpisy sprzed startu EN przetłumaczone wszystkie (decyzja usera 27.10.2026).
+ */
+const newsEn = defineCollection({
+  loader: glob({ base: './src/content/en/news', pattern: '**/*.{md,mdx}' }),
+  schema: z.object({
+    title: z.string(),
+    summary: z.string(),
+    links: z.array(z.object({ label: z.string(), href: z.string() })).optional(),
+    x: z.url().optional(),
+    /** opis i podpis zdjęcia z polskiego wpisu (`cover`) */
+    coverAlt: z.string().optional(),
+    coverCaption: z.string().optional(),
+    translation: z.object({
+      of: reference('news'),
+      files: z.array(z.string()).default([]),
+      hash: z.string().regex(/^[0-9a-f]{12}$/),
+      date: z.coerce.date(),
+    }),
+    /** tłumaczenie poza indeksem (jak w articlesEn): noindex i bez hreflang; na liście zostaje */
+    noindex: z.boolean().default(false),
+  }),
+});
+
+export const collections = { articles, glossary, news, articlesEn, newsEn };

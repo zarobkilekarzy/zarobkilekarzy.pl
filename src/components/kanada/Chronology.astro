@@ -10,6 +10,7 @@ import Icon from '@/components/ui/Icon.astro';
 import type { ChronoEvent, ChronoKind } from '@/data/kanada-lekarze-ustawa-specjalna';
 import { typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
+import { localeOf } from '@/i18n/locales';
 
 interface Props extends HTMLAttributes<'div'> {
   events: ChronoEvent[];
@@ -17,23 +18,46 @@ interface Props extends HTMLAttributes<'div'> {
   label: string;
 }
 
-const KIND: Record<ChronoKind, string> = {
-  rzad: 'Rząd',
-  lekarze: 'Lekarze',
-  sad: 'Sąd lub arbiter',
-  porozumienie: 'Porozumienie',
-};
+/* Na stronach angielskich (/en/…) napisy i daty po angielsku; teksty zdarzeń daje moduł danych EN. */
+const en = localeOf(Astro.url.pathname) === 'en';
 
-const MONTHS = [
-  'styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec',
-  'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień',
-];
+const TEXT = {
+  pl: {
+    kind: {
+      rzad: 'Rząd',
+      lekarze: 'Lekarze',
+      sad: 'Sąd lub arbiter',
+      porozumienie: 'Porozumienie',
+    },
+    months: [
+      'styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec',
+      'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień',
+    ],
+  },
+  en: {
+    kind: {
+      rzad: 'Government',
+      lekarze: 'Doctors',
+      sad: 'Court or arbitrator',
+      porozumienie: 'Agreement',
+    },
+    months: [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ],
+  },
+} satisfies Record<'pl' | 'en', { kind: Record<ChronoKind, string>; months: string[] }>;
 
-/** '2025-10-25' → „25.10.2025”, '2012-05' → „maj 2012”; `when` ma pierwszeństwo */
+const t = en ? TEXT.en : TEXT.pl;
+const KIND = t.kind;
+const MONTHS = t.months;
+
+/** '2025-10-25' → „25.10.2025” (EN: „25 October 2025”), '2012-05' → „maj 2012” (EN: „May 2012”); `when` ma pierwszeństwo */
 function when(e: ChronoEvent): string {
   if (e.when) return e.when;
   const [y, m, d] = e.date.split('-');
-  return d ? `${d}.${m}.${y}` : `${MONTHS[Number(m) - 1]} ${y}`;
+  if (!d) return `${MONTHS[Number(m) - 1]} ${y}`;
+  return en ? `${Number(d)} ${MONTHS[Number(m) - 1]} ${y}` : `${d}.${m}.${y}`;
 }
 
 const { events, label, class: className, ...rest } = Astro.props;

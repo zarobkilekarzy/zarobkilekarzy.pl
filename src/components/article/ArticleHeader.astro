@@ -9,7 +9,9 @@ import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
 import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
 import Num from '@/components/ui/Num.astro';
-import { formatDate, isoDate, typo } from '@/lib/format';
+import { formatDateIn, isoDate, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
 import type { Crumb } from '@/lib/seo';
 
 interface Props {
@@ -30,6 +32,8 @@ interface Props {
 
 const { title, summary, section, crumbs, updated, published, minutes, notesCount = 0, keyPoints = [], aside = false } = Astro.props;
 const date = updated ?? published;
+const t = uiOf(Astro.url).article;
+const locale = localeOf(Astro.url.pathname);
 ---
 <header class="ahead">
   <Breadcrumbs items={crumbs} />
@@ -43,18 +47,18 @@ const date = updated ?? published;
       <dl class="ahead__meta">
         {date && (
           <div>
-            <dt>{updated ? 'Aktualizacja' : 'Publikacja'}</dt>
-            <dd><time datetime={isoDate(date)}>{formatDate(date)}</time></dd>
+            <dt>{updated ? t.updated : t.published}</dt>
+            <dd><time datetime={isoDate(date)}>{formatDateIn(date, locale)}</time></dd>
           </div>
         )}
-        <div><dt>Czas czytania</dt><dd>{minutes} min</dd></div>
-        {notesCount > 0 && <div><dt>Przypisy</dt><dd><a href="#przypisy">{notesCount} ze źródłami</a></dd></div>}
+        <div><dt>{t.readingTime}</dt><dd>{minutes} min</dd></div>
+        {notesCount > 0 && <div><dt>{t.notes}</dt><dd><a href={`#${t.notesId}`}>{t.notesWithSources(notesCount)}</a></dd></div>}
       </dl>
     </div>
 
     {aside ? <slot name="aside" /> : keyPoints.length > 0 && (
       <aside class="ahead__points" aria-labelledby="w-skrocie">
-        <p class="ahead__points-title" id="w-skrocie">W skrócie</p>
+        <p class="ahead__points-title" id="w-skrocie">{t.keyPoints}</p>
         <ol>
           {keyPoints.map((point, i) => (
             <li><Num n={i + 1} size="sm" /><p>{typo(point)}</p></li>

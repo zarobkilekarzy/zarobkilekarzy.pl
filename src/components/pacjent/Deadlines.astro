@@ -6,12 +6,17 @@
 import type { HTMLAttributes } from 'astro/types';
 import type { Deadline } from '@/lib/pacjent/types';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props extends HTMLAttributes<'ol'> {
   items: Deadline[];
 }
 
 const { items, class: className, ...rest } = Astro.props;
+const T = {
+  pl: { urgent: 'Krótki termin', info: 'Dla porównania' },
+  en: { urgent: 'Short deadline', info: 'For comparison' },
+}[localeOf(Astro.url.pathname)];
 ---
 <ol class:list={['deadlines', className]} {...rest}>
   {items.map((d) => (
@@ -21,8 +26,8 @@ const { items, class: className, ...rest } = Astro.props;
         <p class="dl__what">{typo(d.what)}</p>
         <p class="dl__from">{typo(d.from)} · {typo(d.basis)}</p>
       </div>
-      {d.urgent && <p class="dl__tag">Krótki termin</p>}
-      {d.info && <p class="dl__tag dl__tag--info">Dla porównania</p>}
+      {d.urgent && <p class="dl__tag">{T.urgent}</p>}
+      {d.info && <p class="dl__tag dl__tag--info">{T.info}</p>}
     </li>
   ))}
 </ol>

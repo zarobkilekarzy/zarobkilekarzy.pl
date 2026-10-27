@@ -16,7 +16,9 @@
 import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
 import Icon from '@/components/ui/Icon.astro';
-import { formatPL, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
+import { formatNumber, typo } from '@/lib/format';
 import { placePoints, radius, R_MISSING, toneOf, toneOfClass } from '@/lib/mapa/layout';
 import { mapSets, type MapSetId } from '@/lib/mapa/sets';
 import { activeLayer, regionTones, renderMapSvg, tipsUrl } from '@/lib/mapa/svg';
@@ -50,6 +52,11 @@ const toggle = interactive && layers.length > 1;
 // wyszukiwarka: pierwsza warstwa punktowa, która jej chce (szuka w punktach tej warstwy)
 const searchLayer = interactive ? layers.find((l): l is PointLayer => l.kind === 'points' && !!l.search) : undefined;
 const searchId = uid('mapa-szukaj');
+// język strony: liczby z serwera w jego zapisie; poza polskim napisy skryptu (client.ts) w atrybutach data-*
+const locale = localeOf(Astro.url.pathname);
+const t = uiOf(Astro.url).map;
+const foreign = locale !== 'pl';
+const num = (n: number) => formatNumber(n, 0, locale);
 
 const f1 = (v: number) => Math.round(v * 10) / 10;
 /** miejsca punktów przed rozsunięciem — warstwa na żywo układa koła od nowa w przeglądarce */
@@ -69,7 +76,7 @@ const data = interactive
         alt: l.alt,
         ...(l.kind === 'regions' && { regions: Object.fromEntries([...regionTones(l)].map(([t, v]) => [t, [v.tone, v.display]])) }),
         ...(l.kind === 'points' && l.live && {
-          live: { url: l.live.url, adapter: l.live.adapter },
+          live: { url: l.live.url, adapter: l.live.adapter, ...(l.live.text && { text: l.live.text }) },
           scale: { edges: l.scale.edges, tones: l.scale.tones },
           radius: l.size?.radius,
           keys: l.points.map((p) => p.key ?? null),
@@ -84,7 +91,7 @@ const regionName = (teryt: string, l: MapLayer) => (l.kind === 'regions' ? l.reg
 const sizeMax = (l: MapLayer) => (l.kind === 'points' && l.size ? radius(Math.max(...l.size.samples), l.size.radius) : 0);
 const isLive = (l: MapLayer) => l.kind === 'points' && !!l.live;
 ---
-<zl-map class:list={['pm', className]} data-active={active.id} data-kind={active.kind} data-tips={interactive ? tipsUrl(set) : undefined}>
+<zl-map class:list={['pm', className]} data-active={active.id} data-kind={active.kind} data-tips={interactive ? tipsUrl(set) : undefined} data-locale={foreign ? locale : undefined} data-error={foreign ? t.loadError : undefined}>
   {(heading || toggle || searchLayer) && (
     <div class="pm-head">
       {heading && (
@@ -94,12 +101,12 @@ const isLive = (l: MapLayer) => l.kind === 'points' && !!l.live;
         </div>
       )}
       {toggle && (
-        <div class="pm-seg" role="group" aria-label="Co pokazać na mapie">
+        <div class="pm-seg" role="group" aria-label={t.layers}>
           {layers.map((l) => <button type="button" data-layer={l.id} aria-pressed={l.id === active.id ? 'true' : 'false'}>{l.label}</button>)}
         </div>
       )}
       {searchLayer?.search && (
-        <div class="pm-search" data-layer={searchLayer.id} data-empty={searchLayer.search.empty}>
+        <div class="pm-search" data-layer={searchLayer.id} data-empty={searchLayer.search.empty} data-results={foreign ? t.results : undefined}>
           <label class="pm-search__label" for={searchId}>{searchLayer.search.label}</label>
           <div class="pm-search__box">
             <Icon name="search" size={18} class="pm-search__icon" />
@@ -152,7 +159,7 @@ const isLive = (l: MapLayer) => l.kind === 'points' && !!l.live;
             <p class="pm-lg-title">{l.scale.title}</p>
             <ul class:list={['pm-lg', { 'pm-lg--sq': l.kind === 'regions' }]}>
               {l.scale.labels.map((label, i) => (
-                <li><span class="pm-sw" data-tone={toneOfClass(i, l.scale)} />{label}{(l.scale.counts || isLive(l)) && <span class="pm-lg__n" data-c={i}>{l.scale.counts ? formatPL(l.scale.counts[i]) : '–'}</span>}</li>
+                <li><span class="pm-sw" data-tone={toneOfClass(i, l.scale)} />{label}{(l.scale.counts || isLive(l)) && <span class="pm-lg__n" data-c={i}>{l.scale.counts ? num(l.scale.counts[i]) : '–'}</span>}</li>
               ))}
             </ul>
           </div>
@@ -166,7 +173,7 @@ const isLive = (l: MapLayer) => l.kind === 'points' && !!l.live;
                   return (
                     <li>
                       <svg width={2 * R + 2} height={2 * r + 2} aria-hidden="true"><circle cx={R + 1} cy={r + 1} r={r} /></svg>
-                      {formatPL(n)}
+                      {num(n)}
                     </li>
                   );
                 })}
@@ -176,7 +183,7 @@ const isLive = (l: MapLayer) => l.kind === 'points' && !!l.live;
 
           {l.kind === 'points' && l.missing && (
             <ul class="pm-lg">
-              <li><span class="pm-sw pm-sw--none" style={`--d:${2 * R_MISSING + 3}px`} />{l.missing.label}<span class="pm-lg__n" data-missing>{isLive(l) ? '–' : formatPL(l.missing.count)}</span></li>
+              <li><span class="pm-sw pm-sw--none" style={`--d:${2 * R_MISSING + 3}px`} />{l.missing.label}<span class="pm-lg__n" data-missing>{isLive(l) ? '–' : num(l.missing.count)}</span></li>
             </ul>
           )}
 

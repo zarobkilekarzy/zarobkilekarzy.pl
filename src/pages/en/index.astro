@@ -1,0 +1,330 @@
+---
+/**
+ * /en/ — strona startowa wersji angielskiej w układzie polskiej strony głównej (src/pages/index.astro,
+ * sekcje z src/components/home/) i z tymi samymi zdjęciami; teksty z src/data/en/home.ts, w spisach tylko
+ * teksty z tłumaczeniem. Sekcje polskiej głównej, których tu nie ma, bo prowadzą do stron i materiałów tylko
+ * po polsku: mapa monitoringu, film z lektorem, „Sprawdź sam” (egzamin LEK, symulatory, monitoring).
+ * Komponenty home/* (poza News, który bierze język z adresu) mają polskie napisy w znacznikach, więc sekcje są złożone tu z tych samych bloków,
+ * a style skopiowane z komponentów — przy zmianie układu polskiej głównej poprawić też tę stronę.
+ * SZKIC (noindex, bez przełącznika na polskiej stronie głównej) do akceptacji usera — spec: docs/spec-wersja-angielska.md.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import Split from '@/components/layout/Split.astro';
+import Actions from '@/components/layout/Actions.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Button from '@/components/ui/Button.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import MonitorPhoto from '@/components/ui/MonitorPhoto.astro';
+import Badge from '@/components/ui/Badge.astro';
+import Card from '@/components/ui/Card.astro';
+import Flag from '@/components/ui/Flag.astro';
+import Counter from '@/components/ui/Counter.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import NumberedCards from '@/components/blocks/NumberedCards.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import ArticleFeature from '@/components/blocks/ArticleFeature.astro';
+import ArticleList from '@/components/blocks/ArticleList.astro';
+import TopicStrip from '@/components/blocks/TopicStrip.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import RatioDots from '@/components/blocks/RatioDots.astro';
+import MiniStats from '@/components/blocks/MiniStats.astro';
+import LinkIndex from '@/components/blocks/LinkIndex.astro';
+import Glossary from '@/components/blocks/Glossary.astro';
+import CheckList from '@/components/blocks/CheckList.astro';
+import SorLive from '@/components/sor/SorLive.astro';
+import PostulatCta from '@/components/site/PostulatCta.astro';
+import News from '@/components/home/News.astro';
+import {
+  dataSectionLabels,
+  heroPopular,
+  homeText as t,
+  keyNumbers,
+  paths,
+  principles,
+  rights,
+  steps,
+  topics,
+  waitingCaption,
+  waitingTimes,
+} from '@/data/en/home';
+import { englishEntries } from '@/data/en/spis';
+import { glossaryEn } from '@/data/en/glossary';
+import { dataSections } from '@/data/navigation';
+import { HEADLINE } from '@/data/zarobki-ujawnione-listy';
+import { getHomeGlossary } from '@/lib/content';
+import { formatEN } from '@/lib/format';
+import { enHref, getTranslations, type Translated } from '@/i18n/translations';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+import heroImg from '@/assets/img/hero-pokoj-lekarski.jpg';
+import patientImg from '@/assets/img/pacjent-konsultacja.jpg';
+
+/** Szkic: strona poza indeksem, w spisach wszystkie tłumaczenia (także szkice). Po akceptacji — false. */
+const DRAFT = true;
+
+const all = await getTranslations();
+const translations = DRAFT ? all : all.filter((tr) => !tr.article.data.noindex);
+const toEntry = await englishEntries();
+
+// „Nowe i zaktualizowane”: jak getLatest() w lib/content — wyróżniony (featured, a gdy nie ma tłumaczenia —
+// najświeższy ze zdjęciem) i pięć kolejnych, od najświeższych (data aktualizacji oryginału)
+const freshness = (tr: Translated) => tr.source.data.updated ?? tr.source.data.date;
+const dated = translations.filter((tr) => freshness(tr)).sort((a, b) => freshness(b)!.valueOf() - freshness(a)!.valueOf());
+const featuredTr = dated.find((tr) => tr.source.data.featured) ?? dated.find((tr) => tr.source.data.cover);
+const featured = featuredTr && toEntry(featuredTr.source);
+const latest = dated.filter((tr) => tr !== featuredTr).slice(0, 5);
+
+// Spis działów danych: pozycje polskiego spisu, które mają tłumaczenie
+const dataLinks = dataSections.flatMap(({ ref, badge }) => {
+  const tr = translations.find((x) => x.source.id === ref);
+  return tr ? [{ href: enHref(tr), label: dataSectionLabels[ref] ?? tr.article.data.title, badge }] : [];
+});
+
+// Słowniczek: te same hasła co na polskiej głównej, objaśnienia z wersji EN słownika (hasło zostaje po polsku)
+const terms = (await getHomeGlossary()).flatMap((term) => {
+  const en = glossaryEn[term.id];
+  return en ? [{ ...term, full: en.full, def: en.def }] : [];
+});
+
+const crumbs: Crumb[] = [{ label: 'Home' }];
+const seo: SeoInput = {
+  // tytuł w karcie i wynikach wyszukiwania; szablon „ | zarobkilekarzy.pl” dałby ponad 60 znaków
+  title: 'Doctors’ pay in Poland — zarobkilekarzy.pl in English',
+  titleAbsolute: true,
+  description: 'How doctors in Poland are paid from public money, what is public and what is not — a citizens’ transparency initiative, with a source for every figure.',
+  index: !DRAFT,
+  breadcrumbs: crumbs,
+  page: { type: 'CollectionPage', items: translations.map((tr) => ({ name: tr.article.data.title, url: enHref(tr) })) },
+  translations: [{ locale: 'pl', path: '/', indexable: true }],
+};
+---
+<BaseLayout seo={seo}>
+  <Section class="hero" space="none" aria-labelledby="hero-title">
+    <Split cols="minmax(0, 1.08fr) minmax(0, 1fr)">
+      <Eyebrow>{t.hero.eyebrow}</Eyebrow>
+      <Heading as="h1" size="display" id="hero-title" class="hero__title">{t.hero.title[0]}<br /> {t.hero.title[1]}</Heading>
+      <p class="lead hero__lead">{t.hero.lead}</p>
+      <Actions stack="mobile">
+        <Button href="#start">{t.hero.primary}</Button>
+        <LinkArrow href="#data">{t.hero.secondary}</LinkArrow>
+      </Actions>
+      <div class="hero__popular">
+        <span class="mono-label">{t.hero.popular}</span>
+        <ul>
+          {heroPopular.map((p) => <li><a href={p.href}>{p.label}</a></li>)}
+        </ul>
+      </div>
+
+      {/* jak w home/Hero: poziome zdjęcie 3:2 w pionowym kadrze 5:6 */}
+      <MonitorPhoto
+        slot="media"
+        effect="ekg"
+        src={heroImg}
+        alt={t.hero.photoAlt}
+        ratio="5/6"
+        position="38% 50%"
+        widths={[640, 960, 1280, 1600, 1920]}
+        sizes="(min-width: 1025px) 1000px, min(170vw, 1144px)"
+        priority
+        frame
+      >
+        <Badge icon="db" value={formatEN(HEADLINE.positions)} label={t.hero.badge} />
+      </MonitorPhoto>
+    </Split>
+
+    <StatRow items={keyNumbers} label={t.hero.stats} class="hero__stats" />
+    <p class="en-note">{t.hero.note}{' '}<LinkArrow href="/" hreflang="pl">{t.hero.noteLink}</LinkArrow></p>
+  </Section>
+
+  <Section id="start" aria-labelledby="start-title">
+    <SectionHead eyebrow={t.start.eyebrow} title={t.start.title} id="start-title" aside={t.start.aside} />
+    <NumberedCards items={paths} />
+  </Section>
+
+  <Section id="latest" space="bottom" aria-labelledby="latest-title">
+    <SectionHead eyebrow={t.latest.eyebrow} title={t.latest.title} id="latest-title" layout="row">
+      <LinkArrow slot="action" href="/en/analysis/">{t.latest.all}</LinkArrow>
+    </SectionHead>
+
+    <div class="latest">
+      {featured && <ArticleFeature article={featured} effect="scan" />}
+      <ArticleList translations={latest} />
+    </div>
+  </Section>
+
+  <News />
+
+  <Section id="perspectives" tone="dark" space="none" wrap={false} class="persp" aria-labelledby="persp-title">
+    <div class="wrap persp__head">
+      <Heading tone="light" id="persp-title" class="persp__title">{t.perspectives.title[0]}<br />{t.perspectives.title[1]}</Heading>
+      <div class="persp__aside">
+        <p>{t.perspectives.text}</p>
+        <Button href="/en/mechanisms/">{t.perspectives.button}</Button>
+      </div>
+    </div>
+    <TopicStrip topics={topics} />
+  </Section>
+
+  <Section id="data" aria-labelledby="data-title">
+    <SectionHead eyebrow={t.data.eyebrow} title={t.data.title} id="data-title" aside={t.data.aside} />
+
+    <div class="bento">
+      <Card class="bento__chart" label={t.data.chart.label} title={t.data.chart.title}>
+        <BarChart {...waitingTimes} unit={t.data.chart.unit} caption={waitingCaption} />
+        <Fragment slot="footer">
+          <p class="source"><Flag accuracy="exact" />{t.data.chart.source}</p>
+          <LinkArrow href="/en/data/nfz-budget/#money-and-the-waiting-list">{t.data.chart.link}</LinkArrow>
+        </Fragment>
+      </Card>
+
+      <Card class="bento__side" label={t.data.lists.label} title={t.data.lists.title}>
+        <RatioDots total={HEADLINE.over500kOneIn} class="ratio" />
+        <MiniStats
+          items={[
+            { label: t.data.lists.positions, value: formatEN(HEADLINE.positions) },
+            { label: t.data.lists.over500k, value: formatEN(HEADLINE.over500k) },
+            { label: t.data.lists.over1m, value: formatEN(HEADLINE.over1m) },
+          ]}
+        />
+      </Card>
+
+      <Card class="bento__side" tone="blue" label={t.data.record.label}>
+        <p class="record"><Counter value={t.data.record.value} /><small>{t.data.record.unit}</small></p>
+        <p class="record__text">{t.data.record.text}</p>
+        <LinkArrow href="/en/data/record-doctor-payments/" tone="light" class="record__link">{t.data.record.link}</LinkArrow>
+      </Card>
+    </div>
+
+    {dataLinks.length > 0 && <LinkIndex title={t.data.sections} links={dataLinks} class="data-sections" />}
+    <LinkArrow href="/en/data/" class="data-all">{t.data.all}</LinkArrow>
+  </Section>
+
+  <Section tone="soft" aria-labelledby="explain-title">
+    <div class="explain">
+      <div>
+        <Eyebrow>{t.explainer.eyebrow}</Eyebrow>
+        <Heading id="explain-title" punct="?" class="explain__title">{t.explainer.title}</Heading>
+        <NumberedList items={steps} />
+      </div>
+      {terms.length > 0 && <Glossary terms={terms} moreHref="/en/glossary/" id="glossary-terms" class="explain__glossary" />}
+    </div>
+  </Section>
+
+  <Section id="patient" aria-labelledby="patient-title">
+    <Split cols="minmax(0, .95fr) minmax(0, 1.05fr)" gap="clamp(40px, 7vw, 112px)" media="start" mediaMax="560px">
+      {/* jak w home/Patient: zdjęcie 5:4 w kadrze 4:5 */}
+      <MonitorPhoto
+        slot="media"
+        effect="pulse"
+        src={patientImg}
+        alt={t.patient.photoAlt}
+        ratio="4/5"
+        widths={[640, 960, 1280, 1600]}
+        sizes="(min-width: 1025px) 850px, min(148vw, 880px)"
+        frame
+      >
+        <Badge variant="stat" value={t.patient.badge.value} label={t.patient.badge.label} note={t.patient.badge.note} />
+      </MonitorPhoto>
+
+      <Eyebrow>{t.patient.eyebrow}</Eyebrow>
+      <Heading id="patient-title" class="patient__title">{t.patient.title}</Heading>
+      <p class="lead patient__lead">{t.patient.lead}</p>
+      <CheckList items={rights} class="patient__rights" />
+      <Actions stack="mobile" gap="sm">
+        <Button href="/en/patient-rights/">{t.patient.primary}</Button>
+        <Button href="/en/patient-rights/print/" variant="ghost" icon="print">{t.patient.secondary}</Button>
+      </Actions>
+      <SorLive />
+    </Split>
+  </Section>
+
+  <Section id="principles" space="bottom" aria-labelledby="principles-title">
+    <SectionHead eyebrow={t.principles.eyebrow} title={t.principles.title} id="principles-title">
+      <LinkArrow slot="action" href="/en/about/#principles">{t.principles.link}</LinkArrow>
+    </SectionHead>
+
+    <NumberedList items={principles} layout="columns" />
+
+    {/* Opinia redakcji wyraźnie oddzielona od części informacyjnej */}
+    <PostulatCta id="postulat" class="position" />
+  </Section>
+</BaseLayout>
+
+<style>
+  /* Style sekcji skopiowane z src/components/home/ (Hero, Latest, Perspectives, DataHighlights, Explainer, Patient, Principles) */
+  .hero { padding-top: clamp(40px, 6vw, 88px); }
+  .hero__title { margin-bottom: 28px; }
+  .hero__lead { margin-bottom: 36px; }
+  .hero__stats { margin-top: clamp(64px, 7vw, 104px); }
+
+  .hero__popular { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-top: 44px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .hero__popular ul { display: flex; flex-wrap: wrap; gap: 8px; }
+  .hero__popular a {
+    display: inline-block; padding: 7px 12px;
+    border: 1px solid var(--line-2);
+    font-size: 0.84375rem; color: var(--ink-2);
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .hero__popular a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-50); }
+  .en-note { margin-top: 32px; max-width: 70ch; font-size: 0.9375rem; line-height: 1.6; color: var(--muted); }
+
+  .latest { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(40px, 5vw, 80px); align-items: start; }
+
+  .persp { padding-top: clamp(72px, 7vw, 112px); }
+  .persp__head {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+    gap: 32px 64px; align-items: start;
+    padding-bottom: clamp(56px, 6vw, 96px);
+  }
+  .persp__title { font-size: clamp(2.25rem, 4.2vw, 3.625rem); }
+  .persp__aside p { font-size: 0.96875rem; line-height: 1.65; margin-bottom: 28px; color: rgba(255, 255, 255, .72); }
+
+  .bento { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: auto auto; gap: 24px; }
+  .bento__chart { grid-column: span 7; grid-row: span 2; }
+  .bento__side { grid-column: span 5; }
+
+  .source { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  .ratio { margin-bottom: 28px; }
+
+  .record {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+    margin: 18px 0 16px;
+    font: 300 clamp(3rem, 5vw, 4.25rem)/1 var(--f-display); letter-spacing: -0.05em; color: #fff; /* kolor-stały: w karcie tone="blue" (--blue-fill) */
+    font-variant-numeric: tabular-nums;
+  }
+  .record small { font: 400 0.9375rem/1 var(--f-body); letter-spacing: 0; color: rgba(255, 255, 255, .93); }
+  .record__text { font-size: 0.9375rem; line-height: 1.6; max-width: 40ch; margin-bottom: 24px; }
+  .record__link { margin-top: auto; align-self: flex-start; }
+
+  .data-sections { margin-top: 56px; }
+  .data-all { margin-top: 28px; }
+
+  .explain { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 96px); align-items: start; }
+  .explain__title { margin-bottom: 40px; }
+  .explain__glossary { position: sticky; top: calc(var(--header-h) + 24px); }
+
+  .patient__title { margin-bottom: 20px; }
+  .patient__lead { margin-bottom: 36px; }
+  .patient__rights { margin-bottom: 40px; }
+
+  .position { margin-top: clamp(72px, 8vw, 112px); }
+
+  @media (max-width: 1024px) {
+    .latest { grid-template-columns: 1fr; }
+    .persp__head { grid-template-columns: 1fr; }
+    .bento { grid-template-columns: 1fr 1fr; }
+    .bento__chart { grid-column: 1 / -1; grid-row: auto; }
+    .bento__side { grid-column: span 1; }
+    .explain { grid-template-columns: 1fr; }
+    .explain__glossary { position: static; }
+  }
+
+  @media (max-width: 720px) {
+    .hero__popular { margin-top: 32px; }
+    .bento { grid-template-columns: 1fr; gap: 16px; }
+    .bento__side { grid-column: auto; }
+  }
+</style>

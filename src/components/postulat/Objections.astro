@@ -2,6 +2,8 @@
 /**
  * /postulat/ — najczęstsze zarzuty (RODO, rozpoznawalność, „atak na lekarzy”), odsyłacz do szerszego
  * programu (jedno zdanie — program jest osobno) i pomoc w nagłośnieniu.
+ * Dwujęzyczny: na /en/demand/ teksty z src/data/en/postulat.ts; projekt ustawy i program są tylko
+ * po polsku — linki z „(in Polish)”. Wyjście polskie bez zmian.
  */
 import Section from '@/components/layout/Section.astro';
 import Eyebrow from '@/components/ui/Eyebrow.astro';
@@ -9,31 +11,60 @@ import Heading from '@/components/ui/Heading.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import Faq from '@/components/blocks/Faq.astro';
 import ShareLinks from '@/components/article/ShareLinks.astro';
-import { objections, postulatPage, programNote } from '@/data/postulat';
+import * as pl from '@/data/postulat';
+import * as en from '@/data/en/postulat';
 import { programPage } from '@/data/program';
 import { projekt } from '@/data/projekt-ustawy';
+import { localeOf } from '@/i18n/locales';
 import { typo } from '@/lib/format';
 
-const url = new URL('/postulat/', Astro.site).href;
+const locale = localeOf(Astro.url.pathname);
+const { objections, postulatPage, programNote } = locale === 'en' ? en : pl;
+const T = {
+  pl: {
+    id: 'zarzuty',
+    path: '/postulat/',
+    eyebrow: 'Zarzuty',
+    title: 'A co z RODO',
+    intro: 'RODO nie zakazuje przetwarzania danych — określa, kiedy i na jakiej podstawie wolno je przetwarzać. Odpowiadamy też na pytania, na które sami nie znamy jeszcze odpowiedzi.',
+    questions: 'Otwarte pytania prawne',
+    program: programPage.title,
+    share: 'Pomóż nagłośnić postulat',
+    hreflang: undefined,
+  },
+  en: {
+    id: en.sectionIds.zarzuty,
+    path: '/en/demand/',
+    eyebrow: 'Objections',
+    title: 'What about the GDPR',
+    intro: 'The GDPR does not prohibit the processing of data — it sets out when and on what basis data may be processed. We also answer questions to which we do not yet know the answer ourselves.',
+    questions: 'Open legal questions (in Polish)',
+    program: 'Broader programme (in Polish)',
+    share: 'Help spread the word about our demand',
+    hreflang: 'pl',
+  },
+}[locale];
+
+const url = new URL(T.path, Astro.site).href;
 ---
-<Section id="zarzuty" tone="soft" aria-labelledby="zarzuty-title">
+<Section id={T.id} tone="soft" aria-labelledby={`${T.id}-title`}>
   <div class="obj">
     <div class="obj__intro">
-      <Eyebrow>Zarzuty</Eyebrow>
-      <Heading id="zarzuty-title" punct="?">A co z RODO</Heading>
-      <p>RODO nie zakazuje przetwarzania danych — określa, kiedy i na jakiej podstawie wolno je przetwarzać. Odpowiadamy też na pytania, na które sami nie znamy jeszcze odpowiedzi.</p>
-      <LinkArrow href={`${projekt.href}#zalacznik-b`}>Otwarte pytania prawne</LinkArrow>
+      <Eyebrow>{T.eyebrow}</Eyebrow>
+      <Heading id={`${T.id}-title`} punct="?">{T.title}</Heading>
+      <p>{T.intro}</p>
+      <LinkArrow href={`${projekt.href}#zalacznik-b`} hreflang={T.hreflang}>{T.questions}</LinkArrow>
     </div>
     <Faq items={objections} openFirst />
   </div>
 
   <p class="obj__program">
     <span>{typo(programNote)}</span>
-    <LinkArrow href={programPage.href}>{programPage.title}</LinkArrow>
+    <LinkArrow href={programPage.href} hreflang={T.hreflang}>{T.program}</LinkArrow>
   </p>
 
   <div class="obj__share">
-    <ShareLinks url={url} title={postulatPage.title} label="Pomóż nagłośnić postulat" />
+    <ShareLinks url={url} title={postulatPage.title} label={T.share} />
   </div>
 </Section>
 

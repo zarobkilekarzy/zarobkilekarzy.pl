@@ -8,6 +8,8 @@
  */
 import { ETAPY, measure, type Entry, type Snapshot } from './measure';
 import { SOR_CYCLE_MIN } from './source';
+import { fill, SOR_TEXT_PL, type SorText } from './text';
+import type { Locale } from '@/i18n/locales';
 
 export const STALE_MIN = 30;
 
@@ -48,18 +50,19 @@ export function summarize(snap: Snapshot): Summary {
   return out;
 }
 
-export const hm = (iso: string) => new Date(iso).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' });
-const dayOf = (iso: string) => new Date(iso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', timeZone: 'Europe/Warsaw' });
+/** zapis godzin i dat: po angielsku brytyjski (24 h, „17 October”) */
+const tag = (locale: Locale) => (locale === 'en' ? 'en-GB' : 'pl-PL');
+export const hm = (iso: string, locale: Locale = 'pl') => new Date(iso).toLocaleTimeString(tag(locale), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' });
+const dayOf = (iso: string, locale: Locale) => new Date(iso).toLocaleDateString(tag(locale), { day: 'numeric', month: 'long', timeZone: 'Europe/Warsaw' });
 
 /** Czy dane stoją: najświeższy pomiar starszy o STALE_MIN od zegara czytelnika. */
 export const isOutdated = (freshest: string, now = Date.now()) => !freshest || (now - Date.parse(freshest)) / 60000 > STALE_MIN;
 
-/** Linia stanu: godzina najświeższego pomiaru albo ostrzeżenie, że dane stoją. */
-export function stampText(freshest: string, now = Date.now()): string {
-  if (!freshest) return 'Brak pomiarów w pliku z danymi.';
-  const today = dayOf(new Date(now).toISOString()) === dayOf(freshest);
-  const when = `${today ? '' : `${dayOf(freshest)}, `}${hm(freshest)}`;
-  return isOutdated(freshest, now)
-    ? `Ostatni pomiar: ${when} — dane się teraz nie odświeżają.`
-    : `Stan z ${when} · każdy SOR sprawdzany co ${SOR_CYCLE_MIN} minut`;
+/** Linia stanu: godzina najświeższego pomiaru albo ostrzeżenie, że dane stoją (napisy `t`, domyślnie po polsku). */
+export function stampText(freshest: string, t: SorText = SOR_TEXT_PL, now = Date.now()): string {
+  if (!freshest) return t.stampNone;
+  const day = (iso: string) => dayOf(iso, t.locale);
+  const today = day(new Date(now).toISOString()) === day(freshest);
+  const when = `${today ? '' : `${day(freshest)}, `}${hm(freshest, t.locale)}`;
+  return isOutdated(freshest, now) ? fill(t.stampOutdated, { when }) : fill(t.stampFresh, { when, cycle: SOR_CYCLE_MIN });
 }

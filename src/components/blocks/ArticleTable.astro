@@ -2,32 +2,35 @@
 /**
  * Spis materiałów w wierszach: forma (opcjonalnie), tytuł z leadem, liczba z karty i strzałka.
  * `format={false}` — bez kolumny formy (np. analizy, które jej nie mają).
+ * Pozycje: polskie artykuły albo gotowe pozycje spisu (src/i18n/entries.ts — strony /en/).
  */
 import type { HTMLAttributes } from 'astro/types';
 import Icon from '@/components/ui/Icon.astro';
 import Tag from '@/components/ui/Tag.astro';
-import { articleHref, type Article } from '@/lib/content';
+import type { Article } from '@/lib/content';
 import { typo } from '@/lib/format';
+import { toEntry, type Entry } from '@/i18n/entries';
 
 interface Props extends HTMLAttributes<'ol'> {
-  articles: Article[];
+  articles: (Article | Entry)[];
   format?: boolean;
 }
 
 const { articles, format = true, class: className, ...rest } = Astro.props;
+const entries = articles.map(toEntry);
 ---
 <ol class:list={['dtable', { 'dtable--plain': !format }, className]} {...rest}>
-  {articles.map((a) => (
+  {entries.map((a) => (
     <li data-reveal>
-      <a class="drow" href={articleHref(a)}>
-        {format && <span class="drow__format">{a.data.format && <Tag>{a.data.format}</Tag>}</span>}
+      <a class="drow" href={a.href} hreflang={a.hreflang}>
+        {format && <span class="drow__format">{a.format && <Tag>{a.format}</Tag>}</span>}
         <span class="drow__main">
-          <h3 class="drow__title">{typo(a.data.title)}</h3>
-          <span class="drow__desc">{typo(a.data.summary)}</span>
+          <h3 class="drow__title">{typo(a.title)}</h3>
+          <span class="drow__desc">{typo(a.summary)}</span>
         </span>
         <span class="drow__stat">
-          {a.data.stat && <b>{a.data.stat.value}</b>}
-          {a.data.stat && <small>{typo(a.data.stat.unit)}</small>}
+          {a.stat && <b>{a.stat.value}</b>}
+          {a.stat && <small>{typo(a.stat.unit)}</small>}
         </span>
         <Icon name="arrow-ne" class="drow__arrow" />
       </a>

@@ -3,6 +3,7 @@
  * danych, i słowniczek), bez ręcznego przepisywania tytułów. Trafia do pliku /szukaj.json (src/pages/szukaj.json.ts).
  */
 import type { SearchDoc, SearchHit, SearchIndex } from '@/types';
+import type { Locale } from '@/i18n/locales';
 import { articleHref, getAllArticles, getGlossary, getSections, isPublished, plainText, termHref, type Article } from '@/lib/content';
 import { popularSearchIds, searchExtras } from '@/data/navigation';
 import { series, seriesStates } from '@/data/serie';
@@ -92,17 +93,20 @@ export async function getPopularSearches(): Promise<SearchHit[]> {
 }
 
 /** Ile razy występuje każde słowo tekstu. */
-const countWords = (text = '') =>
-  words(text).reduce((counts, word) => counts.set(word, (counts.get(word) ?? 0) + 1), new Map<string, number>());
+const countWords = (text = '', locale: Locale = 'pl') =>
+  words(text, locale).reduce((counts, word) => counts.set(word, (counts.get(word) ?? 0) + 1), new Map<string, number>());
 
 export async function buildSearchIndex(): Promise<SearchIndex> {
-  const docs = await collectDocs(articleWithContent);
+  return indexDocs(await collectDocs(articleWithContent));
+}
 
+/** Indeks z gotowej listy celów — wspólny dla wersji polskiej i angielskiej (./build-en.ts). */
+export function indexDocs(docs: SearchDoc[], locale: Locale = 'pl'): SearchIndex {
   // słowo → (nr dokumentu → waga)
   const weights = new Map<string, Map<number, number>>();
   docs.forEach((doc, i) => {
     for (const field of FIELDS) {
-      for (const [word, count] of countWords(field.text(doc))) {
+      for (const [word, count] of countWords(field.text(doc), locale)) {
         const perDoc = weights.get(word) ?? new Map<number, number>();
         perDoc.set(i, (perDoc.get(i) ?? 0) + field.weight * Math.min(count, MAX_REPEATS));
         weights.set(word, perDoc);

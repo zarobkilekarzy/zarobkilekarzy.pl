@@ -1,26 +1,50 @@
 ---
-/** /postulat/ — co dokładnie postulujemy: cztery elementy, co jawne, co chronione, czego nie chcemy. */
+/**
+ * /postulat/ — co dokładnie postulujemy: cztery elementy, co jawne, co chronione, czego nie chcemy.
+ * Dwujęzyczny: na /en/demand/ teksty z src/data/en/postulat.ts; wyjście polskie bez zmian.
+ */
 import Section from '@/components/layout/Section.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
 import NumberedList from '@/components/blocks/NumberedList.astro';
 import TwoLists from '@/components/blocks/TwoLists.astro';
 import Aside from '@/components/blocks/Aside.astro';
-import { demands, disclosure, notDemanded } from '@/data/postulat';
+import * as pl from '@/data/postulat';
+import * as en from '@/data/en/postulat';
+import { localeOf } from '@/i18n/locales';
 import { typo } from '@/lib/format';
+
+const locale = localeOf(Astro.url.pathname);
+const { demands, disclosure, notDemanded } = locale === 'en' ? en : pl;
+const T = {
+  pl: {
+    id: 'postulat',
+    eyebrow: 'Co postulujemy',
+    title: 'Cztery elementy, jeden przepis',
+    aside: 'Wszystkie cztery mieszczą się w jednym artykule jednej ustawy — art. 27a ustawy o działalności leczniczej. Nie trzeba zbierać nowych danych: państwo może ich już żądać.',
+    not: 'Czego nie postulujemy',
+  },
+  en: {
+    id: en.sectionIds.postulat,
+    eyebrow: 'What we call for',
+    title: 'Four elements, one provision',
+    aside: 'All four fit into a single article of a single act — Article 27a of the Act on Medical Activity (ustawa o działalności leczniczej). No new data need to be collected: the state can already require them.',
+    not: 'What we do not call for',
+  },
+}[locale];
 ---
-<Section id="postulat" aria-labelledby="postulat-title">
+<Section id={T.id} aria-labelledby={`${T.id}-title`}>
   <SectionHead
-    eyebrow="Co postulujemy"
-    title="Cztery elementy, jeden przepis"
-    id="postulat-title"
-    aside="Wszystkie cztery mieszczą się w jednym artykule jednej ustawy — art. 27a ustawy o działalności leczniczej. Nie trzeba zbierać nowych danych: państwo może ich już żądać."
+    eyebrow={T.eyebrow}
+    title={T.title}
+    id={`${T.id}-title`}
+    aside={T.aside}
   />
 
   <NumberedList items={demands} layout="columns" />
 
   <TwoLists yes={disclosure.public} no={disclosure.protected} class="demands__lists" />
 
-  <Aside title="Czego nie postulujemy" class="demands__not">
+  <Aside title={T.not} class="demands__not">
     <p>{typo(notDemanded)}</p>
   </Aside>
 </Section>

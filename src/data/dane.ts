@@ -39,7 +39,7 @@ export const keyNumbers: (Omit<KeyNumber, 'href' | 'target'> & { ref: string })[
   { value: '316 079', unit: 'zł / mies.', desc: 'Najwyższy kontrakt — w regionie, którego szpitale mają 1,4 mld zł długu.', ref: 'rekordy' },
   { value: '0', unit: 'rejestrów', desc: 'Publicznych rejestrów sumujących wypłaty jednego lekarza. To sedno problemu.', ref: 'projekt-nowelizacji-art-27a' },
   { value: '~73%', unit: 'na kontrakcie', desc: 'Specjalistów rozlicza się na umowach cywilnoprawnych — a sumy wypłat dla jednej osoby nikt nie liczy.', ref: 'kontrakt-vs-etat' },
-  { value: '4,2', unit: 'miesiąca', desc: 'Średnio tyle czeka się na poradę specjalisty (Barometr WHC 2025), choć koszty w planie NFZ realnie podwoiły się od 2015 r.', ref: 'kolejki' },
+  { value: '4,2', unit: 'miesiąca', desc: 'Średnio tyle czeka się na poradę specjalisty (Barometr WHC 2025), choć koszty w planie NFZ realnie podwoiły się od 2015 r.', ref: 'budzet-nfz' },
   { value: '40,8', unit: 'mld zł', desc: 'Dług publicznych szpitali w połowie 2026 r. — idzie głównie na pensje wypłacane „na kredyt”.', ref: 'zadluzenie-szpitali' },
   { value: '2,15', unit: 'mln zł / rok', desc: 'Najwyższy roczny dochód z pracy lekarza-radnego w sprawdzonych oświadczeniach majątkowych za 2025 r.', ref: 'lekarze-radni' },
   { value: '5,9', unit: 'piel. / 1000', desc: 'Pielęgniarek na 1000 mieszkańców — wobec 9,2 średnio w OECD.', ref: 'personel-medyczny' },

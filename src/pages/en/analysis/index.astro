@@ -1,0 +1,49 @@
+---
+/**
+ * /en/analysis/ — tłumaczenie /analizy/ (src/pages/analizy/index.astro): ten sam układ „Katalog”, teksty
+ * z src/data/en/analizy.ts, w działach tylko materiały z tłumaczeniem (src/data/en/spis.ts).
+ * Bez sekcji „Tools”: kafle hubu PL (symulatory, egzamin LEK, barometr) prowadzą do stron tylko po polsku.
+ * SZKIC (noindex) do akceptacji usera, jak /en/.
+ */
+import IndexLayout from '@/layouts/IndexLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import TopicCatalog from '@/components/blocks/TopicCatalog.astro';
+import TranslationNote from '@/components/article/TranslationNote.astro';
+import { analizyPage, analysisTopics, labels } from '@/data/en/analizy';
+import { translatedOn } from '@/data/en/home';
+import { countEntries, englishEntries, englishGroups } from '@/data/en/spis';
+import { site } from '@/data/navigation';
+import { getTopicGroups } from '@/lib/content';
+import { ANALYSIS_TOPICS } from '@/types';
+
+/** Szkic: strona poza indeksem. Po akceptacji — false. */
+const DRAFT = true;
+
+const toEntry = await englishEntries();
+const groups = englishGroups(await getTopicGroups(ANALYSIS_TOPICS, analysisTopics), analysisTopics, toEntry);
+---
+<IndexLayout
+  title={analizyPage.title}
+  docTitle={analizyPage.docTitle}
+  lead={analizyPage.lead}
+  description={analizyPage.description}
+  eyebrow={analizyPage.eyebrow}
+  meta={[
+    { label: labels.meta.items, value: countEntries(groups) },
+    { label: labels.meta.sections, value: groups.length },
+    { label: labels.meta.updated, value: site.updated },
+  ]}
+  jump={{ title: labels.jump, items: groups.map((g) => ({ label: g.info.label, href: `#${g.topic}`, count: g.articles.length })) }}
+  articles={groups.flatMap((g) => g.articles)}
+  index={!DRAFT}
+  translations={[{ locale: 'pl', path: '/analizy/', indexable: true }]}
+>
+  <Section space="bottom" class="catalog">
+    <TranslationNote original="/analizy/" translated={translatedOn} />
+    <TopicCatalog groups={groups} noun={labels.noun} format={false} />
+  </Section>
+</IndexLayout>
+
+<style>
+  .catalog { padding-top: 48px; }
+</style>

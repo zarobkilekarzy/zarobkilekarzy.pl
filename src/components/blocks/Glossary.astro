@@ -5,6 +5,7 @@ import Tabs from './Tabs.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import type { Term } from '@/types';
 import { typo } from '@/lib/format';
+import { uiOf } from '@/i18n/ui';
 
 interface Props extends HTMLAttributes<'aside'> {
   terms: Term[];
@@ -14,7 +15,8 @@ interface Props extends HTMLAttributes<'aside'> {
   moreLabel?: string;
 }
 
-const { terms, title = 'Słowniczek', moreHref, moreLabel = 'Cały słownik', id = 'slowniczek', class: className, ...rest } = Astro.props;
+const labels = uiOf(Astro.url).blocks.glossary;
+const { terms, title = labels.title, moreHref, moreLabel = labels.more, id = 'slowniczek', class: className, ...rest } = Astro.props;
 const tabId = (t: Term) => `${id}-tab-${t.id}`;
 const panelId = (t: Term) => `${id}-panel-${t.id}`;
 ---
@@ -24,7 +26,7 @@ const panelId = (t: Term) => `${id}-panel-${t.id}`;
     {moreHref && <LinkArrow href={moreHref}>{moreLabel}</LinkArrow>}
   </header>
   <Tabs>
-    <div class="glossary__tabs" role="tablist" aria-label="Pojęcia">
+    <div class="glossary__tabs" role="tablist" aria-label={labels.terms}>
       {terms.map((t, i) => (
         <button type="button" role="tab" id={tabId(t)} aria-controls={panelId(t)} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? undefined : -1}>{t.tab}</button>
       ))}

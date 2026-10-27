@@ -86,7 +86,7 @@ export const paths: PathCard[] = [
 export const topics: Topic[] = [
   { title: 'Kontrakty i etaty', desc: '~73% specjalistów rozlicza się jako firma. Co to zmienia?', href: '/mechanizmy/kontrakt-vs-etat/', image: imgKontrakty, position: '42% 50%' },
   { title: 'Dyżury i wieloetatowość', desc: 'Kilka placówek, kilka umów — i nikt nie widzi sumy.', href: '/mechanizmy/wieloetatowosc/', image: imgDyzury, position: '55% 50%' },
-  { title: 'Pieniądze a kolejki', desc: 'Budżet NFZ rośnie, czas oczekiwania nie maleje. Dlaczego?', href: '/dane/kolejki/', image: imgKolejki, position: '32% 50%' },
+  { title: 'Pieniądze a kolejki', desc: 'Budżet NFZ rośnie, czas oczekiwania nie maleje. Dlaczego?', href: '/dane/budzet-nfz/#pieniadze-a-kolejka', image: imgKolejki, position: '32% 50%' },
   { title: 'Dostęp do zawodu', desc: 'Limity miejsc i puste rezydentury. Skąd biorą się braki?', href: '/mechanizmy/reglamentacja-dostepu/', image: imgKsztalcenie, position: '50% 50%' },
 ];
 

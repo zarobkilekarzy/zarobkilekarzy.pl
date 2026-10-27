@@ -8,7 +8,9 @@
  * Słupki „rosną” przy przewijaniu (data-reveal="grow" → .is-armed → .is-in).
  */
 import type { BarRow } from '@/types';
-import { formatPL, typo } from '@/lib/format';
+import { formatNumber, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
 
 interface Props {
   rows: BarRow[];
@@ -36,7 +38,7 @@ const longest = Math.max(...rows.map((row) => row.display.length));
 <figure class:list={['bars', { 'bars--lg': size === 'lg' }]} data-reveal="grow" style={`--max: ${max}; --chars: ${longest}${average !== undefined ? `; --avg: ${average}` : ''}`}>
   {lead && <p class="bars__lead" aria-hidden="true"><span class="bars__lead-value">{lead.value}</span> <span>{typo(lead.text)}</span></p>}
   {average !== undefined && (
-    <p class="bars__avg" aria-hidden="true"><span>{typo(averageLabel ?? `średnio ${formatPL(average, 1)} ${unit}`)}</span></p>
+    <p class="bars__avg" aria-hidden="true"><span>{typo(averageLabel ?? uiOf(Astro.url).blocks.average(formatNumber(average, 1, localeOf(Astro.url.pathname)), unit))}</span></p>
   )}
   <ol class:list={['bars__rows', { 'has-avg': average !== undefined }]} aria-hidden="true">
     {rows.map((row, i) => (

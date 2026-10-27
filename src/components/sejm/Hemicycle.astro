@@ -11,12 +11,16 @@
  * - Bez JS: półkole, karty z liczbami i pełna lista posłów w <details> (to też wersja dla czytników).
  *
  *   <Hemicycle voting={limityVoting} clubs={SEJM_CLUBS} last={CLUBS_LAST} />
+ *
+ * Na stronach angielskich (/en/) napisy po angielsku (nazwy klubów przychodzą w `clubs`), etykiety głosów
+ * dla dymków skrypt dostaje w `data-labels`.
  */
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { hemicycle, tallyClubs, type Vote, type Voting } from '@/lib/sejm/hemicycle';
 import type { ClubInfo } from '@/data/glosowania';
-import { formatPL, plural, typo } from '@/lib/format';
+import { formatNumber, plural, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 import { raw } from '@/lib/images';
 import { uid } from '@/lib/uid';
 
@@ -34,12 +38,32 @@ const tallies = tallyClubs(voting.votes, last);
 const { seats, dot } = hemicycle(voting.votes, tallies, { width: W, height: H });
 const id = uid('hc');
 const info = (club: string) => clubs[club] ?? { name: club, short: club };
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
+const text = {
+  pl: {
+    votes: { YES: 'za', NO: 'przeciw', ABSTAIN: 'wstrzymał się', ABSENT: 'nie głosował' },
+    sides: { YES: 'Za', NO: 'Przeciw', ABSTAIN: 'Wstrzymali się' },
+    kicker: 'Głosowanie nad całością',
+    sub: (abstain: number, absent: number) => `za : przeciw · ${abstain} ${plural(abstain, ['wstrzymał się', 'wstrzymało się', 'wstrzymało się'])} · ${absent} nie ${plural(absent, ['głosował', 'głosowało', 'głosowało'])}`,
+    chip: (g: { name: string; yes: number; no: number; abstain: number; absent: number }) => `${g.name}: za ${g.yes}, przeciw ${g.no}, wstrzymało się ${g.abstain}, nie głosowało ${g.absent}`,
+    list: 'Jak głosował każdy poseł',
+  },
+  en: {
+    votes: { YES: 'for', NO: 'against', ABSTAIN: 'abstained', ABSENT: 'did not vote' },
+    sides: { YES: 'For', NO: 'Against', ABSTAIN: 'Abstained' },
+    kicker: 'Vote on the bill as a whole',
+    sub: (abstain: number, absent: number) => `for : against · ${abstain} abstained · ${absent} did not vote`,
+    chip: (g: { name: string; yes: number; no: number; abstain: number; absent: number }) => `${g.name}: for ${g.yes}, against ${g.no}, abstained ${g.abstain}, did not vote ${g.absent}`,
+    list: 'How each MP voted',
+  },
+}[locale];
 
 const VOTES: { key: Vote; label: string; field: 'yes' | 'no' | 'abstain' | 'absent' }[] = [
-  { key: 'YES', label: 'za', field: 'yes' },
-  { key: 'NO', label: 'przeciw', field: 'no' },
-  { key: 'ABSTAIN', label: 'wstrzymał się', field: 'abstain' },
-  { key: 'ABSENT', label: 'nie głosował', field: 'absent' },
+  { key: 'YES', label: text.votes.YES, field: 'yes' },
+  { key: 'NO', label: text.votes.NO, field: 'no' },
+  { key: 'ABSTAIN', label: text.votes.ABSTAIN, field: 'abstain' },
+  { key: 'ABSENT', label: text.votes.ABSENT, field: 'absent' },
 ];
 const f1 = (n: number) => n.toFixed(1);
 const mark = (vote: Vote, x: number, y: number, r = dot) =>
@@ -60,9 +84,9 @@ const groups = tallies.map((t) => {
 const lean = (g: { yes: number; no: number; abstain: number }): Vote =>
   g.yes > Math.max(g.no, g.abstain) ? 'YES' : g.no > Math.max(g.yes, g.abstain) ? 'NO' : 'ABSTAIN';
 const SIDES: { key: Vote; label: string }[] = [
-  { key: 'YES', label: 'Za' },
-  { key: 'NO', label: 'Przeciw' },
-  { key: 'ABSTAIN', label: 'Wstrzymali się' },
+  { key: 'YES', label: text.sides.YES },
+  { key: 'NO', label: text.sides.NO },
+  { key: 'ABSTAIN', label: text.sides.ABSTAIN },
 ];
 const sides = SIDES.map((s) => ({ ...s, groups: groups.filter((g) => lean(g) === s.key) })).filter((s) => s.groups.length);
 // dane dymków: [imię i nazwisko, indeks klubu, głos]
@@ -76,15 +100,15 @@ const logoBox = (logo: ImageMetadata, maxW: number, maxH: number) => {
 const { totals } = voting;
 const names = (club: string, vote: Vote) => voting.votes.filter((v) => v.club === club && v.vote === vote).map((v) => v.name).sort((a, b) => a.localeCompare(b, 'pl'));
 ---
-<zl-hemicycle class="hc" id={id}>
+<zl-hemicycle class="hc" id={id} data-labels={en ? JSON.stringify(text.votes) : undefined}>
   <div class="hc__arc">
     <svg class="hc__svg" viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
       {groups.map((g) => <g class="hc__club" data-club={g.club} set:html={g.svg} />)}
     </svg>
     <div class="hc__total">
-      <span class="hc__kicker">Głosowanie nad całością</span>
+      <span class="hc__kicker">{text.kicker}</span>
       <span class="hc__big"><span class="hc__yes">{totals.yes}</span> : {totals.no}</span>
-      <span class="hc__sub">{typo(`za : przeciw · ${totals.abstain} ${plural(totals.abstain, ['wstrzymał się', 'wstrzymało się', 'wstrzymało się'])} · ${totals.absent} nie ${plural(totals.absent, ['głosował', 'głosowało', 'głosowało'])}`)}</span>
+      <span class="hc__sub">{typo(text.sub(totals.abstain, totals.absent))}</span>
     </div>
     <div class="hc__tip" role="status" hidden></div>
   </div>
@@ -99,7 +123,7 @@ const names = (club: string, vote: Vote) => voting.votes.filter((v) => v.club ==
       <div class="hc__clubs">
         {s.groups.map((g) => (
           <button type="button" class="hc__chip" data-club={g.club} data-cx={f1(g.cx / W * 100)} data-cy={f1(g.cy / H * 100)}
-            aria-label={`${g.name}: za ${g.yes}, przeciw ${g.no}, wstrzymało się ${g.abstain}, nie głosowało ${g.absent}`}>
+            aria-label={text.chip(g)}>
             <span class="hc__logo">
               {g.logo ? <Image src={g.logo} {...(({ w, h }) => ({ width: w, height: h }))(logoBox(g.logo, 40, 26))} densities={[1, 2]} alt="" /> : <span class="hc__nologo">—</span>}
             </span>
@@ -112,14 +136,14 @@ const names = (club: string, vote: Vote) => voting.votes.filter((v) => v.club ==
   ))}
 
   <details class="hc__list">
-    <summary>Jak głosował każdy poseł</summary>
+    <summary>{text.list}</summary>
     {groups.map((g) => (
       <div class="hc__group">
         <h4 class="hc__gname">{g.name} <span class="hc__seats">({g.members})</span></h4>
         <dl>
           {VOTES.filter((v) => g[v.field] > 0).map((v) => (
             <>
-              <dt>{v.label}: {formatPL(g[v.field])}</dt>
+              <dt>{v.label}: {formatNumber(g[v.field], 0, locale)}</dt>
               <dd>{names(g.club, v.key).join(', ')}</dd>
             </>
           ))}
@@ -219,7 +243,8 @@ const names = (club: string, vote: Vote) => voting.votes.filter((v) => v.club ==
     w: number;
     h: number;
   };
-  const LABEL = { YES: 'za', NO: 'przeciw', ABSTAIN: 'wstrzymał się', ABSENT: 'nie głosował' } as const;
+  type Labels = Record<'YES' | 'NO' | 'ABSTAIN' | 'ABSENT', string>;
+  const LABEL_PL: Labels = { YES: 'za', NO: 'przeciw', ABSTAIN: 'wstrzymał się', ABSENT: 'nie głosował' };
   const SYMBOL = {
     YES: '<circle class="hc__m hc__m--yes" r="7"/>',
     NO: '<circle class="hc__m hc__m--no" r="6"/>',
@@ -232,6 +257,8 @@ const names = (club: string, vote: Vote) => voting.votes.filter((v) => v.club ==
   class ZlHemicycle extends HTMLElement {
     connectedCallback() {
       const data = JSON.parse(this.querySelector('.hc__data')?.textContent ?? '{}') as Data;
+      // etykiety głosów języka strony (atrybut z serwera na stronach angielskich; bez niego — polskie)
+      const LABEL: Labels = this.dataset.labels ? JSON.parse(this.dataset.labels) : LABEL_PL;
       const svg = this.querySelector<SVGSVGElement>('.hc__svg');
       const tip = this.querySelector<HTMLElement>('.hc__tip');
       const arc = this.querySelector<HTMLElement>('.hc__arc');

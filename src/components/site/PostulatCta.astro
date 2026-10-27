@@ -2,7 +2,7 @@
 /**
  * Blok „Stanowisko redakcji” z wezwaniem do działania — wspólny dla strony głównej i artykułów.
  * Pod przyciskami: bieżący etap projektu ustawy (src/data/projekt-ustawy.ts), żeby status był
- * w każdym miejscu ten sam.
+ * w każdym miejscu ten sam. Na stronach angielskich — tłumaczenie z src/data/en/postulat.ts.
  */
 import type { HTMLAttributes } from 'astro/types';
 import Callout from '@/components/blocks/Callout.astro';
@@ -10,11 +10,23 @@ import Actions from '@/components/layout/Actions.astro';
 import Button from '@/components/ui/Button.astro';
 import { postulat } from '@/data/postulat';
 import { currentStage, projekt } from '@/data/projekt-ustawy';
+import { localeOf } from '@/i18n/locales';
 
 // `title` to treść bloku, a nie atrybut HTML — nie przyjmujemy go z zewnątrz
 type Props = Omit<HTMLAttributes<'div'>, 'title'>;
 const props = Astro.props;
+// Strony angielskie: ta sama ramka z jednym przyciskiem do /en/demand/ (projekt ustawy jest tylko po polsku).
+// Moduł EN ładujemy tylko na /en/ — liczy kwoty w euro, polskie strony go nie potrzebują.
+const en = localeOf(Astro.url.pathname) === 'en';
+const postulatEn = en ? (await import('@/data/en/postulat')).postulat : undefined;
 ---
+{postulatEn ? (
+<Callout label={postulatEn.label} title={postulatEn.title} text={postulatEn.text} {...props}>
+  <Actions slot="actions" stack="always" gap="sm">
+    <Button href={postulatEn.primary.href}>{postulatEn.primary.label}</Button>
+  </Actions>
+</Callout>
+) : (
 <Callout label={postulat.label} title={postulat.title} text={postulat.text} {...props}>
   <Actions slot="actions" stack="always" gap="sm">
     <Button href={postulat.primary.href}>{postulat.primary.label}</Button>
@@ -22,6 +34,7 @@ const props = Astro.props;
     <p class="cta-status"><span class="cta-status__dot" aria-hidden="true"></span>Etap: {currentStage.label.toLowerCase()} · wersja {projekt.version}</p>
   </Actions>
 </Callout>
+)}
 
 <style>
   .cta-status { display: flex; align-items: center; gap: 8px; margin-top: 8px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }

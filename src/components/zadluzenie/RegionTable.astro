@@ -4,10 +4,13 @@
  * część przeterminowana jako ciemniejszy odcinek tego samego paska, dynamika w 2025 r.
  * i w pierwszym półroczu 2026 r. Wiersze od największego długu; wzrost szybszy niż w całym
  * kraju jest wyróżniony słowem i kolorem. W wąskim kontenerze wiersz staje się kartą.
+ * Dwujęzyczny: na stronie /en/ napisy i nazwy województw po angielsku (src/data/en/zadluzenie-szpitali.ts);
+ * wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
 import { LINKS, REGIONS, REGIONS_DATE } from '@/data/zadluzenie';
-import { formatPL } from '@/lib/format';
+import { formatNumber } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   /** teza tabeli — zdanie nad nią (pisane w treści artykułu, bo zależy od odmiany nazw) */
@@ -15,6 +18,11 @@ interface Props {
 }
 
 const { title } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { REGIONS_DATE_EN, regionName } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/zadluzenie-szpitali') : {}) as typeof import('@/data/en/zadluzenie-szpitali');
+const en = locale === 'en';
+const num = (n: number, d = 0) => formatNumber(n, d, locale);
 
 const rows = [...REGIONS].sort((a, b) => b.now - a.now);
 const sum = (key: 'y2024' | 'y2025' | 'now' | 'overdue') => REGIONS.reduce((s, r) => s + r[key], 0);
@@ -22,22 +30,49 @@ const total = { y2024: sum('y2024'), y2025: sum('y2025'), now: sum('now'), overd
 const max = rows[0].now;
 
 const change = (to: number, from: number) => to / from - 1;
-const pctText = (r: number) => `${r >= 0 ? '+' : '−'}${formatPL(Math.abs(r) * 100)}%`;
+const pctText = (r: number) => `${r >= 0 ? '+' : '−'}${num(Math.abs(r) * 100)}%`;
 const country = { y2025: change(total.y2025, total.y2024), h1: change(total.now, total.y2025) };
-const bn = (mln: number, d = 2) => formatPL(mln / 1000, d);
+const bn = (mln: number, d = 2) => num(mln / 1000, d);
+
+const T = {
+  pl: {
+    note: `Zobowiązania SPZOZ według siedziby podmiotu tworzącego, stan na ${REGIONS_DATE}. MON i MSWiA to szpitale resortowe. Wyróżniony wzrost — szybszy niż w całym kraju (${pctText(country.y2025)} w 2025 r., ${pctText(country.h1)} w I półroczu 2026 r.).`,
+    source: 'Ministerstwo Zdrowia, zobowiązania SPZOZ według województw',
+    region: 'Województwo',
+    debt: 'Dług, mld zł',
+    y2025: '2025 r.',
+    h1: 'I półr. 2026',
+    of: (x: string) => `w tym ${x} przeterminowane`,
+    none: 'bez przeterminowanych',
+    total: 'Razem',
+    name: (pl: string) => pl,
+  },
+  en: {
+    note: `SPZOZ liabilities by the seat of the founding body, as of ${REGIONS_DATE_EN}. The Ministry of Defence (MON) and Ministry of the Interior (MSWiA) hospitals are hospitals run by ministries. Highlighted growth — faster than in the country as a whole (${pctText(country.y2025)} in 2025, ${pctText(country.h1)} in the first half of 2026).`,
+    source: 'Ministry of Health, SPZOZ liabilities by voivodeship',
+    region: 'Voivodeship',
+    debt: 'Debt, PLN bn',
+    y2025: '2025',
+    h1: 'H1 2026',
+    of: (x: string) => `of which ${x} overdue`,
+    none: 'no overdue liabilities',
+    total: 'Total',
+    name: regionName,
+  },
+}[locale];
 ---
 <Figure
   title={title}
-  note={`Zobowiązania SPZOZ według siedziby podmiotu tworzącego, stan na ${REGIONS_DATE}. MON i MSWiA to szpitale resortowe. Wyróżniony wzrost — szybszy niż w całym kraju (${pctText(country.y2025)} w 2025 r., ${pctText(country.h1)} w I półroczu 2026 r.).`}
-  source={{ label: 'Ministerstwo Zdrowia, zobowiązania SPZOZ według województw', href: LINKS.mz }}
+  note={T.note}
+  source={{ label: T.source, href: LINKS.mz }}
 >
   <table class="rg" data-reveal="grow" style={`--max: ${max}`}>
     <thead>
       <tr>
-        <th scope="col">Województwo</th>
-        <th scope="col">Dług, mld zł</th>
-        <th scope="col">2025 r.</th>
-        <th scope="col">I półr. 2026</th>
+        <th scope="col">{T.region}</th>
+        <th scope="col">{T.debt}</th>
+        <th scope="col">{T.y2025}</th>
+        <th scope="col">{T.h1}</th>
       </tr>
     </thead>
     <tbody>
@@ -46,24 +81,28 @@ const bn = (mln: number, d = 2) => formatPL(mln / 1000, d);
         const h = change(r.now, r.y2025);
         return (
           <tr style={`--v: ${r.now}; --od: ${r.overdue}`}>
-            <th scope="row">{r.name}</th>
-            <td class="rg__debt" data-label="Dług, mld zł">
+            <th scope="row">{T.name(r.name)}</th>
+            <td class="rg__debt" data-label={T.debt}>
               <span class="rg__v">{bn(r.now)}</span>
-              <span class:list={['rg__od', { 'has-sw': r.overdue > 0 }]}>{r.overdue > 0 ? `w tym ${bn(r.overdue)} przeterminowane` : 'bez przeterminowanych'}</span>
+              <span class:list={['rg__od', { 'has-sw': r.overdue > 0 }]}>{r.overdue > 0 ? T.of(bn(r.overdue)) : T.none}</span>
               <span class="rg__bar" aria-hidden="true"><span></span></span>
             </td>
-            <td data-label="2025 r." class:list={{ 'is-fast': y > country.y2025 }}>{pctText(y)}</td>
-            <td data-label="I półr. 2026" class:list={{ 'is-fast': h > country.h1 }}>{pctText(h)}</td>
+            <td data-label={T.y2025} class:list={{ 'is-fast': y > country.y2025 }}>{pctText(y)}</td>
+            <td data-label={T.h1} class:list={{ 'is-fast': h > country.h1 }}>{pctText(h)}</td>
           </tr>
         );
       })}
     </tbody>
     <tfoot>
       <tr>
-        <th scope="row">Razem</th>
+        <th scope="row">{T.total}</th>
+        {en ? (
+          <td class="rg__debt" data-label={T.debt}><span class="rg__v">{bn(total.now)}</span><span class="rg__od">{T.of(bn(total.overdue))}</span></td>
+        ) : (
         <td class="rg__debt" data-label="Dług, mld zł"><span class="rg__v">{bn(total.now)}</span><span class="rg__od">w tym {bn(total.overdue)} przeterminowane</span></td>
-        <td data-label="2025 r.">{pctText(country.y2025)}</td>
-        <td data-label="I półr. 2026">{pctText(country.h1)}</td>
+        )}
+        <td data-label={T.y2025}>{pctText(country.y2025)}</td>
+        <td data-label={T.h1}>{pctText(country.h1)}</td>
       </tr>
     </tfoot>
   </table>

@@ -4,6 +4,7 @@
  * i materiały działu. Zdjęcie i tekst zamieniają się stronami co drugi dział.
  * Liczba na zdjęciu pochodzi z pierwszego materiału działu, który ma `stat`.
  * Zdjęcia mają siatkę monitora na najechanie (ui/MonitorPhoto), efekty na zmianę: EKG, pomiar, tętno.
+ * Materiały: polskie artykuły albo pozycje spisu (src/i18n/entries.ts) — strona /en/mechanisms/.
  */
 import MonitorPhoto from '@/components/ui/MonitorPhoto.astro';
 import Badge from '@/components/ui/Badge.astro';
@@ -11,28 +12,31 @@ import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
 import Icon from '@/components/ui/Icon.astro';
 import Tag from '@/components/ui/Tag.astro';
-import { articleHref, type Article } from '@/lib/content';
+import type { Article } from '@/lib/content';
 import type { QuestionTopic } from '@/types';
 import { pad2, typo } from '@/lib/format';
 import type { MonitorEffect } from '@/lib/siatka';
+import { toEntry, type Entry } from '@/i18n/entries';
+import { uiOf } from '@/i18n/ui';
 
 interface Props {
-  groups: { topic: string; info: QuestionTopic; articles: Article[] }[];
+  groups: { topic: string; info: QuestionTopic; articles: (Article | Entry)[] }[];
   /** nagłówek listy materiałów pod odpowiedzią */
   listLabel?: string;
 }
 
-const { groups, listLabel = 'Czytaj dalej' } = Astro.props;
+const { groups, listLabel = uiOf(Astro.url).blocks.readOn } = Astro.props;
 const EFFECTS: MonitorEffect[] = ['ekg', 'scan', 'pulse'];
 ---
 <div class="guide">
-  {groups.map(({ topic, info, articles }, i) => {
-    const lead = articles.find((a) => a.data.stat);
+  {groups.map(({ topic, info, articles: items }, i) => {
+    const articles = items.map(toEntry);
+    const lead = articles.find((a) => a.stat);
     return (
       <section class:list={['band', { 'band--flip': i % 2 === 1 }]} id={topic} aria-labelledby={`${topic}-title`}>
         <div class="band__media" data-reveal>
           <MonitorPhoto effect={EFFECTS[i % EFFECTS.length]} src={info.image} alt="" ratio="5/6" position={info.position} widths={[480, 720, 960]} sizes="(min-width: 1025px) 625px, min(100vw - 32px, 560px)" frame>
-            {lead?.data.stat && <Badge variant="stat" value={lead.data.stat.value} label={lead.data.stat.unit} note={lead.data.title} />}
+            {lead?.stat && <Badge variant="stat" value={lead.stat.value} label={lead.stat.unit} note={lead.title} />}
           </MonitorPhoto>
         </div>
         <div class="band__body">
@@ -43,9 +47,9 @@ const EFFECTS: MonitorEffect[] = ['ekg', 'scan', 'pulse'];
           <ul class="band__list">
             {articles.map((a) => (
               <li>
-                <a href={articleHref(a)}>
-                  <span class="band__title">{typo(a.data.title)}</span>
-                  {a.data.format && <Tag>{a.data.format}</Tag>}
+                <a href={a.href} hreflang={a.hreflang}>
+                  <span class="band__title">{typo(a.title)}</span>
+                  {a.format && <Tag>{a.format}</Tag>}
                   <Icon name="arrow" size={16} class="band__arrow" />
                 </a>
               </li>

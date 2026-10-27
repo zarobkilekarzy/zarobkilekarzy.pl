@@ -1,0 +1,336 @@
+---
+title: "Poland’s harshest penalty for doctors is almost never imposed"
+seoTitle: "Doctor discipline and licence revocation"
+summary: "In 2010–2025 Polish medical courts revoked the licence to practise of 20 doctors with final effect. An admonition, a reprimand and a fine make up 86% of the penalties imposed at first instance in 2020–2025."
+description: "In 2010–2025 Polish medical courts revoked 20 doctors’ licences in final rulings. 86% of penalties in 2020–2025 were an admonition, reprimand or fine."
+keyPoints:
+  - "Doctors’ professional liability is decided by the courts of the medical self-government. A disciplinary prosecutor brings the charges, doctors elected by medical congresses sit as judges, and a case leaves the self-government only with a cassation appeal to the Supreme Court."
+  - "An admonition, a reprimand and a fine make up 86% of the 2,516 penalties imposed at first instance in 2020–2025. The courts ordered revocation of the licence to practise 27 times."
+  - "In 2010–2025, 20 doctors lost their licence to practise with final effect — just over one a year, and in 6 of those 16 years, none. For 2000–2009 the reports do not separate final decisions."
+  - "Relative to the number of doctors, the authorities in Norway and Sweden withdrew licences about 90 times as often in 2020–2025, and the British tribunal, which does not erase doctors from the register on health grounds alone, about 16 times as often. The systems differ, however, in the range of cases they cover, and in Poland doctors’ crimes are tried separately by the criminal courts."
+editorial:
+  - >-
+    We do not believe the harshest penalty should be imposed often. We believe anyone should be able to
+    check, without counting it up themselves, how the self-government holds the profession to account:
+    how many complaints came in, how many cases went to the medical courts, what penalties were imposed
+    and how many of them became final. Every year, in a single summary, as Norway and Sweden do.
+  - >-
+    As long as the overall figure has to be pieced together from dozens of files, the profession’s
+    accountability is public on paper but hard to check in practice.
+translation:
+  of: odpowiedzialnosc-zawodowa-lekarzy
+  files: [src/data/odpowiedzialnosc-zawodowa-lekarzy.ts]
+  hash: "78797e3a1636"
+  date: 2026-10-26
+noindex: true
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Steps from '@/components/blocks/Steps.astro';
+import TwoLists from '@/components/blocks/TwoLists.astro';
+import MonitorPhoto from '@/components/ui/MonitorPhoto.astro';
+import stampsPhoto from '@/assets/articles/odpowiedzialnosc-zawodowa-lekarzy/pieczatki.jpg';
+import UnitChart from '@/components/blocks/UnitChart.astro';
+import RevocationTable from '@/components/odpowiedzialnosc-zawodowa-lekarzy/RevocationTable.astro';
+import {
+  FIRST_INSTANCE,
+  FIRST_INSTANCE_2000_2009,
+  FIRST_INSTANCE_TOTAL,
+  FIRST_YEAR,
+  LAST_YEAR,
+  LINKS,
+  NO_DOCTORS,
+  OROZ_CASES,
+  OSL_CASES_2025,
+  PENALTIES,
+  PENALTIES_MILD,
+  PENALTIES_TOTAL,
+  PENALTY_COUNT,
+  PENALTY_MAX,
+  PL_DOCTORS,
+  PL_ONE_YEARS,
+  PL_ZERO_YEARS,
+  RATES,
+  RATE_MAX,
+  RATIO_ROUNDED,
+  RATIO_UK,
+  SE_DOCTORS_2025,
+  UK_DOCTORS_2020,
+  UK_DOCTORS_2024,
+  WINDOW,
+  YEARS_COUNT,
+  firstInstance,
+  penaltyCaption,
+  penaltyRows,
+  plIn,
+  rate,
+  rateCaption,
+  rateRows,
+  share,
+  total,
+} from '@/data/en/odpowiedzialnosc-zawodowa-lekarzy';
+import { formatEN } from '@/lib/format';
+
+{/* Tłumaczenie src/content/articles/odpowiedzialnosc-zawodowa-lekarzy.mdx; wykresy liczy src/data/en/odpowiedzialnosc-zawodowa-lekarzy.ts, tabelę lat — dwujęzyczny RevocationTable */}
+
+export const span = `${WINDOW.from}–${WINDOW.to}`;
+export const allYears = `${FIRST_YEAR}–${LAST_YEAR}`;
+export const mildPct = Math.round((PENALTIES_MILD / PENALTIES_TOTAL) * 100);
+export const suspension = PENALTY_COUNT.suspension;
+export const revocation = PENALTY_COUNT.revocation;
+export const ban = PENALTY_COUNT.ban;
+export const restriction = PENALTY_COUNT.restriction;
+export const plTotal = total('pl');
+export const firstSince2010 = firstInstance(FIRST_YEAR, LAST_YEAR);
+export const plWindow = total('pl', WINDOW.from, WINDOW.to);
+export const lastFirstInstance = firstInstance(LAST_YEAR, LAST_YEAR);
+export const plIfFinal = rate(plWindow + lastFirstInstance, PL_DOCTORS);
+export const scandiMin = Math.min(RATES.no, RATES.se);
+export const ratioUk = Math.round(RATIO_UK);
+
+<MonitorPhoto
+  src={stampsPhoto}
+  alt="Seven rubber stamps arranged from the smallest to the largest. The first ones are dark with ink; the last and largest is clean"
+  effect="ekg"
+  ratio="3/2"
+  sizes="(min-width: 1025px) 720px, calc(100vw - 32px)"
+  frame
+/>
+
+The harshest penalty that the medical self-government can impose on a doctor is revocation of the licence to practise (PWZ). According to the annual reports of the medical courts, in {allYears} it was imposed with final effect on {plTotal} doctors — on average just over once a year.[^nil-sady] Most often the medical courts end cases with an admonition, a reprimand or a fine.
+
+We describe who rules on doctors’ professional liability in Poland, what penalties are applied and how the figures compare with Norway and Sweden, where state authorities decide on the right to practise, and with the United Kingdom, where the decision is taken by a tribunal separate from the professional regulator. We do not write about any specific case or person, only about how the system works.
+
+<UnitChart
+  title={`Of the ${formatEN(PENALTIES_TOTAL)} penalties imposed by medical courts in ${PENALTIES.period}, revocation of the licence to practise was ordered ${revocation} times`}
+  unit={1}
+  exact
+  unitLabel="penalty imposed at first instance"
+  cols={68}
+  groups={[
+    { value: PENALTIES_TOTAL - suspension - revocation, kind: 'off', label: 'other penalties — from an admonition to a restriction of the scope of practice' },
+    { value: suspension, kind: 'mid', label: 'suspension of the licence to practise for 1–5 years' },
+    { value: revocation, kind: 'on', label: 'revocation of the licence to practise' },
+  ]}
+  source={`NIL, reports of the regional medical courts ${PENALTIES.period} (our compilation)`}
+  href={LINKS.nilCourts}
+/>
+
+<StatRow
+  label="Medical courts in figures"
+  items={[
+    { value: plTotal, unit: 'doctors', desc: `lost their licence to practise with final effect in ${allYears}; in ${PL_ZERO_YEARS} of the ${YEARS_COUNT} years there was not a single such case`, accuracy: 'exact', source: 'NIL, our compilation', href: LINKS.nilCourts },
+    { value: mildPct, unit: '%', desc: `of the penalties imposed at first instance in ${PENALTIES.period} were an admonition, a reprimand or a fine (${formatEN(PENALTIES_MILD)} of ${formatEN(PENALTIES_TOTAL)})`, accuracy: 'exact', source: 'NIL, our compilation', href: LINKS.nilCourts },
+    { value: FIRST_INSTANCE_TOTAL, unit: 'decisions', desc: `revoking the licence to practise were issued at first instance by regional medical courts in 2000–${LAST_YEAR}; in ${allYears} there were ${firstSince2010}, while final revocations in that period numbered ${plTotal}`, accuracy: 'exact', source: 'NIL, our compilation', href: LINKS.nilCourts },
+  ]}
+/>
+
+## Who judges doctors
+
+The medical self-government consists of the Supreme Medical Chamber (NIL), 23 regional medical chambers and the Military Medical Chamber, which has the status of a regional chamber.[^nil-2024] Its members are doctors and dentists entered on the chambers’ membership lists. The licence to practise is granted by a chamber, and on receiving it a doctor is entered on the list of its members.[^uil-ustroj]
+
+The Act on medical chambers gives the self-government two roles at once: it represents the people practising the profession and, at the same time, oversees its proper practice within the limits of the public interest.[^uil-ustroj] The second role is served by two bodies that every chamber has: a disciplinary prosecutor (*rzecznik odpowiedzialności zawodowej*) and a medical court. The path of a case step by step, with examples from rulings, is described in our text [How medical courts work](/en/mechanisms/how-medical-courts-work/).
+
+<Figure
+  title="Each of the 24 chambers — the 23 regional chambers and the Military Chamber — has its own disciplinary prosecutor and court of first instance. The second instance is the Supreme Medical Court."
+  source={{ label: 'Act on medical chambers, Articles 21, 24, 25, 35, 38 and 80', href: LINKS.act }}
+>
+  <Comparison
+    table={{
+      columns: ['', 'Regional chamber (23 and the Military Chamber)', 'Supreme Medical Chamber'],
+      rows: [
+        { cells: ['Medical congress', 'Regional medical congress — delegates elect the chamber’s other bodies', 'National Medical Congress — delegates are elected by the regional congresses'] },
+        { cells: ['Medical council', 'Regional medical council — runs the chamber between congresses and grants the licence to practise', 'Supreme Medical Council — runs the self-government between congresses'] },
+        { cells: ['Disciplinary prosecutor', 'Regional disciplinary prosecutor — investigates complaints and brings charges before the medical court', 'Chief Disciplinary Prosecutor'] },
+        { cells: ['Medical court', 'Regional medical court — first instance, sits as a panel of 3', 'Supreme Medical Court — second instance, sits as a panel of 5'] },
+        { cells: ['Audit committee', 'Regional audit committee — oversees the chamber’s finances and management', 'Supreme Audit Committee'] },
+      ],
+    }}
+  />
+</Figure>
+
+Disciplinary prosecutors, their deputies and the members of the medical courts are elected for a four-year term by medical congresses: regional congresses in the regional chambers and the National Congress in the Supreme Medical Chamber. Any doctor who has practised for at least 10 years may stand.[^uil-sady] It is therefore doctors elected by doctors who bring the charges and decide the cases. When adjudicating, members of the medical courts are bound by generally applicable law.[^uil-sady]
+
+A case passes through the successive stages set out in the act:[^uil-postepowanie]
+
+<Steps>
+
+1. **Complaint.** A patient files it with the regional disciplinary prosecutor of the chamber to which the doctor belongs; the prosecutor may also act on receiving information about possible misconduct. Proceedings are not opened if 3 years have passed since the act, and once opened, liability lapses after 5 years (for a criminal offence — not earlier than its limitation period).
+2. **Preliminary investigation.** It is conducted by the prosecutor — first verification steps, then, if there are grounds, a preliminary investigation. It should last no more than 6 months but may be extended. The injured party is a party to the proceedings and may challenge a refusal to open proceedings before the medical court.
+3. **First instance.** If the prosecutor considers the charges justified, they submit a request for a penalty to the regional medical court and act as prosecutor before it. The court sits as a panel of three.
+4. **Appeal.** Within 14 days a party may appeal to the Supreme Medical Court. It sits as a panel of five and may uphold, amend or set aside the decision.
+5. **Cassation.** Against a final decision of the Supreme Medical Court that ends the case, the parties, the minister of health and the president of the Supreme Medical Council may lodge a cassation appeal with the Supreme Court within 2 months. This is the only stage at which the case is examined by a court outside the self-government.
+
+</Steps>
+
+Where the evidence points to serious misconduct and the doctor’s continued work endangers patients, the medical court may, at the prosecutor’s request, temporarily suspend the licence to practise or restrict the scope of practice — for up to a year, with immediate effect and with the possibility of extension after the court examines the case again.[^uil-postepowanie] Cases of doctors who cannot practise because of their state of health are handled by the self-government under a separate procedure, outside the medical courts.[^nil-2024][^uil-postepowanie]
+
+The Patient Ombudsman, too, refers patients in such matters to the regional disciplinary prosecutor.[^rpp] How to prepare a complaint and what other routes exist is described in our guide [Patients’ rights](/en/patient-rights/).
+
+## Seven penalties
+
+Article 83 of the act lists seven penalties, from the mildest:[^uil-kary]
+
+1. admonition,
+2. reprimand,
+3. fine — from one third to four times the average monthly wage in the enterprise sector,
+4. ban on holding managerial positions in healthcare, for 1–5 years,
+5. restriction of the scope of professional practice, for 6 months to 2 years,
+6. suspension of the licence to practise, for 1–5 years,
+7. revocation of the licence to practise.
+
+The court may add a ban on holding managerial positions to a restriction of the scope of practice or to a suspension, and a fine to penalties four to six. With penalties four to seven it may also order the decision to be published in the chamber’s bulletin.[^uil-kary]
+
+The most important line runs between the sixth and the seventh penalty. A suspension lasts at most five years and is expunged five years after it has been served. Revocation of the licence to practise is the only one of the seven penalties that is never expunged.[^uil-kary]
+
+## What penalties the medical courts impose
+
+In {PENALTIES.period} the regional medical courts imposed {formatEN(PENALTIES_TOTAL)} penalties at first instance.[^nil-sady] More than four in five of them were the three mildest.
+
+<Figure
+  title={`The three mildest penalties make up ${mildPct}% of the ${formatEN(PENALTIES_TOTAL)} penalties imposed in ${PENALTIES.period}. The courts ordered revocation of the licence to practise ${revocation} times.`}
+  note={`Penalties imposed at first instance by the regional medical courts of the 24 chambers, in the order set by the act — from the mildest. There are more penalties than doctors penalised, because the court may add a ban on holding managerial positions to a restriction or suspension, and a fine to penalties four to six. ${LAST_YEAR} excludes the Koszalin chamber, whose column in the report is empty.`}
+  source={{ label: `NIL, reports of the regional medical courts ${PENALTIES.period} (our compilation)`, href: LINKS.nilCourts }}
+>
+  <BarChart
+    rows={penaltyRows}
+    max={PENALTY_MAX}
+    unit="penalties"
+    caption={penaltyCaption}
+  />
+</Figure>
+
+Admonitions, reprimands and fines together account for {formatEN(PENALTIES_MILD)} penalties, or {mildPct}%. The courts ordered suspension of the licence to practise {suspension} times ({formatEN(share(suspension), 1)}%) and revocation {revocation} times (about {Math.round(share(revocation))}%). Only the ban on holding managerial positions was imposed less often than revocation: {ban} times.
+
+Frequency therefore does not fall evenly with severity. Suspension, the sixth penalty in the statutory order, was imposed more often than the fourth and fifth combined ({ban} + {restriction} = {ban + restriction}).
+
+Two caveats. This is the number of penalties, not of cases or of doctors penalised: one doctor may receive, for example, a suspension, a ban on holding managerial positions and a fine at the same time. These are also first-instance decisions, and some of them change on appeal. In addition, the figures for {LAST_YEAR} are incomplete, because the report lacks data from the Koszalin chamber.[^nil-2025]
+
+What these penalties look like in specific cases is shown in the [catalogue of rulings](/sad-lekarski/orzeczenia/) (in Polish): summaries of final rulings from the NIL portal, with the charge and the penalty imposed. In the [game](/sad-lekarski/) (in Polish) you can check whether, given the same facts, you would rule as the medical court did.
+
+## How many times the licence to practise was revoked
+
+A decision of a regional medical court does not close the case, because it can be appealed.[^uil-postepowanie] That is why we count final revocations: those that nobody appealed, and those that the Supreme Medical Court upheld or ordered itself.
+
+In 2000–{LAST_YEAR} the regional medical courts ordered revocation of the licence to practise {FIRST_INSTANCE_TOTAL} times: {FIRST_INSTANCE[0].n} times in {FIRST_INSTANCE[0].period}, {FIRST_INSTANCE[1].n} times in {FIRST_INSTANCE[1].period} and {FIRST_INSTANCE[2].n} times in {FIRST_INSTANCE[2].period}.[^nil-sady] Final revocations can be counted exactly from {FIRST_YEAR}: in {allYears} there were {plTotal}, against {firstSince2010} first-instance decisions over the same period.[^suma-nil] The older report form, used in 2000–2009, does not separate final decisions from the others. At first instance the medical courts ordered revocation {FIRST_INSTANCE_2000_2009} times in those years, so over the whole quarter-century there were at least {plTotal} final revocations, but the reports do not give the exact number.[^nil-sady] In 2019 Prawo.pl, a Polish legal news site, reported that 13 doctors had lost their licence to practise since the 1990s.[^prawo2019]
+
+The reports do not break down the difference between {firstSince2010} and {plTotal}. It consists of decisions that the Supreme Medical Court amended or set aside, and of cases in which an appeal is still pending, especially from recent years. The years do not match either: we count a revocation in the year it became final, not in the year of the first decision.
+
+The table in the next section shows this year by year. In {PL_ZERO_YEARS} of the {YEARS_COUNT} years there were no final revocations at all, and in {PL_ONE_YEARS} there was one each. In 2020–2022 there were {total('pl', 2020, 2022)}, in 2023 {plIn(2023)}, and in 2024 {plIn(2024)} — more than half as many as in 2015–2023 combined ({total('pl', 2015, 2023)}).[^nil-sady] For {LAST_YEAR} the reports show none, even though the regional courts ordered {lastFirstInstance} revocations that year. None of them became final that year without an appeal. If the Supreme Medical Court upholds them at second instance, they will appear in the statistics for later years.[^nil-2025]
+
+A picture of a single year at second instance comes from the Supreme Medical Court’s report for 2022. Decisions ending the proceedings, issued at a hearing, concerned 97 doctors that year, and orders issued at sittings — 185. The harshest penalties imposed by that court in 2022 were suspensions (6 doctors) and restrictions of the scope of practice (5). There was not a single revocation of the licence to practise.[^nsl-2022]
+
+Only some cases reach the courts. In {LAST_YEAR} the regional disciplinary prosecutors received {formatEN(OROZ_CASES[2025])} cases, against {formatEN(OROZ_CASES[2022])} in 2022, {formatEN(OROZ_CASES[2023])} in 2023 and {formatEN(OROZ_CASES[2024])} in 2024.[^oroz] The prosecutors’ summaries count all incoming cases, not only patients’ complaints. In {LAST_YEAR} the regional medical courts received {formatEN(OSL_CASES_2025)} cases, excluding the Koszalin chamber.[^nil-2025] In 2019 Prawo.pl wrote of about 3,000 complaints a year, of which roughly one third reach the courts.[^prawo2019]
+
+## The criminal court is a separate route
+
+Proceedings before a medical court run independently of criminal proceedings.[^uil-postepowanie] A criminal court may ban a doctor who has committed a crime from practising the profession as a penal measure — if they abused their profession in committing the crime or if their continued practice endangers important legally protected interests.[^kk]
+
+The low number of revocations within the self-government therefore does not tell the whole story about doctors convicted of crimes, because in their cases a ban on practising may be imposed by a criminal court. We did not find how many doctors have received such a ban in the sources we use. The figures in this text concern the medical courts only.
+
+## Poland compared with Norway, Sweden, the United Kingdom and Czechia
+
+In Norway a doctor’s authorisation, that is the right to practise, is withdrawn by the state supervisory authority Helsetilsynet.[^helse] In Sweden applications are made by, among others, the state inspectorate IVO, and the decision is taken by the state board HSAN.[^hsan] Both countries publish the number of such decisions every year, separately for each profession.
+
+In the United Kingdom complaints about doctors are investigated by the General Medical Council, the statutory regulator that keeps the register of doctors. Whether to erase a doctor from the register is decided by the Medical Practitioners Tribunal Service, which according to the GMC is operationally separate from it and decides independently. The GMC publishes the number of erasures every year in its fitness to practise statistics, and information about tribunal hearings and their outcomes is published.[^gmc]
+
+Poland has about {formatEN(PL_DOCTORS / NO_DOCTORS[LAST_YEAR], 1)} times as many doctors as Norway and about {formatEN(PL_DOCTORS / SE_DOCTORS_2025, 1)} times as many as Sweden, and the United Kingdom about {formatEN(UK_DOCTORS_2024 / PL_DOCTORS, 1)} times as many as Poland,[^lekarze][^gmc-kadry] which is why we compare figures per 100,000 doctors.
+
+<Figure
+  title={`Relative to the number of doctors, the authorities in Norway and Sweden withdrew licences to practise about ${RATIO_ROUNDED} times as often as Polish medical courts revoked them.`}
+  note={`Annual average for ${span}, per 100,000 doctors. The systems differ in the range of cases and in definitions, and the denominators come from different registers — this is a comparison of orders of magnitude, not exact to a single case.`}
+  source={{ label: 'our calculation; data and sources in the table below' }}
+>
+  <BarChart
+    rows={rateRows}
+    max={RATE_MAX}
+    unit="per 100,000 doctors"
+    caption={rateCaption}
+  />
+</Figure>
+
+<RevocationTable />
+
+In {span} the authorities in Norway and Sweden withdrew the right to practise from {total('no', WINDOW.from, WINDOW.to)} and {total('se', WINDOW.from, WINDOW.to)} doctors respectively, the British tribunal erased {total('uk', WINDOW.from, WINDOW.to)} doctors from the register, and Polish medical courts revoked the licence to practise of {plWindow} with final effect. The window includes 2024, with {plIn(2024)} revocations, the most in the whole series, but also {LAST_YEAR}, for which the reports show no final revocation and the data of the regional courts lack the Koszalin chamber. Even if all {lastFirstInstance} revocations ordered at first instance in {LAST_YEAR} were added to that year, the Polish rate would be about {formatEN(plIfFinal, 1)}, and the authorities in Norway and Sweden would still withdraw licences about {Math.round(scandiMin / plIfFinal)} times as often.
+
+The years {span} are the most recent for which we have data from all four countries. In {LAST_YEAR} both authorities withdrew the right to practise from more doctors than in any year since 2010: 58 in Norway[^helse-2025] and 64 in Sweden.[^hsan]
+
+These figures are not directly comparable. In Poland, revocation of the licence to practise is a penalty for professional misconduct. Crimes are tried separately by a criminal court, and the self-government deals with unfitness to work on health grounds under a different procedure. The authorities in Norway and Sweden withdraw licences for various reasons under a single procedure, and in Sweden a licence may also be withdrawn at the request of the doctor themselves.[^hsan] The Norwegian authority reports voluntary surrenders of authorisation separately.[^helse-2025] The British data are tribunal decisions in the year they were taken, which can be appealed to a court, not final decisions; they do not include erasures ordered on review of earlier sanctions or erasures at the doctor’s own request.[^gmc] The denominators come from different registers. That is why we compare orders of magnitude, not results exact to a single case.
+
+The closest equivalent of the Polish revocation is erasure from the British register. In the United Kingdom it is also a sanction for misconduct: cases concerning only a doctor’s health, as the GMC writes, never end in erasure.[^gmc] The tribunal erased doctors less often than the Scandinavian authorities, about {formatEN(RATES.uk, 0)} erasures a year per 100,000 doctors, but still about {ratioUk} times as often as Polish medical courts. The years 2020–2021 were unusual there: during the pandemic the tribunal held fewer hearings.[^gmc]
+
+The Czech Medical Chamber (ČLK), like the Polish self-government, is a professional body. It does not publish annual statistics, but according to its president it expelled 10 doctors over 20 years, and expulsion is possible for at most five years.[^tempus] For Germany and Austria there is no comparable figure. In 2026 the German federal government told the Bundestag that it has no national statistics.[^de] The Austrian act on the medical profession prohibits informing the public about the course and outcome of closed disciplinary proceedings.[^at]
+
+## The self-government’s arguments
+
+There are arguments that explain the low number of revocations and that need to be set out. Penalties are graduated, and revocation of the licence to practise is meant to be a last resort: the court should first consider a milder penalty. This is how an expert in medical law described the principle in a statement for MedExpress.[^medexpress] Revocation is also the only penalty that is never expunged, so it remains in the register of penalised doctors for good.[^uil-kary]
+
+The reports do not say what the cases were about, so the figures alone cannot show whether the penalties matched the seriousness of the misconduct. The structure of penalties fits both the explanation that most cases concern less serious misconduct and the claim that the courts rule leniently.
+
+The self-government’s decisions are also subject to external review: a cassation appeal to the Supreme Court may be lodged not only by a party but also by the minister of health.[^uil-postepowanie] NIL also runs a portal of final rulings of the medical courts, whose rules were adopted in March 2024. It publishes anonymised rulings there and, on its website, tables with the number of final rulings since 2023, broken down since 2024 into penalties, discontinuations and acquittals.[^nil-2024][^portal] It has not yet prepared the table for the second half of 2025 — according to NIL, because the courts exceed the deadlines for drafting written reasons.[^portal]
+
+## What can be checked
+
+Penalties imposed on individual doctors go into the Register of Penalised Doctors, kept by the Supreme Medical Council. Information from the register is given only to a person or institution that shows a legal interest.[^rejestr]
+
+Aggregate data are public but scattered. NIL publishes the medical courts’ reports as separate spreadsheet and document files, year by year.[^nil-sady] To count how many doctors lost their licence to practise with final effect, one has to add up two sections of the reports — those of the regional medical courts and of the Supreme Medical Court — for all 24 chambers. In two files an incorrect total cell also has to be ignored.[^suma-nil] Norway and Sweden publish this figure ready-made, every year and broken down by profession, and the British regulator — every year in its table of tribunal outcomes.[^helse][^hsan][^gmc]
+
+We propose the same principle — public data without names — for public money: [the total paid to each person from public money, under a permanent identifier, without names](/en/demand/).
+
+<TwoLists
+  yes={{
+    title: 'The figures show',
+    note: 'what follows from the reports',
+    items: [
+      'The medical courts most often impose the mildest penalties: an admonition, a reprimand and a fine.',
+      `Final revocation of the licence to practise happens on average just over once a year: in ${PL_ZERO_YEARS + PL_ONE_YEARS} of the ${YEARS_COUNT} years there was at most one.`,
+      `Relative to the number of doctors, the authorities in Norway and Sweden withdraw licences to practise about ${RATIO_ROUNDED} times as often.`,
+    ],
+  }}
+  no={{
+    title: 'They do not show',
+    note: 'what we cannot read from them',
+    items: [
+      'Whether the penalties matched the seriousness of the misconduct — the reports do not describe the cases.',
+      'How many doctors were banned from practising by criminal courts.',
+      'Whether serious misconduct is rarer in Poland than in Scandinavia — each system counts something different.',
+    ],
+  }}
+/>
+
+## Method
+
+We calculated the Polish figures ourselves from NIL files: the annual reports of the regional medical courts and of the Supreme Medical Court for {allYears} and the summary of rulings from 2000–2014.[^nil-sady] We add up all 24 chambers, always from the columns of the individual chambers rather than from the total cell in the file, because in two reports that cell is wrong.[^suma-nil] A final revocation is a decision of a regional court that nobody appealed (section 8.9 of the report), or a revocation upheld or ordered by the Supreme Medical Court at second instance (section 8.11). We assume that these two sets do not overlap: a case with an appeal ends with a decision of the Supreme Medical Court, so it should not appear in section 8.9 of the regional courts’ report. This cannot be checked case by case, because the reports do not give case numbers. Revocations in both sections in the same year occurred only in 2016 and 2024. If in both of those years the same doctor was involved, there would be {plIn(2024) - 1} instead of {plIn(2024)} for 2024, and {plTotal - 2} instead of {plTotal} for {allYears}.[^pokrycie] We calculate the structure of penalties from first-instance decisions in {PENALTIES.period}. In the regional courts’ report for {LAST_YEAR} the column of the Koszalin chamber is empty, although in 2019–2024 that court had a dozen or so cases a year, so the totals for {LAST_YEAR} are incomplete.[^nil-2025]
+
+The rate per 100,000 doctors is the annual average for {span} divided by the number of doctors. For Norway the denominator is the average number of employed doctors over those years. For Sweden it is an estimate of that average, because the Socialstyrelsen report gives the figure for May {LAST_YEAR} and the change since 2020, not an annual series. The Swedish figure covers only doctors employed in healthcare, the Norwegian one all employed doctors.[^lekarze] For the United Kingdom we take doctors with a licence to practise and estimate the average for the window as the mean of the 2020 figure ({formatEN(UK_DOCTORS_2020)}) and the 2024 figure ({formatEN(UK_DOCTORS_2024)}), because the GMC has not yet published the number for {LAST_YEAR}.[^gmc-kadry] For Poland we take {formatEN(PL_DOCTORS)} practising doctors according to the NIL register at the end of 2025, because we do not have an annual series from that register.[^lekarze] If there had been on average one fifth fewer doctors in {span}, the Polish rate would be about {formatEN(rate(plWindow, PL_DOCTORS * 0.8), 1)}, so the order of magnitude does not change.
+
+The Polish denominator does not include dentists, while the medical courts’ reports do include them and do not show them separately in the rows on penalties. In 2020–2025 dental specialties accounted for 14 to 20% of the requests for a penalty for which the reports give the specialty.[^nil-sady] If dentists were added to the denominator, the Polish rate would be even lower. Swedish and Norwegian statistics list dentists separately, so they are not included in the comparison there.[^hsan][^helse-2025] In the Swedish series for 2013 we use the figure from the HSAN report (25), although Läkartidningen gives 17.[^hsan]
+
+[^nil-sady]: Supreme Medical Chamber, [“<span lang="pl">Dane liczbowe dotyczące sądów lekarskich</span>”](https://nil.org.pl/izba/naczelny-sad-lekarski/sprawozdania/dane-liczbowe-dotyczace-sadow-lekarskich) (“Figures on the medical courts”, in Polish): annual reports of the regional medical courts and the Supreme Medical Court 2010–2025 and the summary of rulings of the regional courts (OSL) and the Supreme Medical Court (NSL) for 2000–2014. Totals for the 24 chambers and the breakdown by year — our compilation (see “Method”). Share of dental specialties in requests for a penalty — the “Specjalizacje” (“Specialties”) sheets of the OSL reports for 2020–2025.
+[^nil-2025]: Supreme Medical Chamber, reports for 2025, files from September 2026 (in Polish): [regional medical courts](https://nil.org.pl/uploaded_files/1788883847_sprawozdanie-osl-2025.xlsx) (XLSX) — 1,269 incoming cases (row 1), 7 decisions revoking the licence to practise at first instance (row 7.11), 0 final revocations without appeal (row 8.9), empty column for the Koszalin chamber; [Supreme Medical Court](https://nil.org.pl/uploaded_files/1788883794_nsl-sprawozdanie-2025specjalizacje.doc) (DOC) — 0 revocations (item 8.11).
+[^suma-nil]: In the regional medical courts’ reports for [2021](https://nil.org.pl/uploaded_files/1699623318_sprawozdanie-roczne-osl-2021-kpl.xls) (XLS, in Polish) and [2022](https://nil.org.pl/uploaded_files/1699623457_sprawozdanie-osl-2022.xlsx) (XLSX, in Polish) the SUMA (total) cell in row 8.9 (final revocations without appeal) is entered as 0, although the chambers’ columns show one such decision in each of those years; the same applies to row 8.8 (suspensions). We count the sum of the chambers’ columns. For 2019 one revocation is shown in the [Supreme Medical Court’s report](https://nil.org.pl/uploaded_files/1591023201_sprawozdanie-roczne-nsl-2019specjalizacje-formularz.doc) (DOC, in Polish, item 8.11). An earlier version of this compilation left out these three cases and gave 17 instead of 20 for 2010–2024.
+[^pokrycie]: Section 8.11 of the Supreme Medical Court’s reports shows one revocation each in 2015, 2016, 2017, 2019, 2023 and 2024, and section 8.9 of the regional courts’ reports — in 2014, 2016, 2020–2022 and 2024 ([NIL files](https://nil.org.pl/izba/naczelny-sad-lekarski/sprawozdania/dane-liczbowe-dotyczace-sadow-lekarskich), in Polish). For 2024: [regional medical courts](https://nil.org.pl/uploaded_files/1764064972_sprawozdanie-osl-2024.xlsx) (XLSX) — 8 revocations at first instance (row 7.11), 6 final (row 8.9) in three chambers which in the same year ordered exactly 6 revocations at first instance; [Supreme Medical Court](https://nil.org.pl/uploaded_files/1760008853_nsl-sprawozdanie-2024specjalizacje.pdf) (PDF) — 1 revocation (item 8.11).
+[^nsl-2022]: Supreme Medical Court, [report for 2022](https://nil.org.pl/uploaded_files/1682609596_sprawozdanie-roczne-nsl-2022specjalizacje.doc) (DOC, in Polish): item 8.1 (97 doctors concerned by decisions ending the proceedings issued at a hearing), item 8.2 (185 doctors concerned by orders issued at sittings), items 8.9–8.11 (restriction of the scope of practice 5, suspension 6, revocation 0).
+[^oroz]: Supreme Medical Chamber, [annual summaries of the regional disciplinary prosecutors](https://nil.org.pl/izba/naczelny-rzecznik-odpowiedzialnosci-zawodowej/sprawozdania/roczne-oroz) (in Polish), column “<span lang="pl">Liczba spraw, które wpłynęły</span>” (“Number of incoming cases”), total for the 24 chambers: [2022](https://nil.org.pl/uploaded_files/1676378379_oroz-2022-r.docx), [2023](https://nil.org.pl/uploaded_files/1709121502_oroz-2023-r.docx), [2024](https://nil.org.pl/uploaded_files/1741773461_oroz-2024-r.docx), [2025](https://nil.org.pl/uploaded_files/1770880377_oroz-zestawienie-2025-r.docx) (DOCX).
+[^nil-2024]: Supreme Medical Chamber, [“<span lang="pl">Informacja o działalności samorządu lekarzy i lekarzy dentystów za 2024 rok</span>”](https://nil.org.pl/uploaded_files/documents/doc_1758536379_ru028-25-ix-sprawozdanie-za-rok-2024.pdf) (“Report on the activities of the self-government of doctors and dentists in 2024”, PDF, in Polish): item 1 (chambers and their bodies), item 5 (proceedings on unfitness to practise), item 9 (portal of final rulings).
+[^uil-ustroj]: [Act of 2 December 2009 on medical chambers](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (in Polish), consolidated text Dz.U. 2021 item 1342: Article 2(2) (representing the profession and overseeing its practice), Article 3 (chambers), Article 5(3) (granting the licence to practise), Article 6(1) (entry on the chamber’s membership list), Articles 21 and 35 (bodies of the chambers).
+[^uil-sady]: [Act on medical chambers](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (in Polish): Article 14(1) and (6) (4-year term; candidates for prosecutor and for the court — at least 10 years of practice), Article 24(7)–(8) and Article 38(7)–(8) (election of prosecutors and court members by congresses), Article 81 (court members are bound by the law).
+[^uil-postepowanie]: [Act on medical chambers](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (in Polish): Article 31 (the prosecutor as the prosecuting party), Article 54 (independence from criminal proceedings), Articles 55–57 (stages of proceedings, parties, the injured party), Article 64 (limitation), Article 68 (complaint against a refusal to open proceedings), Articles 74 and 76 (request for a penalty, duration of the preliminary investigation), Article 67 (opening proceedings on information about possible misconduct), Article 77 (temporary suspension and review of whether it should continue), Article 93 (unfitness on health grounds — procedure under the act on the professions of doctor and dentist), Article 80 (composition of the courts), Articles 90 and 92 (appeal to the NSL), Articles 95–98 (cassation appeal to the Supreme Court).
+[^uil-kary]: [Act on medical chambers](https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf) (in Polish): Article 83 (list of penalties), Article 84 (publication of the decision), Article 85 (amount of the fine), Article 110 (Register of Penalised Doctors and expungement of penalties).
+[^rpp]: Patient Ombudsman, [“<span lang="pl">Izba lekarska — kiedy i jak może pomóc</span>”](https://www.gov.pl/web/rpp/izba-lekarska-kiedy-i-jak-moze-pomoc) (“The medical chamber — when and how it can help”, in Polish).
+[^prawo2019]: Prawo.pl, [opinion piece on the penalty of revocation of the licence to practise in the medical courts](https://www.prawo.pl/zdrowie/sady-lekarskie-kara-pozbawienia-prawa-wykonywania-zawodu-ukaraly,399509.html) (in Polish), 24.04.2019: 13 doctors deprived of the licence to practise since the 1990s; about 3,000 complaints a year, of which one third reach the courts (no year given).
+[^medexpress]: MedExpress, [statement by Prof. D. Karkowska on revocation of the licence to practise as a last resort](https://www.medexpress.pl/zawody-medyczne/pozbawienie-prawa-wykonywania-zawodu-jest-ostatecznoscia-62892/) (in Polish), 2016.
+[^kk]: [Penal Code](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU19970880553) (in Polish), Article 41 § 1 — ban on practising a profession as a penal measure.
+[^lekarze]: Number of doctors: Poland — 164,892 practising doctors, excluding dentists, [Central Register of Doctors, NIL, breakdown by age](https://nil.org.pl/uploaded_files/1768208069_31122025-zestawienie-nr-3.pdf) (in Polish), as at 31.12.2025; Norway — [SSB, table 07938](https://www.ssb.no/statbank/table/07938/) (in Norwegian), employed doctors with and without a specialisation, 4th quarter: 31,753 in 2020, 35,997 in 2025, average for 2020–2025 about 34,000; Sweden — [Socialstyrelsen, 2026](https://www.socialstyrelsen.se/contentassets/8f0d27a18c394508bb609d03d5153dc2/2026-2-10048.pdf) (PDF, in Swedish), table 1: 46,020 doctors, including specialists, employed in healthcare in May 2025, 13% more than in May 2020; we estimate the average for 2020–2025 (about 43,000) as the mean of these two figures, i.e. assuming steady growth.
+[^helse]: Helsetilsynet, [statistics on reactions against healthcare personnel](https://www.helsetilsynet.no/tilsyn/om-tilsynssaker/statistikk-reaksjoner-mot-helsepersonell/) (in Norwegian): annual announcements on the withdrawal of doctors’ authorisations or licences; 2010–2018 from the archive of announcements and the “Tilsynsmelding” reports, 2019–2024 from current announcements.
+[^helse-2025]: Helsetilsynet, [“Tilsyn med virksomheter og helsepersonell – administrative reaksjoner i 2025”](https://www.helsetilsynet.no/presse/nyhetsarkiv/2026/tilsyn-virksomheter-helsepersonell-administrative-reaksjoner-2025/) (“Supervision of organisations and healthcare personnel – administrative reactions in 2025”, in Norwegian), 9.02.2026: authorisation withdrawn from 58 doctors; the authority reports voluntary surrenders of authorisation separately.
+[^hsan]: Hälso- och sjukvårdens ansvarsnämnd (HSAN), [annual report for 2025](https://www.socialstyrelsen.se/globalassets/sharepoint-dokument/dokument-webb/ovrigt/hsan-verksamhetsredogorelse-2025.pdf) (PDF, in Swedish), table 6: withdrawals of doctors’ licences — 2023: 55, 2024: 48 (including 2 temporary), 2025: 64 (including 4 temporary); dentists in a separate row; 2010–2017 from earlier reports. Applications for withdrawal of a licence are made by, among others, the IVO inspectorate, and HSAN also considers applications from doctors themselves.
+[^gmc]: General Medical Council, annual fitness to practise statistics: [report for 2025](https://www.gmc-uk.org/cdn/documents/concerns-about-fitness-to-practise-annual-statistical-report-2025-english_pdf-115384449.pdf) (PDF), table 3b (tribunal outcomes 2020–2025, row “Impairment – erasure”; the role of the MPTS; health-only cases do not end in erasure; publication of information about hearings), [report for 2024](https://www.gmc-uk.org/cdn/documents/fitness-to-practise-statistics-report-2024_pdf-112202260.pdf) (PDF), table 6, and earlier annual reports (2010–2019; fall in the number of hearings in 2020 because of the pandemic — report for 2020). Calendar year of decision; excluding erasures following a review of sanctions and voluntary erasures.
+[^gmc-kadry]: General Medical Council, [The state of medical education and practice in the UK: workforce report 2025](https://www.gmc-uk.org/cdn/documents/wfr25-report-251117_pdf-112967442.pdf) (PDF), part 2: 328,149 licensed doctors in 2024 against 272,255 in 2020.
+[^tempus]: Česká lékařská komora, [Tempus Medicorum 12/2024](https://www.lkcr.cz/doc/tempus_file/tempus_medicorum_12_2024_web-218.pdf) (PDF, in Czech): statement by the chamber’s president on 10 expulsions in 20 years; expulsion is possible for at most 5 years.
+[^de]: Deutscher Bundestag, [printed paper 21/4787](https://dserver.bundestag.de/btd/21/047/2104787.pdf) (PDF, in German), 2026: the federal government has no national statistics.
+[^at]: [§ 194 ÄrzteG](https://www.jusline.at/gesetz/aerzteg/paragraf/194) (in German), the Austrian act on the medical profession: ban on informing the public about the course and outcome of closed disciplinary proceedings.
+[^rejestr]: Supreme Medical Chamber, [“<span lang="pl">Rejestr Ukaranych Lekarzy</span>”](https://nil.org.pl/rejestry/rejestr-ukaranych-lekarzy) (“Register of Penalised Doctors”, in Polish); Act on medical chambers, Article 110.
+[^portal]: Supreme Medical Chamber, [“<span lang="pl">Prawomocne orzeczenia sądów lekarskich</span>”](https://nil.org.pl/rejestry/rejestr-ukaranych-lekarzy/prawomocne-orzeczenia-sadow-lekarskich) (“Final rulings of the medical courts”, in Polish): tables for 2023 and for the half-years of 2024–2025, as of October 2026.

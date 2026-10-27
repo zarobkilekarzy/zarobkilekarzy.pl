@@ -1,8 +1,10 @@
 ---
 import Icon from '@/components/ui/Icon.astro';
 import type { Link } from '@/types';
-import { formatDate, isoDate, typo } from '@/lib/format';
+import { formatDateIn, isoDate, typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
+import { localeOf } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
 
 interface Props {
   updated: Date;
@@ -11,12 +13,14 @@ interface Props {
 }
 
 const { updated, announcement, links } = Astro.props;
+const t = uiOf(Astro.url);
+const locale = localeOf(Astro.url.pathname);
 ---
 <div class="topbar">
   <div class="wrap topbar__inner">
     <p class="topbar__news">
       <span class="pulse" aria-hidden="true"></span>
-      <span class="topbar__date">Aktualizacja <time datetime={isoDate(updated)}>{formatDate(updated)}</time></span>
+      <span class="topbar__date">{t.topbar.updated} <time datetime={isoDate(updated)}>{formatDateIn(updated, locale)}</time></span>
       {announcement && (
         <a href={announcement.href}><span class="topbar__text">{typo(announcement.text)}</span><Icon name="arrow" size={16} /></a>
       )}

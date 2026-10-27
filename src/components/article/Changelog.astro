@@ -5,7 +5,9 @@
  * co zmieniło się w opisywanej sprawie albo w samym tekście. Zapis wpisu: lib/inline (**b**, [a](href)).
  */
 import type { HTMLAttributes } from 'astro/types';
-import { formatDate, isoDate } from '@/lib/format';
+import { formatDateIn, isoDate } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
 import { inline } from '@/lib/inline';
 
 interface Props extends HTMLAttributes<'section'> {
@@ -14,14 +16,16 @@ interface Props extends HTMLAttributes<'section'> {
 
 const { entries, class: className, ...rest } = Astro.props;
 const sorted = [...entries].sort((a, b) => b.date.getTime() - a.date.getTime());
+const locale = localeOf(Astro.url.pathname);
+const t = uiOf(Astro.url).article;
 ---
-<section class:list={['log', className]} aria-labelledby="historia-zmian" {...rest}>
-  <h2 class="log__title" id="historia-zmian">Historia zmian</h2>
+<section class:list={['log', className]} aria-labelledby={t.changelogId} {...rest}>
+  <h2 class="log__title" id={t.changelogId}>{t.changelog}</h2>
   <ol class="log__list">
     {sorted.map((e) => (
       <li class="log__item">
-        <time class="log__date" datetime={isoDate(e.date)}>{formatDate(e.date)}</time>
-        <p class="log__text" set:html={inline(e.text)} />
+        <time class="log__date" datetime={isoDate(e.date)}>{formatDateIn(e.date, locale)}</time>
+        <p class="log__text" set:html={inline(e.text, undefined, undefined, locale)} />
       </li>
     ))}
   </ol>

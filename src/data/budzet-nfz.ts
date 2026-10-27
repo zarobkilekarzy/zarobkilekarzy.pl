@@ -1,5 +1,5 @@
 /**
- * Budżet NFZ — jedyne źródło liczb budżetu Funduszu w serwisie (/dane/budzet-nfz/, /dane/kolejki/;
+ * Budżet NFZ — jedyne źródło liczb budżetu Funduszu w serwisie (/dane/budzet-nfz/ z częścią o kolejkach;
  * inne strony powinny importować stąd zamiast wpisywać kwoty).
  *
  * DEFINICJA SERII: koszty ogółem (poz. K) w OSTATECZNYM planie finansowym NFZ na dany rok, czyli ile

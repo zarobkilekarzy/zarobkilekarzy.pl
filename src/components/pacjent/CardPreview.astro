@@ -3,9 +3,11 @@
  * Podgląd karty kieszonkowej w HTML: przód i tył w proporcji A6, z tych samych danych co PDF.
  * To prawdziwy tekst (nie obrazek), więc czytnik ekranu przeczyta, co jest na karcie, zanim
  * ktoś ją wydrukuje. Zawsze „papier” — jasny także w trybie nocnym.
+ * Napisy spoza treści karty: na stronach /en/ te same, co w angielskim PDF (src/data/en/prawa-pacjenta.ts → pdfText).
  */
 import type { CardContent, CardPhones } from '@/lib/pacjent/types';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   card: CardContent;
@@ -13,33 +15,61 @@ interface Props {
 }
 
 const { card, phones } = Astro.props;
+const T = {
+  pl: {
+    front: 'Przód karty',
+    back: 'Tył karty',
+    kind: 'Karta kieszonkowa',
+    call: 'Nie wiesz, od czego zacząć? Zadzwoń',
+    sos: 'Zagrożenie życia? Dzwoń pod 112.',
+    rights: 'Masz prawo do',
+    full: 'Pełna wersja i źródła:',
+    free: 'To jest bezpłatne — choć rzadko kto o tym mówi',
+    deadlines: 'Pilnuj terminów',
+    warning: 'Uwaga.',
+    routes: 'Gdzie zgłosić',
+  },
+  en: {
+    front: 'Front of the card',
+    back: 'Back of the card',
+    kind: 'Pocket card',
+    call: 'Not sure where to start? Call',
+    sos: 'Life in danger? Call 112.',
+    rights: 'You have the right to',
+    full: 'Full version and sources:',
+    free: 'This is free — though hardly anyone tells you',
+    deadlines: 'Watch the deadlines',
+    warning: 'Warning.',
+    routes: 'Where to report',
+  },
+}[localeOf(Astro.url.pathname)];
 ---
 <div class="cards">
-  <div class="sheet"><article class="paper" aria-label="Przód karty">
-    <p class="p-stamp">Karta kieszonkowa · {card.stamp}</p>
+  <div class="sheet"><article class="paper" aria-label={T.front}>
+    <p class="p-stamp">{T.kind} · {card.stamp}</p>
     <h3 class="p-title">{card.title}</h3>
-    <p class="p-label">Nie wiesz, od czego zacząć? Zadzwoń</p>
+    <p class="p-label">{T.call}</p>
     <p class="p-phone">{phones.helpline.phone.display}</p>
     <p class="p-small"><strong>{phones.helpline.name}</strong> — {phones.helpline.hours.toLowerCase()}.</p>
-    <p class="p-sos"><span>{phones.emergency.phone.display}</span> Zagrożenie życia? Dzwoń pod 112.</p>
-    <h4 class="p-label p-label--rule">Masz prawo do</h4>
+    <p class="p-sos"><span>{phones.emergency.phone.display}</span> {T.sos}</p>
+    <h4 class="p-label p-label--rule">{T.rights}</h4>
     <ul class="p-list">
       {card.rights.map((r) => <li><span>{typo(r.text)}</span><span class="p-basis">{r.basis}</span></li>)}
     </ul>
-    <p class="p-foot">Pełna wersja i źródła: <strong>{card.url}</strong></p>
+    <p class="p-foot">{T.full} <strong>{card.url}</strong></p>
   </article></div>
 
-  <div class="sheet"><article class="paper" aria-label="Tył karty">
-    <h4 class="p-label p-label--rule">To jest bezpłatne — choć rzadko kto o tym mówi</h4>
+  <div class="sheet"><article class="paper" aria-label={T.back}>
+    <h4 class="p-label p-label--rule">{T.free}</h4>
     <ul class="p-list">
       {card.free.map((r) => <li><span>{typo(r.text)}</span><span class="p-basis">{r.basis}</span></li>)}
     </ul>
-    <h4 class="p-label p-label--rule">Pilnuj terminów</h4>
+    <h4 class="p-label p-label--rule">{T.deadlines}</h4>
     <ul class="p-dl">
       {card.deadlines.map((d) => <li><span class="p-value">{d.value}</span><span>{typo(d.text)}</span></li>)}
     </ul>
-    <p class="p-warn"><strong>Uwaga.</strong> {typo(card.warning)}</p>
-    <h4 class="p-label p-label--rule">Gdzie zgłosić</h4>
+    <p class="p-warn"><strong>{T.warning}</strong> {typo(card.warning)}</p>
+    <h4 class="p-label p-label--rule">{T.routes}</h4>
     <ul class="p-routes">
       {card.routes.map((r) => <li><strong>{typo(r.situation)}</strong><span>{r.contact}</span></li>)}
     </ul>

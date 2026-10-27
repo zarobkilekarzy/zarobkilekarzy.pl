@@ -5,6 +5,8 @@
  * z ogłoszeń, miejsca rezydenckie i pozarezydenckie, kandydaci na miejsce, zdany test PES. Każda kolumna ma inne
  * źródło — lista źródeł z linkami jest pod tabelą (podpis Figure ma tylko jeden link).
  * Dane: data/wedlug-specjalizacji.ts. W wąskim kontenerze wiersz = nazwa + pięć liczb pod nią.
+ * Dwujęzyczny: na stronie /en/ napisy po angielsku, nazwy dziedzin z src/data/en/wedlug-specjalizacji.ts;
+ * wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
 import {
@@ -16,8 +18,9 @@ import {
   SPECIALTIES,
   type Specialty,
 } from '@/data/wedlug-specjalizacji';
-import { formatPL, typo } from '@/lib/format';
+import { formatNumber, formatPL, typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   /** teza tabeli — zdanie nad nią */
@@ -25,65 +28,126 @@ interface Props {
 }
 
 const { title } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { PAY_ACT_EN, specName } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/wedlug-specjalizacji') : {}) as typeof import('@/data/en/wedlug-specjalizacji');
+const en = locale === 'en';
+const num = (n: number, d = 0) => formatNumber(n, d, locale);
+// polska typografia (twarde spacje po „a”, „i”, „w”…) nie dotyczy tekstów angielskich
+const ty = en ? (s: string) => s : typo;
 
-const zl = (n: number) => `${formatPL(n, 2)} zł`;
+const zl = (n: number) => (en ? `PLN ${num(n, 2)}` : `${formatPL(n, 2)} zł`);
 const other = SPECIALTIES.filter((s) => !s.priority);
 const priority = SPECIALTIES.filter((s) => s.priority);
 
+// funkcje, nie obiekty: gałąź angielska czyta moduł EN, którego na stronach polskich nie ma
+const T = {
+  pl: () => ({
+    other: 'Poza listą priorytetów',
+    otherCount: `${other.length} dziedzin`,
+    priority: 'Dziedziny priorytetowe',
+    priorityCount: `${priority.length} z ${PRIORITY_FIELDS.length}`,
+    pay: (first: number, later: number) => `rezydent: ${zl(first)}, po dwóch latach ${zl(later)}`,
+    cols: { rate: 'Zł/h', rez: 'Rezyd.', nonRez: 'Pozarez.', candidates: 'Kandyd.', pes: 'PES %' },
+    head: {
+      field: 'Dziedzina',
+      rate: 'Stawka z ogłoszeń',
+      rateSub: '2023, zł/h',
+      rez: 'Miejsca rezydenckie',
+      nonRez: 'Pozarezydenckie',
+      season: 'jesień 2025',
+      candidates: 'Kandydaci na miejsce',
+      pes: 'Zdany test PES',
+      pesSub: '2023–2025, %',
+    },
+    sourcesLabel: 'Źródła:',
+    sources: [
+      { what: 'pensja', label: `rozporządzenie MZ, ${PAY_ACT.label}`, href: PAY_ACT.href },
+      { what: 'stawki', label: `raport „Lekarze – oferty pracy” za ${OFFERS_2023.year} r., s. 19`, href: LINKS.offers2023 },
+      { what: 'miejsca', label: 'CMKP, wykaz na sesję jesień 2025 (28.08.2025)', href: LINKS.cmkpPlaces },
+      { what: 'kandydaci', label: 'zestawienie dyrektora CMKP za: Beauty Razem, 10.12.2025', href: LINKS.candidates },
+      { what: 'test PES', label: 'CEM, wyniki części testowej PES, obliczenia własne', href: LINKS.pes },
+    ],
+    note: `Pensja rezydenta to płaca zasadnicza brutto od ${PAY_ACT.from} w pierwszych dwóch latach rezydentury. Stawka 2023 to średnia stawka godzinowa brutto (zł/h) z ${formatPL(OFFERS_2023.offers)} ogłoszeń o pracę z 2023 r. — oferta, nie wypłata; kreska oznacza, że dziedziny nie ma w raporcie, a choroby płuc, otorynolaryngologia, położnictwo i chirurgia ogólna to w nim wiersze „pulmonologia”, „laryngologia”, „ginekologia” i „chirurgia”. Miejsca to suma 16 województw w sesji jesień 2025; rezydenckie razem z doktoranckimi. Kandydaci na miejsce to liczba lekarzy, którzy wpisali dziedzinę jako pierwszy wybór, podzielona przez wszystkie miejsca w tej dziedzinie — rezydenckie i pozarezydenckie (tylko dziedziny z ponad 10 miejscami). CMKP podało dziesięć najbardziej obleganych dziedzin i dziesięć, w których miejsc było więcej niż chętnych (< 1); kreska — wartości nie opublikowano. Test PES to odsetek podejść do części testowej Państwowego Egzaminu Specjalizacyjnego z wynikiem co najmniej 60% w sześciu sesjach od wiosny 2023 do jesieni 2025, wszystkie podejścia (także powtórne). Część ustna nie jest wliczona — jej wyników nikt nie publikuje. W chirurgii plastycznej i urologii CEM nie publikuje wyników testu.`,
+  }),
+  en: () => ({
+    other: 'Not on the priority list',
+    otherCount: `${other.length} specialties`,
+    priority: 'Priority specialties',
+    priorityCount: `${priority.length} of ${PRIORITY_FIELDS.length}`,
+    pay: (first: number, later: number) => `resident: ${zl(first)}, after two years ${zl(later)}`,
+    cols: { rate: 'PLN/h', rez: 'Resid.', nonRez: 'Non-res.', candidates: 'Cand.', pes: 'PES %' },
+    head: {
+      field: 'Specialty',
+      rate: 'Rate in job ads',
+      rateSub: '2023, PLN/h',
+      rez: 'Residency places',
+      nonRez: 'Non-residency',
+      season: 'autumn 2025',
+      candidates: 'Candidates per place',
+      pes: 'PES test passed',
+      pesSub: '2023–2025, %',
+    },
+    sourcesLabel: 'Sources:',
+    sources: [
+      { what: 'pay', label: `Ministry of Health regulation, ${PAY_ACT_EN.label}`, href: PAY_ACT_EN.href },
+      { what: 'rates', label: `report “Lekarze – oferty pracy” for ${OFFERS_2023.year}, p. 19`, href: LINKS.offers2023 },
+      { what: 'places', label: 'CMKP, list for the autumn 2025 session (28.08.2025)', href: LINKS.cmkpPlaces },
+      { what: 'candidates', label: 'compilation by the CMKP director, via Beauty Razem, 10.12.2025', href: LINKS.candidates },
+      { what: 'PES test', label: 'CEM, results of the PES test part, our own calculation', href: LINKS.pes },
+    ],
+    note: `Resident pay is the gross base salary from ${PAY_ACT_EN.from} in the first two years of residency. The 2023 rate is the average gross hourly rate (PLN/h) from ${num(OFFERS_2023.offers)} job advertisements from 2023 — an offer, not a payment; a dash means the specialty is not in the report, and lung diseases, otorhinolaryngology, obstetrics and general surgery appear in it as the rows “pulmonology”, “laryngology”, “gynaecology” and “surgery”. Places are the sum for the 16 voivodeships (regions) in the autumn 2025 session; residency places include doctoral ones. Candidates per place is the number of doctors who entered the specialty as their first choice, divided by all places in that specialty — residency and non-residency (only specialties with more than 10 places). The CMKP named the ten most sought-after specialties and ten in which there were more places than applicants (< 1); a dash — the value was not published. The PES test is the share of attempts at the test part of the State Specialisation Examination with a score of at least 60% in six sessions from spring 2023 to autumn 2025, all attempts (including repeat ones). The oral part is not included — nobody publishes its results. For plastic surgery and urology the CEM does not publish test results.`,
+  }),
+}[locale]();
+
 const groups = [
   {
-    name: 'Poza listą priorytetów',
-    count: `${other.length} dziedzin`,
-    pay: `rezydent: ${zl(RESIDENT_PAY.other.first)}, po dwóch latach ${zl(RESIDENT_PAY.other.later)}`,
+    name: T.other,
+    count: T.otherCount,
+    pay: T.pay(RESIDENT_PAY.other.first, RESIDENT_PAY.other.later),
     rows: other,
   },
   {
-    name: 'Dziedziny priorytetowe',
-    count: `${priority.length} z ${PRIORITY_FIELDS.length}`,
-    pay: `rezydent: ${zl(RESIDENT_PAY.priority.first)}, po dwóch latach ${zl(RESIDENT_PAY.priority.later)}`,
+    name: T.priority,
+    count: T.priorityCount,
+    pay: T.pay(RESIDENT_PAY.priority.first, RESIDENT_PAY.priority.later),
     rows: priority,
   },
 ];
 
 /** Krótkie etykiety komórek — widać je tylko w wąskim układzie, nad liczbą */
-const COLS = {
-  rate: 'Zł/h',
-  rez: 'Rezyd.',
-  nonRez: 'Pozarez.',
-  candidates: 'Kandyd.',
-  pes: 'PES %',
-};
+const COLS = T.cols;
 
-const rate = (s: Specialty) => (s.rate === undefined ? '—' : formatPL(s.rate));
+const rate = (s: Specialty) => (s.rate === undefined ? '—' : num(s.rate));
 const candidates = (s: Specialty) =>
-  s.candidates === undefined ? '—' : s.candidates === 'below-1' ? '< 1' : formatPL(s.candidates, 2);
-const pes = (s: Specialty) => (s.pes === undefined ? '—' : formatPL((s.pes.passed / s.pes.n) * 100, 1));
+  s.candidates === undefined ? '—' : s.candidates === 'below-1' ? '< 1' : num(s.candidates, 2);
+const pes = (s: Specialty) => (s.pes === undefined ? '—' : num((s.pes.passed / s.pes.n) * 100, 1));
+const name = (s: Specialty) => (en ? specName(s) : s.name);
 
-const sources = [
-  { what: 'pensja', label: `rozporządzenie MZ, ${PAY_ACT.label}`, href: PAY_ACT.href },
-  { what: 'stawki', label: `raport „Lekarze – oferty pracy” za ${OFFERS_2023.year} r., s. 19`, href: LINKS.offers2023 },
-  { what: 'miejsca', label: 'CMKP, wykaz na sesję jesień 2025 (28.08.2025)', href: LINKS.cmkpPlaces },
-  { what: 'kandydaci', label: 'zestawienie dyrektora CMKP za: Beauty Razem, 10.12.2025', href: LINKS.candidates },
-  { what: 'test PES', label: 'CEM, wyniki części testowej PES, obliczenia własne', href: LINKS.pes },
-];
+const sources = T.sources;
+const H = T.head;
 ---
 <Figure
   title={title}
-  note={`Pensja rezydenta to płaca zasadnicza brutto od ${PAY_ACT.from} w pierwszych dwóch latach rezydentury. Stawka 2023 to średnia stawka godzinowa brutto (zł/h) z ${formatPL(OFFERS_2023.offers)} ogłoszeń o pracę z 2023 r. — oferta, nie wypłata; kreska oznacza, że dziedziny nie ma w raporcie, a choroby płuc, otorynolaryngologia, położnictwo i chirurgia ogólna to w nim wiersze „pulmonologia”, „laryngologia”, „ginekologia” i „chirurgia”. Miejsca to suma 16 województw w sesji jesień 2025; rezydenckie razem z doktoranckimi. Kandydaci na miejsce to liczba lekarzy, którzy wpisali dziedzinę jako pierwszy wybór, podzielona przez wszystkie miejsca w tej dziedzinie — rezydenckie i pozarezydenckie (tylko dziedziny z ponad 10 miejscami). CMKP podało dziesięć najbardziej obleganych dziedzin i dziesięć, w których miejsc było więcej niż chętnych (< 1); kreska — wartości nie opublikowano. Test PES to odsetek podejść do części testowej Państwowego Egzaminu Specjalizacyjnego z wynikiem co najmniej 60% w sześciu sesjach od wiosny 2023 do jesieni 2025, wszystkie podejścia (także powtórne). Część ustna nie jest wliczona — jej wyników nikt nie publikuje. W chirurgii plastycznej i urologii CEM nie publikuje wyników testu.`}
+  note={T.note}
 >
   <table class="spec">
+    {en ? (
+      <caption class="sr-only">{`Resident pay, the rate in job advertisements from 2023, residency and non-residency places and candidates per place in the autumn 2025 session, and the share of PES test attempts passed in 2023–2025 — ${SPECIALTIES.length} specialties in two groups.`}</caption>
+    ) : (
     <caption class="sr-only">
       Pensja rezydenta, stawka z ogłoszeń z 2023 r., miejsca rezydenckie i pozarezydenckie oraz kandydaci na
       miejsce w sesji jesień 2025 oraz odsetek zdanych podejść do testu PES w latach 2023–2025 — {SPECIALTIES.length} dziedzin w dwóch grupach.
     </caption>
+    )}
     <thead>
       <tr>
-        <th scope="col">Dziedzina</th>
-        <th scope="col">Stawka z ogłoszeń<span class="spec__sub">2023, zł/h</span></th>
-        <th scope="col">Miejsca rezydenckie<span class="spec__sub">jesień 2025</span></th>
-        <th scope="col">Pozarezydenckie<span class="spec__sub">jesień 2025</span></th>
-        <th scope="col">Kandydaci na miejsce<span class="spec__sub">jesień 2025</span></th>
-        <th scope="col">Zdany test PES<span class="spec__sub">2023–2025, %</span></th>
+        <th scope="col">{H.field}</th>
+        <th scope="col">{H.rate}<span class="spec__sub">{H.rateSub}</span></th>
+        <th scope="col">{H.rez}<span class="spec__sub">{H.season}</span></th>
+        <th scope="col">{H.nonRez}<span class="spec__sub">{H.season}</span></th>
+        <th scope="col">{H.candidates}<span class="spec__sub">{H.season}</span></th>
+        <th scope="col">{H.pes}<span class="spec__sub">{H.pesSub}</span></th>
       </tr>
     </thead>
     {groups.map((g) => (
@@ -91,15 +155,15 @@ const sources = [
         <tr class="spec__group">
           <th scope="rowgroup" colspan="6">
             <span class="spec__group-name">{g.name}<span class="spec__count"> · {g.count}</span></span>
-            <span class="spec__pay">{typo(g.pay)}</span>
+            <span class="spec__pay">{ty(g.pay)}</span>
           </th>
         </tr>
         {g.rows.map((s) => (
           <tr>
-            <th scope="row">{typo(s.name)}</th>
+            <th scope="row">{ty(name(s))}</th>
             <td data-label={COLS.rate}>{rate(s)}</td>
-            <td data-label={COLS.rez}>{formatPL(s.rez)}</td>
-            <td data-label={COLS.nonRez}>{formatPL(s.nonRez)}</td>
+            <td data-label={COLS.rez}>{num(s.rez)}</td>
+            <td data-label={COLS.nonRez}>{num(s.nonRez)}</td>
             <td
               data-label={COLS.candidates}
               class:list={['spec__cand', { 'is-high': typeof s.candidates === 'number' }]}
@@ -113,10 +177,10 @@ const sources = [
     ))}
   </table>
   <p class="spec__src">
-    Źródła:{' '}
+    {T.sourcesLabel}{' '}
     {sources.map((src, i) => (
       <>
-        {src.what} — <a class="spec__link" {...linkAttrs(src.href)}>{typo(src.label)}</a>{i < sources.length - 1 ? '; ' : '.'}
+        {src.what} — <a class="spec__link" {...linkAttrs(src.href)}>{ty(src.label)}</a>{i < sources.length - 1 ? '; ' : '.'}
       </>
     ))}
   </p>

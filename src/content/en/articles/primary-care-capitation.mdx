@@ -1,0 +1,197 @@
+---
+title: "Money per patient in primary care: a public rate, an unknown result"
+seoTitle: "Primary care capitation rate in Poland"
+summary: "The per-patient rate in primary health care is public to the grosz, and yet nobody knows how much of it the doctor keeps. The way the rate is constructed also affects whom it is better to examine on the spot and whom to refer onwards."
+description: "The per-patient rate in Polish primary care is public to the grosz, but nobody knows how much the doctor keeps. Its design also affects whom to test or refer."
+keyPoints:
+  - "A primary care (POZ) doctor receives an annual rate for every patient on the list, including those who never come. From July 2026 the base rate is PLN 232.56 — 50.8% more than in 2018."
+  - "A full list of about 2,500 patients means revenue of the order of PLN 900,000 a year from capitation alone. From this amount the practice also pays for routine tests."
+  - "A test on the spot costs the practice, while a referral shifts the cost to a specialist outpatient clinic — so the rate may discourage diagnostics in primary care. Nobody shows how much public money a specific doctor keeps."
+editorial:
+  - >-
+    Capitation shows the transparency problem in a nutshell. The state publishes the rate for a single patient
+    to the grosz, but nowhere adds up how much public money in total reaches one doctor.
+    We know how much comes in for the list — we do not know how much is left.
+  - >-
+    That is why we call for public total payments for each person, under a permanent identifier and without names.
+    It is not only the result that is opaque, but also the effects of the construction itself, and without data nobody can measure them.
+translation:
+  of: poz-pieniadz-za-pacjenta
+  files: [src/data/poz.ts]
+  hash: "96e504139cde"
+  date: 2026-10-27
+noindex: true
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Money from '@/components/ui/Money.astro';
+import { LIST, RATE, ageRows, biggest, change, first, listReal, listYear, rateRows } from '@/data/en/poz-pieniadz-za-pacjenta';
+import { formatEN } from '@/lib/format';
+
+{/* Tłumaczenie src/content/articles/poz-pieniadz-za-pacjenta.mdx; wiersze wykresów liczy src/data/en/poz-pieniadz-za-pacjenta.ts z liczb src/data/poz.ts. Adresy przy liczbach w blokach, te same publikacje są w przypisach */}
+export const LINKS = {
+  z65: 'https://baw.nfz.gov.pl/NFZ/document/43917/Zarzadzenie-65_2026_DSOZ',
+  sprawozdanie: 'https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Rada-NFZ-przyjela-sprawozdanie-za-2025-r-Ponad-22-mld-zl-na-POZ-i-1-4-mln-bilansow-zdrowia,286203,1.html',
+  nil: 'https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne',
+  gus: 'https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/13/9/1/ambulatoryjna_opieka_zdrowotna_w_2024_r..pdf',
+};
+
+Of all the money the National Health Fund (NFZ) passes on to doctors, the easiest to count is the money in primary health care (POZ): a public annual rate for every patient registered on the list. At the same time, it is hard to find a less transparent stream when one asks how much of it a specific doctor keeps. On top of that, the construction of the rate quietly affects whom it is better to examine on the spot and whom to refer onwards.
+
+## Payment is per patient on the list, not per visit
+
+A primary care doctor is not paid per visit. The patient submits a declaration of choice and joins the so-called active list. From that moment the provider receives 1/12 of the annual capitation rate for that patient every month — even if the patient does not come in once during the whole year. The rate is multiplied by an age coefficient: a small child or an older person “weighs” several times more than an adult in the prime of life.
+
+The formula from the NFZ order: **amount due = number of patients on the list × 1/12 of the annual rate × age coefficient**. The rate is annual, not monthly — descriptions often get this wrong by a factor of twelve.
+
+This is not an abuse but a deliberate choice: capitation is meant to reward care for the whole population and prevention, not the multiplication of visits. What matters more is how much this stream weighs[^sprawozdanie][^gus] and how it grows.
+
+### How much the rate is and how it has grown
+
+The base rate (coefficient 1.0) rose in nominal terms from <Money value={154.2} decimals={2} /> in 2018 to <Money value={232.56} /> from 1 July 2026, i.e. by 50.8% in eight years.[^stawki][^z65] In the first half of 2026 it was PLN 226.08. The largest jump came in {biggest.year}: {biggest.label} on the previous year. Since 2022 the rate has been raised every year from 1 July, in 2022 and 2023 together with the statutory pay rises in healthcare.
+
+<Figure
+  title={`The per-patient rate: ${change(RATE.rate, first.rate)} since ${first.year}, the largest jump in ${biggest.year}`}
+  note="The last base rate in force in a given year; next to the year — the change on the previous year. In 2018–2020 the rate rose several times a year (in 2019 successively PLN 156.60, 159.00 and 162.60), and since 2022 every year from 1 July; in the first half of the year the previous rate applied (in 2022 PLN 171.00, from April PLN 178.80). 2026: the rate from 1 July (in the first half of the year PLN 226.08); with an accreditation certificate PLN 234.84."
+  source={{ label: 'orders of the President of the NFZ; the rate from 1 July 2026 — order 65/2026/DSOZ', href: LINKS.z65 }}
+>
+  <BarChart
+    rows={rateRows}
+    max={250}
+    unit="PLN"
+    caption={`Annual capitation rate of a primary care doctor in ${first.year}–${RATE.year}: from PLN ${formatEN(first.rate, 2)} to PLN ${formatEN(RATE.rate, 2)}.`}
+  />
+</Figure>
+
+The values come from annex 1 to successive orders of the President of the NFZ on primary care contracts; we have collected the numbers and dates of the orders for each year in a note.[^stawki] The rate for the first half of 2026 was introduced by order 8/2026/DSOZ, and the current one, from 1 July 2026, by order 65/2026/DSOZ.[^z65]
+
+### Who “weighs” the most
+
+The same rate is multiplied by a coefficient that depends on the patient’s age. For the practice, the youngest and the oldest are several times more “valuable” than an adult in the prime of life.
+
+<Figure
+  title={`Annual rate in ${RATE.year} by patient age: from PLN ${formatEN(RATE.rate)} to PLN ${formatEN(Math.max(...ageRows.map((r) => r.value)))}`}
+  note={`Base rate PLN ${formatEN(RATE.rate, 2)} × age coefficient, rounded to the nearest zloty. Primary care nurses and midwives have separate, lower rates: from 1 July 2026, PLN 56.88 and PLN 37.80 a year (order 65/2026/DSOZ).`}
+  source={{ label: 'order 22/2025/DSOZ of the President of the NFZ, § 23(2)' }}
+>
+  <BarChart
+    rows={ageRows}
+    max={1000}
+    unit="PLN"
+    caption={`Annual per-patient rate by age in ${RATE.year}: from PLN ${formatEN(RATE.rate)} (aged 20–39) to PLN ${formatEN(4 * RATE.rate)} (up to age 2).`}
+  />
+</Figure>
+
+## How much public money hangs on one list
+
+The limit of an active list is about 2,500 patients per doctor; a larger list requires the consent of the NFZ. The doctor’s capitation alone from a full list — without coordinated care, the delegated budget and separately settled consultations — looks like this:
+
+<StatRow
+  label="Capitation from a full list"
+  items={[
+    { value: listYear, unit: 'PLN/year', desc: `${formatEN(LIST.patients)} patients × PLN ${formatEN(RATE.rate, 2)} at a coefficient of 1.0`, accuracy: 'est', source: 'our model · NFZ rate', href: LINKS.z65 },
+    { prefix: '~', value: Math.round(listReal / 1e4) * 10, unit: 'thousand PLN/year', desc: `at a realistic average age coefficient of the list of about ${formatEN(LIST.avgWeight, 1)}`, accuracy: 'est', source: 'our model · NFZ rate', href: LINKS.z65 },
+    { prefix: '~', value: Math.round(listReal / 12 / 1e3), unit: 'thousand PLN/month', desc: 'that is, per month for one list', accuracy: 'est', source: 'our model · NFZ rate', href: LINKS.z65 },
+  ]}
+/>
+
+This is the practice’s revenue from capitation alone, not the doctor’s income. Before anything is left over, the practice has to pay from this amount for all the care of the list, including tests. The coefficient of 1.6 is our estimate of the average for a typical age structure — children and older people push it above 1.0. This is a model, not a measurement.
+
+## What the practice pays for out of this amount
+
+Capitation does not reach the doctor “net”. It is a budget from which the provider funds all the care of the list. One item distinguishes primary care from a specialist outpatient clinic and surprises many patients: here the cost of routine tests is borne by the doctor, out of capitation. In specialist care tests are contracted separately, whereas in primary care each test ordered reduces what is left.
+
+<NumberedList
+  items={[
+    { title: 'Basic diagnostics.', text: 'Tests ordered out of the rate, not from a separate budget: full blood count, ESR, glucose, lipid profile, liver function tests, urinalysis, resting ECG, abdominal ultrasound, chest and bone X-rays. The more tests, the less is left.' },
+    { title: 'Staff.', text: 'Nurses and midwives, reception, administration, accounting.' },
+    { title: 'Premises and equipment.', text: 'Rent, utilities, equipment (ECG, ultrasound, spirometer) and its servicing, disposable supplies, medicines and vaccines administered in the surgery.' },
+    { title: 'Systems and reporting.', text: 'Practice software, e-prescriptions and e-referrals, personal data protection, mandatory reports to the NFZ.' },
+    { title: 'Contributions and taxes.', text: 'Social insurance (ZUS), income tax, VAT on some purchases.' },
+  ]}
+/>
+
+To be precise: not everything comes out of capitation. Extended diagnostics — for example ferritin, vitamin B12 or anti-HCV antibodies — are paid for from a separate delegated budget (*budżet powierzony*), and tests such as Holter monitoring, spirometry or Doppler ultrasound from the coordinated care budget. Since 1 May 2026 a primary care doctor can order more than 100 tests from the delegated budget, Rynek Zdrowia reported.[^100-badan] The core, however — the routine tests at almost every visit — is still charged to capitation.
+
+The list of tests financed out of the rate is set out in annex 1 to the regulation on guaranteed primary care services.[^rozporzadzenie] The division into tests funded from capitation and from separate budgets is explained by Medycyna Praktyczna[^mp] and the Silesian branch of the NFZ.[^nfz-slask]
+
+## Cheaper to refer than to test
+
+Since basic tests are paid for out of capitation, the construction has a side effect that nobody designed but that follows directly from it. It is reinforced by an NFZ rule on dividing costs between levels of care. When referring a patient to a specialist, primary care performs only the tests needed to confirm the initial diagnosis. The specialist outpatient clinic (AOS) that takes over the patient performs any further tests at its own cost — this is how the NFZ describes the rules.[^nfz-skierowania]
+
+The practice’s calculation is simple: a test ordered on the spot is a cost out of capitation, while a referral shifts that cost onwards — the diagnostics are covered by the AOS, and the practice keeps the full rate for the patient. This is not an accusation of bad faith or a profit for the doctor, but a feature of a construction in which the cheaper path and the clinically best path can diverge.
+
+There is a bitter paradox in this. Capitation was meant to reward prevention, but since every test is a cost, the same rate discourages the diagnostics that prevention requires.
+
+What actually follows from this — with a note on what cannot be proved:
+
+- **Weaker diagnostics on the spot — a documented risk, not proof of a widespread practice.** The broadest NIK audit[^nik] (2012–2014) showed that primary care does not make full use of its own capabilities: the cardiovascular disease prevention programme covered about 3% of those eligible each year, and a cervical smear result was recorded in fewer than 7% of women’s records. The gap only began to be seriously addressed with the delegated budget in 2022.
+- **Waiting lists for specialists — real, but with many causes.** The average wait for a specialist consultation is 4.2 months, and for a diagnostic test 2.8 months;[^barometr] since 2012 waiting times have doubled. Excess referrals from primary care are one factor, alongside a shortage of specialists and growing demand.
+- **A move to paid care — a broader phenomenon than one mechanism.** Long waiting lists push some patients to private surgeries. Private spending is already more than 20% of all health spending: <Money value={66400000000} scale="billion" decimals={1} /> in 2024, about 23% of current expenditure.[^wydatki] How much of this results from the construction of primary care cannot be calculated.
+
+<Aside title="The patch reduces the incentive, but does not remove it">
+
+The state has recognised this incentive. The delegated budget — since 2022, and since 1 May 2026 extended to more than 100 tests — pays for tests separately, so that ordering them does not burden capitation and patients are not sent to specialist clinics just for a test.[^mzdrowie] This budget is limited, however. Once it runs out, a referral can again be the cheaper path.
+
+</Aside>
+
+The public money that comes in for a list can be counted to the grosz. What the construction does with the money and with patients — how much diagnostics is pushed onwards, who ends up on a waiting list instead of being tested on the spot — nobody measures.
+
+## Scale: where this stream flows
+
+<StatRow
+  label="Primary care in figures"
+  items={[
+    { value: 22.64, decimals: 2, unit: 'PLN bn', desc: 'spent by the NFZ on primary care in 2025; in the plan for 2026 this is about 10.5% of the costs of healthcare services', accuracy: 'exact', source: 'NFZ Council via Rynek Zdrowia', href: LINKS.sprawozdanie },
+    { value: 12216, unit: 'specialists', desc: 'in family medicine — the core of primary care (31.12.2024); services are also provided by internists and paediatricians', accuracy: 'exact', source: 'NIL, table no. 4', href: LINKS.nil },
+    { value: 187, unit: 'million consultations', desc: 'were provided in primary care in 2024', accuracy: 'exact', source: 'Statistics Poland (GUS), 2024', href: LINKS.gus },
+  ]}
+/>
+
+The NFZ does not publish a single aggregate number of primary care doctors. The number of family medicine specialists comes from the register of the Supreme Medical Chamber (NIL);[^nil] together with doctors with a first-degree specialisation there are 12,512 of them.
+
+## A low entry, a high ceiling
+
+Most of the best-paid fields require six years of study and five to six years of residency, for which one has to compete. The path into primary care is wider. Under Article 6 of the Act on primary health care,[^ustawa] services may be provided by:
+
+- a specialist in family medicine or a doctor in training in that specialisation,
+- a doctor with a second-degree specialisation in general medicine,
+- a paediatrician after a course in family medicine — only to patients under 18,
+- an internist or a doctor with a first-degree specialisation in general medicine — temporarily and on condition of completing the course.
+
+The course requirement for internists and paediatricians will apply from 1 January 2027. The deadline has been postponed several times: originally it was to be 2017, then 2024. Doctors who have provided primary care services for at least 10 years do not have to take the course.
+
+The revenue ceiling is high, too: a full list at a realistic average age coefficient means of the order of <Money value={900000} /> a year from the doctor’s capitation alone, before coordinated care, the delegated budget and consultations. A relatively accessible entry thus meets one of the higher revenue ceilings in the system. A caveat: this is the practice’s revenue, not income — and many primary care doctors are not practice owners, but employees or contractors at ordinary rates.
+
+[^sprawozdanie]: Rynek Zdrowia, [“<span lang="pl">Rada NFZ przyjęła sprawozdanie za 2025 r. — ponad 22 mld zł na POZ</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Rada-NFZ-przyjela-sprawozdanie-za-2025-r-Ponad-22-mld-zl-na-POZ-i-1-4-mln-bilansow-zdrowia,286203,1.html) (“The NFZ Council adopted the report for 2025 — over PLN 22 billion for primary care”, in Polish).
+
+[^gus]: GUS, [“<span lang="pl">Ambulatoryjna opieka zdrowotna w 2024 r.</span>”](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/13/9/1/ambulatoryjna_opieka_zdrowotna_w_2024_r..pdf) (“Outpatient healthcare in 2024”, in Polish) — number of consultations in primary care.
+
+[^stawki]: Base rate of a primary care doctor according to annex 1 to orders of the President of the NFZ (in Polish). **2018:** PLN 147.00 from 1.07 ([62/2018/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-622018dsoz,6782.html) of 27.06.2018) and PLN 154.20 from 1.11 ([120/2018/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-1202018dsoz,6844.html) of 29.11.2018). **2019:** PLN 156.60 from 1.07 and PLN 159.00 from 1.10 ([92/2019/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-922019dsoz,6972.html) of 16.07.2019 and [115/2019/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-1152019dsoz,6999.html) of 30.08.2019), PLN 162.60 from 1.12 ([177/2019/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-1772019dsoz,7098.html) of 30.12.2019). **2020:** PLN 166.20 from 1.04 and PLN 168.60 from 1.07 (177/2019/DSOZ), PLN 171.00 from 1.09 ([95/2020/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-952020dsoz,7199.html) of 1.07.2020). **2021:** PLN 171.00 unchanged ([160/2021/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-1602021dsoz,7420.html) of 30.09.2021). **2022:** PLN 178.80 from 1.04 ([38/2022/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-382022dsoz,7505.html) of 29.03.2022 — amount from a secondary source; retained in [79/2022/DSOZ](https://baw.nfz.gov.pl/api/file/GetZipxAttachment/4/3997/false/preview) of 29.06.2022) and PLN 191.88 from 1.07. We have not confirmed the number of the July 2022 order that introduced PLN 191.88 (93/2022/DSOZ or 96/2022/DSOZ); the amount is given by [Puls Medycyny](https://pulsmedycyny.pl/nfz-podwyzsza-stawki-kapitacyjne-w-poz-1156959) and confirmed by the annex to [order 3/2023/DSOZ](https://www.rynekzdrowia.pl/Plik/186607.html) of 9.01.2023. **2023:** PLN 204.36 from 1.07 (99/2023/DSOZ and 104/2023/DSOZ; [NFZ announcement](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/dodatek-za-wielochorobowosc-wchodzi-do-poz-wzrosly-tez-stawki-w-opiece-koordynowanej,8436.html)). **2024:** PLN 215.28 from 1.07 ([61/2024/DSOZ](https://mbrk.pl/baza-wiedzy/poz-zarzadzenie-nr-61-2024-dsoz-prezesa-narodowego-funduszu-zdrowia-z-dnia-28-czerwca-2024-r/) of 28.06.2024). **2025:** PLN 215.28 in the first half of the year ([22/2025/DSOZ](https://mbrk.pl/wp-content/uploads/2025/03/ZARZADZENIE-NR-222025DSOZ.pdf) of 31.03.2025 and [34/2025/DSOZ](https://mbrk.pl/wp-content/uploads/2025/05/ZARZADZENIE-NR-342025DSOZ.pdf) of 2.05.2025), PLN 226.08 from 1.07 ([47/2025/DSOZ](https://mbrk.pl/wp-content/uploads/2025/07/ZA5973_1.pdf) of 30.06.2025). **2026:** PLN 226.08 in the first half of the year (8/2026/DSOZ) and PLN 232.56 from 1.07 ([65/2026/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43917/Zarzadzenie-65_2026_DSOZ) of 14.07.2026). We link the orders from 2024–2025 as copies published by Mazowieckie Biuro Rozliczeń Kontraktów (mbrk.pl).
+
+[^z65]: NFZ, [“<span lang="pl">Zarządzenie nr 65/2026/DSOZ Prezesa NFZ z 14 lipca 2026 r.</span>”](https://baw.nfz.gov.pl/NFZ/document/43917/Zarzadzenie-65_2026_DSOZ) (“Order No. 65/2026/DSOZ of the President of the NFZ of 14 July 2026”, in Polish) amending the order on primary care contracts, annex 1 (rates for services provided from 1 July 2026).
+
+[^100-badan]: Rynek Zdrowia, [“<span lang="pl">W 2026 r. ponad 100 badań na NFZ zleci lekarz rodzinny</span>”](https://www.rynekzdrowia.pl/Prawo/Pacjenci-nie-wiedza-i-traca-pieniadze-W-2026-r-ponad-100-badan-na-NFZ-zleci-lekarz-rodzinny,281292,2.html) (“In 2026 a family doctor will order more than 100 NFZ-funded tests”, in Polish), 2026.
+
+[^rozporzadzenie]: [“<span lang="pl">Rozporządzenie w sprawie świadczeń gwarantowanych z zakresu POZ</span>”](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20230001427) (“Regulation on guaranteed primary care services”, in Polish; Dz.U. 2023 poz. 1427), annex 1 (ISAP).
+
+[^mp]: Medycyna Praktyczna, [“<span lang="pl">Diagnostyczny budżet powierzony w POZ</span>”](https://www.mp.pl/medycynarodzinna/prawo/309727,diagnostyczny-budzet-powierzony-w-poz) (“The diagnostic delegated budget in primary care”, in Polish).
+
+[^nfz-slask]: Silesian regional branch of the NFZ, [“<span lang="pl">Świadczenia diagnostyki laboratoryjnej i obrazowej w POZ</span>”](https://nfz-katowice.pl/index.php/dla-pacjenta/podstawowa-opieka-zdrowotna/swiadczenia-medycznej-diagnostyki-laboratoryjnej-lub-diagnostyki-obrazowej-i-nieobrazowej-w-poz) (“Laboratory and imaging diagnostic services in primary care”, in Polish) (contracting for 2026).
+
+[^nfz-skierowania]: Pomeranian regional branch of the NFZ, [“<span lang="pl">Zasady wystawiania skierowań — podział kosztów badań między POZ a AOS</span>”](https://www.nfz-gdansk.pl/71-podstawowa-opieka-zdrowotna/265-zasady-wystawiania-skierowan/) (“Rules for issuing referrals — division of the costs of tests between primary care and specialist outpatient care”, in Polish).
+
+[^nik]: NIK, [“<span lang="pl">NIK o podstawowej i specjalistycznej opiece medycznej</span>”](https://www.nik.gov.pl/aktualnosci/nik-o-podstawowej-i-specjalistycznej-opiece-medycznej.html) (“NIK on primary and specialist medical care”, in Polish) (audit covering 2012–2014).
+
+[^barometr]: WHC Barometer 2025, via Rynek Zdrowia, [“<span lang="pl">Barometr Watch Health Care — średni czas oczekiwania na leczenie w 2025 r.</span>”](https://www.rynekzdrowia.pl/Polityka-zdrowotna/Barometr-Watch-Health-Care-sredni-czas-oczekiwania-na-leczenie-w-2025-r-to-ponad-4-miesiace,279890,14.html) (“Watch Health Care Barometer — average waiting time for treatment in 2025”, in Polish), 2025.
+
+[^wydatki]: [“<span lang="pl">Obwieszczenie Prezesa GUS z 30 września 2026 r. w sprawie Narodowego Rachunku Zdrowia za 2024 r.</span>”](https://api.sejm.gov.pl/eli/acts/MP/2026/971/text.pdf) (“Notice of the President of Statistics Poland of 30 September 2026 on the National Health Account for 2024”, in Polish; M.P. 2026 poz. 971) — private financing schemes PLN 18,737.2 million and direct household spending PLN 47,640.5 million, together PLN 66,377.7 million out of PLN 287.6 billion of current expenditure. Earlier, preliminary GUS estimates gave PLN 64.5 billion.
+
+[^mzdrowie]: mZdrowie, [“<span lang="pl">Opieka koordynowana w POZ powinna odciążyć specjalistyczne przychodnie</span>”](https://www.mzdrowie.pl/medycyna/opieka-koordynowana-w-poz-powinna-odciazyc-specjalistyczne-przychodnie/) (“Coordinated care in primary care should relieve specialist clinics”, in Polish).
+
+[^nil]: NIL, [“<span lang="pl">Centralny Rejestr Lekarzy — informacje statystyczne</span>”](https://nil.org.pl/rejestry/centralny-rejestr-lekarzy/informacje-statystyczne) (“Central Register of Doctors — statistical information”, in Polish) (table no. 4), as of 31.12.2024.
+
+[^ustawa]: [“<span lang="pl">Ustawa z 27 października 2017 r. o podstawowej opiece zdrowotnej</span>”](https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20170002217) (“Act of 27 October 2017 on primary health care”, in Polish; Dz.U. 2025 poz. 515), Article 6 (ISAP).

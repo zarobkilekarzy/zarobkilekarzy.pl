@@ -10,6 +10,9 @@
 <script>
   import { HEADINGS, anchorFor } from '@/scripts/anchors';
   import { announce, copyText } from '@/scripts/clipboard';
+  import { clientUi } from '@/i18n/client';
+
+  const t = clientUi();
 
   for (const h of document.querySelectorAll<HTMLElement>(HEADINGS)) {
     const id = anchorFor(h);
@@ -17,7 +20,7 @@
     const a = document.createElement('a');
     a.className = 'h-anchor';
     a.href = `#${id}`;
-    a.setAttribute('aria-label', 'Kopiuj link do tej sekcji');
+    a.setAttribute('aria-label', t.sectionLink);
     a.innerHTML = '<svg aria-hidden="true"><use href="#i-link"></use></svg>';
     h.append(a);
   }
@@ -29,8 +32,8 @@
     event.preventDefault();
     history.replaceState(history.state, '', a.hash);
     const ok = await copyText(a.href);
-    a.dataset.copied = ok ? 'Skopiowano link' : 'Link jest w pasku adresu';
-    announce(ok ? 'Link do sekcji skopiowany' : 'Link do sekcji jest w pasku adresu');
+    a.dataset.copied = ok ? t.sectionCopied : t.sectionInBar;
+    announce(ok ? t.sectionCopiedAnnounce : t.sectionInBarAnnounce);
     setTimeout(() => delete a.dataset.copied, 1800);
   });
 </script>

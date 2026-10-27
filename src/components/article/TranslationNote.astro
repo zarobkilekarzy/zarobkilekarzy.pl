@@ -1,0 +1,50 @@
+---
+/**
+ * Nota nad treścią tłumaczenia: kto tłumaczył, że wiąże wersja polska, link do oryginału.
+ * Gdy polski oryginał zmienił się od tłumaczenia (src/i18n/translations.ts → freshnessOf),
+ * nota zmienia się w ostrzeżenie z obiema datami — czytelnik nie dostaje po cichu starych liczb.
+ * Celowo skromna (linia z lewą krawędzią, nie ramka): nie konkuruje z ramkami treści.
+ */
+import { formatDateIn, isoDate } from '@/lib/format';
+
+interface Props {
+  /** adres polskiego oryginału */
+  original: string;
+  /** dzień tłumaczenia (stempel) */
+  translated: Date;
+  stale?: boolean;
+  /** kiedy zmienił się oryginał, gdy wiadomo */
+  changed?: Date;
+}
+
+const { original, translated, stale = false, changed } = Astro.props;
+const when = (d: Date) => ({ iso: isoDate(d), text: formatDateIn(d, 'en') });
+const t = when(translated);
+const c = changed && when(changed);
+---
+<aside class:list={['tnote', { 'tnote--stale': stale }]} aria-label="About this translation">
+  {stale ? (
+    <p>
+      <strong>The Polish original has changed since this translation.</strong>{' '}
+      This text reflects the original as of <time datetime={t.iso}>{t.text}</time>{c && <>; the original was updated on <time datetime={c.iso}>{c.text}</time></>}.
+      Figures and conclusions may be out of date until the translation is revised —{' '}
+      <a href={original} hreflang="pl">read the current Polish version</a>.
+    </p>
+  ) : (
+    <p>
+      Translated from Polish with AI and checked against the original by an AI agent (<time datetime={t.iso}>{t.text}</time>).
+      The Polish version is authoritative —{' '}<a href={original} hreflang="pl">read the original</a>.
+    </p>
+  )}
+</aside>
+
+<style>
+  .tnote {
+    margin-bottom: 40px; padding: 12px 16px;
+    border-left: 2px solid var(--line-2); background: var(--bg-soft);
+    font-size: 0.875rem; line-height: 1.55; color: var(--muted);
+  }
+  .tnote a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+  .tnote--stale { border-left-color: var(--amber); color: var(--ink-2); }
+  .tnote strong { color: var(--ink); }
+</style>

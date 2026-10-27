@@ -17,6 +17,8 @@
  * jak sprostowana Sokółka). Zachodniopomorskie 216 643,81 zł to rekordzista z Koszalina (wiersz roczny) — nie dublujemy.
  * Celowo pominięte (jedno miejsce w serwisie): radni-lekarze (Słupsk, Piotrków) → /analizy/lekarze-radni/;
  * sprawa warszawska (postępowanie w toku) → tylko /mechanizmy/wieloetatowosc/, bez kwot; prezes szpitala z Grójca → /analizy/zarobki-dyrektorow-szpitali/.
+ *
+ * Wiersze i liczby (MONTHLY, DAILY, YEARLY, MAZOWSZE, REGIONS) czyta też wersja angielska — src/data/en/rekordy.ts.
  */
 import type { CompareTable } from '@/types';
 import { formatPL } from '@/lib/format';
@@ -404,7 +406,7 @@ export const YEARLY: RecordRow[] = [
  * Wiersz to miejsce w rankingu danej formy, a nie jedna osoba. Kwoty za miesiąc, zaokrąglone do złotego: etat i umowa
  * cywilnoprawna brutto, kontrakt — jedna kwota bez podziału na brutto i netto (tak podaje źródło).
  */
-const MAZOWSZE: { etat: number; kontrakt: number; rozwiazana?: boolean; cywilna: number }[] = [
+export const MAZOWSZE: { etat: number; kontrakt: number; rozwiazana?: boolean; cywilna: number }[] = [
   { etat: 101384, kontrakt: 316079, rozwiazana: true, cywilna: 100147 },
   { etat: 97736, kontrakt: 258400, rozwiazana: true, cywilna: 62600 },
   { etat: 93928, kontrakt: 231738, cywilna: 51980 },
@@ -435,7 +437,7 @@ export const MAZOWSZE_TABLE: CompareTable = {
  * Podkarpacie: kontrakt z Tarnobrzega, etat z Rzeszowa (urząd podał po pięć kwot na szpital).
  * Zachodniopomorskie: etat „ponad 55,8 tys. zł” — próg, więc iloraz jest górną granicą.
  */
-const REGIONS: { name: string; kontrakt: number; etat: string; ratio: string }[] = [
+export const REGIONS: { name: string; kontrakt: number; etat: string; ratio: string }[] = [
   { name: 'mazowieckie', kontrakt: 316079, etat: zl(101384), ratio: '3,1' },
   { name: 'zachodniopomorskie', kontrakt: 216644, etat: 'ponad 55 800 zł', ratio: 'do 3,9' },
   { name: 'lubuskie', kontrakt: 198043, etat: zl(95443), ratio: '2,1' },

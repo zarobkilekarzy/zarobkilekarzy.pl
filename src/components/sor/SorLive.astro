@@ -8,7 +8,10 @@
  *   podmieniają opis na liczby.
  * Dane pobiera dopiero, gdy element zbliża się do ekranu — każde pobranie to wywołanie Workera SOR,
  * liczone do dziennego limitu konta.
+ * Na stronach angielskich (/en/…) napisy po angielsku i link do /en/patient-rights/emergency-department/;
+ * skrypt dostaje wtedy wzorce napisów w atrybutach data-* (bez nich pisze po polsku, jak dotąd).
  */
+import { localeOf } from '@/i18n/locales';
 import { typo } from '@/lib/format';
 import { SOR_CYCLE_MIN, SOR_DATA_URL } from '@/lib/sor/source';
 
@@ -21,29 +24,53 @@ const { variant = 'kafelek', class: className } = Astro.props;
 const pas = variant === 'pas';
 // lokalny podgląd przed włączeniem crona: PUBLIC_SOR_URL=/ścieżka/do/migawki.json (jak w lib/sor/map)
 const url = import.meta.env.PUBLIC_SOR_URL || SOR_DATA_URL;
-const fallback = `Mapa wszystkich szpitalnych oddziałów ratunkowych: ile osób czeka na lekarza i czy czas mieści się w normie. Odświeżana co ${SOR_CYCLE_MIN} minut.`;
+const en = localeOf(Astro.url.pathname) === 'en';
+const t = en
+  ? {
+      href: '/en/patient-rights/emergency-department/',
+      tag: 'Live · ED',
+      title: 'Emergency department queues now',
+      fallback: `A map of all hospital emergency departments: how many people are waiting for a doctor and whether the wait is within the standard. Refreshed every ${SOR_CYCLE_MIN} minutes.`,
+      button: 'See the queue map →',
+      go: 'Queue map →',
+      // dla skryptu: tekst przy liczbie (jedna osoba | wiele) i linia stanu ({over}, {measured}, {time})
+      waiting: 'person is waiting for a doctor right now in hospital emergency departments|people are waiting for a doctor right now in hospital emergency departments',
+      meta: 'in {over} of {measured} emergency departments the wait exceeds the standard · as of {time}',
+    }
+  : {
+      href: '/prawa-pacjenta/sor/',
+      tag: 'Na żywo · SOR',
+      title: 'Kolejki na SOR teraz',
+      fallback: `Mapa wszystkich szpitalnych oddziałów ratunkowych: ile osób czeka na lekarza i czy czas mieści się w normie. Odświeżana co ${SOR_CYCLE_MIN} minut.`,
+      button: 'Zobacz mapę kolejek →',
+      go: 'Mapa kolejek →',
+      waiting: undefined,
+      meta: undefined,
+    };
+const fallback = t.fallback;
 ---
 {/* hidden={false} na elemencie niestandardowym Astro wypisuje dosłownie jako hidden="false" (i element znika) — stąd undefined */}
-<zl-sor-live data-src={url} data-variant={variant} class:list={[className]} hidden={pas ? undefined : true}>
-  <a class:list={['sorlive', `sorlive--${variant}`]} href="/prawa-pacjenta/sor/">
-    <span class="sorlive__tag"><span class="sorlive__dot" aria-hidden="true"></span>Na żywo · SOR</span>
-    {pas && <span class="sorlive__title">Kolejki na SOR teraz</span>}
+<zl-sor-live data-src={url} data-variant={variant} data-locale={en ? 'en' : undefined} data-waiting={t.waiting} data-meta-text={t.meta} class:list={[className]} hidden={pas ? undefined : true}>
+  <a class:list={['sorlive', `sorlive--${variant}`]} href={t.href}>
+    <span class="sorlive__tag"><span class="sorlive__dot" aria-hidden="true"></span>{t.tag}</span>
+    {pas && <span class="sorlive__title">{t.title}</span>}
     <span class="sorlive__num" data-n hidden={pas}></span>
     <span class="sorlive__text" data-text>{pas && typo(fallback)}</span>
     {pas ? (
       <>
         <span class="sorlive__meta" data-meta hidden></span>
-        <span class="sorlive__go sorlive__go--button">Zobacz mapę kolejek →</span>
+        <span class="sorlive__go sorlive__go--button">{t.button}</span>
       </>
     ) : (
-      <span class="sorlive__meta"><span data-meta></span><span class="sorlive__go">Mapa kolejek →</span></span>
+      <span class="sorlive__meta"><span data-meta></span><span class="sorlive__go">{t.go}</span></span>
     )}
   </a>
 </zl-sor-live>
 
 <script>
-  import { formatPL, plural, typo } from '@/lib/format';
+  import { formatEN, formatPL, plural, typo } from '@/lib/format';
   import { hm, isOutdated, isSnapshot, summarize } from '@/lib/sor/summary';
+  import { fill } from '@/lib/sor/text';
 
   class SorLive extends HTMLElement {
     connectedCallback() {
@@ -72,9 +99,12 @@ const fallback = `Mapa wszystkich szpitalnych oddziałów ratunkowych: ile osób
           el.textContent = typo(text);
           el.hidden = false;
         };
-        set('[data-n]', formatPL(s.before));
-        set('[data-text]', `${plural(s.before, ['osoba czeka', 'osoby czekają', 'osób czeka'])} teraz na lekarza w szpitalnych oddziałach ratunkowych`);
-        set('[data-meta]', `w ${over} z ${s.measured} SOR-ów czas ponad normę · stan z ${hm(s.freshest)}`);
+        // poza polską wersją wzorce napisów przychodzą z serwera (data-locale, data-waiting, data-meta-text)
+        const { locale, waiting, metaText: meta } = this.dataset;
+        const forms = waiting?.split('|');
+        set('[data-n]', locale === 'en' ? formatEN(s.before) : formatPL(s.before));
+        set('[data-text]', forms ? forms[s.before === 1 ? 0 : 1] : `${plural(s.before, ['osoba czeka', 'osoby czekają', 'osób czeka'])} teraz na lekarza w szpitalnych oddziałach ratunkowych`);
+        set('[data-meta]', meta ? fill(meta, { over, measured: s.measured, time: hm(s.freshest, locale === 'en' ? 'en' : 'pl') }) : `w ${over} z ${s.measured} SOR-ów czas ponad normę · stan z ${hm(s.freshest)}`);
         this.hidden = false;
       } catch {
         // bez danych: kafelka nie ma, pas zostaje ze stałym opisem

@@ -5,10 +5,12 @@
  * nie sugeruje winy, a „brak postępowania” i „śledztwo” wyglądają tak samo; różni je tylko tekst.
  * W wąskim kontenerze wiersz staje się kartą z etykietą kolumny nad komórką (jak dyrektorzy/CaseTable).
  * Statycznie, bez JS. Ramę (teza, uwagi) daje blocks/Figure w artykule.
+ * Dwujęzyczny: na stronie /en/ nagłówki po angielsku, wiersze z src/data/en/rekordy.ts; wyjście polskie bez zmian.
  */
 import type { RecordRow } from '@/data/rekordy';
 import { typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   rows: RecordRow[];
@@ -17,14 +19,23 @@ interface Props {
 }
 
 const { rows, caption } = Astro.props;
-const COLS = { what: 'Czym jest kwota', amount: 'Kwota', status: 'Stan sprawy', src: 'Źródła' };
+const en = localeOf(Astro.url.pathname) === 'en';
+const TEXT = {
+  pl: { place: 'Gdzie', what: 'Czym jest kwota', amount: 'Kwota', status: 'Stan sprawy', src: 'Źródła', asOf: 'stan na' },
+  en: { place: 'Where', what: 'What the amount is', amount: 'Amount', status: 'Case status', src: 'Sources', asOf: 'as of' },
+};
+const t = TEXT[en ? 'en' : 'pl'];
+const COLS = { what: t.what, amount: t.amount, status: t.status, src: t.src };
+// angielska kwota bywa dłuższa („almost PLN 3 million”) — może się złamać; atrybut tylko na /en/
+// polska typografia (twarde spacje po „a”, „i”, „w”…) nie dotyczy tekstów angielskich
+const ty = en ? (s: string) => s : typo;
 ---
 <div class="rt-wrap">
   <table class="rt">
     <caption class="sr-only">{caption}</caption>
     <thead>
       <tr>
-        <th scope="col">Gdzie</th>
+        <th scope="col">{t.place}</th>
         <th scope="col">{COLS.what}</th>
         <th scope="col">{COLS.amount}</th>
         <th scope="col">{COLS.status}</th>
@@ -34,17 +45,17 @@ const COLS = { what: 'Czym jest kwota', amount: 'Kwota', status: 'Stan sprawy', 
     <tbody>
       {rows.map((r) => (
         <tr id={`rekord-${r.id}`}>
-          <th scope="row"><span class="rt__place">{typo(r.place)}</span></th>
-          <td data-label={COLS.what}>{typo(r.what)}</td>
+          <th scope="row"><span class="rt__place">{ty(r.place)}</span></th>
+          <td data-label={COLS.what}>{ty(r.what)}</td>
           <td class="rt__amount" data-label={COLS.amount}>
-            <span class="rt__value">{typo(r.amount)}</span>
-            <span class="rt__period">{typo(r.period)}</span>
-            {r.note && <span class="rt__note">{typo(r.note)}</span>}
+            <span class="rt__value" style={en ? 'white-space: normal' : undefined}>{ty(r.amount)}</span>
+            <span class="rt__period">{ty(r.period)}</span>
+            {r.note && <span class="rt__note">{ty(r.note)}</span>}
           </td>
           <td class="rt__status" data-label={COLS.status}>
-            <span class="rt__stage">{typo(r.status.label)}</span>
-            <span class="rt__asof">stan na {r.status.asOf}</span>
-            {r.status.note && <span class="rt__note">{typo(r.status.note)}</span>}
+            <span class="rt__stage">{ty(r.status.label)}</span>
+            <span class="rt__asof">{`${t.asOf} ${r.status.asOf}`}</span>
+            {r.status.note && <span class="rt__note">{ty(r.status.note)}</span>}
           </td>
           <td class="rt__src" data-label={COLS.src}>
             {r.sources.map((s) => <a {...linkAttrs(s.href)}>{s.label}</a>)}

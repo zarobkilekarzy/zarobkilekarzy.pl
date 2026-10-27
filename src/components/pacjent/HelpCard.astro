@@ -8,6 +8,7 @@ import type { HTMLAttributes } from 'astro/types';
 import Icon from '@/components/ui/Icon.astro';
 import type { Phone } from '@/lib/pacjent/types';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props extends HTMLAttributes<'aside'> {
   helpline: { phone: Phone; name: string; hours: string; who: string; abroad: string };
@@ -15,17 +16,25 @@ interface Props extends HTMLAttributes<'aside'> {
 }
 
 const { helpline, emergency, class: className, ...rest } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const T = {
+  pl: { call: 'Nie wiesz, od czego zacząć? Zadzwoń', abroad: 'Dzwonisz z zagranicy?' },
+  en: { call: 'Not sure where to start? Call', abroad: 'Calling from abroad?' },
+}[locale];
+// Na stronach EN numer z zagranicy jest rozwinięty: czytelnik często dzwoni z zagranicznego telefonu
+// Numer kierunkowy (+48 w wersji EN) mniejszym stopniem, żeby duży numer mieścił się w jednym wierszu
+const [, prefix, number] = /^(\+\d+ )?(.*)$/.exec(helpline.phone.display)!;
 ---
 <aside class:list={['help', className]} aria-labelledby="help-title" data-help {...rest}>
-  <p class="help__label" id="help-title">Nie wiesz, od czego zacząć? Zadzwoń</p>
-  <a class="help__number" href={`tel:${helpline.phone.tel}`}>
+  <p class="help__label" id="help-title">{T.call}</p>
+  <a class:list={['help__number', { 'help__number--prefix': prefix }]} href={`tel:${helpline.phone.tel}`}>
     <span class="help__icon"><Icon name="phone" size={22} /></span>
-    <span>{helpline.phone.display}</span>
+    <span class="help__digits">{prefix && <span class="help__prefix">{prefix}</span>}{number}</span>
   </a>
   <p class="help__hours">{typo(helpline.hours)}</p>
   <p class="help__who"><strong>{helpline.name}.</strong> {typo(helpline.who)}</p>
-  <details class="help__abroad">
-    <summary>Dzwonisz z zagranicy?</summary>
+  <details class="help__abroad" open={locale === 'en'}>
+    <summary>{T.abroad}</summary>
     <p>{typo(helpline.abroad)}</p>
   </details>
   <p class="help__sos">
@@ -53,6 +62,9 @@ const { helpline, emergency, class: className, ...rest } = Astro.props;
     font-variant-numeric: tabular-nums;
     text-decoration: none;
   }
+  .help__number--prefix { font-size: clamp(2.125rem, 4.2vw, 3.25rem); }
+  .help__digits { white-space: nowrap; }
+  .help__prefix { font-size: 0.5em; letter-spacing: 0; vertical-align: 0.6em; margin-right: 0.15em; }
   .help__icon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; background: var(--blue-fill); color: #fff; flex: none; }
   .help__number:hover { color: var(--blue); }
   .help__number:hover .help__icon { background: var(--blue-600); }

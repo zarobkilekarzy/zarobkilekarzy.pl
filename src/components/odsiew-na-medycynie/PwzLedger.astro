@@ -4,25 +4,54 @@
  * liczba startowa, kroki ze znakiem (wcięte), sumy pośrednie pod kreską, wynik w kobalcie.
  * Zostaje tabelą także na wąskim ekranie (dwie kolumny mieszczą się w 320 px).
  * Statycznie, bez JS. Dane i arytmetyka: data/odsiew-na-medycynie.ts (LEDGER).
+ * Dwujęzyczny: na stronach /en/ napisy z T.en i kroki z data/en/odsiew-na-medycynie.ts (LEDGER_EN);
+ * wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
 import { LEDGER, LEDGER_TOTALS, LINKS } from '@/data/odsiew-na-medycynie';
-import { formatPL, typo } from '@/lib/format';
+import { formatNumber, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { LEDGER_EN } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/odsiew-na-medycynie') : {}) as typeof import('@/data/en/odsiew-na-medycynie');
+const ledger = locale === 'en' ? LEDGER_EN : LEDGER;
 const isTotal = (kind?: string) => kind === 'subtotal' || kind === 'result';
 // border-collapse rysuje jedną linię między wierszami — kreskę nad sumą daje dolna krawędź wiersza nad nią
-const rows = LEDGER.map((row, i) => ({ ...row, beforeTotal: isTotal(LEDGER[i + 1]?.kind) }));
-const thousands = (n: number) => `${formatPL(n / 1000, 1)} tys.`;
+const rows = ledger.map((row, i) => ({ ...row, beforeTotal: isTotal(ledger[i + 1]?.kind) }));
 const { limit, pwz, reached } = LEDGER_TOTALS;
+
+const T = {
+  pl: {
+    title: (() => {
+      const thousands = (n: number) => `${formatNumber(n / 1000, 1, 'pl')} tys.`;
+      return `Z ${thousands(limit)} miejsc na studiach do prawa wykonywania zawodu dochodzi ${thousands(pwz)} lekarzy — ok. ${formatNumber(reached, 0, 'pl')}%`;
+    })(),
+    note: 'Przyjęci w latach 2015–2019 to w przybliżeniu lekarze, którzy w 2026 r. mają 26–30 lat (izba liczy wiek rocznikami, start studiów w wieku 19 lat). To dopasowanie roczników, a nie śledzenie tych samych osób. Limity: suma pięciu rozporządzeń MZ; Polacy na I semestrze i absolwenci: POL-on; lekarze z PWZ: zestawienie NIL według wieku, stan na 30.06.2026.',
+    source: 'MZ BASiW (POL-on), rozporządzenia MZ o limitach przyjęć, NIL; obliczenia własne',
+    step: 'Krok rachunku',
+    number: 'Liczba',
+  },
+  en: {
+    title: (() => {
+      const thousands = (n: number) => `${formatNumber(n / 1000, 1, 'en')} thousand`;
+      return `Of ${thousands(limit)} places at medical school, ${thousands(pwz)} doctors reach a licence to practise — about ${formatNumber(reached, 0, 'en')}%`;
+    })(),
+    note: 'Those admitted in 2015–2019 are roughly the doctors aged 26–30 in 2026 (the chamber counts age by year of birth; studies start at 19). This matches cohorts; it does not follow the same people. Limits: sum of five regulations of the Minister of Health; Poles in the first semester and graduates: POL-on; doctors with a licence to practise: NIL breakdown by age, as of 30.06.2026.',
+    source: 'Ministry of Health BASiW (POL-on), Ministry of Health regulations on admission limits, NIL; our calculations',
+    step: 'Step of the calculation',
+    number: 'Number',
+  },
+}[locale];
 ---
 <Figure
-  title={`Z ${thousands(limit)} miejsc na studiach do prawa wykonywania zawodu dochodzi ${thousands(pwz)} lekarzy — ok. ${formatPL(reached)}%`}
-  note="Przyjęci w latach 2015–2019 to w przybliżeniu lekarze, którzy w 2026 r. mają 26–30 lat (izba liczy wiek rocznikami, start studiów w wieku 19 lat). To dopasowanie roczników, a nie śledzenie tych samych osób. Limity: suma pięciu rozporządzeń MZ; Polacy na I semestrze i absolwenci: POL-on; lekarze z PWZ: zestawienie NIL według wieku, stan na 30.06.2026."
-  source={{ label: 'MZ BASiW (POL-on), rozporządzenia MZ o limitach przyjęć, NIL; obliczenia własne', href: LINKS.mz }}
+  title={T.title}
+  note={T.note}
+  source={{ label: T.source, href: LINKS.mz }}
 >
   <table class="ledger">
     <thead>
-      <tr><th scope="col">Krok rachunku</th><th scope="col">Liczba</th></tr>
+      <tr><th scope="col">{T.step}</th><th scope="col">{T.number}</th></tr>
     </thead>
     <tbody>
       {rows.map((row) => (

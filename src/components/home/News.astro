@@ -1,28 +1,44 @@
 ---
-/** Strona główna: trzy ostatnie aktualności — data, tytuł i lead; całość pod /aktualnosci/. */
+/**
+ * Strona główna: trzy ostatnie aktualności — data, tytuł i lead; całość pod /aktualnosci/.
+ * Na /en/ — trzy ostatnie przetłumaczone wpisy (src/i18n/news.ts), całość pod /en/news/.
+ */
 import { Image } from 'astro:assets';
 import Section from '@/components/layout/Section.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
-import { formatDate, isoDate, typo } from '@/lib/format';
-import { getNews, newsHref, newsImage, newsPage, newsThumbWhole } from '@/lib/news';
+import { formatDateIn, isoDate, typo } from '@/lib/format';
+import { getNews, newsHref, newsPage, newsImage, newsThumbWhole } from '@/lib/news';
+import { getPublishedNewsTranslations, newsEnHref, newsPageEn } from '@/i18n/news';
+import { localeOf } from '@/i18n/locales';
 
-const news = (await getNews()).slice(0, 3);
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
+const text = en
+  ? { id: 'news', eyebrow: 'News', title: 'What’s new in the project', all: 'All news', href: newsPageEn.href }
+  : { id: 'aktualnosci', eyebrow: 'Aktualności', title: 'Co słychać w projekcie', all: 'Wszystkie aktualności', href: newsPage.href };
+
+// Wpis na liście: polski wpis (data, zdjęcie) i tekst w języku strony
+const news = (
+  en
+    ? (await getPublishedNewsTranslations()).map((t) => ({ href: newsEnHref(t), source: t.source, title: t.entry.data.title, summary: t.entry.data.summary }))
+    : (await getNews()).map((n) => ({ href: newsHref(n), source: n, title: n.data.title, summary: n.data.summary }))
+).slice(0, 3);
 ---
 {news.length > 0 && (
-  <Section id="aktualnosci" space="bottom" aria-labelledby="aktualnosci-title">
-    <SectionHead eyebrow="Aktualności" title="Co słychać w projekcie" id="aktualnosci-title" layout="row">
-      <LinkArrow slot="action" href={newsPage.href}>Wszystkie aktualności</LinkArrow>
+  <Section id={text.id} space="bottom" aria-labelledby={`${text.id}-title`}>
+    <SectionHead eyebrow={text.eyebrow} title={text.title} id={`${text.id}-title`} layout="row">
+      <LinkArrow slot="action" href={text.href}>{text.all}</LinkArrow>
     </SectionHead>
 
     <ol class="hnews">
       {news.map((n) => (
         <li>
-          <a href={newsHref(n)}>
-            <Image src={newsImage(n).src} alt="" widths={[360, 720]} sizes="(min-width: 1025px) 400px, (min-width: 721px) 240px, calc(100vw - 32px)" class:list={['hnews__img', { 'is-whole': newsThumbWhole(n, 16 / 9) }]} />
-            <time datetime={isoDate(n.data.date)}>{formatDate(n.data.date)}</time>
-            <h3 class="hnews__title">{typo(n.data.title)}</h3>
-            <p class="hnews__desc">{typo(n.data.summary)}</p>
+          <a href={n.href}>
+            <Image src={newsImage(n.source).src} alt="" widths={[360, 720]} sizes="(min-width: 1025px) 400px, (min-width: 721px) 240px, calc(100vw - 32px)" class:list={['hnews__img', { 'is-whole': newsThumbWhole(n.source, 16 / 9) }]} />
+            <time datetime={isoDate(n.source.data.date)}>{formatDateIn(n.source.data.date, locale)}</time>
+            <h3 class="hnews__title">{typo(n.title)}</h3>
+            <p class="hnews__desc">{typo(n.summary)}</p>
           </a>
         </li>
       ))}

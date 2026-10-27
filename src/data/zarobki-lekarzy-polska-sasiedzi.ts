@@ -12,6 +12,8 @@
  *   w treści, keyPoints i stat we frontmatterze;
  * - nowe stawki w tabelach (TV-Ärzte/VKA, rozporządzenie czeskie, KAGes): podmień TARIFFS;
  *   złote przeliczy `zl()`, ale kurs NBP i data w RATES muszą się zgadzać z przypisem [^nbp].
+ *
+ * Liczby (RATIO, DENSITY, TARIFFS) czyta też wersja angielska — src/data/en/zarobki-lekarzy-polska-sasiedzi.ts.
  */
 import type { BarRow, CompareTable } from '@/types';
 import { formatPL } from '@/lib/format';
@@ -57,7 +59,7 @@ export const zl = (amount: number, cur: Currency) => `ok. ${formatPL((amount * R
  * pracownika pełnoetatowego w kraju. Rys. 8.11, lewy panel „Salaried”; 2023 r., Polska — 2022 r.
  * Austria nie ma danych dla etatów (tylko praktyki: 4,6 w 2021 r.; Niemcy: 4,9 w 2023 r.).
  */
-const RATIO = [
+export const RATIO = [
   { country: 'Niemcy', value: 3.2 },
   { country: 'Polska', value: 2.91, year: 2022 },
   { country: 'Czechy', value: 2.45 },
@@ -88,7 +90,7 @@ export const ratioCaption = `Przeciętne wynagrodzenie specjalisty na etacie jak
 /* ── Lekarze praktykujący na 1000 mieszkańców (OECD) ──────────────────────────── */
 
 /** Rys. 8.4, 2023 r.; Szwecja — 2022 r. Średnia OECD (w pliku „OECD37”: 3,896) = 3,9. */
-const DENSITY = [
+export const DENSITY = [
   { country: 'Austria', value: 5.51 },
   { country: 'Niemcy', value: 4.66 },
   { country: 'Szwecja', value: 4.47, year: 2022 },
@@ -163,7 +165,7 @@ export const OVERVIEW_TABLE: CompareTable = {
 
 /* ── Jawne tabele płac: stawka specjalisty na etacie ──────────────────────────── */
 
-interface Tariff {
+export interface Tariff {
   country: string;
   /** która tabela, grupa i od kiedy */
   table: string;
@@ -177,7 +179,7 @@ interface Tariff {
   payments: string;
 }
 
-const TARIFFS: Tariff[] = [
+export const TARIFFS: Tariff[] = [
   {
     country: 'Niemcy',
     table: 'TV-Ärzte/VKA (szpitale komunalne), grupa II — specjalista; od 1.06.2026',

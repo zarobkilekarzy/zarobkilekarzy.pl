@@ -19,9 +19,12 @@
  * Dymek pokazuje okres (`label`, domyślnie rok), wartość (`tip`, domyślnie liczba z jednostką
  * albo indeks) i opis (`note`, domyślnie nazwa serii). To dodatek dla oka — czytnik ekranu
  * dostaje `caption`, dlatego kropki nie łapią fokusu.
+ * Na stronach angielskich (/en/) liczby w dymkach w zapisie angielskim i „index” zamiast „indeks”;
+ * pozostałe napisy (serie, podpisy, `caption`) przychodzą w propsach.
  */
 import type { HTMLAttributes } from 'astro/types';
-import { formatPL, typo } from '@/lib/format';
+import { formatNumber, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Point {
   /** położenie na osi czasu: rok + ułamek */
@@ -77,8 +80,11 @@ const X = (x: number) => ((x - xMin) / (xMax - xMin)) * 1000;
 const Y = (v: number) => 1000 - ((v - yMin) / (yMax - yMin)) * 1000;
 const pct = (x: number, lo: number, hi: number) => (((x - lo) / (hi - lo)) * 100).toFixed(3);
 
+const locale = localeOf(Astro.url.pathname);
+const indexWord = locale === 'en' ? 'index' : 'indeks';
+
 /** Dymek kropki: przy lewym brzegu wyrównany do kropki zamiast wyśrodkowany, przy górnym — pod kropką */
-const tipValue = (p: Point) => p.tip ?? (base !== undefined ? `indeks ${formatPL(p.v)} (${base} = 100)` : `${formatPL(p.v, 1)}${unit ? `\u00A0${unit}` : ''}`);
+const tipValue = (p: Point) => p.tip ?? (base !== undefined ? `${indexWord} ${formatNumber(p.v, 0, locale)} (${base} = 100)` : `${formatNumber(p.v, 1, locale)}${unit ? `\u00A0${unit}` : ''}`);
 const tipPlace = (p: Point) => ({
   'is-start': (p.x - xMin) / (xMax - xMin) < 0.2,
   'is-below': (p.v - yMin) / (yMax - yMin) > 0.75,

@@ -5,21 +5,28 @@ import ThemeToggle from './ThemeToggle.astro';
 import TextSizeToggle from './TextSizeToggle.astro';
 import type { Link } from '@/types';
 import { isCurrent } from '@/lib/links';
+import { LOCALE_META, type Locale } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
 
 interface Props {
   nav: Link[];
   /** pozycje dodatkowo pokazywane tylko w menu mobilnym */
   mobileExtras?: Link[];
+  /** ta sama strona w innym języku (albo strona startowa drugiej wersji) — przełącznik „EN”/„PL” obok wyszukiwarki */
+  translation?: { locale: Locale; path: string };
 }
 
-const { nav, mobileExtras = [] } = Astro.props;
+const { nav, mobileExtras = [], translation } = Astro.props;
 const { pathname } = Astro.url;
+const t = uiOf(Astro.url);
+// bez pozycji w menu (strony angielskie na start) nie ma czego rozwijać
+const menu = nav.length + mobileExtras.length > 0;
 ---
-<header class="header" data-header>
+<header class:list={['header', { 'header--no-menu': !menu }]} data-header>
   <div class="wrap header__inner">
     <Logo />
 
-    <nav class="nav" aria-label="Główna nawigacja">
+    <nav class="nav" aria-label={t.nav.main}>
       <ul class="nav__list">
         {nav.map((link) => {
           const current = isCurrent(link, pathname);
@@ -29,23 +36,30 @@ const { pathname } = Astro.url;
     </nav>
 
     <div class="header__tools">
-      <button class="search-trigger" type="button" data-search-open aria-label="Szukaj w serwisie">
+      <button class="search-trigger" type="button" data-search-open aria-label={t.nav.search}>
         <Icon name="search" size={18} />
-        <span class="search-trigger__label">Szukaj</span>
+        <span class="search-trigger__label">{t.nav.searchShort}</span>
         <kbd>⌘K</kbd>
       </button>
-      <div class="display" role="group" aria-label="Wyświetlanie">
+      {translation && (
+        <a class="lang" href={translation.path} hreflang={LOCALE_META[translation.locale].hreflang} lang={LOCALE_META[translation.locale].html}
+          aria-label={LOCALE_META[translation.locale].name} title={LOCALE_META[translation.locale].name}>{translation.locale.toUpperCase()}</a>
+      )}
+      <div class="display" role="group" aria-label={t.nav.display}>
         <TextSizeToggle class="display__text" />
         <ThemeToggle />
       </div>
-      <button class="menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="mobile-menu" aria-label="Otwórz menu">
-        <Icon name="menu" class="menu-toggle__open" />
-        <Icon name="close" class="menu-toggle__close" />
-      </button>
+      {menu && (
+        <button class="menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="mobile-menu" aria-label={t.nav.openMenu}
+          data-label-open={t.nav.openMenu} data-label-close={t.nav.closeMenu}>
+          <Icon name="menu" class="menu-toggle__open" />
+          <Icon name="close" class="menu-toggle__close" />
+        </button>
+      )}
     </div>
   </div>
 
-  <div class="mobile-menu" id="mobile-menu" data-mobile-menu hidden>
+  {menu && <div class="mobile-menu" id="mobile-menu" data-mobile-menu hidden>
     <ul>
       {[...nav, ...mobileExtras].map((link) => <li><a href={link.href}>{link.label}</a></li>)}
     </ul>
@@ -53,10 +67,11 @@ const { pathname } = Astro.url;
     <div class="mobile-menu__prefs">
       <TextSizeToggle labelled />
     </div>
-  </div>
+  </div>}
 </header>
 
 <script>
+  // Napisy przycisku menu w atrybutach (język strony) — bez importu słownika skrypt zostaje wstawiony w HTML
   const header = document.querySelector<HTMLElement>('[data-header]');
   const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
   const menu = document.querySelector<HTMLElement>('[data-mobile-menu]');
@@ -68,7 +83,7 @@ const { pathname } = Astro.url;
   const setMenu = (open: boolean) => {
     if (!toggle || !menu) return;
     toggle.setAttribute('aria-expanded', String(open));
-    toggle.setAttribute('aria-label', open ? 'Zamknij menu' : 'Otwórz menu');
+    toggle.setAttribute('aria-label', (open ? toggle.dataset.labelClose : toggle.dataset.labelOpen) ?? '');
     menu.hidden = !open;
   };
 
@@ -135,6 +150,15 @@ const { pathname } = Astro.url;
   .search-trigger:hover { border-color: var(--ink); }
   .search-trigger__label { flex: 1; text-align: left; color: var(--muted); }
 
+  /* Przełącznik języka: kwadrat jak przyciski obok, skrót języka docelowego */
+  .lang {
+    display: inline-grid; place-items: center; min-width: 40px; height: 40px; padding: 0 8px;
+    border: 1px solid var(--line-2); color: var(--ink);
+    font: 500 0.75rem/1 var(--f-mono); letter-spacing: 0.04em;
+    transition: border-color .2s, color .2s;
+  }
+  .lang:hover { border-color: var(--ink); color: var(--blue); }
+
   .menu-toggle { display: none; width: 44px; height: 44px; place-items: center; border: 1px solid var(--line-2); color: var(--ink); }
   .menu-toggle__close { display: none; }
   .menu-toggle[aria-expanded="true"] .menu-toggle__open { display: none; }
@@ -159,6 +183,7 @@ const { pathname } = Astro.url;
     .nav { display: none; }
     .menu-toggle { display: grid; }
     .search-trigger { height: 44px; }
+    .lang { min-width: 44px; height: 44px; }
   }
 
   /* Większy tekst: menu w nagłówku potrzebuje ok. 625 px i między 1025 a ~1055 px łamałoby się
@@ -168,8 +193,15 @@ const { pathname } = Astro.url;
     :global(:root[data-text-size="lg"]) .menu-toggle { display: grid; }
   }
 
+  /* Telefon: logo i cztery przyciski (lupa, język, tryb nocny, menu) mieszczą się od 375 px tylko z mniejszymi odstępami */
+  @media (max-width: 420px) {
+    .header__inner { gap: 12px; }
+    .header__tools { gap: 4px; }
+  }
+
   @media (max-width: 720px) {
-    .display :global(.display__text) { display: none; }
+    /* „Większy tekst” przechodzi do menu mobilnego — chyba że menu nie ma */
+    .header:not(.header--no-menu) .display :global(.display__text) { display: none; }
     .mobile-menu__prefs {
       display: flex; flex-wrap: wrap; gap: 8px;
       width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; padding: 4px 0 24px;

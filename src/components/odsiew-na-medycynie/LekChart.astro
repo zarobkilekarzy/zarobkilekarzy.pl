@@ -6,10 +6,13 @@
  * Wartość stoi za końcem słupka: przy dodatnich po prawej, przy ujemnych po lewej.
  * Szeroko: nazwa uczelni w kolumnie obok słupka; wąsko (Figure < 560 px): nad słupkiem.
  * Statycznie, bez JS. Dane: data/odsiew-na-medycynie.ts (LEK).
+ * Dwujęzyczny: na stronach /en/ napisy z T.en, nazwy uczelni i wartości z data/en/odsiew-na-medycynie.ts;
+ * wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
 import { LEK, LEK_SCALE, LINKS, lekDisplay } from '@/data/odsiew-na-medycynie';
-import { formatPL } from '@/lib/format';
+import { formatNumber } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 const { min, max } = LEK_SCALE;
 const range = max - min;
@@ -21,22 +24,47 @@ const rows = LEK.map((r) => ({
   width: Math.abs(r.diff) / range,
   negative: r.diff < 0,
 }));
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { schoolEN, lekDisplayEN } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/odsiew-na-medycynie') : {}) as typeof import('@/data/en/odsiew-na-medycynie');
+const en = locale === 'en';
+const school = (name: string) => (en ? schoolEN(name) : name);
+const display = en ? lekDisplayEN : lekDisplay;
+
+const T = {
+  pl: {
+    title: 'Egzamin końcowy: uczelnie „stare” i „nowe” są wymieszane, wyraźnie odstaje jedna',
+    note: 'Średni wynik zdających po raz pierwszy (egzamin po polsku) minus średnia sesji, w punktach na 200; sześć sesji od wiosny 2024 do jesieni 2026, ważone liczbą zdających. Kobaltem — uczelnie „nowe” (podział jak w ankiecie NIL). Średnio: „stare” +0,3 pkt i 97,2% zdało, „nowe” −1,7 pkt i 95,4%.',
+    source: 'CEM, statystyka LEK — zdający po raz pierwszy; obliczenia własne',
+    zero: 'średnia sesji',
+    newTag: ' · nowa',
+    sr: (passed: number) => ` pkt względem średniej sesji; zdało ${formatNumber(passed, 1, 'pl')}%`,
+  },
+  en: {
+    title: 'Final examination: “old” and “new” universities are mixed together, one clearly stands out',
+    note: 'Average score of first-time candidates (examination in Polish) minus the session average, in points out of 200; six sessions from spring 2024 to autumn 2026, weighted by the number of candidates. In cobalt — “new” universities (as classified in the NIL survey). On average: “old” +0.3 points and 97.2% passed, “new” −1.7 points and 95.4%.',
+    source: 'CEM, LEK statistics — first-time candidates; our calculations',
+    zero: 'session average',
+    newTag: ' · new',
+    sr: (passed: number) => ` points relative to the session average; ${formatNumber(passed, 1, 'en')}% passed`,
+  },
+}[locale];
 ---
 <Figure
-  title="Egzamin końcowy: uczelnie „stare” i „nowe” są wymieszane, wyraźnie odstaje jedna"
-  note="Średni wynik zdających po raz pierwszy (egzamin po polsku) minus średnia sesji, w punktach na 200; sześć sesji od wiosny 2024 do jesieni 2026, ważone liczbą zdających. Kobaltem — uczelnie „nowe” (podział jak w ankiecie NIL). Średnio: „stare” +0,3 pkt i 97,2% zdało, „nowe” −1,7 pkt i 95,4%."
-  source={{ label: 'CEM, statystyka LEK — zdający po raz pierwszy; obliczenia własne', href: LINKS.cem }}
+  title={T.title}
+  note={T.note}
+  source={{ label: T.source, href: LINKS.cem }}
 >
   <div class="dev" style={`--z: ${zero}`}>
-    <p class="dev__zero" aria-hidden="true"><span>średnia sesji</span></p>
+    <p class="dev__zero" aria-hidden="true"><span>{T.zero}</span></p>
     <ol class="dev__rows">
       {rows.map((r) => (
         <li class:list={['dev__row', { 'dev__row--hi': r.type === 'nowa' }]} style={`--s: ${r.start}; --w: ${r.width}`}>
-          <span class="dev__label">{r.school}{r.type === 'nowa' && <em> · nowa</em>}</span>
+          <span class="dev__label">{school(r.school)}{r.type === 'nowa' && <em>{T.newTag}</em>}</span>
           <span class="dev__track">
             <span class="dev__bar" aria-hidden="true"></span>
             <span class:list={['dev__value', { 'dev__value--neg': r.negative }]}>
-              {lekDisplay(r.diff)}<span class="sr-only"> pkt względem średniej sesji; zdało {formatPL(r.passed, 1)}%</span>
+              {display(r.diff)}<span class="sr-only">{T.sr(r.passed)}</span>
             </span>
           </span>
         </li>

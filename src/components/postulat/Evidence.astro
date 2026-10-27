@@ -1,14 +1,26 @@
 ---
-/** /postulat/ — dowody: cztery liczby ze źródłami; reszta w działach Dane i Analizy. */
+/**
+ * /postulat/ — dowody: cztery liczby ze źródłami; reszta w działach Dane i Analizy.
+ * Dwujęzyczny: na /en/demand/ opisy z src/data/en/postulat.ts (liczby z modułu PL); wyjście polskie bez zmian.
+ */
 import Section from '@/components/layout/Section.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import StatRow from '@/components/blocks/StatRow.astro';
-import { evidence } from '@/data/postulat';
+import { evidence as evidencePl } from '@/data/postulat';
+import { evidence as evidenceEn, sectionIds } from '@/data/en/postulat';
+import { localeOf } from '@/i18n/locales';
+
+const locale = localeOf(Astro.url.pathname);
+const evidence = locale === 'en' ? evidenceEn : evidencePl;
+const T = {
+  pl: { id: 'dowody', eyebrow: 'Dowody', title: 'Dlaczego to konieczne', all: 'Wszystkie dane', allHref: '/dane/', label: 'Liczby uzasadniające postulat' },
+  en: { id: sectionIds.dowody, eyebrow: 'Evidence', title: 'Why it is necessary', all: 'All data', allHref: '/en/data/', label: 'Figures supporting our demand' },
+}[locale];
 ---
-<Section id="dowody" aria-labelledby="dowody-title">
-  <SectionHead eyebrow="Dowody" title="Dlaczego to konieczne" id="dowody-title" layout="row">
-    <LinkArrow slot="action" href="/dane/">Wszystkie dane</LinkArrow>
+<Section id={T.id} aria-labelledby={`${T.id}-title`}>
+  <SectionHead eyebrow={T.eyebrow} title={T.title} id={`${T.id}-title`} layout="row">
+    <LinkArrow slot="action" href={T.allHref}>{T.all}</LinkArrow>
   </SectionHead>
-  <StatRow items={evidence} label="Liczby uzasadniające postulat" />
+  <StatRow items={evidence} label={T.label} />
 </Section>

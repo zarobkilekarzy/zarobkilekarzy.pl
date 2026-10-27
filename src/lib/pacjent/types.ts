@@ -55,7 +55,8 @@ export interface Route {
   examples: string;
   to: string;
   facts: { label: string; text: string; urgent?: boolean }[];
-  actions?: { label: string; href: string; icon?: IconName }[];
+  /** `extra` — przycisk tylko w tłumaczeniu (np. numer dla dzwoniących z zagranicy); kontrola zgodności z PL go pomija */
+  actions?: { label: string; href: string; icon?: IconName; extra?: true }[];
   /** wersja na kartę kieszonkową */
   card?: { situation: string; contact: string };
 }
@@ -86,6 +87,36 @@ export interface CardContent {
   routes: { situation: string; contact: string }[];
   legal: string;
   howTo: string[];
+}
+
+/**
+ * Napisy PDF spoza treści karty (nagłówki, telefon, linia cięcia, metadane). Polskie — domyślne
+ * w lib/pacjent/pdf.ts (PL_PDF_TEXT); angielskie — src/data/en/prawa-pacjenta.ts (pdfText).
+ */
+export interface PdfText {
+  /** język dokumentu (Tagged PDF), np. „pl-PL” */
+  lang: string;
+  cardMeta: { title: (title: string) => string; subject: string; keywords: string };
+  largeMeta: { title: (title: string) => string; subject: string; keywords: string };
+  /** „Karta kieszonkowa” przed datą stanu */
+  cardKind: string;
+  /** „Duży druk” przed datą stanu */
+  largeKind: string;
+  /** „Nie wiesz, od czego zacząć? Zadzwoń” (duży druk dokleja dwukropek) */
+  call: string;
+  cardHelpline: (name: string, hours: string) => string;
+  largeHelpline: (name: string, hours: string) => string;
+  cardEmergency: string;
+  largeEmergency: string;
+  rights: string;
+  free: string;
+  deadlines: string;
+  warning: string;
+  routes: string;
+  /** „Pełna wersja i źródła:” przed adresem */
+  full: string;
+  cutMarks: string;
+  page: (n: number, of: number) => string;
 }
 
 /** Telefony na karcie: infolinia i numer alarmowy. */

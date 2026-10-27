@@ -2,6 +2,7 @@
  * SeoInput strony → wartości znaczników <head>: pełny tytuł z szablonu, canonical, robots, OG.
  * Jedyne miejsce, w którym powstaje szablon tytułu — strony podają tytuł bez nazwy serwisu.
  */
+import { LOCALE_META, localeOf } from '@/i18n/locales';
 import { ROBOTS_INDEX, ROBOTS_NOINDEX } from './robots';
 import { absoluteUrl, withSlash } from './urls';
 import type { ResolvedSeo, SeoImage, SeoInput } from './types';
@@ -24,6 +25,20 @@ export function resolveSeo(input: SeoInput, { site, pathname, siteName, image }:
   const url = absoluteUrl(withSlash(pathname), site);
   const indexable = input.index !== false;
   const modified = input.dates?.modified ?? input.dates?.published;
+  const locale = localeOf(pathname);
+
+  // hreflang: ta strona i odpowiedniki w indeksie; x-default to wersja polska (źródło prawdy)
+  const pairs = indexable ? (input.translations ?? []).filter((t) => t.indexable) : [];
+  const versions = [{ locale, path: pathname }, ...pairs].map((v) => ({
+    locale: v.locale,
+    href: absoluteUrl(withSlash(v.path), site),
+  }));
+  const alternates = pairs.length
+    ? [
+        ...versions.map((v) => ({ hreflang: LOCALE_META[v.locale].hreflang, href: v.href })),
+        { hreflang: 'x-default', href: versions.find((v) => v.locale === 'pl')?.href ?? url },
+      ]
+    : [];
 
   return {
     title: fullTitle(input, siteName),
@@ -41,5 +56,7 @@ export function resolveSeo(input: SeoInput, { site, pathname, siteName, image }:
     published: input.dates?.published?.toISOString(),
     modified: modified?.toISOString(),
     section: input.section,
+    locale,
+    alternates,
   };
 }

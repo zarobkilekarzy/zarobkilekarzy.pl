@@ -1,0 +1,78 @@
+---
+/**
+ * /en/mechanisms/ — tłumaczenie /mechanizmy/ (src/pages/mechanizmy/index.astro): ten sam układ „Przewodnik”
+ * (pytania ze zdjęciami — te same pliki), teksty z src/data/en/mechanizmy.ts, w działach tylko materiały
+ * z tłumaczeniem (src/data/en/spis.ts). SZKIC (noindex) do akceptacji usera, jak /en/.
+ */
+import IndexLayout from '@/layouts/IndexLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import QuestionBands from '@/components/blocks/QuestionBands.astro';
+import ToolTiles from '@/components/blocks/ToolTiles.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import TranslationNote from '@/components/article/TranslationNote.astro';
+import { hubTiles } from '@/data/en/narzedzia';
+import { labels, mechanizmyPage, mechanismTopics } from '@/data/en/mechanizmy';
+import { translatedOn } from '@/data/en/home';
+import { countEntries, englishEntries, englishGroups, numberWord } from '@/data/en/spis';
+import { site } from '@/data/navigation';
+import { getTopicGroups } from '@/lib/content';
+import { typo } from '@/lib/format';
+import { MECHANISM_TOPICS } from '@/types';
+
+/** Szkic: strona poza indeksem. Po akceptacji — false. */
+const DRAFT = true;
+
+const toEntry = await englishEntries();
+const groups = englishGroups(await getTopicGroups(MECHANISM_TOPICS, mechanismTopics), mechanismTopics, toEntry);
+const tiles = hubTiles.mechanizmy;
+---
+<IndexLayout
+  title={mechanizmyPage.title}
+  docTitle={mechanizmyPage.docTitle}
+  lead={mechanizmyPage.lead}
+  description={mechanizmyPage.description}
+  eyebrow={mechanizmyPage.eyebrow}
+  meta={[
+    { label: labels.meta.items, value: countEntries(groups) },
+    { label: labels.meta.questions, value: groups.length },
+    { label: labels.meta.updated, value: site.updated },
+  ]}
+  jump={{ title: labels.jump(numberWord(groups.length)), items: groups.map((g) => ({ label: g.info.question, href: `#${g.topic}`, count: g.articles.length })) }}
+  articles={groups.flatMap((g) => g.articles)}
+  index={!DRAFT}
+  translations={[{ locale: 'pl', path: '/mechanizmy/', indexable: true }]}
+>
+  <Section space="bottom">
+    <TranslationNote original="/mechanizmy/" translated={translatedOn} />
+    <QuestionBands groups={groups} listLabel={labels.listLabel} />
+  </Section>
+
+  {tiles.length > 0 && (
+    <Section space="bottom" aria-labelledby="tools-title">
+      <SectionHead eyebrow={labels.tools.eyebrow} title={labels.tools.title} id="tools-title" aside={labels.tools.aside} />
+      <ToolTiles items={tiles} />
+    </Section>
+  )}
+
+  <Section tone="soft" aria-labelledby="common-title">
+    <div class="common">
+      <div>
+        <Eyebrow>{labels.commonEyebrow}</Eyebrow>
+        <Heading id="common-title" class="common__title">{typo(mechanizmyPage.common.title)}</Heading>
+      </div>
+      <p class="common__text">{typo(mechanizmyPage.common.text)}</p>
+    </div>
+  </Section>
+</IndexLayout>
+
+<style>
+  .common { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px clamp(40px, 6vw, 96px); align-items: end; }
+  .common__title { margin-top: 18px; max-width: 16ch; }
+  .common__text { font-size: 1.125rem; line-height: 1.7; max-width: 48ch; color: var(--ink-2); }
+
+  @media (max-width: 1024px) {
+    .common { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

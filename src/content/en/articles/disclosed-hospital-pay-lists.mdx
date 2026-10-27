@@ -1,0 +1,200 @@
+---
+title: "Doctors’ pay from disclosed payroll lists"
+seoTitle: "Doctor pay from disclosed payroll lists"
+summary: "In the Watchdog Polska monitoring, 97 facilities sent full annual payroll lists of their doctors — 11,113 payroll entries for 2025. The median is about PLN 180,000 a year, and 13% of the amounts exceed half a million, although each is a payment from only one facility."
+description: "Median about PLN 180,000 a year, 13% of entries above PLN 500,000: the distribution of 11,113 amounts from full doctor payroll lists sent to Watchdog Polska."
+keyPoints:
+  - "Full annual payroll lists of doctors for 2025 were sent by 97 of the 1,358 facilities asked by Watchdog Polska — 11,113 payroll entries in total. About 70% of requests ended in a refusal, silence or a mere acknowledgement of receipt."
+  - "The median of the entries on these lists is about PLN 180,000 a year, or about PLN 15,000 gross a month. 13% of the amounts exceed PLN 500,000, and 172 entries exceed PLN 1 million."
+  - "Each amount is a payment from one facility, and an entry on a list is not always one person. For an individual doctor it is a lower bound; for the profession as a whole it describes selected lists, not a measurement of the market."
+  - "The highest amounts on lists that identify doctors by initials only cannot be compared as records of one person — a row may combine several contracts or different people."
+translation:
+  of: zarobki-ujawnione-listy
+  files: [src/data/zarobki-ujawnione-listy.ts]
+  hash: "83c4268d7bc1"
+  date: 2026-10-26
+noindex: true
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import KeyFacts from '@/components/blocks/KeyFacts.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import {
+  DATA,
+  LIST_CRITERION,
+  LISTS,
+  POSITIONS,
+  PAYROLL_TOTAL,
+  OUTCOMES,
+  REFUSED_OR_SILENT,
+  outcome,
+  DISTRIBUTION,
+  OVER_500K,
+  OVER_1M,
+  OVER_1M_FACILITIES,
+  MAX_OVER_2M_FACILITIES,
+  MEDIAN,
+  FACILITY_MEDIAN,
+  LARGEST,
+  EXAMPLE,
+  below,
+  MONITORING_EN,
+  asOf,
+  statSource,
+  figSource,
+  pln,
+  eur,
+  pct,
+  toThousand,
+  entries,
+  facilities,
+  outcomeRows,
+  outcomeCaption,
+  distRows,
+  distCaption,
+  medianBucketLabel,
+  thresholdTable,
+} from '@/data/en/zarobki-ujawnione-listy';
+import { formatEN } from '@/lib/format';
+
+{/* Tłumaczenie src/content/articles/zarobki-ujawnione-listy.mdx; liczby, wykresy i tabelę liczy src/data/zarobki-ujawnione-listy.ts, teksty — src/data/en/zarobki-ujawnione-listy.ts; frontmatter (summary, keyPoints) trzeba poprawić ręcznie */}
+
+The Citizens Network Watchdog Poland (Sieć Obywatelska Watchdog Polska) sent {formatEN(DATA.requests)} healthcare facilities the same request for public information: how much they paid each of their doctors, gross, for {DATA.year}. The requests and replies are public on the fedrowanie platform, in the monitoring “<span lang="pl">{DATA.source.monitoring}</span>” (“{MONITORING_EN}”).[^watchdog] Some facilities sent back full annual payroll lists, row by row.
+
+Here we combine those lists into a single distribution and describe what follows from it and what cannot be read from it. The figures come from the same file as the [monitoring browser](/dane/monitoring-watchdog/) (in Polish), as of {asOf}. In the browser each facility can be viewed separately, with a link to its case at the source.
+
+<StatRow
+  label="Full payroll lists in the Watchdog Polska monitoring"
+  items={[
+    { value: LISTS, unit: LISTS === 1 ? 'facility' : 'facilities', desc: `with a full annual payroll list of doctors — out of ${formatEN(DATA.requests)} asked`, accuracy: 'exact', source: statSource, href: DATA.source.url },
+    { value: POSITIONS, unit: POSITIONS === 1 ? 'payroll entry' : 'payroll entries', desc: `annual gross amounts for ${DATA.year} on these lists; each is a payment from one facility`, accuracy: 'exact', source: statSource, href: DATA.source.url },
+    { prefix: '~', value: MEDIAN.rounded, unit: 'PLN', desc: `median entry for the year (${eur(MEDIAN.rounded)}), or about PLN ${formatEN(toThousand(MEDIAN.rounded / 12))} a month; an estimate from the distribution`, accuracy: 'est', source: statSource, href: DATA.source.url },
+    { value: (OVER_500K / POSITIONS) * 100, decimals: 1, unit: '%', desc: `of entries exceed PLN 500,000 a year; over one million — ${entries(OVER_1M)}`, accuracy: 'exact', source: statSource, href: DATA.source.url },
+  ]}
+/>
+
+## Who sent lists and who did not
+
+On this page, “facilities with a list” are one fixed group: those that sent an annual gross breakdown by doctor, with at least {LIST_CRITERION.minPositions} entries and a median of at least PLN {formatEN(LIST_CRITERION.minMedian)} — the same criterion as in the [monitoring browser](/dane/monitoring-watchdog/#metoda) (in Polish). According to the state of the monitoring on {asOf}, there are {formatEN(LISTS)} such facilities.[^watchdog] The criterion filters out monthly and partial breakdowns. Another {formatEN(outcome('aggregate'))} facilities sent only aggregate data (numbers of doctors in pay ranges, totals, ranges), and {formatEN(outcome('disclosed'))} sent data that could not be processed: spreadsheets and archives, scans without text, or incomplete lists. We calculate the distribution below from the full lists only.
+
+A refusal, silence or a mere acknowledgement of receipt was the outcome of {pct(REFUSED_OR_SILENT / DATA.requests, 0)}% of requests, that is, in the case of {facilities(REFUSED_OR_SILENT)}. The other categories of reply are shown in the chart.
+
+<Figure
+  title={`Full payroll lists: ${formatEN(LISTS)} of ${formatEN(DATA.requests)} facilities. Refusal, silence or acknowledgement of receipt only: ${pct(REFUSED_OR_SILENT / DATA.requests, 0)}% of requests.`}
+  note="The reply category is assigned automatically by the fedrowanie platform and can be wrong; a facility that sent a full list always counts here as a list."
+  source={figSource}
+>
+  <BarChart
+    rows={outcomeRows}
+    max={Math.ceil(OUTCOMES[0].n / 100) * 100}
+    unit="facilities"
+    caption={outcomeCaption}
+  />
+</Figure>
+
+Most facilities with a list are hospitals, but they also include, among others, health resorts, psychiatric centres, an ambulance service station and remand prisons — which is why we write about facilities rather than hospitals. Together their lists add up to {pln(PAYROLL_TOTAL, { scale: 'billion', decimals: 2 })} gross paid to doctors for {DATA.year} — the sum of the “Payroll fund” column (<span lang="pl">Fundusz płac</span>) in the [browser](/dane/monitoring-watchdog/) (in Polish).
+
+## Distribution of amounts
+
+<Figure
+  title={`${pct(OVER_500K / POSITIONS)}% of entries exceed PLN 500,000 a year — from one facility`}
+  note={`Annual gross amounts for ${DATA.year} from ${formatEN(LISTS)} full lists; the number of entries is given next to each range. An entry is a position on a list, not always one person.`}
+  source={figSource}
+>
+  <BarChart
+    rows={distRows}
+    max={Math.ceil(Math.max(...DISTRIBUTION.map((b) => b.share)) * 20) * 5}
+    unit="%"
+    caption={distCaption}
+  />
+</Figure>
+
+The middle amount in this set — the median of the entries on the full lists in the Watchdog Polska monitoring — is about {pln(MEDIAN.rounded)} a year.[^watchdog] Half of the entries on the lists are lower, half higher. That works out at about {pln(toThousand(MEDIAN.rounded / 12))} gross a month, but this is merely a division by twelve: the list does not show how many months or hours of work lie behind an amount.
+
+This median is an estimate. For each facility, the monitoring file gives the number of entries in ranges, not individual amounts. So we know exactly that the median lies in the range {medianBucketLabel(MEDIAN.bucket.from)}, and we place it within that range on the assumption that the amounts are spread evenly across it. The shares above the thresholds, collected in the table below, are exact, because the thresholds coincide with the range boundaries.
+
+{pct(below(100000).share)}% of entries are less than PLN 100,000 for the whole year. The list alone does not say who is behind them: a doctor employed for a few months, working part-time, taking occasional on-call shifts, or split across several rows. The distribution therefore describes how facilities divide money between the positions on a list, not a typical doctor’s income.
+
+<Aside title="The median from the Watchdog lists, not from AOTMiT data">
+
+There are two different medians on this site. This one comes from payroll lists sent in the Watchdog Polska monitoring: it is the annual payment from one facility for one position on the list, regardless of working time. The medians in [Distribution of doctors’ pay](/en/data/doctor-pay-distribution/) come from data of the Agency for Health Technology Assessment and Tariff System (AOTMiT) and concern monthly pay by form of employment. These are two different measurements, so they should not be mixed, and a figure from one should not be attributed to the other source.
+
+</Aside>
+
+## The higher, the rarer
+
+With each successive threshold the number of entries falls quickly, but they do not disappear. The table shows how many positions on the lists exceed a given threshold of the annual amount from one facility.
+
+<Figure
+  title={`Over one million zloty a year: ${entries(OVER_1M)} in ${formatEN(OVER_1M_FACILITIES)} of ${facilities(LISTS)}`}
+  note="The thresholds are the boundaries of the distribution ranges, so “over PLN 200,000” also includes an amount equal to PLN 200,000."
+  source={figSource}
+>
+  <Comparison table={thresholdTable} />
+</Figure>
+
+## An entry on a list is not always one person
+
+All the figures on this page refer to payroll entries, that is, positions on the lists. In many breakdowns one row is one doctor, but not in all of them:
+
+- **Several tables.** Employment contracts, contracts and sometimes residencies listed separately — each numbered from the start. The same doctor can appear in two tables and be counted twice.
+- **A row per contract.** A doctor with several contracts in the same facility has several entries, each lower than their total pay.
+- **Initials only.** Pairs of initials repeat, and it cannot be determined whether they are different people or one person with several contracts.
+
+That is why we write “{entries(OVER_1M)} above one million zloty” rather than “{formatEN(OVER_1M)} doctors”. Where one person is split across several rows, their total pay from that facility is higher than any of the entries. The layout of each list can be checked in the case at the source: a link to it is given next to each facility in the [monitoring browser](/dane/monitoring-watchdog/) (in Polish).
+
+## Records: handle lists with initials with care
+
+At the very end of the distribution there are single very high amounts: in {facilities(MAX_OVER_2M_FACILITIES)} the highest entry (the “highest” column, <span lang="pl">Najwyższa</span>, in the [browser](/dane/monitoring-watchdog/) (in Polish)) exceeds PLN 2 million. We do not rank such entries or compare them with one another as records of one person.
+
+Lists that identify doctors by initials only must be read with particular care. Since the same initials repeat, a high entry may combine several contracts or several people, and two lower ones may belong to one doctor. On top of that there are reading errors: the amounts were extracted automatically from the correspondence, including by OCR of scans. A single amount is material to check at the source, not a finished result.
+
+Lists in which the facility itself numbered the doctors are more reliable. One of the voivodeship (regional) hospitals sent exactly such a breakdown: each row has a serial number, the word “doctor” and the amount for the year — no names.
+
+<Figure
+  title="A list with numbers instead of names: the amounts are public, the people are not"
+  note={`Over one million zloty: ${entries(EXAMPLE.over1m, 'entr')}. Annual gross amounts for ${DATA.year} — payments from this one hospital.`}
+  source={figSource}
+>
+  <KeyFacts
+    items={[
+      { value: formatEN(EXAMPLE.doctors), label: `${EXAMPLE.doctors === 1 ? 'entry' : 'entries'} on the list` },
+      { value: formatEN(toThousand(EXAMPLE.median)), unit: 'PLN', label: 'median' },
+      { value: formatEN(EXAMPLE.max / 1e6, 2), unit: 'million PLN', label: 'highest entry' },
+      { value: formatEN(EXAMPLE.over500k), label: `${EXAMPLE.over500k === 1 ? 'entry' : 'entries'} above PLN 500,000` },
+    ]}
+  />
+</Figure>
+
+We do not name the hospital: a full list is good practice, not grounds for accusations. Documented records of individual people, each with a source, are collected in [Record payments](/en/data/record-doctor-payments/).
+
+## A lower bound for a doctor, not for the profession
+
+Each amount on a list is a payment from one facility. The same doctor may in the same year work in several places at once, both as an employee and under a contract, and the list does not show those other payments. For a specific person, the amount on the list is therefore a lower bound: their total pay from all workplaces cannot be lower.
+
+This principle does not, however, carry over to the median. The median of {formatEN(LISTS)} lists is not a lower bound for doctors’ earnings in Poland, only a description of selected breakdowns. Forces pulling in opposite directions act on it:
+
+- **The facilities are not selected at random.** The lists come from {formatEN(LISTS)} of the {facilities(DATA.requests)} asked — from those that decided to send them. The five longest lists account for {pct(LARGEST.share, 0)}% of all entries. When each facility is counted once, the [median of facility medians](#method-and-data-status) is about {pln(toThousand(FACILITY_MEDIAN))}, compared with about {pln(MEDIAN.rounded)} for all entries together.
+- **Amounts for part of a year or for part-time work** appear on the lists on an equal footing with full ones and can pull the median down.
+- **Splitting one person across several rows** lowers the amounts per entry.
+
+The distribution therefore shows the order of magnitude and the spread of the amounts, not the average income of a doctor in Poland. How one person’s pay is spread across several facilities is described in our text on [working for multiple employers](/en/mechanisms/multiple-jobs-parallel-contracts/).
+
+## What is missing for the full picture
+
+A list with numbers instead of names shows that an amount can be disclosed without disclosing the person. Such a number, however, works only within one breakdown: “doctor 17” in one hospital and “doctor 203” in another may be the same person, and two lists cannot establish this. Adding up payments requires an identifier shared by all facilities.
+
+That is why we call for the total paid to each person from public money to be public — under a permanent identifier, without names. Instead of lists collected through requests from some facilities, there would then be one total for each person, from all workplaces. Details in [our demand](/en/demand/).
+
+## Method and data status
+
+- **Source.** The monitoring “<span lang="pl">{DATA.source.monitoring}</span>” (“{MONITORING_EN}”)[^watchdog] of the Citizens Network Watchdog Poland: requests for public information on doctors’ pay for {DATA.year} and the facilities’ replies, public on the fedrowanie platform. Data as of {asOf}.
+- **File.** We calculate from the same file as the [monitoring browser](/dane/monitoring-watchdog/) (in Polish); it can also be downloaded as a [JSON file](/dane/monitoring-watchdog/monitoring-watchdog.json). When the file is updated, the figures in the text, charts and table are recalculated automatically.
+- **List criterion.** An annual gross breakdown by doctor, at least {LIST_CRITERION.minPositions} entries, a median of at least PLN {formatEN(LIST_CRITERION.minMedian)}.
+- **Calculations.** The numbers and shares of entries above the thresholds, the total of the lists and the median of facility medians are exact. The median of all entries is an estimate from the distribution: linear interpolation within the range in which half of the entries fall, rounded to PLN 10,000.
+- **Data quality.** The amounts and reply categories were extracted automatically from the correspondence, including by OCR of scans, so they may contain errors. Before you quote a single figure, check it in the case at the source. Who collected and extracted the data — see the [acknowledgements](/dane/monitoring-watchdog/#podziekowania) (in Polish).
+- **Earlier version.** The previous version of this page, from July 2026, calculated the distribution from a smaller number of lists. The current figures replace it.
+
+[^watchdog]: Citizens Network Watchdog Poland (Sieć Obywatelska Watchdog Polska), [monitoring “<span lang="pl">Ile zarabiają lekarze?</span>”](https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabiaja-lekarze) (“How much do doctors earn?”, in Polish) — requests to healthcare facilities and their replies on the fedrowanie platform.

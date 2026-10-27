@@ -7,6 +7,7 @@ import type { HTMLAttributes } from 'astro/types';
 import Icon from '@/components/ui/Icon.astro';
 import type { IconName } from '@/icons';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Action {
   label: string;
@@ -25,6 +26,10 @@ interface Props extends Omit<HTMLAttributes<'div'>, 'title'> {
 }
 
 const { title, text, phone, actions, class: className, ...rest } = Astro.props;
+const T = {
+  pl: { mini: 'Prawa pacjenta', label: 'Weź to ze sobą' },
+  en: { mini: 'Patient rights', label: 'Take it with you' },
+}[localeOf(Astro.url.pathname)];
 ---
 <div class:list={['promo', className]} {...rest}>
   <div class="promo__art" aria-hidden="true">
@@ -35,14 +40,14 @@ const { title, text, phone, actions, class: className, ...rest } = Astro.props;
       <span class="mini__l"></span><span class="mini__l mini__l--s"></span>
     </div>
     <div class="mini mini--front">
-      <span class="mini__title">Prawa pacjenta</span>
+      <span class="mini__title">{T.mini}</span>
       <span class="mini__phone">{phone}</span>
       <span class="mini__l"></span><span class="mini__l"></span><span class="mini__l"></span><span class="mini__l mini__l--s"></span><span class="mini__l"></span><span class="mini__l mini__l--s"></span>
     </div>
   </div>
 
   <div class="promo__copy">
-    <p class="promo__label">Weź to ze sobą</p>
+    <p class="promo__label">{T.label}</p>
     <h2 class="promo__title" id="druk-title">{typo(title)}</h2>
     <p class="promo__text">{typo(text)}</p>
     <ul class="promo__actions">

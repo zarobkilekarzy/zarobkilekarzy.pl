@@ -1,0 +1,31 @@
+---
+/** Tłumaczenie artykułu, np. /en/analysis/doctor-salaries-poland-vs-neighbours/ — z kolekcji articlesEn. */
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
+import { render } from 'astro:content';
+import ArticleLayout from '@/layouts/ArticleLayout.astro';
+import ProseLink from '@/components/article/ProseLink.astro';
+import DebtCounter from '@/components/zadluzenie/DebtCounter.astro';
+import { SECTIONS_EN, getTranslations } from '@/i18n/translations';
+
+export const getStaticPaths = (async () => {
+  const translations = await getTranslations();
+  return translations.map(({ article, source }) => ({
+    params: { section: SECTIONS_EN[source.data.category].path, slug: article.id },
+    props: { article, source },
+  }));
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { article, source } = Astro.props;
+const { Content, headings } = await render(article);
+// Narzędzie obok tytułu jak w wersji polskiej (pages/[section]/[id].astro) — klucz to id polskiego oryginału
+const ASIDES: Record<string, typeof DebtCounter> = {
+  'zadluzenie-szpitali': DebtCounter,
+};
+const Aside = ASIDES[source.id];
+---
+<ArticleLayout article={article} source={source} headings={headings}>
+  {Aside && <Aside slot="aside" />}
+  <Content components={{ a: ProseLink }} />
+</ArticleLayout>

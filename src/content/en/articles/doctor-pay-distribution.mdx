@@ -1,0 +1,226 @@
+---
+title: "Distribution of doctors’ pay in Poland"
+seoTitle: "Doctor pay in Poland: the distribution"
+summary: "AOTMiT medians by form of employment, the statutory minimum for salaried doctors and payments above PLN 100,000 a month. Each of these amounts is a payment from one facility — nobody adds up the total earnings of one person."
+description: "AOTMiT medians by form of employment, the minimum for employees and payments over PLN 100,000. Each is a payment from one facility, not a doctor’s income."
+keyPoints:
+  - "According to AOTMiT data from February 2026, the median monthly payment to a specialist under a single hospital contract is PLN 25,595 gross, and under an employment contract PLN 23,666. Contracts of mandate and contracts for specific work have the lowest medians, about PLN 17,000–18,000."
+  - "The AOTMiT compilation counts contracts, not doctors, so it does not show how many doctors earn over PLN 100,000 a month. After adding up all workplaces it could be 5–10% of doctors — an estimate by the president of AOTMiT, which Rynek Zdrowia converted into 7,000–14,000 people."
+  - "From 1 July 2026 the statutory minimum for a salaried specialist is PLN 12,910.16, or about PLN 77 an hour and about PLN 116–155 per hour of on-call duty. Market ranges for hospital contracts are PLN 180–300 an hour."
+  - "Each of these figures describes a payment from one facility. A doctor working in several places appears in the data as several unconnected entries, and nobody adds up their total earnings."
+translation:
+  of: rozklad-wynagrodzen
+  files: [src/data/rozklad-wynagrodzen.ts, src/data/personel-medyczny.ts, src/data/poz.ts, src/data/zarobki-ujawnione-listy.ts]
+  hash: "1893a53e2e05"
+  date: 2026-10-26
+noindex: true
+---
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import TwoLists from '@/components/blocks/TwoLists.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Photo from '@/components/ui/Photo.astro';
+import Money from '@/components/ui/Money.astro';
+import kartoteka from '@/assets/img/rozklad-kartoteka.jpg';
+import {
+  LINKS,
+  MEDIANS,
+  KONTRAKT_PREMIUM,
+  medianRows,
+  MEDIAN_MAX,
+  medianCaption,
+  ETAT_SPEC,
+  BRACKETS_EN as BRACKETS,
+  SHARES,
+  RESIDENT_AVERAGE,
+  OVER_100K,
+  SUMMED,
+  over100kTable,
+  CRU,
+  MONTH_HOURS,
+  SPECIALIST_FLOOR,
+  NON_SPECIALIST_FLOOR,
+  INTERN_FLOOR,
+  floorTable,
+  B2B,
+  B2B_RATIO,
+  PER_100H,
+  INVOICE_EXAMPLE,
+  FLOOR_FROM,
+  pln,
+} from '@/data/en/rozklad-wynagrodzen';
+import { RATE } from '@/data/poz';
+import {
+  MEDIAN as WATCHDOG_MEDIAN,
+  DATA as WATCHDOG_DATA,
+  LISTS as WATCHDOG_LISTS,
+  POSITIONS as WATCHDOG_POSITIONS,
+  OVER_1M as WATCHDOG_OVER_1M,
+  OVER_1M_FACILITIES as WATCHDOG_OVER_1M_FACILITIES,
+  MONITORING_EN,
+  entries,
+  toThousand,
+} from '@/data/en/zarobki-ujawnione-listy';
+import { formatEN } from '@/lib/format';
+
+{/* Tłumaczenie src/content/articles/rozklad-wynagrodzen.mdx; liczby AOTMiT i minima na etacie liczy src/data/rozklad-wynagrodzen.ts, teksty — src/data/en/rozklad-wynagrodzen.ts; frontmatter (summary, keyPoints) trzeba poprawić ręcznie */}
+
+The fullest picture of how much doctors earn in Polish hospitals comes from a compilation by the Agency for Health Technology Assessment and Tariff System (AOTMiT) of February 2026. The agency collected pay data from 538 hospitals, about 96% of the facilities in the so-called hospital network, and presented them in May at a meeting of the Tripartite Team for Health Care (<span lang="pl">Trójstronny Zespół do spraw Ochrony Zdrowia</span>).[^rp-etat][^pap] It is a working document of the agency; its figures are known from articles in Rzeczpospolita and from the Polish Press Agency (PAP).[^rp-aotmit] We have gathered them here into a single distribution: from the statutory minimum for salaried doctors to payments of over PLN 100,000 a month.
+
+<Figure note="Each card is one payroll entry, not a person: a few very high amounts and a long row of ordinary ones.">
+  <Photo src={kartoteka} alt="A card-index drawer in which a few cards stand clearly higher than the rest" ratio="3/2" sizes="(min-width: 1025px) 950px, calc(100vw - 32px)" />
+</Figure>
+
+<Aside variant="warn" title="None of these amounts is a doctor’s total income">
+
+AOTMiT collects data on individual contracts within one facility, so a doctor working in three hospitals appears in its data as three separate entries.[^wywiad][^rz-milion] For such a person, each figure below describes only part of their earnings. That is why [we call](/en/demand/) for the total paid to each person from public money to be public — under a permanent identifier, without names.
+
+</Aside>
+
+## Medians by form of employment
+
+The median is the middle amount: half of the payments are higher, half lower. AOTMiT gave it separately for doctors with and without a specialisation and for three forms of employment: an employment contract, a contract, and a contract of mandate or for specific work.[^rp-aotmit]
+
+<Figure
+  title={`Specialist under a contract: median PLN ${formatEN(MEDIANS.specKontrakt)}, ${KONTRAKT_PREMIUM}% higher than for an employee`}
+  note="Median monthly gross pay under one contract in one hospital, February 2026. A contract here means an agreement with a doctor who runs a practice as a business (B2B); AOTMiT counts contracts of mandate and for specific work separately."
+  source={{ label: 'AOTMiT (February 2026) via Rzeczpospolita, 27.05.2026', href: LINKS.aotmit }}
+>
+  <BarChart rows={medianRows} max={MEDIAN_MAX} unit="PLN" caption={medianCaption} />
+</Figure>
+
+At the median, the form of employment makes a moderate difference to pay: a specialist under a contract receives about {KONTRAKT_PREMIUM}% more than as an employee. For doctors without a specialisation the order is reversed — the employment contract has the highest median. Contracts of mandate and for specific work come out lowest.
+
+About 73% of specialists (exactly {formatEN(SHARES.civil, 2)}%) are paid under civil-law contracts, and about {SHARES.etat}% are salaried.[^rp-aotmit] Where this predominance comes from and what follows from it is described in [Contract or employment](/en/mechanisms/contract-vs-employment/).
+
+So the medians of contracts are known: AOTMiT collected them from hospitals. Two other things remain unknown — the amounts of individual contracts, because nobody publishes them, and the total paid to one person by many facilities, because nobody calculates it.
+
+### How widely the amounts are spread
+
+The median does not show the spread. From the same compilation we also know that:
+
+- the largest group of specialists’ contracts falls in the range {BRACKETS.kontrakt.label} a month — {formatEN(BRACKETS.kontrakt.share, 1)}% of contracts ({formatEN(BRACKETS.kontrakt.n)}).[^rp-aotmit] The median is more than PLN 10,000 above this range, so contract amounts are widely spread;
+- among salaried specialists the largest group earns {BRACKETS.etat.label}: {formatEN(BRACKETS.etat.n)} {BRACKETS.etat.n === 1 ? 'person' : 'people'}, or {formatEN(BRACKETS.etat.share, 1)}%;[^rp-aotmit]
+- the average pay of a salaried specialist, including on-call duty and seniority allowances, is <Money value={ETAT_SPEC.average} decimals={2} />. The lowest-paid quarter receives on average <Money value={ETAT_SPEC.bottomQuartileAvg} decimals={2} />, and the best-paid quarter — over <Money value={ETAT_SPEC.topQuartileFrom} decimals={2} />.[^rp-etat]
+
+## The floor: the statutory minimum for employees
+
+For salaried doctors, base pay cannot fall below the minimum set by the act of 8 June 2017. From {FLOOR_FROM} it is {pln(SPECIALIST_FLOOR.monthly, { decimals: 2 })} for a specialist, {pln(NON_SPECIALIST_FLOOR.monthly, { decimals: 2 })} for a doctor without a specialisation and {pln(INTERN_FLOOR.monthly, { decimals: 2 })} for an intern.[^siatka] These amounts exclude on-call duty and allowances. The minimums for other medical professions are shown in [Other medical professions](/en/data/other-health-professions-pay/).
+
+The hourly rate at the minimum salary depends on the number of working days in a month. The daily working-time standard in healthcare facilities is 7 hours 35 minutes, so a month with 22 working days has {formatEN(MONTH_HOURS, 1)} hours. On-call duty (<span lang="pl">dyżur medyczny</span>) for employees is paid like overtime: with a 50% supplement on weekdays and 100% at night, on Sundays and public holidays.[^udl][^wds]
+
+<Figure
+  title={`An hour of on-call duty for a salaried specialist: at least about PLN ${formatEN(SPECIALIST_FLOOR.dutyDay)}–${formatEN(SPECIALIST_FLOOR.dutyNight)}`}
+  note={`The monthly minimum divided by ${formatEN(MONTH_HOURS, 1)} hours (22 working days of 7 h 35 min), rounded to the nearest zloty. In a month with fewer working days an hour costs more. Excluding the seniority allowance and other allowances.`}
+  source={{ label: 'minimums under the act of 8.06.2017; method: Wsparcie dla Szpitala; our calculation', href: LINKS.dyzury }}
+>
+  <Comparison table={floorTable} />
+</Figure>
+
+Resident doctors, that is, doctors in specialist training under a residency, earned on average <Money value={RESIDENT_AVERAGE} decimals={2} /> in February 2026.[^rp-etat] This is an average, not a median, which is why we do not put it on the chart next to the medians. The source also does not say whether the amount includes on-call duty. For comparison: the median for all salaried doctors without a specialisation is <Money value={MEDIANS.bezEtat} />.[^rp-aotmit] We list resident doctors’ pay in individual specialties in [By specialty](/en/data/residents-pay-by-specialty/).
+
+### Contracts: a market rate, not a statutory one
+
+Contract rates are neither set by any act nor collected by any register. According to the portal Wsparcie dla Szpitala, hospitals pay specialists under contract PLN {B2B.mid.from}–{B2B.mid.to} an hour in medium-sized towns and in fields without shortages, PLN {B2B.big.from}–{B2B.big.to} in large cities, and up to PLN {B2B.max} in hospital emergency departments (SOR) and intensive care.[^wds] That is from about {formatEN(B2B_RATIO.from, 1)} to {formatEN(B2B_RATIO.to, 1)} times the minimum hourly pay of a salaried specialist.
+
+The comparison is not like for like, however. From the amount on the invoice the doctor pays social contributions themselves and gets neither paid leave nor sick pay from the hospital. These are also market ranges, not measured payments.
+
+## Over PLN 100,000 a month: contracts, not doctors
+
+The threshold of PLN 100,000 gross a month is nearly four times the median contract of a specialist. How many payments exceed it depends on what is counted: individual contracts, people in one facility, or people after adding up all their workplaces.
+
+<Figure
+  title="Over PLN 100,000 a month: the result depends on what is counted"
+  note="The same threshold, four units of counting. The first three rows describe a payment from one facility. The last is an estimate: nobody publishes data linking one person’s payments from several facilities."
+  source={{ label: 'AOTMiT via Rzeczpospolita (27.05.2026) and Rynek Zdrowia (17.06 and 31.08.2026)', href: LINKS.milion }}
+>
+  <Comparison table={over100kTable} />
+</Figure>
+
+The AOTMiT compilation counts contracts. In it, {formatEN(OVER_100K.contracts)} specialists’ contracts were worth over PLN 100,000 gross a month, or {formatEN(OVER_100K.contractsShare, 1)}% of all of them, and {OVER_100K.etat} salaried specialists earned that much ({formatEN(OVER_100K.etatShare, 1)}%).[^rp-aotmit][^pap] The president of the agency said that about {OVER_100K.persons} people exceed this threshold in one facility, just over 1% of doctors; in another statement the figure given was 1.5%.[^wywiad][^rz-milion] A doctor with two contracts of PLN 60,000 each in two hospitals receives PLN 120,000 a month, but in such a compilation does not exceed the threshold even once. The compilation gives no upper limit; the highest known amounts from individual hospitals are collected in [Record payments](/en/data/record-doctor-payments/).
+
+After adding up all workplaces, the number of people above the threshold can only rise, because the sum of several payments is not smaller than any one of them. The president of AOTMiT estimates that if the payments to the same person from different facilities could be combined, 5–10% of doctors might have over PLN 100,000 a month.[^wywiad] Rynek Zdrowia converted this estimate assuming {formatEN(SUMMED.activeDoctors)} professionally active doctors: the result is between {formatEN(SUMMED.persons.from)} and {formatEN(SUMMED.persons.to)} people.[^rz-milion] This is an estimate, not the result of a calculation: no method was presented, and nobody publishes the data with which it could be checked. The only certainty is that for anyone who works in more than one place, the amounts on this page are a lower bound.
+
+### Full payroll lists: entries above one million
+
+The second measurement is the annual payroll lists that facilities send in the monitoring “<span lang="pl">{WATCHDOG_DATA.source.monitoring}</span>” (“{MONITORING_EN}”) of the Citizens Network Watchdog Poland (Sieć Obywatelska Watchdog Polska).[^watchdog] So far, full lists for {WATCHDOG_DATA.year} have come from {formatEN(WATCHDOG_LISTS)} of the {formatEN(WATCHDOG_DATA.requests)} facilities asked. They cover {entries(WATCHDOG_POSITIONS)}, including {formatEN(WATCHDOG_OVER_1M)} above PLN 1 million gross a year, or on average more than <Money value={83000} /> a month from one facility. Such amounts appear on the lists of {formatEN(WATCHDOG_OVER_1M_FACILITIES)} of the {formatEN(WATCHDOG_LISTS)} facilities.
+
+These figures cannot be converted into doctors either. The facilities that sent lists are not a random sample, and a payroll entry is a position on one facility’s list, not always one person. For a doctor who also works elsewhere, the amount from one list is only part of their earnings. The full distribution and the method are described in [Doctors’ pay from disclosed payroll lists](/en/data/disclosed-hospital-pay-lists/).
+
+### Contracts in the Central Register of Contracts
+
+The third source is the Central Register of Contracts of Public Finance Sector Entities (<span lang="pl">Centralny Rejestr Umów</span>). Since 1 July 2026 it has included contracts concluded by, among others, independent public healthcare facilities (SPZOZ); hospitals operating as companies do not belong to the sector.[^ufp] At the end of August the register contained {CRU.over1m} {CRU.over1m === 1 ? 'contract' : 'contracts'} for the provision of healthcare services worth over PLN 1 million, but some of them cover several years: {CRU.threeYearOver3m} three-year contracts were worth over PLN 1 million a year, that is, over PLN 3 million over three years.[^rz-milion] Some of these contracts were concluded by hospitals with individual medical practices, that is, with doctors running their own business. The contracts for the highest amounts, however, were signed with companies, mainly for laboratory tests and reporting on imaging examinations — this is payment to a firm, not the pay of one person.[^rz-milion]
+
+Nor is the amount in a contract a payment. The director of one hospital explained that contracts are signed “with headroom”, with a margin for extra hours, and the doctor receives as much as they work.[^rz-milion] The register therefore shows the value of a single contract, not a payment or a person’s earnings, and, like the other sources, it does not add up the contracts of one doctor. What the register covers and what it does not is described in [Lack of transparency](/en/mechanisms/lack-of-transparency/).
+
+## One person, several unconnected payroll entries
+
+The measurements described above have one feature in common: each shows a payment from one facility. The president of AOTMiT admitted that the agency has no data linking the pay of the same person from different entities.[^wywiad] Nor can it yet convert a contract into a full-time equivalent.[^pap]
+
+The model below shows how this looks from the perspective of one doctor. It is an illustrative example, not a description of a specific person, and each of these arrangements is legal in its own right.
+
+1. **A contract in a hospital.** At a rate of PLN {B2B.mid.from}–{B2B.max} an hour, every 100 hours a month gives PLN {formatEN(PER_100H.from)}–{formatEN(PER_100H.to)}. Wsparcie dla Szpitala describes an anonymous example of an anaesthetist under contract in a voivodeship (regional) hospital: {INVOICE_EXAMPLE.hours} hours a month, including {INVOICE_EXAMPLE.dutyHours} on call, and an invoice for <Money value={INVOICE_EXAMPLE.amount} /> gross.[^wds]
+2. **On-call duty or standby in a second hospital.** The same doctor can be on call elsewhere — as an employee or under another contract. Employees are also paid for standby “on the phone”: each hour of it is paid at half the hourly base rate, without being present in the hospital.[^udl]
+3. **An outpatient clinic or a primary care (POZ) practice.** On top of that there may be visits in a specialist outpatient clinic with a contract with the National Health Fund (NFZ), and for a family doctor with their own practice — the capitation rate: from July 2026, {pln(RATE.rate, { decimals: 2 })} a year for each patient on the list, multiplied by an age-dependent coefficient.[^poz] This is the practice’s revenue, from which it pays for tests, among other things, not the doctor’s pay.
+
+Each of these payments goes to a different facility or to the NFZ. None of them needs to exceed PLN 100,000 for them to exceed that threshold together. And if none of them exceeds it, in the AOTMiT compilation this person is not among the payments above PLN 100,000. How work in several places adds up is described in our text on [working for multiple employers](/en/mechanisms/multiple-jobs-parallel-contracts/), and the per-patient rate in the analysis [Money per patient in primary care](/en/analysis/primary-care-capitation/).
+
+Since 5 August 2026 the minister of health may request from facilities pay data linked to the PESEL number and the licence to practise (PWZ) number — in other words, data that can be summed for one person. The act does not, however, provide for their publication.[^ustawa-972] We describe the details in our analysis [The pay data act](/en/analysis/pay-data-act-vs-public-register/).
+
+## What these figures show and what they do not
+
+<TwoLists
+  yes={{
+    title: 'What they show',
+    note: 'AOTMiT (February 2026), Watchdog payroll lists, register of contracts',
+    items: [
+      'the middle payment under one contract in a hospital — separately for employment, contracts and contracts of mandate',
+      `that at the median a specialist’s contract pays about ${KONTRAKT_PREMIUM}% more than employment`,
+      'how many contracts with one hospital are worth over PLN 100,000 a month',
+      'how many entries above one million zloty a year are on the lists of the facilities that sent them',
+      'the maximum amounts for which public hospitals sign new contracts',
+    ],
+  }}
+  no={{
+    title: 'What they do not show',
+    note: 'none of the measurements covers this',
+    items: [
+      'the total earnings of a doctor who works in several places',
+      'how many doctors exceed PLN 100,000 after adding up all their payments',
+      'how many hours of work lie behind the amount of a contract',
+      'how much doctors earn outside hospitals: in outpatient clinics, in primary care and privately',
+      'whether this is a lot or a little — that is a judgement, not data',
+    ],
+  }}
+/>
+
+<Aside title="The median from the Watchdog lists is a different measurement">
+
+There is also a second median on this site: about {pln(WATCHDOG_MEDIAN.rounded)} a year, or about PLN {formatEN(toThousand(WATCHDOG_MEDIAN.rounded / 12))} a month, from the full payroll lists that facilities sent in the Watchdog Polska monitoring for {WATCHDOG_DATA.year}. It is the annual amount per position on one facility’s list, regardless of how many months and hours lie behind it. The AOTMiT medians are something else — monthly pay by form of employment — so the two should not be compared, and one should not be attributed to the other’s source. More: [Doctors’ pay from disclosed payroll lists](/en/data/disclosed-hospital-pay-lists/).
+
+</Aside>
+
+[^rp-aotmit]: Rzeczpospolita, [“<span lang="pl">625 lekarzy w Polsce zarabia powyżej 100 tys. zł. Dotarliśmy do wyliczeń</span>”](https://www.rp.pl/ochrona-zdrowia/art44466691-625-lekarzy-w-polsce-zarabia-powyzej-100-tys-zl-dotarlismy-do-wyliczen) (“625 doctors in Poland earn over PLN 100,000. We have obtained the calculations”, in Polish), 27.05.2026 — AOTMiT data of February 2026: medians by form of employment, the most common pay ranges, 625 contracts (1.2%) and 49 employment contracts (0.2%) above PLN 100,000, the share of civil-law contracts (73.16%) and employment contracts (25%) among specialists. The data concern individual contracts with a specific hospital.
+
+[^rp-etat]: Rzeczpospolita, [“<span lang="pl">Tak zarabia się na etacie w szpitalu. „Rzeczpospolita” ujawnia zarobki w ochronie zdrowia</span>”](https://www.rp.pl/ochrona-zdrowia/art44409431-tak-zarabia-sie-na-etacie-w-szpitalu-rzeczpospolita-ujawnia-zarobki-w-ochronie-zdrowia) (“This is what a salaried hospital job pays. Rzeczpospolita reveals pay in healthcare”, in Polish), 20.05.2026 — AOTMiT data of February 2026 from 538 hospitals (about 96% of the hospital network): averages and quartiles of pay for employees, average pay of a resident doctor.
+
+[^pap]: Puls Medycyny (PAP), [“<span lang="pl">Ilu lekarzy zarabia ponad 100 tys. miesięcznie? Dane AOTMiT</span>”](https://pulsmedycyny.pl/system-ochrony-zdrowia/finanse/ilu-lekarzy-zarabia-ponad-100-tys-miesiecznie-dane-aotmit/) (“How many doctors earn over 100,000 a month? AOTMiT data”, in Polish) — AOTMiT working document of February 2026 presented at the May meeting of the Tripartite Team for Health Care: 1.2% of specialists’ contracts, i.e. 625, above PLN 100,000 a month; the agency cannot yet convert contracts into full-time equivalents.
+
+[^wywiad]: Rynek Zdrowia, [interview with the president of AOTMiT](https://www.rynekzdrowia.pl/Polityka-zdrowotna/Szef-rzadowej-agencji-po-aferze-Kacprzyka-wynaturzenia-musimy-sie-zabezpieczyc,285516,14.html) (in Polish), 17.06.2026 — just over 1%, i.e. about 560 people, earn over PLN 100,000 a month in one facility; after adding up payments from many facilities it could be 5–10% (the president’s estimate); the agency has no data linking one person across entities. The president had given the same estimate earlier to Rzeczpospolita (27.05.2026).
+
+[^rz-milion]: Rynek Zdrowia, [“<span lang="pl">Kontrakty roczne na milion złotych dla lekarza. Sprawdziliśmy centralny rejestr</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Kontrakty-roczne-na-milion-zlotych-dla-lekarza-Sprawdzilismy-centralny-rejestr,288374,1.html) (“Annual contracts worth a million zloty for a doctor. We checked the central register”, in Polish), 31.08.2026 — AOTMiT had data on individual contracts, not on doctors’ earnings; the president of AOTMiT: 1.5% of doctors exceed PLN 100,000 in one workplace, and after adding up payments from many facilities it could be 5–10%, which, assuming 140,000 professionally active doctors, gives 7,000–14,000 people; Central Register of Contracts at the end of August 2026: 54 contracts for the provision of healthcare services above PLN 1 million, including 10 three-year contracts above PLN 3 million, some with individual medical practices, the highest with companies (mainly diagnostics); citing Wyborcza.biz, a hospital director’s statement that the amounts in contracts are maximums, not actual pay.
+
+[^ufp]: [Act of 4 December 2025 amending the act amending the Criminal Code and certain other acts, and amending certain other acts](https://api.sejm.gov.pl/eli/acts/DU/2025/1844/text.pdf) (in Polish; Dz.U. 2025 item 1844) — Articles 34a and 34b of the Public Finance Act (Central Register of Contracts of Public Finance Sector Entities), applied to contracts concluded from 1.07.2026. Independent public healthcare facilities (SPZOZ) in the public finance sector: [Public Finance Act](https://api.sejm.gov.pl/eli/acts/DU/2025/1483/text.pdf) (in Polish; consolidated text Dz.U. 2025 item 1483), Article 9(10).
+
+[^watchdog]: Citizens Network Watchdog Poland (Sieć Obywatelska Watchdog Polska), [monitoring “<span lang="pl">Ile zarabiają lekarze?</span>”](https://fedrowanie.siecobywatelska.pl/monitoringi/ile-zarabiaja-lekarze) (“How much do doctors earn?”, in Polish) — requests to healthcare facilities and their replies on the fedrowanie platform; the compilation of full payroll lists and the criterion for selecting them: [Doctors’ pay from disclosed payroll lists](/en/data/disclosed-hospital-pay-lists/).
+
+[^siatka]: Rynek Zdrowia, [“<span lang="pl">Od dziś 12 910 zł dla lekarzy, 11 485 zł dla pielęgniarek — 1 lipca podwyżki medyków</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Od-dzis-12-910-zl-zl-dla-lekarzy-11-485-zl-dla-pielegniarek-1-lipca-podwyzki-medykow,286085,1.html) (“From today PLN 12,910 for doctors, PLN 11,485 for nurses — pay rises for medical staff on 1 July”, in Polish) — minimum base pay from 1.07.2026 under the act of 8 June 2017: the group coefficient times the base amount.
+
+[^wds]: Wsparcie dla Szpitala, [“<span lang="pl">Ile zarabia lekarz w szpitalu 2026? Od 10 595 zł brutto</span>”](https://wsparciedlaszpitala.pl/personel-medyczny/dyzur-lekarski-szpital-stawki-opt-out-czas-pracy/) (“How much does a hospital doctor earn in 2026? From PLN 10,595 gross”, in Polish), as of September 2026 — the hourly rate of a specialist at the minimum (PLN 12,910.16 ÷ 166.8 h ≈ PLN 77.4), on-call duty paid like overtime (Article 95(5) of the Act on medical activity in conjunction with Article 151¹ of the Labour Code), ranges of contract rates in hospitals and an anonymous example of an invoice for 220 hours.
+
+[^udl]: The Act on medical activity on the LexLege website (in Polish): [Article 93](https://lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-93/) (a standard of 7 h 35 min a day and on average 37 h 55 min a week), [Article 95](https://lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-95/) (on-call duty; paragraph 5 refers to Article 151¹ of the Labour Code on overtime) and [Article 98](https://lexlege.pl/ustawa-o-dzialalnosci-leczniczej/art-98/) (pay for standby to provide services).
+
+[^poz]: NFZ, [Order No. 65/2026/DSOZ of the President of the NFZ of 14 July 2026](https://baw.nfz.gov.pl/NFZ/document/43917/Zarzadzenie-65_2026_DSOZ) (in Polish), annex 1 — the capitation rate of a primary care (POZ) doctor for services from 1 July 2026.
+
+[^ustawa-972]: [Act of 19 June 2026 amending the Act on publicly funded healthcare services and the Act on medical activity](https://api.sejm.gov.pl/eli/acts/DU/2026/972/text.pdf) (in Polish; Dz.U. 2026 item 972), in force from 5.08.2026 — new wording of Article 27a of the Act on medical activity.

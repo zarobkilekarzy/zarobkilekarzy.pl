@@ -3,6 +3,7 @@
 import type { HTMLAttributes } from 'astro/types';
 import { inline, sentence, type Resolve } from '@/lib/inline';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props extends HTMLAttributes<'section'> {
   title: string;
@@ -11,6 +12,7 @@ interface Props extends HTMLAttributes<'section'> {
 }
 
 const { title, steps, resolve, class: className, ...rest } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
 ---
 <section class:list={['steps', className]} aria-labelledby="steps-title" {...rest}>
   <h3 class="steps__title" id="steps-title">{typo(title)}</h3>
@@ -18,7 +20,7 @@ const { title, steps, resolve, class: className, ...rest } = Astro.props;
     {steps.map((step, i) => (
       <li>
         <span class="steps__n" aria-hidden="true">{i + 1}</span>
-        <p><strong>{typo(sentence(step.title))}</strong> <span set:html={inline(step.text, resolve)} /></p>
+        <p><strong>{typo(sentence(step.title))}</strong> <span set:html={inline(step.text, resolve, undefined, locale)} /></p>
       </li>
     ))}
   </ol>

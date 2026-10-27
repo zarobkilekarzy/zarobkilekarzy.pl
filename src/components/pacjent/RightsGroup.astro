@@ -5,6 +5,7 @@ import RightItem from './RightItem.astro';
 import type { RightsGroup } from '@/lib/pacjent/types';
 import { inline, type Resolve } from '@/lib/inline';
 import { plural } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   group: RightsGroup;
@@ -13,10 +14,17 @@ interface Props {
 }
 
 const { group, act, resolve } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const n = group.items.length;
+// podpis pod wstępem: liczba pytań i jak czytać listę
+const count = {
+  pl: () => `${n} ${plural(n, ['pytanie', 'pytania', 'pytań'])} · odpowiedź od razu, szczegóły po rozwinięciu`,
+  en: () => `${n} ${n === 1 ? 'question' : 'questions'} · the answer straight away, details when expanded`,
+}[locale]();
 ---
 <div class="rights">
   <Intro class="rights__intro" eyebrow={group.eyebrow} title={group.title} id={`${group.id}-title`} lead={group.lead}>
-    <p class="rights__count">{group.items.length} {plural(group.items.length, ['pytanie', 'pytania', 'pytań'])} · odpowiedź od razu, szczegóły po rozwinięciu</p>
+    <p class="rights__count">{count}</p>
   </Intro>
   <div class="rights__list">
     {group.items.map((item) => <RightItem item={item} act={act} resolve={resolve} />)}
@@ -25,7 +33,7 @@ const { group, act, resolve } = Astro.props;
         <h3 class="rights__also-title" id={`${group.id}-also`}>{group.also.title}</h3>
         <ul>
           {group.also.items.map((a) => (
-            <li><span set:html={inline(a.text, resolve)} /> <span class="rights__also-basis">{a.basis}</span></li>
+            <li><span set:html={inline(a.text, resolve, undefined, locale)} /> <span class="rights__also-basis">{a.basis}</span></li>
           ))}
         </ul>
       </section>

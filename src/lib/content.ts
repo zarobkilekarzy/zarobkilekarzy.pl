@@ -8,6 +8,9 @@ import type { Category, Term, TopicId } from '@/types';
 
 export type Article = CollectionEntry<'articles'>;
 
+/** Tekst z treścią i stanowiskiem redakcji — artykuł albo jego tłumaczenie (src/i18n/translations.ts). */
+type Text = Pick<Article, 'body'> & { data: { editorial?: string[] } };
+
 /** Segment adresu dla każdej kategorii: Mechanizm → /mechanizmy/… */
 const SECTIONS: Record<Category, { path: string; label: string }> = {
   Mechanizm: { path: 'mechanizmy', label: 'Mechanizmy' },
@@ -124,7 +127,7 @@ function stripExpressions(source: string): string {
 const FOOTNOTE_DEF = /^\[\^[^\]]+\]:.*$/gm;
 
 /** Przypisy artykułu (`[^id]: …`): liczba i adresy, na które się powołują — do nagłówka i JSON-LD. */
-export function getFootnotes(article: Article): { count: number; urls: string[] } {
+export function getFootnotes(article: Text): { count: number; urls: string[] } {
   const defs = article.body?.match(FOOTNOTE_DEF) ?? [];
   const urls = defs.flatMap((d) => [...d.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)].map((m) => m[1]));
   return { count: defs.length, urls: [...new Set(urls)] };
@@ -136,7 +139,7 @@ export function getFootnotes(article: Article): { count: number; urls: string[] 
  * z linków zostaje ich tekst, a adresy znikają. Przypisy (opisy źródeł) się nie liczą.
  * Do liczenia słów i do wyszukiwarki.
  */
-export function plainText(article: Article): string {
+export function plainText(article: Text): string {
   const body = stripExpressions(article.body ?? '')
     .replace(FOOTNOTE_DEF, ' ')
     .replace(/\[\^[^\]]+\]/g, '')
@@ -148,13 +151,13 @@ export function plainText(article: Article): string {
 }
 
 /** Szacowany czas czytania w minutach (≈200 słów/min). */
-export function readingMinutes(article: Article): number {
+export function readingMinutes(article: Text): number {
   const words = plainText(article).match(/\p{L}+/gu)?.length ?? 0;
   return Math.max(1, Math.round(words / 200));
 }
 
 /** Sekcje artykułu: nagłówki ## z kotwicami, te same, które pokazuje spis treści. */
-export async function getSections(article: Article): Promise<MarkdownHeading[]> {
+export async function getSections(article: Article | CollectionEntry<'articlesEn'>): Promise<MarkdownHeading[]> {
   const { headings } = await render(article);
   return headings.filter((h) => h.depth === 2);
 }

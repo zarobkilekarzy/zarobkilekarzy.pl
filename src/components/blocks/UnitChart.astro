@@ -10,7 +10,9 @@ import Flag from '@/components/ui/Flag.astro';
 import Icon from '@/components/ui/Icon.astro';
 import type { Cell } from '@/lib/siatka';
 import type { Accuracy } from '@/types';
-import { formatPL, typo } from '@/lib/format';
+import { formatNumber, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
 import { linkAttrs } from '@/lib/links';
 
 interface Group {
@@ -36,20 +38,23 @@ interface Props {
 }
 
 const { groups, unit, unitLabel, cols = 29, exact = false, title, source, href, accuracy = 'exact' } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const t = uiOf(Astro.url).blocks;
+const fmt = (n: number) => formatNumber(n, 0, locale);
 const cells = groups.flatMap((g) => Array.from({ length: Math.round(g.value / unit) }, () => g.kind));
 ---
 <figure class="unit">
   {title && <figcaption class="unit__title">{typo(title)}</figcaption>}
-  <DotGrid cells={cells} cols={cols} label={groups.map((g) => `${formatPL(g.value)} — ${g.label}`).join('; ')} />
+  <DotGrid cells={cells} cols={cols} label={groups.map((g) => `${fmt(g.value)} — ${g.label}`).join('; ')} />
   <ul class="unit__legend">
     {groups.map((g) => (
       <li>
         <DotGrid mask={[{ on: '#', mid: 'o', off: '.' }[g.kind]]} class="unit__key" />
-        <b>{formatPL(g.value)}</b> {typo(g.label)}
+        <b>{fmt(g.value)}</b> {typo(g.label)}
       </li>
     ))}
   </ul>
-  <p class="unit__note">1 {unit === 1 ? 'pole' : 'kropka'} {exact ? '=' : '≈'} {formatPL(unit)} {unitLabel}</p>
+  <p class="unit__note">1 {unit === 1 ? t.unitCell : t.unitDot} {exact ? '=' : '≈'} {fmt(unit)} {unitLabel}</p>
   <p class="unit__src">
     <Flag accuracy={accuracy} />
     {href ? <a {...linkAttrs(href)}>{typo(source)}<Icon name="arrow-ne" size={10} /></a> : typo(source)}

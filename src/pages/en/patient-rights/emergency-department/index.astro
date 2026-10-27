@@ -1,0 +1,123 @@
+---
+/**
+ * /en/patient-rights/emergency-department/ — tłumaczenie /prawa-pacjenta/sor/ (src/pages/prawa-pacjenta/sor/index.astro):
+ * ten sam układ, teksty z src/data/en/kolejki-sor.ts. Mapa: zestaw `sor-en` (lib/sor/map) — te same punkty i dane
+ * na żywo co w PL, napisy po angielsku (także te liczone w przeglądarce, przez dane mapy). Para i stempel
+ * w src/i18n/pages.json; nota o tłumaczeniu nad treścią (article/PageTranslationNote).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import SourceList from '@/components/article/SourceList.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import PolandMap from '@/components/mapa/PolandMap.astro';
+import { editorial, gaps, labels, page, sorLiveText, sources, steps } from '@/data/en/kolejki-sor';
+import { pagePairOf } from '@/i18n/pages';
+import { normText, STAGES } from '@/lib/sor/measure';
+import { formatDateIn, isoDate, typo } from '@/lib/format';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: labels.crumb, href: '/en/patient-rights/' }, { label: page.title }];
+const seo: SeoInput = {
+  title: page.seoTitle,
+  description: page.description,
+  index: !pagePairOf(Astro.url.pathname)?.draft,
+  breadcrumbs: crumbs,
+  dates: { modified: page.checked },
+};
+// kategorie z normą: kolor i nazwa etapu po angielsku (lib/sor/text), norma z rozporządzenia (lib/sor/measure)
+const norms = STAGES.map((s, i) => ({ norm: s.norm, ...sorLiveText.stages[i] })).filter((s) => s.norm != null);
+const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1);
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="sor-top">
+    <PageHeader title={page.title} lead={page.lead} eyebrow={labels.eyebrow} crumbs={crumbs}>
+      <div class="sor-112">
+        <a class="sor-112__num" href="tel:112">112</a>
+        <p><strong>{typo(page.emergency.title)}</strong> <span>{typo(page.emergency.text)}</span></p>
+      </div>
+    </PageHeader>
+  </Section>
+
+  <Section aria-labelledby={labels.map.id} space="bottom">
+    <PageTranslationNote />
+    <PolandMap set="sor-en" heading={labels.map} />
+  </Section>
+
+  <Section tone="soft" aria-labelledby={labels.how.id}>
+    <SectionHead eyebrow={labels.how.eyebrow} title={labels.how.title} id={labels.how.id} />
+    <ol class="sor-steps">
+      {steps.map((s) => (
+        <li>
+          <h3>{typo(s.title)}</h3>
+          <p>{typo(s.text)}</p>
+          {s.norms && (
+            <table class="sor-norms">
+              <caption class="sr-only">{labels.normsCaption}</caption>
+              <tbody>
+                {norms.map((n) => <tr><th scope="row">{capitalize(n.color!)}</th><td class="sor-norms__api">{labels.priority(n.label)}</td><td>{normText(n.norm!, sorLiveText)}</td></tr>)}
+              </tbody>
+            </table>
+          )}
+          {s.link && <p><a class="sor-link" href={s.link.href}>{s.link.label} →</a></p>}
+          {s.basis && <p class="sor-basis">{s.basis}</p>}
+        </li>
+      ))}
+    </ol>
+  </Section>
+
+  <Section aria-labelledby={labels.limits.id}>
+    <SectionHead eyebrow={labels.limits.eyebrow} title={labels.limits.title} id={labels.limits.id} />
+    <div class="sor-gaps">
+      {gaps.map((g) => (
+        <div>
+          <h3>{typo(g.title)}</h3>
+          <p>{typo(g.text)}</p>
+          {g.basis && <p class="sor-basis">{g.basis}</p>}
+        </div>
+      ))}
+    </div>
+    <Aside variant="editorial" title={editorial.title} class="sor-editorial">
+      <p>{typo(editorial.text)}</p>
+    </Aside>
+    <p class="sor-checked">{labels.checked} <time datetime={isoDate(page.checked)}>{formatDateIn(page.checked, 'en')}</time>.</p>
+    <SourceList sources={sources} />
+  </Section>
+</BaseLayout>
+
+<style>
+  /* jak w src/pages/prawa-pacjenta/sor/index.astro */
+  .sor-112 { display: flex; align-items: center; gap: clamp(16px, 2.5vw, 24px); max-width: 40em; margin-top: 32px; padding: clamp(16px, 2.5vw, 22px) clamp(16px, 2.5vw, 26px); border-left: 4px solid var(--bad); background: var(--bad-bg); }
+  .sor-112__num { flex: none; display: grid; place-items: center; min-width: 4.75rem; height: 3.75rem; padding: 0 12px; background: var(--bad); color: var(--on-ink); font: 600 1.875rem/1 var(--f-display); letter-spacing: -0.02em; text-decoration: none; transition: background .2s; }
+  .sor-112__num:hover { background: light-dark(#8f1c13, #FFB3AA); }
+  .sor-112__num:focus-visible { outline: 2px solid var(--bad); outline-offset: 3px; }
+  .sor-112 p { display: grid; gap: 2px; }
+  .sor-112 strong { font: 600 clamp(1.25rem, 2.2vw, 1.5rem)/1.2 var(--f-display); letter-spacing: -0.015em; color: var(--bad); }
+  .sor-112 span { font-size: 1rem; line-height: 1.4; color: var(--text-strong); }
+
+  .sor-steps { display: grid; gap: 32px; max-width: 46em; counter-reset: krok; }
+  .sor-steps li { position: relative; padding-left: 52px; counter-increment: krok; }
+  .sor-steps li::before { content: counter(krok, decimal-leading-zero); position: absolute; left: 0; top: 4px; font: 500 0.8125rem/1 var(--f-mono); color: var(--blue); }
+  .sor-steps h3, .sor-gaps h3 { margin-bottom: 6px; font: 600 1.125rem/1.35 var(--f-display); color: var(--ink); }
+  .sor-steps p, .sor-gaps p { color: var(--text); }
+  .sor-link { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+  .sor-basis { margin-top: 6px; font: 400 0.75rem/1.45 var(--f-mono); color: var(--muted) !important; }
+
+  .sor-norms { width: 100%; max-width: 30em; margin-top: 12px; border-collapse: collapse; font-size: 0.9375rem; }
+  .sor-norms th, .sor-norms td { padding: 6px 0; border-top: 1px solid var(--line); text-align: left; font-weight: 400; color: var(--text-strong); }
+  .sor-norms td:last-child { text-align: right; font-family: var(--f-mono); color: var(--ink); }
+  .sor-norms__api { color: var(--muted) !important; font-size: 0.875rem; }
+
+  .sor-gaps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px clamp(32px, 4vw, 56px); }
+  .sor-gaps > div { padding-top: 16px; border-top: 2px solid var(--line-2); }
+  .sor-gaps p { font-size: 1rem; }
+  .sor-editorial { margin-top: 48px; max-width: 46em; }
+  .sor-checked { margin: 32px 0 12px; font-size: 0.875rem; color: var(--muted); }
+
+  @media (max-width: 860px) {
+    .sor-gaps { grid-template-columns: 1fr; }
+    .sor-steps li { padding-left: 40px; }
+  }
+</style>

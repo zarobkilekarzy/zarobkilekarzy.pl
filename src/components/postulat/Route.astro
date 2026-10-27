@@ -2,6 +2,8 @@
 /**
  * /postulat/ — droga do ustawy: co zrobiło państwo, oś etapów projektu i dwie formy postulatu
  * (projekt ustawy — bieżąca, petycja — archiwum). Etapy i wersja: src/data/projekt-ustawy.ts.
+ * Dwujęzyczny: na /en/demand/ teksty i etapy z src/data/en/postulat.ts; projekt, petycja i strony
+ * /ustawy/, /dzialaj/ są tylko po polsku — linki z „(in Polish)”. Wyjście polskie bez zmian.
  */
 import Section from '@/components/layout/Section.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
@@ -9,46 +11,97 @@ import Button from '@/components/ui/Button.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import Tag from '@/components/ui/Tag.astro';
 import StatusTrack from '@/components/blocks/StatusTrack.astro';
-import { route } from '@/data/postulat';
-import { projekt, stages } from '@/data/projekt-ustawy';
+import { route as routePl } from '@/data/postulat';
+import { projekt as projektPl, stages as stagesPl } from '@/data/projekt-ustawy';
+import { projekt as projektEn, route as routeEn, sectionIds, stages as stagesEn } from '@/data/en/postulat';
 import { petycja } from '@/data/petycja';
-import { formatDate, isoDate, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+import { formatDateIn, isoDate, typo } from '@/lib/format';
 import { projektPdfPages } from '@/lib/projekt/download';
 
 // liczba stron z pliku składanego przy buildzie
 const pdfPages = await projektPdfPages();
+
+const locale = localeOf(Astro.url.pathname);
+const isEn = locale === 'en';
+const route = isEn ? routeEn : routePl;
+const projekt = isEn ? projektEn : projektPl;
+const stages = isEn ? stagesEn : stagesPl;
+const date = (d: Date) => formatDateIn(d, locale);
+const T = {
+  pl: {
+    id: 'droga',
+    eyebrow: 'Jak to wprowadzić',
+    title: 'Droga do ustawy',
+    laws: 'Ustawy opisane na stronie',
+    track: 'Etapy projektu ustawy',
+    help: 'Jak możesz pomóc',
+    current: 'Bieżąca forma',
+    version: 'wersja ',
+    billTitle: 'Projekt ustawy',
+    billText: `${projekt.kind}: nowelizacja ${projekt.scope}. Tekst, uzasadnienie i pytania do weryfikacji prawnej.`,
+    read: 'Przeczytaj projekt',
+    pdf: `PDF (${pdfPages})`,
+    archive: 'Archiwum',
+    since: 'od ',
+    petitionTitle: 'Petycja',
+    petitionText: `Do Ministra Zdrowia i Senatu: jawny rejestr imienny, po numerze PWZ. Wcześniejsza wersja postulatu.`,
+    petitionLink: 'Treść i stan petycji',
+    hreflang: undefined,
+  },
+  en: {
+    id: sectionIds.droga,
+    eyebrow: 'How to put it into practice',
+    title: 'The route to legislation',
+    laws: 'Acts described on this site (in Polish)',
+    track: 'Stages of the draft act',
+    help: 'How you can help (in Polish)',
+    current: 'Current form',
+    version: 'version ',
+    billTitle: 'Draft act',
+    billText: `${projekt.kind}: amendment of ${projekt.scope}. Text, explanatory memorandum and questions for legal review.`,
+    read: 'Read the draft (in Polish)',
+    pdf: `PDF in Polish (${pdfPages} pages)`,
+    archive: 'Archive',
+    since: 'since ',
+    petitionTitle: 'Petition',
+    petitionText: 'To the Minister of Health and the Senate: a public register by name, by PWZ number. An earlier version of our demand.',
+    petitionLink: 'Text and status of the petition (in Polish)',
+    hreflang: 'pl',
+  },
+}[locale];
 ---
-<Section id="droga" tone="soft" aria-labelledby="droga-title">
-  <SectionHead eyebrow="Jak to wprowadzić" title="Droga do ustawy" id="droga-title" />
+<Section id={T.id} tone="soft" aria-labelledby={`${T.id}-title`}>
+  <SectionHead eyebrow={T.eyebrow} title={T.title} id={`${T.id}-title`} />
 
   <div class="route__context">
     <h3>{typo(route.title)}</h3>
     <div>
       <p>{typo(route.text)}</p>
-      <p class="route__laws"><LinkArrow href="/ustawy/">Ustawy opisane na stronie</LinkArrow></p>
+      <p class="route__laws"><LinkArrow href="/ustawy/" hreflang={T.hreflang}>{T.laws}</LinkArrow></p>
     </div>
   </div>
 
-  <StatusTrack stages={stages} label="Etapy projektu ustawy" class="route__track" />
-  <p class="route__help"><LinkArrow href="/dzialaj/">Jak możesz pomóc</LinkArrow></p>
+  <StatusTrack stages={stages} label={T.track} class="route__track" />
+  <p class="route__help"><LinkArrow href="/dzialaj/" hreflang={T.hreflang}>{T.help}</LinkArrow></p>
 
   <div class="route__docs">
     <article class="doc doc--current">
-      <p class="doc__kicker"><Tag tone="blue">Bieżąca forma</Tag><span>wersja {projekt.version} · <time datetime={isoDate(projekt.date)}>{formatDate(projekt.date)}</time></span></p>
-      <h3 class="doc__title">Projekt ustawy</h3>
-      <p class="doc__text">{typo(`${projekt.kind}: nowelizacja ${projekt.scope}. Tekst, uzasadnienie i pytania do weryfikacji prawnej.`)}</p>
+      <p class="doc__kicker"><Tag tone="blue">{T.current}</Tag><span>{T.version}{projekt.version}{' · '}<time datetime={isoDate(projekt.date)}>{date(projekt.date)}</time></span></p>
+      <h3 class="doc__title">{T.billTitle}</h3>
+      <p class="doc__text">{typo(T.billText)}</p>
       <div class="doc__actions">
-        <Button href={projekt.href} icon="doc">Przeczytaj projekt</Button>
-        <LinkArrow href={projekt.pdf.href}>PDF ({pdfPages})</LinkArrow>
+        <Button href={projekt.href} icon="doc" hreflang={T.hreflang}>{T.read}</Button>
+        <LinkArrow href={projekt.pdf.href} hreflang={T.hreflang}>{T.pdf}</LinkArrow>
       </div>
     </article>
 
     <article class="doc doc--archive">
-      <p class="doc__kicker"><Tag>Archiwum</Tag><span>od <time datetime={isoDate(petycja.launched)}>{formatDate(petycja.launched)}</time></span></p>
-      <h3 class="doc__title">Petycja</h3>
-      <p class="doc__text">{typo(`Do Ministra Zdrowia i Senatu: jawny rejestr imienny, po numerze PWZ. Wcześniejsza wersja postulatu.`)}</p>
+      <p class="doc__kicker"><Tag>{T.archive}</Tag><span>{T.since}<time datetime={isoDate(petycja.launched)}>{date(petycja.launched)}</time></span></p>
+      <h3 class="doc__title">{T.petitionTitle}</h3>
+      <p class="doc__text">{typo(T.petitionText)}</p>
       <div class="doc__actions">
-        <LinkArrow href={petycja.href}>Treść i stan petycji</LinkArrow>
+        <LinkArrow href={petycja.href} hreflang={T.hreflang}>{T.petitionLink}</LinkArrow>
       </div>
     </article>
   </div>

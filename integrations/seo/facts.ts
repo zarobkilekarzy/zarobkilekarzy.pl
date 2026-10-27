@@ -18,6 +18,8 @@ export interface PageFacts {
   titles: string[];
   description?: string;
   canonical?: string;
+  /** <link rel="alternate" hreflang> — wersje językowe strony */
+  alternates: { hreflang: string; href: string }[];
   robots?: string;
   /** meta refresh — przekierowanie zapisane przez Astro jako HTML */
   refresh?: string;
@@ -54,7 +56,7 @@ const insideTemplate = (node: Node) => {
 };
 
 export function factsFromHtml(html: string, path: string): PageFacts {
-  const facts: PageFacts = { path, titles: [], h1: 0, jsonLd: [], links: [], ids: [], images: [] };
+  const facts: PageFacts = { path, titles: [], alternates: [], h1: 0, jsonLd: [], links: [], ids: [], images: [] };
 
   walkSync(parse(html), (node) => {
     if (node.type !== ELEMENT_NODE) return;
@@ -79,6 +81,7 @@ export function factsFromHtml(html: string, path: string): PageFacts {
       }
       case 'link':
         if (a.rel === 'canonical') facts.canonical = a.href && decode(a.href);
+        else if (a.rel === 'alternate' && a.hreflang && a.href) facts.alternates.push({ hreflang: a.hreflang, href: decode(a.href) });
         break;
       case 'script':
         if (a.type === 'application/ld+json') {

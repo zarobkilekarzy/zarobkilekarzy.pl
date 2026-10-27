@@ -6,6 +6,8 @@
  * nr 88, kwoty w tys. zł). Wersję po zmianach (MZ, 18.09.2026: dotacja 33,6 mld zł, koszty 223,43 mld zł
  * według stanu na 11.09.2026) podaje tekst artykułu. Gdy w BIP NFZ pojawi się nowsza wersja, podmień
  * kwoty tutaj i daty w tekście.
+ *
+ * Liczby (STOPS, PLAN_2026_*) czyta też wersja angielska — src/data/en/sladem-zlotowki.ts.
  */
 import { formatPL } from '@/lib/format';
 import type { CompareTable } from '@/types';
@@ -77,7 +79,7 @@ export const STOPS: Stop[] = [
 export const PLAN_2026_TOTAL = 217_388_948;
 
 /** Pozycje wymienione z kwotą w wystąpieniu NFZ, tys. zł. */
-const PLAN_2026_ITEMS = [
+export const PLAN_2026_ITEMS = [
   { label: 'Składka zdrowotna (należna brutto)', value: 184_347_480 },
   { label: 'Dotacja podmiotowa z budżetu państwa', value: 26_000_000 },
   { label: 'Fundusz Medyczny i Fundusz Solidarnościowy', value: 2_628_225 },
@@ -90,7 +92,7 @@ const PLAN_2026_ITEMS = [
  * do sumy: ok. 2,32 mld zł. W wystąpieniu NFZ to „0,86% przychodów”, czyli ok. 1,87 mld zł — zapis nie
  * domyka się o ok. 0,45 mld zł (pomyłka w stenogramie albo pozycja bez nazwy).
  */
-const PLAN_2026_REST = PLAN_2026_TOTAL - PLAN_2026_ITEMS.reduce((sum, item) => sum + item.value, 0);
+export const PLAN_2026_REST = PLAN_2026_TOTAL - PLAN_2026_ITEMS.reduce((sum, item) => sum + item.value, 0);
 
 export const PLAN_2026 = {
   contribution: PLAN_2026_ITEMS[0].value,

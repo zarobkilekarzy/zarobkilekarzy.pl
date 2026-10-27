@@ -1,0 +1,328 @@
+---
+title: "Private visits: the longer the waiting list, the higher the price"
+seoTitle: "Private visits: prices rise with queues"
+summary: "A private visit to a specialist costs on average PLN 231.52, 2.6 times more than in 2015. There is more and more public money and the waiting list is not getting shorter — so those who can afford it pay to skip it."
+description: "A private specialist visit costs on average PLN 231.52, 2.6 times more than in 2015. How the NFZ budget, waiting lists and private prices depend on each other."
+keyPoints:
+  - "A private visit to a specialist costs on average PLN 231.52, 2.6 times more than in 2015. That is roughly how much the minimum wage rose, while prices overall rose by 57%."
+  - "The NFZ pays more and more for a similar number of visits: in 2022–2024 the costs of specialist outpatient clinics rose by 55.6% and the number of services by 13.7%."
+  - "A private visit is the simplest way to skip the waiting list — this is how 79% of those who pay explain paying. In 2024 patients spent PLN 47.6 billion out of their own pockets."
+  - "The same doctors work in both sectors. Nobody checks how many hours they give to which waiting list."
+editorial:
+  - >-
+    A waiting list for a specialist is not only a problem of how clinics organise their work. It is also the
+    price the patient pays for not seeing what the NFZ pays for. When public money grows faster than the number
+    of visits, and the same doctor works in a clinic with an NFZ contract and in a private practice next door,
+    the patient has no way of checking how many hours go to which waiting list.
+  - >-
+    That is why we call for open pseudonymised data: the total paid to each person from public money, from all
+    their workplaces, under a permanent identifier instead of a name. This is not about banning private work,
+    but about making it visible what we buy with public money.
+translation:
+  of: wizyty-prywatne-kolejka-cena
+  files: [src/data/budzet-nfz.ts, src/data/ciecie-limitow-na-medycyne.ts, src/data/kolejki.ts, src/data/wizyty-prywatne-kolejka-cena.ts]
+  hash: "76eaa44504eb"
+  date: 2026-10-27
+noindex: true
+---
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import ColumnChart from '@/components/blocks/ColumnChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import Verdict from '@/components/blocks/Verdict.astro';
+import Money from '@/components/ui/Money.astro';
+import IndexChart from '@/components/budzet/IndexChart.astro';
+import SubsidyChart from '@/components/budzet/SubsidyChart.astro';
+import {
+  A0,
+  A2,
+  AGE_COLUMNS,
+  AOS_TABLE,
+  BEFORE,
+  BOTTOM,
+  C,
+  CORR_CHART,
+  GROWTH_CHART,
+  GROWTH_LINES,
+  K,
+  LINKS,
+  LOOP_STEPS,
+  NIL_ROWS,
+  OOP_2023,
+  OOP_2024,
+  POPULATION_2024,
+  PRIVATE_2024,
+  Q,
+  TICKET_STEPS,
+  VISIT_ROWS,
+  WHC_2022,
+  WHC_2024,
+  ageCaption,
+  bn,
+  gapOlder,
+  nilCaption,
+  oopPerPerson,
+  pct,
+  perService,
+  priceLevel,
+  visit,
+  visitCaption,
+  wage,
+} from '@/data/en/wizyty-prywatne-kolejka-cena';
+import { formatEN } from '@/lib/format';
+
+{/* Tłumaczenie src/content/articles/wizyty-prywatne-kolejka-cena.mdx; wykresy, tabele i listy liczy src/data/en/wizyty-prywatne-kolejka-cena.ts. */}
+
+A visit to a specialist paid for by the National Health Fund (NFZ) costs the patient nothing, but it means waiting: in autumn 2025, on average 4.2 months.[^whc] Those who do not want to wait pay at the private practice next door. This bill is growing faster than prices overall. In March 2026 prices in the “health” category were 4.7% higher than a year earlier, as reported by Polityka Zdrowotna, a health policy news site, and prices of outpatient medical services 7.0% higher. Inflation was 3.0% at the time.[^pz][^gus-iii] This text describes how public money, the waiting list and private prices depend on each other, and what is not known about that relationship.
+
+<StatRow
+  label="Private visit, public money"
+  items={[
+    { value: visit(2025), decimals: 2, unit: 'PLN', desc: `average price of a visit to a specialist doctor in 2025, compared with PLN ${formatEN(visit(2015), 2)} in 2015`, accuracy: 'exact', source: 'GUS, Local Data Bank', href: LINKS.bdl },
+    { value: pct(A0.cost, A2.cost), decimals: 1, unit: '%', desc: `the increase in NFZ costs of specialist outpatient care in 2022–2024; the number of services rose by ${formatEN(pct(A0.services, A2.services), 1)}%`, accuracy: 'exact', source: 'NFZ, report for 2024', href: LINKS.nfz2024 },
+    { value: OOP_2024, decimals: 1, unit: 'PLN bn', desc: 'spent by patients on healthcare out of their own pockets in 2024, 23% more than a year earlier', accuracy: 'exact', source: 'GUS, National Health Account for 2024', href: LINKS.nrz2024 },
+  ]}
+/>
+
+## Money, waiting lists and prices grow together
+
+<Figure
+  title={`Since 2015 the NFZ budget has grown ${formatEN(Q.budget, 1)} times, a private visit has become ${formatEN(visit(2025) / visit(2015), 1)} times more expensive, and the waiting time has grown by ${formatEN(Q.queue)}%.`}
+  note="Indices, 2015 = 100. Budget: costs in the final NFZ financial plan. Private visit: average price of a visit to a specialist doctor in GUS price surveys. Waiting time: average waiting time for a single service in the WHC Barometer; each dot is one edition, there was no survey in 2020 (dashed segment)."
+  source={[
+    { label: 'NFZ, financial plans', href: LINKS.nfzPlans },
+    { label: 'GUS, Local Data Bank — visit to a specialist doctor', href: LINKS.bdl },
+    { label: 'Watch Health Care Foundation, WHC Barometer', href: K.whc2025 },
+  ]}
+>
+  <IndexChart {...CORR_CHART} animate />
+</Figure>
+
+Over ten years all three lines went up. The NFZ budget grew every year, and so did the price of a private visit — fastest in 2022–2023, when inflation was highest. The waiting time grew more slowly and unevenly: in 2021 it was shorter than before the pandemic, then it grew again, and since 2024 it has been the longest in the history of the Barometer.[^nfz-plany][^bdl][^whc]
+
+The chart shows that these three things are happening at the same time. On its own it does not prove which causes which — three rising lines would look similar if each had its own cause. The following sections show what links them: what the NFZ pays for, who pays privately and why, and why there are few of the doctors whose hours both systems compete for.
+
+## A visit for PLN 231.52
+
+Every year Statistics Poland (GUS) publishes the average price of a visit to a specialist doctor from its retail price surveys. This is the price the patient pays: a visit paid for by the NFZ has no price, so it does not appear in these surveys. In 2015 the average visit cost <Money value={visit(2015)} />, in 2025 <Money value={visit(2025)} />, i.e. {formatEN(visit(2025) / visit(2015), 1)} times more.[^bdl] Prices overall rose by about 57% over that time,[^gus-cpi] so after adjusting for inflation a visit is about 66% more expensive (our own calculation). Its price rose fastest in 2022–2023: by 18.8% and 15.2% a year.
+
+<Figure
+  title={`The average visit to a specialist cost PLN ${formatEN(visit(2025), 2)} in 2025 — ${formatEN(visit(2025) / visit(2015), 1)} times more than in 2015.`}
+  note="Average retail prices of consumer goods and services, item “visit to a specialist doctor”, Poland, PLN. Annual average from GUS price surveys."
+  source={{ label: 'GUS, Local Data Bank', href: LINKS.bdl }}
+>
+  <BarChart rows={VISIT_ROWS} max={250} unit="PLN" caption={visitCaption} />
+</Figure>
+
+The average does not say how much of the doctor’s time one gets for that price. In October 2026 an online content creator described on social media a private visit for <Money value={280} />: according to his account, the doctor looked at one blood test result, recommended vitamin D and ended the consultation after about two minutes. The post with the receipt was reported by Onet, a Polish news portal.[^onet] This is one person’s account, not a measurement. It does show, however, that the price of a private visit is fixed, while its length depends on the doctor and nobody measures it.
+
+This series ends in 2025. The price indices are more recent. In September 2026 outpatient medical and rehabilitation services — excluding dentistry — were 7.9% more expensive than a year earlier, and prices overall 4.1%.[^gus-ix] Medicines and hospital services are becoming more expensive more slowly, so the “health” category as a whole rose by 4.6%.
+
+The rapid rise in the price of a visit does not necessarily mean that someone is making a disproportionate profit on it. A visit is above all an hour of work by the doctor and the reception staff, and services that consist mainly of work usually become more expensive at the pace of wages, not of goods prices. From 2015 to 2025 the minimum wage rose from <Money value={wage(2015)} /> to <Money value={wage(2025)} />, i.e. {formatEN(wage(2025) / wage(2015), 1)} times — roughly as much as the price of a visit.[^placa] So the question is not only “why is it so expensive”, but also: why are patients paying more and more often when more and more money goes to public healthcare?
+
+<Figure
+  title={`In 2015 a visit to a specialist cost PLN ${formatEN(visit(2015), 2)} and the minimum wage was PLN ${formatEN(wage(2015))}. In 2025 both were about ${formatEN(visit(2025) / visit(2015), 1)}–${formatEN(wage(2025) / wage(2015), 1)} times higher, and prices overall ${formatEN(priceLevel(2025), 1)} times.`}
+  note="Multiple of the 2015 level. Visit: average price of a visit to a specialist doctor in GUS price surveys. Minimum wage: rate from January; in 2023 and 2024 a second, higher rate applied from July. Prices overall: product of annual average consumer price indices (our own calculation)."
+  source={[
+    { label: 'GUS, Local Data Bank — visit to a specialist doctor', href: LINKS.bdl },
+    { label: 'GUS, annual consumer price indices', href: K.gusCpi },
+    { label: 'Council of Ministers regulations on the minimum wage', href: K.minWage2021 },
+  ]}
+>
+  <SubsidyChart {...GROWTH_CHART} step={250} flow>
+    <IndexChart {...GROWTH_LINES} animate />
+  </SubsidyChart>
+</Figure>
+
+## More money, not many more visits
+
+Costs in the NFZ plan more than tripled in 2015–2025, and roughly doubled after inflation. The average waiting time for a service grew by about 43% over that period — we show this in our compilation [The NFZ budget and waiting lists](/en/data/nfz-budget/#money-and-the-waiting-list). What that money bought can be seen in NFZ reports. The longest comparison under a single, unchanged definition covers specialist outpatient care (AOS), i.e. specialist clinics and tests such as CT or MRI scans, in 2022–2024.[^nfz2024]
+
+<Figure
+  title={`In 2022–2024 the costs of specialist clinics rose by ${formatEN(pct(A0.cost, A2.cost), 1)}%, and the number of services by ${formatEN(pct(A0.services, A2.services), 1)}%.`}
+  note="Specialist outpatient care under NFZ contracts, including the lump sum for hospitals in the hospital network. Services: consultations in clinics, consultations under comprehensive care and high-cost diagnostic tests. Patients: unique persons. The cost per service is costs divided by the number of services — our own calculation."
+  source={{ label: 'NFZ, activity report for 2024, tables II.19 and II.20', href: LINKS.nfz2024 }}
+>
+  <Comparison table={AOS_TABLE} />
+</Figure>
+
+<Verdict
+  label="Conclusion"
+  title="Adding money does not shorten waiting lists"
+  steps={[
+    { value: `+${formatEN(pct(A0.cost, A2.cost), 1)}%`, desc: 'more NFZ money for specialist clinics, 2022–2024' },
+    { value: `+${formatEN(pct(A0.services, A2.services), 1)}%`, desc: 'more services in those clinics over the same period' },
+    { value: `+${formatEN(pct(WHC_2022.single, WHC_2024.single))}%`, desc: `longer waiting time for a service: from ${formatEN(WHC_2022.single, 1)} to ${formatEN(WHC_2024.single, 1)} months (WHC Barometer)` },
+  ]}
+  text={`Money grew about ${formatEN(pct(A0.cost, A2.cost) / pct(A0.services, A2.services))} times faster than the number of services, and waiting got longer. As long as the extra money does not buy extra hours of specialists’ work, the waiting list does not get shorter.`}
+/>
+
+The figures come from the NFZ report for 2024 and from the WHC Barometer: in November 2022 the average wait for a service was {formatEN(WHC_2022.single, 1)} months, in autumn 2024 {formatEN(WHC_2024.single, 1)} months.[^nfz2024][^whc]
+
+In 2024 the average service cost the NFZ <Money value={Math.round(perService(A2))} />, {formatEN(pct(perService(A0), perService(A2)))}% more than two years earlier. Prices overall rose by about 15% over that time, so even after adjusting for inflation a service became about 19% more expensive (our own calculation). Roughly two thirds of the growth in costs is the higher cost of a single service, and one third is more services. Part of the growth is more expensive diagnostics and pay rises for staff under the act on minimum pay in healthcare, and part is higher hourly rates for doctors’ work. The NFZ report does not separate these components.
+
+The NFZ itself admits that the money has not shortened waiting lists. In February 2025 the Fund said that spending on specialist clinics rose from <Money value={6.2e9} scale="billion" /> in 2018 to <Money value={18.2e9} scale="billion" /> in 2024, while the number of services rose “only slightly” (our translation). The NFZ deputy president judged that the abolition of limits in 2021 had not brought the expected effect of shorter waiting lists.[^nfz-aos] The Supreme Audit Office (NIK) described the same thing in clinics for children: despite higher spending and unit prices, access got worse, and the median waiting time rose in 32 of 36 types of clinic between the end of 2020 and mid-2024.[^nik]
+
+Money can shorten waiting lists. According to OECD comparative studies, the countries that succeeded increased spending permanently rather than once.[^siciliani] The condition, however, is that the money buys more hours of work. When the number of hours grows more slowly than the budget, the extra money goes into the price of an hour. With a fixed pool of money, the number of hours is inversely proportional to the rate — this is arithmetic, not a hypothesis. Why the number of doctors grows slowly is described in our analysis [Why Poland is short of doctors](/en/analysis/why-poland-is-short-of-doctors/), and how the NFZ sets the prices of services in [Pricing of healthcare services](/en/mechanisms/pricing-of-healthcare-services/).
+
+## Fewer places at medical school, a more expensive hour
+
+Money buys a higher price instead of more hours, because specialists’ hours cannot be bought quickly. Their number is still affected by a decision taken three decades ago. According to Rynek Zdrowia, a healthcare news site, the number of first-year places in medicine was cut from more than {formatEN(BEFORE)} in 1987 to {formatEN(BOTTOM)} in full-time studies in 2003.[^rz2019] We know these figures only from the press — we write about this in our analysis [Cutting medical school places](/en/analysis/cutting-medical-school-places/).
+
+<Figure
+  title={`There are ${gapOlder}% fewer doctors aged 46–50, who began their studies after the cuts to admission limits, than doctors aged 56–60.`}
+  note="Thousands of practising doctors (excluding dentists) by age, as at 31.12.2025. Year of starting studies — an approximation from the year of birth. Dashed line: the number of doctors aged 56–60, who began their studies before the cuts."
+  source={{ label: 'NIL, Central Register of Physicians, table no. 3', href: C.crl }}
+>
+  <ColumnChart
+    columns={AGE_COLUMNS}
+    max={21000}
+    gap={{ from: 3, to: 5, label: 'Gap', sub: 'studies c. 1990–2004' }}
+    ref={{ index: 6, label: `−${gapOlder}% vs aged 56–60` }}
+    caption={ageCaption}
+  />
+</Figure>
+
+The cohorts admitted under the lowest limits are today doctors in mid-career, at the age at which a specialist has the most experience and most often runs their own practice.[^crl] When they are missing, clinics with an NFZ contract, hospitals and private practices compete for the same, smaller pool of hours. By the simple arithmetic of the market, the price of an hour rises on both sides: the NFZ pays more for a similar number of visits, and the patient pays more for a private visit.
+
+Admission limits have been rising again for years: in 2025/26 medicine had 10,504 places.[^limity] From admission to medical school to the title of specialist, however, takes 12–13 years, so the cohorts from the latest admissions will become specialists roughly in 2034–2038. The Ministry of Health and a team working at the Supreme Medical Chamber (NIL) predict that there may then be more doctors than needed. We describe both forecasts in our analysis [Why Poland is short of doctors](/en/analysis/why-poland-is-short-of-doctors/). Until then, the shortage of specialists from the cohorts after the cuts is one of the reasons why extra money raises the price of an hour faster than the number of visits.
+
+## A private visit instead of the waiting list
+
+The simplest way to skip the waiting list is legal: pay. A patient who does not want to wait for an appointment at a clinic with an NFZ contract books the first available slot at a private practice, often with the same specialist. This is how most of those who pay explain using paid care, as shown below.
+
+An extreme example was described in September 2026 by Głos Wielkopolski, a regional daily. A 52-year-old woman from Piła, whose fingers had stiffened after a fracture, was given a referral for reconstruction marked as urgent at a university hospital in Poznań. At registration she was given a date: 1 October 2035, place 3,214 on a list of 6,738 people. For urgent rehabilitation, she says, she would have had to wait up to three years. The hospital did not comment on the case.[^gw] The Greater Poland (Wielkopolska) branch of the NFZ explained on Polsat News that the date depends on medical indications and the facility’s resources, and that there are about 20 hand surgeons in Poland with the international specialist examination. According to the Fund, the wait for procedures that are not life-threatening is on average 1.5–2 years.[^polsat] With so few specialists, extra money will not by itself increase the number of procedures — at most it can raise the price of an hour of those who are there.
+
+Those who wait too long go private — if they can afford it. CBOS, the Public Opinion Research Centre, asks about this regularly. In June 2025, 40% of adults had seen a specialist outside the NFZ in the six months before the survey, paying themselves or through additional insurance. In 2018 the figure was 29%. In both years 40% used specialist visits paid for by the NFZ.[^cbos2025] There were no fewer public visits, but there were more private ones.
+
+CBOS last asked about the reasons in 2023. Among people who used paid care, 79% named shorter waiting times — by far the most common reason. The other reasons were clearly less frequent: 27% of respondents expected better specialists, 19% more efficient service.[^cbos2023]
+
+The demand that the waiting list pushes out of the public system goes to private practices. A patient who is offered an endocrinologist in a year’s time by a clinic with an NFZ contract — on average 12.9 months according to the WHC Barometer — does not spend long comparing prices.[^whc] This does not have to mean collusion or dishonesty: with a shortage of specialists and an urgent need, the price is set by how much patients are willing to pay so as not to wait.
+
+## How much we pay out of pocket
+
+Private visits, medicines, dentistry and tests that patients pay for themselves are counted by GUS in the National Health Account. In 2024 households spent <Money value={bn(OOP_2024)} scale="billion" /> in this way, {formatEN(pct(OOP_2023, OOP_2024))}% more than a year earlier.[^nrz2024] Per inhabitant this is about <Money value={oopPerPerson} /> a year (our own calculation: the GUS amount divided by {formatEN(POPULATION_2024 / 1e6, 1)} million inhabitants).[^ludnosc] Together with medical subscription plans and voluntary insurance, private health spending came to <Money value={bn(PRIVATE_2024)} scale="billion" />.[^nrz2024]
+
+For scale: in 2024 patients spent {formatEN(OOP_2024 / (A2.cost / 1e6), 1)} times more out of their own pockets than the NFZ spent on all specialist clinics and the tests carried out in them (<Money value={bn(A2.cost / 1e6)} scale="billion" />).[^nfz2024] The GUS amount covers everything patients pay for, including medicines and the dentist, so it is not the price of the waiting list for specialists alone. It does show, however, that alongside the public system there is a second one, financed directly by the sick. How this spending has changed since 2020 is shown in our compilation [The NFZ budget and waiting lists](/en/data/nfz-budget/#how-much-we-pay-ourselves).
+
+## The same doctors on both sides
+
+The public and the private waiting lists do not have separate doctors. A doctor who sees patients at a clinic with an NFZ contract may see patients at a private practice after hours, and many work this way. The medical self-government studied this in spring 2026 in a survey of 2,243 doctors and dentists. The sample was not random, so the result does not speak for all doctors, but it shows the scale of the phenomenon.[^nil]
+
+- 30.8% of respondents worked only on publicly funded services,
+- 31.0% mainly publicly and occasionally privately,
+- 18.5% publicly and privately to a similar extent,
+- 5.4% mainly privately, and 11.9% only privately.
+
+In total about 55% combine both sectors. Asked about the problems of such combining, respondents most often named adding patients outside a transparent order (41.4%), the risk of using public resources for private work (35.4%) and moving patients from the public waiting list to private visits (27.3%).[^nil] These are doctors’ own opinions about the risks, not a measurement of how often they occur.
+
+## A ticket through the private practice
+
+A private visit can also shorten the path to treatment paid for by the NFZ. When a doctor sees patients privately and works in a hospital, a paid consultation can become a ticket to a ward — faster than the waiting list. This path has four steps, and most of them are legal:
+
+<NumberedList items={TICKET_STEPS} />
+
+The basis is the provisions of the act on publicly funded healthcare services: a referral to hospital may be issued by a “doctor”, and a referral to a specialist clinic by a “health insurance doctor”.[^art57] The hospital is to admit patients in the order in which they register, taking into account the medical category, which it sets itself.[^art20] How often patients from a private practice get a date sooner than their condition justifies is not known: nobody matches paid visits with admissions funded by the NFZ. In the medical self-government’s survey, adding patients outside a transparent order was the most frequently named problem of combining public and private work (41.4%).[^nil]
+
+Individual inspections are known. In June 2026 the NFZ fined a department (klinika) of one of the Warsaw university hospitals <Money value={289000} />. According to the inspection findings, 70% of patients had been admitted out of order, and 10 people bypassing the waiting list. The inspection was preceded by an anonymous letter from employees, according to which those admitted outside the queue were mainly patients from one doctor’s private practice. The NFZ did not confirm this. The hospital disagrees with the inspection results and says that it admitted patients according to medical criteria.[^interia] The NIK, in its inspection of clinics for children, in turn described a facility that saw patients privately during hours in which, under its NFZ contract, it should have been seeing public patients.[^nik]
+
+The government wants to give the Fund a tool to check such cases. Under a draft amendment to the act on healthcare services that went to consultation in July 2026, facilities combining an NFZ contract with paid services are to provide the Fund with data on those services. The NFZ could then check whether patients admitted out of order had previously seen the same doctors privately. The President of the NFZ admitted that today the Fund has no tools to examine links between work in the public system and doctors’ private practice.[^gp-kontrole]
+
+## Ban the combination?
+
+Health economists call a doctor’s work in both sectors a conflict of interest: the longer the public waiting list, the more willingly a patient who can afford it goes private, often to the same doctor.[^siciliani] The simplest answer is to forbid doctors with an NFZ contract to see patients privately. The evidence, however, is not clear-cut. A theoretical model from 1997 shows that when doctors are allowed to see patients privately, the public waiting list may grow.[^iversen] A 2011 review of studies, however, finds that there is little empirical evidence and that it points in different directions.[^socha] Work in two sectors may also give patients more doctor hours than the public system alone would.
+
+Among doctors a ban has little support. In the medical self-government’s survey, a full ban on combining public and private work was supported by 15.1% of respondents (excluding “hard to say” answers). A ban on seeing patients privately in the same scope in which the doctor works for the NFZ was supported by 22.9%, and 67.7% were against. The most support — 71.9% — went to full separation of public and private waiting lists, schedules and billing, but almost as many respondents (68.9%) supported keeping the current freedom without new restrictions.[^nil]
+
+<Figure
+  title="Doctors support separating waiting lists, not banning private work"
+  note="NIL online survey “Perspektywa 27”, 29.04–4.05.2026, doctors and dentists, non-random sample (N = 2,243). Share of supporters among answers other than “hard to say”; ban in the same scope — among all answers."
+  source={{ label: 'Supreme Medical Chamber, “Perspektywa 27” report', href: LINKS.nil }}
+>
+  <BarChart rows={NIL_ROWS} max={100} unit="%" caption={nilCaption} />
+</Figure>
+
+As risks of too strict a separation, doctors named some doctors leaving for private work (74.8%) and longer waiting lists in the public system (58.9%). At the same time, 56.8% said that under predictable and attractive conditions they would choose to work only on public services — most often on condition of guaranteed high pay (67.1%).[^nil] The Presidium of the Supreme Medical Council takes a negative view of the government draft that limits doctors’ total working time: according to the self-government, rigid limits amid staff shortages will reduce the number of services under the NFZ and increase the number of purely private services. At the same time, the self-government declares its support for transparency of contracts.[^nrl]
+
+Other countries choose different paths. Since March 2023 Ireland has employed new consultants in the public health service only on “public only” contracts — a step towards gradually phasing out private practice from public hospitals.[^irl] The United Kingdom does not ban private work, but since 2003 has regulated it in the NHS consultant contract. Work for the NHS takes priority, and the rules cover disclosure of private practice, scheduling, the transfer of patients between the NHS and the private sector and the management of waiting lists. Complying with them is a condition of pay progression.[^nhs]
+
+The available data do not show that a ban alone would shorten waiting lists — with a shortage of specialists it could lengthen them if some doctors chose private practice. The British contract shows another way: not to ban, but to know who works where and how much, and who gets onto the list from a private practice. That knowledge is lacking in Poland today.
+
+## The loop
+
+From these data one can assemble a mechanism in which three trends reinforce one another. This is a hypothesis: the data make it plausible, but none of the available sources proves it.
+
+<NumberedList items={LOOP_STEPS} />
+
+<Aside title="What these data do not show" variant="note">
+Nobody measures how many hours one doctor works under the NFZ and how many privately, or how much they earn in total from all their workplaces. That is why the last link of the loop cannot be checked: whether a higher rate in private practice really raises the cost of an hour at a clinic with an NFZ contract and draws hours away from it. Waiting lists are also lengthened by causes unrelated to money: backlogs after the pandemic, ageing patients, more referrals for tests, and follow-up visits that take appointments away from new patients.
+</Aside>
+
+The government has prepared a draft that limits the total working time of one person in facilities with an NFZ contract. We describe it in our text on [multiple jobs](/en/mechanisms/multiple-jobs-parallel-contracts/). Even with such a limit, without data on the hours and payments of one person from all their workplaces it is impossible to check whether public money buys more visits, or only more expensive ones.
+
+[^whc]: Watch Health Care Foundation, [WHC Barometer — report from September/October 2025](https://www.korektorzdrowia.pl/wp-content/uploads/barometr-whc-2025.pdf) (in Polish) — fig. 2: average waiting time for a single service in all editions (including 3.6 months in Nov 2022 and 4.2 months in Oct/Nov 2024); average waiting time for a single service and for a specialist consultation: 4.2 months each; endocrinologist 12.9 months.
+
+[^pz]: Polityka Zdrowotna, [„<span lang="pl">Zdrowie drożeje najbardziej — nowe dane GUS</span>”](https://politykazdrowotna.com/artykul/zdrowie-drozeje-najbardziej-n2260121) (“Health is getting more expensive the most — new GUS data”, in Polish), 16.04.2026.
+
+[^gus-iii]: GUS, [„<span lang="pl">Wskaźniki cen towarów i usług konsumpcyjnych w marcu 2026 r.</span>”](https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-w-marcu-2026-r-,2,173.html) (“Price indices of consumer goods and services in March 2026”, in Polish), 15.04.2026 — tables: health 104.7, outpatient medical and rehabilitation services (COICOP 06231) 107.0, total 103.0 (March 2025 = 100).
+
+[^bdl]: GUS, Local Data Bank, [average retail prices of consumer goods and services — “visit to a specialist doctor”](https://bdl.stat.gov.pl/api/v1/data/by-variable/5076?unit-level=0&format=json) (in Polish; variable 5076), Poland, 1999–2025. Annual changes and the multiple — our own calculation.
+
+[^gus-cpi]: GUS, [„<span lang="pl">Roczne wskaźniki cen towarów i usług konsumpcyjnych</span>”](https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/) (“Annual price indices of consumer goods and services”, in Polish) — the price level in 2025 relative to 2015 and in 2024 relative to 2022 is the product of the annual average indices (our own calculation).
+
+[^gus-ix]: GUS, [„<span lang="pl">Wskaźniki cen towarów i usług konsumpcyjnych we wrześniu 2026 r.</span>” — tables](https://stat.gov.pl/download/gfx/portalinformacyjny/pl/defaultaktualnosci/5464/2/179/1/wskazniki_cen_towarow_i_uslug_konsumpcyjnych_we_wrzesniu_2026_r_tablice.xlsx) (“Price indices of consumer goods and services in September 2026”, in Polish), 14.10.2026 — September 2025 = 100: total 104.1; health 104.6; outpatient medical and rehabilitation services (COICOP 06231) 107.9.
+
+[^placa]: Regulations of the Council of Ministers on the minimum wage; we list the rates from January for 2015–2026 in the table in [The NFZ budget and waiting lists](/en/data/nfz-budget/#the-longer-view-in-figures), e.g. [for 2021](https://eli.gov.pl/eli/DU/2020/1596/ogl/pol/pdf) (in Polish; Dz.U. 2020 item 1596).
+
+[^nfz2024]: NFZ, [„<span lang="pl">Sprawozdanie z działalności Narodowego Funduszu Zdrowia za 2024 rok</span>”](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/dzialalnosc_nfz/sprawozdania_z_dzialalnosci_nfz/zalacznik_do_uchwaly_nr_15-sig.pdf) (“Report on the activities of the National Health Fund for 2024”, in Polish) — table II.19 (value and performance of contracts in specialist outpatient care, AOS, including the hospital network lump sum) and table II.20 (number of patients and services in AOS) for 2022–2024.
+
+[^nfz-aos]: NFZ, [„<span lang="pl">Szybciej dostaniesz się do lekarza specjalisty. NFZ pokazał projekt zmian w ambulatoryjnej opiece specjalistycznej</span>”](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/szybciej-dostaniesz-sie-do-lekarza-specjalisty-nfz-pokazal-projekt-zmian-w-ambulatoryjnej-opiece-specjalistycznej,8732.html) (“You will see a specialist sooner. The NFZ has presented draft changes to specialist outpatient care”, in Polish), 17.02.2025.
+
+[^nik]: NIK, [„<span lang="pl">Ambulatoryjna opieka specjalistyczna dla dzieci finansowana ze środków publicznych</span>”](https://www.nik.gov.pl/kontrole/wyniki-kontroli-nik/pobierz,kzd~p_24_047_202409041156571725443817~01,typ,k.pdf) (“Publicly funded specialist outpatient care for children”, in Polish), 2025 (ref. no. 6/2025/P/24/047/KZD) — summary of the audit results, p. 9; private visits during hours in the NFZ contract schedule — findings for one of the audited facilities.
+
+[^siciliani]: L. Siciliani, M. Borowitz, V. Moran (eds.), *Waiting Time Policies in the Health Sector: What Works?*, OECD 2013; a co-author of the report discussed its conclusions before the Health Committee of the Northern Ireland Assembly: [record of the meeting of 26.02.2014](https://www.niassembly.gov.uk/globalassets/documents/official-reports/health/2013-2014/140226_reviewofwaitingtimesprofsiciliani.pdf) — successful policies went together with a significant and sustained increase in resources; the dual role of doctors creates a conflict of interest.
+
+[^iversen]: T. Iversen, [The effect of a private sector on the waiting time in a national health service](https://ideas.repec.org/a/eee/jhecon/v16y1997i4p381-396.html), *Journal of Health Economics* 16(4), 1997, pp. 381–396.
+
+[^socha]: K. Z. Socha, M. Bech, [Physician dual practice: a review of literature](https://ideas.repec.org/a/eee/hepoli/v102y2011i1p1-7.html), *Health Policy* 102(1), 2011, pp. 1–7.
+
+[^onet]: Onet, [„<span lang="pl">Nie krył oburzenia po prywatnej wizycie. „Czas trwania dwie minuty”. Tyle zapłacił</span>”](https://kobieta.onet.pl/wiadomosci/poszedl-prywatnie-do-lekarza-tyle-zaplacil-za-dwuminutowa-wizyte/pn0gf86) (“He did not hide his outrage after a private visit. ‘Duration: two minutes’. This is how much he paid”, in Polish), 13.10.2026 — a patient’s account from social media; the article does not name the doctor’s specialty or the facility.
+
+[^gw]: Głos Wielkopolski, [„<span lang="pl">„Za 9 lat ta operacja nie będzie mi już potrzebna”. Pani Agnieszka na zabieg „na cito” u Degi w Poznaniu ma czekać aż do 2035 roku</span>”](https://gloswielkopolski.pl/za-9-lat-ta-operacja-nie-bedzie-mi-juz-potrzebna-pani-agnieszka-na-zabieg-na-cito-u-degi-w-poznaniu-ma-czekac-az-do-2035-roku/ar/c14p2-29386235) (“‘In 9 years I won’t need this operation any more’. Ms Agnieszka is to wait until 2035 for an ‘urgent’ procedure at Dega in Poznań”, in Polish), 28.09.2026; the case was also reported by, among others, [Bezprawnik](https://bezprawnik.pl/dostala-skierowanie-na-cito-operacje-ma-zaplanowana-na-2035-rok/) (in Polish), 30.09.2026.
+
+[^polsat]: Polsat News, [„<span lang="pl">Ma niesprawną rękę i skierowanie „na cito”. Termin operacji? Za 9 lat</span>”](https://www.polsatnews.pl/wiadomosc/2026-09-29/ma-niesprawna-reke-i-skierowanie-na-juz-przezyla-szok-gdy-zobaczyla-termin-zabiegu/) (“She has a disabled hand and an ‘urgent’ referral. The date of the operation? In 9 years”, in Polish), 29.09.2026 — explanations from the Greater Poland Regional Branch of the NFZ; NFZ headquarters announced that it would look into the case.
+
+[^ludnosc]: GUS, [„<span lang="pl">Zasoby kadrowe w wybranych zawodach medycznych na podstawie źródeł administracyjnych w 2024 r.</span>”](https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/zasoby-kadrowe-w-wybranych-zawodach-medycznych-na-podstawie-zrodel-administracyjnych-w-2024-r-,28,4.html) (“Human resources in selected medical professions based on administrative sources in 2024”, in Polish) — population used as the denominator of the indicators (37,489,087).
+
+[^interia]: Interia, [„<span lang="pl">Nawet 70 proc. pacjentów przyjętych poza kolejką. Klinika z karą od NFZ</span>”](https://wydarzenia.interia.pl/mazowieckie/news-nawet-70-proc-pacjentow-przyjetych-poza-kolejka-klinika-z-ka,nId,23503408) (“As many as 70% of patients admitted outside the queue. Clinic fined by the NFZ”, in Polish), 22.06.2026 — citing the Rynek Zdrowia portal; fine of PLN 289 thousand, an earlier fine of PLN 50 thousand from 2022; the hospital’s position.
+
+[^gp-kontrole]: Gazeta Prawna (citing PAP), [„<span lang="pl">Kontrola NFZ w prywatnych gabinetach i szpitalach. Nowe uprawnienia Funduszu i zmiana przepisów</span>”](https://www.gazetaprawna.pl/wiadomosci/kraj/artykuly/11281904,kontrole-nfz-bez-zapowiedzi-limit-czasu-pracy-lekarzy-320-godzin-nowelizacja-2026.html) (“NFZ inspections in private practices and hospitals. New powers for the Fund and a change in the rules”, in Polish), 28.07.2026 — the draft amendment to the act on publicly funded healthcare services sent for public consultation.
+
+[^art20]: [Act of 27 August 2004 on publicly funded healthcare services](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (<span lang="pl">ustawa o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych</span>; in Polish; consolidated text Dz.U. 2025 item 1461), Article 20(1) and (2)(1)–(2).
+
+[^nfz-plany]: NFZ, Public Information Bulletin, [NFZ finances — financial plans](https://www.nfz.gov.pl/bip/finanse-nfz/) (in Polish) — total costs in the final financial plans for 2015–2025; the same series as in our compilation [The NFZ budget](/en/data/nfz-budget/).
+
+[^rz2019]: Rynek Zdrowia, [„<span lang="pl">Limity przyjęć na medycynę wyraźnie rosną. Czy odbudujemy lekarskie kadry?</span>”](https://www.rynekzdrowia.pl/Nauka/Limity-przyjec-na-medycyne-wyraznie-rosna-Czy-odbudujemy-lekarskie-kadry,198210,9.html) (“Admission limits for medicine are clearly rising. Will we rebuild the medical workforce?”, in Polish), 16.09.2019 — first-year places: more than 6,000 in 1987; 2,090 places in full-time studies in 2003 (without naming the primary source).
+
+[^crl]: Supreme Medical Chamber (NIL), [„<span lang="pl">Zestawienie liczbowe lekarzy i lekarzy dentystów według wieku, płci i tytułu zawodowego, stan na 31.12.2025</span>”](https://nil.org.pl/uploaded_files/1768208069_31122025-zestawienie-nr-3.pdf) (“Numbers of doctors and dentists by age, sex and professional title, as at 31.12.2025”, in Polish) — practising doctors by age; percentages — our own calculations.
+
+[^limity]: Regulation of the Minister of Health on the admission limit for medicine and dentistry, [Dz.U. 2025 item 1086](https://api.sejm.gov.pl/eli/acts/DU/2025/1086/text.pdf) (in Polish), annex 1 — 10,504 places in medicine in 2025/26, including 1,888 taught in a foreign language; we compare the regulations from previous years in our analysis [Why Poland is short of doctors](/en/analysis/why-poland-is-short-of-doctors/).
+
+[^art57]: [Act of 27 August 2004 on publicly funded healthcare services](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (in Polish; consolidated text Dz.U. 2025 item 1461), Article 57(1) (specialist clinics — referral from a health insurance doctor, <span lang="pl">lekarz ubezpieczenia zdrowotnego</span>) and Article 58 (hospital treatment — referral from a doctor, dentist or feldsher).
+
+[^nrl]: Supreme Medical Chamber, [„<span lang="pl">Stanowisko nr 17/26/P-X Prezydium Naczelnej Rady Lekarskiej z 11 sierpnia 2026 r.</span>”](https://nil.org.pl/articleToPdf/9353) (“Position no. 17/26/P-X of the Presidium of the Supreme Medical Council of 11 August 2026”, in Polish) on the draft act amending the act on publicly funded healthcare services and certain other acts.
+
+[^irl]: European Commission, [Entry into operation of the Sláintecare Consultant Contract](https://reforms-investments.ec.europa.eu/projects/entry-operation-slaintecare-consultant-contract_en) — the “Public Only” contract introduced on 8.03.2023, the only one available for new and replacement posts in the HSE; current consultants may switch to it.
+
+[^nhs]: NHS Employers, [Consultant contract: framework](https://www.nhsemployers.org/system/files/2021-06/framework-agreement-consultants.pdf) (framework agreement between the UK health departments, the BMA and the NHS Confederation; contract from 1.04.2003), section 7 “Private practice”.
+
+[^cbos2025]: CBOS, [„<span lang="pl">Korzystanie ze świadczeń i ubezpieczeń zdrowotnych</span>”](https://www.cbos.pl/SPISKOM.POL/2025/K_069_25.PDF) (“Use of healthcare services and health insurance”, in Polish), research report no. 69/2025 — table 3 (under the NFZ) and table 4 (outside the NFZ), surveys 2018–2025.
+
+[^cbos2023]: CBOS, [research report no. 101/2023](https://cbos.pl/SPISKOM.POL/2023/K_101_23.PDF) (in Polish) — reasons for using non-public healthcare among the 62% of respondents who had used it.
+
+[^nrz2024]: [„<span lang="pl">Obwieszczenie Prezesa GUS z 30 września 2026 r. w sprawie Narodowego Rachunku Zdrowia za 2024 r.</span>”](https://api.sejm.gov.pl/eli/acts/MP/2026/971/text.pdf) (“Announcement of the President of GUS of 30 September 2026 on the National Health Account for 2024”, in Polish; M.P. 2026 item 971) — out-of-pocket household spending PLN 47,640.5 million (in 2023 PLN 38,633.2 million), total private spending PLN 66,377.7 million.
+
+[^nil]: Supreme Medical Chamber, Research and Analysis Centre, [„<span lang="pl">Raport z badania „Perspektywa 27”. Opinie lekarzy i lekarzy dentystów o rozdzieleniu aktywności zawodowej między świadczenia finansowane publicznie i prywatne</span>”](https://nil.org.pl/uploaded_files/art_1778144361_perspektywa-27-final.pdf) (“Report on the ‘Perspektywa 27’ survey. Opinions of doctors and dentists on dividing professional activity between publicly and privately funded services”, in Polish), 2026 — online survey 29.04–4.05.2026, N = 2,243; clinical work model (table 1) and problems of combining sectors (section 5.4, multiple-choice question).

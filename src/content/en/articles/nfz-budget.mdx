@@ -1,0 +1,345 @@
+---
+title: "The NFZ budget and waiting lists, year by year"
+seoTitle: "Poland’s NFZ budget and waiting lists"
+summary: "Costs in the financial plan of the National Health Fund (NFZ) have more than tripled since 2015, and roughly doubled after inflation. The average waiting time for a service grew by about 43% over the same period. For 2026 the Fund plans PLN 227.4 billion in costs and a PLN 33.6 billion subsidy from the state budget."
+description: "NFZ plan costs since 2015 in one definition: three times higher nominally, twice in real terms, and waiting times about 43% longer. The 2026 plan, subsidy, pay."
+keyPoints:
+  - "From 2015 to 2025 costs in the NFZ plan rose from PLN 71.5 billion to PLN 220.2 billion: more than threefold in nominal terms, roughly twofold in real terms. The average waiting time for a service according to the WHC Barometer grew by about 43% over that period, to 4.2 months."
+  - "The plan changes during the year. For 2026 the draft assumed PLN 217.4 billion in costs, and the plan after the October amendment — PLN 227.4 billion. For 2027 the Fiscal Council estimates a shortfall of about PLN 16 billion."
+  - "The plan does not show how much pay costs. The cost of the act on minimum pay in healthcare is known from estimates: PLN 71–72 billion in 2026, about one third of costs."
+  - "In 2024 households spent PLN 47.6 billion on healthcare out of their own pockets, 23% more than a year earlier."
+translation:
+  of: budzet-nfz
+  files: [src/data/budzet-nfz.ts, src/data/kolejki.ts]
+  hash: "80c219f04b35"
+  date: 2026-10-27
+noindex: true
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Money from '@/components/ui/Money.astro';
+import IndexChart from '@/components/budzet/IndexChart.astro';
+import SubsidyChart from '@/components/budzet/SubsidyChart.astro';
+import {
+  BUDGET_TABLE,
+  COST_CHART,
+  COVID_IN_NFZ,
+  CURRENT,
+  CURRENT_PLAN,
+  DRAFT_2026,
+  DRAFT_2027,
+  GAP_2027,
+  LAST_FINAL,
+  LINKS,
+  OVERRUN_2021_2025,
+  SUBSIDY_CHART,
+  FUS_LINKS,
+  GROWTH,
+  QUEUE_LINKS,
+  budget,
+  change,
+  priceLevel,
+  f1,
+  bn,
+  FROM,
+  TO,
+  INDEX_CHART,
+  HISTORY_TABLE,
+  SPECIALIST_ROWS,
+  SPECIALISTS_2025,
+  SOURCES_TABLE,
+  CONTRIBUTION_TABLE,
+  MEDIAN_WAGES,
+  MIN_WAGE,
+  NFZ_ORTHOPEDIST,
+  OOP_PER_PERSON_2024,
+  OUT_OF_POCKET,
+  POPULATION_2024,
+  PRIVATE_TOTAL_2024,
+  WHC_2021,
+  WHC_LATEST,
+  contribution,
+  editionEN,
+} from '@/data/en/budzet-nfz';
+import { formatEN } from '@/lib/format';
+
+{/* Tłumaczenie src/content/articles/budzet-nfz.mdx; wykresy i tabelę liczy src/data/en/budzet-nfz.ts. Kwoty w tekście: <Money value={bn(x)} scale="billion" /> — bn() zaokrągla jak formatMld w wersji polskiej. */}
+
+export const first = budget(2015);
+export const y2020 = budget(2020);
+export const y2021 = budget(2021);
+export const y2022 = budget(2022);
+export const y2023 = budget(2023);
+export const y2024 = budget(2024);
+export const oopGrowth = OUT_OF_POCKET.slice(1).map((o, i) => (o.value / OUT_OF_POCKET[i].value - 1) * 100);
+export const oopEarlier = oopGrowth.slice(0, -1);
+export const oopLast = OUT_OF_POCKET.at(-1);
+export const wage = (year) => MIN_WAGE.find((m) => m.year === year).value;
+export const firstMedian = MEDIAN_WAGES[0];
+export const lastMedian = MEDIAN_WAGES.at(-1);
+
+The “budget” of the National Health Fund (NFZ) is in practice the Fund’s financial plan, and the plan goes through several versions in the course of a year: the draft, the plan approved before the start of the year, successive amendments and the final plan. After the year comes the report on how the plan was carried out. Each version gives a different amount, which is why figures from different sources easily diverge. Here we count every year the same way and show the other figures alongside, in separate columns.
+
+## One series, one definition
+
+The main figure is total costs in the final NFZ financial plan, i.e. the amount the Fund could spend in a given year after all amendments to the plan. The plans are published in the NFZ Public Information Bulletin (BIP).[^plany] The year {CURRENT.year} is still under way, so we show the current plan, as amended on {CURRENT_PLAN.date} (order of the President of the NFZ no. {CURRENT_PLAN.ordinance}).[^z107] This amount may still change.
+
+<Figure
+  title={`From 2015 to ${LAST_FINAL.year} costs in the NFZ plan more than tripled: from PLN ${f1(first.costs)} billion to PLN ${f1(LAST_FINAL.costs)} billion.`}
+  note={`Total costs in the final NFZ financial plan; each dot is one year. Dashed line: ${CURRENT.year} — plan in progress after the amendment of ${CURRENT_PLAN.date} (PLN ${f1(CURRENT.costs)} billion); ${DRAFT_2027.year} — draft plan presented to the Sejm Health Committee on 2 July 2026 (PLN ${f1(DRAFT_2027.total)} billion), not a forecast of actual spending.`}
+  source={{ label: 'NFZ, financial plans (BIP)', href: LINKS.bip }}
+>
+  <IndexChart {...COST_CHART} animate />
+</Figure>
+
+Money from the COVID-19 Response Fund (Fundusz Przeciwdziałania COVID-19), which operated outside the state budget, contributed to the jump in {y2021.year}, of {f1(change(y2020.costs, y2021.costs))}%. According to the Supreme Audit Office (NIK), from 2020 to mid-2022 the Minister of Health spent <Money value={bn(COVID_IN_NFZ.nik)} scale="billion" /> from it on NFZ tasks and on refunding health contributions.[^nik-covid] The NFZ plan has no separate item for this money. Its structure shows that the money falls under other revenue, which rose from <Money value={bn(COVID_IN_NFZ.otherRevenue[2020])} scale="billion" /> in 2020 to <Money value={bn(COVID_IN_NFZ.otherRevenue[2021])} scale="billion" /> in 2021 and fell to <Money value={bn(COVID_IN_NFZ.otherRevenue[2022])} scale="billion" /> in 2022. Costs in the plan then grew by only {f1(change(y2021.costs, y2022.costs))}%.[^plany][^sprawozdania] We write more about the COVID-19 Response Fund in our analysis [COVID-19: billions without a transparent account](/en/analysis/covid-19-public-money/).
+
+Alongside costs we give revenue from the same plan and the outturn, i.e. operating costs from the Fund’s combined financial statements.[^sprawozdania] The outturn is a checkpoint, not the same series: the financial statements group items differently from the plan. In {LAST_FINAL.year} the plan allowed the Fund to spend <Money value={bn(LAST_FINAL.costs)} scale="billion" />, while operating costs amounted to <Money value={bn(LAST_FINAL.executed)} scale="billion" />.
+
+<Figure
+  title="All columns of the series, year by year"
+  note="Before 2020 the plan had no item for a general subsidy from the state budget, and we do not show the outturn for those years. The year-on-year change is calculated only for costs in the plan."
+  source={{ label: 'NFZ, financial plans and financial statements (BIP)', href: LINKS.bip }}
+>
+  <Comparison table={BUDGET_TABLE} />
+</Figure>
+
+In some years the final plan assumes higher costs than revenue, i.e. a negative financial result. In {y2023.year} the difference was <Money value={bn(y2023.costs - y2023.revenue)} scale="billion" />, in {y2024.year} <Money value={bn(y2024.costs - y2024.revenue)} scale="billion" />, and in {LAST_FINAL.year} <Money value={bn(LAST_FINAL.costs - LAST_FINAL.revenue)} scale="billion" />.[^plany] This is why we do not combine revenue and costs in a single series.
+
+## What it means in real terms
+
+A zloty from 2015 is worth less today. According to Statistics Poland (GUS), consumer prices rose by a total of about {formatEN(GROWTH.prices)}% from 2015 to 2025.[^gus-cpi] After adjusting for inflation, costs in the NFZ plan grew {formatEN(GROWTH.budgetReal, 2)} times over that period, i.e. roughly doubled. This is our own calculation: nominal growth ({formatEN(GROWTH.budget, 2)} times) divided by the rise in prices.
+
+Since 2020 both costs in the final plan and the outturn have doubled: in both columns the growth to {LAST_FINAL.year} is {formatEN(LAST_FINAL.costs / y2020.costs, 2)} times.[^sprawozdania] Prices rose by about {formatEN((priceLevel(LAST_FINAL.year) / priceLevel(2020) - 1) * 100)}% over that time, so in real terms costs in the plan grew by about {formatEN((LAST_FINAL.costs / y2020.costs / (priceLevel(LAST_FINAL.year) / priceLevel(2020)) - 1) * 100)}%.[^gus-cpi]
+
+<StatRow
+  label="Costs in the NFZ plan: 2015 and 2025"
+  items={[
+    { value: GROWTH.budget, decimals: 1, prefix: '~', unit: 'times', desc: `the nominal growth of costs in the final plan: from PLN ${f1(first.costs)} billion to PLN ${f1(LAST_FINAL.costs)} billion`, accuracy: 'exact', source: 'NFZ, financial plans', href: LINKS.bip },
+    { value: GROWTH.budgetReal, decimals: 1, prefix: '~', unit: 'times', desc: 'the growth after adjusting for inflation, in 2015 prices — our own calculation', accuracy: 'est', source: 'NFZ and GUS', href: QUEUE_LINKS.gusCpi },
+    { value: change(LAST_FINAL.costs, CURRENT.costs), decimals: 1, unit: '%', desc: `by this much costs in the current plan for ${CURRENT.year} exceed those in the final plan for ${LAST_FINAL.year}`, accuracy: 'exact', source: `NFZ, order ${CURRENT_PLAN.ordinance}`, href: LINKS.z107 },
+  ]}
+/>
+
+## The 2026 plan: from PLN 217 billion to PLN 227 billion
+
+The figure of PLN 217 billion that often comes up in connection with the NFZ budget for 2026 comes from the draft plan presented to the Sejm Health Committee in July 2025. Revenue and costs in it were <Money value={bn(DRAFT_2026.total)} scale="billion" /> each, including <Money value={bn(DRAFT_2026.subsidy, 0)} scale="billion" decimals={0} /> of subsidy from the state budget.[^kz88]
+
+In 2026 the plan was amended several times. By the end of July revenue had been increased, including the subsidy, which rose to <Money value={bn(CURRENT.subsidy)} scale="billion" />.[^z73] After the amendment of {CURRENT_PLAN.date}, costs stand at <Money value={bn(CURRENT.costs)} scale="billion" /> and revenue at <Money value={bn(CURRENT.revenue)} scale="billion" />.[^z107] That is {f1(change(LAST_FINAL.costs, CURRENT.costs))}% more than costs in the final plan for {LAST_FINAL.year}. We compare the plan for the current year with the final plan for the previous year, not with its outturn, because these are two different quantities.
+
+Articles about the NFZ also cite other amounts from the same plan, for example the costs of healthcare services. In the current plan for 2026 they come to <Money value={bn(CURRENT.benefits)} scale="billion" />.[^z107] This is part of total costs, not a competing version of the budget. We also write about how the plan changes during the year in our analysis [Following the public zloty](/en/analysis/following-the-public-zloty/).
+
+The media also write about a gap in the Fund’s finances. In June 2026 Rynek Zdrowia, a healthcare news site, put the “hole” in the NFZ budget at about <Money value={16e9} scale="billion" decimals={0} />.[^rz] This is an estimate, not an item in the plan. In the current plan for 2026, costs exceed revenue by <Money value={bn(CURRENT.costs - CURRENT.revenue)} scale="billion" />.[^z107]
+
+The draft plan for 2027, presented to the Sejm Health Committee in July 2026, is balanced, i.e. it has no deficit: revenue and costs in it are <Money value={bn(DRAFT_2027.total)} scale="billion" /> each, including <Money value={bn(DRAFT_2027.subsidy, 0)} scale="billion" decimals={0} /> of subsidy from the state budget.[^kz152] The draft budget act for 2027, however, provides for a subsidy for the NFZ of <Money value={bn(GAP_2027.subsidy)} scale="billion" />, so — as the Fiscal Council (Rada Fiskalna) points out — the Fund’s plan is inconsistent with the draft budget in this respect.[^rf] According to the Fiscal Council, which cites an estimate by its office, the NFZ’s funding shortfall in 2027 will be about <Money value={bn(GAP_2027.value, 0)} scale="billion" decimals={0} />, and that is after taking the higher subsidy into account. This is an estimate, not an item in the plan. The Council also notes that in 2021–2025 the costs actually incurred by the NFZ exceeded the initial plan by about PLN {OVERRUN_2021_2025.min}–{OVERRUN_2021_2025.max} billion a year.[^rf]
+
+## The subsidy from the state budget
+
+Until 2019 the NFZ plan contained no general subsidy (dotacja podmiotowa) from the state budget. It included only targeted subsidies, for example for emergency medical teams. In the plans for 2020–2023 the general subsidy did not exceed <Money value={2.6e9} scale="billion" />. In 2024 it rose to <Money value={bn(y2024.subsidy)} scale="billion" />, in 2025 to <Money value={bn(LAST_FINAL.subsidy)} scale="billion" />, and in the current plan for 2026 it is <Money value={bn(CURRENT.subsidy)} scale="billion" />.[^plany][^z107] That is about {formatEN(CURRENT.subsidy / CURRENT.revenue * 100)}% of the Fund’s revenue.
+
+<Figure
+  title={`Until 2023 the subsidy did not exceed PLN 2.6 billion. In ${CURRENT.year} it is PLN ${f1(CURRENT.subsidy)} billion.`}
+  note={`General subsidy from the state budget in the final NFZ financial plan; ${CURRENT.year} — plan in progress after the amendment of ${CURRENT_PLAN.date}. Excluding targeted subsidies (e.g. for emergency medical services). In the animation alongside, for scale: the state budget subsidy to the Social Insurance Fund (FUS) — outturn for 2020–2025, plan for 2026.`}
+  source={[
+    { label: 'NFZ, financial plans (BIP)', href: LINKS.bip },
+    { label: 'FUS — ZUS, financial situation and financial plan of the FUS', links: FUS_LINKS },
+  ]}
+>
+  <SubsidyChart {...SUBSIDY_CHART} />
+</Figure>
+
+<StatRow
+  label="State budget subsidy to the NFZ"
+  items={[
+    { value: LAST_FINAL.subsidy, decimals: 1, unit: 'PLN bn', desc: `in the final plan for ${LAST_FINAL.year}`, accuracy: 'exact', source: `NFZ, final plan ${LAST_FINAL.year}`, href: LAST_FINAL.href },
+    { value: CURRENT.subsidy, decimals: 1, unit: 'PLN bn', desc: `in the current plan for ${CURRENT.year} — ${formatEN(change(LAST_FINAL.subsidy, CURRENT.subsidy))}% more`, accuracy: 'exact', source: `NFZ, order ${CURRENT_PLAN.ordinance}`, href: LINKS.z107 },
+    { value: DRAFT_2027.subsidy, unit: 'PLN bn', desc: `in the draft plan for 2027; PLN ${f1(GAP_2027.subsidy)} billion in the draft state budget`, accuracy: 'exact', source: 'Sejm, Health Committee no. 152', href: DRAFT_2027.href },
+  ]}
+/>
+
+We calculate the growth of the subsidy between final plans, or between a final plan and the current one. A comparison with the draft, or with the plan approved before the start of the year, gives a completely different result, because the subsidy is often raised during the year — for 2026 from <Money value={bn(DRAFT_2026.subsidy, 0)} scale="billion" decimals={0} /> in the draft to <Money value={bn(CURRENT.subsidy)} scale="billion" />.[^kz88][^z73] Why the health contribution does not cover the costs of services is explained in our analysis [Following the public zloty](/en/analysis/following-the-public-zloty/).
+
+## How much of this is pay
+
+The NFZ financial plan has no item for “pay of medical staff”. Money for salaries in hospitals and clinics is included in the costs of services, together with medicines, equipment and the facilities’ other costs. The plan shows separately only the pay of the Fund’s own staff, less than <Money value={1e9} scale="billion" decimals={0} />.[^z107] How much the statutory pay rises in healthcare cost is therefore known only from estimates.
+
+<StatRow
+  label="The cost of pay rises: estimates"
+  items={[
+    { value: 58, prefix: '~', unit: 'PLN bn', desc: 'the cumulative cost of the act on minimum pay in healthcare in 2025 — estimate by the Federation of Polish Entrepreneurs', accuracy: 'est', source: 'TVN24', href: LINKS.tvn },
+    { value: 72, prefix: '~', unit: 'PLN bn', desc: 'the same cost in 2026 according to the NFZ vice-president (April 2026)', accuracy: 'est', source: 'Forsal.pl', href: LINKS.forsal },
+    { value: 9.25, decimals: 2, unit: 'PLN bn', desc: 'the rise in NFZ spending over 12 months following the 2026 AOTMiT recommendation — an increase, not total pay', accuracy: 'exact', source: 'Termedia', href: LINKS.termediaAotmit },
+  ]}
+/>
+
+The cumulative cost of the act on minimum pay in healthcare came to about <Money value={58e9} scale="billion" decimals={0} /> in 2025. This figure comes from analyses by the Federation of Polish Entrepreneurs (Federacja Przedsiębiorców Polskich, FPP), an employers’ organisation, cited by the broadcaster TVN24.[^tvn] For 2026 the NFZ vice-president spoke in April of <Money value={72e9} scale="billion" decimals={0} /> out of a “PLN 220 billion” plan,[^forsal] and according to TVN24 — of at least <Money value={71e9} scale="billion" decimals={0} />.[^tvn] Against the current plan (PLN {f1(CURRENT.costs)} billion), PLN 72 billion is about {formatEN(72 / CURRENT.costs * 100)}% of costs, and about {formatEN(72 / CURRENT.benefits * 100)}% of the costs of services. This is our own calculation. It is also roughly three times what the 2026 plan allocates to primary care (<Money value={bn(CURRENT_PLAN.primaryCare)} scale="billion" />).[^z107]
+
+A different figure is the PLN 9.25 billion from the June 2026 recommendation of the Agency for Health Technology Assessment and Tariff System (AOTMiT). According to the agency, NFZ spending will rise by this amount, mainly because of the July increases in minimum pay.[^termedia] This is an increase over 12 months, not the total cost of pay. According to Rynek Zdrowia, it comes to about <Money value={4.5e9} scale="billion" /> by the end of 2026 and about <Money value={9e9} scale="billion" decimals={0} /> in the whole of 2027.[^rz] How pay rises feed into the prices of services is described in [Pricing of services](/en/mechanisms/pricing-of-healthcare-services/), and how the NFZ settles accounts with hospitals in [The NFZ payment system](/en/mechanisms/nfz-payment-system/).
+
+<Aside title="Where “69% of the growth” comes from">
+
+The often-quoted figure that about 69% of the growth in spending goes on pay refers to something other than the NFZ plan. According to an analysis by the Federation of Polish Entrepreneurs from December 2023, public spending on healthcare rose by <Money value={100.3e9} scale="billion" /> in 2018–2024, of which <Money value={69.4e9} scale="billion" /> was absorbed by pay rises.[^fpp] This is all public spending, not the NFZ budget, and 2024 was still counted from the plan at the time. The proportion does not apply to 2025–2026.
+
+</Aside>
+
+## Money and the waiting list
+
+More money in the plan does not mean shorter waits. The chart shows both trends since {FROM} on one scale: each line is calculated relative to {FROM}, which has the value 100. Costs are the same series as above, prices are the annual GUS indices, and the waiting time is the average waiting time for a service in the Barometer of the Watch Health Care Foundation (WHC).[^plany][^gus-cpi][^whc2025]
+
+<Figure
+  title={`Since ${FROM} costs in the NFZ plan have risen ${f1(GROWTH.budget)} times, prices by ${formatEN(GROWTH.prices)}%, and the waiting time for a service by ${formatEN(GROWTH.queue)}%.`}
+  note={`Indices, ${FROM} = 100. Costs: final NFZ financial plans. Prices: annual GUS indices. Waiting time: average waiting time for a single service in the WHC Barometer; each dot is one edition of the survey, and 100 is the average of three measurements from ${FROM}. There was no Barometer in 2020 (dashed segment).`}
+  source={{ label: 'NFZ, GUS, Watch Health Care Foundation', href: QUEUE_LINKS.whc2025 }}
+>
+  <IndexChart {...INDEX_CHART} />
+</Figure>
+
+The average waiting time for a single service grew from 2.9–3.0 months in {FROM} to {f1(WHC_LATEST.single)} months in September and October {TO}. According to the Watch Health Care Foundation this is the longest since its measurements began.[^whc2025] The waiting time did not grow evenly, however. At the turn of 2018 and 2019 it was 3.8 months, in September 2021 it was shorter (3.4 months), and then it grew again: to 3.5–3.6 months in 2022–2023 and to 4.2 months in 2024 and 2025.
+
+The chart sets two trends side by side, but does not show what links them. The Barometer shows how access to services changes, but not why. How many doctors are missing and why is explained in our analysis [Why Poland is short of doctors](/en/analysis/why-poland-is-short-of-doctors/), and how the waiting list feeds into the price of a private visit in [Private visits: the longer the waiting list, the higher the price](/en/analysis/private-visits-queues-and-prices/).
+
+### Two measures of the WHC Barometer
+
+The Watch Health Care Foundation checks waiting times using the “mystery patient” method: it phones facilities with an NFZ contract and asks for the first available appointment.[^whc2025] From the results it calculates several averages. The chart shows one of them: the average waiting time for a **single service**, i.e. for about 215 visits, tests and procedures taken together.[^rz-whc] The other is the average waiting time for a **specialist consultation**, calculated for several dozen specialties.
+
+In autumn 2025 the two measures gave the same result, but earlier they differed, so the pace of growth depends on which one is chosen. Since September 2021 the waiting time for a single service has grown from {f1(WHC_2021.single)} to {f1(WHC_LATEST.single)} months, and for a specialist consultation from {f1(WHC_2021.specialist)} to {f1(WHC_LATEST.specialist)} months.[^whc2021][^whc2025]
+
+<StatRow
+  label="WHC Barometer: September 2021 and autumn 2025"
+  items={[
+    { value: WHC_LATEST.single, decimals: 1, unit: 'months', desc: `on average for a single service, ${editionEN(WHC_LATEST.label)} — the same for a specialist consultation`, accuracy: 'exact', source: 'WHC Barometer 2025', href: QUEUE_LINKS.whc2025 },
+    { value: GROWTH.single2021, unit: '%', desc: `the growth since Sep 2021 in the waiting time for a single service (${f1(WHC_2021.single)} → ${f1(WHC_LATEST.single)} months)`, accuracy: 'exact', source: 'WHC Barometer 2021 and 2025', href: QUEUE_LINKS.whc2021 },
+    { value: GROWTH.specialist2021, unit: '%', desc: `the growth since Sep 2021 in the waiting time for a specialist consultation (${f1(WHC_2021.specialist)} → ${f1(WHC_LATEST.specialist)} months)`, accuracy: 'exact', source: 'WHC Barometer 2021 and 2025', href: QUEUE_LINKS.whc2021 },
+  ]}
+/>
+
+### The longer view in figures
+
+The table shows the same years in absolute terms, together with inflation and the minimum wage.[^plany][^gus-cpi][^placa] For waiting times we give both Barometer measures, each edition separately.[^whc-raporty]
+
+<Figure
+  note="Costs: final NFZ financial plan; 2026 — plan in progress. Inflation: annual average GUS index, change on the previous year. Minimum wage from January; in 2023 and 2024 a second, higher rate applied from July. The WHC measurement from the turn of December 2018 and January 2019 is shown under 2019. We do not give specialist consultations for the 2016–2018 editions."
+  source={{ label: 'NFZ, GUS, Council of Ministers regulations, Watch Health Care Foundation', href: QUEUE_LINKS.whcRaporty }}
+>
+  <Comparison table={HISTORY_TABLE} />
+</Figure>
+
+The minimum wage rose from <Money value={wage(FROM)} /> in {FROM} to <Money value={wage(TO)} /> in {TO}, i.e. {formatEN(GROWTH.minWage, 2)} times, and in 2026 it is <Money value={wage(2026)} />.[^placa] We show it as a reference point, because people on the lowest pay also use public healthcare.
+
+### Waiting times depend on the specialist
+
+<Figure
+  title="The wait for a neurosurgeon or an endocrinologist is over 12 months, three times longer than the average for a specialist."
+  note="Average waiting time for an appointment at a clinic with an NFZ contract, in months. Five of the 41 specialists in the Barometer: the three with the longest waits and two common clinics."
+  source={{ label: 'Watch Health Care Foundation Barometer, Sep/Oct 2025', href: QUEUE_LINKS.whc2025 }}
+>
+  <BarChart
+    rows={SPECIALIST_ROWS}
+    max={14}
+    unit="months"
+    average={SPECIALISTS_2025.average}
+    caption={`Waiting time for an appointment with a specialist according to the WHC Barometer, Sep/Oct 2025: ${SPECIALIST_ROWS.map((r) => `${r.label.toLowerCase()} ${formatEN(r.value, 1)} months`).join(', ')}; ${formatEN(SPECIALISTS_2025.average, 1)} months on average for a specialist.`}
+  />
+</Figure>
+
+These are appointments at clinics according to the WHC Barometer from September and October 2025.[^whc2025] The wait for a neurosurgeon is 4.7 months longer than a year earlier, and for an endocrinologist 0.8 months longer. The result for a single specialist is based on a few facilities, so it is less certain than the average for all of them.
+
+The NFZ also has its own data on waiting times. They are based on facilities’ reports on their waiting lists. According to data for the second quarter of 2025, described by the daily Gazeta Prawna, {formatEN(NFZ_ORTHOPEDIST.waiting / 1000, 1)} thousand people were waiting for an appointment with an orthopaedist in the stable category, for {f1(NFZ_ORTHOPEDIST.months)} months on average.[^gp] The same clinics have different results in the two sources, because these are two different measurements: the NFZ counts patients registered on the list, while WHC asks for the first available appointment.
+
+<Figure
+  title="The same clinic, two sources, two results"
+  note="NFZ: providers’ reports for the second quarter of 2025, via Gazeta Prawna. WHC: first available appointment, September and October 2025. Months."
+  source={{ label: 'Gazeta Prawna; WHC Barometer 2025', href: QUEUE_LINKS.gp }}
+>
+  <Comparison table={SOURCES_TABLE} />
+</Figure>
+
+The NFZ also gives the waiting time for admission to a hospital ward, e.g. 5.8 months for neurosurgery.[^gp] This is admission to hospital, not an appointment at a clinic, so it cannot be compared with the 13.1 months from the Barometer. How many training places and candidates there are in individual specialties is shown in our compilation [Residents’ pay by specialty](/en/data/residents-pay-by-specialty/).
+
+## How much we pay ourselves
+
+<Figure
+  title={`In ${oopLast.year} households spent PLN ${f1(oopLast.value)} billion on healthcare out of their own pockets — ${formatEN(oopGrowth.at(-1))}% more than a year earlier.`}
+  note="Direct spending by households on healthcare in the GUS National Health Account, PLN billion. GUS has not yet published data for 2025."
+  source={{ label: 'GUS, National Health Account for 2024 (M.P. 2026 item 971)', href: QUEUE_LINKS.nrz2024 }}
+>
+  <BarChart
+    rows={OUT_OF_POCKET.map((o) => ({ label: String(o.year), value: o.value, display: `PLN ${f1(o.value)} bn`, highlight: o.year === oopLast.year }))}
+    max={50}
+    unit="PLN bn"
+    caption={`Direct spending by households on healthcare, PLN billion: ${OUT_OF_POCKET.map((o) => `${o.year} — ${f1(o.value)}`).join('; ')}.`}
+  />
+</Figure>
+
+This is money that patients pay directly, without insurance or a subscription. It comes from the GUS National Health Account.[^nrz2024][^nrz] In 2021–2023 this spending grew by {formatEN(Math.min(...oopEarlier))}–{formatEN(Math.max(...oopEarlier))}% a year, and in {oopLast.year} by {formatEN(oopGrowth.at(-1))}%. GUS data do not show what caused such a large jump. Per inhabitant it is about <Money value={Math.round(OOP_PER_PERSON_2024 / 10) * 10} /> in {oopLast.year}. This is our own calculation: the GUS amount divided by {f1(POPULATION_2024 / 1e6)} million inhabitants.[^ludnosc] Together with medical subscriptions and voluntary insurance, private spending on health came to <Money value={bn(PRIVATE_TOTAL_2024)} scale="billion" /> in {oopLast.year}.[^nrz2024]
+
+The second thing we pay ourselves is the health contribution. GUS does not say how much contribution a person on the median wage pays, so we calculate it ourselves. An employee pays 9% of the base, i.e. gross pay less 13.71% social insurance contributions.[^mediany] At the October {lastMedian.year} median (<Money value={lastMedian.median} decimals={0} /> gross) this is about <Money value={Math.round(contribution(lastMedian.median))} /> a year, compared with about <Money value={Math.round(contribution(firstMedian.median))} /> in {firstMedian.year}.
+
+<Figure
+  title="Health contribution of an employee on the median wage — our calculation from GUS data"
+  note="Contribution = 9% × (gross median − 13.71%) × 12. The medians for 2020 and 2022 come from the survey “Structure of wages and salaries by occupation”, those for 2024 and 2025 from “Distribution of wages and salaries”. These are different surveys, so the years are not fully comparable. There is no median for 2021 or 2023."
+  source={{ label: 'GUS, median pay; our own calculation', href: QUEUE_LINKS.median2024 }}
+>
+  <Comparison table={CONTRIBUTION_TABLE} />
+</Figure>
+
+The amount alone does not say how much the burden has grown, however. Until the end of 2021, 7.75% of the base was deductible from income tax; since 2022 there has been no such deduction. At the same time the rules of income tax changed.[^rpo] We write more about this in our analysis [Following the public zloty](/en/analysis/following-the-public-zloty/).
+
+## What the plan does not show
+
+The NFZ plan says how much the Fund will spend on particular types of services, but not how much of it will reach specific people. Nobody publishes the total paid to one person from public money. What we know about doctors’ pay is shown in our compilation [Doctor pay distribution](/en/data/doctor-pay-distribution/), and [we call](/en/demand/) for these totals to be made public: under a permanent identifier, without names.
+
+How large the debts of public hospitals are is shown in our compilation [Hospital debt](/en/data/hospital-debt/).
+
+[^plany]: NFZ, Public Information Bulletin, [“<span lang="pl">Finanse NFZ — plany finansowe</span>”](https://www.nfz.gov.pl/bip/finanse-nfz/) (“NFZ finances — financial plans”, in Polish). Final financial plans for [2015](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2015/plan_ostateczny_2015_r..xls), [2016](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2016/plan_ostateczny_nfz_na_2016_r..xlsx), [2017](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2018/plan_ostateczny_2017.xlsx), [2018](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2018/plan_ostateczny_2018.xlsx), [2019](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2019/plan_ostateczny_2019_r.xlsx), [2020](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2021/ostateczny_plan_finansowy_za_2020_rok_-_po_stanowisku_mf.xlsx), [2021](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2021/ostateczny_plan_finansowy_nfz_na_rok_2021..xlsx), [2022](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2022/ostateczny_plan_finansowy_nfz_na_rok_2022..xlsx), [2023](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2023/ostateczny_plan_finansowy_nfz_na_rok_2023.xlsx), [2024](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2024/ostateczny_plan_finansowy_nfz_na_rok_2024.xlsx) and [2025](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2025/ostateczny_plan_finansowy_nfz_na_rok_2025.xlsx) (in Polish), sheet “NFZ”, amounts in PLN thousand: total costs (item K; in the 2015 plan item O), total revenue (item J; in 2015 item N), general subsidy from the state budget (item A5 until 2022, item A4 from 2023).
+
+[^z107]: NFZ, [“<span lang="pl">Zarządzenie Prezesa NFZ nr 107/2026/DEF w sprawie zmiany planu finansowego Narodowego Funduszu Zdrowia na 2026 rok</span>”](https://baw.nfz.gov.pl/NFZ/document/44057/Zarzadzenie-107_2026_DEF) (“Order of the President of the NFZ no. 107/2026/DEF amending the financial plan of the National Health Fund for 2026”, in Polish), 5.10.2026 (NFZ database of internal acts) — plan after the amendment: total costs PLN 227.35 billion, total revenue PLN 225.17 billion, costs of healthcare services PLN 212.72 billion, of which primary care PLN 24.41 billion; general subsidy PLN 33.6 billion; pay of NFZ staff PLN 0.81 billion.
+
+[^sprawozdania]: NFZ, combined financial statements of the Fund for [2020](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2021/laczne_sprawozdanie_finansowe_nfz_2020.pdf), [2021](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2022/laczne_sprawozdanie_finansowe_nfz_2021.pdf), [2022](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/majatek_nfz/2022/laczne_sprawozdanie_finansowe_nfz_2022.pdf), [2023](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2024/laczne_sprawozdanie_finansowe_nfz_2023.pdf), [2024](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2025/laczne_sprawozdanie_finansowe_nfz_2024.pdf) and [2025](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2026/laczne_sprawozdanie_finansowe_nfz_2025.pdf) (in Polish) — operating costs in the profit and loss account; the statements for 2021 also show revenue reported as “<span lang="pl">środki z funduszu przeciwdziałania COVID-19</span>” (“funds from the COVID-19 Response Fund”, note 10.2).
+
+[^nik-covid]: NIK, [“<span lang="pl">Realizacja zadań finansowanych z Funduszu Przeciwdziałania COVID-19</span>”](https://www.nik.gov.pl/plik/id,28245,vp,31071.pdf) (“Implementation of tasks financed from the COVID-19 Response Fund”, in Polish), audit report, 2023, p. 23 — spending by the Minister of Health from the Fund from 2020 to the end of the first half of 2022: PLN 52,222.4 million, of which PLN 40,776.9 million on NFZ tasks and on refunding the effects of exemption from health contributions.
+
+[^gus-cpi]: GUS, [“<span lang="pl">Roczne wskaźniki cen towarów i usług konsumpcyjnych</span>”](https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/) (“Annual consumer price indices”, in Polish) — annual average indices for 2016–2025; the price level in 2025 relative to 2015 is their product (our own calculation).
+
+[^kz88]: Sejm, [“<span lang="pl">Pełny zapis przebiegu posiedzenia Komisji Zdrowia (nr 88)</span>”](https://api.sejm.gov.pl/sejm/term10/committees/ZDR/sittings/88/pdf) (“Full record of the Health Committee sitting (no. 88)”, in Polish), 9.07.2025 — draft NFZ financial plan for 2026: revenue PLN 217,388,948 thousand, subsidy from the state budget PLN 26,000,000 thousand.
+
+[^z73]: NFZ, [“<span lang="pl">Zarządzenie Prezesa NFZ nr 73/2026/DEF</span>”](https://baw.nfz.gov.pl/NFZ/document/43941/Zarzadzenie-73_2026_DEF) (“Order of the President of the NFZ no. 73/2026/DEF”, in Polish), 2026 (NFZ database of internal acts) — amendment of the financial plan for 2026; in the plan as at 23.07.2026 the general subsidy is PLN 33.6 billion.
+
+[^rz]: Rynek Zdrowia, [“<span lang="pl">9 mld zł na podwyżki dla medyków. Zapłaci Narodowy Fundusz Zdrowia</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/9-mld-zl-na-podwyzki-dla-medykow-Zaplaci-Narodowy-Fundusz-Zdrowia,285313,1.html) (“PLN 9 billion for pay rises for medical staff. The National Health Fund will pay”, in Polish), 11.06.2026.
+
+[^kz152]: Sejm, [“<span lang="pl">Pełny zapis przebiegu posiedzenia Komisji Zdrowia (nr 152)</span>”](https://api.sejm.gov.pl/sejm/term10/committees/ZDR/sittings/152/pdf) (“Full record of the Health Committee sitting (no. 152)”, in Polish), 2.07.2026 — draft NFZ financial plan for 2027: revenue PLN 237,342,389 thousand, costs PLN 237,342,389 thousand, subsidy from the state budget PLN 35,000,000 thousand.
+
+[^rf]: Fiscal Council, [“<span lang="pl">Opinia Rady Fiskalnej o projekcie ustawy budżetowej na rok 2027 z dnia 27 sierpnia 2026 roku</span>”](https://www.radafiskalna.gov.pl/wp-content/uploads/2026/09/2026-09-11_opinia-RF-o-wPUB27.pdf) (“Opinion of the Fiscal Council on the draft budget act for 2027 of 27 August 2026”, in Polish), 11.09.2026 — p. 29: NFZ funding shortfall in 2027 estimated by the Office of the Fiscal Council at about PLN 16 billion “already after taking into account a general subsidy of PLN 41.5 billion” (our translation); NFZ costs actually incurred in 2021–2025 higher than the initial plan by about PLN 19–22 billion a year; the NFZ plan inconsistent with the draft budget as regards the subsidy. Pp. 35–36: general subsidy for the NFZ in the draft budget act for 2027 — PLN 41.5 billion.
+
+[^tvn]: TVN24, [“<span lang="pl">„Grzech pierworodny” ustawy. Kulisy finansowania płac minimalnych w ochronie zdrowia</span>”](https://tvn24.pl/zdrowie/podwyzki-plac-minimalnych-w-ochronie-zdrowia-ile-beda-kosztowaly-st9013918) (“The act’s ‘original sin’. Behind the funding of minimum pay in healthcare”, in Polish), 23.04.2026 — the cost in 2025 based on analyses by the Federation of Polish Entrepreneurs, in 2026 according to the NFZ vice-president at the European Economic Congress.
+
+[^forsal]: Forsal.pl, [“<span lang="pl">Miliardy złotych na podwyżki w ochronie zdrowia</span>”](https://forsal.pl/gospodarka/aktualnosci/artykuly/11237489,miliardy-zlotych-na-podwyzki-w-ochronie-zdrowia-wiceprezes-nfz-jakub.html) (“Billions of zloty for pay rises in healthcare”, in Polish), 23.04.2026 — statement by the NFZ vice-president at the European Economic Congress.
+
+[^termedia]: Termedia, Menedżer Zdrowia, [“<span lang="pl">Na podwyżki NFZ ma wydać ponad 9 mld zł. AOTMiT publikuje rekomendację</span>”](https://www.termedia.pl/mz/Na-podwyzki-NFZ-ma-wydac-ponad-9-mld-zl-AOTMiT-publikuje-rekomendacje,68001.html) (“The NFZ is to spend over PLN 9 billion on pay rises. AOTMiT publishes its recommendation”, in Polish), 2.07.2026 — recommendation of the President of AOTMiT no. 84/2026 of 9.06.2026, the variant approved by the minister of health.
+
+[^fpp]: Prawo.pl, [the Federation of Polish Entrepreneurs’ analysis “<span lang="pl">Monitor finansowania ochrony zdrowia</span>” (“Healthcare Financing Monitor”)](https://www.prawo.pl/zdrowie/monitor-finansowy-ochrony-zdrowia-podwyzki-plac,524511.html) (in Polish), 18.12.2023.
+
+[^whc2025]: Watch Health Care Foundation, [“<span lang="pl">Barometr WHC — raport z IX/X 2025</span>”](https://www.korektorzdrowia.pl/wp-content/uploads/barometr-whc-2025.pdf) (“WHC Barometer — report for Sep/Oct 2025”, in Polish) — fig. 2: average waiting time for a single service in all editions since 2012; survey method; specialist consultation 4.2 months (a year earlier 4.3 months); waiting times for individual specialists.
+
+[^rz-whc]: Rynek Zdrowia, [“<span lang="pl">Barometr Watch Health Care: średni czas oczekiwania na leczenie w 2025 r. to ponad 4 miesiące</span>”](https://www.rynekzdrowia.pl/Polityka-zdrowotna/Barometr-Watch-Health-Care-sredni-czas-oczekiwania-na-leczenie-w-2025-r-to-ponad-4-miesiace,279890,14.html) (“Watch Health Care Barometer: the average waiting time for treatment in 2025 is over 4 months”, in Polish) — average of 215 services.
+
+[^whc2021]: Watch Health Care Foundation, [“<span lang="pl">Barometr WHC — raport z września 2021</span>”](https://www.korektorzdrowia.pl/wp-content/uploads/2021-wrzesien.pdf) (“WHC Barometer — report for September 2021”, in Polish) — single service 3.4 months, specialist consultation 2.9 months.
+
+[^placa]: Regulations of the Council of Ministers on the minimum wage, issued every September for the following year, e.g. [for 2021](https://eli.gov.pl/eli/DU/2020/1596/ogl/pol/pdf) (Dz.U. 2020 item 1596, Journal of Laws, in Polish).
+
+[^whc-raporty]: Watch Health Care Foundation, [WHC Barometer reports](http://www.korektorzdrowia.pl/barometr/raporty/) (in Polish) — specialist consultations from the texts of the reports for individual editions: 2015 (three editions), Dec/Jan 2019, Sep 2021, Nov 2022, Jul/Aug 2023, Oct/Nov 2024 and Sep/Oct 2025.
+
+[^nrz2024]: [“<span lang="pl">Obwieszczenie Prezesa GUS z 30 września 2026 r. w sprawie Narodowego Rachunku Zdrowia za 2024 r.</span>”](https://api.sejm.gov.pl/eli/acts/MP/2026/971/text.pdf) (“Notice of the President of GUS of 30 September 2026 on the National Health Account for 2024”, M.P. 2026 item 971, in Polish) — direct household spending PLN 47,640.5 million, total private spending PLN 66,377.7 million.
+
+[^nrz]: GUS, [“<span lang="pl">Wydatki na ochronę zdrowia w latach 2021–2023</span>”](https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/wydatki-na-ochrone-zdrowia-w-latach-2021-2023,27,4.html) (“Health expenditure in 2021–2023”, in Polish) — direct household spending: PLN 33,625.3 million (2021), PLN 36,963.4 million (2022), PLN 38,633.2 million (2023); for 2020 (PLN 32.2 billion): Prawo.pl, [“<span lang="pl">Wydatki gospodarstw domowych na zdrowie w 2020 r.</span>”](https://www.prawo.pl/zdrowie/wydatki-gospodarstw-domowych-na-zdrowie-w-2020-r-gus,517633.html) (“Household spending on health in 2020”, in Polish), based on GUS data.
+
+[^ludnosc]: GUS, [“<span lang="pl">Zasoby kadrowe w wybranych zawodach medycznych na podstawie źródeł administracyjnych w 2024 r.</span>”](https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/zasoby-kadrowe-w-wybranych-zawodach-medycznych-na-podstawie-zrodel-administracyjnych-w-2024-r-,28,4.html) (“Human resources in selected medical professions based on administrative sources in 2024”, in Polish) — population used as the denominator of the indicators (37,489,087).
+
+[^mediany]: GUS, median gross pay in October: [2020](https://stat.gov.pl/obszary-tematyczne/rynek-pracy/pracujacy-zatrudnieni-wynagrodzenia-koszty-pracy/struktura-wynagrodzen-wedlug-zawodow-w-pazdzierniku-2020-roku,5,7.html) and [2022](https://stat.gov.pl/obszary-tematyczne/rynek-pracy/pracujacy-zatrudnieni-wynagrodzenia-koszty-pracy/struktura-wynagrodzen-wedlug-zawodow-za-pazdziernik-2022-r-,5,8.html) (“Structure of wages and salaries by occupation”), [2024](https://stat.gov.pl/obszary-tematyczne/rynek-pracy/pracujacy-zatrudnieni-wynagrodzenia-koszty-pracy/rozklad-wynagrodzen-w-gospodarce-narodowej-w-pazdzierniku-2024-r-,32,10.html) (“Distribution of wages and salaries in the national economy”); 2025: Prawo.pl, [“<span lang="pl">Mediana wynagrodzeń w październiku 2025 r.</span>”](https://www.prawo.pl/kadry/mediana-wynagrodzen-pazdziernik-2025-r-gus,1542164.html) (“Median pay in October 2025”), based on GUS (all in Polish). We calculate the contribution ourselves: 9% × (median − 13.71%) × 12.
+
+[^rpo]: Commissioner for Human Rights, [“<span lang="pl">Składka zdrowotna — brak możliwości odliczenia od podatku. Odpowiedź MZ</span>”](https://bip.brpo.gov.pl/pl/content/rpo-podatki-skladka-zdrowotna-niemoznosc-odliczenia-mz-odpowiedz) (“Health contribution — no deduction from tax. Reply of the Ministry of Health”, in Polish) — until 2021 a deduction of up to 7.75% of the base, abolished from 1.01.2022.
+
+[^gp]: Gazeta Prawna, [“<span lang="pl">NFZ podał najnowsze dane o kolejkach. Do tych specjalistów nie ma już wolnych terminów</span>”](https://www.gazetaprawna.pl/biznes/zdrowie/artykuly/11155472,kolejkidolekarzynfz2025.html) (“The NFZ has released the latest waiting-list data. There are no free appointments left with these specialists”, in Polish), 12.11.2025 — NFZ data for Q2 2025: clinics (orthopaedist 4.8 months, 225.8 thousand waiting; cardiologist 4.2; ophthalmologist 3.4) and hospital wards (neurosurgery 5.8 months).

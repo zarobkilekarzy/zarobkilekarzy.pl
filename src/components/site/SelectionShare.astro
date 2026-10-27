@@ -8,13 +8,16 @@
  * Obszar bez paska (np. interaktywne narzędzie): atrybut data-no-share.
  */
 import Icon from '@/components/ui/Icon.astro';
+import { uiOf } from '@/i18n/ui';
+
+const t = uiOf(Astro.url);
 ---
-<zl-selection-share class="qs" role="toolbar" aria-label="Zaznaczony fragment" hidden>
+<zl-selection-share class="qs" role="toolbar" aria-label={t.nav.selection} hidden>
   <button type="button" class="qs__btn" data-copy>
-    <Icon name="link" size={16} /><span data-label>Kopiuj link</span>
+    <Icon name="link" size={16} /><span data-label>{t.share.copy}</span>
   </button>
   <button type="button" class="qs__btn" data-share hidden>
-    <Icon name="share" size={16} /><span>Udostępnij</span>
+    <Icon name="share" size={16} /><span>{t.share.label}</span>
   </button>
 </zl-selection-share>
 
@@ -22,6 +25,7 @@ import Icon from '@/components/ui/Icon.astro';
   import { anchorBefore, pageUrl } from '@/scripts/anchors';
   import { textDirective } from '@/scripts/text-fragment';
   import { announce, copyText } from '@/scripts/clipboard';
+  import { clientUi } from '@/i18n/client';
 
   const EXCLUDE = 'input, textarea, select, [contenteditable], dialog, [data-no-share]';
   const QUOTE_MAX = 280;
@@ -43,10 +47,11 @@ import Icon from '@/components/ui/Icon.astro';
 
       copy.addEventListener('click', async () => {
         const ok = await copyText(this.#url);
-        label.textContent = ok ? 'Skopiowano ✓' : 'Nie udało się';
-        announce(ok ? 'Link do zaznaczonego fragmentu skopiowany' : 'Nie udało się skopiować linku');
+        const t = clientUi();
+        label.textContent = ok ? t.copied : t.failed;
+        announce(ok ? t.quoteCopiedAnnounce : t.quoteFailedAnnounce);
         setTimeout(() => {
-          label.textContent = 'Kopiuj link';
+          label.textContent = t.copyLink;
           this.hide();
         }, 1400);
       });

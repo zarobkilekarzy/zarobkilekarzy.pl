@@ -10,6 +10,8 @@ import type { Route } from '@/lib/pacjent/types';
 import { inline, type Resolve } from '@/lib/inline';
 import { pad2, typo } from '@/lib/format';
 import { isExternal, linkAttrs } from '@/lib/links';
+import { localeOf } from '@/i18n/locales';
+import { ui } from '@/i18n/ui';
 
 interface Props extends HTMLAttributes<'ol'> {
   routes: Route[];
@@ -17,6 +19,8 @@ interface Props extends HTMLAttributes<'ol'> {
 }
 
 const { routes, resolve, class: className, ...rest } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const to = { pl: 'Dokąd: ', en: 'Where to: ' }[locale];
 ---
 <ol class:list={['routes', className]} {...rest}>
   {routes.map((r, i) => (
@@ -27,7 +31,7 @@ const { routes, resolve, class: className, ...rest } = Astro.props;
           <span class="route__head">
             <span class="route__situation">{typo(r.situation)}</span>
             <span class="route__examples">{typo(r.examples)}</span>
-            <span class="route__to"><span class="sr-only">Dokąd: </span>{typo(r.to)}</span>
+            <span class="route__to"><span class="sr-only">{to}</span>{typo(r.to)}</span>
           </span>
           <span class="route__toggle" aria-hidden="true"></span>
         </summary>
@@ -36,7 +40,7 @@ const { routes, resolve, class: className, ...rest } = Astro.props;
             {r.facts.map((f) => (
               <div class:list={{ 'is-urgent': f.urgent }}>
                 <dt>{f.label}</dt>
-                <dd set:html={inline(f.text, resolve)} />
+                <dd set:html={inline(f.text, resolve, undefined, locale)} />
               </div>
             ))}
           </dl>
@@ -49,7 +53,7 @@ const { routes, resolve, class: className, ...rest } = Astro.props;
                     <a {...linkAttrs(a.href)}>
                       <Icon name={icon} size={18} />
                       <span>{a.label}</span>
-                      {isExternal(a.href) && <span class="sr-only"> (otwiera się w nowej karcie)</span>}
+                      {isExternal(a.href) && <span class="sr-only"> ({ui[locale].newTab})</span>}
                     </a>
                   </li>
                 );

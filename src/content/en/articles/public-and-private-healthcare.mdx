@@ -1,0 +1,470 @@
+---
+title: "One doctor, two price lists: public and private healthcare"
+seoTitle: "Public vs private healthcare in Poland"
+summary: "The same doctor works in a hospital with a National Health Fund contract and in a private practice. How public and private healthcare share costs and profits — in the US and in Poland — and why more public money does not shorten the queue but strengthens the second price list."
+description: "Public vs private healthcare: the American model, Poland’s mixed system, competition for doctors, and who bears the costs while others collect the margins."
+keyPoints:
+  - "Since 2015 NFZ costs have risen 3.1 times, and the queue has grown 43% longer. In the first half of 2026 the NFZ spent 14.8% more on primary care, while primary care doctors provided 11.5% fewer consultations."
+  - "The same doctors work for the NFZ and in private practices. Hospitals bid for them against private practices and against one another — in 2024–2025, 539 wards were suspended or closed."
+  - "In the US and in Poland the state pays for training doctors, for the oldest patients and for losses, while the margin arises where the patient and the service can be chosen."
+editorial:
+  - >-
+    The private sector is not the patient’s enemy. The problem is the boundary between the sectors, which
+    cannot be seen. The same doctors, the same rooms and the same queue serve an NFZ patient one moment and
+    a private client the next, and the public payer does not know how many hours it is buying or how much
+    the bidding for doctors with the neighbouring hospital costs it.
+  - >-
+    That is why we call for open pseudonymised data: the total paid from public money to each person, from
+    all workplaces, every quarter, under a permanent identifier instead of a name. Only then will it be
+    possible to check whether further billions for public healthcare buy more treatment or a more expensive
+    hour from the same people.
+translation:
+  of: publiczna-prywatna-ochrona-zdrowia
+  files: [src/data/kolejki.ts]
+  hash: "92b22be2dfe4"
+  date: 2026-10-27
+noindex: true
+---
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import BidSteps from '@/components/blocks/BidSteps.astro';
+import ColumnChart from '@/components/blocks/ColumnChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import DotRows from '@/components/blocks/DotRows.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import KeyFacts from '@/components/blocks/KeyFacts.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import TugOfWar from '@/components/blocks/TugOfWar.astro';
+import UnitChart from '@/components/blocks/UnitChart.astro';
+import Verdict from '@/components/blocks/Verdict.astro';
+import Money from '@/components/ui/Money.astro';
+import { GROWTH as Q } from '@/data/kolejki';
+import { formatEN } from '@/lib/format';
+import {
+  LINKS,
+  USA_PUBLIC,
+  PL_TOTAL,
+  perCapitaRows,
+  perCapitaCaption,
+  PL_PUBLIC_PPS,
+  EU_PUBLIC_PPS,
+  publicVsEu,
+  NRZ,
+  share,
+  OOP,
+  bn,
+  oopColumns,
+  oopCaption,
+  spendingGroups,
+  MATRIX,
+  OFFER,
+  pullOf,
+  USA_PL,
+  POZ_TABLE,
+  SENIORS,
+  QUEUES,
+  queuesCaption,
+  US_MECHANISMS,
+  COST_SHIFTS,
+} from '@/data/en/publiczna-prywatna-ochrona-zdrowia';
+
+{/* Tłumaczenie src/content/articles/publiczna-prywatna-ochrona-zdrowia.mdx; liczby i teksty wykresów: src/data/en/publiczna-prywatna-ochrona-zdrowia.ts */}
+
+In the morning, the same orthopaedic surgeon operates at a county hospital; in the afternoon, they see patients at a private practice two streets away. Under the National Health Fund (NFZ), the wait for a hip replacement is almost a year and a half on average.[^whc] For a paid visit to the practice, it is as long as the doctor’s schedule dictates. The patient sees two queues and two price lists. The doctor has one day and one schedule, which they divide between the public and the private purse. This text describes how the two systems share money, risk and doctors — in the United States, which is seen as the model of a market, and in Poland, where both sectors operate side by side, often under one roof.
+
+<StatRow
+  label="Public money, private market"
+  items={[
+    { value: Q.budget, decimals: 1, unit: 'times', desc: `the increase in NFZ costs in 2015–2025; the average waiting time for a service grew by ${formatEN(Q.queue)}% over the same period`, accuracy: 'exact', source: 'NFZ, financial plans; WHC Barometer', href: 'https://www.nfz.gov.pl/bip/finanse-nfz/' },
+    { value: NRZ[2024].oop / 1000, decimals: 1, unit: 'PLN bn', desc: 'paid by patients out of pocket for treatment in 2024 — alongside PLN 221.2 billion of public money', accuracy: 'exact', source: 'Statistics Poland (GUS), National Health Accounts', href: LINKS.nrz2024 },
+    { value: 539, unit: 'hospital wards', desc: 'were suspended or closed in 2024–2025; in 321 cases because of staff shortages', accuracy: 'est', source: 'compilation by Menedżer Zdrowia', href: LINKS.oddzialy },
+  ]}
+/>
+
+## Who pays and who treats
+
+“Public” and “private” healthcare are shorthand terms that combine two different things: who pays for treatment and who owns the facility. A county hospital is public in both senses. A private company with an NFZ contract for MRI scans or dialysis is private by ownership but public by money — the patient pays nothing, the Fund pays. Conversely, a public hospital can sell commercial services.
+
+<Comparison table={MATRIX} />
+
+So when we speak of “socialising costs and privatising profits”, we do not mean that companies make money and SPZOZs lose it. The point is which costs — training, on-call duty, difficult cases, losses — remain with the public payer, and which revenues can be moved to where the patient, the service and the price can be chosen. In 2024 current spending on healthcare in Poland amounted to <Money value={287565.5e6} scale="billion" />.[^nrz2024]
+
+<UnitChart
+  title="Of PLN 288 billion spent on health in 2024, PLN 66 billion was paid by patients and employers"
+  unit={1}
+  unitLabel="PLN bn"
+  cols={24}
+  groups={spendingGroups}
+  source="Statistics Poland (GUS), National Health Accounts for 2024"
+  href={LINKS.nrz2024}
+/>
+
+## The American model: a market paid for by the state
+
+In 2024 the United States spent US$5.3 trillion on health, or 18.0% of GDP — <Money value={15474} currency="USD" /> per resident.[^cms] Most working-age Americans are insured through their employer. People over 65 are insured by the federal Medicare programme, the poorest by the state-run Medicaid. Doctors and hospitals are paid for each service, and each insurer negotiates prices separately. In 2024 private insurance covered 31% of spending, Medicare 21%, Medicaid 18% and patients out of pocket 11%.[^cms]
+
+This is not a purely private system. According to the OECD, public money financed 54% of American health spending in 2023.[^oecd-finanse] Per resident, public programmes alone — Medicare, Medicaid and other government programmes — cost {formatEN(USA_PUBLIC)} US dollars at purchasing power parity in 2024. That is more than all health spending, public and private combined, in 27 of the 37 other OECD countries, including the United Kingdom, France and Poland.[^oecd-sha]
+
+<Figure
+  title={`Public programmes alone in the US cost ${formatEN(USA_PUBLIC / PL_TOTAL, 1)} times more per resident than all of healthcare in Poland`}
+  note="Current health spending per capita in 2024, US dollars at purchasing power parity (USD PPP). USA, public programmes: government schemes (including Medicaid) and social insurance (Medicare), excluding private insurance that the OECD classifies as compulsory under the Affordable Care Act. Other countries: all spending, public and private."
+  source={{ label: 'OECD, System of Health Accounts', href: LINKS.oecdPerCapita }}
+>
+  <BarChart
+    rows={perCapitaRows}
+    max={15000}
+    unit="USD PPP"
+    caption={perCapitaCaption}
+  />
+</Figure>
+
+For all this money Americans do not live longer. Life expectancy in 2023 was the same in the US and in Poland — 78.4 years — with spending per resident 3.5 times higher.[^oecd-profil] Roughly one in twelve US residents, 27.2 million people, had no insurance at all in 2024.[^nhis] Medical debts that appeared in credit reports reached <Money value={88e9} currency="USD" scale="billion" decimals={0} />.[^cfpb]
+
+What makes the system expensive is above all prices. In 2022 private insurers paid hospitals on average 254% of the rates that Medicare pays for the same services, and for doctors’ services — 184%.[^rand] A doctor in the US earns on average <Money value={277260} currency="USD" /> a year, almost four times as much as the average worker.[^bls] And there are fewer practising doctors than in Poland: 2.7 per 1,000 residents compared with 3.9.[^oecd-sha]
+
+This model shows clearly how costs go to the common purse and profits to those who are able to choose:
+
+<NumberedList items={US_MECHANISMS} />
+
+The data for this list come from federal agencies and Congress.[^cms][^medpac][^aha][^crs][^kff] It also includes a mechanism that Americans considered dangerous enough to ban. A doctor may not refer Medicare patients to a facility in which they have a financial interest — unless one of the narrow exceptions applies. The audit office of Congress calculated that doctors who referred patients for tests to their own units ordered about twice as many MRI and CT scans as other doctors.[^gao] We found no similar ban in the Polish acts on healthcare services and on medical activity. The Code of Medical Ethics only forbids recommending a healthcare provider for the sake of one’s own benefit.[^kel]
+
+## Poland: a public core, a private overlay
+
+Poland, like Germany, Czechia and Austria, has an insurance-based system: contributions go to a single payer, which buys services from public and private facilities. Alongside it there is a market in which the patient pays directly or through a subscription or an insurance policy from the employer. Both markets are served by the same people. In a 2026 survey by the medical self-government, about 55% of doctors said they worked in both the public and the private part of the system, and 11.9% only in the private part.[^nil] The sample was not random, but the scale is clear: for most specialists, the private practice and the hospital with an NFZ contract are two workplaces in a single day.
+
+### A second purse: practices, subscriptions and patients’ own pockets
+
+Part of the private market consists of fully commercial facilities with no NFZ contract at all: specialists’ practices and nationwide chains of clinics that sell subscriptions, most often to employers as an addition to pay. The largest of the listed chains had €1.24 billion of revenue in Poland in 2025.[^medicover] According to CBOS, a Polish public opinion research centre, 36% of adults have a medical subscription or a health insurance policy, including 17% who receive it from their employer. 11% of adults are treated exclusively outside the NFZ, and 53% use both systems.[^cbos]
+
+<KeyFacts
+  items={[
+    { value: bn(NRZ[2024].oop), unit: 'PLN bn', label: 'paid by patients out of pocket in 2024, 23% more than a year earlier' },
+    { value: '36', unit: '%', label: 'of adults have a medical subscription or a health insurance policy (2025)' },
+    { value: '5.8', unit: 'million', label: 'people had private health insurance in 2025 — excluding subscriptions' },
+    { value: '×2.5', label: 'the increase in households’ monthly spending on visits and outpatient services in 2019–2025' },
+  ]}
+/>
+
+Voluntary prepayments — subscriptions and insurance policies — cost <Money value={11.6e9} scale="billion" /> in 2023, twice as much as in 2015.[^nrz-seria] More than 5.8 million people had health insurance policies in 2025, 8.6% more than a year earlier.[^piu] According to the household budget survey, the average person spent about <Money value={121} /> a month on health in 2025, including about <Money value={42} /> on visits and outpatient services — 2.5 times more than in 2019.[^bgd] How many visits take place in fully private practices is not officially known. Statistics Poland (GUS) counts clinics and practices providing services financed from public funds — in 2025 they provided 330.7 million doctor consultations.[^gus-amb]
+
+<Figure
+  title={`Patients pay ${formatEN(NRZ[2024].oop / OOP[0].value, 1)} times more out of pocket than in 2015`}
+  note="Direct household spending on healthcare (visits, medicines, dentistry, tests), PLN billion at current prices, according to the National Health Accounts for successive years."
+  source={[{ label: 'Statistics Poland (GUS), National Health Accounts for 2024', href: LINKS.nrz2024 }, { label: 'Statistics Poland (GUS), Health expenditure in 2022–2024', href: LINKS.nrzSeria }]}
+>
+  <ColumnChart
+    columns={oopColumns}
+    max={50000}
+    caption={oopCaption}
+  />
+</Figure>
+
+This market is not a separate world. It largely employs the same specialists who see patients under the NFZ, and patients go to a private practice mostly to skip the queue — that is how 79% of those who pay explain it.[^cbos2023] The closest example to Poland’s is Austria. There a doctor can have a contract with a health insurance fund — then the patient pays nothing — or work as an “elective doctor” without a contract, for a full fee, part of which the fund reimburses to the patient. The number of fund doctors has stood still, while the number of elective doctors has grown by 61% since 2004.[^soh-at] Austria also has more doctors per resident than Poland — so the private part is growing not only because of a shortage of doctors, but also because working outside the fund is often more advantageous for them.
+
+## The same pathology, a different scale
+
+The Polish system does not resemble the American one: insurance is universal, and prices for NFZ patients are zero. In both countries, however, the same mechanism operates — costs that cannot be chosen stay with the public payer, while revenues that can be chosen may move to the private side.
+
+<Comparison table={USA_PL} />
+
+We give the sources of the figures in the table below, with the description of each mechanism. The last row is the most important here. In the US, which is regarded as a market-driven country, Medicare has published every year, starting with data for 2013, how much it paid each doctor for billed services — with the name and identification number.[^cms-npi] In Poland nobody knows how much public money one person receives, not even without a name.
+
+<Figure
+  title="In both countries older patients account for more than twice as large a share of spending as of the population"
+  note="USA: people aged 65+, total spending on health services, 2020. Poland: people aged 60+, NFZ reimbursement for hospital treatment, 2022. The definitions differ, so we compare the proportions within each country, not the countries with each other."
+  source={[{ label: 'CMS, National Health Expenditure', href: LINKS.cms }, { label: 'Statistics Poland (GUS), The situation of older people in Poland in 2022', href: LINKS.gus60 }]}
+>
+  <BarChart
+    rows={SENIORS}
+    max={60}
+    unit="%"
+    caption="Bar chart: USA — people aged 65+ are about 17% of the population and about 37% of spending on health services; Poland — people aged 60+ are 25.9% of the population and 55.4% of NFZ spending on hospital treatment."
+  />
+</Figure>
+
+## More money, fewer visits, a longer queue
+
+Our thesis is this: the weaker public care is, the stronger private care becomes. Weakness here does not mean, however, that public money is not growing — it is growing fast. It means that it buys less and less treatment. When the public system cannot offer an appointment, patients who can afford it pay privately, and private practice becomes more lucrative for doctors. The longer the public queue, the stronger the second price list — and the more the hospital has to pay for the same hours.
+
+Since 2015 NFZ costs have grown {formatEN(Q.budget, 1)} times. The average waiting time for a service, measured by the Watch Health Care Foundation, increased by {formatEN(Q.queue)}% over the same period and in autumn 2025 reached 4.2 months, the highest in the history of the survey.[^nfz-plany][^whc] Those who can, go to a private practice: in 2025, 40% of adults had seen a specialist outside the NFZ within six months, compared with 29% in 2018.[^cbos] We show how the NFZ budget, the queue and the price of a private visit changed year by year in the analysis [Private visits: the longer the waiting list, the higher the price](/en/analysis/private-visits-queues-and-prices/).
+
+For this money the NFZ buys fewer and fewer visits per zloty, and in primary care (POZ) — fewer visits overall. In the first half of 2026 the Fund spent 14.8% more on primary care than a year earlier, while family doctors provided 11.5% fewer consultations — 7.6 million fewer. The number of patients fell by only 1.8%.[^nfz-q2] In specialist outpatient clinics the number of visits is rising, but more slowly than the money: in 2022–2024 costs rose by 55.6%, and the number of services by 13.7%.[^nfz2024]
+
+<Comparison table={POZ_TABLE} />
+
+The NFZ report does not give the reasons for the fall in primary care consultations. Family doctors list possible causes: a difference in the infection season (data for the whole year will give the full picture), annual prescriptions, which free chronically ill patients from visits for a prescription, and the consolidation of facilities, after which some of them shorten their opening hours.[^rz-poz] One thing is certain: a primary care doctor is not paid per visit but receives a fixed rate for each patient on the list, so more money need not mean more consultations. We describe how this rate works in the analysis [Money per patient in primary care](/en/analysis/primary-care-capitation/).
+
+<Verdict
+  label="Thesis"
+  title="More public money, fewer NFZ visits, a longer queue, more visits to private practices"
+  steps={[
+    { value: `×${formatEN(Q.budget, 1)}`, desc: 'NFZ costs in 2015–2025' },
+    { value: '−11.5%', desc: 'consultations by primary care doctors in H1 2026 — with primary care costs 14.8% higher' },
+    { value: `+${formatEN(Q.queue)}%`, desc: 'average waiting time for a service in 2015–2025' },
+    { value: '29% → 40%', desc: 'of adults saw a specialist privately within six months (2018 → 2025)' },
+  ]}
+  text="The money did not buy doctors’ hours, only a more expensive hour. We describe how this happens in the section on competition for doctors."
+/>
+
+Despite the growing budget, Poland spends less on health than the average EU country: 7.84% of GDP compared with an EU average of 10.16%. Public spending per resident in purchasing power standards was {formatEN(PL_PUBLIC_PPS)} in 2024 compared with an EU average of {formatEN(EU_PUBLIC_PPS)}, or {publicVsEu}% of it.[^eurostat] Private money also plays a bigger role than elsewhere: patients covered 16.6% of spending out of pocket (EU: 15.1%), and subscriptions, insurance policies and other private spending 6.5% (EU: 4.6%).[^eurostat]
+
+The main barrier is time, not price. In the 2025 EU-SILC survey, 2.2% of Polish adults said they had not had a medical examination or treatment because the waiting list was too long. In the EU such people made up 1.2%. Cost was the reason for 0.5% in Poland and 1.0% in the EU.[^silc]
+
+The share of private money in total spending fell, from {formatEN(share(2015), 1)}% in 2015 to {formatEN(share(2024), 1)}% in 2024, because public money grew faster: nominally {formatEN(NRZ[2024].pub / NRZ[2015].pub, 2)} times compared with {formatEN(NRZ[2024].priv / NRZ[2015].priv, 2)} times.[^nrz2015][^nrz2024] The private market did not shrink in zloty terms, however — it almost doubled — and the queue grew longer. If the additional public money bought more doctors’ hours, the queue should be getting shorter and private practices should be losing clients. The opposite happened.
+
+Comparative research describes this relationship more cautiously. A 2004 analysis of OECD countries with parallel private financing concludes that a shift towards private money in the balance does more harm than good to public systems, although the effects depend on its form.[^tuohy] In Australia, a long expected queue led people to buy private insurance, and in public hospitals private patients were given higher priority.[^johar] A 2011 review of research on doctors working in two sectors, however, finds little hard evidence of their impact on public queues.[^socha]
+
+## The private practice as a door to the hospital
+
+The wait for a specialist visit under the NFZ is months, for planned surgery often more than a year, and in extreme cases years. A private visit shortens the first queue, but it can also be a door to the second.
+
+<Figure
+  title="The wait for a joint replacement under the NFZ is a year and a half. Nobody measures how much a paid visit shortens this route"
+  note="Average waiting time in facilities with an NFZ contract according to the WHC Barometer, IX/X 2025. The Poznań case: a date of 1.10.2035 for a patient with an urgent referral, as reported by the daily Głos Wielkopolski — the hospital did not comment."
+  source={[{ label: 'Watch Health Care Foundation, WHC Barometer', href: LINKS.whc }, { label: 'Głos Wielkopolski, 28.09.2026', href: LINKS.gw }]}
+>
+  <DotRows
+    rows={QUEUES}
+    unitLabel="1 dot = 1 month of waiting. Crosses: no data."
+    caption={queuesCaption}
+  />
+</Figure>
+
+The mechanism is simple. Any doctor can refer a patient to hospital, including a doctor in a private practice — only a specialist outpatient clinic requires a referral from a doctor with an NFZ contract. The medical category and the date are set by the hospital, often the one where the doctor from the practice works.[^art57][^art20] A paid consultation is therefore not just a faster visit. It can open the way to the ward where the same doctor works, and to a procedure paid for by the NFZ. If as a result the patient gets a date earlier than their condition justifies, the paid visit buys a place in the public queue.
+
+Doctors themselves point to this problem. In the medical self-government survey, 41.4% of respondents named adding patients outside a transparent order as a problem of combining the sectors, and 27.3% — moving patients from the public queue to private visits.[^nil] NFZ audits in 2026 found admissions outside the queue order on a large scale: at a clinic of a Warsaw university hospital, 70% of the audited admissions did not follow the queue order, and at a clinic of one of the Warsaw hospitals run by a government ministry — more than 97%.[^uck][^mswia] In neither audit did the NFZ confirm that patients reached the ward through a private practice. In the first, such an allegation was made in an anonymous letter from staff; in the second, donations to a foundation linked to the hospital were pointed to, which the ministry denies. How often a private practice opens the way to a ward is not known, because nobody matches paid visits against admissions financed by the NFZ. We describe this in detail in the section [A ticket through the private practice](/en/analysis/private-visits-queues-and-prices/#a-ticket-through-the-private-practice).
+
+## Competition for doctors
+
+A hospital does not buy a “doctor” but their hours, and specialists’ hours cannot be bought in quickly — 12–13 years pass from admission to medical school to the title of specialist. The same limited pool of hours is sought by private practices, clinics with NFZ contracts and several hospitals in the area. It looks like a tug of war in which the rope has two ends, but many are pulling.
+
+<Figure
+  title="The hospital is in a tug of war with the private practice and with the neighbouring hospital"
+  note="Round one: average hourly rates in job offers for doctors in 2023 by type of facility — offers, not payments; according to the report’s authors, specialist outpatient clinics are mostly private facilities. Round two: Ostrzeszów and Kępno, December 2025. The doctor’s position on the rope reflects the ratio of the rates (round one) or where the doctors went (round two); the dot under the rope marks its centre."
+  source={[{ label: 'Report “Lekarze — oferty pracy” (“Doctors — job offers”) for 2023', href: LINKS.lop }, { label: 'TVN24, 11.12.2025', href: LINKS.ostrzeszow }]}
+>
+  <TugOfWar
+    rounds={[
+      {
+        title: 'Round 1: public hospital versus private practice',
+        left: { pictogram: 'szpital', label: 'Hospital — average offer', value: `PLN ${formatEN(OFFER.hospital)}/h`, sub: 'job offers, 2023' },
+        right: { pictogram: 'gabinet', label: 'Specialist outpatient clinic — average offer', value: `PLN ${formatEN(OFFER.aos)}/h`, sub: 'mostly private' },
+        pull: pullOf(OFFER.hospital, OFFER.aos),
+        result: `The private practice offers ${formatEN((OFFER.aos / OFFER.hospital - 1) * 100)}% more per hour. The doctor does not have to choose one place, so the hospital gets the hours left over after the practice — or pays more.`,
+      },
+      {
+        title: 'Round 2: public hospital versus public hospital',
+        left: { pictogram: 'szpital', label: 'Hospital in Ostrzeszów', value: '0 of 5', sub: 'gynaecologists stayed' },
+        right: { pictogram: 'szpital', label: 'Hospital in neighbouring Kępno', value: '5 of 5', sub: 'gynaecologists moved' },
+        pull: 0.9,
+        result: 'According to the hospital in Ostrzeszów, the competitor offered much higher rates; the hospital in Kępno denies this. The maternity ward in Ostrzeszów was suspended.',
+      },
+    ]}
+  />
+</Figure>
+
+The Supreme Audit Office (NIK) put it most concisely in an audit of a hospital in Silesia: the staff shortage “strengthened the negotiating position of doctors”, and the management, wishing to keep the wards running, was “forced to accept pay demands” (our translation). Spending on employee pay there rose by more than 60% in 2018–2021, and on medical subcontracting by 49.8%.[^nik-kadry] In many hospitals the negotiations follow similar steps:
+
+<Figure
+  title="How the bidding for a team of doctors unfolds"
+  note="Diagram. The height of the bars shows the direction of the bidding, not exact rates; the figures in the descriptions come from NIK audits, the report on job offers and press reports on specific hospitals."
+>
+  <BidSteps
+    steps={[
+      { side: 'left', who: 'Hospital', level: 2, value: 'PLN 150/h', text: 'Announces a call for offers for on-call duty or for staffing a ward. In one of the hospitals audited by NIK, a 2021 contract paid PLN 150 an hour.' },
+      { side: 'right', who: 'Competitor', level: 4, value: 'PLN 249/h', text: 'A private practice or a hospital in the neighbouring county pays more. That was the average offer in specialist outpatient clinics in 2023.' },
+      { side: 'team', who: 'Team', level: 4, value: 'resignations', text: 'The ward’s doctors hand in their notice at the same time — as happened in 2025 and 2026 in, among other places, Nowogard, Pińczów and Ełk.' },
+      { side: 'left', who: 'Hospital', level: 5, value: '+28.6%', text: 'Raises the rate or suspends the ward. In Opole the doctors’ pay fund rose by 28.6% in 2025; in 2024–2025, 539 wards were suspended or closed.' },
+      { side: 'team', who: 'Market', level: 6, value: 'PLN 240/h', text: 'The new rate becomes a reference point. After the government announced a limit of PLN 240 an hour, some doctors demanded a rise to exactly that amount.' },
+    ]}
+    legend={{ left: 'hospital looking for doctors', right: 'competitor: private practice or another hospital', team: 'doctors' }}
+    caption="Diagram of the bidding in five steps: the hospital announces a call for offers (PLN 150/h), a competitor pays more (on average PLN 248.58/h in outpatient clinics), the team hands in its notice, the hospital raises the rate or suspends the ward, the new rate becomes a reference point (demands of PLN 240/h after the limit was announced)."
+  />
+</Figure>
+
+Each step has its source.[^nik-zlecenia][^lop][^nowogard][^pinczow][^elk][^opole][^oddzialy][^kotwica] In other hospitals it looks similar. When the county hospital in Iłża was looking for doctors for its internal medicine ward in February 2026, candidates demanded PLN 350–500 an hour, and the director called these amounts “lethal” for the hospital (our translation).[^ilza] The hospital in Bartoszyce, with <Money value={90.7e6} scale="million" /> of debt, paid an orthopaedic surgeon about <Money value={113000} /> a month in 2026, and yet since August it has been merging three wards because it lacks doctors.[^bartoszyce] Nationwide, “staff shortages” were the reason for 321 of the 539 decisions to suspend or close wards; most often they concerned obstetrics. This is an editorial compilation from the justifications that hospitals sent to the Ministry of Health, and “staff shortages” can mean both a lack of candidates and doctors who left because they received a better offer.[^oddzialy] Almost 91% of county hospitals ended 2025 with a loss on their core activity.[^zpp]
+
+The arithmetic is simple. With a fixed budget, the number of hours bought is inversely proportional to the rate: if an hour becomes 50% more expensive, the hospital buys a third fewer hours for the same money. Higher rates do not bring in new doctors, because their number is set by decisions taken years ago. What they do is make the same doctors move their hours to where they are paid more. The hospital that lost the bidding suspends the ward; patients travel further or go private. The weaker hospital has less money for the next round. That is how the spiral closes — and how additional public money turns into a more expensive hour instead of a shorter queue.
+
+Other countries know this spiral too. In 2014/15 English hospitals spent <Money value={3.3e9} currency="GBP" scale="billion" /> on agency medical staff, half as much again as five years earlier, and the UK’s National Audit Office found a statistically significant link between this spending and hospital deficits.[^nao] In Sweden all regions limited the hiring of agency staff, and in 2024 spending on hired doctors fell by 23%, and on hired staff overall by 35.8%.[^skr] The bidding can be stopped when buyers stop outbidding one another — but for that, one needs to know who pays how much.
+
+## Socialising costs, privatising profits
+
+In Poland, as in the US, part of the costs of healthcare stays on the public side regardless of who provides the service and who profits from it. We describe this mechanism with five examples. None of them means that anyone is breaking the law, and some are simply tasks that rest with the state. Together, however, they show where the costs lie and where the margin is.
+
+<NumberedList items={COST_SHIFTS} />
+
+Each point has its source and its limits.[^druk1569][^nik-budzet][^kredyt][^gus-60][^cbos][^nik-kardio][^nik-poludniowy][^zpp-samorzady][^medicover] NIK’s findings on cardiology concern 2011–2014, and pricing has changed since then. The private group’s result does not prove that it makes money at the expense of public hospitals — it is a different business model, in which the patient and the scope of services can be chosen. Local government does not have to cover a hospital’s losses — it only may, although in practice it does so regularly.[^uodl] There is one common denominator: costs that cannot be chosen — training, on-call duty, the patient with multiple conditions, the deficit — stay on the public side. Revenues that can be chosen may move to the private side.
+
+There are also costs that nobody counts. Complications after procedures performed commercially, in Poland or abroad, are treated in emergencies at the NFZ’s expense, but there is no register that would make it possible to establish how much this costs.
+
+<Aside title="The doctor is not the culprit here" variant="warn" label="How to read this mechanism">
+A doctor who accepts a better offer behaves rationally — just like an IT specialist or an engineer. According to AOTMiT, the median monthly pay of doctors, salaried and under contract, is PLN 24,000–27,000; about 1.5% of them earn more than <Money value={100000} /> a month.[^aotmit] The problem does not lie in the pay of the average doctor, but in the fact that several hundred hospitals bid for the same hours blindly, and the public payer cannot see what it is buying.
+</Aside>
+
+## Ban the combination?
+
+The simplest answer to the conflict of interest is to forbid doctors to work in both sectors. The idea comes back regularly in politics. In 2026 it was announced both by PiS (Law and Justice), which wants to write the ban into the party’s programme, and by the New Left (Nowa Lewica) in a draft on healthcare financing. The justification sounds similar to this text: private entities make money, while difficult cases remain in the public system.[^prawo-zakaz] In an IBRiS poll for the daily Rzeczpospolita in July 2026, 53.5% of respondents said that doctors should not combine work in both sectors, and 40.7% that they may.[^ibris]
+
+Doctors see it differently. In the medical self-government survey, a full ban was supported by 15.1% of respondents, and the most support — 71.9% — went to separating public and private queues, schedules and billing.[^nil] The National Trade Union of Doctors (OZZL) warns that a ban would push some doctors into the private sector.[^prawo-zakaz] The Presidium of the Supreme Medical Council considers that rigid restrictions amid staff shortages would reduce the number of NFZ services and increase the number of purely private ones.[^nrl] The act on pay limits for medical staff, which the Sejm passed on 22 October 2026 and which is now before the Senate, does not introduce a ban.[^glosowanie] It limits total working time and pay and gives the NFZ insight into the commercial services of facilities that have contracts with it.[^druk3157]
+
+A ban solves one problem — the conflict of interest — but may deepen another. With a fixed number of doctors, some specialists would choose private practice, the public queue would grow longer, and rates for those who stayed would rise — the same bidding mechanism, only with a stronger opponent. Ireland is taking a gradual route: since 2023 new consultants in the public health service receive only “public only” contracts. In August 2025, 64% of consultants had them, but an internal audit found that there is no system to check the phasing out of private practice in public hospitals.[^irl] We describe the British and Irish solutions in more detail in the section [Ban the combination?](/en/analysis/private-visits-queues-and-prices/#ban-the-combination) of the analysis of private visits. The common conclusion: without data on who works where and how much, it is impossible either to enforce a ban or to check whether one is needed.
+
+## What the private sector contributes
+
+The private part of the system is not only a cost. In 2024 it contributed <Money value={66.4e9} scale="billion" />, which the public budget would not have put up.[^nrz2024] Private companies with NFZ contracts increase capacity where the payer buys volume: after the limits on cataract operations were lifted, the average waiting time fell from 398 days in 2019 to 55 days at the end of 2024.[^zacma] Working in two sectors may also increase doctors’ total hours. In Norway, where more than 12,000 hospital doctors were studied, such dual practice was not associated with waiting times, and better-paid extra hours in hospital reduced the inclination to work privately.[^norwegia]
+
+This last finding shows well where the line lies. The private sector helps when the public payer knows what it is buying and can pay enough for an hour that the doctor does not need to look for it elsewhere. It does harm when the public system is too weak to pay competitively and too blind to see where its hours and patients are flowing out.
+
+## A boundary nobody can see
+
+Today nobody in Poland knows how many hours one doctor works for the NFZ and how many privately, how much they receive in total from public money from all their workplaces, or how much a hospital in the neighbouring county pays for the same hour. The NFZ does not have this knowledge, nor do hospital directors or patients. The government bill will give the Fund insight into the commercial services of facilities, but the payer will see individual facilities, not the total for one person.[^druk3157]
+
+Swedish regions limited the bidding for agency staff because every year they publicly count how much they spend on it.[^skr] Americans banned referrals to doctors’ own facilities because they calculated how much it costs, and they publish Medicare payments to doctors with names.[^gao][^cms-npi] In both cases the first step was a number. Our proposal is more modest than American practice: public amounts under a permanent pseudonym, without names. Without such data, every additional zloty for public healthcare may buy more treatment — or merely raise the price of an hour in the next round of bidding.
+
+<Aside title="What these data do not show" variant="note">
+Nobody measures the flow of doctors and hours between the public and the private sector. That is why the weakest link of the spiral described here is its beginning: it is not possible today to measure by how much a better offer from a private practice raises the rate in a hospital. Among the ward suspensions described here, none documents doctors moving to the private sector — what is documented is bidding between hospitals. Part of the rise in hospital pay costs results from the act on minimum pay in healthcare, not from the contract market; the available data do not allow the two to be separated. Queues also grow longer for reasons unrelated to money, including the ageing of patients. Comparisons with the EU and the OECD rely on health accounts whose methodology is sometimes revised.
+</Aside>
+
+[^whc]: Watch Health Care Foundation, [“<span lang="pl">Barometr WHC — raport z IX/X 2025</span>”](https://www.korektorzdrowia.pl/wp-content/uploads/barometr-whc-2025.pdf) (“WHC Barometer — report of IX/X 2025”, in Polish) — average waiting time for a single service 4.2 months, the longest in the history of the survey; cardiologist 4.6 months, gastroscopy 5.8 months, hip replacement 17.6 months, knee replacement (stable case) 18.9 months.
+
+[^nfz-plany]: NFZ, Public Information Bulletin, [“<span lang="pl">Finanse NFZ — plany finansowe</span>”](https://www.nfz.gov.pl/bip/finanse-nfz/) (“NFZ finances — financial plans”, in Polish) — costs in the final financial plans for 2015–2025; the the series and the growth of the waiting list calculated as in the compilation [The NFZ budget and waiting lists](/en/data/nfz-budget/).
+
+[^nfz-q2]: NFZ, [“<span lang="pl">Sprawozdanie z działalności Narodowego Funduszu Zdrowia za II kwartał 2026 roku</span>”](https://www.nfz.gov.pl/download/gfx/nfz/pl/defaultaktualnosci/284/6773/1/zalacznik_do_uchwaly_nr_33.2026_czesc_opisowa.pdf) (“Report on the activity of the National Health Fund for Q2 2026”, in Polish), annex to [NFZ Council resolution no. 33/2026/V](https://www.nfz.gov.pl/zarzadzenia-prezesa/uchwaly-rady-nfz/uchwala-nr-332026v,6773.html) (in Polish) — table 3: primary care costs PLN 10,600,932.40 thousand (I–VI 2025) and PLN 12,165,653.87 thousand (I–VI 2026), index 114.76%; primary care patients 24,397,887 and 23,968,352; consultations by primary care doctors 66,257,533 and 58,645,163; visits by primary care nurses 8,724,243 and 8,179,726. Primary care costs cover more than doctors’ consultations, so the cost per consultation is an approximation (our calculation).
+
+[^rz-poz]: Rynek Zdrowia, [“<span lang="pl">Ponad 7,6 mln porad lekarskich mniej. Co dzieje się w podstawowej opiece zdrowotnej?</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Ponad-7-6-mln-porad-lekarskich-mniej-Co-dzieje-sie-w-podstawowej-opiece-zdrowotnej,290078,1.html) (“More than 7.6 million fewer doctor consultations. What is happening in primary care?”, in Polish), 16.10.2026 — statements by representatives of family doctors; the NFZ did not give the reasons.
+
+[^nfz2024]: NFZ, [“<span lang="pl">Sprawozdanie z działalności Narodowego Funduszu Zdrowia za 2024 rok</span>”](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/dzialalnosc_nfz/sprawozdania_z_dzialalnosci_nfz/zalacznik_do_uchwaly_nr_15-sig.pdf) (“Report on the activity of the National Health Fund for 2024”, in Polish) — tables II.19 and II.20: costs of specialist outpatient care and number of services in 2022–2024; compilation in the analysis [Private visits: the longer the waiting list, the higher the price](/en/analysis/private-visits-queues-and-prices/).
+
+[^nrz2024]: [“<span lang="pl">Obwieszczenie Prezesa GUS z 30 września 2026 r. w sprawie Narodowego Rachunku Zdrowia za 2024 r.</span>”](https://api.sejm.gov.pl/eli/acts/MP/2026/971/text.pdf) (“Announcement of the President of Statistics Poland of 30 September 2026 on the National Health Accounts for 2024”, in Polish; M.P. 2026 item 971) — current health spending PLN 287,565.5 million, public PLN 221,187.8 million, private PLN 66,377.7 million, of which direct household spending PLN 47,640.5 million (in 2023: PLN 38,633.2 million).
+
+[^nrz2015]: Announcements of the President of Statistics Poland on the National Health Accounts for 2015–2023 (in Polish) — for 2015: current spending PLN 114,142.4 million, public PLN 79,886.6 million, private PLN 34,255.8 million; direct household spending in subsequent years as in the chart. Multiples and shares — our calculation, at current prices.
+
+[^nrz-seria]: Statistics Poland (GUS), [“<span lang="pl">Wydatki na ochronę zdrowia w latach 2022–2024</span>”](https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/wydatki-na-ochrone-zdrowia-w-latach-2022-2024,27,5.html) (“Health expenditure in 2022–2024”, in Polish), tables — voluntary health insurance schemes (HF.2.1: premiums for voluntary insurance and medical subscriptions) PLN 5,752.1 million in 2015 and PLN 11,645.8 million in 2023 (preliminary data).
+
+[^cms]: Centers for Medicare & Medicaid Services, [National Health Expenditure — Fact Sheet](https://www.cms.gov/data-research/statistics-trends-and-reports/national-health-expenditure-data/nhe-fact-sheet) — data for 2024: US$5.3 trillion, US$15,474 per person, 18.0% of GDP; payer shares; spending by age (2020): people aged 65+ about 17% of the population and about 37% of spending.
+
+[^cms-npi]: Centers for Medicare & Medicaid Services, [Medicare Physician & Other Practitioners — by Provider](https://data.cms.gov/provider-summary-by-type-of-service/medicare-physician-other-practitioners/medicare-physician-other-practitioners-by-provider) — annual compilations since 2013: the doctor with name and NPI number, number of services and the total amount paid by Medicare.
+
+[^oecd-finanse]: OECD, [*Health at a Glance 2025*, “Public funding of health spending”](https://www.oecd.org/en/publications/health-at-a-glance-2025_8f9e3f98-en/full-report/public-funding-of-health-spending_ff3ad2d2.html) — share of public funding in the US 54% in 2023.
+
+[^oecd-sha]: OECD, System of Health Accounts, database (spending by financing scheme, USD PPP per capita, 2024, retrieved 20.10.2026); [*Health at a Glance 2025*, “Health expenditure by financing scheme”](https://www.oecd.org/en/publications/health-at-a-glance-2025_8f9e3f98-en/full-report/health-expenditure-by-financing-scheme_074bead0.html) — part of “compulsory” spending in the US is private insurance required by the Affordable Care Act; practising doctors per 1,000 population: USA 2.7 (2022), Poland 3.9 (2024). Comparison with the other countries — our calculation.
+
+[^oecd-profil]: OECD, *Health at a Glance 2025*, country profiles: [United States](https://www.oecd.org/en/publications/health-at-a-glance-2025_15a55280-en/united-states_3517f35e-en.html) and [Poland](https://www.oecd.org/en/publications/health-at-a-glance-2025_15a55280-en/poland_c3917772-en.html) — life expectancy in 2023 78.4 years in both countries; spending per capita in 2024 USD PPP 14,885 and 4,284.
+
+[^nhis]: CDC, National Center for Health Statistics, [press release of 24.06.2025](https://www.cdc.gov/nchs/pressroom/releases/20250624.html) — in 2024, 8.2% of US residents (27.2 million people) had no health insurance.
+
+[^cfpb]: Consumer Financial Protection Bureau, [Medical Debt Burden in the United States](https://www.consumerfinance.gov/data-research/research-reports/medical-debt-burden-in-the-united-states/), 2022 — US$88 billion of medical debt in credit reports (as of June 2021).
+
+[^rand]: RAND, [Prices Paid to Hospitals by Private Health Plans: Findings from Round 5.1](https://www.rand.org/pubs/research_reports/RRA1144-2-v2.html) — 2022 prices: hospitals 254% of Medicare rates, doctors’ services 184%.
+
+[^bls]: U.S. Bureau of Labor Statistics, [Occupational Employment and Wage Statistics, May 2025](https://www.bls.gov/oes/current/oes_nat.htm) — average annual pay of physicians US$277,260, of all workers US$69,770 (excluding the self-employed). The multiple — our calculation.
+
+[^medpac]: MedPAC, [March 2026 report to Congress — press release](https://www.medpac.gov/wp-content/uploads/2026/03/March_2026_MedPAC_Report_Press_Release_SEC.pdf) — Medicare spends about 14% more on people in Medicare Advantage plans than in traditional Medicare, about US$76 billion in 2026; the main component is favourable selection (about 11%).
+
+[^aha]: American Hospital Association, [Fact Sheet: Uncompensated Hospital Care Cost](https://www.aha.org/fact-sheets/2020-01-06-fact-sheet-uncompensated-hospital-care-cost) — US$42.67 billion in 2020; the obligation under the 1986 EMTALA act is described by [CMS](https://www.cms.gov/medicare/regulations-guidance/legislation/emergency-medical-treatment-labor-act).
+
+[^crs]: Congressional Research Service, [Medicare Graduate Medical Education, 2025](https://www.congress.gov/crs_external_products/IF/PDF/IF13088/IF13088.3.pdf) (IF13088) — an estimated US$21.2 billion in fiscal year 2023; the cap on places set at the number of residents in 1996 (Balanced Budget Act of 1997).
+
+[^kff]: KFF, [The Estimated Value of Tax Exemption for Nonprofit Hospitals Was About $28 Billion in 2020](https://www.kff.org/health-costs/issue-brief/the-estimated-value-of-tax-exemption-for-nonprofit-hospitals-was-about-28-billion-in-2020/) — an estimate; the cost of free treatment (charity care) in these hospitals about US$16 billion.
+
+[^gao]: U.S. Government Accountability Office, [Higher Use of Advanced Imaging Services by Providers Who Self-Refer](https://www.gao.gov/products/gao-12-966) (GAO-12-966), 2012; the ban on referrals to facilities in which the doctor has a financial interest (the so-called Stark Law) is described by [CMS](https://www.cms.gov/medicare/regulations-guidance/physician-self-referral).
+
+[^kel]: [“<span lang="pl">Kodeks Etyki Lekarskiej</span>”](https://www.mp.pl/etyka/dokumenty/show.html?id=384918) (“Code of Medical Ethics”, in Polish; in force since 1.01.2025), Article 65. We found no equivalent of this ban in the Act on healthcare services financed from public funds or in the Act on medical activity.
+
+[^piu]: Polish Chamber of Insurance (PIU), [“<span lang="pl">Rynek ubezpieczeń zdrowotnych w 2025 roku nadal rośnie dwucyfrowo</span>”](https://piu.org.pl/rynek-ubezpieczen-zdrowotnych-w-2025-roku-nadal-rosnie-dwucyfrowo/) (“The health insurance market kept growing at double-digit rates in 2025”, in Polish), 14.05.2026 — more than 5.8 million people, premiums PLN 2.65 billion; the data concern insurance policies, excluding medical subscriptions.
+
+[^bgd]: Statistics Poland (GUS), [“<span lang="pl">Sytuacja gospodarstw domowych w 2025 r. w świetle badania budżetów gospodarstw domowych</span>”](https://stat.gov.pl/obszary-tematyczne/warunki-zycia/dochody-wydatki-i-warunki-zycia-ludnosci/sytuacja-gospodarstw-domowych-w-2025-r-w-swietle-badania-budzetow-gospodarstw-domowych,3,25.html) (“The situation of households in 2025 in the light of the household budget survey”, in Polish) — spending per person PLN 2,015 a month, of which health 6.0%, outpatient services 2.1% (in 2019: 1.35% of PLN 1,252). Amounts in zloty — our calculation from the shares.
+
+[^gus-amb]: Statistics Poland (GUS), [“<span lang="pl">Ambulatoryjna opieka zdrowotna w 2025 r.</span>”](https://stat.gov.pl/download/gfx/portalinformacyjny/pl/defaultaktualnosci/5513/13/10/1/ambulatoryjna_opieka_zdrowotna_2025.pdf) (“Outpatient healthcare in 2025”, in Polish), 28.05.2026 — 25,119 clinics and 486 medical practices “providing services financed from public funds” (our translation), 330.7 million doctor consultations.
+
+[^cbos]: CBOS, [“<span lang="pl">Korzystanie ze świadczeń i ubezpieczeń zdrowotnych</span>”](https://www.cbos.pl/SPISKOM.POL/2025/K_069_25.PDF) (“Use of healthcare services and health insurance”, in Polish), research report no. 69/2025 — visits to a specialist outside the NFZ in 2018 and 2025; patterns of use (NFZ only 24%, both systems 53%, outside the NFZ only 11%); additional health insurance overall and by age.
+
+[^cbos2023]: CBOS, [research report no. 101/2023](https://cbos.pl/SPISKOM.POL/2023/K_101_23.PDF) (in Polish) — reasons for using non-public healthcare; a shorter waiting time was given by 79% of users.
+
+[^nil]: Supreme Medical Chamber (NIL), [“<span lang="pl">Raport z badania „Perspektywa 27”</span>”](https://nil.org.pl/uploaded_files/art_1778144361_perspektywa-27-final.pdf) (“Report on the ‘Perspektywa 27’ survey”, in Polish), 2026 — online survey, non-random sample (N = 2,243); work model, problems of combining the sectors, support for regulatory options.
+
+[^soh-at]: OECD and European Observatory on Health Systems and Policies, [State of Health in the EU: Austria, Country Health Profile 2025](https://health.ec.europa.eu/document/download/074dbff5-8c8d-459c-8623-52d0b895bc07_en?filename=2025_chp_at_english.pdf) — fund doctors and elective doctors; more in the analysis [Doctors’ pay: Poland compared with its neighbours](/en/analysis/doctor-salaries-poland-vs-neighbours/).
+
+[^eurostat]: Eurostat, [Health care expenditure by financing scheme](https://ec.europa.eu/eurostat/databrowser/view/hlth_sha11_hf/) (hlth_sha11_hf), 2024, retrieved 20.10.2026 — current spending as % of GDP, public spending per capita in PPS, share of out-of-pocket spending (HF.3) and of other private spending (HF.2), Poland and the EU-27.
+
+[^silc]: Eurostat, EU-SILC, [Self-reported unmet needs for medical examination by sex, age, main reason declared and income quintile](https://ec.europa.eu/eurostat/databrowser/view/hlth_silc_08/) (hlth_silc_08), 2025, people aged 16 and over.
+
+[^tuohy]: C. H. Tuohy, C. M. Flood, M. Stabile, [How Does Private Finance Affect Public Health Care Systems? Marshaling the Evidence from OECD Nations](https://doi.org/10.1215/03616878-29-3-359), *Journal of Health Politics, Policy and Law* 29(3), 2004, pp. 359–396.
+
+[^johar]: M. Johar et al., [Waiting times for elective surgery and the decision to buy private health insurance](https://doi.org/10.1002/hec.1707), *Health Economics* 20(S1), 2011, pp. 68–86; M. Johar et al., [Are waiting list prioritization guidelines being followed in Australia?](https://doi.org/10.1177/0272989X14532530), *Medical Decision Making* 34(8), 2014, pp. 976–986 — higher priority for private patients in public hospitals in New South Wales.
+
+[^socha]: K. Z. Socha, M. Bech, [Physician dual practice: a review of literature](https://ideas.repec.org/a/eee/hepoli/v102y2011i1p1-7.html), *Health Policy* 102(1), 2011, pp. 1–7.
+
+[^art57]: [“<span lang="pl">Ustawa z 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych</span>”](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (“Act of 27 August 2004 on healthcare services financed from public funds”, in Polish; consolidated text Dz.U. 2025 item 1461), Article 57(1) (specialist outpatient clinics — referral by a health insurance doctor) and Article 58 (hospital treatment — referral by a doctor, a dentist or a feldsher).
+
+[^art20]: Ibid., Article 20(1) and (2)(1)–(2) — order of registration and the medical category determined by the provider.
+
+[^uck]: Rynek Zdrowia, [“<span lang="pl">Pacjenci poza kolejką. Nieprawidłowości i 300 tys. zł kary dla kolejnego warszawskiego szpitala</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Pacjenci-poza-kolejka-Nieprawidlowosci-i-300-tys-zl-kary-dla-kolejnego-warszawskiego-szpitala,285677,1.html) (“Patients outside the queue. Irregularities and a PLN 300,000 fine for another Warsaw hospital”, in Polish), June 2026 — a fine of PLN 289,000; the allegation concerning a private practice came from an anonymous letter and was not confirmed; the hospital disputes the audit results.
+
+[^mswia]: Rzeczpospolita, [“<span lang="pl">NFZ: 97 proc. przyjęć poza kolejką w szpitalu MSWiA. Jest kara i śledztwo CBA</span>”](https://www.rp.pl/ochrona-zdrowia/art43883541-masowe-przyjecia-poza-kolejnoscia-w-szpitalu-mswia-nfz-przedstawil-wyniki-kontroli) (“NFZ: 97% of admissions outside the queue at the Interior Ministry hospital. A fine and an investigation by the Central Anti-Corruption Bureau”, in Polish), 27.02.2026 — 2,178 of 2,244 admissions outside the queue order in 2022–2025, a fine of PLN 507,500; the ministry disputes the findings concerning donations.
+
+[^nik-kadry]: Supreme Audit Office (NIK), [post-audit statement LKA.410.018.04.2022](https://nik.gov.pl/kontrole/wyniki-kontroli-nik/pobierz,lka~p_22_047_202206131523571655126637~id3~01,typ,kj.pdf) (in Polish) as part of audit P/22/047 “<span lang="pl">Zasoby kadry medycznej w systemie ochrony zdrowia</span>” (“Medical staff resources in the healthcare system”), 2022.
+
+[^nik-zlecenia]: NIK, [“<span lang="pl">Zlecanie usług medycznych przez szpitale publiczne</span>”](https://www.nik.gov.pl/plik/id,28541,vp,31371.pdf) (“Outsourcing of medical services by public hospitals”, in Polish; 160/2022/P/22/046/KZD) — including a contract of 30.07.2021 for specialist on-call duty at a rate of PLN 150 an hour.
+
+[^lop]: Report “<span lang="pl">Lekarze — oferty pracy</span>” (“Doctors — job offers”) for 2023, [PDF](https://www.termedia.pl/pobierz/28761ac10ff69d4055cd0f793cfa9175) (in Polish) — rates from advertisements in a group for doctors on social media, not payments; on average PLN 198.29/h; specialist outpatient clinics PLN 248.58/h, hospitals PLN 162.79/h.
+
+[^nowogard]: Rynek Zdrowia (via PAP), [“<span lang="pl">Wszyscy lekarze na oddziale złożyli wypowiedzenia. Szpital zawiesza kluczowe świadczenia</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Wszyscy-lekarze-na-oddziale-zlozyli-wypowiedzenia-Szpital-zawiesza-kluczowe-swiadczenia,279678,1.html) (“All the doctors on the ward handed in their notice. The hospital suspends key services”, in Polish), 5.01.2026.
+
+[^pinczow]: abcZdrowie, [“<span lang="pl">Oddział wewnętrzny bez lekarzy. Szpital w Pińczowie wstrzymuje przyjęcia</span>”](https://portal.abczdrowie.pl/oddzial-wewnetrzny-bez-lekarzy-szpital-w-pinczowie-wstrzymuje-przyjecia/7278700377495552a) (“Internal medicine ward without doctors. The hospital in Pińczów halts admissions”, in Polish), 21.04.2026.
+
+[^elk]: tko.pl, [“<span lang="pl">Jedyny taki oddział na Mazurach zawieszony. Lekarze odeszli ze szpitala</span>”](https://tko.pl/387480,2026,09,07,jedyny-taki-oddzial-na-mazurach-zawieszony-lekarze-odeszli-ze-szpitala) (“The only ward of its kind in Masuria suspended. Doctors have left the hospital”, in Polish), 7.09.2026.
+
+[^opole]: abcZdrowie (via Gazeta Wyborcza), [“<span lang="pl">Opole. Lekarze postawili ultimatum. Szpital uległ, wypłaca podwyżki</span>”](https://portal.abczdrowie.pl/opole-lekarze-postawili-ultimatum-szpital-ulegl-wyplaca-podwyzki/7312310288730496a) (“Opole. Doctors issued an ultimatum. The hospital gave in and is paying rises”, in Polish), 28.07.2026 — doctors’ pay fund PLN 40.68 million (2024) and PLN 52.33 million (2025); money.pl, [“<span lang="pl">Szpital podniósł stawki lekarzom. Inaczej zamknąłby oddziały</span>”](https://www.money.pl/gospodarka/szpital-podniosl-stawki-lekarzom-inaczej-zamknalby-oddzialy-7312024781994336a.html) (“The hospital raised doctors’ rates. Otherwise it would have closed wards”, in Polish), 27.07.2026.
+
+[^kotwica]: Interia Biznes, [“<span lang="pl">Lekarze chcą podwyżek. „Pani dyrektor, słyszymy, że możemy zarabiać 240 zł”</span>”](https://biznes.interia.pl/gospodarka/news-limity-zarobkow-lekarzy-w-szpitalach-widac-pierwsze-efekty-p,nId,23516042) (“Doctors want rises. ‘Director, we hear we can earn PLN 240’”, in Polish), July 2026 — account by the Polish Hospital Federation.
+
+[^ilza]: Rynek Zdrowia, [“<span lang="pl">500 zł za godzinę pracy lekarza w Iłży. „Kwoty nie są wysokie, one są zabójcze”</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/500-zl-za-godzine-pracy-lekarza-w-Ilzy-Kwoty-nie-sa-wysokie-one-sa-zabojcze,281306,1.html) (“PLN 500 an hour for a doctor’s work in Iłża. ‘The amounts are not high, they are lethal’”, in Polish), 20.02.2026.
+
+[^bartoszyce]: money.pl (via PAP), [“<span lang="pl">Szpital walczy o przetrwanie. Tyle płaci lekarzom, a chętnych i tak brakuje</span>”](https://www.money.pl/gospodarka/szpital-walczy-o-przetrwanie-tyle-placi-lekarzom-a-chetnych-i-tak-brakuje-7307014998792544a.html) (“A hospital fights for survival. This is what it pays doctors, and there are still not enough candidates”, in Polish), 13.07.2026.
+
+[^oddzialy]: abcZdrowie, [“<span lang="pl">539 zawieszonych i zamkniętych oddziałów szpitalnych. Powodem głównie braki kadrowe</span>”](https://portal.abczdrowie.pl/539-zawieszonych-i-zamknietych-oddzialow-szpitalnych-powodem-glownie-braki-kadrowe/7242595503827456a) (“539 suspended and closed hospital wards. Mainly because of staff shortages”, in Polish), 12.01.2026 — compilation by Menedżer Zdrowia from the hospitals’ justifications sent to the Ministry of Health: 95 closures and 444 suspensions in 201 hospitals, 93 concerned obstetrics and gynaecology.
+
+[^zpp]: Association of Polish Counties (ZPP), [position of 17.06.2026](https://www.zpp.pl/storage/files/2026-06/f82bcbc5a925e49b7436d94a6ea94a077397.pdf) (in Polish) — almost 91% of county hospitals with a loss on core activity for 2025.
+
+[^nao]: National Audit Office, [Managing the supply of NHS clinical staff in England](https://www.nao.org.uk/wp-content/uploads/2016/02/Managing-the-supply-of-NHS-clinical-staff-in-England.pdf), 2016 — trusts’ spending on agency staff £2.2 billion (2009/10) and £3.3 billion (2014/15).
+
+[^skr]: Sveriges Kommuner och Regioner, [Kostnad för inhyrd personal, helår 2024](https://skr.se/download/18.1bd4a187199a31bc44792cd9/1759833220818/Kostnad-inhyrd-personal-helar-2024_SKR.pdf) (“Cost of hired staff, full year 2024”, in Swedish) — hired staff overall −35.8% in 2024; hired doctors: SEK 4.95 billion (2023) and SEK 3.83 billion (2024).
+
+[^druk1569]: [“<span lang="pl">Rządowy projekt ustawy o zmianie ustawy — Prawo o szkolnictwie wyższym i nauce oraz niektórych innych ustaw</span>”](https://api.sejm.gov.pl/sejm/term9/prints/1569/1569.pdf) (“Government bill amending the Act — Law on higher education and science and certain other acts”, in Polish; Sejm print no. 1569, 9th term, 2021), explanatory memorandum — the cost of training in medicine PLN 200,000–250,000 depending on the university; methodology not given.
+
+[^nik-budzet]: NIK, [“<span lang="pl">Analiza wykonania budżetu państwa i założeń polityki pieniężnej w 2025 r.</span>”](https://www.nik.gov.pl/plik/id,32191.pdf) (“Analysis of the execution of the state budget and of monetary policy assumptions in 2025”, in Polish) — “financing of medical internships and specialist training” PLN 4,124.3 million.
+
+[^kredyt]: [“<span lang="pl">Ustawa z 17 listopada 2021 r. o zmianie ustawy — Prawo o szkolnictwie wyższym i nauce oraz niektórych innych ustaw</span>”](https://api.sejm.gov.pl/eli/acts/DU/2021/2232/text.pdf) (“Act of 17 November 2021 amending the Act — Law on higher education and science and certain other acts”, in Polish; Dz.U. 2021 item 2232) — the loan for paid medical studies is written off after 10 years of work, within 12 years, at an entity financed from public funds and after obtaining a priority specialisation (Article 103d of the Law on higher education and science).
+
+[^gus-60]: Statistics Poland (GUS), [“<span lang="pl">Sytuacja osób starszych w Polsce w 2022 roku</span>”](https://stat.gov.pl/obszary-tematyczne/osoby-starsze/osoby-starsze/sytuacja-osob-starszych-w-polsce-w-2022-roku,2,5.html) (“The situation of older people in Poland in 2022”, in Polish) — people aged 60+: 25.9% of the population and 55.4% of the amount of NFZ reimbursement for hospital treatment.
+
+[^nik-kardio]: NIK, [“<span lang="pl">Realizacja świadczeń zdrowotnych z zakresu kardiologii przez publiczne i niepubliczne podmioty lecznicze</span>”](https://www.nik.gov.pl/plik/id,10872,vp,13213.pdf) (“Provision of cardiology services by public and non-public healthcare providers”, in Polish; P/14/078, 2016), period 2011–2015 — structure of services, pricing, location of the non-public wards, selection of patients at one provider; mortality after angioplasty lower than the national average in all the audited centres.
+
+[^nik-poludniowy]: NIK, [“<span lang="pl">NIK o działalności Warszawskiego Szpitala Południowego</span>”](https://www.nik.gov.pl/aktualnosci/nik-o-dzialalnosci-warszawskiego-szpitala-poludniowego.html) (“NIK on the activity of the Warsaw Southern Hospital”, in Polish), July 2026 (I/25/003/KZD).
+
+[^zpp-samorzady]: Rynek Zdrowia, [“<span lang="pl">Powiaty wydają miliony na wsparcie szpitali. Najnowszy raport pokazuje skalę tych wydatków</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Powiaty-wydaja-miliony-na-wsparcie-szpitali-Najnowszy-raport-pokazuje-skale-tych-wydatkow,284813,1.html) (“Counties spend millions supporting hospitals. The latest report shows the scale of this spending”, in Polish), 27.05.2026 — based on the ZPP report; we compile hospital liabilities in [Hospital debt](/en/data/hospital-debt/).
+
+[^medicover]: Medicover AB, [Interim report January–December 2025](https://storage.mfn.se/53b2f4c9-bbb2-43cc-a866-f9a73893d762/interim-report-january-december-2025.pdf) — group: revenue €2,378.1 million, EBITDA €371.0 million, 79% of revenue from private payers; Poland — €1,240.3 million of revenue. The margin — our calculation.
+
+[^uodl]: [“<span lang="pl">Ustawa z 15 kwietnia 2011 r. o działalności leczniczej</span>”](https://api.sejm.gov.pl/eli/acts/DU/2026/156/text.pdf) (“Act of 15 April 2011 on medical activity”, in Polish; consolidated text Dz.U. 2026 item 156), Article 59(2) — the founding body “may” cover the net loss.
+
+[^aotmit]: Polityka Zdrowotna, [“<span lang="pl">100 tys. zł miesięcznie to dopiero początek. AOTMiT połączy dane lekarzy</span>”](https://politykazdrowotna.com/artykul/prezes-rutkowski-aotmit-n2439295) (“PLN 100,000 a month is only the beginning. AOTMiT will combine doctors’ data”, in Polish), 5.08.2026 — median PLN 24,400 (employment) and PLN 26,600 (contract), about 1.5% of doctors above PLN 100,000 a month.
+
+[^prawo-zakaz]: Prawo.pl, [“<span lang="pl">Jeden lekarz, jeden etat — recepta czy przepis na katastrofę?</span>”](https://www.prawo.pl/zdrowie/czy-lekarze-beda-mogli-pracowac-tylko-w-jednej-placowce,1547003.html) (“One doctor, one job — a cure or a recipe for disaster?”, in Polish), 22.06.2026 — announcements of a ban on combining work in the PiS programme and in the New Left draft; the position of OZZL.
+
+[^nrl]: Supreme Medical Chamber, [“<span lang="pl">Stanowisko nr 17/26/P-X Prezydium Naczelnej Rady Lekarskiej z 11 sierpnia 2026 r.</span>”](https://nil.org.pl/articleToPdf/9353) (“Position no. 17/26/P-X of the Presidium of the Supreme Medical Council of 11 August 2026”, in Polish) on the bill amending the Act on healthcare services financed from public funds and certain other acts.
+
+[^ibris]: Interia, [“<span lang="pl">Nowy sondaż o pracy lekarzy. Większość wskazała jedno rozwiązanie</span>”](https://wydarzenia.interia.pl/kraj/news-nowy-sondaz-o-pracy-lekarzy-wiekszosc-wskazala-jedno-rozwiaz,nId,23518970) (“New poll on doctors’ work. The majority chose one solution”, in Polish), 24.07.2026 — IBRiS poll for Rzeczpospolita.
+
+[^irl]: Echo Live, [HSE finds no “structured system” to monitor phasing out of private consultants in public hospitals](https://www.echolive.ie/nationalnews/arid-41860716.html), 11.06.2026 — 3,090 of 4,825 HSE consultants on “Public Only” contracts in August 2025; the contract introduced on 8.03.2023 is described by the [European Commission](https://reforms-investments.ec.europa.eu/projects/entry-operation-slaintecare-consultant-contract_en).
+
+[^zacma]: Ministry of Health, [reply to interpellation no. 7368](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDDMJYS/i07368-o1.pdf) (in Polish), 4.02.2025 — average waiting time for cataract surgery according to NFZ data.
+
+[^norwegia]: E. I. Johannessen, T. P. Hagen, [Physicians’ engagement in dual practices and the effects on labor supply in public hospitals: results from a register-based study](https://doi.org/10.1186/1472-6963-14-299), *BMC Health Services Research* 14:299, 2014 — 12,399 hospital doctors in 2001–2009.
+
+[^druk3157]: [“<span lang="pl">Rządowy projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych oraz niektórych innych ustaw</span>”](https://api.sejm.gov.pl/sejm/term10/prints/3157/3157.pdf) (“Government bill amending the Act on healthcare services financed from public funds and certain other acts”, in Polish; Sejm print no. 3157, 28.09.2026) — Article 61ba: obligation to provide information to the President of the NFZ, including on services not covered by a contract with the Fund; limits on working time and pay; [progress of work in the Sejm](https://api.sejm.gov.pl/sejm/term10/processes/3157) (in Polish).
+
+[^glosowanie]: Sejm of the Republic of Poland, 67th sitting, 22.10.2026 — [vote no. 149](https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=glosowania&NrKadencji=10&NrPosiedzenia=67&NrGlosowania=149) (in Polish) on the bill on pay limits for medical staff as a whole: 229 in favour, 144 against, 67 abstentions.

@@ -7,26 +7,29 @@
 import type { HTMLAttributes } from 'astro/types';
 import { inline } from '@/lib/inline';
 import { noteId, noteRefId, type Notes } from '@/lib/notes';
-import { FOOTNOTES_HINT } from '@/lib/markdown/footnotes';
+import { localeOf } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
 
 interface Props extends HTMLAttributes<'details'> {
   notes: Notes;
 }
 
 const { notes, class: className, ...rest } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const t = uiOf(Astro.url).article;
 ---
 {notes.length > 0 && (
-  <details class:list={['footnotes', className]} id="przypisy" {...rest}>
+  <details class:list={['footnotes', className]} id={t.notesId} {...rest}>
     <summary class="footnotes__head">
-      <span class="footnotes__title" id="footnote-label" role="heading" aria-level="2">Przypisy <span>{notes.length}</span></span>
-      <span class="footnotes__hint">{FOOTNOTES_HINT}</span>
+      <span class="footnotes__title" id="footnote-label" role="heading" aria-level="2">{t.notes} <span>{notes.length}</span></span>
+      <span class="footnotes__hint">{t.notesHint}</span>
     </summary>
     <ol>
       {notes.map((note) => (
         <li id={noteId(note.id)}>
           <p>
-            <Fragment set:html={inline(note.text)} />{' '}
-            <a data-footnote-backref aria-label={`Wróć do miejsca w tekście (przypis ${note.n})`} class="data-footnote-backref" href={`#${noteRefId(note.id)}`}>↩</a>
+            <Fragment set:html={inline(note.text, undefined, undefined, locale)} />{' '}
+            <a data-footnote-backref aria-label={t.noteBack(String(note.n))} class="data-footnote-backref" href={`#${noteRefId(note.id)}`}>↩</a>
           </p>
         </li>
       ))}

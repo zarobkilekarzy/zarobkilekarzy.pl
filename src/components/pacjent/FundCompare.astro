@@ -8,6 +8,7 @@ import Icon from '@/components/ui/Icon.astro';
 import type { CompareRow } from '@/lib/pacjent/types';
 import { inline, sentence } from '@/lib/inline';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   compare: CompareRow[];
@@ -20,20 +21,35 @@ interface Props {
 }
 
 const { compare, heads, catchBox, conditions, how, notes, amountsNote } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const T = {
+  pl: {
+    catch: 'Przeczytaj, zanim podpiszesz',
+    caption: (a: string, b: string) => `Porównanie: ${a} i ${b}`,
+    conditions: 'Fundusz rozpatrzy sprawę, gdy spełnione są wszystkie cztery warunki',
+    how: 'Jak złożyć wniosek i co dalej',
+  },
+  en: {
+    catch: 'Read this before you sign',
+    caption: (a: string, b: string) => `Comparison: ${a} and ${b}`,
+    conditions: 'The Fund will consider your case if all four conditions are met',
+    how: 'How to apply and what happens next',
+  },
+}[locale];
 ---
 <div class="fund">
   <aside class="fund__catch" aria-labelledby="catch-title">
     <Icon name="alert" size={26} class="fund__catch-icon" />
     <div>
-      <p class="fund__catch-label">Przeczytaj, zanim podpiszesz</p>
+      <p class="fund__catch-label">{T.catch}</p>
       <h3 class="fund__catch-title" id="catch-title">{typo(catchBox.title)}</h3>
-      <p set:html={inline(catchBox.text)} />
+      <p set:html={inline(catchBox.text, undefined, undefined, locale)} />
     </div>
   </aside>
 
   <div class="fund__table-wrap">
     <table class="fund__table">
-      <caption class="sr-only">Porównanie: {heads[0]} i {heads[1]}</caption>
+      <caption class="sr-only">{T.caption(heads[0], heads[1])}</caption>
       <thead>
         <tr><th scope="col">{heads[0]}</th><th scope="col">{heads[1]}</th></tr>
       </thead>
@@ -49,7 +65,7 @@ const { compare, heads, catchBox, conditions, how, notes, amountsNote } = Astro.
 
   <div class="fund__cols">
     <section aria-labelledby="cond-title">
-      <h3 class="fund__h" id="cond-title">Fundusz rozpatrzy sprawę, gdy spełnione są wszystkie cztery warunki</h3>
+      <h3 class="fund__h" id="cond-title">{T.conditions}</h3>
       <ol class="fund__cond">
         {conditions.map((c) => (
           <li>
@@ -60,9 +76,9 @@ const { compare, heads, catchBox, conditions, how, notes, amountsNote } = Astro.
       </ol>
     </section>
     <section aria-labelledby="how-title">
-      <h3 class="fund__h" id="how-title">Jak złożyć wniosek i co dalej</h3>
+      <h3 class="fund__h" id="how-title">{T.how}</h3>
       <ul class="fund__how">
-        {how.map((h) => <li set:html={inline(h)} />)}
+        {how.map((h) => <li set:html={inline(h, undefined, undefined, locale)} />)}
       </ul>
       <ul class="fund__notes">
         {notes.map((n) => <li>{typo(n)}</li>)}

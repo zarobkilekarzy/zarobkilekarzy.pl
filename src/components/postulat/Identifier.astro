@@ -3,6 +3,7 @@
  * /postulat/ — jak działa identyfikator: analogia z tablicą rejestracyjną i przykład
  * funkcji z kluczem tajnym liczony w przeglądarce (PseudonymDemo).
  * Pierwszy widok liczy build (node:crypto), więc karta i przykład pokazują ten sam identyfikator.
+ * Dwujęzyczny: na /en/demand/ teksty (i klucz pokazowy) z src/data/en/postulat.ts; wyjście polskie bez zmian.
  */
 import { createHmac } from 'node:crypto';
 import Section from '@/components/layout/Section.astro';
@@ -10,8 +11,29 @@ import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
 import PseudonymDemo from '@/components/postulat/PseudonymDemo.astro';
 import { groups, neighbour } from '@/components/postulat/pseudonym';
-import { identifier, pseudonymDemo } from '@/data/postulat';
+import * as pl from '@/data/postulat';
+import * as en from '@/data/en/postulat';
+import { localeOf } from '@/i18n/locales';
 import { typo } from '@/lib/format';
+
+const locale = localeOf(Astro.url.pathname);
+const { identifier, pseudonymDemo } = locale === 'en' ? en : pl;
+const T = {
+  pl: {
+    id: 'identyfikator',
+    eyebrow: 'Jak działa identyfikator',
+    table: 'Tablica rejestracyjna a identyfikator w danych o wynagrodzeniach',
+    plate: 'tablica',
+    pid: 'identyfikator',
+  },
+  en: {
+    id: en.sectionIds.identyfikator,
+    eyebrow: 'How the identifier works',
+    table: 'A number plate compared with the identifier in pay data',
+    plate: 'number plate',
+    pid: 'identifier',
+  },
+}[locale];
 
 const hmac = (key: string, message: string) => createHmac('sha256', key).update(message).digest('hex');
 const id = hmac(pseudonymDemo.key, pseudonymDemo.pwz);
@@ -19,27 +41,27 @@ const nearPwz = neighbour(pseudonymDemo.pwz);
 const nearId = hmac(pseudonymDemo.key, nearPwz);
 const { car, pay, rows } = identifier.analogy;
 ---
-<Section id="identyfikator" aria-labelledby="identyfikator-title">
+<Section id={T.id} aria-labelledby={`${T.id}-title`}>
   <div class="ident">
     <div class="ident__intro">
-      <Eyebrow>Jak działa identyfikator</Eyebrow>
-      <Heading id="identyfikator-title">{typo(identifier.title)}</Heading>
+      <Eyebrow>{T.eyebrow}</Eyebrow>
+      <Heading id={`${T.id}-title`}>{typo(identifier.title)}</Heading>
       <p class="ident__lead">{typo(identifier.lead)}</p>
     </div>
 
-    <div class="analogy" role="table" aria-label="Tablica rejestracyjna a identyfikator w danych o wynagrodzeniach">
+    <div class="analogy" role="table" aria-label={T.table}>
       <div class="analogy__row analogy__row--head" role="row">
         <span role="columnheader" class="analogy__corner"></span>
         <div role="columnheader" class="analogy__obj">
           <span class="analogy__name">{car.title}</span>
-          <span class="plate" aria-label={`tablica ${car.plate}`}>
+          <span class="plate" aria-label={`${T.plate} ${car.plate}`}>
             <span class="plate__eu" aria-hidden="true"><span class="plate__stars"></span>PL</span>
             <span class="plate__num">{car.plate}</span>
           </span>
         </div>
         <div role="columnheader" class="analogy__obj">
           <span class="analogy__name">{pay.title}</span>
-          <span class="pid" aria-label="identyfikator">{groups(id.slice(0, 8), 4).join(' ')}…</span>
+          <span class="pid" aria-label={T.pid}>{groups(id.slice(0, 8), 4).join(' ')}…</span>
         </div>
       </div>
       {rows.map((row) => (

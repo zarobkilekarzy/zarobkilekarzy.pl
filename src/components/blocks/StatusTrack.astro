@@ -6,7 +6,9 @@
  */
 import type { HTMLAttributes } from 'astro/types';
 import type { Stage } from '@/types';
-import { formatDate, isoDate, typo } from '@/lib/format';
+import { formatDateIn, isoDate, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
 
 interface Props extends HTMLAttributes<'div'> {
   stages: Stage[];
@@ -15,11 +17,8 @@ interface Props extends HTMLAttributes<'div'> {
   compact?: boolean;
 }
 
-const STATE: Record<Stage['state'], string> = {
-  done: 'Zrobione',
-  current: 'Jesteśmy tu',
-  next: 'Przed nami',
-};
+const STATE: Record<Stage['state'], string> = uiOf(Astro.url).blocks.stage;
+const locale = localeOf(Astro.url.pathname);
 
 const { stages, label, compact = false, class: className, ...rest } = Astro.props;
 ---
@@ -30,7 +29,7 @@ const { stages, label, compact = false, class: className, ...rest } = Astro.prop
         <span class="track__mark" aria-hidden="true"></span>
         <p class="track__state">
           {STATE[s.state]}
-          {s.date && <> · <time datetime={isoDate(s.date)}>{formatDate(s.date)}</time></>}
+          {s.date && <> · <time datetime={isoDate(s.date)}>{formatDateIn(s.date, locale)}</time></>}
         </p>
         <p class="track__label">{s.href ? <a href={s.href}>{typo(s.label)}</a> : typo(s.label)}</p>
         {!compact && s.note && <p class="track__note">{typo(s.note)}</p>}

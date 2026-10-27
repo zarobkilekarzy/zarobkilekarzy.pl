@@ -4,6 +4,8 @@
  * i spisem działów, treść strony (slot) i na końcu stanowisko redakcji.
  * Slot "legend" — pod metadanymi (np. legenda etykiet dokładności).
  * SEO: CollectionPage z listą materiałów działu, które mają własny adres; data zmiany = najświeższy z nich.
+ * Strony /en/: materiały jako pozycje spisu (src/i18n/entries.ts), okruszek „Home” z ui.ts, `index` i `translations`
+ * (szkic, para PL) przekazane do SEO; pozycje prowadzące do stron w innym języku (`hreflang`) nie idą do listy.
  */
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Section from '@/components/layout/Section.astro';
@@ -11,8 +13,10 @@ import PageHeader from '@/components/layout/PageHeader.astro';
 import PageMeta from '@/components/layout/PageMeta.astro';
 import JumpList from '@/components/blocks/JumpList.astro';
 import PostulatCta from '@/components/site/PostulatCta.astro';
-import { articleHref, type Article } from '@/lib/content';
+import type { Article } from '@/lib/content';
 import type { Crumb, SeoInput } from '@/lib/seo';
+import { toEntry, type Entry } from '@/i18n/entries';
+import { uiOf } from '@/i18n/ui';
 
 interface Props {
   /** nagłówek h1 i ostatni okruszek */
@@ -26,27 +30,33 @@ interface Props {
   meta: { label: string; value: string | number | Date }[];
   jump: { title: string; items: { label: string; href: string; count?: number }[] };
   /** materiały w spisie strony (mogą się powtarzać między działami) — lista w danych strukturalnych */
-  articles: Article[];
+  articles: (Article | Entry)[];
+  /** strona w indeksie wyszukiwarek (szkic /en/: false); bez propsa — jak w BaseLayout */
+  index?: boolean;
+  /** odpowiednik w innym języku (przełącznik, hreflang); bez propsa — z rejestru src/i18n/pages.json */
+  translations?: SeoInput['translations'];
 }
 
-const { title, docTitle = title, lead, description = lead, eyebrow, meta, jump, articles } = Astro.props;
+const { title, docTitle = title, lead, description = lead, eyebrow, meta, jump, articles, index, translations } = Astro.props;
+const t = uiOf(Astro.url);
 
 // Tylko materiały z własną stroną (zapowiedź bez treści ma „#” albo kotwicę na innej stronie)
-const listed = [...new Map(articles.map((a) => [a.id, a])).values()]
-  .map((a) => ({ article: a, href: articleHref(a) }))
-  .filter(({ href }) => href.startsWith('/') && !href.includes('#'));
+const listed = [...new Map(articles.map((a) => [a.id, toEntry(a)])).values()]
+  .filter(({ href, hreflang }) => href.startsWith('/') && !href.includes('#') && !hreflang);
 const freshest = listed
-  .map(({ article: a }) => a.data.updated ?? a.data.date)
+  .map((a) => a.updated ?? a.date)
   .filter((d): d is Date => d !== undefined)
   .sort((a, b) => b.valueOf() - a.valueOf())[0];
 
-const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: title }];
+const crumbs: Crumb[] = [{ label: t.nav.home, href: t.nav.homeHref }, { label: title }];
 const seo: SeoInput = {
   title: docTitle,
   description,
   breadcrumbs: crumbs,
   dates: { modified: freshest },
-  page: { type: 'CollectionPage', items: listed.map(({ article: a, href }) => ({ name: a.data.title, url: href })) },
+  page: { type: 'CollectionPage', items: listed.map((a) => ({ name: a.title, url: a.href })) },
+  ...(index !== undefined && { index }),
+  ...(translations && { translations }),
 };
 ---
 <BaseLayout seo={seo}>

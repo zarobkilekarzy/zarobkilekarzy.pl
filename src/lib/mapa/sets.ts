@@ -6,12 +6,14 @@
  * Nowy temat: funkcja budująca warstwy (kontrakt w ./types) i wpis poniżej.
  */
 import { monitoringMap } from '@/lib/monitoring/map';
-import { sorMap } from '@/lib/sor/map';
+import { sorMap, sorMapEn } from '@/lib/sor/map';
 import type { MapSet } from './types';
 
 export const mapSets = {
   monitoring: monitoringMap,
   sor: sorMap,
+  // wersja angielska (/en/patient-rights/emergency-department/) — dymki w /mapy/sor-en.json
+  'sor-en': sorMapEn,
 } satisfies Record<string, MapSet>;
 
 export type MapSetId = keyof typeof mapSets;

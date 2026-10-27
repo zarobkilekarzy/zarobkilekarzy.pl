@@ -1,0 +1,247 @@
+---
+title: "Nursing in Poland: the age ladder"
+summary: "The average nurse in Poland is 55 years old, and in 2023 one in three registered nurses was over 60. There are 5.9 working nurses per 1,000 population, against an EU average of 8.5."
+description: "The average nurse in Poland is 55, and one in three registered nurses was over 60 in 2023. 5.9 working nurses per 1,000 population, EU average 8.5."
+keyPoints:
+  - "In January 2023, 34% of registered nurses were over 60 and 16.5% under 40. The average age rose from 44.2 years in 2008 to 55.2 at the end of 2025."
+  - "Shortage forecasts from 2021–2023 assumed that about 6,000 people a year would enter the profession. In 2025, 10,152 people obtained a licence to practise, and the number of employed nurses and midwives has risen by about 11,000 since 2021."
+  - "There are 5.9 working nurses per 1,000 population against an EU average of 8.5, and by 2030 the number of people aged 80+ is expected to rise from 1.6 to 2.1 million."
+  - "The minimum pay of a salaried nurse follows from a public act. Nobody publishes the amounts of contracts — those of nurses or of doctors."
+translation:
+  of: pielegniarstwo-w-polsce
+  files: [src/data/pielegniarstwo-w-polsce.ts]
+  hash: "9167398344cb"
+  date: 2026-10-27
+noindex: true
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Money from '@/components/ui/Money.astro';
+import {
+  AGE_BASE,
+  LINKS,
+  OVER_60,
+  UNDER_40,
+  REGISTRY,
+  MODEL_INFLOW,
+  ageRows,
+  densityRows,
+  licenseRows,
+  modelTable,
+  checkedYears,
+  actualGap,
+  modelGap,
+  signed,
+  employedShare,
+  employed2021,
+  employed2025,
+  RETIREMENT_NOW,
+  RETIREMENT_2030,
+} from '@/data/en/pielegniarstwo-w-polsce';
+import { formatEN } from '@/lib/format';
+import SimulatorBanner from '@/components/podaz/SimulatorBanner.astro';
+
+{/* Tłumaczenie src/content/articles/pielegniarstwo-w-polsce.mdx; wykresy i tabele liczy src/data/en/pielegniarstwo-w-polsce.ts */}
+
+The Central Register of Nurses and Midwives (CRPiP) lists 333,336 nurses and 43,965 midwives.[^crpip] We set data on their age, the number in work and the inflow into the profession against the shortage forecasts that the professional self-government has published for years, and check what those forecasts imply today. The figures come mainly from the register and reports of the Supreme Chamber of Nurses and Midwives (NIPiP), from the OECD and from Statistics Poland (GUS). We give the date next to each figure, because the age data and the forecasts come from different years.
+
+## The age ladder
+
+In January 2023 the register held 315,670 nurses. The largest group were people aged 51–60 (31.5%), the second largest those aged 61–70 (25.3%). 34% of registered nurses were over 60, and 16.5% were under 40.[^nipip2023] We did not find a newer age distribution in NIPiP reports.
+
+<Figure
+  title="In 2023 one in three registered nurses was over 60, and one in six was under 40"
+  note={`Share of age groups among ${formatEN(AGE_BASE.nurses)} nurses in the CRPiP, ${AGE_BASE.date}. The highlighted groups over 60 make up ${formatEN(OVER_60, 1)}%, people under 40 — ${formatEN(UNDER_40, 1)}%. The register also includes people who do not work in the profession.`}
+  source={{ label: 'NIPiP, Report on the state of nursing and midwifery in Poland, May 2023, chart 3', href: LINKS.report2023 }}
+>
+  <BarChart
+    rows={ageRows}
+    max={35}
+    unit="%"
+    caption={`Age structure of registered nurses, ${AGE_BASE.date}: ${ageRows.map((r) => `${r.label} — ${r.display}`).join(', ')}.`}
+  />
+</Figure>
+
+Midwives are younger: just under one in three (almost 30%) was of retirement age, and 25.7% of them were under 40.[^nipip2023]
+
+The register is not the same as the staff at the bedside: about 74% of registered nurses work.[^nipip2023] NIPiP gave the age of employed nurses alone in its 2022 report. At that time 36.0% of them were aged 51–60, and 29.4% were over 60.[^nipip2022]
+
+The average age of a registered nurse rose from 44.2 years in 2008 to 55.2 years at the end of 2025, and that of a midwife from 43.2 to 52.2 years. The average is, however, rising ever more slowly: in 2022 it went up by 0.46 years, in 2025 by 0.28 years.[^crpip] This coincides with the growing inflow into the profession, which we describe below.
+
+## How many nurses are of retirement age
+
+Two figures circulate in the debate: 34% of nurses “already of retirement age” and 65% “by 2030”. They describe different groups in different years, so they should not be combined into one series.
+
+**34% is a measurement.** That is the share of registered nurses who were 61 or older in January 2023.[^nipip2023] Women, who make up 96.5% of the profession,[^crpip] become entitled to a pension at 60, and 60-year-olds fall into the 51–60 group in the chart. If the single-year cohorts in this group are roughly equal, about {RETIREMENT_NOW}% of registered nurses were of retirement age at that time.[^szacunek]
+
+**65% is a forecast.** NIPiP stated in April 2022 that in 2030, 65% of the nurses employed at that time would be of pensionable age, including those who had already reached it. It assumed an age of 60 for everyone, men included. This corresponds roughly to all employed nurses who were at least 51 in April 2022 (65.4%).[^nipip2022]
+
+**The 2023 data give a lower figure.** By the end of 2030, registered nurses who were at least 52 in January 2023 will turn 60. With equal cohorts that is about {RETIREMENT_2030}% of the register, not 65.5% — the share of all groups from the age of 51.[^szacunek]
+
+Retirement age does not mean leaving work. In 2022, 76,388 nurses and midwives who were already entitled to a pension were working — and each of them could retire at any moment.[^nipip2022]
+
+## The register and work with patients
+
+<StatRow
+  label={`Nurses in the CRPiP, as of ${REGISTRY.date}`}
+  items={[
+    { value: REGISTRY.nurses.registered, unit: 'in the register', desc: `nurses with a licence to practise, of whom ${formatEN(REGISTRY.nurses.men)} are men`, accuracy: 'exact', source: `NIPiP, CRPiP, ${REGISTRY.date}`, href: LINKS.registry },
+    { value: REGISTRY.nurses.employed, unit: 'employed', desc: `that is ${formatEN(employedShare, 1)}% of those registered; the difference is close to 90,000 people`, accuracy: 'exact', source: `NIPiP, CRPiP, ${REGISTRY.date}`, href: LINKS.registry },
+  ]}
+/>
+
+The register does not say directly who the others are. According to it, just under 1% of registered nurses are abroad, and 8.7% are over 70, so some of them are presumably retired.[^nipip2023] The NIPiP website also does not explain which forms of work it counts as employment, so it is not known whether it covers all nurses working under contracts.[^crpip]
+
+Compared with Europe, the workforce is thin. In 2023 there were 5.9 nurses working in Poland per 1,000 population, against an EU average of 8.5[^soh] and an OECD average of 9.2.[^hag] The profile of Poland in the State of Health in the EU report identifies the low number of doctors and nurses as a key constraint on the capacity of the system.[^soh]
+
+<Figure
+  title="Per 1,000 population, Poland has 30% fewer nurses than the EU average"
+  note="Practising nurses per 1,000 population, 2023 or nearest available year. The data cover all categories of nurses. OECD average: Health at a Glance 2025, country note on Poland."
+  source={{ label: 'OECD/European Observatory, State of Health in the EU: Poland 2025', href: LINKS.stateOfHealth }}
+>
+  <BarChart
+    rows={densityRows}
+    max={10}
+    unit="per 1,000"
+    caption="Practising nurses per 1,000 population in 2023: Poland 5.9, EU average 8.5, OECD average 9.2."
+  />
+</Figure>
+
+## Inflow into the profession: forecasts versus data
+
+The shortage forecasts that NIPiP published in 2021–2023 calculated the loss of staff as the difference between the people reaching retirement age and the people obtaining a licence to practise as a nurse or midwife (PWZ). They froze the inflow at a constant level. The 2022 report assumed 6,205 people a year — the 2019–2021 average for nurses and midwives combined — and assumed that all of them would take up work.[^model2022]
+
+Meanwhile the inflow grew. In 2025, 10,152 people obtained a licence (9,153 nurses and 999 midwives), against 5,969 in 2019 and 4,202 in 2014.[^pwz] The 2023 NIPiP report itself noted that the forecast did not take into account the number of new licences, which had been rising since 2014.[^prognoza2023]
+
+<Figure
+  title={`Since ${checkedYears.from}, there have been more new licences every year than the forecast assumed (${formatEN(MODEL_INFLOW)})`}
+  note={`Nurses and midwives combined. Highlighted: the years ${checkedYears.from}–${checkedYears.to}, for which the 2022 NIPiP forecast assumed a constant inflow of ${formatEN(MODEL_INFLOW)} people a year.`}
+  source={{ label: 'NIPiP, Number of people who obtained a licence to practise', href: LINKS.licenses }}
+>
+  <BarChart
+    rows={licenseRows}
+    max={11000}
+    unit="people"
+    caption={`New licences to practise as a nurse or midwife in 2014–2025: ${licenseRows.map((r) => `${r.label} — ${r.display}`).join(', ')}.`}
+  />
+</Figure>
+
+When the actual number of new licences is put into the NIPiP calculation, the balance for {checkedYears.from}–{checkedYears.to} is {signed(actualGap)} people instead of the {signed(modelGap(checkedYears.from, checkedYears.to))} that follow from the forecast.[^model2022]
+
+<Figure
+  title={`The actual inflow in ${checkedYears.from}–${checkedYears.to} almost balanced those reaching retirement age`}
+  note="Our calculation. People reaching 60 and the inflow assumption — NIPiP forecast of April 2022 (employed nurses and midwives). Actual new licences — NIPiP data for successive years (footnote in the text). Not everyone with a new licence takes up work in Poland, and retirement age does not mean leaving the profession."
+  source={{ label: 'NIPiP, Nurse, midwife — shortage professions, April 2022, chapter V', href: LINKS.report2022 }}
+>
+  <Comparison table={modelTable} />
+</Figure>
+
+The employment data point in the same direction. At the end of 2021, {formatEN(employed2021)} nurses and midwives were employed, at the end of 2025 {formatEN(employed2025)}, or {formatEN(employed2025 - employed2021)} more.[^crpip] The forecasts from 2021–2022 predicted a fall over this period: by 16,761 people by 2025 according to the 2021 report[^raport2021] and by 11,663 according to the 2022 report.[^model2022]
+
+This is good news, but not a solution. The inflow barely balances those reaching retirement age, the average age of the workforce is still rising, and the number of nurses per 1,000 population remains far from the EU average.
+
+<SimulatorBanner kind="pielegniarki" />
+
+### Why the shortage figures differ
+
+Three figures appear in the media. All of them come from the same calculation with a frozen inflow, but from different years and periods:
+
+- **over 26,000** — the sum of the annual differences in 2023–2030 (exactly 26,273), with an inflow of 6,205 people a year; employed nurses and midwives; this figure was also announced in a NIPiP press release of 9.02.2024;[^prognoza2023]
+- **28,889** — the same forecast counted from 2022, i.e. for 2022–2030;[^model2022]
+- **36,293** — the fall in the number of employed nurses and midwives by 2030 in the older 2021 report, which froze the inflow at the 2020 level (5,693 licences).[^raport2021]
+
+None of them takes into account the growth of the inflow in 2022–2025. They describe a scenario in which admissions would have stopped at the level of a few years earlier — and that did not happen.
+
+## How many graduates stay in the profession
+
+Training has clearly accelerated. In February 2023, 126 universities with accreditation from the minister of health could run nursing programmes.[^uczelnie] The number of new licences for nurses alone rose from 3,443 in 2014 to 9,153 in 2025.[^pwz]
+
+Not every diploma turns into work in the profession, however. The measurement we were able to find concerns the 2020 cohort: 4,525 people obtained a nursing degree that year, and 2,504 of them, or about 55%, applied for a licence to practise by the end of 2021.[^demagog] This is the number of licence applications, not employment contracts, and without a breakdown into public and private facilities. Of the remaining 45%, all that is known is that they did not apply during that time. We did not find a newer measurement, and the NIPiP forecasts assumed that everyone with a new licence takes up work.[^model2022]
+
+## Emigration: what is known and what is not
+
+How many nurses leave is not known. The Supreme Audit Office (NIK) found in 2016 that Poland does not monitor the emigration of medical staff.[^nik] There are three indirect measures, and each measures something different.
+
+<StatRow
+  label="Nurses leaving: three different measures"
+  items={[
+    { value: 23424, unit: 'certificates', desc: 'for the recognition of qualifications abroad were issued to nurses and midwives in 2004–2025', accuracy: 'exact', source: 'NIPiP', href: LINKS.certificates },
+    { prefix: '<', value: 6, unit: '%', desc: 'of working nurses were considering leaving within 12 months, 1.7% definitely (survey of January 2023)', accuracy: 'est', source: 'MedMedia Consulting for NIPiP', href: LINKS.report2023 },
+    { prefix: '~', value: 64, unit: 'thousand', desc: 'Polish-born nurses were working in OECD countries in 2020/21 — a stock by country of birth, not the number of departures', accuracy: 'est', source: 'OECD, Health at a Glance 2025', href: LINKS.oecdMigration },
+  ]}
+/>
+
+**Certificates.** Anyone who wants to work in another EU country needs a certificate for the recognition of qualifications. The most were issued in 2015 (1,527). Since 2023 NIPiP has counted them with a changed scope (230 in 2025), so the newer years cannot be compared directly with the older ones.[^zaswiadczenia] A certificate points to an intention to leave rather than to departure itself.[^nik]
+
+**Survey.** In a study that MedMedia Consulting (MMC) carried out for NIPiP in January 2023,[^mmc-data] just under 6% of working nurses were considering leaving within a year, and 1.7% definitely. Asked about the destination, they most often named the Scandinavian countries (28.6%), Germany (25.2%), the United Kingdom (16.5%) and Switzerland (12.7%).[^ankieta] These are declarations, not departures.
+
+**OECD data.** According to the OECD report Health at a Glance 2025, about 64,000 Polish-born nurses were working in OECD countries in 2020/21. Among the countries of birth of migrant nurses, Poland ranks third, after the Philippines and India.[^oecd-migracja] This is, however, a stock, not a number of departures: it includes people who left many years ago, including those who obtained their qualification abroad.
+
+## Society is ageing too
+
+The workforce is ageing at the same time as the patients. In 2024, more than 7.7 million people aged 65 and over lived in Poland (20.6% of the population), and more than 1.6 million people aged 80+.[^gus2024] According to the GUS projection, the number of people aged 80+ will rise to 2.1 million by 2030 and to 3.5 million by 2060. People aged 65+ will then make up about 30% of the population.[^gusprognoza]
+
+<StatRow
+  label="Demand for care"
+  items={[
+    { prefix: '>', value: 7.7, decimals: 1, unit: 'million', desc: 'people aged 65+ in 2024, or 20.6% of the population; in 2030 there are expected to be 8.1 million', accuracy: 'exact', source: 'Statistics Poland, 2024 data', href: LINKS.gus2024 },
+    { value: 2.1, decimals: 1, unit: 'million', desc: 'people aged 80+ in 2030 according to the projection, against 1.6 million in 2024', accuracy: 'est', source: 'Statistics Poland, projection 2023–2060', href: LINKS.gusProjection },
+    { value: 151607, unit: 'places', desc: 'in long-term care (social welfare homes, private care homes, ZOL and ZPO care facilities) in 2024, equivalent to 5% of the number of people aged 75+', accuracy: 'exact', source: 'BGK, February 2026', href: LINKS.bgk },
+  ]}
+/>
+
+According to BGK, the state development bank, providing places for 6% of people aged 75+ in 2040 would require 276,000 places — almost twice as many as today.[^bgk] The growing number of the oldest patients increases the need for care, including nursing care, precisely in the years in which the largest cohorts of nurses reach retirement age.
+
+## A public pay scale, undisclosed contracts
+
+This site follows where public money in healthcare goes. With nurses, part of it is unusually visible. The minimum base pay of an employee in a healthcare provider follows from an act: it is the coefficient of the occupational group times a base amount announced every year. We set out the amounts for nurses, midwives and other professions in [Other medical professions: pay scale and numbers](/en/data/other-health-professions-pay/).
+
+With specialist doctors it is the other way round: most of them work under contracts whose amounts nobody publishes (see [Contract or employment](/en/mechanisms/contract-vs-employment/)). Nurses working under contracts also fall outside this picture — their rates are known only from job advertisements.
+
+A public minimum is also a point of reference in pay disputes. At the Provincial Integrated Hospital in Kalisz, arrears owed to staff, mainly nurses, reached about <Money value={37000000} scale="million" decimals={0} />. According to the new director, they resulted from incorrect grading and understated base rates.[^kalisz] We describe the finances of this hospital, including the cost of doctors’ contracts, in the overview of [hospital debt](/en/data/hospital-debt/).
+
+Pay transparency will not remove the shortage of nurses: its source is above all the age structure of the workforce and an inflow that was too small for years. But how much money is left for staff pay is decided by the division of a single budget, and that division is only partly visible. The full picture would come from open data on the total paid from public money to each person, under a permanent identifier and without names — for doctors, nurses and other professions. That is what [our proposal](/en/demand/) is about.
+
+[^crpip]: NIPiP, [“<span lang="pl">Liczba pielęgniarek i położnych zarejestrowanych i zatrudnionych</span>”](https://nipip.pl/liczba-pielegniarek-poloznych-zarejestrowanych-zatrudnionych/) (“Number of registered and employed nurses and midwives”, in Polish) (CRPiP, updated 14.01.2026): registered by sex and average age in 2008–2025, employed in 2012–2025. The page does not define which forms of work “employment” covers. Share of women: 321,832 of 333,336 nurses.
+
+[^nipip2023]: NIPiP, [“<span lang="pl">Raport o stanie pielęgniarstwa i położnictwa w Polsce</span>”](https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf) (“Report on the state of nursing and midwifery in Poland”, in Polish), May 2023, chapter I: age structure of registered nurses and midwives (chart 3, CRPiP data from January 2023), share of people of retirement age and under 40; share of registered nurses working in the profession and living abroad.
+
+[^nipip2022]: NIPiP, [“<span lang="pl">Pielęgniarka, położna — zawody deficytowe w polskim systemie ochrony zdrowia</span>”](https://nipip.pl/wp-content/uploads/2022/06/2022_Raport-NIPiP-struktura-wiekowa-kadr.pdf) (“Nurse, midwife — shortage professions in the Polish healthcare system”, in Polish), April 2022, chapters I and V: age structure of 234,665 employed nurses (CRPiP, 30.04.2022), forecast of 65% of retirement age by 2030 (midwives: 60%), 76,388 nurses and midwives working while entitled to a pension.
+
+[^szacunek]: Our calculation on the data from chart 3 of the 2023 NIPiP report, assuming equal single-year cohorts in the 51–60 group (3.15% per year of age). Today: 34.0% + 3.15% ≈ 37%. By the end of 2030: 34.0% + 9 × 3.15% ≈ 62%. As in the NIPiP forecast, we disregard the higher retirement age of men (65), who make up 3.5% of the profession. The calculation concerns the register, while the NIPiP forecast concerns employed nurses.
+
+[^model2022]: NIPiP, [“<span lang="pl">Pielęgniarka, położna — zawody deficytowe w polskim systemie ochrony zdrowia</span>”](https://nipip.pl/wp-content/uploads/2022/06/2022_Raport-NIPiP-struktura-wiekowa-kadr.pdf) (“Nurse, midwife — shortage professions in the Polish healthcare system”, in Polish), April 2022, chapters IV–V: number of new licences in 2019–2021 (6,205 on average), forecast assumptions (constant inflow, 100% take up work, retirement age 60), table of people reaching pension entitlement in 2022–2030, a loss of 11,663 by 2025 and 28,889 by 2030.
+
+[^pwz]: NIPiP, [“<span lang="pl">Liczba osób, które uzyskały prawo wykonywania zawodu</span>”](https://nipip.pl/liczba-osob-ktore-uzyskaly-prawo-wykonywania-zawodu/) (“Number of people who obtained a licence to practise”, in Polish): nurses and midwives in 2014–2025.
+
+[^prognoza2023]: NIPiP, [“<span lang="pl">Raport o stanie pielęgniarstwa i położnictwa w Polsce</span>”](https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf) (“Report on the state of nursing and midwifery in Poland”, in Polish), May 2023, chapter I.3: a loss from 2,500 people in 2023 to almost 3,900 in 2029, over 26,000 in total in 2023–2030, and the caveat about the number of licences rising since 2014. The figure of 26,000 was also announced in a [NIPiP press release](https://nipip.pl/do-2030-roku-liczba-pielegniarek-i-poloznych-zmniejszy-sie-o-ponad-26-tysiecy-alarmuje-samorzad-zawodowy-informacja-prasowa/) (in Polish) of 9.02.2024. The exact total (26,273) — from the table in the 2022 report.
+
+[^raport2021]: NIPiP, [2021 report](https://nipip.pl/raport2021/) (in Polish), via [Puls Medycyny](https://pulsmedycyny.pl/medycyna/zdrowie/nipip-liczba-zatrudnionych-pielegniarek-i-poloznych-zmniejszy-sie-do-2030-r-o-363-tys/) (in Polish) — a fall in the number of employed nurses and midwives by 16,761 by 2025 and by 36,293 by 2030, with an inflow equal to the number of licences in 2020 (5,693).
+
+[^soh]: OECD and European Observatory on Health Systems and Policies, [State of Health in the EU: Poland, Country Health Profile 2025](https://www.oecd.org/content/dam/oecd/en/publications/reports/2025/12/country-health-profile-2025-country-notes_7e72146d/poland_388161c0/5b674a77-en.pdf), p. 7 and figure 11: 5.9 nurses per 1,000 population against an EU average of 8.5 (2023, unweighted average). The data cover all categories of nurses, not only those meeting the requirements of the EU directive on the recognition of qualifications.
+
+[^hag]: OECD, [Health at a Glance 2025 — country note on Poland](https://www.oecd.org/content/dam/oecd/en/publications/reports/2025/11/health-at-a-glance-2025-country-notes_2f94481e/poland_3e11c239/c3917772-en.pdf): 5.9 practising nurses per 1,000 population against an OECD average of 9.2.
+
+[^uczelnie]: NIPiP, [“<span lang="pl">Raport o stanie pielęgniarstwa i położnictwa w Polsce</span>”](https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf) (“Report on the state of nursing and midwifery in Poland”, in Polish), May 2023, chapter II.2 — according to the Minister of Health’s accreditation list of February 2023.
+
+[^demagog]: Demagog, [“<span lang="pl">Ile wykształconych pielęgniarek nie podejmuje pracy w zawodzie?</span>”](https://demagog.org.pl/wypowiedzi/ile-wyksztalconych-pielegniarek-nie-podejmuje-pracy-w-zawodzie/) (“How many trained nurses do not take up work in the profession?”, in Polish), 13.10.2021 — based on NIPiP’s reply to a request for public information. The figure of 2,504 covers applications submitted in 2020–2021.
+
+[^nik]: K. Domagała et al., [article on the emigration of Polish medical staff](https://pmc.ncbi.nlm.nih.gov/articles/PMC8776200/), International Journal of Environmental Research and Public Health, 2022 — citing the NIK report “<span lang="pl">Kształcenie i przygotowanie zawodowe kadr medycznych</span>” (“Education and professional training of medical staff”, 2016) and the assessment that certificates indicate an intention to leave rather than actual emigration.
+
+[^zaswiadczenia]: NIPiP, [“<span lang="pl">Liczba zaświadczeń wydanych na potrzeby uznawania kwalifikacji zawodowych</span>”](https://nipip.pl/liczba-zaswiadczen-wydanych-na-potrzeby-uznawania-kwalifikacji-zawodowych/) (“Number of certificates issued for the recognition of professional qualifications”, in Polish): 2004–2025 (2004–2007 combined), from 2023 with a note on the change in the scope of the certificates. The total of 23,424 — our calculation.
+
+[^ankieta]: NIPiP, [“<span lang="pl">Raport o stanie pielęgniarstwa i położnictwa w Polsce</span>”](https://nipip.pl/wp-content/uploads/2023/12/RAPORT-O-STANIE-PIELEGNIARSTWA-I-P-OLOZNICTWA-W-POLSCE-MAJ-2023.pdf) (“Report on the state of nursing and midwifery in Poland”, in Polish), May 2023, chapter VII: representative MMC study for NIPiP (charts 38–39), conducted as an online survey (CAWI), 16,518 nurses and 3,051 midwives. Destinations were named only by those considering leaving; more than one country could be named.
+
+[^mmc-data]: The NIPiP report gives neither the date of the study nor the full name of the contractor (it refers to “the MMC study”; on the title page: MedMedia Sp. z o.o.). We know the date and the name MedMedia Consulting from secondary sources: mp.pl, [“<span lang="pl">Portret polskiej pielęgniarki i położnej</span>”](https://www.mp.pl/pacjent/aktualnosci/338479,portret-polskiej-pielegniarki-i-poloznej) (“A portrait of the Polish nurse and midwife”, in Polish), 21.12.2023 — study conducted in January 2023.
+
+[^oecd-migracja]: OECD, [Health at a Glance 2025 — International migration of nurses](https://www.oecd.org/en/publications/2025/11/health-at-a-glance-2025_a894f72e/full-report/international-migration-of-nurses_9f4ba769.html): nurses working in OECD countries by country of birth, 2020/21 (Philippines about 270,000, India 120,000, Poland 64,000); data from the OECD Database on Immigrants (DIOC), based on censuses and labour force surveys. The same in the [full PDF report](https://www.oecd.org/content/dam/oecd/en/publications/reports/2025/11/health-at-a-glance-2025_a894f72e/8f9e3f98-en.pdf), chapter 8, p. 200.
+
+[^gus2024]: Statistics Poland, [“<span lang="pl">Sytuacja demograficzna Polski do 2024 r.</span>”](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5468/40/5/1/sytuacja_demograficzna_polski_do_2024.pdf) (“The demographic situation of Poland up to 2024”, in Polish), chapter on the age structure of the population.
+
+[^gusprognoza]: Statistics Poland, [“<span lang="pl">Prognoza ludności rezydującej dla Polski na lata 2023–2060</span>”](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5469/12/1/1/prognoza_ludnosci_rezydujacej_dla_polski_na_lata_2023-2060.pdf) (“Projection of the resident population of Poland for 2023–2060”, in Polish), table 1. A projection, not a measurement.
+
+[^bgk]: BGK, [“<span lang="pl">Opieka długoterminowa w Polsce</span>”](https://www.bgk.pl/files/public/Pliki/Raporty/Opieka_d%C5%82ugoterminowa_w_Polsce_raport_BGK_luty_2026.pdf) (“Long-term care in Poland”, in Polish), February 2026: 151,607 places in 2024 (an indicator of 5.0% of the population aged 75+) and 276,000 places needed in 2040 at an indicator of 6%.
+
+[^kalisz]: abcZdrowie, [“<span lang="pl">Szpital w Kaliszu z 37 mln zł długu. Nowy dyrektor ujawnia skalę zaniedbań</span>”](https://portal.abczdrowie.pl/szpital-w-kaliszu-z-37-mln-zl-dlugu-nowy-dyrektor-ujawnia-skale-zaniedban/7183447202130688a) (“Hospital in Kalisz with PLN 37 million of debt. The new director reveals the scale of neglect”, in Polish), 29.07.2025.

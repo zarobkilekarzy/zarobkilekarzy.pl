@@ -2,6 +2,7 @@
  * Model SEO: co strona mówi o sobie (SeoInput) i co z tego wylicza lib/seo (ResolvedSeo).
  * Strony i layouty podają fakty; znaczniki, szablon tytułu i graf schema.org buduje lib/seo.
  */
+import type { Locale } from '@/i18n/locales';
 
 /** Okruszek nawigacji; ostatni (bieżąca strona) nie ma adresu. */
 export interface Crumb {
@@ -86,6 +87,11 @@ export interface SeoInput {
   page?: PageSchema;
   /** główne byty strony */
   entities?: Entity[];
+  /**
+   * ta sama treść w innym języku (adres bez domeny). Przełącznik języka pokazuje pierwszą;
+   * hreflang dostają tylko pary, w których obie strony są w indeksie.
+   */
+  translations?: { locale: Locale; path: string; indexable: boolean }[];
 }
 
 /** Obrazek podglądu (OG) — ten sam trafia do og:image i do grafu jako primaryImageOfPage. */
@@ -117,4 +123,8 @@ export interface ResolvedSeo {
   published?: string;
   modified?: string;
   section?: string;
+  /** język strony (z adresu) */
+  locale: Locale;
+  /** <link rel="alternate" hreflang>: ta strona, jej odpowiedniki i x-default; pusta lista = bez hreflang */
+  alternates: { hreflang: string; href: string }[];
 }

@@ -3,11 +3,13 @@
  * Prawo jako pytanie pacjenta. Widać od razu: pytanie, odpowiedź jednym słowem („Tak”, „0 zł”),
  * jedno-dwa zdania i artykuł ustawy. Po rozwinięciu: szczegóły i zdanie „Możesz powiedzieć”.
  * Kotwica (#id) otwiera odpowiedź, a „Wyślij tę odpowiedź” daje link do niej — np. dla rodzica.
+ * Na stronach /en/ napisy z obiektu T (treść odpowiedzi przychodzi w propsach).
  */
 import Icon from '@/components/ui/Icon.astro';
 import type { RightQA } from '@/lib/pacjent/types';
 import { inline, type Resolve } from '@/lib/inline';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   item: RightQA;
@@ -17,19 +19,40 @@ interface Props {
 
 const { item, act, resolve } = Astro.props;
 const qid = `${item.id}-q`;
+const locale = localeOf(Astro.url.pathname);
+const T = {
+  pl: {
+    answer: 'Odpowiedź: ',
+    more: (say: boolean) => (say ? 'Szczegóły i co powiedzieć' : 'Szczegóły'),
+    say: 'Możesz powiedzieć',
+    quote: (text: string) => `„${text}”`,
+    actTitle: (name: string) => `Tekst ustawy: ${name}`,
+    actHint: ' ustawy o prawach pacjenta (otwiera się w nowej karcie)',
+    share: 'Wyślij tę odpowiedź',
+  },
+  en: {
+    answer: 'Answer: ',
+    more: (say: boolean) => (say ? 'Details and what to say' : 'Details'),
+    say: 'You can say',
+    quote: (text: string) => `“${text}”`,
+    actTitle: (name: string) => `Text of the act (in Polish): ${name}`,
+    actHint: ' of the Act on Patient Rights (opens in a new tab, in Polish)',
+    share: 'Send this answer',
+  },
+}[locale];
 ---
 <article class="qa" id={item.id} aria-labelledby={qid}>
   <h3 class="qa__q" id={qid}>{typo(item.q)}</h3>
-  <p class="qa__verdict"><span class="sr-only">Odpowiedź: </span>{item.verdict}</p>
-  <p class="qa__short" set:html={inline(item.short, resolve)} />
+  <p class="qa__verdict"><span class="sr-only">{T.answer}</span>{item.verdict}</p>
+  <p class="qa__short" set:html={inline(item.short, resolve, undefined, locale)} />
 
   <details class="qa__more">
     <summary>
       <span class="qa__toggle" aria-hidden="true"></span>
-      {item.say ? 'Szczegóły i co powiedzieć' : 'Szczegóły'}
+      {T.more(Boolean(item.say))}
     </summary>
     <div class="qa__body">
-      {item.more.map((p) => <p set:html={inline(p, resolve)} />)}
+      {item.more.map((p) => <p set:html={inline(p, resolve, undefined, locale)} />)}
 
       {item.table && (
         <table class="qa__table">
@@ -45,20 +68,20 @@ const qid = `${item.id}-q`;
 
       {item.say && (
         <figure class="qa__say">
-          <figcaption>Możesz powiedzieć</figcaption>
-          <blockquote><p>„{typo(item.say)}”</p></blockquote>
+          <figcaption>{T.say}</figcaption>
+          <blockquote><p>{T.quote(typo(item.say))}</p></blockquote>
         </figure>
       )}
     </div>
   </details>
 
   <footer class="qa__foot">
-    <a class="qa__basis" href={act.url} target="_blank" rel="noopener" title={`Tekst ustawy: ${act.name}`}>
-      {item.basis}<span class="sr-only"> ustawy o prawach pacjenta (otwiera się w nowej karcie)</span>
+    <a class="qa__basis" href={act.url} target="_blank" rel="noopener" title={T.actTitle(act.name)}>
+      {item.basis}<span class="sr-only">{T.actHint}</span>
     </a>
     <a class="qa__share" href={`#${item.id}`} data-share={item.q}>
       <Icon name="link" size={16} />
-      <span data-share-label>Wyślij tę odpowiedź</span>
+      <span data-share-label>{T.share}</span>
     </a>
   </footer>
 </article>

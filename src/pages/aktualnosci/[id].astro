@@ -15,6 +15,7 @@ import Aside from '@/components/blocks/Aside.astro';
 import Screenshot from '@/components/blocks/Screenshot.astro';
 import { formatDate, isoDate, typo } from '@/lib/format';
 import { getAllNews, newsHref, newsPage } from '@/lib/news';
+import { newsEnHref, newsTranslationOf } from '@/i18n/news';
 import type { Crumb, SeoInput } from '@/lib/seo';
 
 export const getStaticPaths = (async () => {
@@ -29,6 +30,8 @@ const { title, date, summary, draft, links = [], x, cover, coverAlt, coverCaptio
 const { Content } = await render(entry);
 
 const url = new URL(newsHref(entry), Astro.site).href;
+// Para językowa: przełącznik prowadzi do tłumaczenia, hreflang tylko poza szkicem (lib/seo/meta.ts)
+const pair = await newsTranslationOf(entry);
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: newsPage.title, href: newsPage.href }, { label: title }];
 const seo: SeoInput = {
   title,
@@ -39,6 +42,7 @@ const seo: SeoInput = {
   section: newsPage.title,
   breadcrumbs: crumbs,
   entities: [{ kind: 'article' }],
+  translations: pair && [{ locale: 'en', path: newsEnHref(pair), indexable: !draft && !pair.entry.data.noindex }],
 };
 ---
 <BaseLayout seo={seo}>

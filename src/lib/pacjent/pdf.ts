@@ -9,8 +9,10 @@
  *
  * Obie wersje czarno-białe: drukarka atramentowa nie zużyje kolorowego tuszu.
  * Druga karta na arkuszu jest dla czytnika ekranu dekoracją (ta sama treść nie czyta się dwa razy).
+ * Napisy spoza treści karty: parametr `t` (PdfText) — domyślnie polskie, wersja angielska
+ * (/en/patient-rights/*.pdf) podaje własne z src/data/en/prawa-pacjenta.ts.
  */
-import type { CardContent, CardPhones } from './types';
+import type { CardContent, CardPhones, PdfText } from './types';
 import { artifact, createPdf, fit, list, measure, mm, tag, text, widthOf, type Pdf, type TextStyle } from '@/lib/pdf/typeset';
 
 const INK = '#000000';
@@ -19,6 +21,36 @@ const GREY = '#8a8a8a';
 const HAIR = '#bdbdbd';
 
 const A4 = { w: 595.28, h: 841.89 };
+
+/** Napisy polskich PDF-ów (/prawa-pacjenta/*.pdf). */
+export const PL_PDF_TEXT: PdfText = {
+  lang: 'pl-PL',
+  cardMeta: {
+    title: (title) => `${title} — karta kieszonkowa do wydruku`,
+    subject: 'Najważniejsze prawa pacjenta, terminy i numery. Dwie karty na kartce A4: przetnij i złóż.',
+    keywords: 'prawa pacjenta, Rzecznik Praw Pacjenta, dokumentacja medyczna, karta do druku',
+  },
+  largeMeta: {
+    title: (title) => `${title} — duży druk`,
+    subject: 'Najważniejsze prawa pacjenta, terminy i numery, dużą czcionką na dwóch stronach A4.',
+    keywords: 'prawa pacjenta, duży druk, Rzecznik Praw Pacjenta, karta do druku',
+  },
+  cardKind: 'Karta kieszonkowa',
+  largeKind: 'Duży druk',
+  call: 'Nie wiesz, od czego zacząć? Zadzwoń',
+  cardHelpline: (name, hours) => `**${name}** — ${hours.toLowerCase()}. Wspólny numer Rzecznika Praw Pacjenta i NFZ.`,
+  largeHelpline: (name, hours) => `${hours}. **${name}** — wspólna infolinia Rzecznika Praw Pacjenta i NFZ.`,
+  cardEmergency: 'Zagrożenie życia? Dzwoń pod 112. Infolinia pacjenta nie wysyła karetki.',
+  largeEmergency: '**Zagrożenie życia? Dzwoń pod 112.** Infolinia pacjenta nie wysyła karetki.',
+  rights: 'Masz prawo do',
+  free: 'To jest bezpłatne — choć rzadko kto o tym mówi',
+  deadlines: 'Pilnuj terminów',
+  warning: 'Uwaga',
+  routes: 'Gdzie zgłosić',
+  full: 'Pełna wersja i źródła:',
+  cutMarks: 'przetnij wzdłuż kreski · złóż wzdłuż kropek, napisem na zewnątrz',
+  page: (n, of) => `strona ${n} z ${of}`,
+};
 
 /**
  * Pisanie z otagowaniem albo bez — ta sama funkcja rysuje kartę dla czytnika ekranu (pierwsza)
@@ -84,20 +116,20 @@ function basisItem(pdf: Pdf, item: { text: string; basis: string }, x: number, y
   return Math.max(end, text(pdf.doc, item.basis, x + w - BASIS_W, y, BASIS_W, C.basis));
 }
 
-function front(pdf: Pdf, wr: Writer, c: CardContent, phones: CardPhones, ox: number, oy: number) {
+function front(pdf: Pdf, wr: Writer, c: CardContent, phones: CardPhones, t: PdfText, ox: number, oy: number) {
   const { doc } = pdf;
   const x = ox + PAD;
   const w = PANEL.w - 2 * PAD;
   const bottom = oy + PANEL.h - PAD;
   let y = oy + PAD;
 
-  wr.block('P', () => { y = text(doc, `Karta kieszonkowa · ${c.stamp}`, x, y, w, C.stamp); });
+  wr.block('P', () => { y = text(doc, `${t.cardKind} · ${c.stamp}`, x, y, w, C.stamp); });
   y += 4;
   wr.block('H1', () => { y = text(doc, c.title, x, y, w, C.title); });
   wr.deco(() => rule(pdf, x, y + 4, w, 1.4));
   y += 11;
 
-  wr.block('P', () => { y = text(doc, 'Nie wiesz, od czego zacząć? Zadzwoń', x, y, w, C.label); });
+  wr.block('P', () => { y = text(doc, t.call, x, y, w, C.label); });
   y += 2;
   wr.block('P', () => {
     const top = y;
@@ -105,7 +137,7 @@ function front(pdf: Pdf, wr: Writer, c: CardContent, phones: CardPhones, ox: num
     doc.link(x, top, widthOf(doc, phones.helpline.phone.display, C.phone), y - top, `tel:${phones.helpline.phone.tel}`);
   });
   y += 3;
-  wr.block('P', () => { y = text(doc, `**${phones.helpline.name}** — ${phones.helpline.hours.toLowerCase()}. Wspólny numer Rzecznika Praw Pacjenta i NFZ.`, x, y, w, { ...C.small, bold: 600 }); });
+  wr.block('P', () => { y = text(doc, t.cardHelpline(phones.helpline.name, phones.helpline.hours), x, y, w, { ...C.small, bold: 600 }); });
   y += 6;
 
   // 112: czarny kwadrat z numerem, obok jedno zdanie
@@ -113,11 +145,11 @@ function front(pdf: Pdf, wr: Writer, c: CardContent, phones: CardPhones, ox: num
   wr.deco(() => doc.save().rect(x, y, box.w, box.h).fill(INK).restore());
   wr.block('P', () => {
     text(doc, phones.emergency.phone.display, x, y + (box.h - C.sos.size) / 2, box.w, { ...C.sos, color: '#ffffff', align: 'center' });
-    text(doc, 'Zagrożenie życia? Dzwoń pod 112. Infolinia pacjenta nie wysyła karetki.', x + box.w + 7, y + 1.5, w - box.w - 7, C.small);
+    text(doc, t.cardEmergency, x + box.w + 7, y + 1.5, w - box.w - 7, C.small);
   });
   y += box.h + 12;
 
-  y = cardLabel(pdf, wr, 'Masz prawo do', x, y, w);
+  y = cardLabel(pdf, wr, t.rights, x, y, w);
   // linie między punktami rysujemy po liście: dekoracja nie może siedzieć w treści punktu
   const seps: number[] = [];
   wr.list(c.rights, (item, i) => {
@@ -126,26 +158,26 @@ function front(pdf: Pdf, wr: Writer, c: CardContent, phones: CardPhones, ox: num
   });
   wr.deco(() => seps.forEach((sy) => rule(pdf, x, sy, w, 0.3, HAIR)));
 
-  const footH = measure(doc, `Pełna wersja i źródła: ${c.url}`, w, C.foot);
+  const footH = measure(doc, `${t.full} ${c.url}`, w, C.foot);
   fit('karta, przód', y, bottom - footH - 6);
-  wr.block('P', () => { text(doc, `Pełna wersja i źródła: **${c.url}**`, x, bottom - footH, w, { ...C.foot, bold: 600 }); });
+  wr.block('P', () => { text(doc, `${t.full} **${c.url}**`, x, bottom - footH, w, { ...C.foot, bold: 600 }); });
 }
 
-function back(pdf: Pdf, wr: Writer, c: CardContent, ox: number, oy: number) {
+function back(pdf: Pdf, wr: Writer, c: CardContent, t: PdfText, ox: number, oy: number) {
   const { doc } = pdf;
   const x = ox + PAD;
   const w = PANEL.w - 2 * PAD;
   const bottom = oy + PANEL.h - PAD;
   let y = oy + PAD;
 
-  y = cardLabel(pdf, wr, 'To jest bezpłatne — choć rzadko kto o tym mówi', x, y, w);
+  y = cardLabel(pdf, wr, t.free, x, y, w);
   wr.list(c.free, (item, i) => {
     if (i) y += 4.5;
     y = basisItem(pdf, item, x, y, w);
   });
   y += 11;
 
-  y = cardLabel(pdf, wr, 'Pilnuj terminów', x, y, w);
+  y = cardLabel(pdf, wr, t.deadlines, x, y, w);
   const valueW = 52;
   wr.list(c.deadlines, (d, i) => {
     if (i) y += 5;
@@ -160,12 +192,12 @@ function back(pdf: Pdf, wr: Writer, c: CardContent, ox: number, oy: number) {
   const warnH = measure(doc, c.warning, inner, C.body) + 18;
   wr.deco(() => doc.save().rect(x, y, w, warnH).lineWidth(0.9).strokeColor(INK).stroke().restore());
   wr.block('P', () => {
-    text(doc, 'Uwaga', x + 7, y + 5, inner, C.label);
+    text(doc, t.warning, x + 7, y + 5, inner, C.label);
     text(doc, c.warning, x + 7, y + 13, inner, C.body);
   });
   y += warnH + 11;
 
-  y = cardLabel(pdf, wr, 'Gdzie zgłosić', x, y, w);
+  y = cardLabel(pdf, wr, t.routes, x, y, w);
   wr.list(c.routes, (r, i) => {
     if (i) y += 4.5;
     y = text(doc, r.situation, x, y, w, C.strong);
@@ -178,7 +210,7 @@ function back(pdf: Pdf, wr: Writer, c: CardContent, ox: number, oy: number) {
 }
 
 /** Linie cięcia i zgięcia + jednozdaniowa instrukcja na linii cięcia. */
-function cutMarks(pdf: Pdf) {
+function cutMarks(pdf: Pdf, t: PdfText) {
   const { doc } = pdf;
   artifact(pdf, () => {
     // zgięcie: kropki pionowo przez środek arkusza
@@ -186,7 +218,7 @@ function cutMarks(pdf: Pdf) {
     // cięcie: kreska poziomo przez środek
     doc.save().moveTo(0, PANEL.h).lineTo(A4.w, PANEL.h).lineWidth(0.5).dash(4, { space: 3 }).strokeColor(GREY).stroke().restore();
     // podpis na linii cięcia (na białym tle, przerywa kreskę)
-    const label = 'przetnij wzdłuż kreski · złóż wzdłuż kropek, napisem na zewnątrz';
+    const label = t.cutMarks;
     const style: TextStyle = { family: 'mono', weight: 500, size: 5.2, tracking: 0.3, color: GREY, leading: 1 };
     const lw = widthOf(doc, label, style) + 10;
     doc.save().rect(A4.w / 2 - lw / 2, PANEL.h - 4, lw, 8).fill('#ffffff').restore();
@@ -194,22 +226,23 @@ function cutMarks(pdf: Pdf) {
   });
 }
 
-export async function renderCard(c: CardContent, phones: CardPhones, date: Date): Promise<Uint8Array> {
+export async function renderCard(c: CardContent, phones: CardPhones, date: Date, t: PdfText = PL_PDF_TEXT): Promise<Uint8Array> {
   const pdf = await createPdf({
-    title: `${c.title} — karta kieszonkowa do wydruku`,
-    subject: 'Najważniejsze prawa pacjenta, terminy i numery. Dwie karty na kartce A4: przetnij i złóż.',
-    keywords: 'prawa pacjenta, Rzecznik Praw Pacjenta, dokumentacja medyczna, karta do druku',
+    title: t.cardMeta.title(c.title),
+    subject: t.cardMeta.subject,
+    keywords: t.cardMeta.keywords,
     date,
+    lang: t.lang,
   });
   const wr = tagged(pdf);
-  front(pdf, wr, c, phones, 0, 0);
-  back(pdf, wr, c, PANEL.w, 0);
+  front(pdf, wr, c, phones, t, 0, 0);
+  back(pdf, wr, c, t, PANEL.w, 0);
   // druga karta — dla kogoś bliskiego; dla czytnika ekranu to powtórzenie, więc dekoracja
   artifact(pdf, () => {
-    front(pdf, plain, c, phones, 0, PANEL.h);
-    back(pdf, plain, c, PANEL.w, PANEL.h);
+    front(pdf, plain, c, phones, t, 0, PANEL.h);
+    back(pdf, plain, c, t, PANEL.w, PANEL.h);
   });
-  cutMarks(pdf);
+  cutMarks(pdf, t);
   return pdf.finish();
 }
 
@@ -232,12 +265,13 @@ const L = {
   foot: { family: 'mono', weight: 500, size: 9, leading: 1.3, color: TEXT },
 } satisfies Record<string, TextStyle>;
 
-export async function renderLargePrint(c: CardContent, phones: CardPhones, date: Date): Promise<Uint8Array> {
+export async function renderLargePrint(c: CardContent, phones: CardPhones, date: Date, t: PdfText = PL_PDF_TEXT): Promise<Uint8Array> {
   const pdf = await createPdf({
-    title: `${c.title} — duży druk`,
-    subject: 'Najważniejsze prawa pacjenta, terminy i numery, dużą czcionką na dwóch stronach A4.',
-    keywords: 'prawa pacjenta, duży druk, Rzecznik Praw Pacjenta, karta do druku',
+    title: t.largeMeta.title(c.title),
+    subject: t.largeMeta.subject,
+    keywords: t.largeMeta.keywords,
     date,
+    lang: t.lang,
   });
   const { doc } = pdf;
   const wr = tagged(pdf);
@@ -251,7 +285,7 @@ export async function renderLargePrint(c: CardContent, phones: CardPhones, date:
     wr.deco(() => {
       rule(pdf, x, bottom - 16, w, 0.5, HAIR);
       text(doc, c.url, x, bottom - 11, w, L.foot);
-      text(doc, `strona ${n} z ${pages}`, x, bottom - 11, w, { ...L.foot, align: 'right' });
+      text(doc, t.page(n, pages), x, bottom - 11, w, { ...L.foot, align: 'right' });
     });
   const h2 = (label: string, y: number) => {
     let end = y;
@@ -266,13 +300,13 @@ export async function renderLargePrint(c: CardContent, phones: CardPhones, date:
 
   // --- strona 1: telefon i prawa ---
   let y = M;
-  wr.block('P', () => { y = text(doc, `Duży druk · ${c.stamp}`, x, y, w, L.stamp); });
+  wr.block('P', () => { y = text(doc, `${t.largeKind} · ${c.stamp}`, x, y, w, L.stamp); });
   y += 6;
   wr.block('H1', () => { y = text(doc, c.title, x, y, w, L.title); });
   wr.deco(() => rule(pdf, x, y + 8, w, 2));
   y += 22;
 
-  wr.block('P', () => { y = text(doc, 'Nie wiesz, od czego zacząć? Zadzwoń:', x, y, w, L.lead); });
+  wr.block('P', () => { y = text(doc, `${t.call}:`, x, y, w, L.lead); });
   y += 4;
   wr.block('P', () => {
     const top = y;
@@ -280,18 +314,18 @@ export async function renderLargePrint(c: CardContent, phones: CardPhones, date:
     doc.link(x, top, widthOf(doc, phones.helpline.phone.display, L.phone), y - top, `tel:${phones.helpline.phone.tel}`);
   });
   y += 6;
-  wr.block('P', () => { y = text(doc, `${phones.helpline.hours}. **${phones.helpline.name}** — wspólna infolinia Rzecznika Praw Pacjenta i NFZ.`, x, y, w, L.body); });
+  wr.block('P', () => { y = text(doc, t.largeHelpline(phones.helpline.name, phones.helpline.hours), x, y, w, L.body); });
   y += 14;
 
   const box = { w: 52, h: 34 };
   wr.deco(() => doc.save().rect(x, y, box.w, box.h).fill(INK).restore());
   wr.block('P', () => {
     text(doc, phones.emergency.phone.display, x, y + (box.h - L.sos.size) / 2, box.w, { ...L.sos, color: '#ffffff', align: 'center' });
-    text(doc, '**Zagrożenie życia? Dzwoń pod 112.** Infolinia pacjenta nie wysyła karetki.', x + box.w + 14, y + 0.5, w - box.w - 14, L.body);
+    text(doc, t.largeEmergency, x + box.w + 14, y + 0.5, w - box.w - 14, L.body);
   });
   y += box.h + 26;
 
-  y = h2('Masz prawo do', y);
+  y = h2(t.rights, y);
   const seps: number[] = [];
   wr.list(c.rights, (item, i) => {
     if (i) { seps.push(y + 5); y += 10; }
@@ -304,14 +338,14 @@ export async function renderLargePrint(c: CardContent, phones: CardPhones, date:
   // --- strona 2: bezpłatne, terminy, gdzie zgłosić ---
   doc.addPage({ size: 'A4', margin: 0 });
   y = M;
-  y = h2('To jest bezpłatne — choć rzadko kto o tym mówi', y);
+  y = h2(t.free, y);
   wr.list(c.free, (item, i) => {
     if (i) y += 9;
     y = basisRow(item, y);
   });
   y += 16;
 
-  y = h2('Pilnuj terminów', y);
+  y = h2(t.deadlines, y);
   const valueW = 96;
   wr.list(c.deadlines, (d, i) => {
     if (i) y += 10;
@@ -325,12 +359,12 @@ export async function renderLargePrint(c: CardContent, phones: CardPhones, date:
   const warnH = measure(doc, c.warning, inner, L.body) + 36;
   wr.deco(() => doc.save().rect(x, y, w, warnH).lineWidth(1.5).strokeColor(INK).stroke().restore());
   wr.block('P', () => {
-    text(doc, 'Uwaga', x + 14, y + 12, inner, { ...L.stamp, color: INK });
+    text(doc, t.warning, x + 14, y + 12, inner, { ...L.stamp, color: INK });
     text(doc, c.warning, x + 14, y + 26, inner, L.body);
   });
   y += warnH + 18;
 
-  y = h2('Gdzie zgłosić', y);
+  y = h2(t.routes, y);
   wr.list(c.routes, (r, i) => {
     if (i) y += 10;
     y = text(doc, r.situation, x, y, w, L.strong);

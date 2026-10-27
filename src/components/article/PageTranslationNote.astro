@@ -1,0 +1,13 @@
+---
+/**
+ * Nota o tłumaczeniu na angielskiej stronie spoza kolekcji artykułów (FAQ, słownik…): dane z rejestru
+ * src/i18n/pages.json, wygląd i treść — article/TranslationNote. Strona wstawia ją sama pod nagłówkiem.
+ */
+import TranslationNote from './TranslationNote.astro';
+import { pageFreshness, pagePairOf } from '@/i18n/pages';
+
+const pair = pagePairOf(Astro.url.pathname);
+if (!pair) throw new Error(`[i18n] ${Astro.url.pathname}: brak wpisu w src/i18n/pages.json`);
+const { stale, changed } = pageFreshness(pair);
+---
+<TranslationNote original={pair.pl} translated={new Date(pair.date)} stale={stale} changed={changed} />

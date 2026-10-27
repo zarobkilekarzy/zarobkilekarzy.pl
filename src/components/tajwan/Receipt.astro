@@ -5,11 +5,18 @@
  * (ui/Popover). Gdy figura jest węższa niż 640 px, wydruk składa się w jedną kolumnę, a objaśnienia
  * stoją listą pod nim: na telefonie widać je bez stukania i nie zasłaniają kwot.
  * Pod spodem pasek „kto płaci za tę wizytę”. Kwoty: data/tajwan.ts → RECEIPT.
+ * Na stronach /en/ podpisy i objaśnienia z src/data/en/tajwan.ts, bez złotych (TWD nie ma w tabeli A NBP).
  */
 import Figure from '@/components/blocks/Figure.astro';
 import ReceiptRow from '@/components/tajwan/ReceiptRow.astro';
-import { LINKS, RECEIPT, TWD, type ReceiptLine } from '@/data/tajwan';
-import { formatPL, typo } from '@/lib/format';
+import { LINKS, RECEIPT as RECEIPT_PL, TWD, type ReceiptLine } from '@/data/tajwan';
+import { formatNumber, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { RECEIPT: RECEIPT_EN } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/tajwan') : {}) as typeof import('@/data/en/tajwan');
+const RECEIPT = locale === 'en' ? RECEIPT_EN : RECEIPT_PL;
 
 const total = RECEIPT.split.reduce((sum, part) => sum + part.amount, 0);
 const share = (amount: number) => Math.round((amount / total) * 100);
@@ -18,16 +25,37 @@ const due = RECEIPT.due.amount;
 // Numery objaśnień w kolejności czytania wydruku: pozycje → ramka dopłaty → kolumna NHI → okienko
 const noted = [...RECEIPT.items, ...RECEIPT.copay.lines, ...RECEIPT.points, ...RECEIPT.counter, RECEIPT.due].filter((l) => l.note);
 const num = (line: ReceiptLine) => noted.indexOf(line) + 1 || undefined;
+
+const T = {
+  pl: {
+    title: `W okienku ${due} TWD, czyli ok. ${share(due)}% kwoty za wizytę. Resztę rozlicza ubezpieczyciel — i pacjent widzi ile.`,
+    note: `Dolna część w układzie prawdziwego wydruku, nagłówek i polskie podpisy są nasze. Kwoty pochodzą z rachunku z 17.09.2026; pacjent i nazwa szpitala są zmyślone. Punkty liczymy jak dolary tajwańskie (1:1). Złote po kursie NBP z ${TWD.date}.`,
+    source: 'rachunek opublikowany przez @rafaltwn',
+    paper: 'Przykładowy rachunek za wizytę',
+    heading: 'Rachunek za świadczenia medyczne',
+    hint: 'Kliknij numer przy kwocie, żeby zobaczyć objaśnienie.',
+    split: 'Kto płaci za tę wizytę',
+  },
+  en: {
+    title: `TWD ${due} at the counter, about ${share(due)}% of the cost of the visit. The insurer settles the rest — and the patient sees how much.`,
+    note: 'The lower part follows the layout of the real printout; the header and the English labels are ours. The amounts come from a receipt of 17 September 2026; the patient and the hospital name are made up. We count points as Taiwan dollars (1:1).',
+    source: 'receipt published by @rafaltwn',
+    paper: 'Sample receipt for a visit',
+    heading: 'Receipt for medical services',
+    hint: 'Click a number next to an amount to see the explanation.',
+    split: 'Who pays for this visit',
+  },
+}[locale];
 ---
 <Figure
-  title={`W okienku ${due} TWD, czyli ok. ${share(due)}% kwoty za wizytę. Resztę rozlicza ubezpieczyciel — i pacjent widzi ile.`}
-  note={`Dolna część w układzie prawdziwego wydruku, nagłówek i polskie podpisy są nasze. Kwoty pochodzą z rachunku z 17.09.2026; pacjent i nazwa szpitala są zmyślone. Punkty liczymy jak dolary tajwańskie (1:1). Złote po kursie NBP z ${TWD.date}.`}
-  source={{ label: 'rachunek opublikowany przez @rafaltwn', href: LINKS.receipt }}
+  title={T.title}
+  note={T.note}
+  source={{ label: T.source, href: LINKS.receipt }}
 >
   <div class="rcpt">
-    <div class="rcpt__paper" role="group" aria-label="Przykładowy rachunek za wizytę">
+    <div class="rcpt__paper" role="group" aria-label={T.paper}>
       <div class="rcpt__head">
-        <p class="rcpt__title"><span lang="zh-Hant">醫療費用收據</span> Rachunek za świadczenia medyczne</p>
+        <p class="rcpt__title"><span lang="zh-Hant">醫療費用收據</span> {T.heading}</p>
         <dl class="rcpt__meta">
           {RECEIPT.meta.map((m) => (
             <div>
@@ -64,7 +92,7 @@ const num = (line: ReceiptLine) => noted.indexOf(line) + 1 || undefined;
       </div>
     </div>
 
-    <p class="rcpt__hint">Kliknij numer przy kwocie, żeby zobaczyć objaśnienie.</p>
+    <p class="rcpt__hint">{T.hint}</p>
 
     <ol class="rcpt__notes">
       {noted.map((line, i) => (
@@ -74,13 +102,13 @@ const num = (line: ReceiptLine) => noted.indexOf(line) + 1 || undefined;
   </div>
 
   <div class="split">
-    <p class="split__title">Kto płaci za tę wizytę</p>
+    <p class="split__title">{T.split}</p>
     <p class="split__bar" aria-hidden="true">
       {RECEIPT.split.map((p) => <span class={`split__part split__part--${p.tone}`} style={`--w: ${p.amount / total}`}></span>)}
     </p>
     <ul class="split__legend">
       {RECEIPT.split.map((p) => (
-        <li><span class={`split__dot split__part--${p.tone}`}></span>{p.label}: <strong>{formatPL(p.amount)}</strong> ({share(p.amount)}%)</li>
+        <li><span class={`split__dot split__part--${p.tone}`}></span>{p.label}: <strong>{formatNumber(p.amount, 0, locale)}</strong> ({share(p.amount)}%)</li>
       ))}
     </ul>
   </div>

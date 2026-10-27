@@ -7,14 +7,24 @@
  *
  * Słupki to HTML/CSS (napisy zostają czytelne na telefonie). Pod wykresem rozwijana
  * tabela z danymi kwartalnymi — także jako tekstowa wersja wykresu.
+ * Dwujęzyczny: na stronie /en/ napisy po angielsku i zapis liczb angielski; wyjście polskie bez zmian.
  */
 import Figure from '@/components/blocks/Figure.astro';
 import { DEBT, LINKS } from '@/data/zadluzenie';
-import { mld, pct, projectQuarters } from '@/lib/zadluzenie/model';
-import { formatPL, typo } from '@/lib/format';
+import { mld as mldPL, pct as pctPL, projectQuarters } from '@/lib/zadluzenie/model';
+import { formatNumber, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+
+const locale = localeOf(Astro.url.pathname);
+// moduł EN tylko na stronach /en/ — jego strażniki (brak tłumaczenia = błąd) nie mogą zatrzymać polskiego buildu
+const { bn, pct: pctEN, quarterEn } = (localeOf(Astro.url.pathname) === 'en' ? await import('@/data/en/zadluzenie-szpitali') : {}) as typeof import('@/data/en/zadluzenie-szpitali');
+const en = locale === 'en';
+const num = (n: number, d = 0) => formatNumber(n, d, locale);
+const mld = en ? bn : mldPL;
+const pct = en ? pctEN : pctPL;
 
 const { quarters, last, params: p, lowSpan } = DEBT;
-const quarterName = (label: string) => label.replace(' ', ' kw. ');
+const quarterName = (label: string) => (en ? quarterEn(label) : label.replace(' ', ' kw. '));
 const signed = (rate: number) => `${rate < 0 ? '−' : '+'}${pct(Math.abs(rate))}%`;
 const now = Date.now();
 const projected = projectQuarters(p, last, now);
@@ -41,23 +51,50 @@ const x = nowX(now);
 
 const end = projected.at(-1);
 const labels = new Map<number, string>([
-  [0, formatPL(bars[0].total, 1)],
-  [lastIndex, formatPL(last.total / B, 1)],
+  [0, num(bars[0].total, 1)],
+  [lastIndex, num(last.total / B, 1)],
 ]);
 // Rok = grupa kwartałów: kreska na granicy, podpis na środku grupy
 const starts = bars.flatMap((b, i) => (b.label.startsWith('I ') ? [i] : []));
 const years = starts.map((i, k) => ({ i, span: (starts[k + 1] ?? n) - i, year: bars[i].label.slice(2) }));
 
-const ratio = formatPL(last.spzoz / quarters[0].spzoz, 1);
+const ratio = num(last.spzoz / quarters[0].spzoz, 1);
+
+const T = {
+  pl: {
+    title: `Od początku 2020 r. dług SPZOZ wzrósł ${ratio} raza. W ostatnim roku przybyło mu ${pct(p.rate)}% — i w tym tempie liczy licznik.`,
+    note: `Słupki do ${quarterName(last.label)} to dane MZ o zobowiązaniach SPZOZ, od końca 2025 r. z dodanym długiem szpitali-spółek i instytutów (MZ podało go raz, dalej rośnie w tempie SPZOZ). Kreskowane — projekcja na najbliższe 12 miesięcy, nie dane.`,
+    source: 'Ministerstwo Zdrowia, zobowiązania SPZOZ (dane kwartalne)',
+    unit: ' mld zł',
+    now: 'teraz',
+    sr: () => `Zobowiązania SPZOZ według MZ: ${num(bars[0].total, 1)} mld zł w ${quarterName(bars[0].label)} i ${num(last.spzoz / B, 1)} mld zł w ${quarterName(last.label)}; z szpitalami-spółkami i instytutami ${num(last.total / B, 1)} mld zł. Projekcja: ${end ? `w ${quarterName(end.label)} od ${mld(end.low, 0)} do ${mld(end.high, 0)} mld zł` : ''}.`,
+    legend: ['SPZOZ — dane MZ', 'szpitale-spółki i instytuty', `projekcja: tempo z ostatniego roku (+${pct(p.rate)}%)`, `wolniej: tempo średnio ${lowSpan} (+${pct(p.low)}%)`],
+    table: 'Dane kwartalne w tabeli',
+    cols: ['Koniec kwartału', 'SPZOZ, mld zł', 'w tym wymagalne', 'rok do roku'],
+  },
+  en: {
+    title: `Since the start of 2020 SPZOZ debt has grown ${ratio} times. In the last year it grew by ${pct(p.rate)}% — and that is the rate the counter uses.`,
+    note: `Bars up to ${quarterName(last.label)} are Ministry of Health data on SPZOZ liabilities; from the end of 2025 with the debt of hospitals run as companies and research institutes added (the ministry gave it once; after that it grows at the SPZOZ rate). Hatched — a projection for the next 12 months, not data.`,
+    source: 'Ministry of Health, SPZOZ liabilities (quarterly data)',
+    unit: ' PLN bn',
+    now: 'now',
+    sr: () => `SPZOZ liabilities according to the Ministry of Health: PLN ${num(bars[0].total, 1)} billion in ${quarterName(bars[0].label)} and PLN ${num(last.spzoz / B, 1)} billion in ${quarterName(last.label)}; with hospitals run as companies and research institutes PLN ${num(last.total / B, 1)} billion. Projection: ${end ? `in ${quarterName(end.label)} from PLN ${mld(end.low, 0)} billion to PLN ${mld(end.high, 0)} billion` : ''}.`,
+    legend: ['SPZOZ — Ministry of Health data', 'hospitals run as companies and institutes', `projection: last year’s rate (+${pct(p.rate)}%)`, `slower: average rate ${lowSpan} (+${pct(p.low)}%)`],
+    table: 'Quarterly data in a table',
+    cols: ['End of quarter', 'SPZOZ, PLN bn', 'of which overdue', 'year on year'],
+  },
+}[locale];
+// polska typografia (twarde spacje po „a”, „i”, „w”…) nie dotyczy tekstów angielskich
+const ty = en ? (s: string) => s : typo;
 ---
 <Figure
-  title={`Od początku 2020 r. dług SPZOZ wzrósł ${ratio} raza. W ostatnim roku przybyło mu ${pct(p.rate)}% — i w tym tempie liczy licznik.`}
-  note={`Słupki do ${quarterName(last.label)} to dane MZ o zobowiązaniach SPZOZ, od końca 2025 r. z dodanym długiem szpitali-spółek i instytutów (MZ podało go raz, dalej rośnie w tempie SPZOZ). Kreskowane — projekcja na najbliższe 12 miesięcy, nie dane.`}
-  source={{ label: 'Ministerstwo Zdrowia, zobowiązania SPZOZ (dane kwartalne)', href: LINKS.mz }}
+  title={T.title}
+  note={T.note}
+  source={{ label: T.source, href: LINKS.mz }}
 >
   <div class="dc" data-reveal="grow" style={`--n: ${n}; --max: ${max}`}>
     <div class="dc__plot" aria-hidden="true">
-      {ticks.map((t) => <span class="dc__tick" style={`--t: ${t}`}><span>{t}{t === max && ' mld zł'}</span></span>)}
+      {ticks.map((t) => <span class="dc__tick" style={`--t: ${t}`}><span>{t}{t === max && T.unit}</span></span>)}
       <div class="dc__area">
         <ol class="dc__bars">
           {bars.map((b, i) => (
@@ -71,33 +108,37 @@ const ratio = formatPL(last.spzoz / quarters[0].spzoz, 1);
         {/* Ostatni słupek to koniec kwartału, nie „za 12 miesięcy” z licznika — stąd nazwa kwartału przy kwocie */}
         {end && (
           <p class="dc__end" style={`--v: ${end.high / B}`}>
-            <span>{quarterName(end.label)}</span>{mld(end.low, 0)}–{mld(end.high, 0)} mld zł
+            {en ? (
+              <><span>{quarterName(end.label)}</span>PLN {mld(end.low, 0)}–{mld(end.high, 0)} bn</>
+            ) : (
+            <><span>{quarterName(end.label)}</span>{mld(end.low, 0)}–{mld(end.high, 0)} mld zł</>
+            )}
           </p>
         )}
-        <span class="dc__now" data-now={JSON.stringify(ends)} style={x === null ? 'display: none' : `--x: ${x}`}><span>teraz</span></span>
+        <span class="dc__now" data-now={JSON.stringify(ends)} style={x === null ? 'display: none' : `--x: ${x}`}><span>{T.now}</span></span>
       </div>
     </div>
     <div class="dc__years" aria-hidden="true">
       {years.map((y) => <span style={`--i: ${y.i}; --span: ${y.span}`}>{y.year}</span>)}
     </div>
     <p class="sr-only">
-      {typo(`Zobowiązania SPZOZ według MZ: ${formatPL(bars[0].total, 1)} mld zł w ${quarterName(bars[0].label)} i ${formatPL(last.spzoz / B, 1)} mld zł w ${quarterName(last.label)}; z szpitalami-spółkami i instytutami ${formatPL(last.total / B, 1)} mld zł. Projekcja: ${end ? `w ${quarterName(end.label)} od ${mld(end.low, 0)} do ${mld(end.high, 0)} mld zł` : ''}.`)}
+      {ty(T.sr())}
     </p>
 
     <ul class="dc__legend">
-      <li><i class="dc__sw dc__sw--data"></i>SPZOZ — dane MZ</li>
-      <li><i class="dc__sw dc__sw--others"></i>szpitale-spółki i instytuty</li>
-      <li><i class="dc__sw dc__sw--proj"></i>{typo(`projekcja: tempo z ostatniego roku (+${pct(p.rate)}%)`)}</li>
-      <li><i class="dc__sw dc__sw--low"></i>{typo(`wolniej: tempo średnio ${lowSpan} (+${pct(p.low)}%)`)}</li>
+      <li><i class="dc__sw dc__sw--data"></i>{T.legend[0]}</li>
+      <li><i class="dc__sw dc__sw--others"></i>{T.legend[1]}</li>
+      <li><i class="dc__sw dc__sw--proj"></i>{ty(T.legend[2])}</li>
+      <li><i class="dc__sw dc__sw--low"></i>{ty(T.legend[3])}</li>
     </ul>
   </div>
 </Figure>
 
 <details class="dc__data">
-  <summary>Dane kwartalne w tabeli</summary>
+  <summary>{T.table}</summary>
   <table>
     <thead>
-      <tr><th scope="col">Koniec kwartału</th><th scope="col">SPZOZ, mld zł</th><th scope="col">w tym wymagalne</th><th scope="col">rok do roku</th></tr>
+      <tr><th scope="col">{T.cols[0]}</th><th scope="col">{T.cols[1]}</th><th scope="col">{T.cols[2]}</th><th scope="col">{T.cols[3]}</th></tr>
     </thead>
     <tbody>
       {quarters.toReversed().map((q, i, all) => {
@@ -105,8 +146,8 @@ const ratio = formatPL(last.spzoz / quarters[0].spzoz, 1);
         return (
           <tr>
             <th scope="row">{quarterName(q.label)}</th>
-            <td>{formatPL(q.spzoz / B, 2)}</td>
-            <td>{formatPL(q.overdue / B, 2)}</td>
+            <td>{num(q.spzoz / B, 2)}</td>
+            <td>{num(q.overdue / B, 2)}</td>
             <td>{prev ? signed(q.spzoz / prev.spzoz - 1) : '—'}</td>
           </tr>
         );

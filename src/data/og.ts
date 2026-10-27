@@ -101,8 +101,11 @@ const LIMITY_BARS: OgPage['bars'] = {
   ],
 };
 
+/** Podpisy półkola: legenda (za, przeciw, wstrzymało się, nie głosowało) i opis wyniku pod łukiem. */
+const HEMICYCLE_PL = { legend: ['za', 'przeciw', 'wstrz.', 'nie gł.'], result: 'za : przeciw' };
+
 /** Półkole głosowania nad ustawą o limitach płac (jak `sejm/Hemicycle` na stronie) — barwy dzienne, podpisy przez label(). */
-function hemicyclePanel(): string {
+export function hemicyclePanel(text: typeof HEMICYCLE_PL = HEMICYCLE_PL): string {
   const W = MEDIA_W, ARC_H = 250, H = 300;
   const tok = (name: string) => tokenColor(name, false);
   const { seats, dot } = hemicycle(limityVoting.votes, tallyClubs(limityVoting.votes, CLUBS_LAST), { width: W, height: ARC_H });
@@ -113,11 +116,11 @@ function hemicyclePanel(): string {
     : vote === 'ABSTAIN' ? `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r * 0.5)}" fill="${tok('text')}"/>`
     : `<path d="M${f(x - r * 0.55)} ${f(y)}h${f(r * 1.1)}M${f(x)} ${f(y - r * 0.55)}v${f(r * 1.1)}" stroke="${tok('chart')}" stroke-width="1.2"/>`;
   const { yes, no, abstain, absent } = limityVoting.totals;
-  const legend = [['YES', `za ${yes}`], ['NO', `przeciw ${no}`], ['ABSTAIN', `wstrz. ${abstain}`], ['ABSENT', `nie gł. ${absent}`]]
+  const legend = [['YES', `${text.legend[0]} ${yes}`], ['NO', `${text.legend[1]} ${no}`], ['ABSTAIN', `${text.legend[2]} ${abstain}`], ['ABSENT', `${text.legend[3]} ${absent}`]]
     .map(([v, text], i) => mark(v, 8 + i * 118, H - 14, 6) + label(20 + i * 118, H - 9, text));
   return svg(W, H, seats.map((s) => mark(s.vote.vote, s.x, s.y)).join('')
     + label(W / 2, ARC_H - 40, `${yes} : ${no}`, ['big', 'strong'], 'middle')
-    + label(W / 2, ARC_H - 12, 'za : przeciw', [], 'middle')
+    + label(W / 2, ARC_H - 12, text.result, [], 'middle')
     + legend.join(''));
 }
 

@@ -9,12 +9,16 @@ import { raw } from '@/lib/images';
 import { articleHref, getPublishedArticles } from '@/lib/content';
 import { getNews, newsHref, newsImage } from '@/lib/news';
 import { ogArticleMedia, ogPages } from '@/data/og';
-import { articleOg, pageOg, type OgEntry } from './presets';
+import { ogArticleMediaEn, ogPagesEn } from '@/data/en/og';
+import { getTranslations } from '@/i18n/translations';
+import { getPublishedNewsTranslations, newsEnHref } from '@/i18n/news';
+import { articleOg, articleOgEn, pageOg, type OgEntry } from './presets';
 
 export type { OgEntry };
 export { OG_HEIGHT, OG_WIDTH } from './presets';
 
 const DEFAULT_ROUTE = '/';
+const DEFAULT_ROUTE_EN = '/en/';
 
 async function collect(): Promise<OgEntry[]> {
   const [articles, news] = await Promise.all([getPublishedArticles(), getNews()]);
@@ -29,8 +33,30 @@ async function collect(): Promise<OgEntry[]> {
       footer: { text: 'Co nowego w projekcie' },
     }),
   );
-  return [...Object.entries(ogPages).map(([route, page]) => pageOg(route, page)), ...articles.map((a) => articleOg(a, ogArticleMedia[articleHref(a)])), ...newsOg];
+  return [...Object.entries(ogPages).map(([route, page]) => pageOg(route, page)), ...articles.map((a) => articleOg(a, ogArticleMedia[articleHref(a)])), ...newsOg, ...(await collectEn())];
 }
+
+/**
+ * Strony angielskie: ten sam szablon z napisami po angielsku. Wykresy z podpisami biorą wersję z src/data/en/og.ts
+ * (klucz = adres polskiego oryginału); grafika bez tekstu (ilustracja, zdjęcie) przechodzi z polskiej strony.
+ */
+async function collectEn(): Promise<OgEntry[]> {
+  const [translations, news] = await Promise.all([getTranslations(), getPublishedNewsTranslations()]);
+  const newsOg = news.map((t) => {
+    const route = newsHref(t.source);
+    const media = ogArticleMediaEn[route] ?? ogArticleMedia[route] ?? { photo: newsImage(t.source).src, position: t.source.data.cover ? '0% 0%' : '70% 50%' };
+    return pageOg(newsEnHref(t), { eyebrow: 'News', title: t.entry.data.title, lead: t.entry.data.summary, ...media, footer: { text: 'What’s new in the project' } }, 'en');
+  });
+  return [
+    ...Object.entries(ogPagesEn).map(([route, page]) => pageOg(route, page, 'en')),
+    ...translations.map((t) => articleOgEn(t, ogArticleMediaEn[articleHref(t.source)] ?? textless(ogArticleMedia[articleHref(t.source)]))),
+    ...newsOg,
+  ];
+}
+
+/** Media polskiego artykułu, które nie mają napisów (np. wirus na obrazku COVID-19) — reszta wymaga wersji EN. */
+const textless = (media?: (typeof ogArticleMedia)[string]) =>
+  media?.panels?.every((p) => !p.head && !p.svg.includes('<text')) ? { panels: media.panels } : undefined;
 
 // W buildzie liczymy raz; w dev za każdym razem, żeby zmiana frontmattera była od razu widoczna
 let cached: Promise<OgEntry[]> | undefined;
@@ -69,7 +95,8 @@ export async function ogImageFor(pathname: string, fallback = true): Promise<{ u
       warned.add(path);
       console.warn(`[og] ${path}: brak obrazka OG — użyto domyślnego (dodaj wpis w src/data/og.ts lub preset)`);
     }
-    entry = entries.find((e) => e.route === DEFAULT_ROUTE)!;
+    // strony angielskie bez własnego wpisu dostają angielską okładkę
+    entry = entries.find((e) => e.route === (path.startsWith('/en/') ? DEFAULT_ROUTE_EN : DEFAULT_ROUTE))!;
   }
   return { url: ogUrl(entry), alt: entry.alt };
 }

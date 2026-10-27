@@ -25,6 +25,7 @@ import { tokenColor } from '@/lib/tokens';
 import { GEOMETRY, frameLines, polyline } from '@/lib/siatka';
 import type { OgCover } from '@/types';
 import type { Accuracy, OgDots, OgStamp, OgStat } from '@/types';
+import type { Locale } from '@/i18n/locales';
 import { NARROW_TITLE_MAX, OG_HEIGHT, OG_WIDTH, type OgEntry, type OgMedia, type OgSpec } from './presets';
 
 const PAD_X = 64;
@@ -202,12 +203,12 @@ export const logo = (c: Pick<typeof C, 'ink' | 'muted' | 'blue'> = C) =>
     'zarobkilekarzy',
     h('span', { style: { color: c.muted } }, '.pl'));
 
-/** „Obserwuj @konto na [logo X]” — dyskretna linia w stopce obrazków OG i infografik. */
-export const followX = (c: Pick<typeof C, 'ink' | 'muted'>, size: number, style: Style = {}) =>
+/** „Obserwuj @konto na [logo X]” — dyskretna linia w stopce obrazków OG i infografik; po angielsku „Follow … on”. */
+export const followX = (c: Pick<typeof C, 'ink' | 'muted'>, size: number, style: Style = {}, locale: Locale = 'pl') =>
   h('div', { style: { alignItems: 'center', fontSize: size, color: c.muted, whiteSpace: 'nowrap', ...style } },
-    'Obserwuj',
+    locale === 'en' ? 'Follow' : 'Obserwuj',
     h('span', { style: { margin: '0 0.6em', color: c.ink } }, site.twitter),
-    'na',
+    locale === 'en' ? 'on' : 'na',
     h('img', { src: iconUri('x', c.ink), width: size, height: size, style: { marginLeft: Math.round(size * 0.45) } }));
 
 const eyebrow = (text: string) =>
@@ -215,23 +216,25 @@ const eyebrow = (text: string) =>
     h('div', { style: { width: 10, height: 10, marginRight: 12, background: C.blue } }),
     text);
 
-const flag = (accuracy: Accuracy) =>
+const FLAGS: Record<Locale, Record<Accuracy, string>> = { pl: { exact: 'Dokładna', est: 'Szacunek' }, en: { exact: 'Exact', est: 'Estimate' } };
+
+const flag = (accuracy: Accuracy, locale: Locale = 'pl') =>
   h('div', {
     style: {
       padding: '5px 8px', fontFamily: MONO, fontWeight: 500, fontSize: 13, letterSpacing: '0.06em', textTransform: 'uppercase',
       background: accuracy === 'exact' ? C.blue50 : C.amberBg,
       color: accuracy === 'exact' ? C.blue700 : C.amber,
     },
-  }, accuracy === 'exact' ? 'Dokładna' : 'Szacunek');
+  }, FLAGS[locale][accuracy]);
 
 /** Stopka; linia „Obserwuj” po prawej, a przy wąskiej kolumnie (obok zdjęcia lub liczby) w osobnym wierszu. */
-const footer = ({ text, flags }: NonNullable<OgSpec['footer']>, wide: boolean) =>
+const footer = ({ text, flags }: NonNullable<OgSpec['footer']>, wide: boolean, locale: Locale = 'pl') =>
   h('div', { style: { flexDirection: 'column', paddingTop: 20, borderTop: `1px solid ${C.line}`, fontFamily: MONO, fontSize: 15, color: C.muted } },
     h('div', { style: { alignItems: 'center', gap: 10 } },
       h('span', { style: { marginRight: flags ? 6 : 0 } }, typo(text)),
-      flags && [flag('exact'), flag('est')],
-      wide && followX(C, 15, { marginLeft: 'auto' })),
-    !wide && followX(C, 15, { marginTop: 12 }));
+      flags && [flag('exact', locale), flag('est', locale)],
+      wide && followX(C, 15, { marginLeft: 'auto' }, locale)),
+    !wide && followX(C, 15, { marginTop: 12 }, locale));
 
 /** Ramka z narożnymi uchwytami i cieniem (ui/Photo frame). */
 const frame = (...children: Child[]) =>
@@ -251,7 +254,7 @@ async function photo(m: Extract<OgMedia, { kind: 'photo' }>) {
       rest ?? ''));
 }
 
-function stat(s: OgStat) {
+function stat(s: OgStat, locale: Locale = 'pl') {
   const [, prefix = '', value = s.value] = s.value.match(/^([~><]?)\s*(.+)$/) ?? [];
   const len = value.length;
   const size = len <= 2 ? 200 : len <= 4 ? 168 : len <= 6 ? 128 : 96;
@@ -265,7 +268,7 @@ function stat(s: OgStat) {
           s.unit && h('span', { style: { marginLeft: 14, fontFamily: BODY, fontWeight: 400, fontSize: 30, letterSpacing: 0, color: 'rgba(255,255,255,.85)' } }, typo(s.unit))),
         s.desc && h('div', { style: { marginTop: 22, fontFamily: DISPLAY, fontSize: 22, lineHeight: 1.3, letterSpacing: '-0.01em', color: 'rgba(255,255,255,.92)' } }, typo(s.desc)),
         (s.accuracy || s.source) && h('div', { style: { alignItems: 'center', gap: 12, marginTop: 24, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,.3)', fontFamily: MONO, fontSize: 14, color: 'rgba(255,255,255,.75)' } },
-          s.accuracy && flag(s.accuracy),
+          s.accuracy && flag(s.accuracy, locale),
           s.source && typo(s.source)))));
 }
 
@@ -501,8 +504,8 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
         h('div', { style: { flexDirection: 'column', marginTop: spec.eyebrow ? 26 : 0, maxWidth: wide ? WIDE_W : '100%', fontFamily: DISPLAY, fontWeight: 400, fontSize: size, lineHeight: 1, letterSpacing: '-0.04em', color: C.ink } },
           ...titleLines(title, spec.redact)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
-      spec.footer && footer(spec.footer, wide)),
-    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : spec.media.kind === 'dots' ? dots(spec.media) : spec.media.kind === 'stamps' ? stamps(spec.media) : null);
+      spec.footer && footer(spec.footer, wide, spec.locale)),
+    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat, spec.locale) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : spec.media.kind === 'dots' ? dots(spec.media) : spec.media.kind === 'stamps' ? stamps(spec.media) : null);
 }
 
 /** PNG 1200×630 z paletą 8-bit: zdjęcia B&W + kolory marki mieszczą się w niej bez widocznej straty. */

@@ -142,7 +142,7 @@ const news = defineCollection({
  */
 const articlesEn = defineCollection({
   loader: glob({ base: './src/content/en/articles', pattern: '**/*.{md,mdx}' }),
-  schema: z.object({
+  schema: ({ image }) => z.object({
     title: z.string(),
     summary: z.string(),
     keyPoints: z.array(z.string()).optional(),
@@ -151,6 +151,8 @@ const articlesEn = defineCollection({
     changelog: z.array(z.object({ date: z.coerce.date(), text: z.string() })).min(1).optional(),
     seoTitle: z.string().optional(),
     description: z.string().optional(),
+    /** obrazek OG: nadpisania jak w `articles` (tekst po angielsku); grafika bez tekstu z polskiego `og` przechodzi sama */
+    og: ogSchema({ image }),
     translation: z.object({
       /** polski oryginał */
       of: reference('articles'),

@@ -1,0 +1,400 @@
+---
+/**
+ * Model anatomii do analizy o studiach lekarskich: dwie warstwy na rysunkach z domeny publicznej
+ * (data/anatomia/*.svg — szkielet i krwiobieg Mariany Ruiz Villarreal, przekolorowane tokenami).
+ *
+ * - Kości: najechanie pokazuje nazwę, klik — opis w panelu; przy kości ramiennej i udowej rysuje
+ *   numerowane szpilki, jak na egzaminie praktycznym. Lista kości w panelu daje to samo z klawiatury.
+ * - Serce i naczynia: numery to dymki (ui/Popover, wariant `pin`), a ta sama lista stoi w panelu.
+ * - Warstwy przełącza blocks/Tabs; bez JS widać szkielet z listą kości.
+ *
+ * Szkielet jest odbity w lustrze (dłoń wysunięta w tę samą stronę co na rysunku naczyń) — transform na grupie
+ * wokół rysunku, więc `data-side` opisuje kość w oryginale. Szpilki: ułamki ramki kości widocznej po prawej
+ * stronie rysunku (opis przy typie BonePin), numery w kolumnie na prawo od niej.
+ */
+import Tabs from '@/components/blocks/Tabs.astro';
+import Popover from '@/components/ui/Popover.astro';
+import skeletonRaw from '@/data/anatomia/szkielet.svg?raw';
+import vesselsRaw from '@/data/anatomia/naczynia.svg?raw';
+import { typo } from '@/lib/format';
+import { uid } from '@/lib/uid';
+import { localeOf } from '@/i18n/locales';
+import type { Bone, BonePin, VesselPin } from '@/data/studia-lekarskie';
+
+interface Props {
+  bones: Record<string, Bone>;
+  bonePins: Record<string, BonePin[]>;
+  boneNotes: Record<string, string>;
+  vessels: VesselPin[];
+  /** viewBox rysunku naczyń — do przeliczenia współrzędnych szpilek na procenty */
+  vesselBox: readonly number[];
+  /** 2–3 liczby w panelu kości (wartość + opis) */
+  facts: { value: string; label: string }[];
+}
+
+const { bones, bonePins, boneNotes, vessels, vesselBox, facts } = Astro.props;
+const id = uid('am');
+// Napisy interfejsu w języku strony; nazwy kości i naczyń przychodzą w props (EN: src/data/en/studia-lekarskie.ts)
+const T = localeOf(Astro.url.pathname) === 'en'
+  ? {
+      layer: 'Model layer', bones: 'Bones', osteology: 'osteology', vessels: 'Heart and vessels', angiology: 'angiology',
+      osteologyYear: 'Osteology · year 1', angiologyYear: 'Angiology · year 1', osteologyKicker: 'Osteology',
+      bonesText: 'Anatomy starts with the bones. Each must be known in Latin, and in the practical exam students identify structures marked with a pin on a specimen.',
+      bonesHint: 'Hover over a bone or click it. The humerus and the femur have pins.',
+      allBonesList: 'All bones in the drawing', allBones: 'All bones',
+      pinsSub: 'Pins — this is what a question in the practical exam can look like',
+      vesselsText: 'Darker lines are arteries, lighter ones are veins. A number on the drawing opens the description of the vessel.',
+    }
+  : {
+      layer: 'Warstwa modelu', bones: 'Kości', osteology: 'osteologia', vessels: 'Serce i naczynia', angiology: 'angiologia',
+      osteologyYear: 'Osteologia · I rok', angiologyYear: 'Angiologia · I rok', osteologyKicker: 'Osteologia',
+      bonesText: 'Anatomię zaczyna się od kości. Każdą trzeba znać po łacinie, a na egzaminie praktycznym rozpoznać struktury wskazane szpilką na preparacie.',
+      bonesHint: 'Najedź na kość albo ją kliknij. Kość ramienna i udowa mają szpilki.',
+      allBonesList: 'Wszystkie kości z rysunku', allBones: 'Wszystkie kości',
+      pinsSub: 'Szpilki — tak może wyglądać pytanie na egzaminie praktycznym',
+      vesselsText: 'Ciemniejsze linie to tętnice, jaśniejsze — żyły. Numer na rysunku otwiera opis naczynia.',
+    };
+
+const svg = (raw: string, cls: string) =>
+  raw.replace(/<!--[\s\S]*?-->\s*/, '').replace('<svg ', `<svg class="am__svg ${cls}" aria-hidden="true" focusable="false" `);
+
+/** Odbicie w poziomie wokół środka viewBox (cała zawartość w jednej grupie) */
+const mirror = (raw: string) => {
+  const [x0, , w] = (raw.match(/viewBox="([^"]+)"/)?.[1] ?? '0 0 0 0').split(/\s+/).map(Number);
+  return raw.replace(/(<svg[^>]*>)/, `$1<g transform="translate(${2 * x0 + w} 0) scale(-1 1)">`).replace('</svg>', '</g></svg>');
+};
+
+const [vx, vy, vw, vh] = vesselBox;
+const at = (v: VesselPin) => `left: ${(((v.x - vx) / vw) * 100).toFixed(2)}%; top: ${(((v.y - vy) / vh) * 100).toFixed(2)}%`;
+
+/* Dane dla skryptu: teksty już po typo() (twarde spacje) */
+const data = {
+  bones: Object.fromEntries(Object.entries(bones).map(([k, b]) => [k, { ...b, fact: b.fact && typo(b.fact) }])),
+  pins: bonePins,
+  notes: Object.fromEntries(Object.entries(boneNotes).map(([k, t]) => [k, typo(t)])),
+  t: { kicker: T.osteologyKicker, pinsSub: T.pinsSub, back: T.allBones },
+};
+---
+<div class="am" id={id} data-am={JSON.stringify(data)}>
+  <Tabs>
+    <div class="am__tabs" role="tablist" aria-label={T.layer}>
+      <button type="button" role="tab" id={`${id}-tab-kosci`} aria-controls={`${id}-kosci`} aria-selected="true">{T.bones} <span>{T.osteology}</span></button>
+      <button type="button" role="tab" id={`${id}-tab-naczynia`} aria-controls={`${id}-naczynia`} aria-selected="false" tabindex="-1">{T.vessels} <span>{T.angiology}</span></button>
+    </div>
+
+    <div class="am__layer" role="tabpanel" id={`${id}-kosci`} aria-labelledby={`${id}-tab-kosci`}>
+      <div class="am__stage">
+        <div class="am__canvas" data-am-canvas>
+          <Fragment set:html={svg(mirror(skeletonRaw), 'am__svg--sk')} />
+          <svg class="am__svg am__pins" viewBox={skeletonRaw.match(/viewBox="([^"]+)"/)?.[1]} aria-hidden="true" data-am-pins></svg>
+          <span class="am__tip" data-am-tip hidden></span>
+        </div>
+      </div>
+      <div class="am__panel">
+        <div data-am-overview>
+          <p class="am__kicker">{T.osteologyYear}</p>
+          <p class="am__name">{T.bones}</p>
+          <p class="am__lat">ossa</p>
+          <p class="am__text">{typo(T.bonesText)}</p>
+          <dl class="am__facts">
+            {facts.map((f) => (
+              <div><dt>{f.value}</dt><dd>{typo(f.label)}</dd></div>
+            ))}
+          </dl>
+          <p class="am__hint">{T.bonesHint}</p>
+        </div>
+        <div class="am__detail" data-am-detail aria-live="polite" hidden></div>
+        <details class="am__list">
+          <summary>{T.allBonesList}</summary>
+          <ul>
+            {Object.entries(bones).map(([key, b]) => (
+              <li><button type="button" data-pick={key}>{b.name}</button> <i>{b.latin}</i></li>
+            ))}
+          </ul>
+        </details>
+      </div>
+    </div>
+
+    <div class="am__layer" role="tabpanel" id={`${id}-naczynia`} aria-labelledby={`${id}-tab-naczynia`} hidden>
+      <div class="am__stage">
+        <div class="am__canvas">
+          <Fragment set:html={svg(vesselsRaw, 'am__svg--ve')} />
+          {vessels.map((v, i) => (
+            <span class="am__mark" style={at(v)}>
+              <Popover variant="pin" label={`${i + 1}: ${v.name}`} heading={v.name}>
+                <Fragment slot="trigger">{i + 1}</Fragment>
+                <em>{v.latin}</em>. {typo(v.text)}
+              </Popover>
+            </span>
+          ))}
+        </div>
+      </div>
+      <div class="am__panel">
+        <p class="am__kicker">{T.angiologyYear}</p>
+        <p class="am__name">{T.vessels}</p>
+        <p class="am__lat">systema cardiovasculare</p>
+        <p class="am__text">{typo(T.vesselsText)}</p>
+        <ol class="am__vlist">
+          {vessels.map((v) => (
+            <li><span>{v.name}</span> <i>{v.latin}</i></li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </Tabs>
+</div>
+
+<script>
+  interface Bone { name: string; latin: string; fact?: string }
+  interface Pin { name: string; latin: string; x: number; y: number }
+  interface Data { bones: Record<string, Bone>; pins: Record<string, Pin[]>; notes: Record<string, string>; t: { kicker: string; pinsSub: string; back: string } }
+
+  const SVGNS = 'http://www.w3.org/2000/svg';
+
+  const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text) e.textContent = text;
+    return e;
+  };
+  const svgEl = (tag: string, attrs: Record<string, string | number>) => {
+    const e = document.createElementNS(SVGNS, tag);
+    Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, String(v)));
+    return e;
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-am]').forEach((root) => {
+    const data = JSON.parse(root.dataset.am ?? '{}') as Data;
+    const sk = root.querySelector<SVGSVGElement>('.am__svg--sk');
+    const pinLayer = root.querySelector<SVGSVGElement>('[data-am-pins]');
+    const canvas = root.querySelector<HTMLElement>('[data-am-canvas]');
+    const tip = root.querySelector<HTMLElement>('[data-am-tip]');
+    const overview = root.querySelector<HTMLElement>('[data-am-overview]');
+    const detail = root.querySelector<HTMLElement>('[data-am-detail]');
+    if (!sk || !pinLayer || !canvas || !tip || !overview || !detail) return;
+
+    let current: string | null = null;
+    const groups = (key: string) => sk.querySelectorAll<SVGGraphicsElement>(`[data-bone="${key}"]`);
+
+    /** Najbliższa grupa z opisem (np. kość stępu zamiast całej stopy) */
+    const boneAt = (target: EventTarget | null) => {
+      let g = (target as Element | null)?.closest?.('[data-bone]') ?? null;
+      while (g && !data.bones[(g as HTMLElement).dataset.bone ?? '']) g = g.parentElement?.closest('[data-bone]') ?? null;
+      return g ? (g as HTMLElement).dataset.bone ?? null : null;
+    };
+
+    const drawPins = (key: string | null) => {
+      pinLayer.replaceChildren();
+      const pins = key ? data.pins[key] : null;
+      if (!key || !pins) return;
+      // po odbiciu kość „right” z oryginału stoi po prawej stronie rysunku; ramkę liczymy w układzie rysunku
+      const g = [...groups(key)].find((x) => (x as unknown as HTMLElement).dataset.side === 'right') ?? groups(key)[0];
+      const m = sk.getScreenCTM()!.inverse().multiply(g.getScreenCTM()!);
+      const lb = g.getBBox();
+      const corners = [[lb.x, lb.y], [lb.x + lb.width, lb.y + lb.height]].map(([x, y]) => new DOMPoint(x, y).matrixTransform(m));
+      const b = { x: Math.min(...corners.map((c) => c.x)), y: Math.min(...corners.map((c) => c.y)) } as { x: number; y: number; width: number; height: number };
+      b.width = Math.max(...corners.map((c) => c.x)) - b.x;
+      b.height = Math.max(...corners.map((c) => c.y)) - b.y;
+      const cx = b.x + b.width + 30;
+      const pts = pins.map((p, i) => ({ i, x: b.x + p.x * b.width, y: b.y + p.y * b.height, ly: 0 }));
+      let last = -Infinity;
+      [...pts].sort((a, c) => a.y - c.y).forEach((p) => { p.ly = Math.max(p.y, last + 24); last = p.ly; });
+      pts.forEach(({ i, x, y, ly }) => {
+        const pin = svgEl('g', { class: 'am__pin' });
+        pin.append(
+          svgEl('polyline', { points: `${x},${y} ${cx - 16},${ly} ${cx - 9},${ly}` }),
+          svgEl('circle', { cx: x, cy: y, r: 2 }),
+          svgEl('rect', { x: cx - 9, y: ly - 9, width: 18, height: 18 }),
+        );
+        const t = svgEl('text', { x: cx, y: ly });
+        t.textContent = String(i + 1);
+        pin.append(t);
+        pinLayer.append(pin);
+      });
+    };
+
+    const showDetail = (key: string) => {
+      const b = data.bones[key];
+      const pins = data.pins[key];
+      const out: HTMLElement[] = [el('p', 'am__kicker', data.t.kicker), el('p', 'am__name', b.name), el('p', 'am__lat', b.latin)];
+      if (b.fact) out.push(el('p', 'am__text', b.fact));
+      if (pins) {
+        out.push(el('p', 'am__sub', data.t.pinsSub));
+        const ol = el('ol', 'am__plist');
+        pins.forEach((p) => {
+          const li = el('li');
+          li.append(el('span', '', p.name), ' ', el('i', '', p.latin));
+          ol.append(li);
+        });
+        out.push(ol);
+        if (data.notes[key]) out.push(el('p', 'am__text am__note', data.notes[key]));
+      }
+      const back = el('button', 'am__back', data.t.back);
+      back.type = 'button';
+      back.dataset.pick = '';
+      out.push(back);
+      detail.replaceChildren(...out);
+    };
+
+    const select = (key: string | null) => {
+      sk.querySelectorAll('.is-on').forEach((g) => g.classList.remove('is-on'));
+      current = key && data.bones[key] ? key : null;
+      if (current) groups(current).forEach((g) => g.classList.add('is-on'));
+      overview.hidden = !!current;
+      detail.hidden = !current;
+      if (current) showDetail(current);
+      drawPins(current);
+    };
+
+    const clearHover = () => sk.querySelectorAll('.is-hover').forEach((g) => g.classList.remove('is-hover'));
+
+    sk.addEventListener('click', (e) => {
+      const key = boneAt(e.target);
+      if (key) select(key === current ? null : key);
+    });
+    /* Podświetlenie zmienia się tylko przy zmianie kości; szczeliny między żebrami czy palcami
+       (kursor na chwilę poza kością) nie gaszą go od razu — inaczej rysunek mruga */
+    let hovered: string | null = null;
+    let leaveTimer = 0;
+    const setHover = (key: string | null) => {
+      window.clearTimeout(leaveTimer);
+      if (key === hovered) return;
+      clearHover();
+      hovered = key;
+      if (!key) { tip.hidden = true; return; }
+      groups(key).forEach((g) => g.classList.add('is-hover'));
+      tip.replaceChildren(data.bones[key].name, ' ', el('i', '', data.bones[key].latin));
+      tip.hidden = false;
+    };
+
+    sk.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const key = boneAt(e.target);
+      if (key) setHover(key);
+      else if (hovered) { window.clearTimeout(leaveTimer); leaveTimer = window.setTimeout(() => setHover(null), 150); }
+      const r = canvas.getBoundingClientRect();
+      tip.style.left = `${e.clientX - r.left}px`;
+      tip.style.top = `${e.clientY - r.top}px`;
+    });
+    sk.addEventListener('pointerleave', () => setHover(null));
+    root.addEventListener('click', (e) => {
+      const btn = (e.target as Element).closest<HTMLElement>('[data-pick]');
+      if (!btn) return;
+      select(btn.dataset.pick || null);
+      if (!btn.dataset.pick) overview.querySelector<HTMLElement>('.am__name')?.scrollIntoView({ block: 'nearest' });
+    });
+  });
+</script>
+
+<style is:global>
+  /* Globalnie (prefiks am__), bo rysunki wchodzą przez set:html, a panel szczegółów buduje skrypt */
+  .am {
+    container-type: inline-size;
+    --am-bone: color-mix(in oklab, var(--chart-soft) 60%, var(--surface));
+    --am-hi: color-mix(in oklab, var(--chart-soft) 12%, var(--surface));
+    --am-line: color-mix(in oklab, var(--chart) 30%, var(--muted));
+    --pop-pin: 20px;
+  }
+
+  /* ---------- Zakładki (jak w Glossary) ---------- */
+  .am__tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .am__tabs button {
+    padding: 9px 12px; border: 1px solid var(--line-2);
+    font-size: 0.84375rem; color: var(--text-strong); transition: all .2s;
+  }
+  .am__tabs button span { margin-left: 6px; font: 400 0.6875rem var(--f-mono); color: var(--muted); }
+  .am__tabs button:hover { border-color: var(--ink); }
+  .am__tabs button[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .am__tabs button[aria-selected="true"] span { color: inherit; opacity: .7; }
+
+  /* ---------- Układ: rysunek + panel ---------- */
+  .am__layer { display: grid; grid-template-columns: minmax(240px, 340px) 1fr; gap: 40px; align-items: start; }
+  .am__layer[hidden] { display: none; }
+  .am__stage { background: var(--surface); border: 1px solid var(--line-2); padding: 20px 16px; }
+  .am__canvas { position: relative; }
+  .am__svg { display: block; width: 100%; height: auto; }
+  .am__pins { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+
+  /* ---------- Kości ---------- */
+  .am__svg--sk :is(path, polygon, circle, ellipse, rect) { fill: var(--am-bone); }
+  .am__svg--sk .h { fill: var(--am-hi); }
+  .am__svg--sk .s { fill: var(--chart-soft); }
+  .am__svg--sk .g { fill: var(--bg-soft); }
+  .am__svg--sk .n { fill: none; }
+  .am__svg--sk .o { stroke: var(--am-line); stroke-width: .6; }
+  .am__svg--sk [data-bone] { cursor: pointer; }
+  /* Podświetlenie zachowuje światłocień rysunku (oczodoły, cienie, odblaski) — trzy odcienie kobaltu zamiast jednego */
+  .am__svg--sk :is([data-bone].is-hover, [data-bone].is-hover *):not(.n) { fill: var(--blue-50); }
+  .am__svg--sk :is([data-bone].is-hover, [data-bone].is-hover *):is(.s, .g) { fill: color-mix(in oklab, var(--blue) 24%, var(--surface)); }
+  .am__svg--sk :is([data-bone].is-hover, [data-bone].is-hover *).h { fill: var(--surface); }
+  .am__svg--sk :is([data-bone].is-on, [data-bone].is-on *):not(.n) { fill: var(--blue-100); }
+  .am__svg--sk :is([data-bone].is-on, [data-bone].is-on *):is(.s, .g) { fill: color-mix(in oklab, var(--blue) 40%, var(--surface)); }
+  .am__svg--sk :is([data-bone].is-on, [data-bone].is-on *).h { fill: color-mix(in oklab, var(--blue-100) 45%, var(--surface)); }
+  .am__svg--sk :is([data-bone].is-hover, [data-bone].is-on, [data-bone].is-hover *, [data-bone].is-on *).o { stroke: var(--blue); }
+
+  .am__pin polyline { fill: none; stroke: var(--blue); stroke-width: .9; }
+  .am__pin circle { fill: var(--blue); }
+  .am__pin rect { fill: var(--blue-fill); stroke: var(--surface); stroke-width: 1.5; }
+  .am__pin text { fill: #fff; font: 500 10px var(--f-mono); text-anchor: middle; dominant-baseline: central; } /* kolor-stały: numer na kobaltowym wypełnieniu */
+
+  .am__tip {
+    position: absolute; z-index: 2; pointer-events: none; transform: translate(14px, -50%);
+    padding: 6px 9px; background: var(--inverse-2); color: #fff; /* kolor-stały: tekst na stałym granacie dymka */
+    font-size: 0.8125rem; line-height: 1.3; white-space: nowrap;
+  }
+  .am__tip i { opacity: .7; }
+
+  /* ---------- Serce i naczynia ---------- */
+  .am__svg--ve :is(path, polygon, circle, ellipse, rect) { fill: none; }
+  .am__svg--ve .f-b { fill: var(--am-bone); }
+  .am__svg--ve .s-bo { stroke: var(--line-2); }
+  .am__svg--ve .f-a { fill: var(--text-strong); }
+  .am__svg--ve .s-a { stroke: var(--text-strong); }
+  .am__svg--ve :is(.f-v, .f-v2) { fill: var(--chart); }
+  .am__svg--ve :is(.s-v, .s-v2) { stroke: var(--chart); }
+  .am__svg--ve .f-h { fill: var(--chart-soft); }
+  .am__mark { position: absolute; display: flex; transform: translate(-50%, -50%); --pop-pin: 16px; }
+
+  /* ---------- Panel ---------- */
+  .am__kicker, .am__sub { font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .am__sub { margin-top: 20px; }
+  .am__name { margin-top: 8px; font: 400 1.75rem/1.15 var(--f-display); color: var(--ink); }
+  .am__lat { margin-top: 2px; font-style: italic; color: var(--muted); }
+  .am__text { margin-top: 14px; max-width: 46ch; color: var(--text-strong); }
+  .am__note { font-size: 0.875rem; color: var(--text); }
+  .am__hint { margin-top: 16px; font-size: 0.8125rem; color: var(--muted); }
+
+  .am__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin-top: 20px; border-block: 1px solid var(--line-2); }
+  .am__facts div { padding: 12px 14px 12px 0; }
+  .am__facts div + div { border-left: 1px solid var(--line); padding-left: 14px; }
+  .am__facts dt { font: 300 1.75rem/1 var(--f-display); color: var(--ink); }
+  .am__facts dd { margin: 6px 0 0; font-size: 0.8125rem; color: var(--text); }
+
+  .am__plist, .am__vlist { list-style: none; margin-top: 10px; padding: 0; counter-reset: am; }
+  .am__plist li, .am__vlist li {
+    display: grid; grid-template-columns: var(--pop-pin) 1fr; column-gap: 10px; align-items: baseline;
+    padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 0.9375rem; color: var(--text-strong);
+  }
+  .am__plist li::before, .am__vlist li::before {
+    counter-increment: am; content: counter(am);
+    display: inline-grid; place-items: center; width: var(--pop-pin); height: var(--pop-pin);
+    font: 500 0.625rem/1 var(--f-mono); color: #fff; background: var(--blue-fill); /* kolor-stały: numer na kobaltowym wypełnieniu */
+  }
+  .am__plist i, .am__vlist i { grid-column: 2; font-size: 0.8125rem; color: var(--muted); }
+
+  .am__back { margin-top: 18px; font-size: 0.875rem; font-weight: 500; color: var(--blue); }
+  .am__back::before { content: '← '; }
+
+  .am__list { margin-top: 22px; }
+  .am__list summary { cursor: pointer; font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .am__list ul { columns: 2; column-gap: 24px; list-style: none; margin-top: 10px; padding: 0; font-size: 0.875rem; }
+  .am__list li { break-inside: avoid; padding: 2px 0; }
+  .am__list button { color: var(--blue); text-align: left; }
+  .am__list i { color: var(--muted); }
+
+  @container (max-width: 600px) {
+    .am__layer { grid-template-columns: 1fr; gap: 24px; }
+    .am__stage { max-width: 300px; justify-self: center; width: 100%; }
+    .am__list ul { columns: 1; }
+  }
+</style>

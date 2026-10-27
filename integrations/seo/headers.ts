@@ -16,12 +16,15 @@ import { SOR_DATA_ORIGIN } from '../../src/lib/sor/source';
  * Mapa i kafelek kolejek na SOR czytają migawkę z dane.zarobkilekarzy.pl (Worker SOR, lib/sor/source).
  * Cloudflare Turnstile (challenges.cloudflare.com: skrypt, ramka, zapytania) — niewidoczny widżet
  * przy zapisie wyniku egzaminu do statystyk (src/lib/egzamin/stats.ts).
+ * YouTube (youtube-nocookie.com: tylko ramka) — film w artykule, osadzany dopiero po kliknięciu (blocks/YouTube).
  * HSTS celowo nie tutaj — ustawione strefowo w panelu Cloudflare (jedno źródło nagłówka).
  * Pułapka: `astro preview` nie nakłada `_headers` — CSP sprawdza `npm run preview:cf`.
  */
 /** `frames` = strona może być osadzana w ramce z tej domeny i sama osadza ramki z tej domeny (podprojekt /mobywatel/). */
 export function contentSecurityPolicy(frames = false): string {
   const TURNSTILE = 'https://challenges.cloudflare.com';
+  // Filmy z YouTube (blocks/YouTube): ramka ładuje się dopiero po kliknięciu, z domeny bez ciasteczek
+  const YOUTUBE = 'https://www.youtube-nocookie.com';
   const connect = ["'self'", TURNSTILE, 'https://cloudflareinsights.com', SOR_DATA_ORIGIN];
   if (newsletterOn) connect.push(new URL(newsletter.endpoint).origin);
   return [
@@ -35,7 +38,7 @@ export function contentSecurityPolicy(frames = false): string {
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
     `connect-src ${connect.join(' ')}`,
-    `frame-src ${frames ? "'self' " : ''}${TURNSTILE}`,
+    `frame-src ${frames ? "'self' " : ''}${TURNSTILE} ${YOUTUBE}`,
     "manifest-src 'self'",
     'upgrade-insecure-requests',
   ].join('; ');

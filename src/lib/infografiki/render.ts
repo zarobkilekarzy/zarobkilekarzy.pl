@@ -24,6 +24,8 @@
  * na osi, pod osią dwie liczby ze zdaniem (zob. timelineLayout).
  * Dziewiąty, „trzy okna” (pole `views`): część całości z perspektywy każdego, kto ją widzi — małe plansze
  * po 100 pól, na każdej zapalone tylko pola jednej części; obok pełna plansza w kobalcie z sumą (zob. viewsLayout).
+ * Dziesiąty, „kolejka” (pole `queue`): ile osób przypada na jedno miejsce — rząd pól siatki (kropka = miejsce,
+ * plusy = reszta kolejki) z liczbą — i obok druga miara jako cienki pasek, np. próg (zob. queueLayout; na stronie blocks/QueueChart).
  * Rama (nagłówek i stopka) wspólna dla wszystkich stylów.
  */
 import sharp from 'sharp';
@@ -210,6 +212,26 @@ export interface Dots {
   panels: [DotPanel, DotPanel];
 }
 
+/** Wiersz stylu „kolejka”: osoby na jedno miejsce (kolejka ma Math.round(count) pól) i druga miara jako pasek. */
+export interface QueueRow {
+  label: string;
+  count: number;
+  countDisplay: string;
+  /** druga miara w skali 0…barMax */
+  bar: number;
+  barDisplay: string;
+  highlight?: boolean;
+}
+
+/** Styl „kolejka”: kolejki obok siebie, przy każdej pasek drugiej miary (np. próg). */
+export interface Queue {
+  rows: QueueRow[];
+  /** nagłówki kolumn (poziom) i podpis paska (pion), np. „zgłoszenia na jedno miejsce”, „próg” */
+  countLabel: string;
+  barLabel: string;
+  barMax: number;
+}
+
 /** Część w stylu „trzy okna”: kto ją widzi i które pola planszy (od `from`, `dots` pól) są jej. */
 export interface ViewPart {
   /** kto widzi tę część (wersaliki, mono), np. „widzi szpital A” */
@@ -286,6 +308,8 @@ export interface Infographic {
   dots?: Dots;
   /** zamiast wierszy: części na osobnych planszach i pełna plansza z sumą */
   views?: Views;
+  /** zamiast wierszy: kolejki na jedno miejsce z drugą miarą obok */
+  queue?: Queue;
   /** zamiast wierszy: cytat */
   quote?: Quote;
   /** miara i okres, np. „na 100 tys. lekarzy rocznie · 2020–2025”; przy cytacie — etykieta obok logo */
@@ -310,6 +334,11 @@ export interface InfographicSet {
   items: Infographic[];
   /** język stałych napisów i zapisu liczb (wersje EN: src/lib/infografiki/zestawy-en.ts); domyślnie polski */
   locale?: Locale;
+  /**
+   * klucze zestawów innych stron, których grafiki pokazujemy też w sekcji „Infografiki do pobrania” tej strony
+   * (bez kopii plików: adres, QR i podpis prowadzą do strony źródłowej; na /media/ grafika jest raz)
+   */
+  also?: string[];
 }
 
 /** Akapit nad siatką infografik: formaty i to, co jest na grafice. */
@@ -1023,6 +1052,83 @@ function timelineLayout(set: InfographicSet, i: Infographic, t: Timeline, f: For
     figures));
 }
 
+/* ---------- Styl „kolejka”: ilu chętnych na jedno miejsce, obok druga miara ---------- */
+
+/**
+ * Geometria. Pion: wiersz w dwóch liniach — nazwa i pasek z wartością, pod spodem kolejka z liczbą
+ * (pole do `cell`, mniejsze, gdy najdłuższa kolejka się nie mieści). Poziom: nazwa | kolejka z liczbą | pasek
+ * w jednej linii, nad wierszami nagłówki kolumn.
+ */
+const KG = {
+  pion: { cell: 24, label: 27, num: 54, barW: 170, bar: 9, val: 30, head: 15, padY: 18, gap: 12, labelW: 0, rowH: 0 },
+  poziom: { cell: 14, label: 18, num: 30, barW: 170, bar: 7, val: 20, head: 11, padY: 0, gap: 0, labelW: 230, rowH: 58 },
+};
+
+function queueLayout(set: InfographicSet, i: Infographic, q: Queue, f: FormatKey, theme: ThemeKey): Node {
+  const C = THEMES[theme].colors;
+  const qg = KG[f];
+  const pion = f === 'pion';
+  const inner = FORMATS[f].width - 2 * G[f].padX;
+  const longest = Math.max(...q.rows.map((r) => Math.max(1, Math.round(r.count))));
+  const numW = Math.ceil(Math.max(...q.rows.map((r) => textWidth(r.countDisplay, qg.num))) + qg.num * 0.3);
+  // miejsce na wartość paska: szacunek szerokości z zapasem (Inter Tight 400 jest szerszy niż Light z textWidth)
+  const valW = Math.ceil(textWidth('00,00', qg.val) * 1.15);
+  const barCol = qg.barW + 16 + valW;
+  const queueW = pion ? inner - numW - 16 : inner - qg.labelW - barCol - 2 * 24 - numW - 12;
+  const cell = Math.min(qg.cell, Math.floor(queueW / longest));
+
+  // kolejka jako SVG w <img> (Satori nie rysuje ścieżek inline); kształty z geometrii siatki strony
+  const dots = (r: QueueRow) => {
+    const n = Math.max(1, Math.round(r.count));
+    const arm = GEOMETRY.arm * cell;
+    const cells = Array.from({ length: n }, (_, k) => {
+      const cx = k * cell + cell / 2;
+      const cy = cell / 2;
+      return k === 0
+        ? `<circle cx="${cx}" cy="${cy}" r="${GEOMETRY.on * cell}" fill="${r.highlight ? C.blue : C.ink}"/>`
+        : `<path d="M${cx} ${cy - arm}v${2 * arm}M${cx - arm} ${cy}h${2 * arm}" stroke="${C.bar}" stroke-width="${GEOMETRY.stroke * cell * 1.2}" fill="none"/>`;
+    });
+    const w = n * cell;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${cell}" viewBox="0 0 ${w} ${cell}">${cells.join('')}</svg>`;
+    return h('img', { src: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`, width: w, height: cell });
+  };
+  const count = (r: QueueRow) =>
+    h('span', { style: { marginLeft: 12, fontFamily: DISPLAY, fontWeight: r.highlight ? 400 : 300, fontSize: qg.num, lineHeight: 1, letterSpacing: '-0.05em', color: r.highlight ? C.blue : C.ink } }, r.countDisplay);
+  const bar = (r: QueueRow) =>
+    h('div', { style: { alignItems: 'center' } },
+      h('div', { style: { width: qg.barW, height: qg.bar, background: C.line } },
+        h('div', { style: { width: Math.max(2, (r.bar / q.barMax) * qg.barW), height: qg.bar, background: r.highlight ? C.blue : C.bar } })),
+      h('span', { style: { marginLeft: 16, width: valW, justifyContent: 'flex-end', fontFamily: DISPLAY, fontWeight: 400, fontSize: qg.val, lineHeight: 1, color: r.highlight ? C.blue : C.ink } }, r.barDisplay));
+  const name = (r: QueueRow) =>
+    h('span', { style: { fontFamily: BODY, fontSize: qg.label, lineHeight: 1.2, fontWeight: r.highlight ? 500 : 400, color: r.highlight ? C.blue : C.ink } }, typo(r.label));
+  const mono = (text: string) =>
+    h('span', { style: { fontFamily: MONO, fontSize: qg.head, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.muted } }, typo(text));
+
+  if (pion) {
+    const row = (r: QueueRow) =>
+      h('div', { style: { flexDirection: 'column', padding: `${qg.padY}px 0`, borderTop: `1px solid ${C.line}` } },
+        h('div', { style: { alignItems: 'center', justifyContent: 'space-between' } },
+          name(r),
+          h('div', { style: { alignItems: 'center' } }, h('span', { style: { marginRight: 16, display: 'flex' } }, mono(q.barLabel)), bar(r))),
+        h('div', { style: { alignItems: 'center', marginTop: qg.gap } }, dots(r), count(r)));
+    // w pionie bez nagłówków kolumn — miara nad treścią mówi, co liczymy, a „próg” stoi przy każdym pasku
+    return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', width: inner } }, ...q.rows.map(row)));
+  }
+
+  const row = (r: QueueRow) =>
+    h('div', { style: { alignItems: 'center', height: qg.rowH, borderTop: `1px solid ${C.line}` } },
+      h('div', { style: { width: qg.labelW, flexShrink: 0, paddingRight: 16 } }, name(r)),
+      h('div', { style: { flexGrow: 1, alignItems: 'center' } }, dots(r), count(r)),
+      h('div', { style: { width: barCol, flexShrink: 0, justifyContent: 'flex-end' } }, bar(r)));
+  return frame(set, i, f, theme,
+    h('div', { style: { flexDirection: 'column', width: inner } },
+      h('div', { style: { paddingBottom: 8 } },
+        h('div', { style: { width: qg.labelW, flexShrink: 0 } }),
+        h('div', { style: { flexGrow: 1 } }, mono(q.countLabel)),
+        h('div', { style: { width: barCol, flexShrink: 0 } }, mono(q.barLabel))),
+      ...q.rows.map(row)));
+}
+
 /** PNG z paletą 8-bit, jak obrazki OG. */
 export async function renderInfographic(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey = 'jasny'): Promise<Buffer> {
   const { width, height } = FORMATS[f];
@@ -1040,6 +1146,8 @@ export async function renderInfographic(set: InfographicSet, i: Infographic, f: 
             ? dotsLayout(set, i, i.dots, f, theme)
             : i.views
             ? viewsLayout(set, i, i.views, f, theme)
+            : i.queue
+            ? queueLayout(set, i, i.queue, f, theme)
             : i.timeline
               ? timelineLayout(set, i, i.timeline, f, theme)
               : layout(set, i, i.rows ?? [], f, theme);

@@ -23,8 +23,8 @@ interface Props {
   set: string | string[];
   /** akapit o formatach nad siatką; strona zbiorcza pisze go raz u góry */
   lead?: boolean;
-  /** link do strony, z której pochodzi grafika (poza tą stroną) */
-  source?: boolean;
+  /** link do strony, z której pochodzi grafika; 'others' — tylko pod grafikami z zestawów innych niż pierwszy */
+  source?: boolean | 'others';
 }
 
 const { lead = true, source = false } = Astro.props;
@@ -61,7 +61,7 @@ const LEAD_EN = (count: number) =>
           <img src={infographicUrl(set, item.id, 'pion')} width={FORMATS.pion.width} height={FORMATS.pion.height} alt={item.alt} loading="lazy" decoding="async" />
         </a>
         <p class="ig__title">{typo([item.title, item.titleAccent].filter(Boolean).join(' ').replace(/\n/g, ' '))}</p>
-        {source && <p class="ig__source"><a href={set.route}>{typo(set.page)}</a></p>}
+        {(source === true || (source === 'others' && set !== sets[0])) && <p class="ig__source"><a href={set.route}>{typo(set.page)}</a></p>}
         <div class="ig__dl">
           {themes.map((t) => (
             <p class="ig__dl-row">

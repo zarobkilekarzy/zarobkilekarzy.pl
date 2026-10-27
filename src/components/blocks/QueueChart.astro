@@ -1,0 +1,118 @@
+---
+/**
+ * „Kolejka i poprzeczka”: w każdym wierszu ile osób (zgłoszeń, kandydatów) przypada na jedno miejsce —
+ * rząd pól siatki (kropka = miejsce, plusy = reszta kolejki) z liczbą — a obok druga miara jako
+ * cienki pasek we wspólnej skali (np. próg punktowy). Kolejność wierszy ustala konsument.
+ * Kolejka wchodzi od lewej, pasek rośnie (data-reveal="grow" → .is-armed → .is-in); bez JS stan końcowy.
+ * Wąsko (kontener < 560 px) wiersz rozpada się na trzy linie: nazwa, kolejka, pasek.
+ */
+import { typo } from '@/lib/format';
+
+interface QueueRow {
+  label: string;
+  /** osoby na jedno miejsce; kolejka ma Math.round(count) pól */
+  count: number;
+  countDisplay: string;
+  /** druga miara w skali 0…barMax */
+  bar: number;
+  barDisplay: string;
+  highlight?: boolean;
+}
+
+interface Props {
+  rows: QueueRow[];
+  /** nagłówki kolumn; `barShort` — podpis paska na wąskim ekranie (nagłówków wtedy nie ma) */
+  headers: { label: string; count: string; bar: string; barShort: string };
+  barMax: number;
+  legend: { one: string; rest: string };
+  /** pełny opis danych dla czytników ekranu */
+  caption: string;
+}
+
+const { rows, headers, barMax, legend, caption } = Astro.props;
+// najdłuższa kolejka wyznacza wielkość pola — cała musi się zmieścić obok liczby
+const longest = Math.max(...rows.map((r) => Math.max(1, Math.round(r.count))));
+---
+<figure class="queue" data-reveal="grow" style={`--bar-max: ${barMax}; --n: ${longest}`}>
+  <div class="queue__grid" aria-hidden="true">
+    <span class="queue__h queue__h--label">{typo(headers.label)}</span>
+    <span class="queue__h">{typo(headers.count)}</span>
+    <span class="queue__h">{typo(headers.bar)}</span>
+    {rows.map((r, i) => (
+      <div class:list={['queue__row', { 'queue__row--hi': r.highlight }]} style={`--i: ${i}`}>
+        <span class="queue__name">{typo(r.label)}</span>
+        <span class="queue__line">
+          <span class="queue__dots">
+            {Array.from({ length: Math.max(1, Math.round(r.count)) }, (_, k) => <i class={k === 0 ? 'seat' : 'wait'} style={`--k: ${k}`}></i>)}
+          </span>
+          <span class="queue__n">{r.countDisplay}</span>
+        </span>
+        <span class="queue__bar" data-label={headers.barShort}>
+          <span class="queue__track"><span class="queue__fill" style={`--v: ${r.bar}`}></span></span>
+          <b>{r.barDisplay}</b>
+        </span>
+      </div>
+    ))}
+  </div>
+  <p class="queue__key" aria-hidden="true">
+    <span><i class="seat"></i>{typo(legend.one)}</span>
+    <span><i class="wait"></i>{typo(legend.rest)}</span>
+  </p>
+  <figcaption class="sr-only">{caption}</figcaption>
+</figure>
+
+<style>
+  /* Pole kolejki: do 12 px, mniejsze, gdy najdłuższa kolejka nie mieści się w kolumnie (nazwa 9rem, pasek 10rem, liczba ~3,4rem, odstępy) */
+  .queue { --cell: clamp(5px, calc((100cqi - 22.4rem - 50px) / var(--n)), 12px); }
+  .queue__grid { display: grid; grid-template-columns: 9rem 1fr 10rem; column-gap: 20px; }
+  .queue__h { padding-bottom: 8px; border-bottom: 1px solid var(--line-2); font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .queue__row { display: contents; }
+  .queue__row > * { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .queue__name { font-size: 0.9375rem; line-height: 1.3; color: var(--ink); }
+  .queue__row--hi .queue__name { color: var(--blue); font-weight: 500; }
+
+  /* Kolejka: pole siatki (lib/siatka) — kropka = miejsce, plus = kolejna osoba */
+  .queue__line { gap: 10px; min-width: 0; }
+  .queue__dots { display: flex; min-width: 0; }
+  .queue i { position: relative; flex: 0 0 var(--cell); height: var(--cell); }
+  .queue i::before { content: ""; position: absolute; inset: 0; margin: auto; }
+  .queue .seat::before { width: calc(var(--cell) * .72); height: calc(var(--cell) * .72); border-radius: 50%; background: var(--text-strong); }
+  .queue__row--hi .seat::before { background: var(--blue); }
+  .queue .wait::before {
+    width: calc(var(--cell) * .62); height: calc(var(--cell) * .62); opacity: .75;
+    background: linear-gradient(var(--muted), var(--muted)) center / 100% 1.4px no-repeat, linear-gradient(var(--muted), var(--muted)) center / 1.4px 100% no-repeat;
+  }
+  .queue__n { font: 400 1.25rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
+  .queue__row--hi .queue__n { color: var(--blue); font-weight: 500; }
+
+  /* Druga miara: cienki pasek we wspólnej skali */
+  .queue__bar { gap: 10px; }
+  .queue__track { position: relative; flex: 1; height: 6px; }
+  .queue__fill { position: absolute; inset: 0 auto 0 0; width: calc(var(--v) / var(--bar-max) * 100%); background: var(--chart); transform-origin: left; transition: transform 1.1s var(--ease) calc(var(--i) * 80ms + .2s); }
+  .queue__row--hi .queue__fill { background: var(--blue); }
+  .queue__bar b { min-width: 3.4em; text-align: right; font: 400 0.9375rem var(--f-display); color: var(--text-strong); font-variant-numeric: tabular-nums; }
+
+  .queue__key { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; font-size: 0.8125rem; color: var(--text); }
+  .queue__key span { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* Animacja: kolejka wchodzi od lewej, pasek rośnie */
+  .queue.is-armed .queue__dots i { opacity: 0; transform: translateX(-6px); }
+  .queue.is-armed.is-in .queue__dots i {
+    opacity: 1; transform: none;
+    transition: opacity .35s var(--ease), transform .35s var(--ease);
+    transition-delay: calc(var(--k) * 28ms + var(--i) * 60ms);
+  }
+  .queue.is-armed .queue__fill { transform: scaleX(0); }
+  .queue.is-armed.is-in .queue__fill { transform: scaleX(1); }
+
+  /* Wąsko: każdy wiersz w trzech liniach — nazwa, kolejka, pasek z podpisem */
+  @container (max-width: 560px) {
+    .queue { --cell: clamp(4px, calc((100cqi - 3.4rem - 10px) / var(--n)), 9px); }
+    .queue__grid { grid-template-columns: 1fr; }
+    .queue__h { display: none; }
+    .queue__row > .queue__name, .queue__row > .queue__line { padding-bottom: 2px; border-bottom: 0; }
+    .queue__row > .queue__line, .queue__row > .queue__bar { padding-top: 2px; }
+    .queue__bar::before { content: attr(data-label); font: 500 0.6875rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .queue__track { max-width: 160px; }
+  }
+</style>

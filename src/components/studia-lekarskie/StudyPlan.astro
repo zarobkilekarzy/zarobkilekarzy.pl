@@ -1,0 +1,174 @@
+---
+/**
+ * Plan studiów rok po roku (dane: WUM_PLAN w data/studia-lekarskie.ts). Wiersz = rok, odcinek = przedmiot,
+ * długość ∝ godziny (wszystkie lata w jednej skali, 100% = najdłuższy rok). Egzamin — stały kobalt
+ * (--blue-fill, biały podpis), zaliczenie — --chart-soft, praktyki wakacyjne — kreskowanie.
+ * Ulepszenia z JS: przełącznik „tylko egzaminy”, opis przedmiotu po najechaniu/dotknięciu (ten sam przedmiot
+ * na innych latach podświetla się razem — pole `key`) i podpisy tylko tam, gdzie się mieszczą
+ * (polskie dzielenie wyrazów, `hyphens: auto`). Bez JS: wykres z podpisami i pełny opis w figcaption.
+ * Pod /en/ nazwy przedmiotów z src/data/en/studia-lekarskie.ts i napisy po angielsku.
+ */
+import { WUM_PLAN as PLAN_PL, PLAN_TOTAL, type PlanSubject } from '@/data/studia-lekarskie';
+import { WUM_PLAN as PLAN_EN } from '@/data/en/studia-lekarskie';
+import { formatEN, formatPL } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+
+const en = localeOf(Astro.url.pathname) === 'en';
+const WUM_PLAN = en ? PLAN_EN : PLAN_PL;
+const fmt = en ? formatEN : formatPL;
+
+const longest = Math.max(...WUM_PLAN.map((y) => y.hours));
+const T = en
+  ? {
+      phases: { I: 'Basic sciences', III: 'Preclinical sciences', IV: 'Clinical subjects', VI: 'Practical clinical training' } as Record<string, string>,
+      form: { e: 'exam', z: 'pass/fail', p: 'summer work placement, pass/fail' },
+      year: (y: string) => `Year ${y}`,
+      hours: 'h',
+      examWord: (n: number) => (n === 1 ? 'exam' : 'exams'),
+      hint: 'Hover over a subject or tap it to see the hours and ECTS credits.',
+      show: 'Show', all: 'All subjects', onlyExams: 'Exams only',
+      legend: ['exam', 'pass/fail', 'summer work placement'],
+      caption: (h: string, n: number) => `Study plan at the Medical University of Warsaw for the 2026/27 cohort: ${h} hours and ${n} exams over six years.`,
+      captionYear: (y: string, h: number, list: string) => ` Year ${y}, ${h} hours: ${list}.`,
+      captionSubject: (x: PlanSubject, form: string) => `${x.name} ${x.hours} h (${form})`,
+    }
+  : {
+      phases: { I: 'Nauki podstawowe', III: 'Nauki przedkliniczne', IV: 'Przedmioty kliniczne', VI: 'Praktyczne nauczanie kliniczne' } as Record<string, string>,
+      form: { e: 'egzamin', z: 'zaliczenie', p: 'praktyki wakacyjne, zaliczenie' },
+      year: (y: string) => `${y} rok`,
+      hours: 'godz.',
+      examWord: (n: number) => (n === 1 ? 'egzamin' : n >= 2 && n <= 4 ? 'egzaminy' : 'egzaminów'),
+      hint: 'Najedź na przedmiot albo go dotknij, żeby zobaczyć liczbę godzin i punktów ECTS.',
+      show: 'Pokaż', all: 'Wszystkie przedmioty', onlyExams: 'Tylko egzaminy',
+      legend: ['egzamin', 'zaliczenie', 'praktyki wakacyjne'],
+      caption: (h: string, n: number) => `Plan studiów na WUM dla rocznika 2026/27: ${h} godzin i ${n} egzaminów w sześć lat.`,
+      captionYear: (y: string, h: number, list: string) => ` Rok ${y}, ${h} godzin: ${list}.`,
+      captionSubject: (x: PlanSubject, form: string) => `${x.name} ${x.hours} godz. (${form})`,
+    };
+const exams = (subjects: PlanSubject[]) => subjects.filter((x) => x.form === 'e').length;
+const info = (y: string, x: PlanSubject) => `${x.name} — ${T.year(y)} · ${x.hours} ${T.hours} · ${x.ects} ECTS · ${T.form[x.form]}`;
+const hint = T.hint;
+---
+<figure class="sp" data-show="all">
+  <div class="sp__switch" role="group" aria-label={T.show} hidden>
+    <button type="button" class="sp__opt" data-show="all" aria-pressed="true">{T.all}</button>
+    <button type="button" class="sp__opt" data-show="ex" aria-pressed="false">{T.onlyExams}</button>
+  </div>
+  <div class="sp__plot" aria-hidden="true">
+    {WUM_PLAN.map((y) => (
+      <>
+        {T.phases[y.year] && <p class="sp__phase">{T.phases[y.year]}</p>}
+        <div class="sp__yr">
+          <p class="sp__head">{T.year(y.year)}<small>{fmt(y.hours)} {T.hours}<br />{exams(y.subjects)} {T.examWord(exams(y.subjects))}</small></p>
+          <div class="sp__bar" style={`--w: ${((y.hours / longest) * 100).toFixed(2)}%`}>
+            {y.subjects.map((x) => (
+              <button
+                type="button"
+                tabindex="-1"
+                class:list={['sp__s', { 'is-ex': x.form === 'e', 'is-pr': x.form === 'p' }]}
+                style={`--h: ${x.hours}`}
+                data-key={x.key ?? `${y.year}-${x.short}`}
+                data-info={info(y.year, x)}
+              ><span>{x.short}</span></button>
+            ))}
+          </div>
+        </div>
+      </>
+    ))}
+  </div>
+  <div class="sp__legend" aria-hidden="true">
+    <span><i class="is-ex"></i>{T.legend[0]}</span><span><i></i>{T.legend[1]}</span><span><i class="is-pr"></i>{T.legend[2]}</span>
+  </div>
+  <p class="sp__info" aria-live="polite" hidden>{hint}</p>
+  <figcaption class="sr-only">
+    {T.caption(fmt(PLAN_TOTAL.hours), PLAN_TOTAL.exams)}
+    {WUM_PLAN.map((y) => T.captionYear(y.year, y.hours, y.subjects.map((x) => T.captionSubject(x, T.form[x.form])).join('; ')))}
+  </figcaption>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.sp').forEach((sp) => {
+    const info = sp.querySelector<HTMLElement>('.sp__info')!;
+    const hint = info.textContent ?? '';
+    const segs = [...sp.querySelectorAll<HTMLButtonElement>('.sp__s')];
+    const opts = [...sp.querySelectorAll<HTMLButtonElement>('.sp__opt')];
+    sp.querySelector<HTMLElement>('.sp__switch')!.hidden = false;
+    info.hidden = false;
+
+    // Podpis zostaje, gdy najdłuższe słowo mieści się w całości albo po jednym podziale (hyphens: auto)
+    const ctx = document.createElement('canvas').getContext('2d')!;
+    const fit = () => segs.forEach((seg) => {
+      const label = seg.querySelector('span')!;
+      label.hidden = false;
+      ctx.font = getComputedStyle(label).font;
+      const room = seg.clientWidth - 8;
+      const word = Math.max(...(label.textContent ?? '').split(' ').map((w) => ctx.measureText(w).width));
+      label.hidden = room < 40 || word > room * 2 || label.scrollHeight > label.clientHeight + 1;
+    });
+    fit();
+    new ResizeObserver(fit).observe(sp);
+
+    opts.forEach((b) => b.addEventListener('click', () => {
+      opts.forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+      sp.dataset.show = b.dataset.show;
+    }));
+
+    const show = (seg: HTMLButtonElement | null) => {
+      segs.forEach((x) => x.classList.toggle('is-hl', !!seg && x.dataset.key === seg.dataset.key));
+      if (seg) sp.dataset.hover = '';
+      else delete sp.dataset.hover;
+      info.textContent = seg?.dataset.info ?? hint;
+    };
+    segs.forEach((seg) => {
+      seg.addEventListener('pointerenter', () => show(seg));
+      seg.addEventListener('click', () => show(seg));
+    });
+    sp.querySelector('.sp__plot')!.addEventListener('pointerleave', () => show(null));
+  });
+</script>
+
+<style>
+  .sp { container-type: inline-size; margin: 0; }
+  .sp__switch { display: inline-flex; margin: 0 0 16px; border: 1px solid var(--line-2); font: 400 0.75rem/1.55 var(--f-mono); }
+  .sp__switch[hidden] { display: none; }
+  .sp__opt { padding: 6px 12px; border: 0; background: none; font: inherit; color: var(--text-strong); cursor: pointer; transition: color .2s, background-color .2s; }
+  .sp__opt + .sp__opt { border-left: 1px solid var(--line-2); }
+  .sp__opt:hover { color: var(--blue); }
+  .sp__opt[aria-pressed='true'] { background: var(--blue-50); color: var(--blue); }
+
+  .sp__plot { display: grid; gap: 12px; }
+  .sp__phase { margin: 10px 0 -4px 88px; font: 500 0.6875rem/1 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .sp__phase:first-child { margin-top: 0; }
+  .sp__yr { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 14px; align-items: start; }
+  .sp__head { margin: 0; padding-top: 2px; font: 600 0.9375rem/1.2 var(--f-display); color: var(--ink); }
+  .sp__head small { display: block; margin-top: 3px; font: 400 0.6875rem/1.4 var(--f-mono); color: var(--muted); }
+  .sp__bar { display: flex; gap: 2px; width: var(--w); height: 48px; }
+
+  .sp__s {
+    position: relative; flex: var(--h) 1 0; min-width: 0; padding: 0; border: 0; border-radius: 1px;
+    background: var(--chart-soft); cursor: pointer; transition: opacity .2s;
+  }
+  .sp__s.is-ex { background: var(--blue-fill); }
+  .sp__s.is-pr { background: repeating-linear-gradient(135deg, var(--chart-soft) 0 4px, transparent 4px 7px); box-shadow: inset 0 0 0 1px var(--chart-soft); }
+  .sp__s span {
+    position: absolute; inset: 5px 3px 3px 5px; overflow: hidden; text-align: left; hyphens: auto;
+    font: 500 0.6875rem/1.15 var(--f-body); color: var(--ink);
+  }
+  .sp__s span[hidden] { display: none; }
+  .sp__s.is-ex span { color: #fff; } /* kolor-stały: biały podpis na stałym kobalcie (--blue-fill) */
+  .sp[data-show='ex'] .sp__s:not(.is-ex) { opacity: 0.18; }
+  .sp[data-hover] .sp__s:not(.is-hl) { opacity: 0.35; }
+
+  .sp__legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 16px; font-size: 0.8125rem; color: var(--text); }
+  .sp__legend i { display: inline-block; width: 18px; height: 10px; margin-right: 6px; vertical-align: -1px; background: var(--chart-soft); }
+  .sp__legend i.is-ex { background: var(--blue-fill); }
+  .sp__legend i.is-pr { background: repeating-linear-gradient(135deg, var(--chart-soft) 0 3px, transparent 3px 5px); box-shadow: inset 0 0 0 1px var(--chart-soft); }
+  .sp__info { min-height: 2.9em; margin: 10px 0 0; font-size: 0.875rem; line-height: 1.45; color: var(--text-strong); }
+  .sp__info[hidden] { display: none; }
+
+  @container (max-width: 560px) {
+    .sp__yr { grid-template-columns: 52px minmax(0, 1fr); gap: 10px; }
+    .sp__phase { margin-left: 62px; }
+    .sp__bar { height: 36px; }
+  }
+</style>

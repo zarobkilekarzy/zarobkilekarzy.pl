@@ -106,6 +106,10 @@ export const cards: Record<string, CardEn> = {
   'dlaczego-brakuje-lekarzy': { stat: { of: '62%', value: '62%', unit: 'of specialist training places empty in autumn 2025' } },
   'ciecie-limitow-na-medycyne': { stat: { of: '2 090', value: '2,090', unit: 'full-time places in medical school in 2003, against more than 6,000 in 1987' } },
   'odsiew-na-medycynie': { stat: { of: '1 na 5', value: '1 in 5', unit: 'students who start do not finish on time' } },
+  'studia-lekarskie': {
+    stat: { of: '32,8', value: '32.8', unit: 'applicants per place in medicine at the University of Warsaw in 2026' },
+    coverAlt: 'A wooden pencil case with six empty compartments, and behind it a crowd of hundreds of standing pencils',
+  },
   'english-division': { stat: { of: '17%', value: '17%', unit: 'of places in medicine are degree programmes taught in a foreign language' } },
   'odpowiedzialnosc-zawodowa-lekarzy': {
     stat: { of: '20', value: '20', unit: 'doctors finally stripped of the right to practise in 2010–2025' },

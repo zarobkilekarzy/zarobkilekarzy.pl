@@ -3,7 +3,8 @@
  * Zwijana sekcja „Infografiki do pobrania” na dole strony (<details>, domyślnie zwinięta, bez JS):
  * nagłówek h2 z liczbą grafik i znacznikiem +/– jak w FAQ, po rozwinięciu blocks/Infographics.
  * Artykuły dostają ją z ArticleLayout (zestaw o kluczu = id artykułu); podstrony spoza kolekcji
- * (egzamin, symulator, monitoring) wstawiają ją same.
+ * (egzamin, symulator, monitoring) wstawiają ją same. Pole `also` zestawu dokłada grafiki innych stron
+ * (z linkiem do strony źródłowej pod podglądem).
  *
  *   <InfographicsSection set="egzamin" />
  */
@@ -21,7 +22,9 @@ interface Props extends HTMLAttributes<'details'> {
 
 const { set, class: className, ...rest } = Astro.props;
 const en = localeOf(Astro.url.pathname) === 'en';
-const count = (en ? infographicSetsEn : infographicSets)[set]?.items.length ?? 0;
+const all = en ? infographicSetsEn : infographicSets;
+const keys = [set, ...(all[set]?.also ?? [])];
+const count = keys.reduce((n, key) => n + (all[key]?.items.length ?? 0), 0);
 if (!count) throw new Error(`[infografiki] nieznany albo pusty zestaw „${set}”`);
 ---
 <details class:list={['igs', className]} {...rest}>
@@ -38,7 +41,7 @@ if (!count) throw new Error(`[infografiki] nieznany albo pusty zestaw „${set}�
       </>
     )}
   </summary>
-  <Infographics set={set} />
+  <Infographics set={keys} source={keys.length > 1 ? 'others' : false} />
 </details>
 
 <style>

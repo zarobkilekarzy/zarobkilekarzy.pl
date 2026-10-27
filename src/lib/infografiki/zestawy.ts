@@ -19,6 +19,7 @@ import { AOS_FIRST, AOS_LAST, LINKS as WIZYTA_LINKS, NIL_N, NO_CLINICAL, WHC_202
 import { BEAN, NORI } from '@/data/ai-w-medycynie-2026';
 import { SELF_GOVERNMENT_STANCES, SURPLUS_YEAR } from '@/data/reglamentacja-dostepu';
 import { DOBA_MODEL } from '@/data/film';
+import { uwQueueRows } from '@/data/studia-lekarskie';
 import { formatPL } from '@/lib/format';
 import { monitoring } from '@/lib/monitoring';
 import { monitoringMap, opennessP } from '@/lib/monitoring/map';
@@ -692,7 +693,27 @@ const filmDoba: InfographicSet = {
   ],
 };
 
+// kolejka i próg na UW: te same wiersze co wykres w artykule (od najwyższego progu)
+const studiaLekarskie: InfographicSet = {
+  route: '/analizy/studia-lekarskie/',
+  page: 'Analiza: Studia lekarskie: od matury do LEK',
+  filePrefix: 'zarobkilekarzy-studia-lekarskie',
+  // porównanie zdawalności LEK z innymi egzaminami — ten sam wykres jest w sekcji o LEK
+  also: ['egzamin'],
+  items: [
+    {
+      id: 'kolejka-i-prog',
+      title: 'Na lekarski najdłuższa kolejka. Próg — jak na prawie',
+      measure: 'Uniwersytet Warszawski · rekrutacja 2026/27 · zgłoszenia na jedno miejsce i próg w pkt na 100',
+      queue: { rows: uwQueueRows, countLabel: 'zgłoszenia na jedno miejsce', barLabel: 'próg', barMax: 100 },
+      sources: 'Źródło: Uniwersytet Warszawski 2026/27 · zgłoszenia, nie osoby · kierunki liczą punkty z różnych matur',
+      alt: `Infografika „Na lekarski najdłuższa kolejka. Próg — jak na prawie”: rekrutacja na Uniwersytet Warszawski 2026/27, zgłoszenia na jedno miejsce i próg (wynik ostatniej osoby przyjętej, punkty na 100), od najwyższego progu: ${uwQueueRows.map((r) => `${r.label} — ${r.countDisplay} zgłoszenia na miejsce, próg ${r.barDisplay}`).join('; ')}. Każde zgłoszenie to jedno pole: kropka to miejsce, plusy to pozostałe zgłoszenia.`,
+    },
+  ],
+};
+
 export const infographicSets: Record<string, InfographicSet> = {
+  'studia-lekarskie': studiaLekarskie,
   'film-doba': filmDoba,
   'nil-a-kontrakty-lekarskie': nil,
   egzamin,

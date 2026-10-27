@@ -1,0 +1,103 @@
+---
+/**
+ * Film z YouTube osadzony dopiero na kliknięcie. Do tego czasu strona nie łączy się z Google:
+ * zamiast miniatury z i.ytimg.com jest okładka w stylu serwisu (siatka kropek, tytuł, kanał, czas),
+ * opcjonalnie na tle kadru z filmu trzymanego u nas (`poster`, czarno-biały i przyciemniony),
+ * a po kliknięciu skrypt podmienia ją na ramkę z youtube-nocookie.com (CSP: frame-src w
+ * integrations/seo/headers.ts). Bez JavaScriptu okładka jest zwykłym linkiem do filmu.
+ *   <YouTube id="bNMPCu5xpEY" title="…" channel="…" duration="3:27" />
+ */
+import { Image } from 'astro:assets';
+import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+
+interface Props {
+  /** identyfikator filmu z adresu youtube.com/watch?v=… */
+  id: string;
+  /** tytuł filmu, jak na YouTube */
+  title: string;
+  /** nazwa kanału */
+  channel: string;
+  /** długość, np. „3:27” */
+  duration?: string;
+  /** kadr z filmu na tło okładki (src/assets/…, bez metadanych — research/grafiki `wydaj`) */
+  poster?: ImageMetadata;
+}
+
+const { id, title, channel, duration, poster } = Astro.props;
+const watch = `https://www.youtube.com/watch?v=${id}`;
+const embed = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
+const text = localeOf(Astro.url.pathname) === 'en'
+  ? { play: 'Play the video', note: 'Clicking loads the YouTube player (Google).' }
+  : { play: 'Odtwórz film', note: 'Kliknięcie załaduje odtwarzacz YouTube (Google).' };
+---
+<div class="yt" data-yt-embed={embed} data-yt-title={title}>
+  <a class="yt__cover" href={watch} rel="noopener">
+    {poster && <Image class="yt__poster" src={poster} alt="" widths={[poster.width]} sizes="(min-width: 1025px) 950px, calc(100vw - 32px)" loading="lazy" />}
+    <span class="yt__play" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path d="M8 5.5v13l11-6.5z" fill="currentColor" /></svg>
+    </span>
+    <span class="yt__meta">
+      <span class="yt__eyebrow">YouTube · {channel}{duration && ` · ${duration}`}</span>
+      <span class="yt__title">{typo(title)}</span>
+      <span class="yt__note">{text.play}. {text.note}</span>
+    </span>
+  </a>
+</div>
+
+<script>
+  // Okładka → ramka po kliknięciu; zwykły link zostaje dla nowej karty (Ctrl/⌘) i bez JS
+  document.querySelectorAll<HTMLElement>('.yt').forEach((box) => {
+    const cover = box.querySelector<HTMLAnchorElement>('.yt__cover');
+    cover?.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+      e.preventDefault();
+      const frame = document.createElement('iframe');
+      frame.src = box.dataset.ytEmbed!;
+      frame.title = box.dataset.ytTitle ?? '';
+      frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      frame.className = 'yt__frame';
+      cover.replaceWith(frame);
+      frame.focus();
+    });
+  });
+</script>
+
+<style>
+  .yt { margin: 0; }
+  /* ramkę tworzy skrypt, więc nie ma atrybutu stylów komponentu — stąd :global */
+  .yt__cover, .yt :global(.yt__frame) {
+    display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--line);
+  }
+  .yt__cover {
+    position: relative; overflow: hidden; color: #fff; text-decoration: none;
+    background:
+      radial-gradient(circle at center, color-mix(in oklab, #fff 22%, transparent) 1.2px, transparent 1.6px) 0 0 / 18px 18px, /* kolor-stały: kropki siatki na zawsze ciemnej okładce */
+      var(--inverse);
+  }
+  .yt__poster {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    filter: grayscale(1) contrast(1.05); opacity: 0.5;
+  }
+  .yt__play {
+    position: absolute; z-index: 1; left: 50%; top: 42%; translate: -50% -50%;
+    display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%;
+    background: var(--blue-fill); color: #fff; transition: transform 0.2s;
+  }
+  .yt__cover:hover .yt__play, .yt__cover:focus-visible .yt__play { transform: scale(1.08); }
+  .yt__meta {
+    position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; display: grid; gap: 4px; padding: 16px 20px;
+    background: linear-gradient(transparent, color-mix(in oklab, var(--inverse) 92%, transparent) 40%);
+  }
+  /* kolor-stały: początek — tekst na okładce, która jest zawsze ciemna (--inverse) */
+  .yt__eyebrow { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in oklab, #fff 70%, transparent); }
+  .yt__title { font: 600 clamp(1rem, 2.4vw, 1.25rem)/1.25 var(--f-display); }
+  .yt__note { font: 400 0.8125rem/1.4 var(--f-body); color: color-mix(in oklab, #fff 70%, transparent); }
+  /* kolor-stały: koniec */
+  @media (max-width: 480px) {
+    .yt__play { width: 56px; height: 56px; top: 36%; }
+    .yt__note { display: none; }
+  }
+</style>

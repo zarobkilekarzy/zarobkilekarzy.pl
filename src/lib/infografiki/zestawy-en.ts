@@ -8,6 +8,7 @@
 import { COUNTRIES, FIRST_YEAR, LAST_YEAR, REVOCATIONS, WINDOW, ratePer100k, total, type CountryKey } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
 import { COUNTRY_EN } from '@/data/en/odpowiedzialnosc-zawodowa-lekarzy';
 import { LATEST } from '@/data/english-division';
+import { uwQueueRows as uwQueueRowsEn } from '@/data/en/studia-lekarskie';
 import { dayRows } from '@/data/ciecie-limitow-na-medycyne';
 import { BUDGET, CURRENT, DRAFT_2027, GAP_2027, budget } from '@/data/budzet-nfz';
 import { MEDIAN_WAGES, OUT_OF_POCKET, SPECIALISTS_2025, TO, WHC_EDITIONS, WHC_LATEST, contribution } from '@/data/kolejki';
@@ -608,7 +609,27 @@ const filmDoba: InfographicSet = {
   ],
 };
 
+/* ---------- Studia lekarskie: kolejka i próg na UW ---------- */
+
+const studiaLekarskie: InfographicSet = {
+  route: '/en/analysis/medical-studies-in-poland/',
+  page: 'Analysis: Medical studies in Poland',
+  filePrefix: 'zarobkilekarzy-en',
+  locale: 'en',
+  items: [
+    {
+      id: 'queue-and-threshold',
+      title: 'Medicine has the longest queue. The cut-off — about the same as law',
+      measure: 'University of Warsaw · 2026/27 admissions · applications per place and cut-off in points out of 100',
+      queue: { rows: uwQueueRowsEn, countLabel: 'applications per place', barLabel: 'cut-off', barMax: 100 },
+      sources: 'Source: University of Warsaw 2026/27 · applications, not people · programmes count points from different matura subjects',
+      alt: `Infographic “Medicine has the longest queue. The cut-off — about the same as law”: admissions to the University of Warsaw for 2026/27, applications per place and the cut-off (score of the last person admitted, points out of 100), from the highest cut-off: ${uwQueueRowsEn.map((r) => `${r.label} — ${r.countDisplay} applications per place, cut-off ${r.barDisplay}`).join('; ')}. Each application is one square: the dot is the place, the plus signs are the other applications.`,
+    },
+  ],
+};
+
 export const infographicSetsEn: Record<string, InfographicSet> = {
+  'studia-lekarskie': studiaLekarskie,
   'film-doba': filmDoba,
   'nil-a-kontrakty-lekarskie': nil,
   'odpowiedzialnosc-zawodowa-lekarzy': odpowiedzialnosc,

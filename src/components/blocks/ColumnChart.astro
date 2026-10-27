@@ -8,6 +8,7 @@
  * i podpis na górze pola. `ref` rysuje przerywaną linię na wysokości wybranej kolumny — od początku
  * luki do tej kolumny — żeby było widać, ile do niej brakuje.
  * Kolumny „rosną” przy przewijaniu (data-reveal="grow" → .is-armed → .is-in, scripts/reveal.ts).
+ * `dense` — w wąskim kontenerze podpisana jest co druga kolumna (np. 15 lat akademickich), żeby etykiety na siebie nie wchodziły.
  */
 import { typo } from '@/lib/format';
 
@@ -26,16 +27,18 @@ interface Props {
   max: number;
   gap?: { from: number; to: number; label: string; sub?: string };
   ref?: { index: number; label: string };
+  /** w wąskim kontenerze podpis co drugiej kolumny */
+  dense?: boolean;
   /** pełny opis danych dla czytników ekranu */
   caption: string;
 }
 
-const { columns, max, gap, ref, caption } = Astro.props;
+const { columns, max, gap, ref, dense, caption } = Astro.props;
 const n = columns.length;
 const k = (v: number) => (v / max).toFixed(4);
 const inGap = (i: number) => gap !== undefined && i >= gap.from && i <= gap.to;
 ---
-<figure class="cc" data-reveal="grow" style={`--n: ${n}`}>
+<figure class:list={['cc', { 'cc--dense': dense }]} data-reveal="grow" style={`--n: ${n}`}>
   <div class="cc__plot" aria-hidden="true">
     {gap && (
       <div class="cc__gap" style={`--from: ${gap.from}; --span: ${gap.to - gap.from + 1}`}>
@@ -122,6 +125,7 @@ const inGap = (i: number) => gap !== undefined && i >= gap.from && i <= gap.to;
   @container (max-width: 560px) {
     .cc__x small { display: none; }
     .cc__ref-label { font-size: 0.5625rem; }
+    .cc--dense .cc__x:nth-child(even) { visibility: hidden; }
   }
 
   /* Animacja wzrostu */

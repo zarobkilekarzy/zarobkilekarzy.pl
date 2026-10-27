@@ -5,6 +5,7 @@
  */
 import { film as defaultFilm, type FilmData } from '@/data/film';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   /** prefiks id — komponent może stać na stronie raz, ale id opisu musi być unikalne w serwisie */
@@ -15,22 +16,26 @@ interface Props {
 
 const { id, film = defaultFilm } = Astro.props;
 const descId = `${id}-napisy`;
+// Napisy interfejsu w języku strony; tekst filmu przychodzi w `film` (po angielsku: src/data/en/film.ts)
+const text = localeOf(Astro.url.pathname) === 'en'
+  ? { download: 'Download the film', summary: 'What the film says: transcript and sources', source: 'Source', sources: 'Sources' }
+  : { download: 'Pobierz film', summary: 'Co jest w filmie: napisy i źródła', source: 'Źródło', sources: 'Źródła' };
 ---
 <figure class="film">
   <video class="film__video" controls preload="none" playsinline poster={film.poster} width={film.width} height={film.height} aria-describedby={descId}>
     <source src={film.hls} type="application/vnd.apple.mpegurl" />
     <source src={film.src} type="video/mp4" />
-    <a href={film.src} download={film.download}>Pobierz film (MP4, {film.size})</a>
+    <a href={film.src} download={film.download}>{text.download} (MP4, {film.size})</a>
   </video>
   <details class="film__napisy" id={descId}>
-    <summary>Co jest w filmie: napisy i źródła</summary>
+    <summary>{text.summary}</summary>
     <ol>
       {film.transcript.map((b) => (
         <li>
           <p>{typo(b.text)}</p>
           {b.note && <p class="film__note">{typo(b.note)}</p>}
           {b.sources.length > 0 && (
-            <p class="film__src">{b.sources.length > 1 ? 'Źródła' : 'Źródło'}: {b.sources.map((s, i) => <Fragment>{i > 0 && ', '}<a href={s.href}>{typo(s.label)}</a></Fragment>)}</p>
+            <p class="film__src">{b.sources.length > 1 ? text.sources : text.source}: {b.sources.map((s, i) => <Fragment>{i > 0 && ', '}<a href={s.href}>{typo(s.label)}</a></Fragment>)}</p>
           )}
           {b.more && <p class="film__src"><a href={b.more.href}>{typo(b.more.label)}</a></p>}
         </li>

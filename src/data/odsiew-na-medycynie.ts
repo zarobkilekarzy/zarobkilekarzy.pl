@@ -146,32 +146,34 @@ export interface LekRow {
 
 /** Od najlepszego wyniku względem średniej sesji. */
 export const LEK: LekRow[] = [
-  { school: 'Uniwersytet Opolski', type: 'nowa', takers: 384, diff: 6.2, passed: 99.0 },
-  { school: 'CM UMK (Bydgoszcz)', type: 'stara', takers: 769, diff: 5.0, passed: 98.6 },
+  { school: 'Uniwersytet Opolski', type: 'nowa', takers: 384, diff: 6.1, passed: 99.0 },
+  { school: 'CM UMK (Bydgoszcz)', type: 'stara', takers: 769, diff: 5.1, passed: 98.6 },
   { school: 'UM w Poznaniu', type: 'stara', takers: 1348, diff: 4.5, passed: 98.6 },
-  { school: 'UM we Wrocławiu', type: 'stara', takers: 1144, diff: 3.6, passed: 98.1 },
+  { school: 'Uczelnia Łazarskiego', type: 'nowa', takers: 256, diff: 3.9, passed: 98.4 },
+  { school: 'UM we Wrocławiu', type: 'stara', takers: 1144, diff: 3.5, passed: 98.1 },
   { school: 'Uniwersytet Radomski', type: 'nowa', takers: 191, diff: 3.0, passed: 96.9 },
   { school: 'UWM w Olsztynie', type: 'stara', takers: 287, diff: 1.7, passed: 95.8 },
-  { school: 'CM UJ (Kraków)', type: 'stara', takers: 796, diff: 1.4, passed: 98.1 },
-  { school: 'ŚUM w Katowicach', type: 'stara', takers: 1849, diff: 1.2, passed: 97.2 },
+  { school: 'CM UJ (Kraków)', type: 'stara', takers: 796, diff: 1.3, passed: 98.1 },
+  { school: 'ŚUM w Katowicach', type: 'stara', takers: 1849, diff: 1.1, passed: 97.2 },
   { school: 'Uniwersytet Rzeszowski', type: 'nowa', takers: 455, diff: 0.9, passed: 97.8 },
   { school: 'UM w Lublinie', type: 'stara', takers: 876, diff: 0.0, passed: 96.0 },
   { school: 'PUM w Szczecinie', type: 'stara', takers: 776, diff: 0.0, passed: 97.2 },
   { school: 'UM w Łodzi', type: 'stara', takers: 1667, diff: -1.0, passed: 97.1 },
   { school: 'WUM', type: 'stara', takers: 1885, diff: -1.1, passed: 96.7 },
   { school: 'UKSW', type: 'nowa', takers: 230, diff: -2.2, passed: 96.1 },
-  { school: 'UJK w Kielcach', type: 'nowa', takers: 310, diff: -2.5, passed: 95.8 },
-  { school: 'Krakowska Akademia AFM', type: 'nowa', takers: 179, diff: -3.0, passed: 95.5 },
+  { school: 'UJK w Kielcach', type: 'nowa', takers: 310, diff: -2.6, passed: 95.8 },
+  { school: 'Krakowska Akademia AFM', type: 'nowa', takers: 179, diff: -3.1, passed: 95.5 },
   { school: 'UM w Białymstoku', type: 'stara', takers: 867, diff: -4.5, passed: 94.7 },
   { school: 'Uniwersytet Zielonogórski', type: 'nowa', takers: 335, diff: -5.2, passed: 93.1 },
   { school: 'GUMed (Gdańsk)', type: 'stara', takers: 1117, diff: -5.6, passed: 97.0 },
-  { school: 'Akademia Śląska', type: 'nowa', takers: 216, diff: -16.4, passed: 85.2 },
+  { school: 'Uczelnia Medyczna im. M. Skłodowskiej-Curie', type: 'nowa', takers: 56, diff: -14.7, passed: 75.0 },
+  { school: 'Akademia Śląska', type: 'nowa', takers: 216, diff: -16.5, passed: 85.2 },
 ];
 
 /** Skala wykresu LEK (punkty względem średniej sesji). */
 export const LEK_SCALE = { min: -18, max: 8 } as const;
 
-/** Etykieta wartości: „+6,2”, „−16,4”, „0,0”. */
+/** Etykieta wartości: „+6,1”, „−16,5”, „0,0”. */
 export const lekDisplay = (diff: number) => signed(diff, 1);
 
 /* ---------- 5. Losy absolwentów (POL-on × ZUS × NFZ), Polacy ---------- */

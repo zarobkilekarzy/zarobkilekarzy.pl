@@ -71,6 +71,8 @@ const SCHOOL: Record<string, string> = {
   'Uniwersytet Zielonogórski': 'University of Zielona Góra',
   'GUMed (Gdańsk)': 'Medical University of Gdańsk',
   'Akademia Śląska': 'Silesian Academy (Akademia Śląska)',
+  'Uczelnia Łazarskiego': 'Lazarski University',
+  'Uczelnia Medyczna im. M. Skłodowskiej-Curie': 'Maria Skłodowska-Curie Medical College',
 };
 export const schoolEN = (name: string) => {
   const en = SCHOOL[name];
@@ -102,7 +104,7 @@ export const nilRows: BarRow[] = NIL_FIRST_YEAR.map((u) => ({
 
 /* ── 4. LEK: university score relative to the session average ────────────────── */
 
-/** Etykieta wartości: „+6.2”, „−16.4”, „0.0”. */
+/** Etykieta wartości: „+6.1”, „−16.5”, „0.0”. */
 export const lekDisplayEN = (diff: number) => signed(diff, 1);
 
 /* ── 5. Graduates’ careers (POL-on × ZUS × NFZ), Poles ───────────────────────── */

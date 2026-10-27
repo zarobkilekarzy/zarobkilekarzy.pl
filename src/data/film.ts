@@ -1,7 +1,7 @@
 /**
  * Filmy serwisu. „Brak odczytu” (49 s) — strona główna (components/home/Film.astro) i /media/;
  * „Doba” (2 min 37 s) — /media/ i wpis w aktualnościach. Lista `films` = kolejność na /media/.
- * Pliki leżą w public/film/ („Doba” w public/film/doba/): MP4 (Chrome, Firefox, pobieranie), ten sam film pocięty na HLS
+ * Pliki leżą w public/film/ („Doba” w public/film/doba/, także pion do pobrania): MP4 (Chrome, Firefox, pobieranie), ten sam film pocięty na HLS
  * w hls/ (Safari, także na iOS) i okładka. HLS jest potrzebny, bo statyczne pliki Workera
  * ignorują nagłówek Range, a Safari bez odpowiedzi 206 nie odtwarza MP4 — kawałki HLS pobiera
  * w całości. Odtwarzacz podaje HLS jako pierwsze źródło; przeglądarki bez HLS biorą MP4.
@@ -36,6 +36,8 @@ export interface FilmData {
   height: number;
   seconds: number;
   size: string;
+  /** ta sama treść w pionie 9:16 (TikTok, Shorts, relacje) — tylko do pobrania, bez odtwarzacza i HLS */
+  vertical?: { src: string; download: string; width: number; height: number; size: string };
   transcript: FilmBeat[];
 }
 
@@ -148,6 +150,7 @@ export const filmDoba: FilmData = {
   height: 1080,
   seconds: 157,
   size: '25,4 MB',
+  vertical: { src: '/film/doba/doba-pion.mp4', download: 'zarobkilekarzy-doba-pion.mp4', width: 1080, height: 1920, size: '22,5 MB' },
   transcript: [
     {
       text: 'Ten lekarz ma etat za 20 tys. zł miesięcznie. Tyle widać na pasku. Ale to tylko jedna z trzech umów.',

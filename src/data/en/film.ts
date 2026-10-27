@@ -84,6 +84,7 @@ export const filmDobaEn: FilmData = {
   ...filmDoba,
   lead: '2 min 37 s, with Polish narration. One doctor, three contracts: PLN 999,999 a year and 72 hours in a single day. The doctor is a model example, and each mechanism is illustrated by a real case.',
   size: '25.4 MB',
+  vertical: filmDoba.vertical && { ...filmDoba.vertical, size: '22.5 MB' },
   transcript: filmDoba.transcript.map((beat, i) => {
     const en = BEATS[i];
     if ((en.sources?.length ?? 0) !== beat.sources.length) throw new Error(`[film] „Doba” EN, ujęcie ${i + 1}: inna liczba źródeł niż w polskim`);

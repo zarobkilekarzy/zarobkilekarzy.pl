@@ -58,7 +58,7 @@ const pl = {
     fixTitle: 'Widzisz błąd?',
     fixText: 'Poprawki publikujemy w rejestrze sprostowań z datą i opisem zmiany. Opisujemy mechanizmy, a nie konkretne osoby.',
     fixLink: 'Zgłoś sprostowanie',
-    fixHref: '/#zasady',
+    fixHref: '/o-projekcie/#sprostowania',
     share: 'Pomóż nagłośnić',
     relatedEyebrow: 'Czytaj dalej',
     relatedTitle: 'Powiązane mechanizmy',

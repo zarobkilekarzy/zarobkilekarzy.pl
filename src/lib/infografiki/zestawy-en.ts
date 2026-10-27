@@ -20,8 +20,9 @@ import { funnelRows } from '@/data/en/odsiew-na-medycynie';
 import { AOS_FIRST, AOS_LAST, LINKS as WIZYTA_LINKS, NIL_N, NO_CLINICAL, WHC_2022, WHC_2024, WORK_MODEL, combined, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
 import { BEAN, NORI } from '@/data/ai-w-medycynie-2026';
 import { SELF_GOVERNMENT_STANCES, SURPLUS_YEAR } from '@/data/reglamentacja-dostepu';
+import { DOBA_MODEL } from '@/data/film';
 import { formatEN } from '@/lib/format';
-import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment } from './render';
+import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment, ViewPart } from './render';
 
 /** Tłumaczenie z polskiej etykiety z modułu danych; brak tłumaczenia wywraca build (nowy wiersz po polsku = tłumaczenie tutaj). */
 const translate = (map: Record<string, string>, pl: string, what: string) => {
@@ -569,7 +570,46 @@ const reglamentacja: InfographicSet = {
   ],
 };
 
+/* ---------- Film „Doba”: trzy umowy jednego lekarza (wpis w aktualnościach) ---------- */
+
+// jak w wersji polskiej: 1 kropka = 10 000 zł rocznie, 24 + 40 + 36 = 100 pól
+const DOT_ZL = 10_000;
+const dobaParts = [
+  { who: 'seen by hospital A', label: 'employment', value: DOBA_MODEL.etat },
+  { who: 'seen by hospital B', label: 'contract, % of procedures', value: DOBA_MODEL.kontrakt },
+  { who: 'seen by entity C', label: 'civil-law contract', value: DOBA_MODEL.ucp },
+];
+const dobaSum = dobaParts.reduce((n, p) => n + p.value, 0);
+const dobaViews: ViewPart[] = dobaParts.reduce<ViewPart[]>((acc, p) => {
+  const from = acc.reduce((n, x) => n + x.dots, 0);
+  return [...acc, { who: p.who, label: p.label, display: formatEN(p.value), from, dots: Math.round(p.value / DOT_ZL) }];
+}, []);
+const dobaHours = DOBA_MODEL.hours * dobaParts.length;
+
+const filmDoba: InfographicSet = {
+  route: '/en/news/film-one-doctor-three-contracts/',
+  page: 'News: New film — one doctor, three contracts',
+  filePrefix: 'zarobkilekarzy-en',
+  locale: 'en',
+  items: [
+    {
+      id: 'three-windows',
+      title: 'Each sees their own piece. Nobody sees the total',
+      measure: `model example · three contracts · one year · 1 dot = PLN ${formatEN(DOT_ZL)} gross`,
+      views: {
+        parts: dobaViews,
+        total: { display: formatEN(dobaSum), label: 'one doctor, one year', sub: `PLN ${formatEN(1_000_000 - dobaSum)} short of a million` },
+        slogan: 'One person. One sum. Anonymously.',
+        brackets: { part: `${DOBA_MODEL.hours} h`, total: `${dobaHours} h in a single day` },
+      },
+      sources: 'Model example from the film “Doba” (“24 hours”) · gross amounts · each contract complies with the rules in force',
+      alt: `Infographic “Each sees their own piece. Nobody sees the total” — a model example from the film “Doba” (“24 hours”): one doctor with three contracts, gross amounts for a year, one dot is PLN ${formatEN(DOT_ZL)}. Three small boards of 100 squares, each with only the squares of one contract lit: hospital A sees the employment contract — PLN ${formatEN(DOBA_MODEL.etat)}, hospital B sees the contract with a percentage of procedures — PLN ${formatEN(DOBA_MODEL.kontrakt)}, entity C sees the civil-law contract — PLN ${formatEN(DOBA_MODEL.ucp)}. Above each board a bracket “${DOBA_MODEL.hours} h”: each contract bills a full 24 hours. Next to them a full board in cobalt with the bracket “${dobaHours} h in a single day”: PLN ${formatEN(dobaSum)} in total, one doctor, one year, PLN ${formatEN(1_000_000 - dobaSum)} short of a million — nobody sees this total. Slogan: One person. One sum. Anonymously.`,
+    },
+  ],
+};
+
 export const infographicSetsEn: Record<string, InfographicSet> = {
+  'film-doba': filmDoba,
   'nil-a-kontrakty-lekarskie': nil,
   'odpowiedzialnosc-zawodowa-lekarzy': odpowiedzialnosc,
   'english-division': englishDivision,

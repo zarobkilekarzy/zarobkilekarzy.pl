@@ -908,10 +908,12 @@ function viewsLayout(set: InfographicSet, i: Infographic, v: Views, f: FormatKey
       h('div', { style: { marginTop: pion ? 10 : 6, width: side, height: g.tick, borderTop: `${g.stroke}px solid ${C.ink}`, borderLeft: `${g.stroke}px solid ${C.ink}`, borderRight: `${g.stroke}px solid ${C.ink}` } }));
   const mono = (text: string, color: string, marginTop = 0) =>
     h('span', { style: { marginTop, fontFamily: MONO, fontSize: g.who, letterSpacing: '0.06em', textTransform: 'uppercase', color } }, typo(text));
+  // waluta jak w tekście strony: „240 000 zł”, po angielsku „PLN 240,000”
+  const unit = (size: number, side: 'marginLeft' | 'marginRight') =>
+    h('span', { style: { [side]: 6, fontSize: Math.round(size * UNIT_SCALE), letterSpacing: '-0.02em' } }, set.locale === 'en' ? 'PLN' : 'zł');
   const money = (text: string, size: number, color: string) =>
     h('div', { style: { alignItems: 'baseline', fontFamily: DISPLAY, fontWeight: 300, fontSize: size, lineHeight: 1, letterSpacing: '-0.05em', color } },
-      text,
-      h('span', { style: { marginLeft: 6, fontSize: Math.round(size * UNIT_SCALE), letterSpacing: '-0.02em' } }, 'zł'));
+      ...(set.locale === 'en' ? [unit(size, 'marginRight'), text] : [text, unit(size, 'marginLeft')]));
 
   const part = (p: ViewPart, w: number) =>
     h('div', { style: { flexDirection: 'column', width: w } },
@@ -924,7 +926,7 @@ function viewsLayout(set: InfographicSet, i: Infographic, v: Views, f: FormatKey
     v.brackets && bracket(v.brackets.total, DOTS_N * g.board, g.hbBig),
     h('div', { style: { marginTop: v.brackets ? (pion ? 10 : 6) : 0 } }, board(g.board, () => true, C.blue)));
   const total = h('div', { style: { flexDirection: 'column' } },
-    mono('nie widzi nikt', C.blue),
+    mono(set.locale === 'en' ? 'seen by nobody' : 'nie widzi nikt', C.blue),
     h('div', { style: { marginTop: pion ? 14 : 8 } }, money(v.total.display, g.totalNum, C.blue)),
     h('span', { style: { marginTop: pion ? 10 : 5, fontFamily: BODY, fontSize: g.label + 2, color: C.ink } }, typo(v.total.label)),
     mono(v.total.sub, C.muted, pion ? 6 : 3));

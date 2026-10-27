@@ -21,6 +21,8 @@ import { formatDateIn, isoDate, typo } from '@/lib/format';
 import { newsHref } from '@/lib/news';
 import { getNewsTranslations, newsEnHref, newsFreshnessOf, newsPageEn } from '@/i18n/news';
 import type { Crumb, SeoInput } from '@/lib/seo';
+import InfographicsSection from '@/components/blocks/InfographicsSection.astro';
+import { infographicSetsEn } from '@/lib/infografiki/zestawy-en';
 
 export const getStaticPaths = (async () => {
   const news = await getNewsTranslations();
@@ -36,6 +38,8 @@ const { date, draft, cover } = source.data;
 const { Content } = await render(entry);
 const freshness = newsFreshnessOf(pair);
 const original = newsHref(source);
+// infografiki do pobrania: zestaw o kluczu = id polskiego wpisu (lib/infografiki/zestawy-en.ts)
+const graphics = infographicSetsEn[source.id]?.items.length ?? 0;
 
 const url = new URL(newsEnHref(pair), Astro.site).href;
 const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: newsPageEn.title, href: newsPageEn.href }, { label: title }];
@@ -77,6 +81,8 @@ const seo: SeoInput = {
       </div>
       <Prose><Content components={{ a: ProseLink }} /></Prose>
 
+      {graphics > 0 && <InfographicsSection set={source.id} class="entry__ig" />}
+
       {(links.length > 0 || x) && (
         <ul class="entry__links">
           {links.map((link) => <li><LinkArrow href={link.href}>{link.label}</LinkArrow></li>)}
@@ -103,6 +109,7 @@ const seo: SeoInput = {
   .entry__draft { margin-top: 40px; max-width: 780px; }
   .entry :global(.entry__cover) { margin-top: clamp(32px, 4vw, 48px); max-width: 1000px; }
   .entry__body { margin-top: clamp(40px, 5vw, 64px); padding-top: 40px; border-top: 1px solid var(--line); }
+  .entry__body :global(.entry__ig) { margin-top: 56px; }
   .entry__note { max-width: 780px; }
   .entry__links { display: grid; gap: 12px; margin-top: 48px; max-width: 780px; }
   .entry__foot {

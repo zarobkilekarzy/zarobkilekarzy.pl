@@ -1,10 +1,11 @@
-/** Infografiki do pobrania generowane w buildzie: /infografiki/<strona>/<id>-<szer>x<wys>[-ciemny].png — zob. lib/infografiki/render.ts */
+/** Infografiki do pobrania generowane w buildzie: /infografiki/[en/]<strona>/<id>-<szer>x<wys>[-ciemny].png — zob. lib/infografiki/render.ts */
 import type { APIRoute, GetStaticPaths, InferGetStaticPropsType } from 'astro';
 import { FORMATS, THEMES, infographicUrl, renderInfographic, type FormatKey, type ThemeKey } from '@/lib/infografiki/render';
 import { infographicSets } from '@/lib/infografiki/zestawy';
+import { infographicSetsEn } from '@/lib/infografiki/zestawy-en';
 
 export const getStaticPaths = (() =>
-  Object.values(infographicSets).flatMap((set) =>
+  [...Object.values(infographicSets), ...Object.values(infographicSetsEn)].flatMap((set) =>
     set.items.flatMap((item) =>
       (Object.keys(FORMATS) as FormatKey[]).flatMap((format) =>
         (Object.keys(THEMES) as ThemeKey[]).map((theme) => ({

@@ -27,7 +27,8 @@
 import sharp from 'sharp';
 import satori from 'satori';
 import { renderSVG } from 'uqr';
-import { formatPL, typo } from '@/lib/format';
+import { formatNumber, formatPL, typo } from '@/lib/format';
+import type { Locale } from '@/i18n/locales';
 import { tokenPair } from '@/lib/tokens';
 import { geo } from '@/lib/mapa/geo';
 import { radius, R_MISSING, toneOfClass } from '@/lib/mapa/layout';
@@ -277,6 +278,8 @@ export interface InfographicSet {
   /** początek nazwy pobieranego pliku */
   filePrefix: string;
   items: Infographic[];
+  /** język stałych napisów i zapisu liczb (wersje EN: src/lib/infografiki/zestawy-en.ts); domyślnie polski */
+  locale?: Locale;
 }
 
 /** Akapit nad siatką infografik: formaty i to, co jest na grafice. */
@@ -285,9 +288,9 @@ export const infographicsLead = (count: number) =>
 
 const setSlug = (route: string) => route.replace(/^\/|\/$/g, '').split('/').pop()!;
 
-/** Adres PNG: /infografiki/<ostatni człon trasy>/<id>-<szer>x<wys>[-ciemny].png */
+/** Adres PNG: /infografiki/[en/]<ostatni człon trasy>/<id>-<szer>x<wys>[-ciemny].png */
 export const infographicUrl = (set: InfographicSet, id: string, f: FormatKey, theme: ThemeKey = 'jasny') =>
-  `/infografiki/${setSlug(set.route)}/${id}-${FORMATS[f].width}x${FORMATS[f].height}${theme === 'jasny' ? '' : `-${theme}`}.png`;
+  `/infografiki/${set.locale === 'en' ? 'en/' : ''}${setSlug(set.route)}/${id}-${FORMATS[f].width}x${FORMATS[f].height}${theme === 'jasny' ? '' : `-${theme}`}.png`;
 
 /**
  * Kod QR prowadzący do strony (SVG jako <img>, bo Satori nie rysuje ścieżek inline). Zawsze ciemne
@@ -393,7 +396,7 @@ function frame(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKe
     h('div', { style: { alignItems: 'center', justifyContent: 'space-between', paddingTop: pion ? 20 : 12, borderTop: `1px solid ${C.ink}`, fontFamily: MONO } },
       h('div', { style: { flexDirection: 'column', paddingRight: 24 } },
         h('span', { style: { fontSize: g.url, color: C.ink } }, pageUrl.replace(/^https:\/\/|\/$/g, '')),
-        followX(C, g.src + 2, { marginTop: pion ? 8 : 5 }),
+        followX(C, g.src + 2, { marginTop: pion ? 8 : 5 }, set.locale),
         h('span', { style: { marginTop: pion ? 8 : 5, fontSize: g.src, lineHeight: 1.4, color: C.muted } }, typo(i.sources))),
       qr(pageUrl, night ? g.qr - 2 * Math.round(g.qr / 12) : g.qr, night)));
 }
@@ -636,7 +639,7 @@ function tableLayout(set: InfographicSet, i: Infographic, t: DataTable, f: Forma
         h('div', { style: { width: g.periodW, flexShrink: 0, alignItems: 'center', ...mono(g.period, C.muted), textTransform: 'none' } }, period),
         ...t.series.map((s) => {
           const v = s.values[k];
-          return cell(s, h('div', { style: { width: g.numW, flexShrink: 0, justifyContent: 'flex-end', ...numStyle(s, v, g.num) } }, formatPL(v)));
+          return cell(s, h('div', { style: { width: g.numW, flexShrink: 0, justifyContent: 'flex-end', ...numStyle(s, v, g.num) } }, formatNumber(v, 0, set.locale ?? 'pl')));
         }));
     // pierwsze podsumowanie oddziela od lat linia w kolorze tekstu, kolejne — zwykła
     const summary = t.summary.map((sum, k) =>
@@ -657,7 +660,7 @@ function tableLayout(set: InfographicSet, i: Infographic, t: DataTable, f: Forma
     h('div', { style: { height: g.rowH, alignItems: 'center', borderBottom: `1px solid ${C.line}`, background: tint(s) } },
       h('div', { style: { width: g.labelW, flexShrink: 0, flexDirection: 'column', paddingLeft: 8 } }, ...head(s, g)),
       ...s.values.map((v) =>
-        h('div', { style: { width: cellW, flexShrink: 0, justifyContent: 'center', ...numStyle(s, v, g.num) } }, formatPL(v))),
+        h('div', { style: { width: cellW, flexShrink: 0, justifyContent: 'center', ...numStyle(s, v, g.num) } }, formatNumber(v, 0, set.locale ?? 'pl'))),
       ...t.summary.map((sum) =>
         h('div', { style: { width: g.sumW, flexShrink: 0, justifyContent: 'flex-end', paddingRight: 8, ...sumStyle(s, g.total) } }, sum.values[j])));
   return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', width: inner } }, header, ...t.series.map(row)));
@@ -755,7 +758,8 @@ function quoteLayout(set: InfographicSet, i: Infographic, q: Quote, f: FormatKey
       : null);
   const line = (text: string, k: number) =>
     h('div', { style: { position: 'relative', color: C.ink } },
-      k === 0 && h('span', { style: { position: 'absolute', left: -qg.hang, top: 0, color: C.blue } }, '„'),
+      // cudzysłów otwierający: po polsku dolny „, po angielsku górny “
+      k === 0 && h('span', { style: { position: 'absolute', left: -qg.hang, top: 0, color: C.blue } }, set.locale === 'en' ? '“' : '„'),
       ...parts(text, { color: C.blue }));
   const quote = h('div', { style: { flexDirection: 'column', flexGrow: 1, justifyContent: 'center', paddingLeft: qg.hang } },
     h('div', { style: { flexDirection: 'column', fontFamily: DISPLAY, fontWeight: 400, fontSize: qg.quote, lineHeight: 1.08, letterSpacing: '-0.022em' } },

@@ -8,6 +8,7 @@ import { footnotes } from './src/lib/markdown/footnotes';
 import { typography } from './src/lib/markdown/typography';
 import seo, { astroRedirects } from './integrations/seo';
 import markdown from './integrations/markdown';
+import i18nQa from './integrations/i18n';
 import mobywatel from './src/mobywatel/integracja';
 import { fontFamilies, localVariants } from './src/lib/fonts';
 
@@ -58,6 +59,8 @@ export default defineConfig({
     seoIntegration,
     // strona.md dla każdej strony — treść w Markdownie dla agentów (llms.txt)
     markdown(),
+    // kontrola tłumaczeń PL↔EN na gotowym HTML — same ostrzeżenia (raport w .astro/i18n-qa.json)
+    i18nQa(),
   ],
 
   env: {

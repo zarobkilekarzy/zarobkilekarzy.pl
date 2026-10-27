@@ -10,21 +10,33 @@
 import type { HTMLAttributes } from 'astro/types';
 import Infographics from '@/components/blocks/Infographics.astro';
 import { infographicSets } from '@/lib/infografiki/zestawy';
+import { infographicSetsEn } from '@/lib/infografiki/zestawy-en';
 import { plural } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 
 interface Props extends HTMLAttributes<'details'> {
-  /** klucz zestawu z lib/infografiki/zestawy.ts */
+  /** klucz zestawu z lib/infografiki/zestawy.ts (na stronach EN — ten sam klucz w zestawy-en.ts) */
   set: string;
 }
 
 const { set, class: className, ...rest } = Astro.props;
-const count = infographicSets[set]?.items.length ?? 0;
+const en = localeOf(Astro.url.pathname) === 'en';
+const count = (en ? infographicSetsEn : infographicSets)[set]?.items.length ?? 0;
 if (!count) throw new Error(`[infografiki] nieznany albo pusty zestaw „${set}”`);
 ---
 <details class:list={['igs', className]} {...rest}>
   <summary>
-    <h2 id="infografiki">{count > 1 ? 'Infografiki' : 'Infografika'} do pobrania</h2>
-    <span class="igs__count">{count} {plural(count, ['grafika', 'grafiki', 'grafik'])} · pion i poziom, jasna i ciemna</span>
+    {en ? (
+      <>
+        <h2 id="infographics">{count > 1 ? 'Infographics' : 'Infographic'} to download</h2>
+        <span class="igs__count">{count} {count > 1 ? 'graphics' : 'graphic'} · portrait and landscape, light and dark</span>
+      </>
+    ) : (
+      <>
+        <h2 id="infografiki">{count > 1 ? 'Infografiki' : 'Infografika'} do pobrania</h2>
+        <span class="igs__count">{count} {plural(count, ['grafika', 'grafiki', 'grafik'])} · pion i poziom, jasna i ciemna</span>
+      </>
+    )}
   </summary>
   <Infographics set={set} />
 </details>

@@ -11,7 +11,7 @@ import { site } from '@/data/navigation';
 import { formatDateIn, formatEN } from '@/lib/format';
 import { helpline } from '@/data/prawa-pacjenta';
 import { MEDIANS } from '@/data/rozklad-wynagrodzen';
-import { pseudonymDemo } from '@/data/postulat';
+import { pseudonymDemo } from '@/data/en/postulat';
 import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { columnChart, svg } from '@/lib/og/charts';
@@ -29,7 +29,7 @@ const MEDIA_W = 470; // kolumna mediów w lib/og/render.ts
 const PANEL_H = 440;
 const TWO_PANELS_H = 196;
 
-// Postulat: ten sam identyfikator z przykładu co na polskim obrazku
+// Postulat: identyfikator z przykładu na /en/demand/ (klucz pokazowy po angielsku, więc inny niż na polskim obrazku)
 const demoId = `${createHmac('sha256', pseudonymDemo.key).update(pseudonymDemo.pwz).digest('hex').slice(0, 8)}…`;
 
 /* ---------- Wykresy (jak w src/data/og.ts, z podpisami po angielsku) ---------- */

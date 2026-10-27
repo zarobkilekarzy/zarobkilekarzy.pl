@@ -28,6 +28,7 @@ import { articleHref, getFootnotes, getRelated, readingMinutes, sectionOf, type 
 import { mainNav } from '@/data/navigation';
 import { formatDateIn, typo } from '@/lib/format';
 import { infographicSets } from '@/lib/infografiki/zestawy';
+import { infographicSetsEn } from '@/lib/infografiki/zestawy-en';
 import type { Crumb, Entity, SeoInput } from '@/lib/seo';
 import { uiOf } from '@/i18n/ui';
 import { getRates } from '@/i18n/rates';
@@ -57,7 +58,8 @@ const sectionHref = sectionEn
 // Powiązane materiały, seria i infografiki są polskie — tłumaczenie ich nie pokazuje
 const related = en ? [] : await getRelated(source);
 // infografiki artykułu: zestaw o kluczu = id artykułu (ostatni człon trasy)
-const graphics = en ? 0 : (infographicSets[article.id]?.items.length ?? 0);
+// infografiki: zestaw o kluczu = id polskiego oryginału (po angielsku z zestawy-en.ts)
+const graphics = ((en ? infographicSetsEn : infographicSets)[source.id]?.items.length ?? 0);
 // Źródła artykułu to przypisy (`[^id]`): liczba do nagłówka, adresy do JSON-LD
 const footnotes = getFootnotes(article);
 const url = new URL(Astro.url.pathname, Astro.site).href;
@@ -133,7 +135,7 @@ const seo: SeoInput = {
           </Aside>
         )}
 
-        {graphics > 0 && <InfographicsSection set={article.id} class="article__ig" />}
+        {graphics > 0 && <InfographicsSection set={source.id} class="article__ig" />}
 
         {changelog && <Changelog entries={changelog} class="article__log" />}
 

@@ -20,12 +20,12 @@ const BEATS: BeatEn[] = [
   },
   {
     text: 'In a second hospital he has a contract. He gets a percentage of every procedure he performs. Over a year that is almost PLN 400,000. On top of that, a civil-law contract: PLN 30,000 a month.',
-    note: 'Pay calculated as a percentage of procedures billed to the NFZ is allowed today. The Sejm passed a ban on it on 22.10.2026; the act is awaiting the Senate and the President.',
+    note: 'Pay calculated as a percentage of procedures billed to the NFZ is allowed today. The Sejm passed a ban on it on 22 October 2026; the act is awaiting the Senate and the President.',
     sources: ['Sejm, print No. 3157 — progress of work'],
     more: { label: 'Pay limits for health professionals', href: '/en/analysis/medical-pay-limits-act/' },
   },
   {
-    text: 'Let’s add up the whole year. The job: 240,000. The contract: almost 400,000. The civil-law contract: 360,000. Total: PLN 999,999. One złoty short of a million. Formally, he is not a “millionaire”.',
+    text: 'Let’s add up the whole year. The job: 240 thousand. The contract: almost 400. The civil-law contract: 360. Total: PLN 999,999. One złoty short of a million. Formally, he is not a “millionaire”.',
     note: 'PLN 240,000 + 399,999 + 360,000. The percentage of procedures changes every month — on average approx. PLN 33,000.',
   },
   {

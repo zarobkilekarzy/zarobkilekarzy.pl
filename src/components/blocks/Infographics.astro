@@ -12,7 +12,9 @@
  */
 import { FORMATS, THEMES, infographicUrl, infographicsLead, type FormatKey, type InfographicSet, type ThemeKey } from '@/lib/infografiki/render';
 import { infographicSets } from '@/lib/infografiki/zestawy';
+import { infographicSetsEn } from '@/lib/infografiki/zestawy-en';
 import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
 import Icon from '@/components/ui/Icon.astro';
 import type { IconName } from '@/icons';
 
@@ -26,8 +28,10 @@ interface Props {
 }
 
 const { lead = true, source = false } = Astro.props;
+// na stronach EN ten sam klucz wskazuje zestaw angielski (lib/infografiki/zestawy-en.ts)
+const en = localeOf(Astro.url.pathname) === 'en';
 const sets = [Astro.props.set].flat().map((key) => {
-  const set = infographicSets[key];
+  const set = (en ? infographicSetsEn : infographicSets)[key];
   if (!set) throw new Error(`[infografiki] nieznany zestaw „${key}”`);
   return set;
 });
@@ -38,12 +42,16 @@ const formatIcon: Record<FormatKey, IconName> = { pion: 'format-pion', poziom: '
 // nazwa pliku = adres z przedrostkiem serwisu, np. zarobkilekarzy-zdawalnosc-…-1080x1350-ciemny.png
 const fileName = (set: InfographicSet, id: string, f: FormatKey, t: ThemeKey) =>
   `${set.filePrefix}-${infographicUrl(set, id, f, t).split('/').pop()}`;
-const orientation = (f: FormatKey) => (FORMATS[f].label === 'pion' ? 'pionowo' : 'poziomo');
+const orientation = (f: FormatKey) => (en ? (f === 'pion' ? 'portrait' : 'landscape') : FORMATS[f].label === 'pion' ? 'pionowo' : 'poziomo');
+const themeLabel = (t: ThemeKey) => (en ? { jasny: 'light', ciemny: 'dark' }[t] : THEMES[t].label);
+const useOf = (f: FormatKey) => (en ? { pion: 'Instagram, Facebook, X', poziom: 'X, LinkedIn, presentations' }[f] : FORMATS[f].use);
+const LEAD_EN = (count: number) =>
+  `${count > 1 ? 'Graphics' : 'A graphic'} to share in two formats — portrait ${FORMATS.pion.width}×${FORMATS.pion.height} (${useOf('pion')}) and landscape ${FORMATS.poziom.width}×${FORMATS.poziom.height} (${useOf('poziom')}) — light and dark. The sources, the page address and a QR code to the page are on the graphic.`;
 ---
 <div class="ig">
   {lead && (
     <p class="ig__lead">
-      {typo(infographicsLead(entries.length))}
+      {en ? LEAD_EN(entries.length) : typo(infographicsLead(entries.length))}
     </p>
   )}
   <ul class="ig__grid">
@@ -57,9 +65,9 @@ const orientation = (f: FormatKey) => (FORMATS[f].label === 'pion' ? 'pionowo' :
         <div class="ig__dl">
           {themes.map((t) => (
             <p class="ig__dl-row">
-              <span class="ig__dl-label">PNG · {THEMES[t].label}</span>
+              <span class="ig__dl-label">PNG · {themeLabel(t)}</span>
               {formats.map((f) => (
-                <a class="ig__fmt" href={infographicUrl(set, item.id, f, t)} download={fileName(set, item.id, f, t)} aria-label={`Pobierz PNG, wersja ${THEMES[t].label}, ${orientation(f)}, ${FORMATS[f].width}×${FORMATS[f].height}`} title={`${orientation(f)[0].toUpperCase()}${orientation(f).slice(1)}, wersja ${THEMES[t].label} — ${FORMATS[f].use}`}>
+                <a class="ig__fmt" href={infographicUrl(set, item.id, f, t)} download={fileName(set, item.id, f, t)} aria-label={en ? `Download PNG, ${themeLabel(t)} version, ${orientation(f)}, ${FORMATS[f].width}×${FORMATS[f].height}` : `Pobierz PNG, wersja ${THEMES[t].label}, ${orientation(f)}, ${FORMATS[f].width}×${FORMATS[f].height}`} title={en ? `${orientation(f)[0].toUpperCase()}${orientation(f).slice(1)}, ${themeLabel(t)} version — ${useOf(f)}` : `${orientation(f)[0].toUpperCase()}${orientation(f).slice(1)}, wersja ${THEMES[t].label} — ${FORMATS[f].use}`}>
                   <Icon name={formatIcon[f]} size={18} />
                   <span>{FORMATS[f].width}×{FORMATS[f].height}</span>
                 </a>

@@ -31,3 +31,5 @@ The [catalogue](/sad-lekarski/orzeczenia/) (in Polish) collects **59 decisions f
 ## How we describe the cases
 
 We write the descriptions ourselves and keep them more general than the ruling: without places, dates and amounts. We do not give data on the health of the accused or details that would make them identifiable. The catalogue is not a random sample of all rulings and will be expanded.
+
+Statistics on the penalties imposed by medical courts in 2020–2025, compared with Norway, Sweden and the United Kingdom, are in the analysis [“Poland’s harshest penalty for doctors is almost never imposed”](/en/analysis/doctor-discipline-licence-revocation/).

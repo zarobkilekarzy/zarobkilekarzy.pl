@@ -360,7 +360,7 @@ export const routes: Route[] = [
       { label: 'Step-by-step instructions', href: '/en/mechanisms/visits-that-never-happened/#check-your-ikp-instructions', icon: 'arrow' },
       { label: 'pacjent.gov.pl (in Polish)', href: 'https://pacjent.gov.pl/' },
     ],
-    card: { situation: 'You see a visit that never happened', contact: 'IKP · pacjent.gov.pl › Historia leczenia › Zgłoś nieprawidłowość' },
+    card: { situation: 'You see a visit that never happened', contact: 'IKP · pacjent.gov.pl › “Historia leczenia” › “Zgłoś nieprawidłowość”' },
   },
   {
     id: 'doctors-ruling',

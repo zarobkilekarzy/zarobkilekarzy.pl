@@ -16,6 +16,8 @@ export const site = {
 };
 
 const x: Link = { label: 'X @ZarobkiLekarzy', href: 'https://x.com/ZarobkiLekarzy' };
+const youtube: Link = { label: 'YouTube @ZarobkiLekarzy', href: 'https://www.youtube.com/@ZarobkiLekarzy' };
+const tiktok: Link = { label: 'TikTok @zarobkilekarzy.pl', href: 'https://www.tiktok.com/@zarobkilekarzy.pl' };
 
 export const mainNav: Link[] = [
   { label: 'Start', href: '/' },
@@ -76,6 +78,8 @@ export const footerNav: NavGroup[] = [
     title: 'Społeczność',
     links: [
       x,
+      youtube,
+      tiktok,
       // te same adresy co w stopce dotychczasowej strony (konta serwisu)
       { label: 'Wykop', href: 'https://wykop.pl/ludzie/zarobkilekarzy' },
       { label: 'Kod źródłowy (GitHub)', href: 'https://github.com/zarobkilekarzy/zarobkilekarzy.pl' },

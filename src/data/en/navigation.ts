@@ -5,6 +5,8 @@
 import type { Link, NavGroup, SearchDoc } from '@/types';
 
 const x: Link = { label: 'X @ZarobkiLekarzy', href: 'https://x.com/ZarobkiLekarzy' };
+const youtube: Link = { label: 'YouTube @ZarobkiLekarzy', href: 'https://www.youtube.com/@ZarobkiLekarzy' };
+const tiktok: Link = { label: 'TikTok @zarobkilekarzy.pl', href: 'https://www.tiktok.com/@zarobkilekarzy.pl' };
 
 export const mainNav: Link[] = [
   { label: 'Home', href: '/en/' },
@@ -45,6 +47,8 @@ export const footerNav: NavGroup[] = [
     title: 'Community',
     links: [
       x,
+      youtube,
+      tiktok,
       { label: 'Source code (GitHub)', href: 'https://github.com/zarobkilekarzy/zarobkilekarzy.pl' },
       { label: 'Support the project on Suppi', href: 'https://suppi.pl/zarobkilekarzy' },
     ],

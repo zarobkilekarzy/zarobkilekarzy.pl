@@ -15,7 +15,7 @@ export const identity = {
   /** logo wydawcy — rastrowa ikona z src/pages/[icon].png.ts (Google wymaga min. 112 px) */
   logo: { path: '/icon-512.png', width: 512, height: 512 },
   /** profile serwisu (schema.org/sameAs) — tylko prawdziwe adresy, bez placeholderów */
-  sameAs: ['https://x.com/ZarobkiLekarzy'],
+  sameAs: ['https://x.com/ZarobkiLekarzy', 'https://www.youtube.com/@ZarobkiLekarzy', 'https://www.tiktok.com/@zarobkilekarzy.pl'],
   /** zasady redakcyjne: każda liczba ze źródłem, sprostowania */
   publishingPrinciples: '/o-projekcie/#zasady',
   /** licencja treści i zestawień (jak na dotychczasowej stronie) */

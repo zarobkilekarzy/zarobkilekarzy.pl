@@ -20,6 +20,8 @@
  * Szósty, „cytat” (pole `quote`): wypowiedź dosłownie, pod nią podpis funkcją i krótkie fakty (zob. quoteLayout).
  * Siódmy, „kropki” (pole `dots`): dwie plansze po 100 pól z siatki strony (lib/siatka) — część całości
  * po lewej, a po prawej, co dzieje się z tą częścią (zob. dotsLayout).
+ * Ósmy, „oś czasu” (pole `timeline`): kolejne sprzeciwy jednego podmiotu jako znaczniki z krzyżykiem
+ * na osi, pod osią dwie liczby ze zdaniem (zob. timelineLayout).
  * Rama (nagłówek i stopka) wspólna dla wszystkich stylów.
  */
 import sharp from 'sharp';
@@ -205,6 +207,35 @@ export interface Dots {
   panels: [DotPanel, DotPanel];
 }
 
+/** Zdarzenie na osi czasu: rok, co się stało, kto (wersaliki, mono). */
+export interface TimelineEvent {
+  year: string;
+  text: string;
+  who: string;
+}
+
+/** Duża liczba pod osią czasu ze zdaniem obok (poziom) albo pod nią (pion). */
+export interface TimelineFigure {
+  value: string;
+  /** jednostka za liczbą, mniejszym stopniem (np. „mies.”) */
+  unit?: string;
+  text: string;
+  /** liczba w kobalcie (to, o czym teza) */
+  highlight?: boolean;
+}
+
+/**
+ * Styl „oś czasu”: zdarzenia jedno po drugim — w poziomie kolumny wzdłuż osi, w pionie wiersze
+ * wzdłuż osi pionowej. Znacznik każdego zdarzenia to krzyżyk w kółku w kolorze alarmu (sprzeciw).
+ */
+export interface Timeline {
+  events: TimelineEvent[];
+  /** zdanie pod osią, np. uzasadnienie podmiotu (szare) */
+  note?: string;
+  /** dwie liczby pod osią */
+  figures: TimelineFigure[];
+}
+
 export interface Infographic {
   /** slug pliku */
   id: string;
@@ -218,6 +249,8 @@ export interface Infographic {
   split?: Split;
   /** zamiast wierszy: tabela rok po roku */
   table?: DataTable;
+  /** zamiast wierszy: oś czasu */
+  timeline?: Timeline;
   /** zamiast wierszy: warstwa mapy z lib/mapa/sets */
   map?: { set: MapSetId; layer: string };
   /** zamiast wierszy: dwie plansze po 100 pól */
@@ -228,7 +261,7 @@ export interface Infographic {
   measure: string;
   /** jednostka za każdą liczbą, mniejszym stopniem (np. „%”) */
   unit?: string;
-  /** wiersze porównania (styl podstawowy); grafika z `chart`, `split`, `table`, `map` albo `dots` ich nie ma */
+  /** wiersze porównania (styl podstawowy); grafika z `chart`, `split`, `table`, `map`, `dots` albo `timeline` ich nie ma */
   rows?: ComparisonRow[];
   /** jedna linia stopki: źródła + najważniejsze zastrzeżenie */
   sources: string;
@@ -803,6 +836,80 @@ function dotsLayout(set: InfographicSet, i: Infographic, d: Dots, f: FormatKey, 
       figure(b, textW)));
 }
 
+/* ---------- Styl „oś czasu”: krzyżyki na osi, pod nią dwie liczby ---------- */
+
+/**
+ * Geometria. Poziom: zdarzenia w równych kolumnach (rok nad znacznikiem, zdanie i podmiot pod nim,
+ * wyśrodkowane), liczby w dwóch kolumnach ze zdaniem obok. Pion: wiersz = rok | znacznik | zdanie
+ * i podmiot, liczby ze zdaniem pod spodem.
+ */
+const LG = {
+  pion: { node: 30, year: 44, yearW: 120, rowH: 86, text: 24, who: 14, note: 19, num: 96, unit: 40, figText: 20 },
+  poziom: { node: 26, year: 34, yearW: 0, rowH: 0, text: 15, who: 11, note: 14, num: 64, unit: 26, figText: 15 },
+};
+
+/** Krzyżyk w kółku na tle grafiki (przerywa oś); SVG jako <img>, bo Satori nie rysuje ścieżek inline. */
+function crossMark(size: number, color: string, bg: string): Node {
+  const c = size / 2, r = c - 1.5, a = size * 0.3;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${c}" cy="${c}" r="${r}" fill="${bg}" stroke="${color}" stroke-width="2"/><path d="M${a} ${a}L${size - a} ${size - a}M${size - a} ${a}L${a} ${size - a}" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+  return h('img', { src: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`, width: size, height: size });
+}
+
+function timelineLayout(set: InfographicSet, i: Infographic, t: Timeline, f: FormatKey, theme: ThemeKey): Node {
+  const C = THEMES[theme].colors;
+  const lg = LG[f];
+  const pion = f === 'pion';
+  const inner = FORMATS[f].width - 2 * G[f].padX;
+  const n = t.events.length;
+  const yearStyle = { fontFamily: DISPLAY, fontWeight: 300, fontSize: lg.year, lineHeight: 1, letterSpacing: '-0.04em', color: C.ink };
+  const whoStyle = { fontFamily: MONO, fontSize: lg.who, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.muted };
+  const figure = (x: TimelineFigure, style: Record<string, string | number> = {}) =>
+    h('div', { style: { alignItems: 'baseline', fontFamily: DISPLAY, fontWeight: 300, fontSize: lg.num, lineHeight: 1, letterSpacing: '-0.05em', color: x.highlight ? C.blue : C.ink, ...style } },
+      x.value,
+      x.unit && h('span', { style: { marginLeft: pion ? 10 : 8, fontSize: lg.unit, letterSpacing: '-0.02em' } }, x.unit));
+  const note = (style: Record<string, string | number>) =>
+    t.note && h('span', { style: { fontFamily: BODY, fontSize: lg.note, color: C.muted, ...style } }, typo(t.note));
+  // odcinki osi między znacznikami (pod znacznik Satori by ich nie schował: rysuje pozycjonowane na wierzchu)
+  const segment = (style: Record<string, number>) => h('div', { style: { position: 'absolute', background: C.ink, ...style } });
+
+  if (!pion) {
+    const colW = Math.floor(inner / n);
+    const axisY = lg.year + 14 + lg.node / 2;
+    const axis = h('div', { style: { position: 'relative', width: inner } },
+      ...t.events.slice(1).map((_, k) => segment({ left: colW / 2 + lg.node / 2 + k * colW, top: axisY, width: colW - lg.node, height: 1 })),
+      ...t.events.map((e) => h('div', { style: { width: colW, flexDirection: 'column', alignItems: 'center', paddingLeft: 8, paddingRight: 8 } },
+        h('span', { style: yearStyle }, e.year),
+        h('div', { style: { marginTop: 14 } }, crossMark(lg.node, C.bad, C.bg)),
+        h('span', { style: { marginTop: 14, fontFamily: BODY, fontSize: lg.text, lineHeight: 1.3, color: C.ink, textAlign: 'center' } }, typo(e.text)),
+        h('span', { style: { marginTop: 8, ...whoStyle, textAlign: 'center' } }, typo(e.who)))));
+    const figures = h('div', { style: { borderTop: `1px solid ${C.line}`, paddingTop: 18 } },
+      ...t.figures.map((x, k) => h('div', { style: { width: inner / t.figures.length, alignItems: 'center', paddingRight: k === 0 ? 32 : 0, paddingLeft: k > 0 ? 32 : 0, borderLeft: k > 0 ? `1px solid ${C.line}` : 'none' } },
+        figure(x, { flexShrink: 0 }),
+        h('span', { style: { marginLeft: 20, fontFamily: BODY, fontSize: lg.figText, lineHeight: 1.3, color: C.ink } }, typo(x.text)))));
+    return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column' } },
+      axis,
+      note({ marginTop: 14, marginBottom: 16, textAlign: 'center', justifyContent: 'center' }),
+      figures));
+  }
+
+  const axis = h('div', { style: { position: 'relative', flexDirection: 'column', width: inner } },
+    ...t.events.slice(1).map((_, k) => segment({ left: lg.yearW + lg.node / 2, top: lg.rowH / 2 + lg.node / 2 + k * lg.rowH, width: 1, height: lg.rowH - lg.node })),
+    ...t.events.map((e) => h('div', { style: { height: lg.rowH, alignItems: 'center' } },
+      h('span', { style: { width: lg.yearW, ...yearStyle } }, e.year),
+      crossMark(lg.node, C.bad, C.bg),
+      h('div', { style: { flexDirection: 'column', marginLeft: 28, width: inner - lg.yearW - lg.node - 28 } },
+        h('span', { style: { fontFamily: BODY, fontSize: lg.text, lineHeight: 1.25, color: C.ink } }, typo(e.text)),
+        h('span', { style: { marginTop: 6, ...whoStyle } }, typo(e.who))))));
+  const figures = h('div', { style: { borderTop: `1px solid ${C.line}` } },
+    ...t.figures.map((x, k) => h('div', { style: { width: inner / t.figures.length, flexDirection: 'column', paddingTop: 24, paddingRight: k === 0 ? 28 : 0, paddingLeft: k > 0 ? 28 : 0, borderLeft: k > 0 ? `1px solid ${C.line}` : 'none' } },
+      figure(x),
+      h('span', { style: { marginTop: 12, fontFamily: BODY, fontSize: lg.figText, lineHeight: 1.3, color: C.ink } }, typo(x.text)))));
+  return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column' } },
+    axis,
+    note({ marginTop: 18, marginBottom: 28 }),
+    figures));
+}
+
 /** PNG z paletą 8-bit, jak obrazki OG. */
 export async function renderInfographic(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey = 'jasny'): Promise<Buffer> {
   const { width, height } = FORMATS[f];
@@ -818,7 +925,9 @@ export async function renderInfographic(set: InfographicSet, i: Infographic, f: 
           ? tableLayout(set, i, i.table, f, theme)
           : i.dots
             ? dotsLayout(set, i, i.dots, f, theme)
-            : layout(set, i, i.rows ?? [], f, theme);
+            : i.timeline
+              ? timelineLayout(set, i, i.timeline, f, theme)
+              : layout(set, i, i.rows ?? [], f, theme);
   const svg = await satori(tree as unknown as Parameters<typeof satori>[0], { width, height, fonts: await loadFonts() });
   return sharp(Buffer.from(svg)).png({ palette: true, quality: 90, compressionLevel: 9 }).toBuffer();
 }

@@ -28,6 +28,53 @@ export const LINKS = {
   cmkp2026: 'https://www.cmkp.edu.pl/aktualnosci/opublikowano-ostateczne-wyniki-rekrutacji-na-specjalizacje-w-sesji-wiosna-2026',
 } as const;
 
+/**
+ * Sprzeciwy samorządu lekarskiego wobec zwiększania liczby osób, które mogą leczyć (oś czasu infografiki
+ * „Dekada jednego «nie»” w lib/infografiki/zestawy.ts). Podmiot = organ, bez nazwisk. Źródło każdego
+ * wpisu w `href`; wpisy 2016, 2022, 2023 i 2026 nie mają przypisu w artykule.
+ */
+export const SELF_GOVERNMENT_STANCES = [
+  {
+    year: 2016,
+    who: 'Prezydium NRL',
+    text: 'Wniosek o mniejszy limit na stomatologii',
+    href: 'https://www.medexpress.pl/zawody-medyczne/ministerstwo-zdrowia-zwiekszy-limity-przyjec-na-kierunki-lekarskie-nil-pyta-po-co-ksztalcic-wiecej-dentystow-63807/',
+  },
+  {
+    year: 2022,
+    who: 'Prezes NRL',
+    text: 'Propozycja oceny absolwentów uczelni bez opinii PKA',
+    href: 'https://nil.org.pl/aktualnosci/6467-pismo-prezesa-nrl-ws-jakosci-ksztalcenia-na-nowych-kierunkach-lekarskich',
+  },
+  {
+    year: 2023,
+    who: 'Prezydium NRL',
+    text: 'Krytyka 215 nowych miejsc na 4 uczelniach',
+    href: 'https://pulsmedycyny.pl/kadry/lekarze/nrl-krytycznie-o-kolejnym-zwiekszeniu-limitu-przyjec-na-studia-lekarskie/',
+  },
+  {
+    year: 2025,
+    who: 'NRL',
+    text: 'Za uchyleniem trybów uproszczonych dla lekarzy spoza UE',
+    href: 'https://www.prawo.pl/zdrowie/zniesienie-uproszczonego-trybu-dostepu-do-zawodu-lekarza-postulaty-nrl,531910.html',
+  },
+  {
+    year: 2025,
+    who: 'Prezydium NRL',
+    text: 'Przeciw limitowi 6 649 miejsc na studiach',
+    href: 'https://nil.org.pl/aktualnosci/8964-pnrl-o-limitach-przyjec-na-studia-na-kierunkach-lekarskim-i-lekarsko-dentystycznym',
+  },
+  {
+    year: 2026,
+    who: 'NRL',
+    text: 'Przeciw samodzielnemu zlecaniu TK i RM przez pielęgniarki',
+    href: 'https://nil.org.pl/aktualnosci/9289-naczelna-rada-lekarska-o-zakresie-i-granicach-uprawnien-zawodowych-w-ochronie-zdrowia',
+  },
+] as const;
+
+/** Rok, od którego według ekspertyzy izby liczba lekarzy przekroczy popyt (stanowisko PNRL 54/25/P-IX). */
+export const SURPLUS_YEAR = 2032;
+
 /** Wyliczenie z listy LINKS.ranking2025 (bez osobnych list „miejsca doktoranckie”), obliczenia własne. */
 export const SPRING_2025 = {
   /** pary województwo × dziedzina z co najmniej jedną osobą zakwalifikowaną na rezydenturę, z dziedzinami stomatologicznymi */

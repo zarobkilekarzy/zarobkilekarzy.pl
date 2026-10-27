@@ -17,6 +17,7 @@ import { FIRST_YEAR as STUDENTS_FIRST_YEAR, LINKS as ODSIEW_LINKS, PES_2025, PES
 import { DEFAULTS, LIMIT_TODAY, PRESETS, REGISTER_TOTAL, YEAR0, YEAR_MIN, seats, simulate } from '@/lib/podaz/model';
 import { AOS_FIRST, AOS_LAST, LINKS as WIZYTA_LINKS, NIL_N, NO_CLINICAL, WHC_2022, WHC_2024, WORK_MODEL, combined, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
 import { BEAN, NORI } from '@/data/ai-w-medycynie-2026';
+import { SELF_GOVERNMENT_STANCES, SURPLUS_YEAR } from '@/data/reglamentacja-dostepu';
 import { formatPL } from '@/lib/format';
 import { monitoring } from '@/lib/monitoring';
 import { monitoringMap, opennessP } from '@/lib/monitoring/map';
@@ -618,6 +619,38 @@ const nil: InfographicSet = {
   ],
 };
 
+/* ---------- Reglamentacja dostępu: sprzeciwy samorządu na osi czasu ---------- */
+
+// porada specjalisty: najnowsza edycja Barometru WHC wobec średniej z edycji 2015 r. (2,4; 2,3; 2,4)
+const specialist2015 = WHC_EDITIONS.filter((e) => e.year === 2015 && e.specialist !== null);
+const specialistFrom = specialist2015.reduce((sum, e) => sum + e.specialist!, 0) / specialist2015.length;
+const specialistNow = WHC_LATEST.specialist!;
+const stanceYears = `${SELF_GOVERNMENT_STANCES[0].year}–${SELF_GOVERNMENT_STANCES.at(-1)!.year}`;
+
+const reglamentacja: InfographicSet = {
+  route: '/mechanizmy/reglamentacja-dostepu/',
+  page: 'Mechanizm: Reglamentacja dostępu do zawodu',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'dekada-jednego-nie',
+      title: 'Dekada jednego',
+      titleAccent: '„nie”',
+      measure: `samorząd lekarski wobec zwiększania liczby lekarzy · ${stanceYears}`,
+      timeline: {
+        events: SELF_GOVERNMENT_STANCES.map((e) => ({ year: String(e.year), text: e.text, who: e.who })),
+        note: 'Uzasadnienie samorządu: jakość kształcenia i bezpieczeństwo pacjentów.',
+        figures: [
+          { value: formatPL(specialistNow, 1), unit: 'mies.', text: `średnio czeka się na poradę specjalisty (${WHC_LATEST.year}); w 2015 r. — ${formatPL(specialistFrom, 1)} mies.`, highlight: true },
+          { value: String(SURPLUS_YEAR), text: 'od tego roku liczba lekarzy ma przekroczyć popyt — według ekspertyzy izby lekarskiej' },
+        ],
+      },
+      sources: `Źródła: NIL — stanowiska NRL i Prezydium NRL ${stanceYears} (nil.org.pl, MedExpress, Puls Medycyny, Prawo.pl) · Barometr WHC ${WHC_LATEST.label}`,
+      alt: `Infografika „Dekada jednego «nie»”: oś czasu sprzeciwów samorządu lekarskiego wobec zwiększania liczby lekarzy, ${stanceYears}. ${SELF_GOVERNMENT_STANCES.map((e) => `${e.year} (${e.who}): ${e.text.charAt(0).toLowerCase()}${e.text.slice(1)}`).join('; ')}. Samorząd uzasadnia stanowiska jakością kształcenia i bezpieczeństwem pacjentów. Na poradę specjalisty czeka się średnio ${formatPL(specialistNow, 1)} mies. (Barometr WHC ${WHC_LATEST.label}), w 2015 r. ${formatPL(specialistFrom, 1)} mies. Według ekspertyzy izby lekarskiej od ${SURPLUS_YEAR} r. liczba lekarzy ma przekroczyć popyt.`,
+    },
+  ],
+};
+
 export const infographicSets: Record<string, InfographicSet> = {
   'nil-a-kontrakty-lekarskie': nil,
   egzamin,
@@ -631,4 +664,5 @@ export const infographicSets: Record<string, InfographicSet> = {
   'monitoring-watchdog': monitoringMaps,
   'wizyty-prywatne-kolejka-cena': wizytyPrywatne,
   'ai-w-medycynie-2026': ai,
+  'reglamentacja-dostepu': reglamentacja,
 };

@@ -1,17 +1,20 @@
 /**
- * Kontrola tłumaczeń po buildzie (spec wersji EN, §9): każda strona /en/ z parą PL (hreflang „pl”) jest porównywana
- * z polskim oryginałem na gotowym HTML — tym, co widzi czytelnik. Wynik to ostrzeżenia, nigdy błąd: wersja
- * angielska nie może zatrzymać polskiej publikacji.
+ * Kontrola tłumaczeń po buildzie (spec wersji EN, §9): każda strona /en/ jest porównywana z polskim oryginałem na
+ * gotowym HTML — tym, co widzi czytelnik. Parę wskazuje nota o tłumaczeniu (`data-translation-of` w
+ * article/TranslationNote, adres ze stempla tłumaczenia), więc kontrola obejmuje też strony poza indeksem;
+ * strona EN bez noty to uwaga. Wynik to ostrzeżenia, nigdy błąd: wersja angielska nie może zatrzymać polskiej
+ * publikacji.
  *
  * Porównywana jest treść: blok `.prose` artykułu i wpisu (bez list „Powiązane”, które po angielsku obejmują tylko
  * tłumaczenia), a na stronach spoza kolekcji cały <main>. Spisy działów i strona główna (HUBS) mają z założenia
  * inną zawartość, więc nie są porównywane. Fragment, który po angielsku celowo się różni (kalendarz zmian tylko po
- * polsku, demo pseudonimu z przetłumaczonym kluczem), ma atrybut `data-i18n-skip` i jest pomijany.
+ * polsku, demo pseudonimu z przetłumaczonym kluczem, przeliczenia obcych walut na złote), ma atrybut
+ * `data-i18n-skip` i jest pomijany.
  *
  * Reguły:
  * - liczby: każda wartość z polskiego tekstu występuje w angielskim. Zapis jest normalizowany („1 358” = „1,358”,
- *   „4,2” = „4.2”), skale rozwijane („132,7 tys.” = „132,700”, „1,6 mln” = „1.6 million”, „217 mld” = „PLN 217
- *   billion”), a ułamki i liczby od 10 000 — z dokładnością, z jaką liczba jest zapisana po angielsku („217.4 billion”
+ *   „4,2” = „4.2”), skale rozwijane, także pisane słowem („132,7 tys.” = „132,700”, „10 tysięcy” = „10,000”, „1,6 mln”
+ *   = „1.6 million”, „217 mld” = „PLN 217 billion”), a ułamki i liczby od 10 000 — z dokładnością, z jaką liczba jest zapisana po angielsku („217.4 billion”
  *   pokrywa „217 388 948 000 zł”, „274,287” nie pokrywa „274 278”). Z daty „22.10.2026”
  *   liczy się tylko rok (po angielsku data bywa zapisana słownie albo opisowo). Pomijamy liczby całkowite poniżej 10 (po
  *   angielsku małe liczby pisze się słowami), dekady („lat 80.”), numery z kropką („2603.08448”), identyfikatory
@@ -27,7 +30,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ELEMENT_NODE, TEXT_NODE, parse, type Node } from 'ultrahtml';
 
-export type QaRule = 'numbers' | 'footnotes' | 'links' | 'structure' | 'polish' | 'terms';
+export type QaRule = 'pair' | 'numbers' | 'footnotes' | 'links' | 'structure' | 'polish' | 'terms';
 
 export interface QaIssue {
   rule: QaRule;
@@ -36,6 +39,7 @@ export interface QaIssue {
 
 export interface QaPage {
   en: string;
+  /** adres polskiego oryginału; pusty, gdy strona EN nie ma noty o tłumaczeniu */
   pl: string;
   issues: QaIssue[];
 }
@@ -47,13 +51,12 @@ const TERMS: [RegExp, string][] = [[/\bNHF\b/, 'NFZ (National Health Fund)']];
 const HUBS = new Set(['/en/', '/en/analysis/', '/en/data/', '/en/mechanisms/', '/en/news/', '/en/search/']);
 
 /**
- * Znane, świadome różnice: strona → reguły, których na niej nie sprawdzamy. Polski oryginał przelicza kwoty
- * w obcej walucie na złote („ok. 22,6 tys. zł”, kurs NBP w przypisie), a angielski zostawia walutę źródła
- * — tych złotych po angielsku z założenia nie ma.
+ * Liczby z polskiego oryginału, których po angielsku świadomie nie ma, a których nie da się oznaczyć
+ * `data-i18n-skip` (tekst w propsie komponentu, bez znaczników): strona → wartości. Pierwszy wybór to zawsze atrybut.
  */
-const KNOWN: Record<string, QaRule[]> = {
-  '/en/analysis/doctor-salaries-poland-vs-neighbours/': ['numbers'],
-  '/en/analysis/taiwan-healthcare-transparency/': ['numbers'],
+const KNOWN_MISSING: Record<string, number[]> = {
+  // przeliczenie na złote w opisie kafelka StatRow („(ok. 21,7 tys. zł)”) — wersja angielska podaje tylko TWD
+  '/en/analysis/taiwan-healthcare-transparency/': [21_700],
 };
 
 /** Słowa z polskimi literami, które w angielskim tekście są w porządku. */
@@ -114,26 +117,29 @@ function extract(html: string) {
 }
 
 const SPACE = '[ \\u00a0\\u202f]';
-const SCALE_PL: Record<string, number> = { tys: 1e3, mln: 1e6, mld: 1e9 };
+/** Skala po polsku: skrót albo słowo w dowolnej formie („tysięcy”, „miliony”, „miliardów”). */
+const SCALE_WORD_PL = 'tys\\.?|tysi[ąę]c\\p{L}*|mln|milion\\p{L}*|mld|miliard\\p{L}*';
+const scalePl = (word: string) => (/^(?:mld|miliard)/.test(word) ? 1e9 : /^(?:mln|milion)/.test(word) ? 1e6 : 1e3);
 const SCALE_EN: Record<string, number> = { thousand: 1e3, k: 1e3, million: 1e6, m: 1e6, mn: 1e6, billion: 1e9, bn: 1e9 };
 
 /** Polskie liczby z tekstu: wartość (skala rozwinięta) i sama liczba („75,1 mld” → 75,1 mld i 75,1 — na wykresie z jednostką w nagłówku). */
 function numbersPl(text: string): { value: number; raw: number }[] {
   const t = text
-    .replace(/\b\d{1,2}\.\d{1,2}\.(\d{4})\b/g, '$1')
-    .replace(/\b\d{1,2}\.(\d{4})\b/g, '$1')
+    // daty: tylko samodzielne („10.6145/jme…” w DOI to nie miesiąc i rok)
+    .replace(/(?<![\d.])\d{1,2}\.\d{1,2}\.(\d{4})(?![\d./])/g, '$1')
+    .replace(/(?<![\d.])\d{1,2}\.(\d{4})(?![\d./])/g, '$1')
     .replace(/\d+(?:\.\d+)+/g, ' ')
     // dekady („lat 80. i 90.”) — po angielsku „the 1980s”
     .replace(/\blat(?:ach)?\s[1-9]0\.(?:\s(?:i|a|do)\s[1-9]0\.)?/g, ' ')
     // skala w osobnym elemencie („193 | tys. zł” na kartach) i zakres z jedną skalą („3,3 do 8,3 tys.”, „10–15 tys.”)
-    .replace(/(\d) \| (tys|mln|mld)\b/g, '$1 $2')
-    .replace(new RegExp(`(\\d+(?:,\\d+)?)(${SPACE}?(?:–|-|do|a)${SPACE}?\\d+(?:,\\d+)?\\+?${SPACE}?(tys|mln|mld)\\b)`, 'g'), '$1 $3 | $2');
-  const re = new RegExp(`(?<![\\p{L}\\d-])(\\d{1,3}(?:${SPACE}\\d{3})+(?:,\\d+)?|\\d+(?:,\\d+)?)(?![\\p{L}\\d…])(?:${SPACE}?(tys|mln|mld)\\b\\.?|${SPACE}?([kKM]B)\\b)?`, 'gu');
+    .replace(new RegExp(`(\\d) \\| (${SCALE_WORD_PL})(?!\\p{L})`, 'gu'), '$1 $2')
+    .replace(new RegExp(`(\\d+(?:,\\d+)?)(${SPACE}?(?:–|-|do|a)${SPACE}?\\d+(?:,\\d+)?\\+?${SPACE}?(${SCALE_WORD_PL})(?!\\p{L}))`, 'gu'), '$1 $3 | $2');
+  const re = new RegExp(`(?<![\\p{L}\\d-])(\\d{1,3}(?:${SPACE}\\d{3})+(?:,\\d+)?|\\d+(?:,\\d+)?)(?![\\p{L}\\d…])(?:${SPACE}?(${SCALE_WORD_PL})(?!\\p{L})|${SPACE}?([kKM]B)\\b)?`, 'gu');
   const out: { value: number; raw: number }[] = [];
   for (const m of t.matchAll(re)) {
     if (m[3]) continue; // rozmiar pliku
     const n = Number(m[1].replace(new RegExp(SPACE, 'g'), '').replace(',', '.'));
-    out.push({ value: m[2] ? n * SCALE_PL[m[2]] : n, raw: n });
+    out.push({ value: m[2] ? n * scalePl(m[2]) : n, raw: n });
   }
   return out;
 }
@@ -177,10 +183,10 @@ function present(v: number, en: Set<number>, all: EnNumber[]): boolean {
 
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : String(Number(n.toPrecision(6))));
 
-function compare(pl: ReturnType<typeof extract>, en: ReturnType<typeof extract>): QaIssue[] {
+function compare(pl: ReturnType<typeof extract>, en: ReturnType<typeof extract>, knownMissing: number[] = []): QaIssue[] {
   const issues: QaIssue[] = [];
   const enValues = numbersEn(en.text);
-  const enSet = new Set(enValues.map((e) => e.value));
+  const enSet = new Set([...enValues.map((e) => e.value), ...knownMissing]);
   const missing = [...new Set(numbersPl(pl.text).filter(({ value, raw }) => significant(value) && !present(value, enSet, enValues) && !(raw !== value && present(raw, enSet, enValues))).map((n) => n.value))];
   if (missing.length) issues.push({ rule: 'numbers', detail: missing.map(fmt).join(', ') });
 
@@ -212,23 +218,26 @@ async function* htmlFiles(dir: string): AsyncGenerator<string> {
   }
 }
 
-/** Wszystkie pary PL↔EN w katalogu builda (`outDir` — ścieżka katalogu). */
+/** Wszystkie strony /en/ w katalogu builda (`outDir` — ścieżka katalogu) z parami PL. */
 export async function checkTranslations(outDir: string): Promise<QaPage[]> {
   const pages: QaPage[] = [];
   for await (const file of htmlFiles(path.join(outDir, 'en'))) {
     const enPath = `/${path.relative(outDir, path.dirname(file))}/`;
     if (HUBS.has(enPath)) continue;
     const html = await readFile(file, 'utf8');
-    const plHref = html.match(/<link rel="alternate" hreflang="pl" href="([^"]+)"/)?.[1];
-    if (!plHref) continue;
-    const plPath = new URL(plHref).pathname;
+    // adres oryginału z noty o tłumaczeniu; atrybuty w dowolnej kolejności
+    const plPath = html.match(/<aside\b[^>]*\sdata-translation-of="([^"]+)"/)?.[1];
+    if (!plPath) {
+      pages.push({ en: enPath, pl: '', issues: [{ rule: 'pair', detail: 'brak noty o tłumaczeniu (data-translation-of) — strona nie jest porównywana' }] });
+      continue;
+    }
     const plHtml = await readFile(path.join(outDir, plPath, 'index.html'), 'utf8').catch(() => undefined);
     pages.push({
       en: enPath,
       pl: plPath,
       issues: plHtml
-        ? compare(extract(plHtml), extract(html)).filter((i) => !KNOWN[enPath]?.includes(i.rule))
-        : [{ rule: 'structure', detail: 'brak polskiej strony z hreflang' }],
+        ? compare(extract(plHtml), extract(html), KNOWN_MISSING[enPath])
+        : [{ rule: 'pair', detail: `brak polskiej strony ${plPath} w buildzie` }],
     });
   }
   return pages.sort((a, b) => a.en.localeCompare(b.en));

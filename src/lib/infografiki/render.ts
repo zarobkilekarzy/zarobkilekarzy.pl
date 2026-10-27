@@ -18,6 +18,8 @@
  * same liczby, bez pasków (zob. tableLayout). Piąty, „mapa” (pole `map`):
  * warstwa z zestawu map (lib/mapa) — ten sam renderer co mapa na stronie, obok legenda (zob. mapLayout).
  * Szósty, „cytat” (pole `quote`): wypowiedź dosłownie, pod nią podpis funkcją i krótkie fakty (zob. quoteLayout).
+ * Siódmy, „kropki” (pole `dots`): dwie plansze po 100 pól z siatki strony (lib/siatka) — część całości
+ * po lewej, a po prawej, co dzieje się z tą częścią (zob. dotsLayout).
  * Rama (nagłówek i stopka) wspólna dla wszystkich stylów.
  */
 import sharp from 'sharp';
@@ -29,6 +31,7 @@ import { geo } from '@/lib/mapa/geo';
 import { radius, R_MISSING, toneOfClass } from '@/lib/mapa/layout';
 import { mapSets, type MapSetId } from '@/lib/mapa/sets';
 import { regionTones, renderMapSvg, staticColors } from '@/lib/mapa/svg';
+import { GEOMETRY } from '@/lib/siatka';
 import { BODY, DISPLAY, MONO, followX, h, loadFonts, logo, type Node } from '@/lib/og/render';
 
 export type FormatKey = 'pion' | 'poziom';
@@ -177,6 +180,31 @@ export interface Quote {
   facts: { label: string; text: string }[];
 }
 
+/**
+ * Plansza 10×10 = 100 pól siatki strony: kropka (zapalone), mniejsza kropka (pośrednie, np. „mniej
+ * niż 1”) albo plus (wygaszone). Kobalt niesie tezę; obrysów wokół pól nie ma — część odróżnia kolor.
+ */
+export interface DotPanel {
+  /** duża liczba nad planszą, w kobalcie */
+  display: string;
+  label: string;
+  /** dopisek pod opisem (wersaliki, mono) */
+  sub?: string;
+  /** ile pól w kobalcie */
+  blue: number;
+  /** kształt pól w kobalcie */
+  blueCell: 'on' | 'mid';
+  /** reszta pól: łupkowe kropki (część całości) albo wygaszone plusy */
+  rest: 'on' | 'off';
+  /** pola w kobalcie od końca planszy (dolny wiersz) albo od początku */
+  from: 'start' | 'end';
+}
+
+/** Styl „kropki”: dwie plansze obok siebie, liczby i opisy nad nimi (pion) albo po bokach (poziom). */
+export interface Dots {
+  panels: [DotPanel, DotPanel];
+}
+
 export interface Infographic {
   /** slug pliku */
   id: string;
@@ -192,13 +220,15 @@ export interface Infographic {
   table?: DataTable;
   /** zamiast wierszy: warstwa mapy z lib/mapa/sets */
   map?: { set: MapSetId; layer: string };
+  /** zamiast wierszy: dwie plansze po 100 pól */
+  dots?: Dots;
   /** zamiast wierszy: cytat */
   quote?: Quote;
   /** miara i okres, np. „na 100 tys. lekarzy rocznie · 2020–2025”; przy cytacie — etykieta obok logo */
   measure: string;
   /** jednostka za każdą liczbą, mniejszym stopniem (np. „%”) */
   unit?: string;
-  /** wiersze porównania (styl podstawowy); grafika z `chart`, `split` albo `table` ich nie ma */
+  /** wiersze porównania (styl podstawowy); grafika z `chart`, `split`, `table`, `map` albo `dots` ich nie ma */
   rows?: ComparisonRow[];
   /** jedna linia stopki: źródła + najważniejsze zastrzeżenie */
   sources: string;
@@ -716,6 +746,63 @@ function quoteLayout(set: InfographicSet, i: Infographic, q: Quote, f: FormatKey
   return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', flexGrow: 1, width: inner } }, quote, facts));
 }
 
+/* ---------- Styl „kropki”: dwie plansze po 100 pól ---------- */
+
+/** Geometria: `cell` = bok pola planszy; poziom — opisy po bokach, `gap` między planszami. */
+const DG = {
+  pion: { cell: 38, num: 120, label: 24, sub: 14, gap: 40 },
+  poziom: { cell: 27, num: 64, label: 16, sub: 10, gap: 120 },
+};
+const DOTS_N = 10;
+
+function dotsLayout(set: InfographicSet, i: Infographic, d: Dots, f: FormatKey, theme: ThemeKey): Node {
+  const C = THEMES[theme].colors;
+  const dg = DG[f];
+  const pion = f === 'pion';
+  const inner = FORMATS[f].width - 2 * G[f].padX;
+  const side = DOTS_N * dg.cell;
+  const total = DOTS_N * DOTS_N;
+
+  // plansza jako SVG w <img> (Satori nie rysuje ścieżek inline); kształty z geometrii siatki strony
+  const board = (p: DotPanel) => {
+    const c = dg.cell;
+    const arm = GEOMETRY.arm * c;
+    const cells = Array.from({ length: total }, (_, k) => {
+      const cx = (k % DOTS_N) * c + c / 2;
+      const cy = Math.floor(k / DOTS_N) * c + c / 2;
+      const blue = p.from === 'end' ? k >= total - p.blue : k < p.blue;
+      if (blue) return `<circle cx="${cx}" cy="${cy}" r="${GEOMETRY[p.blueCell] * c}" fill="${C.blue}"/>`;
+      return p.rest === 'on'
+        ? `<circle cx="${cx}" cy="${cy}" r="${GEOMETRY.on * c}" fill="${C.bar}"/>`
+        : `<path d="M${cx} ${cy - arm}v${2 * arm}M${cx - arm} ${cy}h${2 * arm}" stroke="${C.bar}" stroke-width="${GEOMETRY.stroke * c}" fill="none"/>`;
+    });
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${side}" height="${side}" viewBox="0 0 ${side} ${side}">${cells.join('')}</svg>`;
+    return h('img', { src: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`, width: side, height: side });
+  };
+  const figure = (p: DotPanel, w: number) =>
+    h('div', { style: { flexDirection: 'column', width: w } },
+      h('div', { style: { alignItems: 'baseline', fontFamily: DISPLAY, fontWeight: 300, fontSize: dg.num, lineHeight: 1, letterSpacing: '-0.05em', color: C.blue } },
+        p.display,
+        i.unit && h('span', { style: { marginLeft: 8, fontSize: Math.round(dg.num * UNIT_SCALE), letterSpacing: '-0.02em' } }, i.unit)),
+      h('span', { style: { marginTop: pion ? 12 : 6, fontFamily: BODY, fontSize: dg.label, lineHeight: 1.25, color: C.ink } }, typo(p.label)),
+      p.sub && h('span', { style: { marginTop: pion ? 8 : 4, fontFamily: MONO, fontSize: dg.sub, letterSpacing: '0.06em', textTransform: 'uppercase', color: C.muted } }, typo(p.sub)));
+
+  const [a, b] = d.panels;
+  if (pion) {
+    return frame(set, i, f, theme,
+      h('div', { style: { flexDirection: 'column', width: inner } },
+        h('div', { style: { justifyContent: 'space-between', alignItems: 'flex-end' } }, figure(a, side), figure(b, side)),
+        h('div', { style: { justifyContent: 'space-between', marginTop: dg.gap } }, board(a), board(b))));
+  }
+  // poziom: opis | plansza — przerwa — plansza | opis
+  const textW = Math.floor((inner - 2 * side - dg.gap) / 2) - 20;
+  return frame(set, i, f, theme,
+    h('div', { style: { alignItems: 'center', justifyContent: 'space-between', width: inner } },
+      figure(a, textW),
+      h('div', { style: { width: 2 * side + dg.gap, justifyContent: 'space-between' } }, board(a), board(b)),
+      figure(b, textW)));
+}
+
 /** PNG z paletą 8-bit, jak obrazki OG. */
 export async function renderInfographic(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey = 'jasny'): Promise<Buffer> {
   const { width, height } = FORMATS[f];
@@ -729,7 +816,9 @@ export async function renderInfographic(set: InfographicSet, i: Infographic, f: 
         ? splitLayout(set, i, i.split, f, theme)
         : i.table
           ? tableLayout(set, i, i.table, f, theme)
-          : layout(set, i, i.rows ?? [], f, theme);
+          : i.dots
+            ? dotsLayout(set, i, i.dots, f, theme)
+            : layout(set, i, i.rows ?? [], f, theme);
   const svg = await satori(tree as unknown as Parameters<typeof satori>[0], { width, height, fonts: await loadFonts() });
   return sharp(Buffer.from(svg)).png({ palette: true, quality: 90, compressionLevel: 9 }).toBuffer();
 }

@@ -150,6 +150,23 @@ const englishDivision: InfographicSet = {
       sources: `Źródła: Dz.U. ${LATEST.act.label}, ELA (dyplomy z 2021 r.) · osobna rekrutacja, pełne czesne`,
       alt: `Infografika: studia w języku obcym (English Division) to ${formatPL(foreignShare, 1)}% miejsc w limicie przyjęć na kierunek lekarski w roku ${LATEST.year} (${formatPL(LATEST.foreign)} z ${formatPL(LATEST.total)}). Rok po dyplomie w Polsce pracuje mniej niż 1% absolwentów-cudzoziemców nauk medycznych (ELA, dyplomy z 2021 r.). To osobna rekrutacja i płatne studia. Źródła: rozporządzenie Ministra Zdrowia, Dz.U. ${LATEST.act.label}; Ekonomiczne Losy Absolwentów.`,
     },
+    {
+      // to samo co wyżej na planszach po 100 pól: 17,1% → 17 kropek w kobalcie; ELA podaje „mniej niż 1%”,
+      // więc po prawej jedno pole pośrednie (mniejsza kropka), nie pełne
+      id: 'na-eksport',
+      title: 'Kształcimy lekarzy',
+      titleAccent: 'na eksport',
+      measure: `limit przyjęć ${LATEST.year} · praca w Polsce rok po dyplomie`,
+      unit: '%',
+      dots: {
+        panels: [
+          { display: formatPL(foreignShare, 1), label: 'miejsc na kierunku lekarskim to studia po angielsku', sub: `English Division · ${LATEST.year}`, blue: Math.round(foreignShare), blueCell: 'on', rest: 'on', from: 'end' },
+          { display: '<1', label: 'z absolwentów-cudzoziemców pracuje w Polsce rok po dyplomie', sub: 'ELA · dyplomy z 2021 r.', blue: 1, blueCell: 'mid', rest: 'off', from: 'start' },
+        ],
+      },
+      sources: `Źródła: Dz.U. ${LATEST.act.label}; ELA, dyplomy z 2021 r. · osobna rekrutacja, pełne czesne`,
+      alt: `Infografika „Kształcimy lekarzy na eksport”: dwie plansze po 100 pól. Na pierwszej ${Math.round(foreignShare)} pól w kobalcie — studia w języku obcym (English Division) to ${formatPL(foreignShare, 1)}% miejsc w limicie przyjęć na kierunek lekarski w roku ${LATEST.year} (${formatPL(LATEST.foreign)} z ${formatPL(LATEST.total)}). Na drugiej jedno mniejsze pole: rok po dyplomie w Polsce pracuje mniej niż 1% absolwentów-cudzoziemców nauk medycznych (ELA, dyplomy z 2021 r.). To osobna rekrutacja i płatne studia. Źródła: rozporządzenie Ministra Zdrowia, Dz.U. ${LATEST.act.label}; Ekonomiczne Losy Absolwentów.`,
+    },
   ],
 };
 

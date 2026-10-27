@@ -570,7 +570,39 @@ const ai: InfographicSet = {
   ],
 };
 
+/* ---------- Samorząd lekarski o ustawie z 19.06.2026 (cytat) ---------- */
+
+// cytat dosłownie za relacją Gazety Prawnej, tak jak w artykule; bez nazwiska — podpis funkcją.
+// „Użyjemy wszelkich środków” to parafraza dziennikarza, nie cytat — na grafikę nie trafia.
+const nil: InfographicSet = {
+  route: '/analizy/nil-a-kontrakty-lekarskie/',
+  page: 'Analiza: Naczelna Izba Lekarska a kontrakty lekarskie',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'cytat-trybunaly',
+      title: 'Samorząd lekarski o ustawie z 19 czerwca 2026',
+      measure: 'Samorząd lekarski o ustawie z 19.06.2026',
+      quote: {
+        lines: {
+          poziom: ['Jeżeli prezydent podpisze ustawę,', 'pójdziemy do **Trybunałów Europejskich**', 'i będziemy domagać się jej uchylenia”.'],
+          pion: ['Jeżeli prezydent', 'podpisze ustawę,', 'pójdziemy do', '**Trybunałów Europejskich**', 'i będziemy domagać', 'się jej uchylenia”.'],
+        },
+        who: 'prezes Naczelnej Izby Lekarskiej',
+        where: 'w RMF FM, czerwiec 2026',
+        facts: [
+          { label: 'Co robi ustawa', text: 'Placówki przekazują ministrowi zdrowia, na jego wniosek, dane o wynagrodzeniach z PESEL i numerem PWZ. **Ustawa nie przewiduje ich publikacji.**' },
+          { label: 'Prezydent', text: '**Podpisał ustawę 17.07.2026.**\nDz.U. 2026 poz. 972' },
+        ],
+      },
+      sources: 'Źródło: Gazeta Prawna, 27.06.2026 (relacja z RMF FM) · Dz.U. 2026 poz. 972',
+      alt: 'Infografika z cytatem. Prezes Naczelnej Izby Lekarskiej w RMF FM w czerwcu 2026 r.: „Jeżeli prezydent podpisze ustawę, pójdziemy do Trybunałów Europejskich i będziemy domagać się jej uchylenia”. Co robi ustawa z 19 czerwca 2026 r.: placówki przekazują ministrowi zdrowia, na jego wniosek, dane o wynagrodzeniach z PESEL i numerem PWZ; ustawa nie przewiduje ich publikacji. Prezydent podpisał ustawę 17 lipca 2026 r. (Dz.U. 2026 poz. 972). Źródło: Gazeta Prawna, 27.06.2026.',
+    },
+  ],
+};
+
 export const infographicSets: Record<string, InfographicSet> = {
+  'nil-a-kontrakty-lekarskie': nil,
   egzamin,
   'odpowiedzialnosc-zawodowa-lekarzy': odpowiedzialnosc,
   'english-division': englishDivision,

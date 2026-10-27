@@ -17,6 +17,7 @@
  * (zob. splitLayout). Czwarty, „tabela” (pole `table`): liczby rok po roku dla kilku podmiotów,
  * same liczby, bez pasków (zob. tableLayout). Piąty, „mapa” (pole `map`):
  * warstwa z zestawu map (lib/mapa) — ten sam renderer co mapa na stronie, obok legenda (zob. mapLayout).
+ * Szósty, „cytat” (pole `quote`): wypowiedź dosłownie, pod nią podpis funkcją i krótkie fakty (zob. quoteLayout).
  * Rama (nagłówek i stopka) wspólna dla wszystkich stylów.
  */
 import sharp from 'sharp';
@@ -162,9 +163,24 @@ export interface DataTable {
   summary: { label: string; sub?: string; values: string[] }[];
 }
 
+export interface Quote {
+  /**
+   * Wiersze cytatu osobno dla formatów — łamane ręcznie, żeby nazwa nie rozpadła się na dwa wiersze
+   * i ostatnie słowo nie zostało samo. Fragment w `**…**` w kobalcie. Cudzysłów otwierający dokleja szablon.
+   */
+  lines: Record<FormatKey, string[]>;
+  /** kto mówi — funkcja, nie nazwisko (pogrubione) */
+  who: string;
+  /** gdzie i kiedy, np. „w RMF FM, czerwiec 2026” */
+  where: string;
+  /** fakty pod cytatem: etykieta (mono) i tekst; `**…**` pogrubione, `\n` = nowy wiersz */
+  facts: { label: string; text: string }[];
+}
+
 export interface Infographic {
   /** slug pliku */
   id: string;
+  /** tytuł na /media/ i w udostępnianiu; grafika z `quote` go nie rysuje */
   title: string;
   /** dalszy ciąg tytułu w kolorze alarmu (wykres): „Kolejka nie maleje.” */
   titleAccent?: string;
@@ -176,7 +192,9 @@ export interface Infographic {
   table?: DataTable;
   /** zamiast wierszy: warstwa mapy z lib/mapa/sets */
   map?: { set: MapSetId; layer: string };
-  /** miara i okres, np. „na 100 tys. lekarzy rocznie · 2020–2025” */
+  /** zamiast wierszy: cytat */
+  quote?: Quote;
+  /** miara i okres, np. „na 100 tys. lekarzy rocznie · 2020–2025”; przy cytacie — etykieta obok logo */
   measure: string;
   /** jednostka za każdą liczbą, mniejszym stopniem (np. „%”) */
   unit?: string;
@@ -297,7 +315,12 @@ function frame(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKe
   const titleStyle = { marginTop: pion ? 52 : 22, fontFamily: DISPLAY, fontWeight: 400, fontSize: g.title, lineHeight: 1.04, letterSpacing: '-0.04em', color: C.ink };
 
   return h('div', { style: { width, height, padding: `${g.padY}px ${g.padX}px`, background: C.bg, flexDirection: 'column', justifyContent: 'space-between', fontFamily: BODY } },
-    h('div', { style: { flexDirection: 'column' } },
+    // cytat nie ma tytułu: bohaterem jest wypowiedź, nad nią tylko logo i etykieta w jednym wierszu
+    i.quote
+      ? h('div', { style: { alignItems: 'center', justifyContent: 'space-between', paddingBottom: pion ? 28 : 18, borderBottom: `1px solid ${C.line}` } },
+          logo(C),
+          h('span', { style: { fontFamily: MONO, fontSize: g.measure, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted } }, typo(i.measure)))
+      : h('div', { style: { flexDirection: 'column' } },
       logo(C),
       i.titleAccent
         ? h('div', { style: { ...titleStyle, flexWrap: 'wrap' } }, h('span', { style: { marginRight: '0.25em' } }, typo(i.title)), h('span', { style: { color: C.bad } }, typo(i.titleAccent)))
@@ -646,10 +669,59 @@ function mapLayout(set: InfographicSet, i: Infographic, m: NonNullable<Infograph
       : h('div', { style: { alignItems: 'center', width: inner } }, map, h('div', { style: { flexDirection: 'column', marginLeft: mg.gap, width: inner - W - mg.gap } }, summary, legend)));
 }
 
+/* ---------- Styl „cytat”: wypowiedź dosłownie, podpis funkcją, pod spodem fakty ---------- */
+
+/** Geometria: `hang` = margines, w który wisi cudzysłów otwierający; pion — fakty jeden pod drugim, poziom — obok siebie. */
+const QG = {
+  pion: { quote: 82, hang: 42, who: 24, whoGap: 32, label: 15, fact: 23, factPad: 26 },
+  poziom: { quote: 62, hang: 34, who: 19, whoGap: 20, label: 12, fact: 16, factPad: 16 },
+};
+
+function quoteLayout(set: InfographicSet, i: Infographic, q: Quote, f: FormatKey, theme: ThemeKey): Node {
+  const { width } = FORMATS[f];
+  const C = THEMES[theme].colors;
+  const g = G[f];
+  const qg = QG[f];
+  const pion = f === 'pion';
+  const inner = width - 2 * g.padX;
+
+  // fragmenty `**…**` jako osobne spany, odstęp między nimi marginesem (Satori obcina spacje na brzegach)
+  const parts = (text: string, marked: Record<string, string | number>) =>
+    text.split(/\*\*(.+?)\*\*/).map((part, j) => part.trim()
+      ? h('span', { style: { marginRight: '0.25em', ...(j % 2 ? marked : {}) } }, typo(part.trim()))
+      : null);
+  const line = (text: string, k: number) =>
+    h('div', { style: { position: 'relative', color: C.ink } },
+      k === 0 && h('span', { style: { position: 'absolute', left: -qg.hang, top: 0, color: C.blue } }, '„'),
+      ...parts(text, { color: C.blue }));
+  const quote = h('div', { style: { flexDirection: 'column', flexGrow: 1, justifyContent: 'center', paddingLeft: qg.hang } },
+    h('div', { style: { flexDirection: 'column', fontFamily: DISPLAY, fontWeight: 400, fontSize: qg.quote, lineHeight: 1.08, letterSpacing: '-0.022em' } },
+      ...q.lines[f].map(line)),
+    h('div', { style: { marginTop: qg.whoGap, fontFamily: BODY, fontSize: qg.who, color: C.muted } },
+      h('span', { style: { marginRight: '0.3em' } }, '—'),
+      h('span', { style: { marginRight: '0.25em', fontWeight: 600, color: C.ink } }, typo(q.who)),
+      typo(q.where)));
+
+  const factW = pion ? inner : Math.floor((inner * 2) / 3);
+  const fact = (x: Quote['facts'][number], k: number) => {
+    const w = pion ? inner : k === 0 ? factW : inner - factW;
+    const side = !pion && k > 0;
+    return h('div', { style: { flexDirection: 'column', width: w, padding: `${qg.factPad}px ${side ? 0 : 24}px ${qg.factPad}px ${side ? 32 : 0}px`, ...(side ? { borderLeft: `1px solid ${C.line}` } : {}), ...(pion && k > 0 ? { borderTop: `1px solid ${C.line}` } : {}) } },
+      h('span', { style: { marginBottom: pion ? 10 : 6, fontFamily: MONO, fontSize: qg.label, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted } }, typo(x.label)),
+      ...x.text.split('\n').map((row) =>
+        h('div', { style: { flexWrap: 'wrap', fontFamily: BODY, fontSize: qg.fact, lineHeight: 1.4, color: C.ink } }, ...parts(row, { fontWeight: 600 }))));
+  };
+  const facts = h('div', { style: { flexDirection: pion ? 'column' : 'row', width: inner, marginBottom: pion ? 8 : 4, borderTop: `1px solid ${C.line}` } }, ...q.facts.map(fact));
+
+  return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', flexGrow: 1, width: inner } }, quote, facts));
+}
+
 /** PNG z paletą 8-bit, jak obrazki OG. */
 export async function renderInfographic(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey = 'jasny'): Promise<Buffer> {
   const { width, height } = FORMATS[f];
-  const tree = i.map
+  const tree = i.quote
+    ? quoteLayout(set, i, i.quote, f, theme)
+    : i.map
     ? mapLayout(set, i, i.map, f, theme)
     : i.chart
       ? chartLayout(set, i, i.chart, f, theme)

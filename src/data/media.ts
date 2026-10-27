@@ -27,7 +27,7 @@ export const mediaPage = {
     },
   ],
   /** klucze zestawów infografik, od najnowszego */
-  sets: ['odsiew-na-medycynie', 'pielegniarstwo-w-polsce', 'zadluzenie-szpitali', 'kolejki', 'english-division', 'symulator-podazy-lekarzy', 'egzamin', 'odpowiedzialnosc-zawodowa-lekarzy'],
+  sets: ['nil-a-kontrakty-lekarskie', 'odsiew-na-medycynie', 'pielegniarstwo-w-polsce', 'zadluzenie-szpitali', 'kolejki', 'english-division', 'symulator-podazy-lekarzy', 'egzamin', 'odpowiedzialnosc-zawodowa-lekarzy'],
   film: {
     lead: 'Filmy w formacie 16:9, z lektorem. Pasują do posta na X albo Facebooku i do prezentacji. Źródło każdej liczby jest w stopce kadru i w napisach pod filmem. Licencja CC BY 4.0, jak cały serwis.',
   },

@@ -23,6 +23,7 @@ import { CLUBS_LAST, limityVoting } from '@/data/glosowania';
 import { ageRows, dayRows } from '@/data/ciecie-limitow-na-medycyne';
 import { INDEX_CHART } from '@/data/kolejki';
 import { BUDGET } from '@/data/budzet-nfz';
+import filmDobaOg from '@/assets/aktualnosci/film-doba-og.webp';
 import { AOS_FIRST, AOS_LAST, WHC_2022, WHC_2024, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
 import { funnelRows } from '@/data/odsiew-na-medycynie';
 import { EXAMS_2025, passRate } from '@/data/zdawalnosc-egzaminow';
@@ -120,10 +121,12 @@ function hemicyclePanel(): string {
     + legend.join(''));
 }
 
-export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps'>> = {
+export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps' | 'illustration' | 'position'>> = {
   '/analizy/covid-pieniadz-publiczny/': { panels: [{ height: MEDIA_W, svg: svg(MEDIA_W, MEDIA_W, virus(MEDIA_W)) }] },
   // wpis w aktualnościach: pieczątki jak na obrazku katalogu (okładka wpisu przycięta pokazałaby tylko tytuł)
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },
+  // wpis o filmie „Doba”: pionowy wariant miniatury w kolorze (miniatura 16:9 przycięta do panelu gubiłaby liczby)
+  '/aktualnosci/film-doba/': { illustration: filmDobaOg },
   // wpis o analizie limitów płac: paski jak na obrazku analizy (zdjęciem wpisu jest obrazek OG analizy)
   '/aktualnosci/limity-plac-medykow-w-sejmie/': { bars: LIMITY_BARS },
   // wpis o uchwaleniu ustawy: półkole głosowania nr 149 (jak w analizie i we wpisie)

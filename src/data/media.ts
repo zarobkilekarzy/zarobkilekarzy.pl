@@ -31,7 +31,7 @@ export const mediaPage = {
     },
   ],
   /** klucze zestawów infografik, od najnowszego */
-  sets: ['reglamentacja-dostepu', 'nil-a-kontrakty-lekarskie', 'odsiew-na-medycynie', 'pielegniarstwo-w-polsce', 'zadluzenie-szpitali', 'budzet-nfz', 'english-division', 'symulator-podazy-lekarzy', 'egzamin', 'odpowiedzialnosc-zawodowa-lekarzy'],
+  sets: ['film-doba', 'reglamentacja-dostepu', 'nil-a-kontrakty-lekarskie', 'odsiew-na-medycynie', 'pielegniarstwo-w-polsce', 'zadluzenie-szpitali', 'budzet-nfz', 'english-division', 'symulator-podazy-lekarzy', 'egzamin', 'odpowiedzialnosc-zawodowa-lekarzy'],
   film: {
     lead: 'Filmy w formacie 16:9, z lektorem. Pasują do posta na X albo Facebooku i do prezentacji. Źródło każdej liczby jest w stopce kadru i w napisach pod filmem. Licencja CC BY 4.0, jak cały serwis.',
   },

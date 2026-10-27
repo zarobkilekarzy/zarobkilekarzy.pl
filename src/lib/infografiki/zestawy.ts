@@ -18,10 +18,11 @@ import { DEFAULTS, LIMIT_TODAY, PRESETS, REGISTER_TOTAL, YEAR0, YEAR_MIN, seats,
 import { AOS_FIRST, AOS_LAST, LINKS as WIZYTA_LINKS, NIL_N, NO_CLINICAL, WHC_2022, WHC_2024, WORK_MODEL, combined, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
 import { BEAN, NORI } from '@/data/ai-w-medycynie-2026';
 import { SELF_GOVERNMENT_STANCES, SURPLUS_YEAR } from '@/data/reglamentacja-dostepu';
+import { DOBA_MODEL } from '@/data/film';
 import { formatPL } from '@/lib/format';
 import { monitoring } from '@/lib/monitoring';
 import { monitoringMap, opennessP } from '@/lib/monitoring/map';
-import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment } from './render';
+import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment, ViewPart } from './render';
 
 const span = `${WINDOW.from}–${WINDOW.to}`;
 // na grafice liczby całkowite: to porównanie rzędu wielkości, nie co do przecinka
@@ -651,7 +652,48 @@ const reglamentacja: InfographicSet = {
   ],
 };
 
+/* ---------- Film „Doba”: trzy umowy jednego lekarza (wpis w aktualnościach) ---------- */
+
+/*
+ * Jedna kropka = 10 000 zł rocznie: 24 + 40 + 36 = 100 pól, więc części ułożone jedna za drugą
+ * wypełniają całą planszę (399 999 zł zaokrągla się do 40 pól — brakującą złotówkę mówi podpis).
+ */
+const DOT_ZL = 10_000;
+const dobaParts = [
+  { who: 'widzi szpital A', label: 'etat', value: DOBA_MODEL.etat },
+  { who: 'widzi szpital B', label: 'kontrakt, % od procedur', value: DOBA_MODEL.kontrakt },
+  { who: 'widzi podmiot C', label: 'umowa cywilnoprawna', value: DOBA_MODEL.ucp },
+];
+const dobaSum = dobaParts.reduce((n, p) => n + p.value, 0);
+const dobaViews: ViewPart[] = dobaParts.reduce<ViewPart[]>((acc, p) => {
+  const from = acc.reduce((n, x) => n + x.dots, 0);
+  return [...acc, { who: p.who, label: p.label, display: formatPL(p.value), from, dots: Math.round(p.value / DOT_ZL) }];
+}, []);
+const dobaHours = DOBA_MODEL.hours * dobaParts.length;
+
+const filmDoba: InfographicSet = {
+  route: '/aktualnosci/film-doba/',
+  page: 'Aktualności: film „Doba” — jeden lekarz, trzy umowy',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'trzy-okna',
+      title: 'Każdy widzi swój kawałek. Sumy nie widzi nikt',
+      measure: `przykład modelowy · trzy umowy · jeden rok · 1 kropka = ${formatPL(DOT_ZL)} zł brutto`,
+      views: {
+        parts: dobaViews,
+        total: { display: formatPL(dobaSum), label: 'jeden lekarz, jeden rok', sub: `do miliona brakuje ${formatPL(1_000_000 - dobaSum)} zł` },
+        slogan: 'Jedna osoba. Jedna suma. Anonimowo.',
+        brackets: { part: `${DOBA_MODEL.hours} h`, total: `${dobaHours} h w jednej dobie` },
+      },
+      sources: 'Przykład modelowy z filmu „Doba” · kwoty brutto · każda umowa zgodna z obowiązującym prawem',
+      alt: `Infografika „Każdy widzi swój kawałek. Sumy nie widzi nikt” — przykład modelowy z filmu „Doba”, jeden lekarz z trzema umowami, kwoty brutto za rok, jedna kropka to ${formatPL(DOT_ZL)} zł. Trzy małe plansze po 100 pól, na każdej zapalone tylko pola jednej umowy: szpital A widzi etat — ${formatPL(DOBA_MODEL.etat)} zł, szpital B widzi kontrakt z procentem od procedur — ${formatPL(DOBA_MODEL.kontrakt)} zł, podmiot C widzi umowę cywilnoprawną — ${formatPL(DOBA_MODEL.ucp)} zł. Nad każdą planszą nawias „${DOBA_MODEL.hours} h”: każda umowa rozlicza pełną dobę. Obok pełna plansza w kobalcie z nawiasem „${dobaHours} h w jednej dobie”: razem ${formatPL(dobaSum)} zł, jeden lekarz, jeden rok, do miliona brakuje ${formatPL(1_000_000 - dobaSum)} zł — tej sumy nie widzi nikt. Hasło: Jedna osoba. Jedna suma. Anonimowo.`,
+    },
+  ],
+};
+
 export const infographicSets: Record<string, InfographicSet> = {
+  'film-doba': filmDoba,
   'nil-a-kontrakty-lekarskie': nil,
   egzamin,
   'odpowiedzialnosc-zawodowa-lekarzy': odpowiedzialnosc,

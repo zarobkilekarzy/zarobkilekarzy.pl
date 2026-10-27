@@ -126,6 +126,13 @@ const DOBA = {
 };
 
 /**
+ * Model z „Doby”: roczne kwoty brutto trzech umów jednego lekarza (procent od procedur liczony od razu
+ * za rok — średnio ok. 33 tys. zł miesięcznie) i godziny, które każda umowa rozlicza w tej samej dobie.
+ * Te same liczby mówi lektor; infografika filmu (lib/infografiki/zestawy.ts) liczy z tego obiektu.
+ */
+export const DOBA_MODEL = { etat: 240_000, kontrakt: 399_999, ucp: 360_000, hours: 24 } as const;
+
+/**
  * Film „Doba” (2 min 37 s): jeden lekarz z trzema umowami — 999 999 zł w roku i 72 godziny w jednej
  * dobie. Lekarz jest przykładem modelowym; mechanizmy ilustrują prawdziwe sprawy. Kod filmu, lektor
  * i scenariusz: social/film-doba/ (poza repo) — po zmianie lektora poprawić `transcript` ręcznie.

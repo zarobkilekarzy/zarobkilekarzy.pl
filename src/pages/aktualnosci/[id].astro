@@ -13,8 +13,10 @@ import ProseLink from '@/components/article/ProseLink.astro';
 import ShareLinks from '@/components/article/ShareLinks.astro';
 import Aside from '@/components/blocks/Aside.astro';
 import Screenshot from '@/components/blocks/Screenshot.astro';
+import InfographicsSection from '@/components/blocks/InfographicsSection.astro';
 import { formatDate, isoDate, typo } from '@/lib/format';
 import { getAllNews, newsHref, newsPage } from '@/lib/news';
+import { infographicSets } from '@/lib/infografiki/zestawy';
 import { newsEnHref, newsTranslationOf } from '@/i18n/news';
 import type { Crumb, SeoInput } from '@/lib/seo';
 
@@ -28,6 +30,8 @@ type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 const { entry } = Astro.props;
 const { title, date, summary, draft, links = [], x, cover, coverAlt, coverCaption } = entry.data;
 const { Content } = await render(entry);
+// infografiki do pobrania: zestaw o kluczu = id wpisu (jak w ArticleLayout)
+const graphics = infographicSets[entry.id]?.items.length ?? 0;
 
 const url = new URL(newsHref(entry), Astro.site).href;
 // Para językowa: przełącznik prowadzi do tłumaczenia, hreflang tylko poza szkicem (lib/seo/meta.ts)
@@ -68,6 +72,8 @@ const seo: SeoInput = {
     <div class="entry__body">
       <Prose><Content components={{ a: ProseLink }} /></Prose>
 
+      {graphics > 0 && <InfographicsSection set={entry.id} class="entry__ig" />}
+
       {(links.length > 0 || x) && (
         <ul class="entry__links">
           {links.map((link) => <li><LinkArrow href={link.href}>{link.label}</LinkArrow></li>)}
@@ -93,6 +99,7 @@ const seo: SeoInput = {
   .entry__draft { margin-top: 40px; max-width: 780px; }
   .entry :global(.entry__cover) { margin-top: clamp(32px, 4vw, 48px); max-width: 1000px; }
   .entry__body { margin-top: clamp(40px, 5vw, 64px); padding-top: 40px; border-top: 1px solid var(--line); }
+  .entry__body :global(.entry__ig) { margin-top: 56px; }
   .entry__links { display: grid; gap: 12px; margin-top: 48px; max-width: 780px; }
   .entry__foot {
     display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px 40px;

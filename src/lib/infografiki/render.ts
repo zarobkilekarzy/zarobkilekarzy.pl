@@ -22,6 +22,8 @@
  * po lewej, a po prawej, co dzieje się z tą częścią (zob. dotsLayout).
  * Ósmy, „oś czasu” (pole `timeline`): kolejne sprzeciwy jednego podmiotu jako znaczniki z krzyżykiem
  * na osi, pod osią dwie liczby ze zdaniem (zob. timelineLayout).
+ * Dziewiąty, „trzy okna” (pole `views`): część całości z perspektywy każdego, kto ją widzi — małe plansze
+ * po 100 pól, na każdej zapalone tylko pola jednej części; obok pełna plansza w kobalcie z sumą (zob. viewsLayout).
  * Rama (nagłówek i stopka) wspólna dla wszystkich stylów.
  */
 import sharp from 'sharp';
@@ -208,6 +210,32 @@ export interface Dots {
   panels: [DotPanel, DotPanel];
 }
 
+/** Część w stylu „trzy okna”: kto ją widzi i które pola planszy (od `from`, `dots` pól) są jej. */
+export interface ViewPart {
+  /** kto widzi tę część (wersaliki, mono), np. „widzi szpital A” */
+  who: string;
+  /** liczba pod planszą (bez „zł” — dokleja szablon) */
+  display: string;
+  /** rodzaj części, np. „etat” */
+  label: string;
+  /** pierwsze pole części (0–99); części leżą obok siebie, więc razem dają pełną planszę */
+  from: number;
+  dots: number;
+}
+
+/**
+ * Styl „trzy okna”: każdy widzi na swojej planszy tylko swoje pola (reszta to wygaszone plusy), a pełnej
+ * planszy w kobalcie z sumą nie widzi nikt. Nad planszami opcjonalnie nawiasy ⊓ jak w filmie „Doba”.
+ */
+export interface Views {
+  parts: ViewPart[];
+  total: { display: string; label: string; sub: string };
+  /** hasło w prawym dolnym rogu, np. „Jedna osoba. Jedna suma. Anonimowo.” */
+  slogan: string;
+  /** podpisy nawiasów: nad każdą małą planszą i nad pełną */
+  brackets?: { part: string; total: string };
+}
+
 /** Zdarzenie na osi czasu: rok, co się stało, kto (wersaliki, mono). */
 export interface TimelineEvent {
   year: string;
@@ -256,13 +284,15 @@ export interface Infographic {
   map?: { set: MapSetId; layer: string };
   /** zamiast wierszy: dwie plansze po 100 pól */
   dots?: Dots;
+  /** zamiast wierszy: części na osobnych planszach i pełna plansza z sumą */
+  views?: Views;
   /** zamiast wierszy: cytat */
   quote?: Quote;
   /** miara i okres, np. „na 100 tys. lekarzy rocznie · 2020–2025”; przy cytacie — etykieta obok logo */
   measure: string;
   /** jednostka za każdą liczbą, mniejszym stopniem (np. „%”) */
   unit?: string;
-  /** wiersze porównania (styl podstawowy); grafika z `chart`, `split`, `table`, `map`, `dots` albo `timeline` ich nie ma */
+  /** wiersze porównania (styl podstawowy); grafika z `chart`, `split`, `table`, `map`, `dots`, `views` albo `timeline` ich nie ma */
   rows?: ComparisonRow[];
   /** jedna linia stopki: źródła + najważniejsze zastrzeżenie */
   sources: string;
@@ -840,6 +870,83 @@ function dotsLayout(set: InfographicSet, i: Infographic, d: Dots, f: FormatKey, 
       figure(b, textW)));
 }
 
+/* ---------- Styl „trzy okna”: każdy widzi swoje pola, pełnej planszy nikt ---------- */
+
+/**
+ * Geometria. Pion: małe plansze w rzędzie, pod linią pełna plansza z sumą i hasłem obok. Poziom: małe
+ * plansze po lewej, za pionową linią pełna plansza z sumą. `hb`/`hbBig` — podpisy nawiasów.
+ */
+const VG = {
+  pion: { cell: 22, who: 15, num: 52, label: 19, board: 28, totalNum: 112, slogan: 34, gap: 30, hb: 26, hbBig: 28, stroke: 3, tick: 14, partsW: 0 },
+  poziom: { cell: 13, who: 10, num: 30, label: 13, board: 20, totalNum: 58, slogan: 20, gap: 28, hb: 15, hbBig: 19, stroke: 2, tick: 8, partsW: 560 },
+};
+
+function viewsLayout(set: InfographicSet, i: Infographic, v: Views, f: FormatKey, theme: ThemeKey): Node {
+  const C = THEMES[theme].colors;
+  const g = VG[f];
+  const pion = f === 'pion';
+  const inner = FORMATS[f].width - 2 * G[f].padX;
+
+  // plansza 10×10 jako SVG w <img>, kształty z geometrii siatki strony; flexShrink: 0 — inaczej Satori ściska ją w owal
+  const board = (cell: number, lit: (k: number) => boolean, on: string) => {
+    const side = DOTS_N * cell;
+    const arm = GEOMETRY.arm * cell;
+    const cells = Array.from({ length: DOTS_N * DOTS_N }, (_, k) => {
+      const cx = (k % DOTS_N) * cell + cell / 2;
+      const cy = Math.floor(k / DOTS_N) * cell + cell / 2;
+      return lit(k)
+        ? `<circle cx="${cx}" cy="${cy}" r="${GEOMETRY.on * cell}" fill="${on}"/>`
+        : `<path d="M${cx} ${cy - arm}v${2 * arm}M${cx - arm} ${cy}h${2 * arm}" stroke="${C.bar}" stroke-width="${GEOMETRY.stroke * cell}" fill="none"/>`;
+    });
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${side}" height="${side}" viewBox="0 0 ${side} ${side}">${cells.join('')}</svg>`;
+    return h('img', { src: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`, width: side, height: side, style: { flexShrink: 0 } });
+  };
+  // nawias jak w filmie (ujęcie „72 h”): ⊓ na szerokość planszy, pogrubiony podpis w jednym wierszu nad nim
+  const bracket = (label: string, side: number, size: number) =>
+    h('div', { style: { flexDirection: 'column', width: side } },
+      h('span', { style: { fontFamily: BODY, fontWeight: 600, fontSize: size, lineHeight: 1, whiteSpace: 'nowrap', color: C.ink } }, typo(label)),
+      h('div', { style: { marginTop: pion ? 10 : 6, width: side, height: g.tick, borderTop: `${g.stroke}px solid ${C.ink}`, borderLeft: `${g.stroke}px solid ${C.ink}`, borderRight: `${g.stroke}px solid ${C.ink}` } }));
+  const mono = (text: string, color: string, marginTop = 0) =>
+    h('span', { style: { marginTop, fontFamily: MONO, fontSize: g.who, letterSpacing: '0.06em', textTransform: 'uppercase', color } }, typo(text));
+  const money = (text: string, size: number, color: string) =>
+    h('div', { style: { alignItems: 'baseline', fontFamily: DISPLAY, fontWeight: 300, fontSize: size, lineHeight: 1, letterSpacing: '-0.05em', color } },
+      text,
+      h('span', { style: { marginLeft: 6, fontSize: Math.round(size * UNIT_SCALE), letterSpacing: '-0.02em' } }, 'zł'));
+
+  const part = (p: ViewPart, w: number) =>
+    h('div', { style: { flexDirection: 'column', width: w } },
+      mono(p.who, C.muted),
+      v.brackets && h('div', { style: { marginTop: pion ? 18 : 10 } }, bracket(v.brackets.part, DOTS_N * g.cell, g.hb)),
+      h('div', { style: { marginTop: pion ? 10 : 6 } }, board(g.cell, (k) => k >= p.from && k < p.from + p.dots, C.ink)),
+      h('div', { style: { marginTop: pion ? 16 : 8 } }, money(p.display, g.num, C.ink)),
+      h('span', { style: { marginTop: pion ? 6 : 3, fontFamily: BODY, fontSize: g.label, color: C.ink } }, typo(p.label)));
+  const full = h('div', { style: { flexDirection: 'column', flexShrink: 0 } },
+    v.brackets && bracket(v.brackets.total, DOTS_N * g.board, g.hbBig),
+    h('div', { style: { marginTop: v.brackets ? (pion ? 10 : 6) : 0 } }, board(g.board, () => true, C.blue)));
+  const total = h('div', { style: { flexDirection: 'column' } },
+    mono('nie widzi nikt', C.blue),
+    h('div', { style: { marginTop: pion ? 14 : 8 } }, money(v.total.display, g.totalNum, C.blue)),
+    h('span', { style: { marginTop: pion ? 10 : 5, fontFamily: BODY, fontSize: g.label + 2, color: C.ink } }, typo(v.total.label)),
+    mono(v.total.sub, C.muted, pion ? 6 : 3));
+  const slogan = h('div', { style: { fontFamily: DISPLAY, fontWeight: 400, fontSize: g.slogan, lineHeight: 1.15, letterSpacing: '-0.03em', color: C.ink } }, typo(v.slogan));
+  // suma u góry, hasło na wysokości dołu planszy
+  const side = (extra: Record<string, unknown>) =>
+    h('div', { style: { flexDirection: 'column', justifyContent: 'space-between', alignSelf: 'stretch', ...extra } }, total, slogan);
+
+  if (pion) {
+    const colW = Math.floor(inner / v.parts.length);
+    return frame(set, i, f, theme,
+      h('div', { style: { flexDirection: 'column', width: inner, marginTop: 20 } },
+        h('div', {}, ...v.parts.map((p) => part(p, colW))),
+        h('div', { style: { marginTop: g.gap, paddingTop: g.gap, borderTop: `1px solid ${C.line}` } }, full, side({ marginLeft: 40 }))));
+  }
+  const colW = Math.floor(g.partsW / v.parts.length);
+  return frame(set, i, f, theme,
+    h('div', { style: { width: inner, alignItems: 'flex-start', justifyContent: 'space-between' } },
+      h('div', { style: { width: g.partsW } }, ...v.parts.map((p) => part(p, colW))),
+      h('div', { style: { width: inner - g.partsW - g.gap, paddingLeft: g.gap, borderLeft: `1px solid ${C.line}` } }, full, side({ marginLeft: 24, flexGrow: 1 }))));
+}
+
 /* ---------- Styl „oś czasu”: krzyżyki na osi, pod nią dwie liczby ---------- */
 
 /**
@@ -929,6 +1036,8 @@ export async function renderInfographic(set: InfographicSet, i: Infographic, f: 
           ? tableLayout(set, i, i.table, f, theme)
           : i.dots
             ? dotsLayout(set, i, i.dots, f, theme)
+            : i.views
+            ? viewsLayout(set, i, i.views, f, theme)
             : i.timeline
               ? timelineLayout(set, i, i.timeline, f, theme)
               : layout(set, i, i.rows ?? [], f, theme);

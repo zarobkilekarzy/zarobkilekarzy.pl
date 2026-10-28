@@ -10,7 +10,10 @@ export interface Identity {
   language: string;
   logo: { path: string; width: number; height: number };
   sameAs: string[];
+  email: string;
   publishingPrinciples: string;
+  correctionsPolicy: string;
+  ownershipFundingInfo: string;
   license: string;
 }
 
@@ -50,7 +53,17 @@ export const organization = (identity: Identity, site: string, id: Ids): SchemaN
   },
   image: ref(id.logo),
   sameAs: identity.sameAs,
+  email: identity.email,
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'redakcja: kontakt i sprostowania',
+    email: identity.email,
+    url: abs(identity.correctionsPolicy, site),
+    availableLanguage: ['pl', 'en'],
+  },
   publishingPrinciples: abs(identity.publishingPrinciples, site),
+  correctionsPolicy: abs(identity.correctionsPolicy, site),
+  ownershipFundingInfo: abs(identity.ownershipFundingInfo, site),
 });
 
 export const website = (identity: Identity, site: string, id: Ids): SchemaNode => ({

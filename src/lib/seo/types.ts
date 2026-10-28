@@ -19,6 +19,8 @@ export type SchemaNode = { '@type': string | string[]; '@id'?: string } & Record
  */
 export type PageSchema =
   | { type: 'WebPage' }
+  /** strona o serwisie (/o-projekcie/): kto, jak pracuje, sprostowania, finansowanie */
+  | { type: 'AboutPage' }
   | { type: 'CollectionPage'; items: { name: string; url: string }[] }
   | { type: 'FAQPage'; questions: { question: string; answer: string }[] };
 

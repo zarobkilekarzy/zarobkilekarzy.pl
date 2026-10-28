@@ -65,6 +65,14 @@ const pl = {
     changelog: 'Historia zmian',
     /** id sekcji historii zmian (kotwica #historia-zmian w tekstach) */
     changelogId: 'historia-zmian',
+    /** podgląd w zwiniętej historii zmian: „ostatnia zmiana 28.10.2026 · …” */
+    changelogLatest: 'ostatnia zmiana',
+    /** etykieta wpisu-sprostowania (poprawka błędu) */
+    correction: 'Sprostowanie',
+    /** podpis w nagłówku artykułu: kto opracował tekst i jak (link do opisu pracy redakcji) */
+    byline: 'Opracowanie',
+    bylineText: 'Redakcja, z pomocą AI',
+    bylineHref: '/o-projekcie/#jak-powstaja-teksty',
     updatedOn: (date: string) => `aktualizacja ${date}`,
   },
   /** karta profilu w serwisie X (blocks/XProfile) */
@@ -187,6 +195,11 @@ const en: Ui = {
     relatedTitle: 'Related mechanisms',
     changelog: 'Change history',
     changelogId: 'change-history',
+    changelogLatest: 'latest change',
+    correction: 'Correction',
+    byline: 'Written by',
+    bylineText: 'Editors, AI-assisted',
+    bylineHref: '/en/about/#how-we-work',
     updatedOn: (date: string) => `updated ${date}`,
   },
   xProfile: {

@@ -8,6 +8,20 @@ import { z } from 'astro/zod';
 import { CATEGORIES, DATA_FORMATS, TOPICS } from './types';
 import { ogSchema } from './lib/og/schema';
 
+/**
+ * Wpis „Historii zmian” (article/Changelog): zmiana merytoryczna widoczna dla czytelnika — nowe dane,
+ * zmiana opisywanej sprawy, nowa sekcja, poprawka błędu. Literówek, układu i kodu nie odnotowujemy.
+ * Zapis tekstu: lib/inline (**b**, [a](href)).
+ */
+const changelogEntry = z.object({
+  date: z.coerce.date(),
+  text: z.string(),
+  /** sprostowanie: poprawka błędu w opublikowanej treści — oznaczone przy wpisie i zebrane na /o-projekcie/#sprostowania */
+  correction: z.boolean().default(false),
+});
+
+const DAY = 24 * 60 * 60 * 1000;
+
 const articles = defineCollection({
   // .md dla prostych tekstów, .mdx gdy artykuł osadza komponenty (wykresy, ramki)
   loader: glob({ base: './src/content/articles', pattern: '**/*.{md,mdx}' }),
@@ -17,8 +31,11 @@ const articles = defineCollection({
       category: z.enum(CATEGORIES),
       /** data publikacji; brak = materiał stały */
       date: z.coerce.date().optional(),
-      /** data ostatniej aktualizacji — pokazywana w artykule, liczy się do „Nowe i zaktualizowane” */
-      updated: z.coerce.date().optional(),
+      /**
+       * wycofane: datę aktualizacji wyznacza najnowszy wpis `changelog` (transformacja niżej) — bez opisu zmiany
+       * nie ma nowej daty, więc data nie może obiecać przeglądu, którego nie było
+       */
+      updated: z.never({ error: 'Pole `updated` jest wycofane: data aktualizacji to data najnowszego wpisu `changelog` — dopisz, co zmieniło się merytorycznie.' }).optional(),
       /** lead: jedno–dwa zdania pod tytułem, też opis w wynikach wyszukiwania i meta description */
       summary: z.string(),
       /** „W skrócie” — najważniejsze tezy artykułu */
@@ -31,10 +48,10 @@ const articles = defineCollection({
        */
       editorial: z.array(z.string()).min(1).optional(),
       /**
-       * „Historia zmian” pod treścią (article/Changelog) — dla tekstów, które śledzą zmieniającą się
-       * sprawę, np. projekt ustawy w Sejmie. Wpis: data i co się zmieniło (zapis lib/inline).
+       * „Historia zmian” pod treścią (article/Changelog): każda zmiana merytoryczna po publikacji, jeden wpis na dzień.
+       * Najnowszy wpis = data „Aktualizacja” w nagłówku, w JSON-LD (dateModified), w sitemapie i w RSS.
        */
-      changelog: z.array(z.object({ date: z.coerce.date(), text: z.string() })).min(1).optional(),
+      changelog: z.array(changelogEntry).min(1).optional(),
       /** powiązane materiały; bez tego pola — inne z tej samej kategorii */
       related: z.array(reference('articles')).optional(),
       /** tymczasowy adres dla materiałów bez treści — zob. lib/content.ts → articleHref */
@@ -76,8 +93,25 @@ const articles = defineCollection({
           license: z.url().optional(),
         })
         .optional(),
-    }),
+    })
+      .superRefine((data, ctx) => {
+        const now = Date.now();
+        for (const entry of data.changelog ?? []) {
+          if (data.date && entry.date < data.date)
+            ctx.addIssue({ code: 'custom', path: ['changelog'], message: `wpis z ${entry.date.toISOString().slice(0, 10)} jest starszy niż publikacja (\`date\`)` });
+          if (entry.date.getTime() > now + DAY)
+            ctx.addIssue({ code: 'custom', path: ['changelog'], message: `wpis z ${entry.date.toISOString().slice(0, 10)} ma datę z przyszłości` });
+        }
+      })
+      // data aktualizacji = najnowszy wpis historii zmian; reszta serwisu czyta ją jak dawne pole `updated`
+      .transform((data) => ({ ...data, updated: newest(data.changelog) })),
 });
+
+/** Data najnowszego wpisu historii zmian (wpisy mogą stać w dowolnej kolejności). */
+function newest(entries?: { date: Date }[]): Date | undefined {
+  if (!entries?.length) return undefined;
+  return new Date(Math.max(...entries.map((e) => e.date.getTime())));
+}
 
 /** Odnośnik z pola URL: adres bezwzględny (źródło) albo ścieżka serwisu zakończona „/” (strona). */
 const glossaryLink = z.object({ label: z.string(), href: z.string() });
@@ -147,8 +181,8 @@ const articlesEn = defineCollection({
     summary: z.string(),
     keyPoints: z.array(z.string()).optional(),
     editorial: z.array(z.string()).min(1).optional(),
-    /** „Change history” — tłumaczenie `changelog` oryginału (te same daty, tekst po angielsku) */
-    changelog: z.array(z.object({ date: z.coerce.date(), text: z.string() })).min(1).optional(),
+    /** „Change history” — tłumaczenie `changelog` oryginału (te same daty i sprostowania, tekst po angielsku) */
+    changelog: z.array(changelogEntry).min(1).optional(),
     seoTitle: z.string().optional(),
     description: z.string().optional(),
     /** obrazek OG: nadpisania jak w `articles` (tekst po angielsku); grafika bez tekstu z polskiego `og` przechodzi sama */

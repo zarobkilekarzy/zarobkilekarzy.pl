@@ -13,6 +13,7 @@ import Heading from '@/components/ui/Heading.astro';
 import Prose from '@/components/article/Prose.astro';
 import NoteRef from '@/components/article/NoteRef.astro';
 import NoteList from '@/components/article/NoteList.astro';
+import Changelog from '@/components/article/Changelog.astro';
 import SupplySimulator from '@/components/podaz/SupplySimulator.astro';
 import {
   BASE_INTAKE, DEFAULTS, GUS_WITH_PATIENTS, LIMIT_TODAY, LIMIT_TODAY_LABEL, MEASURED, seats, NIL_BASE, NIL_VARIANTS, OVER_70, OVER_70_TO,
@@ -31,7 +32,7 @@ const description = `Ustaw limit przyjęć na medycynę i zobacz, ilu lekarzy b�
 const analysesHref = mainNav.find((link) => link.match === '/analizy/')?.href ?? '/analizy/';
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Analizy', href: analysesHref }, { label: title }];
 // Narzędzie z opisem modelu i źródłami — w danych strukturalnych to artykuł działu Analizy.
-// Daty z wpisu kolekcji (src/content/articles/symulator-podazy-lekarzy.md: date / updated).
+// Daty z wpisu kolekcji (src/content/articles/symulator-podazy-lekarzy.md: date, aktualizacja z `changelog`).
 const entry = await getArticle('symulator-podazy-lekarzy');
 const seo: SeoInput = {
   title: `${title} w Polsce`,
@@ -136,6 +137,7 @@ const meta = [
         </p>
 
         <NoteList notes={notes} class="about__notes" />
+        {entry?.data.changelog && <Changelog entries={entry.data.changelog} class="about__log" />}
       </div>
     </div>
   </Section>
@@ -164,6 +166,7 @@ const meta = [
   .about__lead { font-size: 1.0625rem; line-height: 1.65; color: var(--text-strong); }
   .about__body :global(h3:first-child) { margin-top: 0; }
   .about__notes { margin-top: 32px; }
+  .about :global(.about__log) { margin-top: 40px; }
   .about__sources { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line-2); font-size: 0.90625rem; line-height: 1.6; color: var(--muted); }
   /* Linki z szablonu strony dostają atrybut zakresu, więc wygląd jak w Prose ustawiamy tutaj; numery przypisów stylują się same (styles/footnotes.css) */
   .about__body a, .about__sources a { color: var(--blue); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }

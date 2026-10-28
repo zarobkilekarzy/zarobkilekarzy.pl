@@ -20,8 +20,8 @@ export const legalPages: typeof legalPagesPl = {
     title: 'About the project',
     docTitle: 'About: aims, principles and corrections',
     lead: 'A citizens’ site about how public money flows through healthcare in Poland — from the health contribution to salaries. We criticise mechanisms, not the profession.',
-    description: 'Why zarobkilekarzy.pl was set up, the principles by which we choose sources, and how to report an error.',
-    updated: '21.10.2026',
+    description: 'Why zarobkilekarzy.pl was set up, how the texts are made, where the money comes from, the principles by which we choose sources, and how to report an error.',
+    updated: '28.10.2026',
   },
 };
 

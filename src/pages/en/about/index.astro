@@ -2,7 +2,8 @@
 /**
  * /en/about/ — tłumaczenie /o-projekcie/ (src/pages/o-projekcie/index.astro): ten sam układ, teksty z src/data/en/o-serwisie.ts.
  * Kalendarz zmian (ActivityCalendar, commitHistory) opisuje polskie commity — tu go nie ma; jedno zdanie odsyła do strony polskiej.
- * Kotwice: #why, #principles, #who-runs-the-site, #change-history, #corrections. Para i stempel w src/i18n/pages.json.
+ * Kotwice: #why, #principles, #how-we-work, #who-runs-the-site, #funding, #change-history, #corrections. Para i stempel w src/i18n/pages.json.
+ * Rejestr sprostowań: wpisy `correction: true` z historii zmian tłumaczeń (te same co w oryginałach).
  */
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Section from '@/components/layout/Section.astro';
@@ -11,8 +12,10 @@ import PageMeta from '@/components/layout/PageMeta.astro';
 import Prose from '@/components/article/Prose.astro';
 import NumberedList from '@/components/blocks/NumberedList.astro';
 import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import Changelog from '@/components/article/Changelog.astro';
 import { contact, editorialRules, legalPages } from '@/data/en/o-serwisie';
 import { pagePairOf } from '@/i18n/pages';
+import { enHref, getTranslations } from '@/i18n/translations';
 import type { Crumb, SeoInput } from '@/lib/seo';
 
 const page = legalPages.oProjekcie;
@@ -22,7 +25,13 @@ const seo: SeoInput = {
   description: page.description,
   index: !pagePairOf(Astro.url.pathname)?.draft,
   breadcrumbs: crumbs,
+  page: { type: 'AboutPage' },
 };
+// Corrections register: correction entries from the change history of published translations, newest first
+const corrections = (await getTranslations())
+  .filter((t) => !t.article.data.noindex)
+  .flatMap((t) => (t.article.data.changelog ?? []).filter((e) => e.correction).map((e) => ({ date: e.date, text: `[${t.article.data.title}](${enHref(t)}#change-history): ${e.text}` })))
+  .sort((a, b) => b.date.getTime() - a.date.getTime());
 const mail = `mailto:${contact.email}`;
 ---
 <BaseLayout seo={seo}>
@@ -44,14 +53,23 @@ const mail = `mailto:${contact.email}`;
       <h2 id="principles">Editorial principles</h2>
       <NumberedList items={editorialRules} />
 
+      <h2 id="how-we-work">How the texts are made</h2>
+      <p>We prepare the texts with the help of AI tools: for finding and organising sources, calculations, first drafts, translations into English and the site’s code. A human is in charge of the content: the editors choose the topics, decide on the arguments and approve every publication and every correction after reading the changes.</p>
+      <p>A tool is not a source. Every number and every claim has a footnote to a document, data set or legal act, and the editors are responsible for errors — report them, and we will record the correction in the change history below the text.</p>
       <h2 id="who-runs-the-site">Who runs the site</h2>
       <p>The site is run anonymously. No foundation, company or organisation stands behind it. Judge us by our sources: every number has a footnote with a link to a document you can check yourself.</p>
+      <h2 id="funding">Funding</h2>
+      <p>The site is non-commercial: it has no advertising, paid content or sponsors. The only outside money is voluntary donations from readers through <a href="https://suppi.pl/zarobkilekarzy" hreflang="pl">Suppi</a> (in Polish) — with nothing in return and no influence on the choice of topics or the content.</p>
 
       <h2 id="change-history">Change history</h2>
       <p>The site’s code and content are public, and every change stays in the repository history with a date; a calendar of these changes is on the <a href="/o-projekcie/#historia-zmian" hreflang="pl">Polish version of this page</a> (in Polish).</p>
 
       <h2 id="corrections">Corrections and contact</h2>
-      <p>Spotted an error, an out-of-date number or a source that no longer works? Write to <a href={mail}>{contact.email}</a>. We check every report, and a corrected text gets a new update date.</p>
+      <p>Spotted an error, an out-of-date number or a source that no longer works? Write to <a href={mail}>{contact.email}</a>. We check every report.</p>
+      <p>Every substantive change — new data, a change in the matter described, the correction of an error — has a dated entry in the change history below the text, and a text’s update date is the date of the latest such entry. We do not record typos or changes in appearance. We also list corrections of errors here:</p>
+      {corrections.length > 0
+        ? <Changelog title="Corrections register" id="corrections-register" entries={corrections} />
+        : <p>We have not published any corrections so far.</p>}
       <p>The site is for information only and does not give medical or legal advice. How we handle data is described in the <a href="/prywatnosc/" hreflang="pl">privacy policy</a> (in Polish), and we answer the most common objections in <a href="/en/faq/">a separate text</a>.</p>
     </Prose>
   </Section>

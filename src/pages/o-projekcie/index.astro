@@ -1,7 +1,9 @@
 ---
 /**
- * /o-projekcie/ — cel serwisu, zasady pracy, sprostowania. Bez informacji, kto prowadzi serwis
- * (decyzja redakcji z 15.10.2026). Dane: src/data/o-serwisie.ts.
+ * /o-projekcie/ — cel serwisu, zasady pracy, jak powstają teksty, finansowanie, sprostowania. Bez informacji,
+ * kto prowadzi serwis (decyzja redakcji z 15.10.2026) — o zaufaniu (YMYL) mówi to, jak pracujemy; kotwice
+ * #zasady, #sprostowania i #finansowanie są w danych strukturalnych wydawcy (data/seo/identity.ts).
+ * Rejestr sprostowań zbiera wpisy `correction: true` z historii zmian artykułów. Dane: src/data/o-serwisie.ts.
  */
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Section from '@/components/layout/Section.astro';
@@ -12,6 +14,7 @@ import NumberedList from '@/components/blocks/NumberedList.astro';
 import Figure from '@/components/blocks/Figure.astro';
 import MiniStats from '@/components/blocks/MiniStats.astro';
 import ActivityCalendar from '@/components/blocks/ActivityCalendar.astro';
+import Changelog from '@/components/article/Changelog.astro';
 import { contact, editorialRules, legalPages } from '@/data/o-serwisie';
 import { commitHistory } from '@/lib/historia';
 import { articleHref, getPublishedArticles } from '@/lib/content';
@@ -21,7 +24,7 @@ import type { Crumb, SeoInput } from '@/lib/seo';
 
 const page = legalPages.oProjekcie;
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: page.title }];
-const seo: SeoInput = { title: page.docTitle, description: page.description, breadcrumbs: crumbs };
+const seo: SeoInput = { title: page.docTitle, description: page.description, breadcrumbs: crumbs, page: { type: 'AboutPage' } };
 const mail = `mailto:${contact.email}`;
 
 // Historia zmian z gita, liczona przy każdym buildzie (bez historii — np. płytki klon — sekcji nie ma)
@@ -32,6 +35,12 @@ async function changedTexts(files: Record<string, string[]>) {
   for (const n of await getNews()) if (n.filePath) texts.set(n.filePath, { label: n.data.title, href: newsHref(n) });
   return Object.fromEntries(Object.entries(files).map(([day, paths]) => [day, paths.flatMap((p) => texts.get(p) ?? [])]));
 }
+// Rejestr sprostowań: wpisy-poprawki błędów z historii zmian opublikowanych tekstów, od najnowszego
+const corrections = (await getPublishedArticles())
+  .filter((a) => !a.data.noindex)
+  .flatMap((a) => (a.data.changelog ?? []).filter((e) => e.correction).map((e) => ({ date: e.date, text: `[${a.data.title}](${articleHref(a)}#historia-zmian): ${e.text}` })))
+  .sort((a, b) => b.date.getTime() - a.date.getTime());
+
 const history = commitHistory();
 const historyStats = history && await (async () => {
   const active = Object.keys(history.days).length;
@@ -68,8 +77,13 @@ const historyStats = history && await (async () => {
       <h2 id="zasady">Zasady pracy</h2>
       <NumberedList items={editorialRules} />
 
+      <h2 id="jak-powstaja-teksty">Jak powstają teksty</h2>
+      <p>Teksty przygotowujemy z pomocą narzędzi AI: przy wyszukiwaniu i porządkowaniu źródeł, obliczeniach, pierwszych wersjach tekstu, tłumaczeniach na angielski i kodzie strony. Nad treścią czuwa człowiek: redakcja wybiera tematy, decyduje o tezach i zatwierdza każdą publikację i każdą poprawkę po przeczytaniu zmian.</p>
+      <p>Narzędzie nie jest źródłem. Każda liczba i każda teza mają przypis do dokumentu, danych albo aktu prawnego, a za błędy odpowiada redakcja — zgłoś je, a poprawkę odnotujemy w historii zmian pod tekstem.</p>
       <h2 id="kto">Kto prowadzi serwis</h2>
       <p>Serwis jest prowadzony anonimowo. Nie stoi za nim żadna fundacja, firma ani organizacja. Oceniaj nas po źródłach: każda liczba ma przypis z linkiem do dokumentu, który możesz sprawdzić sam.</p>
+      <h2 id="finansowanie">Finansowanie</h2>
+      <p>Serwis jest niekomercyjny: nie ma reklam, płatnych treści ani sponsorów. Jedyne pieniądze z zewnątrz to dobrowolne darowizny czytelników przez <a href="https://suppi.pl/zarobkilekarzy">Suppi</a> — bez niczego w zamian i bez wpływu na wybór tematów ani treść.</p>
 
       {history && historyStats && (
         <>
@@ -90,7 +104,11 @@ const historyStats = history && await (async () => {
       )}
 
       <h2 id="sprostowania">Sprostowania i kontakt</h2>
-      <p>Widzisz błąd, nieaktualną liczbę albo źródło, które przestało działać? Napisz na <a href={mail}>{contact.email}</a>. Sprawdzamy każde zgłoszenie, a poprawiony tekst dostaje nową datę aktualizacji.</p>
+      <p>Widzisz błąd, nieaktualną liczbę albo źródło, które przestało działać? Napisz na <a href={mail}>{contact.email}</a>. Sprawdzamy każde zgłoszenie.</p>
+      <p>Każda zmiana merytoryczna — nowe dane, zmiana opisywanej sprawy, poprawka błędu — ma wpis z datą w historii zmian pod tekstem, a data aktualizacji tekstu to data ostatniego takiego wpisu. Literówek i zmian wyglądu nie odnotowujemy. Poprawki błędów zbieramy też tutaj:</p>
+      {corrections.length > 0
+        ? <Changelog title="Rejestr sprostowań" id="rejestr-sprostowan" entries={corrections} />
+        : <p>Na razie nie publikowaliśmy sprostowań.</p>}
       <p>Serwis ma charakter informacyjny i nie udziela porad medycznych ani prawnych. Jak traktujemy dane, opisuje <a href="/prywatnosc/">polityka prywatności</a>, a na najczęstsze zarzuty odpowiadamy w <a href="/faq/">osobnym tekście</a>.</p>
     </Prose>
   </Section>

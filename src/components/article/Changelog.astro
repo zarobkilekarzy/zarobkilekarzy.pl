@@ -1,8 +1,11 @@
 ---
 /**
- * „Historia zmian” pod treścią artykułu: wpisy z pola `changelog` frontmattera, od najnowszego.
- * Dla tekstów, które śledzą coś, co się zmienia (projekt ustawy w Sejmie): data i jedno–dwa zdania,
- * co zmieniło się w opisywanej sprawie albo w samym tekście. Zapis wpisu: lib/inline (**b**, [a](href)).
+ * „Historia zmian” pod treścią: wpisy z pola `changelog` frontmattera, od najnowszego. Każda zmiana
+ * merytoryczna po publikacji — data i jedno–dwa zdania, co zmieniło się dla czytelnika; sprostowania
+ * (poprawki błędów) z etykietą. Zapis wpisu: lib/inline (**b**, [a](href)).
+ * Domyślnie zwinięta jak SourceList; w nagłówku liczba wpisów i ostatnia zmiana. Link do kotwicy
+ * (`#historia-zmian`, np. z daty „Aktualizacja” w ArticleHeader) rozwija ją przed przewinięciem (scripts/open-target).
+ * `title` i `id` zmieniają nagłówek i kotwicę — rejestr sprostowań na /o-projekcie/ to ta sama lista z wpisów wielu tekstów.
  */
 import type { HTMLAttributes } from 'astro/types';
 import { formatDateIn, isoDate } from '@/lib/format';
@@ -10,37 +13,75 @@ import { localeOf } from '@/i18n/locales';
 import { uiOf } from '@/i18n/ui';
 import { inline } from '@/lib/inline';
 
-interface Props extends HTMLAttributes<'section'> {
-  entries: { date: Date; text: string }[];
+interface Props extends HTMLAttributes<'details'> {
+  entries: { date: Date; text: string; correction?: boolean }[];
+  /** nagłówek zamiast „Historia zmian” */
+  title?: string;
 }
 
-const { entries, class: className, ...rest } = Astro.props;
+const t = uiOf(Astro.url).article;
+const { entries, title = t.changelog, id = t.changelogId, class: className, ...rest } = Astro.props;
 const sorted = [...entries].sort((a, b) => b.date.getTime() - a.date.getTime());
 const locale = localeOf(Astro.url.pathname);
-const t = uiOf(Astro.url).article;
+// podgląd w zwiniętym nagłówku: zwykły tekst ostatniego wpisu (bez znaczników lib/inline)
+const plain = (text: string) => text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\*\*/g, '');
+const latest = sorted[0];
 ---
-<section class:list={['log', className]} aria-labelledby={t.changelogId} {...rest}>
-  <h2 class="log__title" id={t.changelogId}>{t.changelog}</h2>
-  <ol class="log__list">
-    {sorted.map((e) => (
-      <li class="log__item">
-        <time class="log__date" datetime={isoDate(e.date)}>{formatDateIn(e.date, locale)}</time>
-        <p class="log__text" set:html={inline(e.text, undefined, undefined, locale)} />
-      </li>
-    ))}
-  </ol>
-</section>
+{latest && (
+  <details class:list={['log', className]} id={id} {...rest}>
+    <summary class="log__head">
+      <h2 class="log__title" data-no-anchor>{title} <span>{sorted.length}</span></h2>
+      <span class="log__preview">{t.changelogLatest} {formatDateIn(latest.date, locale)} · {plain(latest.text)}</span>
+    </summary>
+    <ol class="log__list">
+      {sorted.map((e) => (
+        <li class="log__item">
+          <time class="log__date" datetime={isoDate(e.date)}>{formatDateIn(e.date, locale)}</time>
+          <p class="log__text">
+            {e.correction && <span class="log__tag">{t.correction}</span>}
+            <Fragment set:html={inline(e.text, undefined, undefined, locale)} />
+          </p>
+        </li>
+      ))}
+    </ol>
+  </details>
+)}
 
 <style>
-  .log { padding-top: 20px; border-top: 1px solid var(--ink); }
-  .log__title { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-  .log__list { margin: 12px 0 0; padding: 0; list-style: none; }
+  .log { scroll-margin-top: calc(var(--header-h) + 24px); }
+
+  .log__head {
+    display: flex; align-items: center; gap: 16px;
+    padding: 20px 0 14px; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--line);
+    cursor: pointer; list-style: none;
+  }
+  .log__head::-webkit-details-marker { display: none; }
+  .log__head::after { content: "+"; margin-left: auto; font: 400 1.125rem/1 var(--f-mono); color: var(--blue); }
+  .log[open] .log__head::after { content: "–"; }
+  .log__head:hover .log__title { color: var(--ink); }
+
+  .log__title {
+    display: flex; flex: none; align-items: center; gap: 10px;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    transition: color .2s;
+  }
+  .log__title span { padding: 2px 6px; background: var(--blue-50); color: var(--blue); }
+  .log__preview { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted); }
+  .log[open] .log__preview { visibility: hidden; }
+
+  .log__list { margin: 0; padding: 0; list-style: none; }
   .log__item { display: grid; grid-template-columns: 11ch minmax(0, 1fr); gap: 4px 20px; padding: 12px 0; border-bottom: 1px solid var(--line); }
   .log__date { font: 400 0.8125rem/1.6 var(--f-mono); color: var(--ink-2); }
   .log__text { font-size: 0.9375rem; line-height: 1.6; color: var(--ink-2); }
   .log__text :global(a) { color: var(--ink); }
+  .log__tag {
+    display: inline-block; margin-right: 8px; padding: 1px 6px; vertical-align: 1px;
+    font: 500 0.625rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink); border: 1px solid var(--ink);
+  }
 
   @media (max-width: 520px) {
     .log__item { grid-template-columns: minmax(0, 1fr); }
+    .log__preview { display: none; }
   }
 </style>

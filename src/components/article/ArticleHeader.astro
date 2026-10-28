@@ -1,6 +1,7 @@
 ---
 /**
- * Nagłówek artykułu: okruszki, kategoria, tytuł, lead, metadane i ramka „W skrócie”.
+ * Nagłówek artykułu: okruszki, kategoria, tytuł, lead, metadane (data — z linkiem do historii zmian, podpis
+ * redakcji z linkiem do opisu pracy, czas czytania, przypisy) i ramka „W skrócie”.
  * Z `aside` slot „aside” zajmuje miejsce ramki — dla materiałów, których hakiem jest narzędzie
  * (np. licznik długu w /dane/zadluzenie-szpitali/); obie kolumny są wtedy równe. Flaga zamiast
  * Astro.slots.has(): slot przekazany warunkowo kompilator rejestruje zawsze.
@@ -20,8 +21,11 @@ interface Props {
   section: { label: string; href?: string };
   /** okruszki — te same trafiają do danych strukturalnych (ArticleLayout → seo.breadcrumbs) */
   crumbs: Crumb[];
+  /** data najnowszego wpisu historii zmian (content.config → `updated`) */
   updated?: Date;
   published?: Date;
+  /** artykuł ma „Historię zmian” — data aktualizacji prowadzi do niej */
+  changelog?: boolean;
   minutes: number;
   /** liczba przypisów — lista „Przypisy” (#przypisy) na końcu treści */
   notesCount?: number;
@@ -30,7 +34,7 @@ interface Props {
   aside?: boolean;
 }
 
-const { title, summary, section, crumbs, updated, published, minutes, notesCount = 0, keyPoints = [], aside = false } = Astro.props;
+const { title, summary, section, crumbs, updated, published, changelog = false, minutes, notesCount = 0, keyPoints = [], aside = false } = Astro.props;
 const date = updated ?? published;
 const t = uiOf(Astro.url).article;
 const locale = localeOf(Astro.url.pathname);
@@ -48,9 +52,14 @@ const locale = localeOf(Astro.url.pathname);
         {date && (
           <div>
             <dt>{updated ? t.updated : t.published}</dt>
-            <dd><time datetime={isoDate(date)}>{formatDateIn(date, locale)}</time></dd>
+            <dd>
+              {updated && changelog
+                ? <a href={`#${t.changelogId}`}><time datetime={isoDate(date)}>{formatDateIn(date, locale)}</time></a>
+                : <time datetime={isoDate(date)}>{formatDateIn(date, locale)}</time>}
+            </dd>
           </div>
         )}
+        <div><dt>{t.byline}</dt><dd><a href={t.bylineHref}>{t.bylineText}</a></dd></div>
         <div><dt>{t.readingTime}</dt><dd>{minutes} min</dd></div>
         {notesCount > 0 && <div><dt>{t.notes}</dt><dd><a href={`#${t.notesId}`}>{t.notesWithSources(notesCount)}</a></dd></div>}
       </dl>
@@ -96,7 +105,7 @@ const locale = localeOf(Astro.url.pathname);
 
   @media (max-width: 720px) {
     .ahead__lead { font-size: 1.0625rem; }
-    /* Trzy pozycje nie mieszczą się w rzędzie — siatka 2×2 bez pionowych separatorów */
+    /* Cztery pozycje nie mieszczą się w rzędzie — siatka 2×2 bez pionowych separatorów */
     .ahead__meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
     .ahead__meta > div, .ahead__meta > div + div { padding: 14px 0 0; border-left: 0; }
     .ahead__points { padding: 22px 20px; }

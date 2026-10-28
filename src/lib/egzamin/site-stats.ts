@@ -1,12 +1,18 @@
 /**
- * Zbiorcze wyniki modułu /egzamin z D1 (worker/egzamin.js), czytane raz przy buildzie
- * (components/egzamin/SiteStats). Strona przebudowuje się codziennie (deploy.yml, `schedule`),
- * więc wejścia na stronę nie odpytują ani D1, ani Workera.
+ * Zbiorcze wyniki modułu /egzamin z D1 (worker/egzamin.js) dla sekcji „Wyniki na tej stronie”
+ * (components/egzamin/SiteStats). Wejścia na stronę nie odpytują ani D1, ani Workera — liczby składa build.
  *
- * Odczyt przez `wrangler d1 execute --remote`: w CI z CLOUDFLARE_API_TOKEN i CLOUDFLARE_ACCOUNT_ID,
- * lokalnie z zalogowanego wranglera. Jedno grupowanie po tabeli `wyniki` (koszt ≈ dwie liczby
- * wierszy tabeli w dziennym limicie odczytów D1) i jedno po małej tabeli `agenci`.
- * Bez dostępu do bazy (brak sieci, tokenu, EGZAMIN_STATS=0) zwracamy null, a sekcja znika.
+ * D1 czyta jeden build na dobę. Grupowanie przechodzi przez całą tabelę `wyniki` (≈ dwie liczby jej
+ * wierszy w dziennym limicie odczytów D1 konta), a buildów jest kilkadziesiąt dziennie, więc:
+ *   - EGZAMIN_STATS=d1 — odczyt przez `wrangler d1 execute --remote` (w CI z CLOUDFLARE_API_TOKEN
+ *     i CLOUDFLARE_ACCOUNT_ID). Ustawia go deploy.yml tylko dla nocnego i ręcznego przebiegu;
+ *   - bez zmiennej — migawka z produkcji, /egzamin/statystyki.json (plik statyczny, bez Workera i D1).
+ *     Tak budują pushe w CI i buildy lokalne. Gdy produkcja migawki nie ma (pierwszy deploy, nieudany
+ *     odczyt), build w CI raz sięga do D1, żeby ją założyć; lokalny build pomija wtedy sekcję;
+ *   - EGZAMIN_STATS=0 — bez statystyk.
+ * Każdy build publikuje wynik z powrotem jako /egzamin/statystyki.json (pages/egzamin/statystyki.json.ts),
+ * więc migawka przechodzi z deployu na deploy aż do następnego odczytu D1. Bez danych zwracamy null,
+ * a sekcja znika.
  */
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -64,25 +70,62 @@ const warsawNow = () =>
   new Intl.DateTimeFormat('pl-PL', { timeZone: 'Europe/Warsaw', day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' })
     .format(new Date());
 
-let cache: SiteStats | null | undefined;
+/** Migawka na produkcji — ten sam plik publikuje każdy build (pages/egzamin/statystyki.json.ts). */
+const SNAPSHOT_URL = new URL('/egzamin/statystyki.json', import.meta.env.SITE).href;
 
-export function siteStats(): SiteStats | null {
-  if (cache !== undefined) return cache;
-  cache = null;
-  if (process.env.EGZAMIN_STATS === '0') return cache;
+let cache: Promise<SiteStats | null> | undefined;
+
+/** Statystyki dla tego buildu; strona i plik migawki dzielą jeden odczyt. */
+export function siteStats(): Promise<SiteStats | null> {
+  return (cache ??= load());
+}
+
+async function load(): Promise<SiteStats | null> {
+  const mode = process.env.EGZAMIN_STATS;
+  if (mode === '0') return null;
+  if (mode === 'd1') return fromD1();
+  const snapshot = await fromSnapshot();
+  if (snapshot || process.env.CI !== 'true') return snapshot;
+  // Produkcja bez migawki — build w CI zakłada ją jednym odczytem D1; lokalny build nigdy nie czyta bazy
+  return fromD1();
+}
+
+const isStats = (v: unknown): v is SiteStats => {
+  const s = v as SiteStats | null;
+  return typeof s?.asOf === 'string' && typeof s.since === 'string' && Array.isArray(s.exam?.points)
+    && Array.isArray(s.quick?.byPoints) && Array.isArray(s.quick.byTime) && Array.isArray(s.agents);
+};
+
+async function fromSnapshot(): Promise<SiteStats | null> {
+  try {
+    const res = await fetch(SNAPSHOT_URL, { signal: AbortSignal.timeout(15_000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data: unknown = await res.json();
+    if (!isStats(data)) throw new Error('brak statystyk w pliku');
+    console.info(`[egzamin] statystyki z migawki produkcji (stan na ${data.asOf})`);
+    return data;
+  } catch (e) {
+    console.warn(`[egzamin] brak migawki ${SNAPSHOT_URL} (${(e as Error).message})`);
+    return null;
+  }
+}
+
+function fromD1(): SiteStats | null {
   let rows: Row[], since: string;
   try {
+    // Wiersze przybywają w kolejności dni, więc pierwszy rowid to pierwszy dzień: 1 odczytany wiersz zamiast MIN() po całej tabeli
     const [grouped, first] = query(
       'SELECT tryb, pkt, max, czas_min, zdany, COUNT(*) AS n FROM wyniki GROUP BY tryb, pkt, max, czas_min, zdany; ' +
-      'SELECT MIN(dzien) AS od FROM wyniki',
+      'SELECT dzien AS od FROM wyniki ORDER BY rowid LIMIT 1',
     );
     rows = grouped;
     since = String(first[0]?.od ?? '');
   } catch (e) {
     console.warn(`[egzamin] statystyki strony pominięte — brak odczytu D1 (${(e as Error).message.split('\n')[0]})`);
-    return cache;
+    return null;
   }
-  if (!rows.length || !since) return cache;
+  console.info('[egzamin] statystyki odczytane z D1');
+  if (!rows.length || !since) return null;
 
   const exam = { n: 0, passed: 0, points: [] as { minutes: number; share: number }[] };
   const quick = { n: 0, passed: 0, byPoints: Array.from({ length: QUICK_MAX + 1 }, () => 0) };
@@ -117,7 +160,7 @@ export function siteStats(): SiteStats | null {
     }));
   } catch { /* brak tabeli = brak wyników asystentów */ }
 
-  cache = {
+  return {
     asOf: warsawNow(),
     since,
     exam: { ...exam, points: exam.points.sort((a, b) => a.minutes - b.minutes) },
@@ -127,5 +170,4 @@ export function siteStats(): SiteStats | null {
     },
     agents,
   };
-  return cache;
 }

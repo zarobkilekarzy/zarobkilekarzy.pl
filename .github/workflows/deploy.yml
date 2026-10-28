@@ -3,8 +3,10 @@ name: Deploy to Cloudflare Workers
 # Deploy: automatycznie po pushu na `main` oraz ręcznie (Actions → Run workflow) — tylko z `main`.
 # Worker nie ma adresów podglądu (wrangler.jsonc: preview_urls false), więc każdy deploy jest
 # produkcyjny; ręczny run z innej gałęzi kończy się na buildzie, bez wdrożenia.
-# Codziennie o 1:00 UTC (3:00 latem, 2:00 zimą w Polsce) przebudowa `main`: statystyki wyników
-# na /egzamin/ czyta z D1 build (src/lib/egzamin/site-stats.ts), więc strona ich nie odpytuje.
+# Codziennie o 1:00 UTC (3:00 latem, 2:00 zimą w Polsce) przebudowa `main`: tylko ten przebieg
+# (i ręczny) czyta z D1 statystyki wyników na /egzamin/ i publikuje je jako /egzamin/statystyki.json;
+# build po pushu bierze tę migawkę z produkcji (src/lib/egzamin/site-stats.ts). Dzienny limit
+# odczytów D1 jest wspólny dla konta, a grupowanie czyta całą tabelę wyników.
 on:
   push:
     branches: [main]
@@ -46,8 +48,10 @@ jobs:
         # przerywają build.
         # Token Cloudflare Web Analytics jest publiczny (trafia do HTML jako data-cf-beacon);
         # bez niego Analytics.astro nie renderuje beaconu i pomiar znika.
-        # Token API: odczyt statystyk /egzamin/ z D1 (wrangler d1 execute); bez dostępu sekcja znika.
+        # Statystyki /egzamin/: z D1 (wrangler d1 execute, token API) tylko w przebiegu nocnym i ręcznym;
+        # po pushu migawka z produkcji, a D1 tylko wtedy, gdy produkcja jej nie ma.
         env:
+          EGZAMIN_STATS: ${{ github.event_name != 'push' && 'd1' || '' }}
           CF_WEB_ANALYTICS_TOKEN: 41998160098a4fd3965151cf1b67f440
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

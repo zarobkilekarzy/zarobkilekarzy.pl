@@ -120,6 +120,7 @@ src/
   pages/szukaj.json.ts         indeks wyszukiwarki jako plik statyczny /szukaj.json
   pages/egzamin/index.astro    symulator LEK/LDEK /egzamin/
   pages/egzamin/[exam].json.ts bank pytań jako plik statyczny /egzamin/lek.json, /egzamin/ldek.json
+  pages/egzamin/statystyki.json.ts migawka sekcji „Wyniki na tej stronie” /egzamin/statystyki.json
   pages/mapy/[set].json.ts     treść dymków map jako plik statyczny /mapy/<zestaw>.json
   scripts/reveal.ts        animacje wejścia sterowane atrybutami (data-reveal, data-count)
   scripts/open-target.ts   link do miejsca w zwiniętym <details> (lista przypisów, odpowiedź FAQ) najpierw je rozwija
@@ -387,6 +388,8 @@ Symulator `/egzamin/`: kreator testu, przeglądarka bazy i test w trybie skupien
 Warstwy: `lib/egzamin` nie zna DOM — `ExamSession` to jedyne miejsce zmian stanu (UI i `window.lek` wołają te same metody i słuchają zdarzenia `change`). `client/render.ts` to czyste funkcje stan → HTML, wspólne dla testu, przeglądu wyniku i bazy (style `.lq-` w `question.css`, bo znaczniki powstają w przeglądarce). Konfiguracja (tryby, sesje, dziedziny) trafia do klienta jako JSON z `data/egzamin.ts`; pytania — osobnym plikiem pobieranym przed startem.
 
 **Wersja demonstracyjna.** `data/egzamin-demo.ts` ma 40 przykładowych pytań redakcji (nie z bazy CEM) ze statystykami przykładowymi, a `lib/egzamin/source.ts → expandDemo` rozkłada je powtarzalnie na 200 numerów każdej sesji, żeby UI pracował w pełnej skali. Rozkład wyników innych (`DEMO_DISTRIBUTION`) też jest przykładowy, a wynik nigdzie nie jest wysyłany. Produkcja: `loadPool` czyta pliki sesji z jawnej bazy CEM (ten sam kształt `QuestionBody` + `session`, `nr`), bez `expandDemo`; zbiórka wyników wymaga backendu.
+
+**Wyniki na tej stronie.** Ukończony test trafia anonimowo do D1 (`worker/egzamin.js`, `POST /api/egzamin`: dzień, tryb, sesja, punkty, czas — bez IP i identyfikatorów), a sekcję ze zbiorczymi wynikami (`SiteStats`) składa build w `lib/egzamin/site-stats.ts`. Grupowanie czyta całą tabelę wyników, a dzienny limit odczytów D1 jest wspólny dla konta (plan Free: 5 mln wierszy), więc bazę odpytuje jeden build na dobę: nocny przebieg `deploy.yml` (i ręczny) z `EGZAMIN_STATS=d1`. Wynik trafia do pliku statycznego `/egzamin/statystyki.json`. Każdy inny build — po pushu w CI i lokalny — pobiera tę migawkę z produkcji i publikuje ją dalej, bez Workera i bez D1. Gdy produkcja migawki nie ma, build w CI raz czyta D1, a lokalny pomija sekcję; `EGZAMIN_STATS=0` wyłącza statystyki.
 
 ## Prawa pacjenta
 

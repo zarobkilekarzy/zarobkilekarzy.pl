@@ -6,6 +6,7 @@
  * Opublikowana 27.10.2026, jak /en/ — spec: docs/spec-wersja-angielska.md.
  */
 import IndexLayout from '@/layouts/IndexLayout.astro';
+import { lastUpdated } from '@/i18n/entries';
 import Section from '@/components/layout/Section.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
 import AccuracyLegend from '@/components/ui/AccuracyLegend.astro';
@@ -19,7 +20,6 @@ import { hubTiles } from '@/data/en/narzedzia';
 import { danePage, dataTopics, keyNumbers, labels, polishTargets } from '@/data/en/dane';
 import { principles, translatedOn } from '@/data/en/home';
 import { countEntries, englishEntries, englishGroups, numberWord } from '@/data/en/spis';
-import { site } from '@/data/navigation';
 import { articleHref, getArticle, getTopicGroups } from '@/lib/content';
 import { enHref, getTranslations } from '@/i18n/translations';
 import { ui } from '@/i18n/ui';
@@ -50,6 +50,8 @@ const numbers = (
   )
 ).flat();
 const tiles = hubTiles.dane;
+// materiały w spisie — z nich też data „Aktualizacja” (najświeższy wpis historii zmian albo publikacja)
+const listed = [...(flagship ? [flagship] : []), ...groups.flatMap((g) => g.articles)];
 ---
 <IndexLayout
   title={danePage.title}
@@ -60,10 +62,10 @@ const tiles = hubTiles.dane;
   meta={[
     { label: labels.meta.items, value: countEntries(groups) },
     { label: labels.meta.sections, value: groups.length },
-    { label: labels.meta.updated, value: site.updated },
+    { label: labels.meta.updated, value: lastUpdated(listed) },
   ]}
   jump={{ title: labels.jump, items: groups.map((g) => ({ label: g.info.label, href: `#${g.topic}`, count: g.articles.length })) }}
-  articles={[...(flagship ? [flagship] : []), ...groups.flatMap((g) => g.articles)]}
+  articles={listed}
   index={!DRAFT}
   translations={[{ locale: 'pl', path: '/dane/', indexable: true }]}
 >

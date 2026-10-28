@@ -13,10 +13,12 @@ import Aside from '@/components/blocks/Aside.astro';
 import BarChart from '@/components/blocks/BarChart.astro';
 import Figure from '@/components/blocks/Figure.astro';
 import SourceList from '@/components/article/SourceList.astro';
+import Changelog from '@/components/article/Changelog.astro';
 import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
 import PolandMap from '@/components/mapa/PolandMap.astro';
 import SorDayChart from '@/components/sor/SorDayChart.astro';
-import { dayChartText, editorial, gaps, historyCharts, historyLabels, labels, page, sorLiveText, sources, steps } from '@/data/en/kolejki-sor';
+import { changelog, dayChartText, editorial, gaps, historyCharts, historyLabels, labels, page, sorLiveText, sources, steps } from '@/data/en/kolejki-sor';
+import { getArticle } from '@/lib/content';
 import { historyLabels as historyLabelsPl } from '@/data/kolejki-sor';
 import { sorHistory } from '@/lib/sor/history';
 import { pagePairOf } from '@/i18n/pages';
@@ -25,12 +27,14 @@ import { formatDateIn, isoDate, typo } from '@/lib/format';
 import type { Crumb, SeoInput } from '@/lib/seo';
 
 const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: labels.crumb, href: '/en/patient-rights/' }, { label: page.title }];
+const entry = await getArticle('kolejki-sor');
 const seo: SeoInput = {
   title: page.seoTitle,
   description: page.description,
   index: !pagePairOf(Astro.url.pathname)?.draft,
   breadcrumbs: crumbs,
-  dates: { modified: page.checked },
+  // daty oryginału (wpis kolekcji kolejki-sor); sprawdzenie przepisów = lastReviewed
+  dates: { published: entry.data.date, modified: entry.data.updated, reviewed: page.checked },
 };
 // kategorie z normą: kolor i nazwa etapu po angielsku (lib/sor/text), norma z rozporządzenia (lib/sor/measure)
 const norms = STAGES.map((s, i) => ({ norm: s.norm, ...sorLiveText.stages[i] })).filter((s) => s.norm != null);
@@ -124,10 +128,13 @@ const charts = history ? historyCharts(history) : null;
     </Aside>
     <p class="sor-checked">{labels.checked} <time datetime={isoDate(page.checked)}>{formatDateIn(page.checked, 'en')}</time>.</p>
     <SourceList sources={sources} />
+    <Changelog entries={changelog} class="page-log" />
   </Section>
 </BaseLayout>
 
 <style>
+  /* historia zmian pod źródłami (wpisy: frontmatter kolejki-sor.md → src/data/en/kolejki-sor.ts) */
+  :global(.page-log) { margin-top: 40px; }
   /* jak w src/pages/prawa-pacjenta/sor/index.astro */
   .sor-112 { display: flex; align-items: center; gap: clamp(16px, 2.5vw, 24px); max-width: 40em; margin-top: 32px; padding: clamp(16px, 2.5vw, 22px) clamp(16px, 2.5vw, 26px); border-left: 4px solid var(--bad); background: var(--bad-bg); }
   .sor-112__num { flex: none; display: grid; place-items: center; min-width: 4.75rem; height: 3.75rem; padding: 0 12px; background: var(--bad); color: var(--on-ink); font: 600 1.875rem/1 var(--f-display); letter-spacing: -0.02em; text-decoration: none; transition: background .2s; }

@@ -5,6 +5,7 @@
  * Zestawienia to wpisy kolekcji `articles` z polem `topic`; opisy działów — src/data/dane.ts.
  */
 import IndexLayout from '@/layouts/IndexLayout.astro';
+import { lastUpdated } from '@/i18n/entries';
 import Section from '@/components/layout/Section.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
 import AccuracyLegend from '@/components/ui/AccuracyLegend.astro';
@@ -16,7 +17,6 @@ import ToolTiles from '@/components/blocks/ToolTiles.astro';
 import { hubTiles } from '@/data/narzedzia';
 import { danePage, dataTopics, keyNumbers } from '@/data/dane';
 import { principles } from '@/data/home';
-import { site } from '@/data/navigation';
 import { countArticles, getArticle, getTopicGroups, withTargets } from '@/lib/content';
 import { DATA_TOPICS } from '@/types';
 
@@ -25,6 +25,8 @@ const [groups, numbers, flagship] = await Promise.all([
   withTargets(keyNumbers),
   getArticle(danePage.flagship),
 ]);
+// materiały w spisie — z nich też data „Aktualizacja” (najświeższy wpis historii zmian albo publikacja)
+const listed = [flagship, ...groups.flatMap((g) => g.articles)];
 ---
 <IndexLayout
   title={danePage.title}
@@ -35,10 +37,10 @@ const [groups, numbers, flagship] = await Promise.all([
   meta={[
     { label: 'Zestawienia', value: countArticles(groups) + 1 },
     { label: 'Działy', value: groups.length },
-    { label: 'Aktualizacja', value: site.updated },
+    { label: 'Aktualizacja', value: lastUpdated(listed) },
   ]}
   jump={{ title: 'Działy', items: groups.map((g) => ({ label: g.info.label, href: `#${g.topic}`, count: g.articles.length })) }}
-  articles={[flagship, ...groups.flatMap((g) => g.articles)]}
+  articles={listed}
   translations={[{ locale: 'en', path: '/en/data/', indexable: true }]}
 >
   <AccuracyLegend slot="legend" />

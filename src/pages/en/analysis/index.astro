@@ -6,13 +6,13 @@
  * Opublikowana 27.10.2026, jak /en/.
  */
 import IndexLayout from '@/layouts/IndexLayout.astro';
+import { lastUpdated } from '@/i18n/entries';
 import Section from '@/components/layout/Section.astro';
 import TopicCatalog from '@/components/blocks/TopicCatalog.astro';
 import TranslationNote from '@/components/article/TranslationNote.astro';
 import { analizyPage, analysisTopics, labels } from '@/data/en/analizy';
 import { translatedOn } from '@/data/en/home';
 import { countEntries, englishEntries, englishGroups } from '@/data/en/spis';
-import { site } from '@/data/navigation';
 import { getTopicGroups } from '@/lib/content';
 import { ANALYSIS_TOPICS } from '@/types';
 
@@ -21,6 +21,8 @@ const DRAFT = false;
 
 const toEntry = await englishEntries();
 const groups = englishGroups(await getTopicGroups(ANALYSIS_TOPICS, analysisTopics), analysisTopics, toEntry);
+// materiały w spisie — z nich też data „Aktualizacja” (najświeższy wpis historii zmian albo publikacja)
+const listed = groups.flatMap((g) => g.articles);
 ---
 <IndexLayout
   title={analizyPage.title}
@@ -31,10 +33,10 @@ const groups = englishGroups(await getTopicGroups(ANALYSIS_TOPICS, analysisTopic
   meta={[
     { label: labels.meta.items, value: countEntries(groups) },
     { label: labels.meta.sections, value: groups.length },
-    { label: labels.meta.updated, value: site.updated },
+    { label: labels.meta.updated, value: lastUpdated(listed) },
   ]}
   jump={{ title: labels.jump, items: groups.map((g) => ({ label: g.info.label, href: `#${g.topic}`, count: g.articles.length })) }}
-  articles={groups.flatMap((g) => g.articles)}
+  articles={listed}
   index={!DRAFT}
   translations={[{ locale: 'pl', path: '/analizy/', indexable: true }]}
 >

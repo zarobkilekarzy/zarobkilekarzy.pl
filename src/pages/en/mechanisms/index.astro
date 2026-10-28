@@ -5,6 +5,7 @@
  * z tłumaczeniem (src/data/en/spis.ts). Opublikowana 27.10.2026, jak /en/.
  */
 import IndexLayout from '@/layouts/IndexLayout.astro';
+import { lastUpdated } from '@/i18n/entries';
 import Section from '@/components/layout/Section.astro';
 import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
@@ -16,7 +17,6 @@ import { hubTiles } from '@/data/en/narzedzia';
 import { labels, mechanizmyPage, mechanismTopics } from '@/data/en/mechanizmy';
 import { translatedOn } from '@/data/en/home';
 import { countEntries, englishEntries, englishGroups, numberWord } from '@/data/en/spis';
-import { site } from '@/data/navigation';
 import { getTopicGroups } from '@/lib/content';
 import { typo } from '@/lib/format';
 import { MECHANISM_TOPICS } from '@/types';
@@ -27,6 +27,8 @@ const DRAFT = false;
 const toEntry = await englishEntries();
 const groups = englishGroups(await getTopicGroups(MECHANISM_TOPICS, mechanismTopics), mechanismTopics, toEntry);
 const tiles = hubTiles.mechanizmy;
+// materiały w spisie — z nich też data „Aktualizacja” (najświeższy wpis historii zmian albo publikacja)
+const listed = groups.flatMap((g) => g.articles);
 ---
 <IndexLayout
   title={mechanizmyPage.title}
@@ -37,10 +39,10 @@ const tiles = hubTiles.mechanizmy;
   meta={[
     { label: labels.meta.items, value: countEntries(groups) },
     { label: labels.meta.questions, value: groups.length },
-    { label: labels.meta.updated, value: site.updated },
+    { label: labels.meta.updated, value: lastUpdated(listed) },
   ]}
   jump={{ title: labels.jump(numberWord(groups.length)), items: groups.map((g) => ({ label: g.info.question, href: `#${g.topic}`, count: g.articles.length })) }}
-  articles={groups.flatMap((g) => g.articles)}
+  articles={listed}
   index={!DRAFT}
   translations={[{ locale: 'pl', path: '/mechanizmy/', indexable: true }]}
 >

@@ -25,6 +25,7 @@ import Aside from '@/components/blocks/Aside.astro';
 import InfographicsSection from '@/components/blocks/InfographicsSection.astro';
 import PostulatCta from '@/components/site/PostulatCta.astro';
 import { articleHref, getFootnotes, getRelated, readingMinutes, sectionOf, type Article } from '@/lib/content';
+import { datasetFiles } from '@/lib/media/dane';
 import { mainNav } from '@/data/navigation';
 import { formatDateIn, typo } from '@/lib/format';
 import { infographicSets } from '@/lib/infografiki/zestawy';
@@ -70,9 +71,15 @@ const aside = Astro.slots.has('aside') ? (await Astro.slots.render('aside')).tri
 const crumbs: Crumb[] = [{ label: t.nav.home, href: t.nav.homeHref }, { label: section.label, href: sectionHref }, { label: title }];
 const citations = footnotes.urls;
 
-// Zestawienia działu Dane to zarazem zbiory danych (schema.org/Dataset) — jak na dotychczasowej stronie
+// Zestawienia działu Dane to zarazem zbiory danych (schema.org/Dataset) — jak na dotychczasowej stronie. Strona,
+// z której pochodzi plik CSV na /media/ (lib/media/dane.ts), ma Dataset z tym plikiem do pobrania, także spoza działu Dane
+// (wtedy nazwa i opis zbioru z pliku, nie z tekstu).
 const entities: Entity[] = [{ kind: 'article', citations }];
-if (source.data.category === 'Dane') entities.push({ kind: 'dataset', isBasedOn: citations, ...source.data.dataset });
+const files = datasetFiles(articleHref(source), Astro.site!);
+if (source.data.category === 'Dane' || files.length) {
+  const named = source.data.category !== 'Dane' && files.length === 1 ? { name: files[0]!.name, description: files[0]!.description } : {};
+  entities.push({ kind: 'dataset', isBasedOn: citations, ...named, ...source.data.dataset, ...(files.length && { distribution: files }) });
+}
 
 // Para językowa: przełącznik pokazuje też tłumaczenie-szkic, hreflang dostają tylko pary w indeksie (lib/seo/meta.ts)
 const pair = en ? undefined : await translationOf(source);

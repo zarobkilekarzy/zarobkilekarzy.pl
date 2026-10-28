@@ -55,6 +55,7 @@ export function resolveSeo(input: SeoInput, { site, pathname, siteName, image }:
     },
     published: input.dates?.published?.toISOString(),
     modified: modified?.toISOString(),
+    reviewed: input.dates?.reviewed?.toISOString(),
     section: input.section,
     locale,
     alternates,

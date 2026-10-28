@@ -276,3 +276,14 @@ export const historyLabels = {
     link: 'Open the table (in Polish)',
   },
 };
+
+/**
+ * „Change history” strony — tłumaczenie `changelog` z src/content/articles/kolejki-sor.md (te same daty i sprostowania).
+ * Nowy wpis po polsku = ten sam wpis tutaj.
+ */
+export const changelog: { date: Date; text: string; correction?: boolean }[] = [
+  {
+    date: new Date('2026-10-28'),
+    text: 'Added the section “What the data show”, based on measurements collected every 10 minutes: a typical day in emergency departments, the share of readings above the norm by region, readings capped at “over 2 hours” and a table of all emergency departments.',
+  },
+];

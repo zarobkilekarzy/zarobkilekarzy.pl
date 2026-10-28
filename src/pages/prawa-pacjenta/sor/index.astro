@@ -14,6 +14,7 @@ import Aside from '@/components/blocks/Aside.astro';
 import BarChart from '@/components/blocks/BarChart.astro';
 import Figure from '@/components/blocks/Figure.astro';
 import SourceList from '@/components/article/SourceList.astro';
+import Changelog from '@/components/article/Changelog.astro';
 import PolandMap from '@/components/mapa/PolandMap.astro';
 import SorDayChart from '@/components/sor/SorDayChart.astro';
 import SorGrid from '@/components/sor/SorGrid.astro';
@@ -21,10 +22,18 @@ import { dayChartText, editorial, gaps, historyCharts, historyLabels, page, sour
 import { sorHistory } from '@/lib/sor/history';
 import { normText, STAGES } from '@/lib/sor/measure';
 import { formatDate, isoDate, typo } from '@/lib/format';
+import { getArticle } from '@/lib/content';
 import type { Crumb, SeoInput } from '@/lib/seo';
 
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Prawa pacjenta', href: '/prawa-pacjenta/' }, { label: page.title }];
-const seo: SeoInput = { title: page.seoTitle, description: page.description, breadcrumbs: crumbs, dates: { modified: page.checked } };
+// daty: publikacja i aktualizacja (najnowszy wpis historii zmian) z wpisu kolekcji; sprawdzenie przepisów = lastReviewed
+const entry = await getArticle('kolejki-sor');
+const seo: SeoInput = {
+  title: page.seoTitle,
+  description: page.description,
+  breadcrumbs: crumbs,
+  dates: { published: entry.data.date, modified: entry.data.updated, reviewed: page.checked },
+};
 const norms = STAGES.filter((s) => s.norm != null);
 const capitalize = (s: string) => s[0].toLocaleUpperCase('pl') + s.slice(1);
 const history = await sorHistory();
@@ -115,10 +124,13 @@ const charts = history ? historyCharts(history) : null;
     </Aside>
     <p class="sor-checked">Przepisy i dokumenty sprawdzone <time datetime={isoDate(page.checked)}>{formatDate(page.checked)}</time>.</p>
     <SourceList sources={sources} />
+    {entry.data.changelog && <Changelog entries={entry.data.changelog} class="page-log" />}
   </Section>
 </BaseLayout>
 
 <style>
+  /* historia zmian pod źródłami (wpisy: frontmatter kolejki-sor.md) */
+  :global(.page-log) { margin-top: 40px; }
   /* jedyny alarmowy blok strony — ten sam czerwony co „112” w karcie pomocy (components/pacjent/HelpCard) */
   .sor-112 { display: flex; align-items: center; gap: clamp(16px, 2.5vw, 24px); max-width: 40em; margin-top: 32px; padding: clamp(16px, 2.5vw, 22px) clamp(16px, 2.5vw, 26px); border-left: 4px solid var(--bad); background: var(--bad-bg); }
   .sor-112__num { flex: none; display: grid; place-items: center; min-width: 4.75rem; height: 3.75rem; padding: 0 12px; background: var(--bad); color: var(--on-ink); font: 600 1.875rem/1 var(--f-display); letter-spacing: -0.02em; text-decoration: none; transition: background .2s; }

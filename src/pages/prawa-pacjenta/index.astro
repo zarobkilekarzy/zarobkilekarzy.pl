@@ -10,6 +10,7 @@ import Section from '@/components/layout/Section.astro';
 import PageHeader from '@/components/layout/PageHeader.astro';
 import Aside from '@/components/blocks/Aside.astro';
 import SourceList from '@/components/article/SourceList.astro';
+import Changelog from '@/components/article/Changelog.astro';
 import ShareLinks from '@/components/article/ShareLinks.astro';
 import Icon from '@/components/ui/Icon.astro';
 import HelpCard from '@/components/pacjent/HelpCard.astro';
@@ -29,7 +30,7 @@ import {
   page, rightsGroups, routes, routesNote, sources,
 } from '@/data/prawa-pacjenta';
 import type { Crumb, SeoInput } from '@/lib/seo';
-import { articleHref, getAllArticles } from '@/lib/content';
+import { articleHref, getAllArticles, getArticle } from '@/lib/content';
 import { formatDate, isoDate, typo } from '@/lib/format';
 import { inline, plain, type Resolve } from '@/lib/inline';
 import { PDF_FILES, pdfMeta } from '@/lib/pacjent/downloads';
@@ -49,12 +50,14 @@ const url = new URL(Astro.url.pathname, Astro.site).href;
 
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: page.title }];
 // Pytania i odpowiedzi jako strona FAQ (schema.org/FAQPage) — graf buduje lib/seo
+const entry = await getArticle('prawa-pacjenta');
 const seo: SeoInput = {
   title: page.seoTitle,
   social: { title: page.docTitle },
   description: page.description,
   breadcrumbs: crumbs,
-  dates: { modified: page.checked },
+  // aktualizacja = najnowszy wpis historii zmian (prawa-pacjenta.md); „Sprawdzone ze źródłami” = lastReviewed
+  dates: { modified: entry.data.updated, reviewed: page.checked },
   page: {
     type: 'FAQPage',
     questions: rightsGroups.flatMap((g) => g.items).map((item) => ({
@@ -155,6 +158,7 @@ const seo: SeoInput = {
             {legalBasis.map((p) => <li set:html={inline(p, resolve)} />)}
           </ul>
           <SourceList sources={sources} />
+          {entry.data.changelog && <Changelog entries={entry.data.changelog} class="page-log" />}
         </div>
         <Aside variant="editorial" title="Dlaczego serwis o jawności pisze o prawach pacjenta">
           {editorial.map((p) => <p set:html={inline(p, resolve)} />)}
@@ -224,6 +228,8 @@ const seo: SeoInput = {
 </script>
 
 <style>
+  /* historia zmian pod źródłami (wpisy: frontmatter prawa-pacjenta.md) */
+  :global(.page-log) { margin-top: 40px; }
   .pp-top { padding-top: clamp(32px, 4vw, 56px); }
   .pp :global(.pp-sec) { scroll-margin-top: var(--header-h); }
 

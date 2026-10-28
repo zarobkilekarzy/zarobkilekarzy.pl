@@ -113,3 +113,15 @@ export const datasetUrl = (d: Dataset) => `/media/dane/${d.slug}.csv`;
 
 /** Rozmiar pliku do opisu linku, np. „2 KB” */
 export const datasetSize = (d: Dataset) => `${Math.max(1, Math.round(Buffer.byteLength(toCsv(d)) / 1024))} KB`;
+
+/**
+ * Pliki CSV zestawione z danej strony — `distribution` w jej schema.org/Dataset (ArticleLayout), żeby zbiór
+ * z plikiem do pobrania znalazły też wyszukiwarki zbiorów danych. Adres pliku: pages/media/dane/[plik].csv.ts.
+ */
+export const datasetFiles = (route: string, site: URL) =>
+  DATASETS.filter((d) => d.route === route).map((d) => ({
+    name: d.title,
+    description: d.desc,
+    contentUrl: new URL(`/media/dane/${d.slug}.csv`, site).href,
+    encodingFormat: 'text/csv',
+  }));

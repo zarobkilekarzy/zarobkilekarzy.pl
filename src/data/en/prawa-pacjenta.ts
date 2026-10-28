@@ -612,3 +612,20 @@ same(card.free, PL.card.free, 'bezpłatne na karcie', (f) => f.basis);
 same(editorial, PL.editorial, 'stanowisko redakcji');
 same(legalBasis, PL.legalBasis, 'podstawy prawne');
 same(sources, PL.sources, 'źródła', (s) => s.url);
+
+/**
+ * „Change history” strony — tłumaczenie `changelog` z src/content/articles/prawa-pacjenta.md (te same daty i sprostowania).
+ * Nowy wpis po polsku = ten sam wpis tutaj.
+ */
+export const changelog: { date: Date; text: string; correction?: boolean }[] = [
+  {
+    date: new Date('2026-10-21'),
+    text: 'Corrected: a complaint to the professional liability officer does not have to be in writing or signed by hand, and the 3 years from the act (art. 64 ust. 1 of the Act on Medical Chambers) is the deadline for opening proceedings — the complaint has to be filed earlier.',
+    correction: true,
+  },
+  {
+    date: new Date('2026-10-20'),
+    text: 'Added: respect for dignity and privacy (art. 20 and 22), additional nursing care (art. 34–35), treatment in line with current medical knowledge (art. 6 and 8), the opinion of another nurse or midwife (art. 6 ust. 3), the patient rights representative in the facility (art. 40a), compensation for a breach of rights (art. 4) and a list of other rights in brief. Corrected: in childbirth the act gives the right to services related to childbirth, but does not call them “immediate” (art. 7 ust. 2).',
+    correction: true,
+  },
+];

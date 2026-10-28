@@ -1,10 +1,10 @@
 ---
-/** Rząd metadanych strony (liczba materiałów, działy, data). Slot — np. legenda pod spodem. */
+/** Rząd metadanych strony (liczba materiałów, działy, data). Pozycja bez wartości znika. Slot — np. legenda pod spodem. */
 import { formatDateIn, isoDate } from '@/lib/format';
 import { localeOf } from '@/i18n/locales';
 
 interface Props {
-  items: { label: string; value: string | number | Date }[];
+  items: { label: string; value: string | number | Date | undefined }[];
 }
 
 const { items } = Astro.props;
@@ -13,7 +13,7 @@ const locale = localeOf(Astro.url.pathname);
 <div class="pmeta">
   <div class="pmeta__row">
     <dl>
-      {items.map(({ label, value }) => (
+      {items.filter(({ value }) => value !== undefined).map(({ label, value }) => (
         <div>
           <dt>{label}</dt>
           <dd>{value instanceof Date ? <time datetime={isoDate(value)}>{formatDateIn(value, locale)}</time> : value}</dd>

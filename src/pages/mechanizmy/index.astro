@@ -5,6 +5,7 @@
  * Mechanizmy to wpisy kolekcji `articles` z polem `topic`; pytania i zdjęcia — src/data/mechanizmy.ts.
  */
 import IndexLayout from '@/layouts/IndexLayout.astro';
+import { lastUpdated } from '@/i18n/entries';
 import Section from '@/components/layout/Section.astro';
 import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
@@ -13,12 +14,13 @@ import ToolTiles from '@/components/blocks/ToolTiles.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
 import { hubTiles } from '@/data/narzedzia';
 import { mechanizmyPage, mechanismTopics } from '@/data/mechanizmy';
-import { site } from '@/data/navigation';
 import { countArticles, getTopicGroups } from '@/lib/content';
 import { typo } from '@/lib/format';
 import { MECHANISM_TOPICS } from '@/types';
 
 const groups = await getTopicGroups(MECHANISM_TOPICS, mechanismTopics);
+// materiały w spisie — z nich też data „Aktualizacja” (najświeższy wpis historii zmian albo publikacja)
+const listed = groups.flatMap((g) => g.articles);
 ---
 <IndexLayout
   title={mechanizmyPage.title}
@@ -29,10 +31,10 @@ const groups = await getTopicGroups(MECHANISM_TOPICS, mechanismTopics);
   meta={[
     { label: 'Mechanizmy', value: countArticles(groups) },
     { label: 'Pytania', value: groups.length },
-    { label: 'Aktualizacja', value: site.updated },
+    { label: 'Aktualizacja', value: lastUpdated(listed) },
   ]}
   jump={{ title: 'Cztery pytania', items: groups.map((g) => ({ label: g.info.question, href: `#${g.topic}`, count: g.articles.length })) }}
-  articles={groups.flatMap((g) => g.articles)}
+  articles={listed}
   translations={[{ locale: 'en', path: '/en/mechanisms/', indexable: true }]}
 >
   <Section space="bottom">

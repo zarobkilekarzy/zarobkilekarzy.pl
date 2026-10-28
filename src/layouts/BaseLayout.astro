@@ -28,6 +28,7 @@ import * as navEn from '@/data/en/navigation';
 import { identity } from '@/data/seo/identity';
 import { newsletter, newsletterOn } from '@/data/newsletter';
 import { getPopularSearches } from '@/lib/search/build';
+import { siteUpdated } from '@/lib/content';
 import { OG_HEIGHT, OG_WIDTH, ogImageFor } from '@/lib/og/registry';
 import { buildGraph, resolveSeo, type SeoInput } from '@/lib/seo';
 import { LOCALE_META, localeOf } from '@/i18n/locales';
@@ -66,6 +67,7 @@ const locale = localeOf(Astro.url.pathname);
 const t = ui[locale];
 const en = locale === 'en';
 const nav = en ? navEn : { mainNav, mobileExtras, topbarLinks, footerNav };
+const updated = await siteUpdated();
 const popularSearches = en ? await (await import('@/lib/search/build-en')).getPopularSearchesEn() : await getPopularSearches();
 // Przełącznik języka: odpowiednik strony, a gdy go nie ma — strona startowa drugiej wersji (dziś PL ↔ EN)
 const translation = input.translations?.[0] ?? (en ? { locale: 'pl' as const, path: '/' } : { locale: 'en' as const, path: '/en/' });
@@ -106,7 +108,7 @@ const translation = input.translations?.[0] ?? (en ? { locale: 'pl' as const, pa
   <body>
     <a class="skip-link" href="#tresc">{t.skipLink}</a>
     <Sprite />
-    <Topbar updated={site.updated} announcement={en ? undefined : site.announcement} links={nav.topbarLinks} />
+    <Topbar updated={updated} announcement={en ? undefined : site.announcement} links={nav.topbarLinks} />
     <Header nav={nav.mainNav} mobileExtras={en ? [] : mobileExtras} translation={translation} />
 
     <main id="tresc">

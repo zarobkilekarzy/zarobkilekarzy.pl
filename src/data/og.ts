@@ -4,7 +4,10 @@
  * Strona główna jest też obrazkiem domyślnym dla tras bez własnego wpisu.
  */
 import type { OgPage, OgStamp } from '@/types';
-import { site } from '@/data/navigation';
+import { danePage, dataTopics } from '@/data/dane';
+import { getArticle, getTopicGroups } from '@/lib/content';
+import { lastUpdated } from '@/i18n/entries';
+import { DATA_TOPICS } from '@/types';
 import { formatDate, formatPL, plural } from '@/lib/format';
 import { monitoring, type Response } from '@/lib/monitoring';
 import { currentStage, projekt, stages } from '@/data/projekt-ustawy';
@@ -116,6 +119,12 @@ const LIMITY_BARS: OgPage['bars'] = {
 const HEMICYCLE_PL = { legend: ['za', 'przeciw', 'wstrz.', 'nie gł.'], result: 'za : przeciw' };
 
 /** Półkole głosowania nad ustawą o limitach płac (jak `sejm/Hemicycle` na stronie) — barwy dzienne, podpisy przez label(). */
+/** Data „stan na” w stopce obrazka działu danych — ta sama co „Aktualizacja” na /dane/ (najświeższy materiał w spisie). */
+export const dataUpdated = lastUpdated([
+  await getArticle(danePage.flagship),
+  ...(await getTopicGroups(DATA_TOPICS, dataTopics)).flatMap((g) => g.articles),
+]);
+
 export function hemicyclePanel(text: typeof HEMICYCLE_PL = HEMICYCLE_PL): string {
   const W = MEDIA_W, ARC_H = 250, H = 300;
   const tok = (name: string) => tokenColor(name, false);
@@ -224,7 +233,7 @@ export const ogPages: Record<string, OgPage> = {
       accuracy: 'est',
       source: 'AOTMiT · Rzeczpospolita, 27.05.2026',
     },
-    footer: { text: `Dział danych · stan na ${formatDate(site.updated)}`, flags: true },
+    footer: { text: `Dział danych${dataUpdated ? ` · stan na ${formatDate(dataUpdated)}` : ''}`, flags: true },
   },
   // liczby z danych monitoringu — po regeneracji JSON-a obrazek aktualizuje się sam
   // glob w kolorach widoku „× przeciętna płaca”; bez napisów, ten sam rysunek na obrazku EN

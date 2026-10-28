@@ -52,3 +52,16 @@ export const entryOf = (a: Article): Entry => ({
 });
 
 export const toEntry = (item: Article | Entry): Entry => (isEntry(item) ? item : entryOf(item));
+
+/**
+ * Najświeższa data w spisie (aktualizacja z historii zmian albo publikacja) — „Aktualizacja” stron działów.
+ * Liczona z treści, więc nie starzeje się jak data wpisana ręcznie; spis bez dat — undefined.
+ */
+export function lastUpdated(items: (Article | Entry | undefined)[]): Date | undefined {
+  const times = items.flatMap((item) => {
+    const entry = item && toEntry(item);
+    const when = entry && (entry.updated ?? entry.date);
+    return when ? [when.getTime()] : [];
+  });
+  return times.length ? new Date(Math.max(...times)) : undefined;
+}

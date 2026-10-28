@@ -40,14 +40,14 @@ const EN: Record<string, CaseEn> = {
     sources: ['WP', 'rp.pl'],
   },
   'Łosice': {
-    pl: ['396,5 tys. zł', '1,26 mln zł', 'ok. 1,65 mln zł'],
+    pl: ['396,6 tys. zł', '1,26 mln zł', 'ok. 1,65 mln zł'],
     place: 'Łosice',
     role: 'hospital director',
-    management: { text: 'PLN 396.5 thousand', note: monthly(396_500) },
+    management: { text: 'PLN 396.6 thousand', note: monthly(396_575) },
     other: { text: 'PLN 1.26 million', note: 'for medical services provided to the hospital the director runs' },
     total: { text: 'about PLN 1.65 million', note: 'excluding pension' },
     hospital: 'record profits',
-    sources: ['money.pl'],
+    sources: ['BIP', 'money.pl'],
   },
   'Ostrowiec Świętokrzyski': {
     pl: ['1,07 mln zł', undefined, 'co najmniej 1,07 mln zł'],

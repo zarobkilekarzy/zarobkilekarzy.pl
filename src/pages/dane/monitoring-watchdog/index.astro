@@ -5,6 +5,7 @@
  * Wpis kolekcji `monitoring-watchdog` zostaje bez treści i linkuje tutaj (href).
  */
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import Changelog from '@/components/article/Changelog.astro';
 import Section from '@/components/layout/Section.astro';
 import InfographicsSection from '@/components/blocks/InfographicsSection.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
@@ -17,6 +18,7 @@ import MonitoringGrid from '@/components/monitoring/MonitoringGrid.astro';
 import PolandMap from '@/components/mapa/PolandMap.astro';
 import { grid } from '@/components/monitoring/grid';
 import { monitoring } from '@/lib/monitoring';
+import { getArticle } from '@/lib/content';
 import { opennessP } from '@/lib/monitoring/map';
 import { mainNav } from '@/data/navigation';
 import { formatDate, formatPL, isoDate, plural, typo } from '@/lib/format';
@@ -50,11 +52,14 @@ const definitions = [
 ];
 
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Dane', href: dataHref }, { label: title }];
+const entry = await getArticle('monitoring-watchdog');
+const modified = entry.data.updated && entry.data.updated > updated ? entry.data.updated : updated;
 const seo: SeoInput = {
   title,
   description,
   breadcrumbs: crumbs,
-  dates: { modified: updated },
+  // aktualizacja: nowszy ze stanu danych (odświeżenie danych samo w sobie jest zmianą) i najnowszego wpisu historii zmian (monitoring-watchdog.md)
+  dates: { published: entry.data.date, modified: modified },
   entities: [
     {
       kind: 'dataset',
@@ -171,6 +176,12 @@ const seo: SeoInput = {
       </dl>
     </div>
   </Section>
+
+  {entry.data.changelog && (
+    <Section space="bottom" aria-label="Historia zmian">
+      <Changelog entries={entry.data.changelog} class="page-log" />
+    </Section>
+  )}
 
   <Section aria-label="Infografiki do pobrania">
     <InfographicsSection set="monitoring-watchdog" />

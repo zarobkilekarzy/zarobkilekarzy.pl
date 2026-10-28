@@ -5,17 +5,19 @@
  * Analizy to wpisy kolekcji `articles` z polem `topic`; opisy działów — src/data/analizy.ts.
  */
 import IndexLayout from '@/layouts/IndexLayout.astro';
+import { lastUpdated } from '@/i18n/entries';
 import Section from '@/components/layout/Section.astro';
 import SectionHead from '@/components/layout/SectionHead.astro';
 import TopicCatalog from '@/components/blocks/TopicCatalog.astro';
 import ToolTiles from '@/components/blocks/ToolTiles.astro';
 import { hubTiles } from '@/data/narzedzia';
 import { analizyPage, analysisTopics } from '@/data/analizy';
-import { site } from '@/data/navigation';
 import { countArticles, getTopicGroups } from '@/lib/content';
 import { ANALYSIS_TOPICS } from '@/types';
 
 const groups = await getTopicGroups(ANALYSIS_TOPICS, analysisTopics);
+// materiały w spisie — z nich też data „Aktualizacja” (najświeższy wpis historii zmian albo publikacja)
+const listed = groups.flatMap((g) => g.articles);
 ---
 <IndexLayout
   title={analizyPage.title}
@@ -26,10 +28,10 @@ const groups = await getTopicGroups(ANALYSIS_TOPICS, analysisTopics);
   meta={[
     { label: 'Analizy', value: countArticles(groups) },
     { label: 'Działy', value: groups.length },
-    { label: 'Aktualizacja', value: site.updated },
+    { label: 'Aktualizacja', value: lastUpdated(listed) },
   ]}
   jump={{ title: 'Działy', items: groups.map((g) => ({ label: g.info.label, href: `#${g.topic}`, count: g.articles.length })) }}
-  articles={groups.flatMap((g) => g.articles)}
+  articles={listed}
   translations={[{ locale: 'en', path: '/en/analysis/', indexable: true }]}
 >
   <Section space="bottom" class="catalog">

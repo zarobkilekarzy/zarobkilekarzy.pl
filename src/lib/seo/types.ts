@@ -45,8 +45,8 @@ export type Entity =
       spatialCoverage?: string;
       /** źródła danych */
       isBasedOn?: string[];
-      /** pliki do pobrania */
-      distribution?: { contentUrl: string; encodingFormat: string }[];
+      /** pliki do pobrania (schema.org/DataDownload) */
+      distribution?: { name?: string; contentUrl: string; encodingFormat: string }[];
     }
   | {
       /** słownik pojęć: DefinedTermSet z hasłami (DefinedTerm) — każde hasło ma kotwicę na stronie */
@@ -80,7 +80,11 @@ export interface SeoInput {
   index?: boolean;
   /** tylko dla duplikatów — adres oryginału; domyślnie adres strony */
   canonical?: string;
-  dates?: { published?: Date; modified?: Date };
+  /**
+   * `modified` = ostatnia zmiana merytoryczna (historia zmian); `reviewed` = ostatnie sprawdzenie treści ze źródłami
+   * bez zmian (np. „Sprawdzone ze źródłami” na stronach o prawach pacjenta) — WebPage.lastReviewed, nie dateModified
+   */
+  dates?: { published?: Date; modified?: Date; reviewed?: Date };
   /** dział (article:section) */
   section?: string;
   /** te same okruszki, które widzi czytelnik */
@@ -124,6 +128,7 @@ export interface ResolvedSeo {
   /** daty w ISO — do article:* i do grafu */
   published?: string;
   modified?: string;
+  reviewed?: string;
   section?: string;
   /** język strony (z adresu) */
   locale: Locale;

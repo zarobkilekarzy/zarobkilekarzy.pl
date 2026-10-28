@@ -7,7 +7,6 @@
  */
 import { createHmac } from 'node:crypto';
 import type { OgPage, OgStamp } from '@/types';
-import { site } from '@/data/navigation';
 import { formatDateIn, formatEN } from '@/lib/format';
 import { helpline } from '@/data/prawa-pacjenta';
 import { MEDIANS } from '@/data/rozklad-wynagrodzen';
@@ -18,7 +17,7 @@ import { columnChart, svg } from '@/lib/og/charts';
 import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
 import { globeOgBody } from '@/lib/swiat/og';
 import { newsIllustration } from '@/lib/news';
-import { hemicyclePanel } from '@/data/og';
+import { dataUpdated, hemicyclePanel } from '@/data/og';
 import { BUDGET } from '@/data/budzet-nfz';
 import { AOS_FIRST, AOS_LAST, WHC_2022, WHC_2024, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
 import { WINDOW, ratePer100k, type CountryKey } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
@@ -171,7 +170,7 @@ export const ogPagesEn: Record<string, OgPage> = {
       accuracy: 'est',
       source: 'AOTMiT · Rzeczpospolita, 27 May 2026',
     },
-    footer: { text: `Data section · as of ${formatDateIn(site.updated, 'en')}`, flags: true },
+    footer: { text: `Data section${dataUpdated ? ` · as of ${formatDateIn(dataUpdated, 'en')}` : ''}`, flags: true },
   },
   '/en/mechanisms/': {
     eyebrow: 'Mechanisms',

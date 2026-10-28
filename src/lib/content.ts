@@ -5,6 +5,7 @@
 import { getCollection, getEntries, getEntry, render, type CollectionEntry } from 'astro:content';
 import type { MarkdownHeading } from 'astro';
 import type { Category, Term, TopicId } from '@/types';
+import { getNews } from '@/lib/news';
 
 export type Article = CollectionEntry<'articles'>;
 
@@ -46,6 +47,16 @@ const freshness = (article: Article) => article.data.updated ?? article.data.dat
 export async function getDatedArticles() {
   const all = await getCollection('articles', (a) => freshness(a) !== undefined && isListed(a));
   return all.sort((a, b) => freshness(b)!.valueOf() - freshness(a)!.valueOf());
+}
+
+/**
+ * Ostatnia zmiana treści serwisu — data w pasku nad nagłówkiem: najświeższy tekst (wpis historii zmian albo
+ * publikacja) lub wpis aktualności. Liczona przy buildzie, bez daty wpisywanej ręcznie.
+ */
+export async function siteUpdated(): Promise<Date | undefined> {
+  const [[latest], [news]] = await Promise.all([getDatedArticles(), getNews()]);
+  const times = [latest && freshness(latest), news?.data.date].flatMap((d) => (d ? [d.getTime()] : []));
+  return times.length ? new Date(Math.max(...times)) : undefined;
 }
 
 /** Wyróżniony materiał + lista najnowszych (bez wyróżnionego). */

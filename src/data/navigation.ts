@@ -11,7 +11,6 @@ export const site = {
   name: 'zarobkilekarzy.pl',
   /** konto w serwisie X — twitter:site w podglądach linków */
   twitter: '@ZarobkiLekarzy',
-  updated: new Date('2026-10-12'),
   announcement: { text: `Nowe: przeglądarka monitoringu płac — ${formatPL(monitoring.facilities.length)} ${plural(monitoring.facilities.length, ['placówka', 'placówki', 'placówek'])}`, href: '/dane/monitoring-watchdog/' },
 };
 

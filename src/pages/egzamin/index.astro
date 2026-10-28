@@ -4,6 +4,7 @@
  * test w trybie skupienia (components/egzamin), a pod spodem: skąd pytania, jak czytać statystyki.
  */
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import Changelog from '@/components/article/Changelog.astro';
 import Section from '@/components/layout/Section.astro';
 import InfographicsSection from '@/components/blocks/InfographicsSection.astro';
 import PageHeader from '@/components/layout/PageHeader.astro';
@@ -20,6 +21,7 @@ import {
   egzaminFaq, egzaminPage, egzaminSiteStats, egzaminSources,
 } from '@/data/egzamin';
 import { siteStats } from '@/lib/egzamin/site-stats';
+import { getArticle } from '@/lib/content';
 import { plain } from '@/lib/inline';
 import type { Crumb, SeoInput } from '@/lib/seo';
 import { formatPL, typo } from '@/lib/format';
@@ -37,8 +39,11 @@ const stats = await siteStats();
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Egzamin LEK' }];
 // Frazy z wyszukiwarki („darmowy egzamin LEK”, „egzamin lekarski online”) w tytule, opisie i nagłówku;
 // WebApplication z ofertą 0 zł mówi wyszukiwarce, że test jest bezpłatny; pytania pod testem = FAQPage.
+// daty z wpisu kolekcji (egzamin-lek.md): publikacja i najnowszy wpis historii zmian — nie dzień odświeżenia statystyk
+const entry = await getArticle('egzamin-lek');
 const seo: SeoInput = {
   title: 'Darmowy egzamin LEK i LDEK online',
+  dates: { published: entry.data.date, modified: entry.data.updated },
   description:
     'Darmowy egzamin lekarski online: rozwiąż LEK lub LDEK na jawnych pytaniach CEM z kluczem i statystyką zdających. Bez konta — pełny test na czas lub nauka.',
   breadcrumbs: crumbs,
@@ -175,6 +180,12 @@ const seo: SeoInput = {
       <Faq items={egzaminFaq} openFirst />
     </div>
   </Section>
+
+  {entry.data.changelog && (
+    <Section space="bottom" aria-label="Historia zmian">
+      <Changelog entries={entry.data.changelog} class="page-log" />
+    </Section>
+  )}
 
   <Section aria-label="Infografiki do pobrania">
     <InfographicsSection set="egzamin" />

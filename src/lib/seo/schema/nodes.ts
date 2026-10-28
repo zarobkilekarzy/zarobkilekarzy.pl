@@ -119,6 +119,7 @@ export function webPage(
     ...(opts.hasBreadcrumb && { breadcrumb: ref(id.breadcrumb) }),
     ...(seo.published && { datePublished: seo.published }),
     ...(seo.modified && { dateModified: seo.modified }),
+    ...(seo.reviewed && { lastReviewed: seo.reviewed }),
     ...(opts.mainEntity && { mainEntity: ref(opts.mainEntity) }),
   };
 

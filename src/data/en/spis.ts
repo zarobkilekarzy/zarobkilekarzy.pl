@@ -63,7 +63,7 @@ export const cards: Record<string, CardEn> = {
     stat: { of: '25 595', value: '25,595', unit: 'PLN — median of a single specialist contract' },
     coverAlt: 'A card-index drawer in which a few cards stand clearly taller than the rest',
   },
-  'zarobki-ujawnione-listy': { stat: { of: '11 113', value: '11,113', unit: 'payroll entries from 97 facilities' } },
+  'zarobki-ujawnione-listy': { stat: { of: '14 737', value: '14,737', unit: 'payroll entries from 126 facilities' } },
   rekordy: { stat: { of: '316 079', value: '316,079', unit: 'PLN — the highest monthly contract in the public listing' } },
   'budzet-nfz': { stat: { of: '×2', value: '×2', unit: 'in real terms since 2015' } },
   'zadluzenie-szpitali': { stat: { of: '40,8', value: '40.8', unit: 'PLN billion of debt' } },

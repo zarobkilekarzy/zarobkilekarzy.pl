@@ -11,8 +11,8 @@
  * - liczby i udziały rozliczeń powyżej progów są DOKŁADNE (progi = granice przedziałów `buckets`),
  *   tak samo mediana median placówek i suma list;
  * - mediana wszystkich rozliczeń jest SZACUNKIEM: interpolacja liniowa wewnątrz przedziału, w którym
- *   wypada połowa rozliczeń, zaokrąglona do 10 tys. zł. Kontrola 15.10.2026 na pojedynczych kwotach
- *   z bazy skryptu eksportu (stan 12.10.2026): szacunek 184 tys. zł, mediana dokładna 183 tys. zł.
+ *   wypada połowa rozliczeń, zaokrąglona do 10 tys. zł. Kontrola 28.10.2026 na pojedynczych kwotach
+ *   z bazy skryptu eksportu (stan 28.10.2026): szacunek 179 tys. zł, mediana dokładna 177 tys. zł.
  */
 import { monitoring } from '@/lib/monitoring';
 import type { Facility, Payroll, Response } from '@/lib/monitoring';
@@ -219,7 +219,7 @@ export const EXAMPLE = example.payroll;
  * nie liczą się z danych. Po podmianie JSON-a monitoringu build zatrzyma się tutaj, zanim frontmatter
  * zacznie przeczyć treści. Po zmianie: popraw frontmatter, potem wartości poniżej.
  */
-const FRONTMATTER = { lists: 97, positions: 11_113, medianRounded: 180_000, over500kPct: 13, over1m: 172, refusedOrSilentPct: 70 };
+const FRONTMATTER = { lists: 126, positions: 14_737, medianRounded: 180_000, over500kPct: 12, over1m: 199, refusedOrSilentPct: 70 };
 const actual = {
   lists: LISTS,
   positions: POSITIONS,

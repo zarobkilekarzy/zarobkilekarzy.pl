@@ -387,8 +387,8 @@ class PolandMap extends HTMLElement {
   }
 
   private pin(t: Target) {
-    this.open(t);
     this.pinned = true;
+    this.open(t);
     this.tip.classList.add('is-pinned');
   }
 
@@ -417,6 +417,8 @@ class PolandMap extends HTMLElement {
     this.pulse(dot);
     this.fill(tip);
     this.place(anchor);
+    // przypięty dymek ogłaszamy stronie (np. wykres doby wybranego SOR pod mapą, components/sor/SorDayChart)
+    if (this.pinned) this.dispatchEvent(new CustomEvent('pm-pin', { bubbles: true, detail: { layer: layer.id, tip } }));
   }
 
   close(force = false) {
@@ -471,6 +473,7 @@ class PolandMap extends HTMLElement {
       }
       parts.push(stats);
     }
+    if (tip.profile?.values.length) parts.push(this.profile(tip.profile));
     const table = !!tip.rows?.length && (!!tip.cols || tip.rows.some((r) => !Array.isArray(r)));
     if (tip.rows?.length && !table) {
       const dl = document.createElement('dl');
@@ -489,6 +492,38 @@ class PolandMap extends HTMLElement {
     if (tip.warn) parts.push(el('p', tip.warn, 'pm-tip__warn'));
     this.tip.classList.toggle('pm-tip--wide', table);
     this.tip.replaceChildren(...parts);
+  }
+
+  /** Słupki profilu (Tip.profile): wysokość jako --k (0–1) wspólnej skali z wartością `now`. */
+  private profile(p: NonNullable<Tip['profile']>) {
+    const box = el('div', '', 'pm-tip__profile');
+    box.append(el('p', p.title, 'pm-tip__plabel'));
+    const max = Math.max(1, ...p.values.map((v) => v ?? 0), p.now ?? 0);
+    const bars = el('div', '', 'pm-tip__bars');
+    bars.setAttribute('aria-hidden', 'true');
+    bars.style.setProperty('--n', String(p.values.length));
+    p.values.forEach((v, i) => {
+      const bar = el('i', '', i === p.mark ? 'is-mark' : undefined);
+      bar.style.setProperty('--k', String((v ?? 0) / max));
+      bars.append(bar);
+    });
+    if (p.now != null && p.mark != null) {
+      const now = el('span', '', 'pm-tip__now');
+      now.style.setProperty('--k', String(p.now / max));
+      now.style.setProperty('--i', String(p.mark));
+      bars.append(now);
+    }
+    box.append(bars);
+    if (p.ticks?.length) {
+      const ticks = el('div', '', 'pm-tip__ticks');
+      ticks.setAttribute('aria-hidden', 'true');
+      ticks.style.setProperty('--n', String(p.ticks.length));
+      for (const t of p.ticks) ticks.append(el('span', t));
+      box.append(ticks);
+    }
+    if (p.note) box.append(el('p', p.note, 'pm-tip__pnote'));
+    if (p.caption) box.append(el('p', p.caption, 'pm-tip__pcap'));
+    return box;
   }
 
   private table(tip: Tip) {

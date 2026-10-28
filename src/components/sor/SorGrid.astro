@@ -1,0 +1,32 @@
+---
+/**
+ * Tabela wszystkich SOR — datagrid z konfiguracją z ./grid.ts. Dane dostaje przez propsy (strona czyta
+ * historię z lib/sor/history), a przeglądarka pobiera ten sam zbiór z `src` (plik statyczny).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import Datagrid from '@/components/datagrid/Datagrid.astro';
+import type { SorHistory } from '@/lib/sor/history';
+import { grid } from './grid';
+
+interface Props extends HTMLAttributes<'div'> {
+  history: SorHistory;
+  src: string;
+}
+
+const { history, src, ...rest } = Astro.props;
+---
+<Datagrid tag="zl-sor" config={grid} json={history} src={src} {...rest} />
+
+<script>
+  import { defineDatagrid } from '@/components/datagrid/element';
+  import { grid } from './grid';
+
+  defineDatagrid('zl-sor', grid);
+</script>
+
+<style is:global>
+  /* komórki powstają też w przeglądarce (datagrid), więc style globalne z prefiksem */
+  .sorg-name { display: block; color: var(--ink); }
+  .sorg-meta { display: block; margin-top: 2px; font-size: 0.8125rem; color: var(--muted); }
+  .sorg-none { color: var(--muted); }
+</style>

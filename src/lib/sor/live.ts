@@ -10,9 +10,26 @@ import type { Tip, TipRow } from '@/lib/mapa/types';
 import { measure, normText, STAGES, type Entry } from './measure';
 import { hm, isSnapshot, isStale, STALE_MIN, stampText, summarize, usable } from './summary';
 import { fill, formOf, numOf, SOR_TEXT_PL, waitText, type SorText } from './text';
+import { hoursText, warsawHour } from './usual';
 
 const TOP = 6;
 const SOURCE_PAGE = 'https://pacjent.gov.pl/szpitalny-oddzial-ratunkowy-sor';
+/** „więcej / mniej niż zwykle”: teraz o co najmniej ćwierć powyżej albo poniżej zwykłej średniej */
+const USUAL_MARGIN = 0.25;
+
+
+/** Profil doby z buildu (lib/sor/map) + bieżąca godzina, stan teraz i porównanie; trzecia liczba w dymku. */
+function withUsual(base: Tip, at: string, now: number, t: SorText): Pick<Tip, 'profile'> & { stat?: [string, string] } {
+  if (!base.profile) return {};
+  const hour = warsawHour(at);
+  const usual = base.profile.values[hour];
+  if (usual == null) return { profile: { ...base.profile, mark: hour, now } };
+  const note = now > usual * (1 + USUAL_MARGIN) ? t.usualMore : now < usual * (1 - USUAL_MARGIN) ? t.usualLess : t.usualSame;
+  return {
+    profile: { ...base.profile, mark: hour, now, note },
+    stat: [numOf(Math.round(usual), t.locale), fill(t.usualAt, { hours: hoursText(hour, 1) })],
+  };
+}
 
 function queueTip(base: Tip, entry: Entry, m: ReturnType<typeof measure>, note: string, t: SorText): Tip {
   const e = entry.e!;
@@ -27,13 +44,16 @@ function queueTip(base: Tip, entry: Entry, m: ReturnType<typeof measure>, note: 
     rows.push({ cells: [name, count == null ? '–' : num(count), !wait || wait === '-' ? '–' : waitText(wait, t)], sub: t.otherStage, ...(k === 0 && { gap: true }) }),
   );
   const total = entry.w ?? null;
+  const usual = withUsual(base, entry.t, m.before, t);
   return {
     title: base.title,
     meta: base.meta,
     stats: [
       ...(total == null ? [] : [[num(total), fill(t.inSor, { people: formOf(total, t.people, t.locale) })] as [string, string]]),
       [num(m.before), t.beforeDoctor],
+      ...(usual.stat ? [usual.stat] : []),
     ],
+    ...(usual.profile && { profile: usual.profile }),
     cols: t.cols,
     rows,
     foot: fill(t.asOf, { time: hm(entry.t, t.locale) }) + note,

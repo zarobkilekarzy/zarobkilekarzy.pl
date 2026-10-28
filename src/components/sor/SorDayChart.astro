@@ -1,0 +1,152 @@
+---
+/**
+ * „Zwykle w ciągu doby” pod mapą SOR: ile osób zwykle czeka przed kontaktem z lekarzem w każdej godzinie
+ * (historia z buildu, lib/sor/history). Serwer rysuje całą Polskę (średnio na jeden SOR). Po wybraniu SOR
+ * na mapie (zdarzenie `pm-pin` z components/mapa/client) skrypt rysuje jego profil z dymka (Tip.profile),
+ * z bieżącą godziną i kreską „teraz” z danych na żywo; przycisk wraca do całej Polski.
+ * Słupki ze wspólną skalą od zera, bez osi — podpisana jest najwyższa wartość i bieżąca godzina.
+ */
+import { formatNumber, typo } from '@/lib/format';
+import { fill, type SorDayText } from '@/lib/sor/text';
+import { hoursText, usualCalm, usualPeak } from '@/lib/sor/usual';
+import type { Locale } from '@/i18n/locales';
+
+interface Props {
+  values: (number | null)[];
+  days: number;
+  text: SorDayText;
+  locale: Locale;
+}
+
+const { values, days, text, locale } = Astro.props;
+const max = Math.max(1, ...values.map((v) => v ?? 0));
+const calm = usualCalm(values);
+const peak = usualPeak(values);
+const num = (v: number) => formatNumber(v, 1, locale);
+const caption = [
+  calm != null ? fill(text.calm, { calm: hoursText(calm, 3) }) : '',
+  peak != null ? fill(text.peak, { peak: hoursText(peak, 1) }) : '',
+  fill(text.days, { days }),
+].filter(Boolean).join(' ');
+---
+<div class="sdc" data-sdc data-days={days} data-locale={locale} data-text={JSON.stringify(text)} data-values={JSON.stringify(values)}>
+  <div class="sdc__head">
+    <div>
+      <p class="sdc__eyebrow">{text.eyebrow}</p>
+      <p class="sdc__title" data-sdc-title>{typo(text.national)}</p>
+    </div>
+    <button type="button" class="sdc__back" data-sdc-back hidden>{text.back}</button>
+  </div>
+  <div class="sdc__plot" data-sdc-plot role="img" aria-label={fill(text.alt, { calm: calm != null ? hoursText(calm, 3) : '–', peak: peak != null ? hoursText(peak, 1) : '–' })}>
+    {values.map((v, h) => (
+      <i class:list={{ 'is-peak': h === peak }} style={`--k: ${((v ?? 0) / max).toFixed(4)}`}>
+        {h === peak && v != null && <span>{num(v)}</span>}
+      </i>
+    ))}
+  </div>
+  <div class="sdc__ticks" aria-hidden="true">
+    {[0, 3, 6, 9, 12, 15, 18, 21].map((h) => <span>{h}:00</span>)}
+  </div>
+  <p class="sdc__note" data-sdc-note hidden></p>
+  <p class="sdc__caption" data-sdc-caption>{typo(caption)}</p>
+  <p class="sdc__hint" data-sdc-hint>{typo(text.hint)}</p>
+</div>
+
+<script>
+  import { formatNumber } from '@/lib/format';
+  import { fill, type SorDayText } from '@/lib/sor/text';
+  import { hoursText, usualCalm, usualPeak, warsawHour } from '@/lib/sor/usual';
+  import type { Locale } from '@/i18n/locales';
+  import type { Tip } from '@/lib/mapa/types';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-sdc]')) {
+    const text = JSON.parse(root.dataset.text!) as SorDayText;
+    const national = JSON.parse(root.dataset.values!) as (number | null)[];
+    const days = Number(root.dataset.days);
+    const locale = root.dataset.locale as Locale;
+    const $ = <E extends HTMLElement>(sel: string) => root.querySelector<E>(sel)!;
+    const plot = $('[data-sdc-plot]');
+    const back = $<HTMLButtonElement>('[data-sdc-back]');
+
+    /** Słupki od nowa: wyróżniona bieżąca godzina (`mark`), podpis najwyższej i bieżącej, kreska `now`. */
+    function draw(title: string, values: (number | null)[], mark: number, now?: number, note?: string) {
+      const max = Math.max(1, ...values.map((v) => v ?? 0), now ?? 0);
+      const peak = usualPeak(values);
+      const calm = usualCalm(values);
+      const bars = values.map((v, h) => {
+        const bar = document.createElement('i');
+        bar.style.setProperty('--k', String((v ?? 0) / max));
+        if (h === mark) bar.classList.add('is-mark');
+        if (h === peak) bar.classList.add('is-peak');
+        if (v != null && (h === peak || h === mark)) {
+          const label = document.createElement('span');
+          label.textContent = formatNumber(v, 1, locale);
+          bar.append(label);
+        }
+        return bar;
+      });
+      if (now != null) {
+        const line = document.createElement('b');
+        line.className = 'sdc__now';
+        line.style.setProperty('--k', String(now / max));
+        line.style.setProperty('--h', String(mark));
+        const label = document.createElement('span');
+        label.textContent = `${text.now} ${formatNumber(now, 0, locale)}`;
+        line.append(label);
+        bars.push(line);
+      }
+      plot.replaceChildren(...bars);
+      $('[data-sdc-title]').textContent = title;
+      const noteEl = $('[data-sdc-note]');
+      noteEl.textContent = note ?? '';
+      noteEl.hidden = !note;
+      $('[data-sdc-caption]').textContent = [
+        calm != null ? fill(text.calm, { calm: hoursText(calm, 3) }) : '',
+        peak != null ? fill(text.peak, { peak: hoursText(peak, 1) }) : '',
+        fill(text.days, { days }),
+      ].filter(Boolean).join(' ');
+      plot.setAttribute('aria-label', fill(text.alt, { calm: calm != null ? hoursText(calm, 3) : '–', peak: peak != null ? hoursText(peak, 1) : '–' }));
+    }
+
+    const showNational = () => {
+      draw(text.national, national, warsawHour());
+      back.hidden = true;
+      $('[data-sdc-hint]').hidden = false;
+    };
+    showNational();
+
+    document.addEventListener('pm-pin', (e) => {
+      const tip = (e as CustomEvent<{ tip: Tip }>).detail?.tip;
+      const p = tip?.profile;
+      if (!p?.values.length) return;
+      draw(tip.title, p.values, p.mark ?? warsawHour(), p.now, p.note);
+      back.hidden = false;
+      $('[data-sdc-hint]').hidden = true;
+    });
+    back.addEventListener('click', showNational);
+  }
+</script>
+
+<style>
+  .sdc { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .sdc__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+  .sdc__eyebrow { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .sdc__title { font: 600 1.25rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .sdc__back { flex: none; padding: 8px 12px; border: 1px solid var(--line-2); background: var(--bg); font: 500 0.75rem/1 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--ink); cursor: pointer; }
+  .sdc__back:hover { border-color: var(--ink); }
+  .sdc__plot { --gap: 3px; position: relative; display: grid; grid-template-columns: repeat(24, 1fr); gap: var(--gap); align-items: end; height: 160px; padding-top: 22px; border-bottom: 1px solid var(--ink); }
+  .sdc__plot :global(i) { position: relative; height: calc(var(--k) * 100%); min-height: 1px; background: var(--chart); }
+  .sdc__plot :global(i.is-mark) { background: var(--blue); }
+  .sdc__plot :global(i span) { position: absolute; bottom: calc(100% + 4px); left: 50%; translate: -50% 0; font: 500 0.75rem/1 var(--f-mono); color: var(--ink); white-space: nowrap; }
+  /* kolumna h zaczyna się po h kolumnach i h odstępach; wysokość liczona jak słupków (pole bez górnego odstępu na podpis) */
+  .sdc__plot :global(.sdc__now) { --col: calc((100% - 23 * var(--gap)) / 24); position: absolute; left: calc(var(--h) * (var(--col) + var(--gap))); width: var(--col); bottom: calc(var(--k) * (100% - 22px)); border-top: 2px solid var(--ink); }
+  .sdc__plot :global(.sdc__now span) { position: absolute; bottom: 4px; left: 50%; translate: -50% 0; font: 600 0.75rem/1 var(--f-mono); color: var(--ink); white-space: nowrap; }
+  .sdc__ticks { display: grid; grid-template-columns: repeat(8, 1fr); margin-top: 6px; font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+  .sdc__note { margin-top: 14px; font-weight: 500; color: var(--ink); }
+  .sdc__caption { margin-top: 8px; font-size: 0.875rem; color: var(--text); }
+  .sdc__hint { margin-top: 4px; font-size: 0.875rem; color: var(--muted); }
+  @media (max-width: 560px) {
+    .sdc__plot { --gap: 1px; height: 120px; }
+    .sdc__ticks span:nth-child(even) { visibility: hidden; }
+  }
+</style>

@@ -5,11 +5,12 @@
  * Nazwy szpitali, miast i województw zostają po polsku (przychodzą z danych pacjent.gov.pl).
  */
 import list from '@/data/sor/lista.json';
-import { MZ_REPLY, NIK_REPORT, page as pagePl, type Gap, type Step } from '@/data/kolejki-sor';
-import { formatDateIn } from '@/lib/format';
+import { MZ_REPLY, NIK_REPORT, page as pagePl, SOR_SOURCE_PAGE, type Gap, type HistoryChart, type Step } from '@/data/kolejki-sor';
+import { formatDateIn, formatEN } from '@/lib/format';
+import type { SorHistory } from '@/lib/sor/history';
 import { geo } from '@/lib/mapa/geo';
 import type { SorMapText } from '@/lib/sor/map';
-import type { SorText } from '@/lib/sor/text';
+import type { SorDayText, SorText } from '@/lib/sor/text';
 import type { Source } from '@/types';
 
 const isap = (year: number, pos: number) => `https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU${year}${String(pos).padStart(7, '0')}`;
@@ -167,6 +168,10 @@ export const sorLiveText: SorText = {
   stampNone: 'No measurements in the data file.',
   stampOutdated: 'Last measurement: {when} — the data are not updating at the moment.',
   stampFresh: 'As of {when} · each emergency department checked every {cycle} minutes',
+  usualAt: 'usually at {hours}',
+  usualMore: 'More people than usual at this time.',
+  usualLess: 'Fewer people than usual at this time.',
+  usualSame: 'About as many people as usual at this time.',
   waits: { overHours: 'over {n} hours', underMinutes: 'under {n} minutes', now: 'immediately' },
 };
 
@@ -189,6 +194,12 @@ export const sorMapText: SorMapText = {
     'In the red category the portal always shows “immediately”, and in orange “under 10 minutes” — this is the text of the standard, not a measurement, so these categories do not affect the colour.',
   caption: 'Each point stands where the emergency department is, according to coordinates from pacjent.gov.pl; in towns with several departments, the points are moved apart.',
   warn: (where) => `In the pacjent.gov.pl data, the same number also covers an emergency department in ${where}. It is not known which department the queue refers to.`,
+  usual: {
+    title: 'Usually during the day',
+    ticks: ['0', '6', '12', '18'],
+    caption: 'Usually quietest: {calm}. Average of the last {days} days.',
+    captionNoCalm: 'Average of the last {days} days.',
+  },
   sources: [
     { label: 'Source', name: 'pacjent.gov.pl, TOPSOR system data (administrator: NFZ)', href: list.zrodlo.strona, detail: `list of emergency departments as of ${asOf(list.zrodlo.stan)}` },
     {
@@ -200,4 +211,68 @@ export const sorMapText: SorMapText = {
     { label: 'Boundaries', name: `National Register of Boundaries (${geo.source.name}), ${geo.source.publisher}`, href: geo.source.url, detail: `as of ${asOf(geo.source.asOf)}` },
     { label: 'Coastline', name: `GISCO, country boundaries 1:1 million (2024), ${geo.source.coast.publisher}`, href: geo.source.coast.url, detail: geo.source.coast.copyright },
   ],
+};
+
+/* ---------- historia kolejek (lib/sor/history): wykres doby, wykresy danych; tabela tylko na stronie polskiej ---------- */
+
+const warsaw = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(iso).toLocaleString('en-GB', { timeZone: 'Europe/Warsaw', ...opts });
+const MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+/** „2026-10-17” → „17 October” */
+const dayMonth = (day: string) => `${Number(day.slice(8))} ${MONTH[Number(day.slice(5, 7)) - 1]}`;
+const periodText = (from: string, to: string) => `${dayMonth(from)}–${dayMonth(to)} ${to.slice(0, 4)}`;
+const pct = (v: number) => `${formatEN(v, Number.isInteger(v) ? 0 : 1)}%`;
+const upper = (s: string) => s[0].toUpperCase() + s.slice(1);
+
+export const dayChartText: SorDayText = {
+  eyebrow: 'Usually during the day',
+  national: 'All of Poland — how many people on average wait for a doctor in one emergency department',
+  hint: 'Click an emergency department on the map or find it with the search box to see its day.',
+  back: 'All of Poland',
+  calm: 'Quietest {calm}.',
+  peak: 'Busiest {peak}.',
+  days: 'Average of the last {days} days; the current hour in cobalt, the line shows the state now.',
+  now: 'now',
+  alt: 'Chart: how many people usually wait for a doctor in each hour of the day. Quietest {calm}, busiest {peak}.',
+};
+
+/** Te same wykresy co w PL (src/data/kolejki-sor.ts → historyCharts), napisy po angielsku. */
+export function historyCharts(h: SorHistory) {
+  const { regions, overCap, over, outage } = h.facts;
+  const source = { label: `pacjent.gov.pl (TOPSOR), measurements every 10 minutes, ${periodText(h.window.from, h.window.to)}; own calculations`, href: SOR_SOURCE_PAGE };
+  const top = regions[0];
+  const bottom = regions.at(-1);
+  const byRegion: HistoryChart | null = top && bottom && over.window != null ? {
+    title: `Over the standard most often: ${upper(top.region)} (${pct(Math.round(top.over))}), least often: ${upper(bottom.region)} (${pct(Math.round(bottom.over))})`,
+    rows: regions.map((r, i) => ({ label: upper(r.region), value: r.over, display: pct(r.over), highlight: i === 0 })),
+    max: Math.ceil(top.over / 10) * 10,
+    average: over.window,
+    averageLabel: `Poland ${pct(over.window)}`,
+    caption: `Share of readings over the time standard in the emergency departments of each voivodeship: ${regions.map((r) => `${upper(r.region)} ${pct(r.over)}`).join(', ')}; all of Poland ${pct(over.window)}.`,
+    note: 'Reading: the yellow, green or blue category in which someone is waiting and the portal gives a time.',
+  } : null;
+  const colors = [['Yellow', 'over 2 hours'], ['Green', 'over 4 hours'], ['Blue', 'over 6 hours']] as const;
+  const capped: HistoryChart | null = overCap[0] != null ? {
+    title: `${pct(Math.round(overCap[0]))} of readings in the yellow category say only “over 2 hours” — the portal does not say exactly how long`,
+    rows: colors.flatMap(([color, text], i) => (overCap[i] == null ? [] : [{ label: `${color}: “${text}”`, value: overCap[i]!, display: pct(overCap[i]!), highlight: i === 0 }])),
+    max: Math.ceil(Math.max(...overCap.map((v) => v ?? 0)) / 10) * 10,
+    caption: `Share of readings that give only “over…” instead of a time: ${colors.map(([c, t], i) => `${c.toLowerCase()} (“${t}”) ${overCap[i] == null ? '–' : pct(overCap[i]!)}`).join(', ')}.`,
+    note: 'This is how the portal records any time above twice the standard (in blue — one and a half times), in every emergency department.',
+  } : null;
+  const gap = outage
+    ? `On ${warsaw(outage.from, { day: 'numeric', month: 'long' })}, from ${warsaw(outage.from, { hour: '2-digit', minute: '2-digit' })} to ${warsaw(outage.to, { hour: '2-digit', minute: '2-digit' })}, the pacjent.gov.pl portal did not respond correctly even once (${formatEN(outage.requests)} ${outage.requests === 1 ? 'request' : 'requests'}) — during that time there was no way to know what was happening in any emergency department in Poland.`
+    : null;
+  return { byRegion, capped, gap, source };
+}
+
+export const historyLabels = {
+  facts: { eyebrow: 'From the measurements', id: 'in-the-data', title: (days: number) => `What the data from the last ${days} days show` },
+  gap: 'Gap in the data.',
+  table: {
+    eyebrow: 'Data',
+    id: 'all-departments',
+    title: 'All emergency departments',
+    text: (h: SorHistory) =>
+      `A table of all ${h.rows.length} emergency departments for the last ${h.window.days} full days (${periodText(h.window.from, h.window.to)}): over the standard by colour, how many people usually wait, “over…” and missing data. Filter, sort, download as CSV.`,
+    link: 'Open the table (in Polish)',
+  },
 };

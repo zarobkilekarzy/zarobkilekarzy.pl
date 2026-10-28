@@ -40,6 +40,12 @@ export interface Tip {
   meta?: string;
   /** duże liczby pod tytułem: [wartość, podpis] */
   stats?: [string, string][];
+  /**
+   * Profil pod liczbami, np. zwykła kolejka w każdej godzinie doby: słupki ze wspólną skalą od zera, bez osi.
+   * `mark` wyróżnia słupek (bieżąca godzina), `now` rysuje nad nim kreskę na wysokości wartości teraz;
+   * `ticks` — podpisy pod równymi odstępami; `note` i `caption` — zdania pod słupkami.
+   */
+  profile?: { title: string; values: (number | null)[]; ticks?: string[]; mark?: number; now?: number; note?: string; caption?: string };
   /** nagłówki kolumn, gdy wiersze mają więcej niż dwie komórki */
   cols?: string[];
   /** wiersze „etykieta — wartość” albo wiersze tabeli */

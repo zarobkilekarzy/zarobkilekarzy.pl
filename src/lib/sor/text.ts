@@ -49,6 +49,12 @@ export interface SorText {
   stampOutdated: string;
   /** {when} {cycle} */
   stampFresh: string;
+  /** trzecia liczba w dymku, gdy jest profil doby (lib/sor/history): {hours} = „9:00–10:00” */
+  usualAt: string;
+  /** porównanie teraz ze „zwykle o tej porze” */
+  usualMore: string;
+  usualLess: string;
+  usualSame: string;
   /**
    * Czasy z portalu („powyżej 2 godzin”, „poniżej 10 minut”, „natychmiast”) w języku napisów: {n};
    * bez tego pola zostają dosłownie jak w portalu. „60 min” nie wymaga tłumaczenia.
@@ -87,7 +93,31 @@ export const SOR_TEXT_PL: SorText = {
   stampNone: 'Brak pomiarów w pliku z danymi.',
   stampOutdated: 'Ostatni pomiar: {when} — dane się teraz nie odświeżają.',
   stampFresh: 'Stan z {when} · każdy SOR sprawdzany co {cycle} minut',
+  usualAt: 'zwykle o {hours}',
+  usualMore: 'Teraz więcej osób niż zwykle o tej porze.',
+  usualLess: 'Teraz mniej osób niż zwykle o tej porze.',
+  usualSame: 'Teraz mniej więcej tyle osób, ile zwykle o tej porze.',
 };
+
+/** Napisy wykresu „zwykle w ciągu doby” pod mapą (components/sor/SorDayChart); wzorce jak wyżej. */
+export interface SorDayText {
+  eyebrow: string;
+  /** tytuł dla całej Polski */
+  national: string;
+  /** zachęta do wyboru SOR na mapie */
+  hint: string;
+  back: string;
+  /** {calm} = „8:00–11:00” */
+  calm: string;
+  /** {peak} = „21:00–22:00” */
+  peak: string;
+  /** {days} */
+  days: string;
+  /** podpis kreski „teraz” w legendzie */
+  now: string;
+  /** opis dla czytników: {calm} {peak} */
+  alt: string;
+}
 
 /** Czas oczekiwania z portalu w języku napisów (pole `waits`); bez niego — bez zmian. */
 export function waitText(wait: string, t: SorText): string {

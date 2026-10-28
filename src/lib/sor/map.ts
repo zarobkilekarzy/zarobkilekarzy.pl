@@ -6,38 +6,20 @@
  * lib/sor/live z migawki, którą co 2 minuty uzupełnia Worker workers/sor.
  * Dwa zestawy: `sor` (polski) i `sor-en` (napisy z src/data/en/kolejki-sor.ts) — punkty te same.
  */
-import list from '@/data/sor/lista.json';
 import { formatDate, typo } from '@/lib/format';
 import { geo } from '@/lib/mapa/geo';
 import type { MapSet, MapSource, PointLayer, Tip } from '@/lib/mapa/types';
-import { prettyName } from '@/lib/monitoring/name';
+import { sorHistory, type SorHistory } from './history';
 import { adapt } from './live';
+import { sorByKey as byKey, sorCity as city, sorPlaces as sor, sorSource, sorStreet as street, sorTitle, type SorPlace as Sor } from './places';
 import { SOR_DATA_URL } from './source';
-import type { SorText } from './text';
+import { fill, type SorText } from './text';
+import { hoursText, usualCalm } from './usual';
 import { sorMapText as sorMapTextEn } from '@/data/en/kolejki-sor';
 
-interface Sor {
-  numer: string;
-  nazwa: string;
-  miasto: string;
-  ulica: string;
-  nr: string;
-  wojewodztwo: string;
-  lat: number;
-  lng: number;
-}
-
-const sor: Sor[] = list.sor;
-
-/** Delegatury dużych miast („Wrocław-Fabryczna”) → samo miasto. */
-const DISTRICT = /^(Kraków|Łódź|Poznań|Wrocław)-.*$/i;
-const unshout = (s: string) => (s === s.toUpperCase() ? s.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toLocaleUpperCase('pl')) : s);
-const city = (s: Sor) => unshout(s.miasto).replace(DISTRICT, '$1');
-const street = (s: Sor) => [s.ulica, s.nr].map(unshout).filter(Boolean).join(' ');
-
-// pięć numerów ma po dwa SOR — kolejka jest jedna i nie wiadomo, którego oddziału dotyczy
-const byKey = new Map<string, Sor[]>();
-for (const s of sor) byKey.set(s.numer, [...(byKey.get(s.numer) ?? []), s]);
+// „Zwykle o tej porze” w dymkach: profil doby każdego SOR z historii liczonej przy buildzie (lib/sor/history)
+const history: SorHistory | null = await sorHistory();
+const usualByKey = new Map((history?.rows ?? []).filter((r) => r.usual.length).map((r) => [r.key, r.usual]));
 
 /** Napisy warstwy w jednym języku; polskie niżej, angielskie w src/data/en/kolejki-sor.ts. */
 export interface SorMapText {
@@ -56,6 +38,8 @@ export interface SorMapText {
   caption: string;
   /** zastrzeżenie przy numerze z dwoma SOR; `where` = miasto (i ulica) drugiego */
   warn: (where: string) => string;
+  /** profil doby w dymku: tytuł, podpisy godzin, podpis z {calm} (np. „8:00–11:00”) i {days} albo tylko z {days} */
+  usual: { title: string; ticks: string[]; caption: string; captionNoCalm: string };
   sources: MapSource[];
 }
 
@@ -75,8 +59,14 @@ const PL: SorMapText = {
   ),
   caption: typo('Punkt stoi w miejscu SOR według współrzędnych z pacjent.gov.pl; w miastach z kilkoma oddziałami punkty są rozsunięte.'),
   warn: (where) => typo(`Ten sam numer w danych pacjent.gov.pl ma też SOR: ${where}. Nie wiadomo, którego oddziału dotyczy kolejka.`),
+  usual: {
+    title: 'Zwykle w ciągu doby',
+    ticks: ['0', '6', '12', '18'],
+    caption: 'Zwykle najspokojniej: {calm}. Średnia z ostatnich {days} dni.',
+    captionNoCalm: 'Średnia z ostatnich {days} dni.',
+  },
   sources: [
-    { label: 'Źródło', name: 'pacjent.gov.pl, dane systemu TOPSOR (administrator: NFZ)', href: list.zrodlo.strona, detail: `lista SOR — stan ${formatDate(new Date(list.zrodlo.stan))}` },
+    { label: 'Źródło', name: 'pacjent.gov.pl, dane systemu TOPSOR (administrator: NFZ)', href: sorSource.strona, detail: `lista SOR — stan ${formatDate(new Date(sorSource.stan))}` },
     {
       label: 'Normy',
       name: 'rozporządzenie Ministra Zdrowia w sprawie szpitalnego oddziału ratunkowego, § 6 ust. 9',
@@ -91,9 +81,20 @@ const PL: SorMapText = {
 function tip(s: Sor, t: SorMapText): Tip {
   const twin = byKey.get(s.numer)!.find((o) => o !== s);
   const where = twin && (city(twin) === city(s) ? `${city(twin)}, ${street(twin)}` : city(twin));
+  const usual = usualByKey.get(s.numer);
+  const calm = usual && usualCalm(usual);
   return {
-    title: prettyName(s.nazwa).replace(/ - /g, ' – '),
+    title: sorTitle(s),
     meta: [city(s), street(s)].filter(Boolean).join(' · '),
+    // bieżącą godzinę (`mark`), stan teraz (`now`) i porównanie dokłada adapter na żywo (lib/sor/live)
+    ...(usual && {
+      profile: {
+        title: t.usual.title,
+        values: usual,
+        ticks: t.usual.ticks,
+        caption: fill(calm != null ? t.usual.caption : t.usual.captionNoCalm, { calm: calm != null ? hoursText(calm, 3) : '', days: history!.window.days }),
+      },
+    }),
     ...(where && { warn: t.warn(where) }),
   };
 }

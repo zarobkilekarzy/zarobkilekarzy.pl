@@ -3,9 +3,14 @@
  * Każdy punkt ma podstawę (przepis albo dokument) — pokazywaną pod tekstem i zebraną w `sources`.
  * Liczby z własnego przeglądu (17.10.2026, 01:28) są opisane datą; mapa pod spodem liczy się na żywo.
  */
-import type { Source } from '@/types';
+import { formatPL, plural } from '@/lib/format';
+import type { SorHistory } from '@/lib/sor/history';
+import type { SorDayText } from '@/lib/sor/text';
+import type { BarRow, Source } from '@/types';
 
 const isap = (year: number, pos: number) => `https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU${year}${String(pos).padStart(7, '0')}`;
+
+export const SOR_SOURCE_PAGE = 'https://pacjent.gov.pl/szpitalny-oddzial-ratunkowy-sor';
 
 export const NIK_REPORT = 'https://www.nik.gov.pl/kontrole/wyniki-kontroli-nik/pobierz,kzd~p_25_042_202505211032541747816374~01,typ,kk.pdf';
 export const MZ_REPLY = 'https://sejm.gov.pl/sejm10.nsf/interpelacjaTresc.xsp?key=DWPJ8J';
@@ -133,3 +138,76 @@ export const sources: Source[] = [
   { publisher: 'Najwyższa Izba Kontroli', title: 'Informacja o wynikach kontroli „System ratownictwa medycznego” (KSS.430.5.2026)', url: NIK_REPORT, date: 'czerwiec 2026' },
   { publisher: 'pacjent.gov.pl', title: 'Szpitalny Oddział Ratunkowy — mapa i kolejki (dane TOPSOR, administrator: NFZ)', url: 'https://pacjent.gov.pl/szpitalny-oddzial-ratunkowy-sor' },
 ];
+
+/* ---------- historia kolejek (lib/sor/history): wykres doby pod mapą, wykresy danych, tabela wszystkich SOR ---------- */
+
+const warsaw = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(iso).toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw', ...opts });
+/** „2026-10-17” → „17.10” */
+const dayMonth = (day: string) => `${day.slice(8)}.${day.slice(5, 7)}`;
+/** okres z pełnych dni: „17.10–27.10.2026” */
+export const periodText = (from: string, to: string) => `${dayMonth(from)}–${dayMonth(to)}.${to.slice(0, 4)}`;
+const pct = (v: number) => `${formatPL(v, Number.isInteger(v) ? 0 : 1)}%`;
+const upper = (s: string) => s[0].toLocaleUpperCase('pl') + s.slice(1);
+
+export const dayChartText: SorDayText = {
+  eyebrow: 'Zwykle w ciągu doby',
+  national: 'Cała Polska — ile osób średnio czeka na lekarza w jednym SOR',
+  hint: 'Kliknij SOR na mapie albo znajdź go wyszukiwarką — zobaczysz jego dobę.',
+  back: 'Cała Polska',
+  calm: 'Najspokojniej {calm}.',
+  peak: 'Najtłoczniej {peak}.',
+  days: 'Średnia z ostatnich {days} dni; w kobalcie bieżąca godzina, kreska — stan teraz.',
+  now: 'teraz',
+  alt: 'Wykres: ile osób zwykle czeka na lekarza w każdej godzinie doby. Najspokojniej {calm}, najtłoczniej {peak}.',
+};
+
+export interface HistoryChart {
+  title: string;
+  rows: BarRow[];
+  max: number;
+  average?: number;
+  averageLabel?: string;
+  caption: string;
+  note?: string;
+}
+
+/** Wykresy pod mapą: odsetek ponad normą w województwach i „powyżej…” w kolorach; przerwa w danych — zdanie. */
+export function historyCharts(h: SorHistory) {
+  const { regions, overCap, over, outage } = h.facts;
+  const source = { label: `pacjent.gov.pl (TOPSOR), pomiary co 10 minut, ${periodText(h.window.from, h.window.to)}; obliczenia własne`, href: SOR_SOURCE_PAGE };
+  const top = regions[0];
+  const bottom = regions.at(-1);
+  const byRegion: HistoryChart | null = top && bottom && over.window != null ? {
+    title: `Ponad normą najczęściej: ${top.region} (${pct(Math.round(top.over))}), najrzadziej: ${bottom.region} (${pct(Math.round(bottom.over))})`,
+    rows: regions.map((r, i) => ({ label: upper(r.region), value: r.over, display: pct(r.over), highlight: i === 0 })),
+    max: Math.ceil(top.over / 10) * 10,
+    average: over.window,
+    averageLabel: `Polska ${pct(over.window)}`,
+    caption: `Odsetek odczytów ponad normą czasu w SOR-ach województw: ${regions.map((r) => `${r.region} ${pct(r.over)}`).join(', ')}; cała Polska ${pct(over.window)}.`,
+    note: 'Odczyt: kategoria żółta, zielona albo niebieska, w której ktoś czeka i portal podał czas.',
+  } : null;
+  const colors = [['Żółta', 'powyżej 2 godzin'], ['Zielona', 'powyżej 4 godzin'], ['Niebieska', 'powyżej 6 godzin']] as const;
+  const capped: HistoryChart | null = overCap[0] != null ? {
+    title: `${pct(Math.round(overCap[0]))} odczytów w kategorii żółtej to tylko „powyżej 2 godzin” — ile dokładnie, portal nie podaje`,
+    rows: colors.flatMap(([color, text], i) => (overCap[i] == null ? [] : [{ label: `${color}: „${text}”`, value: overCap[i]!, display: pct(overCap[i]!), highlight: i === 0 }])),
+    max: Math.ceil(Math.max(...overCap.map((v) => v ?? 0)) / 10) * 10,
+    caption: `Odsetek odczytów, w których zamiast czasu jest tylko „powyżej…”: ${colors.map(([c, t], i) => `${c.toLowerCase()} („${t}”) ${overCap[i] == null ? '–' : pct(overCap[i]!)}`).join(', ')}.`,
+    note: 'Tak portal zapisuje każdy czas ponad dwukrotność normy (w niebieskiej — półtorakrotność), we wszystkich SOR.',
+  } : null;
+  const gap = outage
+    ? `${warsaw(outage.from, { day: 'numeric', month: 'long' })} od ${warsaw(outage.from, { hour: '2-digit', minute: '2-digit' })} do ${warsaw(outage.to, { hour: '2-digit', minute: '2-digit' })} portal pacjent.gov.pl nie odpowiedział poprawnie ani razu (${formatPL(outage.requests)} ${plural(outage.requests, ['zapytanie', 'zapytania', 'zapytań'])}) — przez ten czas nie było wiadomo, co dzieje się na żadnym SOR w Polsce.`
+    : null;
+  return { byRegion, capped, gap, source };
+}
+
+/** Nagłówki sekcji historii; tabela: components/sor/grid.ts. */
+export const historyLabels = {
+  facts: { eyebrow: 'Z pomiarów', id: 'w-danych', title: (days: number) => `Co widać w danych z ostatnich ${days} dni` },
+  gap: 'Przerwa w danych.',
+  table: {
+    eyebrow: 'Dane',
+    id: 'wszystkie-sor',
+    title: 'Wszystkie SOR',
+    lead: (h: SorHistory) => `${h.window.days} pełnych dni (${periodText(h.window.from, h.window.to)}), pomiar co 10 minut. Definicje pod znakiem zapytania w nagłówkach; całość w CSV.`,
+  },
+};

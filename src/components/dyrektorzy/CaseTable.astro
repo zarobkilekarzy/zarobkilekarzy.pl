@@ -37,6 +37,9 @@ const COLS = T.cols;
 const NONE = T.none;
 type Col = 'mgmt' | 'other' | 'total';
 const amounts = (c: DirectorCase): [Col, Amount | undefined][] => [['mgmt', c.management], ['other', c.other], ['total', c.total]];
+// po angielsku kwota z dwiema wersjami („PLN 324 thousand or about PLN 328 thousand”) nie mieści się w jednym wierszu:
+// łamie się między wersjami, każda zostaje w całości
+const versions = (text: string) => (en ? text.split(' or ') : [text]);
 ---
 <div class="ct-wrap">
   <table class="ct">
@@ -62,7 +65,7 @@ const amounts = (c: DirectorCase): [Col, Amount | undefined][] => [['mgmt', c.ma
             <td class:list={['ct__num', key === 'mgmt' && 'ct__mgmt']} data-label={COLS[key]}>
               {a ? (
                 <>
-                  <span class="ct__value">{typo(a.text)}</span>
+                  <span class="ct__value">{versions(a.text).map((v, i) => <>{i > 0 && ' or '}<span class="ct__ver">{typo(v)}</span></>)}</span>
                   {a.note && <span class="ct__note">{typo(a.note)}</span>}
                 </>
               ) : (
@@ -96,7 +99,8 @@ const amounts = (c: DirectorCase): [Col, Amount | undefined][] => [['mgmt', c.ma
   .ct__place { display: block; font: 500 0.9375rem/1.35 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
   .ct__role { display: block; margin-top: 3px; font-size: 0.8125rem; line-height: 1.4; color: var(--muted); }
   .ct td { color: var(--ink-2); }
-  .ct__value { display: block; font: 500 1rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+  .ct__value { display: block; font: 500 1rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .ct__ver { white-space: nowrap; }
   .ct__mgmt .ct__value { color: var(--blue); }
   .ct__note { display: block; margin-top: 3px; font-size: 0.78125rem; line-height: 1.4; color: var(--muted); }
   .ct__none { font-size: 0.78125rem; color: var(--muted); }
@@ -109,8 +113,8 @@ const amounts = (c: DirectorCase): [Col, Amount | undefined][] => [['mgmt', c.ma
   }
   .ct .ct__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
 
-  /* Wąsko: wiersz = karta, etykieta kolumny nad komórką */
-  @container (max-width: 760px) {
+  /* Wąsko: wiersz = karta, etykieta kolumny nad komórką. Próg nad najmniejszą szerokością tabeli (ok. 850 px w obu językach). */
+  @container (max-width: 880px) {
     .ct thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     .ct, .ct tbody, .ct tr, .ct tbody th, .ct td { display: block; width: auto; }
     .ct tr { padding: 16px 0; border-bottom: 1px solid var(--line-2); }
@@ -120,7 +124,7 @@ const amounts = (c: DirectorCase): [Col, Amount | undefined][] => [['mgmt', c.ma
       content: attr(data-label); display: block; margin: 8px 0 2px;
       font: 500 0.65625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
     }
-    .ct__value { white-space: normal; }
+    .ct__ver { white-space: normal; }
     .ct .ct__src a { display: inline-block; margin-right: 14px; }
   }
 </style>

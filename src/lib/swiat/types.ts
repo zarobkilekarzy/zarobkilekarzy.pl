@@ -77,6 +77,32 @@ export interface Transparency {
   more?: Link;
 }
 
+/** przepis albo źródło z opisem: zdanie dla czytelnika, nazwa przepisu i adres tekstu pierwotnego */
+export interface TaxText {
+  text: string;
+  law: string;
+  href: string;
+}
+
+/**
+ * Podatek dochodowy od płac w kraju (wiersz w szczegółach kraju). Kraje OECD: najwyższa stawka łącznie z podatkami
+ * regionalnymi i lokalnymi oraz jej próg jako wielokrotność przeciętnej płacy (OECD Tax Database, tabela I.7);
+ * kraje spoza OECD: przepis krajowy, próg słowami w `nat`.
+ */
+export interface Tax {
+  /** najwyższa stawka, % */
+  rate: number;
+  year: number;
+  /** próg najwyższej stawki, × przeciętna płaca brutto (OECD) */
+  th?: number;
+  /** podatek liniowy: jedna stawka, bez progu */
+  flat?: boolean;
+  /** kraj spoza OECD: opis skali z kwotami w walucie kraju, przepis */
+  nat?: TaxText;
+  /** inna forma opodatkowania lekarzy w tym kraju (np. ryczałt na kontrakcie w Polsce): zdania, każde ze swoim źródłem */
+  notes?: TaxText[];
+}
+
 /** tekst wpisu krajowego w innym języku: te same pola, ta sama liczba i kolejność wierszy i źródeł co w polskim wpisie */
 export interface NationalText {
   group?: string;

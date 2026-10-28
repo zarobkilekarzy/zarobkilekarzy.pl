@@ -6,6 +6,7 @@
  * go do wiersza wybranego kraju w widocznej liście.
  */
 import { linkAttrs } from '@/lib/links';
+import { OECD_TAX_HREF } from '@/data/swiat/podatki';
 import TrendSpark from './TrendSpark.astro';
 import { CURRENCIES, DEFAULT_VIEW, LEVEL_TONES, MIN_RECENT_YEAR, obsMeta, VIEW_KEYS, withConversion, type CountryModel, type Obs, type OecdGroup, type View, type WorldModel } from '@/lib/swiat';
 
@@ -86,6 +87,18 @@ const trendLabel = trend.map((l) => T.trend.line(l.label, t.num(l.points[0]![1],
 /** czy w tekście są kwoty do przeliczenia (inaczej jedna wersja bez data-c) */
 const converts = (text: string) => CURRENCIES.some((cur) => withConversion(text, cur, rates, t) !== text);
 
+/** podatek dochodowy: zdanie ze stawką (OECD) albo opis skali z przepisu krajowego */
+const tax = c.tax;
+const rate = tax && t.num(tax.rate, Number.isInteger(tax.rate) ? 0 : 1);
+const taxLine = !tax ? '' : tax.nat ? tax.nat.text : tax.flat ? T.tax.flat(rate!) : T.tax.top(rate!, t.num(tax.th!, 2));
+/** tekst z kwotą w walucie kraju: wersja z przeliczeniem w nawiasie dla każdej waluty (jak w danych krajowych) */
+const perCurrency = (text: string) => (converts(text) ? CURRENCIES.map((cur) => ({ cur, text: withConversion(text, cur, rates, t) })) : null);
+/** zdanie główne ze źródłem (OECD albo przepis krajowy) i dopiski, każdy ze swoim źródłem */
+const taxTexts = !tax ? [] : [
+  { text: taxLine, law: tax.nat ? tax.nat.law : T.tax.source, href: tax.nat ? tax.nat.href : OECD_TAX_HREF },
+  ...(tax.notes ?? []),
+].map((x) => ({ ...x, conv: perCurrency(x.text) }));
+
 /** „Więcej”: w widoku jawności przepis jest już na wierzchu, więc bez innych danych blok znika */
 const otherMore = doctorsInOecd || !!c.nat || !!c.note;
 const moreParts = [doctorsInOecd && T.moreParts.oecd, c.nat && (c.nat.sources ? T.moreParts.natSources : T.moreParts.nat), !c.nat && c.note && T.moreParts.notes].filter(Boolean);
@@ -120,6 +133,20 @@ const openMore = !c.head.e && !c.head.f;
     <div class="wg-det__trend" data-k={PAY_KEYS.join(' ')}>
       <span class="wg-det__eyebrow">{T.trend.title}</span>
       <TrendSpark lines={trend} label={T.trend.aria(trendLabel)} format={t.num} />
+    </div>
+  )}
+
+  {tax && (
+    <div class="wg-det__tax" data-k={PAY_KEYS.join(' ')}>
+      <span class="wg-det__eyebrow">{T.tax.title(tax.year)}</span>
+      {taxTexts.map((x) => (
+        <>
+          <p class="wg-det__note">
+            {x.conv ? x.conv.map(({ cur, text }) => <span data-c={cur} hidden={cur !== model.currency}>{t.typo(text)}</span>) : t.typo(x.text)}
+          </p>
+          <p class="wg-det__law"><a {...linkAttrs(x.href)}>{t.typo(x.law)}</a></p>
+        </>
+      ))}
     </div>
   )}
 

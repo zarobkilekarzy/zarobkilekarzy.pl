@@ -158,6 +158,12 @@ export const enText: WorldText = {
     oecdTitle: 'All OECD data',
     oecdHead: ['Employed', 'Self-employed'],
     oecdRows: { se: 'Specialists', ge: 'General practitioners', n: 'Hospital nurses' },
+    tax: {
+      title: (year: number) => `Income tax on wages · ${year}`,
+      top: (rate: string, th: string) => `Top rate ${rate}% — from ${th}× the average gross wage.`,
+      flat: (rate: string) => `Flat rate ${rate}%.`,
+      source: 'OECD Tax Database, Table I.7',
+    },
   },
 
   teaser: {
@@ -193,6 +199,7 @@ export const enText: WorldText = {
       'A pay scale in a legal act says what the rate is, not what doctors actually earn, and the pay of a broader occupational group is not doctors’ pay. That is why such countries are grey on the map and their numbers appear only in the country details.',
       '“× nurse” divides a doctor’s pay by the pay of a salaried hospital nurse in the same year; both numbers come from the OECD. The chart of change in the country details shows both as multiples of the average wage; a gap in the line marks a change of method.',
       `“Transparency” shows whether the pay of an individual doctor paid from public money can be known: published by name by law, on request or partly, only pay scales and averages, or not at all. We studied ${countries(f.transparent)} and give the legal provision for each. None of them publishes the total payments from public money to each doctor; the closest are Italy (senior staff only) and British Columbia in Canada (payments from one plan).`,
+      'Income tax in the country details is the top rate of tax on wages and the threshold from which it applies, as a multiple of the average gross wage — the same one we compare doctors’ pay with. For OECD countries the rate includes regional and local taxes (for the region chosen by the OECD); for other countries it comes from national law. Social contributions and tax reliefs are not included. The rate applies to employees’ wages: income from self-employment may be taxed differently — for Poland we describe the flat-rate lump-sum tax; for other countries we have not checked this.',
     ],
     main: (f: MethodFacts) => [
       'OECD, Remuneration of health professionals (OECD Health Statistics 2025), downloaded via the API on 27 October 2026; sex: total',
@@ -202,6 +209,7 @@ export const enText: WorldText = {
       'World Bank, PPP conversion factor, private consumption (PA.NUS.PRVT.PP) and Official exchange rate (PA.NUS.FCRF)',
       'Eurostat, Purchasing power parities (prc_ppp_ind), household final consumption (A01)',
       `National Bank of Poland (NBP), mid rates, table ${f.aTable} of ${f.date} and table ${f.bTable} of ${f.bDate}`,
+      'OECD Tax Database, Personal income tax — top statutory and marginal tax rate (Table I.7), downloaded via the API on 28 October 2026',
     ],
   },
 };

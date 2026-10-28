@@ -15,11 +15,13 @@ import { alerts, national, oecdGroups, oecdNotes } from '@/data/swiat/kraje';
 import { alertsEn, nationalEn, oecdGroupsEn, oecdNotesEn } from '@/data/en/swiat/kraje';
 import { transparency } from '@/data/swiat/jawnosc';
 import { transparencyEn } from '@/data/en/swiat/jawnosc';
+import { taxNational, taxNotes, taxes } from '@/data/swiat/podatki';
+import { taxNationalEn, taxNotesEn } from '@/data/en/swiat/podatki';
 import { enText } from '@/data/en/swiat/tekst';
 import type { Locale } from '@/i18n/locales';
 import { getWorldRates, type WorldRates } from './rates';
 import { plText, type WorldText } from './text';
-import type { Currency, Form, Measure, NationalEntry, NationalText, Obs, OecdSeries, OecdValues, Transparency, TransparencyText, ViewKey } from './types';
+import type { Currency, Form, Measure, NationalEntry, NationalText, Obs, OecdSeries, OecdValues, Tax, Transparency, TransparencyText, ViewKey } from './types';
 
 export * from './types';
 export type { WorldRates } from './rates';
@@ -85,6 +87,8 @@ export interface CountryModel {
   /** szeregi OECD do wykresu zmian w szczegółach kraju */
   series?: OecdSeries;
   transparency?: Transparency;
+  /** podatek dochodowy od płac (wiersz w szczegółach kraju) */
+  tax?: Tax;
 }
 
 /**
@@ -140,6 +144,16 @@ function localize(id: string, n: NationalEntry, text: NationalText | undefined):
 
 const localizeTransparency = (t: Transparency, text: TransparencyText): Transparency => ({ ...t, text: text.text, law: text.law, more: text.more });
 
+/** podatek z tekstami w drugim języku: stawki, lata i adresy przepisów zostają z polskiego wpisu */
+function localizeTax(id: string, tax: Tax, nat: Record<string, { text: string; law: string }>, notes: Record<string, { text: string; law: string }[]>): Tax {
+  if (tax.notes && tax.notes.length !== notes[id]?.length) throw new Error(`[swiat] podatek ${id}: inna liczba dopisków niż w polskim`);
+  return {
+    ...tax,
+    ...(tax.nat && { nat: { ...tax.nat, ...nat[id]! } }),
+    ...(tax.notes && { notes: tax.notes.map((n, i) => ({ ...n, ...notes[id]![i]! })) }),
+  };
+}
+
 function buildCountries(locale: Locale): CountryModel[] {
   const { t, names } = LOCALES[locale];
   const en = locale === 'en';
@@ -147,6 +161,9 @@ function buildCountries(locale: Locale): CountryModel[] {
   const notes = en ? translated(oecdNotes, oecdNotesEn, 'noty OECD') : oecdNotes;
   const warn = en ? translated(alerts, alertsEn, 'zastrzeżenia') : alerts;
   const open = en ? translated(transparency, transparencyEn, 'jawność') : undefined;
+  // tłumaczenie ma inne pola niż wpis polski (bez stawki i adresu) — sprawdzamy tylko, czy jest dla każdego klucza
+  const taxNat = en ? (translated<unknown>(taxNational, taxNationalEn, 'podatek: skala krajowa') as typeof taxNationalEn) : undefined;
+  const taxNote = en ? (translated<unknown>(taxNotes, taxNotesEn, 'podatek: dopiski') as typeof taxNotesEn) : undefined;
   const ids = new Set([...Object.keys(oecd), ...Object.keys(national), ...Object.keys(oecdNotes), ...Object.keys(transparency)]);
   return [...ids]
     .map((id) => {
@@ -158,7 +175,8 @@ function buildCountries(locale: Locale): CountryModel[] {
       const f = oecdHead(id, o, 'f', t, groups);
       if (e) head.e = e;
       if (f) head.f = f;
-      return { id, name: names[id] ?? id, head, oecd: o, nat: n, note: notes[id], alert: warn[id], series: SERIES[id], transparency: tr };
+      const tax = taxes[id] && (en ? localizeTax(id, taxes[id], taxNat!, taxNote!) : taxes[id]);
+      return { id, name: names[id] ?? id, head, oecd: o, nat: n, note: notes[id], alert: warn[id], series: SERIES[id], transparency: tr, tax };
     })
     .sort((a, b) => a.name.localeCompare(b.name, t.collator));
 }

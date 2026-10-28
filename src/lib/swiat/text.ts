@@ -171,6 +171,12 @@ export const plText = {
     oecdTitle: 'Wszystkie dane OECD',
     oecdHead: ['Na etacie', 'Na własny rachunek'],
     oecdRows: { se: 'Specjaliści', ge: 'Lekarze rodzinni', n: 'Pielęgniarki szpitalne' },
+    tax: {
+      title: (year: number) => `Podatek dochodowy od płac · ${year}`,
+      top: (rate: string, th: string) => `Najwyższa stawka ${rate}% — od ${th}× przeciętnej płacy brutto.`,
+      flat: (rate: string) => `Stawka liniowa ${rate}%.`,
+      source: 'OECD Tax Database, tabela I.7',
+    },
   },
 
   /** zwiastun globu na stronie głównej (components/home/WorldPay) */
@@ -208,6 +214,7 @@ export const plText = {
       'Tabela płac z aktu prawnego mówi, ile wynosi stawka, a nie ile lekarze faktycznie zarabiają, a płace szerszej grupy zawodów to nie płace lekarzy. Dlatego takie kraje są na mapie szare, a liczby są tylko w szczegółach kraju.',
       '„× pielęgniarka” dzieli płacę lekarza przez płacę pielęgniarki szpitalnej na etacie z tego samego roku; obie liczby pochodzą z OECD. Wykres zmian w szczegółach kraju pokazuje obie płace jako wielokrotność przeciętnej, przerwa w linii oznacza zmianę metody.',
       `„Jawność płac” mówi, czy da się poznać płacę konkretnego lekarza z pieniędzy publicznych: imiennie z urzędu, na wniosek albo częściowo, tylko tabele płac i średnie, czy wcale. Zbadaliśmy ${countries(f.transparent)}, przy każdym podajemy przepis. Żaden z nich nie publikuje łącznych wypłat z pieniędzy publicznych dla każdego lekarza; najbliżej są Włochy (tylko kadra kierownicza) i Kolumbia Brytyjska w Kanadzie (płatności z jednego planu).`,
+      'Podatek dochodowy w szczegółach kraju to najwyższa stawka podatku od płac i próg, od którego obowiązuje, jako wielokrotność przeciętnej płacy brutto — tej samej, do której porównujemy płace lekarzy. Dla krajów OECD stawka obejmuje też podatki regionalne i lokalne (dla regionu wybranego przez OECD); dla pozostałych krajów pochodzi z przepisu krajowego. Bez składek na ubezpieczenia i bez ulg. Stawka dotyczy płac pracowników: dochód z własnej działalności bywa opodatkowany inaczej — dla Polski opisujemy ryczałt, w innych krajach tego nie sprawdzaliśmy.',
     ],
     /** etykiety głównych źródeł w kolejności WorldMethod (adresy są w komponencie) */
     main: (f: MethodFacts) => [
@@ -218,6 +225,7 @@ export const plText = {
       'Bank Światowy, PPP conversion factor, private consumption (PA.NUS.PRVT.PP) i Official exchange rate (PA.NUS.FCRF)',
       'Eurostat, Purchasing power parities (prc_ppp_ind), spożycie gospodarstw domowych (A01)',
       `NBP, kursy średnie, tabela ${f.aTable} z ${f.date} i tabela ${f.bTable} z ${f.bDate}`,
+      'OECD Tax Database, Personal income tax — top statutory and marginal tax rate (tabela I.7), pobrane przez API 28.10.2026',
     ],
   },
 };

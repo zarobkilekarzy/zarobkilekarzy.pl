@@ -625,7 +625,7 @@ export const changelog: { date: Date; text: string; correction?: boolean }[] = [
   },
   {
     date: new Date('2026-10-20'),
-    text: 'Added: respect for dignity and privacy (art. 20 and 22), additional nursing care (art. 34–35), treatment in line with current medical knowledge (art. 6 and 8), the opinion of another nurse or midwife (art. 6 ust. 3), the patient rights representative in the facility (art. 40a), compensation for a breach of rights (art. 4) and a list of other rights in brief. Corrected: in childbirth the act gives the right to services related to childbirth, but does not call them “immediate” (art. 7 ust. 2).',
+    text: 'Added, among others: respect for dignity and privacy, additional nursing care, the patient rights representative in the facility, compensation for a breach of rights and a list of other rights in brief. Corrected: in childbirth the act gives the right to services related to childbirth, but does not call them “immediate” (art. 7 ust. 2).',
     correction: true,
   },
 ];

@@ -1,0 +1,236 @@
+---
+/**
+ * Glob płac lekarzy (/dane/zarobki-lekarzy-na-swiecie/): po lewej przełączniki (miara, forma pracy, waluta) i glob,
+ * przyklejone przy przewijaniu, po prawej tabela krajów z rozwijanymi szczegółami. Na wąskim ekranie glob stoi nad
+ * tabelą, a przyklejone są same przełączniki. Serwer rysuje glob zwrócony do kraju startowego, wszystkie listy
+ * i szczegóły, więc bez JS widać widok domyślny. Skrypt (./client.ts) przełącza widoki przez data-k, przenosi
+ * szczegóły do wiersza wybranego kraju, a kontury do obracania i dymki pobiera z `src` przy pierwszym ruchu nad globem.
+ */
+import CountryDetails from './CountryDetails.astro';
+import GlobeSvg from './GlobeSvg.astro';
+import WorldRanking from './WorldRanking.astro';
+import { CURRENCIES, DEFAULT_VIEW, VIEW_KEYS, type WorldModel } from '@/lib/swiat';
+
+interface Props {
+  model: WorldModel;
+  /** plik z konturami i dymkami (endpoint obok strony) */
+  src: string;
+  /** kraj wybrany na starcie */
+  initial?: string;
+}
+
+const { model, src, initial = '616' } = Astro.props;
+const { t } = model;
+const T = t.globe;
+
+const national = model.countries.filter((c) => c.head.e?.src === 'nat').map((c) => c.id);
+const labels = Object.fromEntries(VIEW_KEYS.map((k) => [k, T.label(model.views[k].sentence)]));
+const config = { keys: VIEW_KEYS, labels, tones: model.tones, national, initial, currency: model.currency, announce: T.announce, noData: t.tips.noData };
+---
+<zl-globe class="wg" data-view={DEFAULT_VIEW} data-sel={initial} data-src={src}>
+  <div class="wg-layout">
+    <div class="wg-stage">
+      <div class="wg-controls">
+        <div class="wg-ctl">
+          <span class="wg-ctl__label" id="wg-l-measure">{T.ctl.measure}</span>
+          <div class="wg-seg" role="group" aria-labelledby="wg-l-measure" data-ctl="measure">
+            {(['r', 'n', 'x', 'p', 'j'] as const).map((m) => <button type="button" data-v={m} aria-pressed={m === 'r' ? 'true' : 'false'}>{t.measure[m]}</button>)}
+          </div>
+        </div>
+        <div class="wg-ctl" data-pay>
+          <span class="wg-ctl__label" id="wg-l-form">{T.ctl.form}</span>
+          <div class="wg-seg" role="group" aria-labelledby="wg-l-form" data-ctl="form">
+            {(['e', 'f'] as const).map((f) => <button type="button" data-v={f} aria-pressed={f === 'e' ? 'true' : 'false'}>{t.form[f]}</button>)}
+          </div>
+        </div>
+        <div class="wg-ctl">
+          <span class="wg-ctl__label" id="wg-l-cur">{T.ctl.currency}</span>
+          <div class="wg-seg" role="group" aria-labelledby="wg-l-cur" data-ctl="currency">
+            {CURRENCIES.map((c) => <button type="button" data-v={c} aria-pressed={c === model.currency ? 'true' : 'false'}>{t.currencyButton[c]}</button>)}
+          </div>
+        </div>
+      </div>
+
+      <figure class="wg-map">
+        <div class="wg-box">
+          <GlobeSvg model={model} selected={initial} class="wg-svg--live" label={labels[DEFAULT_VIEW]!} />
+          <div class="wg-tip" hidden></div>
+          <div class="wg-zoom">
+            <button type="button" data-zoom="1" aria-label={T.zoomIn}>+</button>
+            <button type="button" data-zoom="-1" aria-label={T.zoomOut} disabled>−</button>
+          </div>
+        </div>
+        {VIEW_KEYS.map((k) => (
+          <div class="wg-legend" data-k={k} hidden={k !== DEFAULT_VIEW}>
+            {model.views[k].legend.map((t, i) => <span><i class={`t${model.views[k].legendTones?.[i] ?? i}`} />{t}</span>)}
+            {model.views[k].legendUnit && <span class="wg-legend__unit">{model.views[k].legendUnit}</span>}
+          </div>
+        ))}
+        <div class="wg-legend wg-legend--kinds">
+          <span data-k={VIEW_KEYS.filter((k) => k.startsWith('e-')).join(' ')}><i class="is-ring" />{T.kinds.nat}</span>
+          <span data-k={VIEW_KEYS.filter((k) => k !== 'j').join(' ')}><i class="tc" />{T.kinds.partial}</span>
+          <span data-k={VIEW_KEYS.filter((k) => k !== 'j').join(' ')}><i class="ts" />{T.kinds.none}</span>
+          <span data-k="j" hidden><i class="ts" />{T.kinds.notStudied}</span>
+        </div>
+        <figcaption class="wg-hint">{T.hint}</figcaption>
+      </figure>
+      <slot name="under-map" />
+    </div>
+
+    <div class="wg-table">
+      <p class="sr-only" aria-live="polite" data-announce></p>
+      <WorldRanking model={model} initial={initial} />
+    </div>
+  </div>
+
+  {/* szczegóły pozostałych krajów: skrypt przenosi je do wiersza wybranego kraju */}
+  <div class="wg-store" hidden>
+    {model.countries.filter((c) => c.id !== initial).map((c) => <CountryDetails country={c} model={model} />)}
+  </div>
+
+  <script type="application/json" class="wg-data" set:html={JSON.stringify(config)} />
+</zl-globe>
+
+<script>
+  import { defineGlobe } from './client';
+
+  defineGlobe();
+</script>
+
+<style is:global>
+  zl-globe { display: block; }
+  .wg-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px clamp(32px, 4vw, 64px); align-items: start; }
+  .wg-stage { display: grid; gap: 20px; min-width: 0; }
+  .wg-table { min-width: 0; }
+
+  .wg-controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; }
+  .wg-ctl { display: grid; gap: 6px; min-width: 0; }
+  .wg-ctl__label { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .wg-seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line-2); background: var(--surface); }
+  .wg-seg button { padding: 9px 13px; border: 0; background: none; font: 500 0.875rem/1 var(--f-body); color: var(--text-strong); cursor: pointer; white-space: nowrap; }
+  .wg-seg button + button { border-left: 1px solid var(--line-2); }
+  .wg-seg button:hover { background: var(--bg-soft); }
+  .wg-seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+  .wg-seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  /* forma pracy nie dotyczy jawności: zostaje na miejscu (glob nie skacze), ale wygaszona */
+  .wg-ctl[inert] .wg-seg button { color: var(--muted); }
+  .wg-ctl[inert] .wg-seg button[aria-pressed="true"] { background: var(--bg-soft); }
+
+  .wg-map { margin: 0; display: grid; gap: 10px; min-width: 0; }
+  /* glob, dymek i przyciski przybliżenia: bez zaznaczania tekstu i menu „kopiuj” przy przytrzymaniu;
+     na komputerze glob mieści się w oknie razem z przełącznikami i legendą */
+  .wg-box { position: relative; width: min(100%, 600px, max(300px, calc(100svh - var(--header-h) - 330px))); margin-inline: auto; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .wg-svg--live { touch-action: none; cursor: grab; }
+  .wg-svg--live.is-dragging { cursor: grabbing; }
+  .wg-svg--live .wg-land path.is-info { cursor: pointer; }
+  .wg-svg--live .wg-land path:hover { stroke: var(--ink); stroke-width: 1; }
+  .wg-tip { position: absolute; z-index: 5; pointer-events: none; max-width: 17rem; padding: 9px 11px; background: var(--inverse-2); color: #fff; /* kolor-stały: tekst na --inverse-2 */ font-size: 0.8125rem; line-height: 1.4; transform: translate(-50%, calc(-100% - 12px)); }
+  .wg-tip b { display: block; font-weight: 600; }
+  .wg-tip span { display: block; opacity: .8; font-size: 0.75rem; }
+  .wg-zoom { position: absolute; top: 0; right: 0; display: grid; }
+  .wg-zoom button { width: 36px; height: 36px; margin-top: -1px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: 400 1.125rem/1 var(--f-display); cursor: pointer; }
+  .wg-zoom button:hover:not(:disabled) { background: var(--bg-soft); }
+  .wg-zoom button:disabled { color: var(--chart); cursor: default; }
+  .wg-zoom button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .wg-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font: 400 0.75rem/1 var(--f-mono); color: var(--text); font-variant-numeric: tabular-nums; }
+  .wg-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .wg-legend i { display: inline-block; width: 14px; height: 10px; }
+  .wg-legend--kinds { color: var(--muted); }
+  /* próbki kolorów klas tN (legenda, poziom jawności w szczegółach, pasek tabeli) — jedno miejsce dla wszystkich */
+  :is(.wg-legend i, .wg-det__lvl i, .wg-rank__bar i.is-lvl).t0 { background: var(--seq-0); }
+  :is(.wg-legend i, .wg-det__lvl i, .wg-rank__bar i.is-lvl).t1 { background: var(--seq-1); }
+  :is(.wg-legend i, .wg-det__lvl i, .wg-rank__bar i.is-lvl).t2 { background: var(--seq-2); }
+  :is(.wg-legend i, .wg-det__lvl i, .wg-rank__bar i.is-lvl).t3 { background: var(--seq-3); }
+  :is(.wg-legend i, .wg-det__lvl i, .wg-rank__bar i.is-lvl).t4 { background: var(--seq-4); }
+  .wg-legend i.tc { background: var(--chart); } .wg-legend i.ts { background: var(--chart-soft); }
+  .wg-legend i.is-ring { width: 10px; height: 10px; border: 1.5px solid var(--ink); border-radius: 50%; }
+  .wg-rank__key i.is-nat, .wg-rank__bar i.is-nat { background-color: var(--seq-2); background-image: radial-gradient(circle, var(--bg) 0.9px, transparent 1.1px); background-size: 4px 4px; }
+  .wg-legend__unit { color: var(--muted); }
+  .wg-hint { text-align: center; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+  .wg-rank__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line-2); }
+  .wg-rank__title { margin: 0; font: 400 clamp(1.5rem, 2.2vw, 2rem)/1.15 var(--f-display); color: var(--ink); letter-spacing: -.01em; }
+  .wg-rank__count { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .wg-rank__unit { margin: 10px 0 8px; font-size: 0.875rem; color: var(--muted); }
+  .wg-rank__rows { margin: 0; padding: 0; list-style: none; }
+  .wg-rank__rows li + li { border-top: 1px solid var(--line); }
+  .wg-rank__rows li.is-sel { background: var(--bg-soft); box-shadow: inset 2px 0 0 var(--blue); }
+  .wg-rank__rows button { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 1.6rem minmax(0, 9.5rem) minmax(0, 1fr) 6.2rem 2.6rem; gap: 8px; align-items: center; width: 100%; padding: 6px 6px 6px 4px; font-size: 0.875rem; color: var(--text-strong); cursor: pointer; }
+  .wg-rank__list button:hover { background: var(--bg-soft); }
+  .wg-rank__list button:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .wg-rank__rest { display: flex; flex-wrap: wrap; gap: 2px 4px; margin: 0; padding: 0; list-style: none; }
+  .wg-rank__rest button { all: unset; box-sizing: border-box; padding: 4px 8px; font-size: 0.875rem; color: var(--text-strong); cursor: pointer; }
+  .wg-rank__rest li.is-sel button { background: var(--bg-soft); box-shadow: inset 0 -2px 0 var(--blue); color: var(--ink); }
+  .wg-rank__restdet:has(.wg-det) { margin-top: 8px; background: var(--bg-soft); box-shadow: inset 2px 0 0 var(--blue); }
+  .wg-rank__restdet .wg-det { padding-top: 14px; padding-left: 14px; }
+  .wg-rank__no, .wg-rank__y { font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+  .wg-rank__y.is-old { color: var(--text-strong); text-decoration: underline dotted; text-underline-offset: 2px; }
+  .wg-rank__name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .wg-rank__bar { position: relative; height: 10px; }
+  .wg-rank__bar i { position: absolute; inset: 0 auto 0 0; background: var(--chart); }
+  .wg-rank__bar i.is-est { background: var(--chart-proj); box-shadow: inset 0 0 0 1px var(--chart); }
+  .wg-rank__v { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .wg-rank__rows li.is-pl .wg-rank__name { font-weight: 600; color: var(--ink); }
+  .wg-rank__rows li.is-pl .wg-rank__bar i { background: var(--blue); box-shadow: none; }
+  .wg-rank__sub { margin: 28px 0 6px; padding-bottom: 8px; border-bottom: 1px solid var(--line-2); font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .wg-rank__key { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 20px; font-size: 0.8125rem; color: var(--muted); }
+  .wg-rank__key span { display: inline-flex; align-items: center; gap: 6px; }
+  .wg-rank__key i { display: inline-block; width: 16px; height: 9px; background: var(--chart); }
+  .wg-rank__key i.is-pl { background: var(--blue); }
+  .wg-rank__key i.is-est { background: var(--chart-proj); box-shadow: inset 0 0 0 1px var(--chart); }
+
+  /* szczegóły kraju w rozwiniętym wierszu, wcięte do kolumny nazwy */
+  .wg-det { display: grid; gap: 12px; padding: 4px 12px 18px calc(1.6rem + 12px); }
+  .wg-det__who, .wg-det__none { margin: 0; font-size: 0.875rem; color: var(--text-strong); }
+  .wg-det__j { display: grid; gap: 6px; }
+  .wg-det__lvl { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.875rem; font-weight: 500; color: var(--ink); }
+  .wg-det__lvl i { flex: none; width: 12px; height: 12px; }
+  .wg-det__law { margin: 0; font-size: 0.8125rem; color: var(--muted); }
+  .wg-det__alert { margin: 0; padding: 8px 10px; border-left: 2px solid var(--amber); background: var(--amber-bg); font-size: 0.8125rem; color: var(--text-strong); }
+  .wg-det__trend { display: grid; gap: 6px; max-width: 380px; }
+  .wg-det__eyebrow { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .wg-tag { display: inline-block; margin-right: 6px; padding: 4px 6px 3px; border: 1px solid var(--line-2); font: 500 0.625rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-strong); vertical-align: 1px; }
+  .wg-tag--nat { border-style: dashed; }
+  .wg-det__more summary { cursor: pointer; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+  .wg-det__more summary:hover { color: var(--ink); }
+  .wg-det__more[open] summary { margin-bottom: 4px; }
+  .wg-det__block { display: grid; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--line); }
+  .wg-det__table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .wg-det__table th, .wg-det__table td { padding: 6px 8px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .wg-det__table thead th { padding-top: 0; border-top: 0; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .wg-det__table tbody th { width: 32%; padding-left: 0; font-weight: 500; font-size: 0.8125rem; color: var(--text-strong); }
+  .wg-det__table td { font: 400 1rem/1.15 var(--f-display); color: var(--ink); }
+  .wg-det__table td small { display: block; margin-top: 3px; font: 400 0.75rem/1.4 var(--f-body); color: var(--muted); }
+  .wg-det__table td.is-none { color: var(--muted); }
+  .wg-det__rows { display: grid; grid-template-columns: minmax(0, 9rem) minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 0.8125rem; }
+  .wg-det__rows dt { color: var(--muted); }
+  .wg-det__rows dd { margin: 0; color: var(--text-strong); font-variant-numeric: tabular-nums; }
+  .wg-det__note { margin: 0; font-size: 0.8125rem; color: var(--text); }
+  .wg-det__src { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; font-size: 0.8125rem; }
+
+  /* komputer: glob z przełącznikami stoi obok przewijanej tabeli (tylko gdy okno jest dość wysokie) */
+  @media (min-width: 1025px) and (min-height: 700px) {
+    .wg-stage { position: sticky; top: calc(var(--header-h) + 20px); }
+  }
+  /* wąski ekran: glob nad tabelą, a przełączniki przyklejone pod nagłówkiem strony przez całą tabelę
+     (stage „znika” z układu, więc przełączniki przyklejają się do całego bloku, nie tylko do globu) */
+  @media (max-width: 1024px) {
+    .wg-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .wg-stage { display: contents; }
+    .wg-controls { position: sticky; top: var(--header-h); z-index: 6; flex-wrap: wrap; gap: 8px; margin-inline: calc(var(--gutter) * -1); padding: 10px var(--gutter); background: var(--bg); border-bottom: 1px solid var(--line); }
+    .wg-ctl__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    /* miara w jednym rzędzie, forma pracy i waluta w drugim; co się nie mieści, przewija się w bok */
+    .wg-ctl { flex: 0 1 auto; }
+    .wg-ctl:first-child { flex-basis: 100%; }
+    .wg-seg { flex-wrap: nowrap; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .wg-box { width: min(100%, 520px); }
+    .wg-rank__list li, .wg-rank__restdet { scroll-margin-top: 120px; }
+  }
+  @media (max-width: 720px) {
+    .wg-seg button { padding: 9px 10px; font-size: 0.8125rem; }
+    .wg-det { padding-left: 12px; }
+    .wg-det__rows { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .wg-det__rows dd { margin-bottom: 6px; }
+    .wg-rank__rows button { grid-template-columns: 1.3rem minmax(0, 1fr) minmax(0, 2.6rem) 5.4rem 2.2rem; gap: 6px; font-size: 0.8125rem; }
+  }
+</style>

@@ -1,0 +1,85 @@
+---
+/**
+ * /dane/zarobki-lekarzy-na-swiecie/ — glob płac lekarzy: OECD (Health Statistics 2025) i statystyki krajowe.
+ * Model: lib/swiat (dane: src/data/swiat/, napisy: lib/swiat/text.ts), komponenty: components/swiat/. Kursy NBP z buildu.
+ * Wersja angielska: /en/data/doctors-pay-worldwide/ (para i stempel w src/i18n/pages.json). W katalogu /dane/ przez wpis
+ * src/content/articles/zarobki-lekarzy-na-swiecie.md (bez treści, z `href`).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import WorldGlobe from '@/components/swiat/WorldGlobe.astro';
+import WorldMethod from '@/components/swiat/WorldMethod.astro';
+import { mainNav } from '@/data/navigation';
+import { plural, typo } from '@/lib/format';
+import { worldModel } from '@/lib/swiat';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import type { Stat } from '@/types';
+
+const model = await worldModel('pl');
+const { counts, poland } = model;
+const withValue = counts.oecd + counts.national;
+const pl = model.byId['616']!.head.e!;
+
+const title = 'Ile zarabia lekarz na świecie';
+const lead = `Ile razy więcej od przeciętnego pracownika zarabia lekarz na etacie w ${withValue} krajach, ile to złotych i ile warte jest według siły nabywczej. Dane OECD i krajowych urzędów statystycznych, ze źródłem przy każdym kraju.`;
+const description = `Płace lekarzy w ${withValue} krajach na interaktywnym globie: relacja do przeciętnej płacy, kwota w złotych i siła nabywcza. Dane OECD i urzędów krajowych.`;
+
+const dataHref = mainNav.find((link) => link.match === '/dane/')?.href;
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Dane', href: dataHref }, { label: 'Lekarze na świecie' }];
+const seo: SeoInput = { title: 'Zarobki lekarzy na świecie', description, breadcrumbs: crumbs };
+
+const stats: Stat[] = [
+  {
+    value: pl.r![0],
+    decimals: 2,
+    unit: '×',
+    desc: `przeciętnej płacy zarabia w Polsce specjalista na umowie o pracę (${pl.r![1]} r.), licząc każde miejsce pracy osobno — ${poland.rank}. miejsce na ${poland.of} ${plural(poland.of, ['kraj', 'kraje', 'krajów'])}`,
+    accuracy: 'exact',
+    source: 'OECD Health Statistics 2025',
+    href: 'https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_HEALTH_REAC_EMP%40DF_REMUN&df[ag]=OECD.ELS.HD',
+  },
+  {
+    value: 73,
+    unit: '%',
+    desc: 'specjalistów w Polsce pracuje na umowach cywilnoprawnych, a tych płac statystyka OECD nie obejmuje',
+    accuracy: 'exact',
+    source: 'AOTMiT, dokument roboczy, za „Rzeczpospolitą”',
+    href: 'https://www.rp.pl/ochrona-zdrowia/art44649861-wyplaty-lekarzy-na-kontraktach-wieksze-niz-100-tys-zl-tylko-w-1-proc-przypadkow',
+  },
+];
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="ws-top">
+    <PageHeader title={title} lead={lead} eyebrow="Dane · porównanie międzynarodowe" crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Kraje z wartością', value: withValue },
+          { label: 'Dane cząstkowe', value: `${counts.partial} ${plural(counts.partial, ['kraj', 'kraje', 'krajów'])}` },
+          { label: 'Kursy NBP', value: new Date(model.rates.a.date) },
+        ]}
+      />
+      <StatRow slot="aside" items={stats} label="Polska na tle świata" />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom" aria-label="Glob płac lekarzy">
+    <WorldGlobe model={model} src="/dane/zarobki-lekarzy-na-swiecie/swiat.json">
+      <p slot="under-map" class="ws-note">
+        <strong>{typo('Porównanie mocno przybliżone:')}</strong> {typo('kraje liczą płace różnie, a dane są z lat 2015–2026.')} <a href={`#${model.t.method.anchor}`}>{typo('Jak czytać te dane')}</a>
+      </p>
+    </WorldGlobe>
+  </Section>
+
+  <Section tone="soft" aria-label="Metoda i źródła">
+    <WorldMethod model={model} />
+  </Section>
+</BaseLayout>
+
+<style>
+  .ws-top { padding-top: clamp(32px, 4vw, 56px); }
+  .ws-note { margin: 0; padding: 8px 10px; border-left: 2px solid var(--amber); background: var(--amber-bg); font-size: 0.8125rem; color: var(--text-strong); }
+  .ws-note a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+</style>

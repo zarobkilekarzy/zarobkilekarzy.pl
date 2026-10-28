@@ -1,0 +1,195 @@
+---
+/**
+ * Szczegóły kraju w rozwijanym wierszu tabeli globu płac: kogo obejmuje liczba w każdym widoku (data-k), nota,
+ * wykres zmian, a w „Więcej” jawność płac, wszystkie dane OECD i dane krajowe ze źródłami. Kwoty w walucie kraju
+ * mają przeliczenie w nawiasie w każdej walucie (data-c). Każdy kraj ma jeden taki blok; skrypt globu przenosi
+ * go do wiersza wybranego kraju w widocznej liście.
+ */
+import { linkAttrs } from '@/lib/links';
+import TrendSpark from './TrendSpark.astro';
+import { CURRENCIES, DEFAULT_VIEW, LEVEL_TONES, MIN_RECENT_YEAR, obsMeta, VIEW_KEYS, withConversion, type CountryModel, type Obs, type OecdGroup, type View, type WorldModel } from '@/lib/swiat';
+
+interface Props {
+  country: CountryModel;
+  model: WorldModel;
+}
+
+const { country: c, model } = Astro.props;
+const { rates, t } = model;
+const T = t.details;
+const views = VIEW_KEYS.map((k) => model.views[k]);
+const PAY_KEYS = VIEW_KEYS.filter((k) => k !== 'j');
+
+/** komunikat, gdy kraj nie ma wartości w danym widoku (formie pracy i mierze) */
+function emptyMessage(view: View): string {
+  const head = c.head[view.form];
+  if (!head) return missing(view.form);
+  if (view.measure === 'n' && head.src === 'nat') return T.empty.nurseNational;
+  if (view.measure === 'n') return T.empty.nurse;
+  return T.empty.measure;
+}
+
+/** komunikat, gdy kraj nie ma wartości w danej formie pracy */
+function missing(form: 'e' | 'f'): string {
+  if (form === 'f') return c.id === '616' ? T.empty.selfPoland : T.empty.self;
+  return c.head.f ? T.empty.employedHasSelf : T.empty.employed;
+}
+
+/** ten sam tekst w kilku widokach tylko raz: tekst → widoki, w których jest widoczny */
+function byText(entries: [string, View][]) {
+  const map = new Map<string, View['key'][]>();
+  for (const [text, view] of entries) map.set(text, [...(map.get(text) ?? []), view.key]);
+  return [...map].map(([text, keys]) => ({ text, keys }));
+}
+const pay = views.filter((v) => v.measure !== 'j');
+/** kogo obejmuje liczba z wiersza: grupa i rok obserwacji */
+const who = byText(
+  pay.flatMap((view) => {
+    const v = view.value(c);
+    return v ? [[`${v.head.group} · ${obsMeta(v.obs, t)}`, view] as [string, View]] : [];
+  }),
+);
+const whoSrc = (keys: string[]) => c.head[model.views[keys[0] as View['key']].form]!.src;
+const empty = byText(pay.filter((view) => !view.value(c)).map((view) => [emptyMessage(view), view]));
+
+const usd = rates.mid.USD!;
+/** komórka tabeli OECD: relacja i kwota po kursie w każdej walucie */
+const cell = (g: OecdGroup) => {
+  const x = c.oecd?.[g];
+  if (!x) return undefined;
+  const v = x.r ?? x.p!;
+  const meta = `${v[1]}${t.flags[v[2]] ? `, ${t.flags[v[2]]}` : ''}`;
+  const amount = Object.fromEntries(CURRENCIES.map((cur) => [cur, x.x ? `≈ ${t.money((x.x[0] * usd) / rates.mid[cur]!, cur)}` : '']));
+  return { main: x.r ? `${t.num(x.r[0], 2)}×` : `${t.money(x.p![0], 'USD')} PPP`, meta, amount };
+};
+const groups: { label: string; e: OecdGroup; f?: OecdGroup }[] = [
+  { label: T.oecdRows.se, e: 'se', f: 'sf' },
+  { label: T.oecdRows.ge, e: 'ge', f: 'gf' },
+  { label: T.oecdRows.n, e: 'n' },
+];
+/** tabela OECD tylko wtedy, gdy OECD ma dane o lekarzach (dla USA i Japonii ma same pielęgniarki) */
+const doctorsInOecd = (['se', 'sf', 'ge', 'gf'] as const).some((g) => c.oecd?.[g]);
+
+/**
+ * Wykres zmian: lekarz z głównej grupy kraju i pielęgniarki szpitalne (szeregi OECD od 2000 r.).
+ * Tylko szeregi, które sięgają MIN_RECENT_YEAR — urwany przed laty (np. USA do 2001 r.) wyglądałby obok aktualnych jak błąd.
+ */
+const s = c.series ?? {};
+const recent = (points: Obs[] | undefined): points is Obs[] => !!points && points.length > 1 && points.at(-1)![0] >= MIN_RECENT_YEAR;
+const DOCTOR: OecdGroup[] = ['se', 'sf', 'ge', 'gf'];
+const doctor = DOCTOR.find((g) => recent(s[g]));
+const trend = [
+  ...(doctor ? [{ label: T.trend.doctor[doctor]!, points: s[doctor]!, accent: true }] : []),
+  ...(doctor && recent(s.n) ? [{ label: T.trend.nurse, points: s.n }] : []),
+];
+const trendLabel = trend.map((l) => T.trend.line(l.label, t.num(l.points[0]![1], 2), l.points[0]![0], t.num(l.points.at(-1)![1], 2), l.points.at(-1)![0])).join('; ');
+/** czy w tekście są kwoty do przeliczenia (inaczej jedna wersja bez data-c) */
+const converts = (text: string) => CURRENCIES.some((cur) => withConversion(text, cur, rates, t) !== text);
+
+/** „Więcej”: w widoku jawności przepis jest już na wierzchu, więc bez innych danych blok znika */
+const otherMore = doctorsInOecd || !!c.nat || !!c.note;
+const moreParts = [doctorsInOecd && T.moreParts.oecd, c.nat && (c.nat.sources ? T.moreParts.natSources : T.moreParts.nat), !c.nat && c.note && T.moreParts.notes].filter(Boolean);
+/** kraj bez żadnej porównywalnej wartości: to, co wiadomo, jest od razu rozwinięte */
+const openMore = !c.head.e && !c.head.f;
+---
+<div class="wg-det" id={`wg-det-${c.id}`} data-id={c.id}>
+  {who.map(({ text, keys }) => (
+    <p class="wg-det__who" data-k={keys.join(' ')} hidden={!keys.includes(DEFAULT_VIEW)}>
+      <span class:list={['wg-tag', { 'wg-tag--nat': whoSrc(keys) === 'nat' }]}>{T.tag[whoSrc(keys)]}</span>
+      {t.typo(text)}
+    </p>
+  ))}
+  {empty.map(({ text, keys }) => <p class="wg-det__none" data-k={keys.join(' ')} hidden={!keys.includes(DEFAULT_VIEW)}>{t.typo(text)}</p>)}
+
+  {c.transparency ? (
+    <div class="wg-det__j" data-k="j" hidden>
+      <p class="wg-det__lvl"><i class={`t${LEVEL_TONES[c.transparency.level]}`} />{t.level[c.transparency.level]} · {t.scope[c.transparency.scope]}</p>
+      <p class="wg-det__note">{t.typo(c.transparency.text)}</p>
+      <p class="wg-det__law">
+        <a {...linkAttrs(c.transparency.href)}>{t.typo(c.transparency.law)}</a>
+        {c.transparency.more && <> · <a {...linkAttrs(c.transparency.more.href)}>{t.typo(c.transparency.more.label)}</a></>}
+      </p>
+    </div>
+  ) : (
+    <p class="wg-det__none" data-k="j" hidden>{t.typo(T.empty.notStudied)}</p>
+  )}
+
+  {c.alert && <p class="wg-det__alert">{t.typo(c.alert)}</p>}
+
+  {trend.length > 0 && (
+    <div class="wg-det__trend" data-k={PAY_KEYS.join(' ')}>
+      <span class="wg-det__eyebrow">{T.trend.title}</span>
+      <TrendSpark lines={trend} label={T.trend.aria(trendLabel)} format={t.num} />
+    </div>
+  )}
+
+  {(c.transparency || otherMore) && (
+    <details class="wg-det__more" open={openMore} data-k={otherMore ? undefined : PAY_KEYS.join(' ')}>
+      <summary>{T.more}: {c.transparency && <span data-k={PAY_KEYS.join(' ')}>{T.moreParts.j}{moreParts.length > 0 && ', '}</span>}{moreParts.join(', ')}</summary>
+
+      {c.transparency && (
+        <div class="wg-det__block" data-k={PAY_KEYS.join(' ')}>
+          <span class="wg-det__eyebrow">{T.jTitle} · {t.level[c.transparency.level]}</span>
+          <p class="wg-det__note">{t.typo(c.transparency.text)}</p>
+          <p class="wg-det__law">
+            <a {...linkAttrs(c.transparency.href)}>{t.typo(c.transparency.law)}</a>
+            {c.transparency.more && <> · <a {...linkAttrs(c.transparency.more.href)}>{t.typo(c.transparency.more.label)}</a></>}
+          </p>
+        </div>
+      )}
+
+      {doctorsInOecd && (
+        <div class="wg-det__block">
+          <span class="wg-det__eyebrow">{T.oecdTitle}</span>
+          <table class="wg-det__table">
+            <thead><tr><th></th><th scope="col">{T.oecdHead[0]}</th><th scope="col">{T.oecdHead[1]}</th></tr></thead>
+            <tbody>
+              {groups.map((g) => (
+                <tr>
+                  <th scope="row">{g.label}</th>
+                  {[cell(g.e), g.f && cell(g.f)].map((x) =>
+                    x ? (
+                      <td>
+                        {x.main}
+                        <small>{CURRENCIES.map((cur) => x.amount[cur] && <span data-c={cur} hidden={cur !== model.currency}>{t.typo(x.amount[cur])} · </span>)}{t.typo(x.meta)}</small>
+                      </td>
+                    ) : (
+                      <td class="is-none">—</td>
+                    ),
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {c.nat && (
+        <div class="wg-det__block">
+          <span class="wg-det__eyebrow">{T.kind[c.nat.kind]}</span>
+          {c.nat.group && c.nat.kind !== 'avg' && <p class="wg-det__note"><strong>{t.typo(c.nat.group)}.</strong></p>}
+          {c.nat.rows && (
+            <dl class="wg-det__rows">
+              {c.nat.rows.map(([k, v]) => (
+                <>
+                  <dt>{t.typo(k)}</dt>
+                  <dd>
+                    {converts(v)
+                      ? CURRENCIES.map((cur) => <span data-c={cur} hidden={cur !== model.currency}>{t.typo(withConversion(v, cur, rates, t))}</span>)
+                      : t.typo(v)}
+                  </dd>
+                </>
+              ))}
+            </dl>
+          )}
+          {c.nat.note && <p class="wg-det__note">{t.typo(c.nat.note)}</p>}
+          {c.nat.sources && (
+            <ul class="wg-det__src">{c.nat.sources.map((s) => <li><a {...linkAttrs(s.href)}>{t.typo(s.label)}</a></li>)}</ul>
+          )}
+        </div>
+      )}
+
+      {c.note && <p class="wg-det__note">{t.typo(c.note)}</p>}
+    </details>
+  )}
+</div>

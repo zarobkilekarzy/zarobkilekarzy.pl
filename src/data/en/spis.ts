@@ -69,6 +69,14 @@ export const cards: Record<string, CardEn> = {
   'zadluzenie-szpitali': { stat: { of: '40,8', value: '40.8', unit: 'PLN billion of debt' } },
   'wedlug-specjalizacji': { stat: { of: '29', value: '29', unit: 'specialties' } },
   'personel-medyczny': { stat: { of: '5,9', value: '5.9', unit: 'nurses per 1,000 population' } },
+  'zarobki-lekarzy-na-swiecie': {
+    kicker: 'Tool',
+    page: {
+      title: 'What doctors earn around the world',
+      summary: 'Doctors’ pay on an interactive globe: the ratio to the average wage, the amount in US dollars and purchasing power, plus pay transparency. OECD data and national statistical offices, with a source for every country.',
+      href: '/en/data/doctors-pay-worldwide/',
+    },
+  },
   'zarobki-lekarzy-polska-sasiedzi': { stat: { of: '2,9', value: '2.9', unit: 'times the average wage — a salaried specialist in Poland (OECD)' } },
 
   // Mechanizmy

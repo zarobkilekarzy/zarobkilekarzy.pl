@@ -1,0 +1,64 @@
+---
+/**
+ * Statyczny rysunek globu płac (widok „na etacie, × przeciętna płaca”), zwrócony do wybranego kraju albo punktu.
+ * Używa go glob na podstronie (skrypt potem podmienia ścieżki) i zwiastun na stronie głównej (bez skryptu).
+ */
+import countriesTopo from '@/data/geo/swiat-110m.json';
+import { center, countries, facing, graticule, pathOf, projection, SIZE, visible } from '@/lib/swiat/globe';
+import { DEFAULT_VIEW, type WorldModel } from '@/lib/swiat';
+import type { Topology } from 'topojson-specification';
+
+interface Props {
+  model: WorldModel;
+  /** kraj obrysowany i podpisany na środku */
+  selected?: string;
+  /** środek tarczy [lon, lat], gdy bez wybranego kraju */
+  at?: [number, number];
+  label: string;
+  class?: string;
+}
+
+const { model, selected, at = [15, 35], label, class: className } = Astro.props;
+const features = countries(countriesTopo as unknown as Topology);
+const sel = selected ? features.find((f) => f.id === selected) : undefined;
+const middle = sel ? center(sel) : at;
+const proj = projection(facing(middle));
+const path = pathOf(proj);
+const view = model.views[DEFAULT_VIEW];
+// kraje z wartością z danych krajowych (nie OECD) — kółko na środku kraju
+const national = features.filter((f) => model.byId[f.id]?.head.e?.src === 'nat').map((f) => ({ id: f.id, at: center(f) }));
+const [lx, ly] = proj(middle)!;
+---
+<svg class:list={['wg-svg', className]} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={label}>
+  <path class="wg-ocean" d={path({ type: 'Sphere' })} />
+  <path class="wg-grat" d={path(graticule)} />
+  <g class="wg-land">
+    {features.map((f) => {
+      const d = path(f);
+      const tone = view.tone(model.byId[f.id]);
+      return d && <path d={d} data-id={f.id} class:list={[`t${tone}`, { 'is-pt': f.properties.point, 'is-info': tone !== 's' }]} />;
+    })}
+  </g>
+  <g class="wg-nat">
+    {national.map(({ id, at }) => {
+      const [x, y] = proj(at)!;
+      return visible(at, proj) && <circle data-id={id} cx={Math.round(x)} cy={Math.round(y)} r="5" />;
+    })}
+  </g>
+  <path class="wg-sel" d={sel ? path(sel) : ''} />
+  {sel && visible(middle, proj) && <text class="wg-lbl" x={lx} y={ly - 14} text-anchor="middle">{model.byId[sel.id]?.name}</text>}
+</svg>
+
+<style is:global>
+  .wg-svg { display: block; width: 100%; height: auto; aspect-ratio: 1; }
+  .wg-ocean { fill: var(--bg-soft); stroke: var(--line-2); stroke-width: 1; }
+  .wg-grat { fill: none; stroke: var(--line); stroke-width: .6; }
+  .wg-land path { stroke: var(--bg); stroke-width: .6; transition: fill .35s var(--ease); }
+  .wg-land path.is-pt { stroke: var(--ink); stroke-width: .8; }
+  .wg-nat circle { fill: none; stroke: var(--ink); stroke-width: 1.5; pointer-events: none; }
+  .wg-sel { fill: none; stroke: var(--ink); stroke-width: 1.8; pointer-events: none; }
+  .wg-lbl { font: 600 13px var(--f-body); fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+  .wg-land .t0 { fill: var(--seq-0); } .wg-land .t1 { fill: var(--seq-1); } .wg-land .t2 { fill: var(--seq-2); } .wg-land .t3 { fill: var(--seq-3); } .wg-land .t4 { fill: var(--seq-4); }
+  .wg-land .tc { fill: var(--chart); } .wg-land .ts { fill: var(--chart-soft); }
+  @media (prefers-reduced-motion: reduce) { .wg-land path { transition: none; } }
+</style>

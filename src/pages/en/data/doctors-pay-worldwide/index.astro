@@ -1,0 +1,81 @@
+---
+/**
+ * /en/data/doctors-pay-worldwide/ — tłumaczenie /dane/zarobki-lekarzy-na-swiecie/ (glob płac lekarzy): ten sam układ
+ * i te same komponenty, model w języku angielskim (worldModel('en'): napisy src/data/en/swiat/tekst.ts, teksty krajów
+ * src/data/en/swiat/kraje.ts i jawnosc.ts, waluta na starcie — dolar). Para i stempel w src/i18n/pages.json.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import WorldGlobe from '@/components/swiat/WorldGlobe.astro';
+import WorldMethod from '@/components/swiat/WorldMethod.astro';
+import { enPage as page } from '@/data/en/swiat/tekst';
+import { pagePairOf } from '@/i18n/pages';
+import { worldModel } from '@/lib/swiat';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import type { Stat } from '@/types';
+
+const model = await worldModel('en');
+const { counts, poland, t } = model;
+const withValue = counts.oecd + counts.national;
+const pl = model.byId['616']!.head.e!;
+
+const crumbs: Crumb[] = [{ label: page.crumbs.home, href: '/en/' }, { label: page.crumbs.data, href: '/en/data/' }, { label: page.crumbs.here }];
+const seo: SeoInput = { title: page.seoTitle, description: page.description(withValue), breadcrumbs: crumbs, index: !pagePairOf(Astro.url.pathname)?.draft };
+
+const stats: Stat[] = [
+  {
+    value: pl.r![0],
+    decimals: 2,
+    unit: '×',
+    desc: page.stats.ratio(pl.r![1], poland.rank, poland.of),
+    accuracy: 'exact',
+    source: page.stats.ratioSource,
+    href: 'https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_HEALTH_REAC_EMP%40DF_REMUN&df[ag]=OECD.ELS.HD',
+  },
+  {
+    value: 73,
+    unit: '%',
+    desc: page.stats.contracts,
+    accuracy: 'exact',
+    source: page.stats.contractsSource,
+    href: 'https://www.rp.pl/ochrona-zdrowia/art44649861-wyplaty-lekarzy-na-kontraktach-wieksze-niz-100-tys-zl-tylko-w-1-proc-przypadkow',
+  },
+];
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="ws-top">
+    <PageHeader title={page.title} lead={page.lead(withValue)} eyebrow={page.eyebrow} crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: page.meta.withValue, value: withValue },
+          { label: page.meta.partial, value: t.countries(counts.partial) },
+          { label: page.meta.rates, value: new Date(model.rates.a.date) },
+        ]}
+      />
+      <StatRow slot="aside" items={stats} label={page.statsLabel} />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom" aria-label={page.aria.globe}>
+    <PageTranslationNote />
+    <WorldGlobe model={model} src="/en/data/doctors-pay-worldwide/world.json">
+      <p slot="under-map" class="ws-note">
+        <strong>{page.note.strong}</strong> {page.note.text} <a href={`#${t.method.anchor}`}>{page.note.link}</a>
+      </p>
+    </WorldGlobe>
+  </Section>
+
+  <Section tone="soft" aria-label={page.aria.method}>
+    <WorldMethod model={model} />
+  </Section>
+</BaseLayout>
+
+<style>
+  .ws-top { padding-top: clamp(32px, 4vw, 56px); }
+  .ws-note { margin: 0; padding: 8px 10px; border-left: 2px solid var(--amber); background: var(--amber-bg); font-size: 0.8125rem; color: var(--text-strong); }
+  .ws-note a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+</style>

@@ -1,0 +1,81 @@
+---
+/**
+ * Mały wykres zmian w szczegółach kraju: kilka szeregów OECD (× przeciętna płaca) na wspólnej skali od zera.
+ * Przerwa w szeregu (flaga B — zmiana metody) przerywa linię. Wartości podpisane na początku i końcu linii.
+ */
+import { formatPL } from '@/lib/format';
+import type { Obs } from '@/lib/swiat';
+
+interface Line {
+  label: string;
+  /** [rok, wartość, flaga] */
+  points: Obs[];
+  accent?: boolean;
+}
+interface Props {
+  lines: Line[];
+  label: string;
+  /** zapis liczb w języku strony (domyślnie polski) */
+  format?: (n: number, decimals?: number) => string;
+}
+
+const { lines, label, format = formatPL } = Astro.props;
+const W = 320, H = 116, L = 34, R = 40, T = 10, B = 20;
+const years = lines.flatMap((l) => l.points.map((p) => p[0]));
+const [x0, x1] = [Math.min(...years), Math.max(...years)];
+const vmax = Math.max(...lines.flatMap((l) => l.points.map((p) => p[1]))) * 1.12;
+const x = (year: number) => L + ((year - x0) / Math.max(1, x1 - x0)) * (W - L - R);
+const y = (v: number) => T + (1 - v / vmax) * (H - T - B);
+// całe jednostki: przy szerokości 320 to ułamek piksela, a wykres jest w każdej karcie
+const px = (n: number) => String(Math.round(n));
+
+/** odcinki linii: nowy odcinek od punktu z flagą B */
+function segments(points: Obs[]): string[] {
+  const out: Obs[][] = [];
+  for (const p of points) {
+    if (!out.length || p[2] === 'B') out.push([]);
+    out.at(-1)!.push(p);
+  }
+  return out.map((s) => s.map((p, i) => `${i ? 'L' : 'M'}${px(x(p[0]))} ${px(y(p[1]))}`).join(''));
+}
+const ticks = [0, Math.round((vmax / 1.12) * 2) / 2].filter((v, i, a) => a.indexOf(v) === i);
+---
+<figure class="ts">
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
+    {ticks.map((v) => (
+      <>
+        <line class="ts__grid" x1={L} x2={W - R} y1={px(y(v))} y2={px(y(v))} />
+        <text class="ts__axis" x={L - 6} y={px(y(v) + 3)} text-anchor="end">{format(v, v % 1 ? 1 : 0)}×</text>
+      </>
+    ))}
+    {lines.map((l) => (
+      <g class:list={['ts__line', { 'is-accent': l.accent }]}>
+        {segments(l.points).map((d) => <path d={d} />)}
+        <circle cx={px(x(l.points.at(-1)![0]))} cy={px(y(l.points.at(-1)![1]))} r="2.6" />
+        <text class="ts__val" x={px(x(l.points.at(-1)![0]) + 6)} y={px(y(l.points.at(-1)![1]) + 3.5)}>{format(l.points.at(-1)![1], 2)}</text>
+      </g>
+    ))}
+    <text class="ts__axis" x={L} y={H - 4} text-anchor="start">{x0}</text>
+    <text class="ts__axis" x={W - R} y={H - 4} text-anchor="end">{x1}</text>
+  </svg>
+  <figcaption class="ts__key">
+    {lines.map((l) => <span><i class:list={{ 'is-accent': l.accent }} />{l.label}</span>)}
+  </figcaption>
+</figure>
+
+<style is:global>
+  .ts { margin: 0; display: grid; gap: 6px; }
+  /* SVG skaluje się razem z tekstem; na szerokim ekranie nie rośnie ponad ~1,4× */
+  .ts svg { display: block; width: 100%; max-width: 440px; height: auto; overflow: visible; }
+  .ts__grid { stroke: var(--line); stroke-width: 1; }
+  .ts__axis { font: 400 9px var(--f-mono); fill: var(--muted); }
+  .ts__line path { fill: none; stroke: var(--chart); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .ts__line circle { fill: var(--chart); }
+  .ts__line.is-accent path { stroke: var(--blue); }
+  .ts__line.is-accent circle { fill: var(--blue); }
+  .ts__val { font: 500 10px var(--f-body); fill: var(--ink); font-variant-numeric: tabular-nums; }
+  .ts__key { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.75rem; color: var(--muted); }
+  .ts__key span { display: inline-flex; align-items: center; gap: 6px; }
+  .ts__key i { display: inline-block; width: 14px; height: 2px; background: var(--chart); }
+  .ts__key i.is-accent { background: var(--blue); }
+</style>

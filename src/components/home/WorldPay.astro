@@ -1,0 +1,70 @@
+---
+/**
+ * Strona główna (PL i EN): zwiastun globu płac lekarzy. Statyczny rysunek z buildu (bez skryptu i bez pobierania danych)
+ * i kilka krajów z tej samej miary co na podstronie; całość prowadzi do globu w języku strony (`t.teaser.href`).
+ */
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import GlobeSvg from '@/components/swiat/GlobeSvg.astro';
+import { worldModel } from '@/lib/swiat';
+import type { Locale } from '@/i18n/locales';
+
+interface Props {
+  locale?: Locale;
+}
+
+/** kraje w zwiastunie: Polska i duże kraje z różnych źródeł (wartości liczone z danych) */
+const PICK = ['840', '158', '616', '392', '643'];
+
+const model = await worldModel(Astro.props.locale ?? 'pl');
+const { t } = model;
+const T = t.teaser;
+const ranked = model.lists[0]!.rows;
+const rows = PICK.map((id) => ranked.find((r) => r.id === id)).filter((r) => r !== undefined);
+const max = Math.max(...rows.map((r) => r.obs[0]));
+const withValue = model.counts.oecd + model.counts.national;
+// zakres bez relacji orientacyjnych (licznik i mianownik z różnych badań)
+const firm = ranked.filter((r) => r.obs[2] !== 'O');
+---
+<Section id="swiat" space="bottom" aria-labelledby="swiat-title">
+  <SectionHead eyebrow={T.eyebrow} title={T.title} id="swiat-title" layout="row">
+    <LinkArrow slot="action" href={T.href}>{T.action}</LinkArrow>
+  </SectionHead>
+  <div class="wp">
+    {/* ten sam adres co link w nagłówku sekcji: dla czytnika i klawiatury tylko jeden link */}
+    <a class="wp__globe" href={T.href} aria-hidden="true" tabindex="-1">
+      <GlobeSvg model={model} at={[-25, 30]} label={T.globe} />
+    </a>
+    <div class="wp__text">
+      <p class="wp__lead">{t.typo(T.lead(t.num(firm.at(-1)!.obs[0], 2), t.num(firm[0]!.obs[0], 2), withValue))}</p>
+      <ul class="wp__list">
+        {rows.map((r) => (
+          <li class:list={{ 'is-pl': r.id === '616' }}>
+            <span class="wp__name">{r.name}</span>
+            <span class="wp__bar"><i style={`width:${((r.obs[0] / max) * 100).toFixed(1)}%`} /></span>
+            <span class="wp__v">{t.num(r.obs[0], 2)}×</span>
+          </li>
+        ))}
+      </ul>
+      <p class="wp__note">{t.typo(T.note)}</p>
+    </div>
+  </div>
+</Section>
+
+<style>
+  .wp { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px clamp(32px, 5vw, 72px); align-items: center; padding-top: 28px; border-top: 1px solid var(--line); }
+  .wp__globe { display: block; max-width: 440px; width: 100%; justify-self: center; }
+  .wp__globe:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
+  .wp__text { display: grid; gap: 20px; }
+  .wp__lead { margin: 0; font-size: 1.1875rem; color: var(--text-strong); max-width: 32em; }
+  .wp__list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .wp__list li { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 4rem; gap: 12px; align-items: center; font-size: 0.9375rem; color: var(--text-strong); }
+  .wp__bar { position: relative; height: 10px; }
+  .wp__bar i { position: absolute; inset: 0 auto 0 0; background: var(--chart); }
+  .wp__list li.is-pl .wp__name { font-weight: 600; color: var(--ink); }
+  .wp__list li.is-pl .wp__bar i { background: var(--blue); }
+  .wp__v { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .wp__note { margin: 0; font-size: 0.8125rem; color: var(--muted); max-width: 40em; }
+  @media (max-width: 1024px) { .wp { grid-template-columns: minmax(0, 1fr); } }
+</style>

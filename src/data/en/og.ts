@@ -16,6 +16,7 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { columnChart, svg } from '@/lib/og/charts';
 import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
+import { globeOgBody } from '@/lib/swiat/og';
 import { newsIllustration } from '@/lib/news';
 import { hemicyclePanel } from '@/data/og';
 import { BUDGET } from '@/data/budzet-nfz';
@@ -148,6 +149,13 @@ export const ogPagesEn: Record<string, OgPage> = {
     title: 'Doctors’ pay.\nCalmly,\nwith sources',
     cover: { lines: ['Doctors’ pay in Poland', 'calmly, with sources'], label: 'zarobkilekarzy.pl · in English', theme: 'ciemny' },
     footer: { text: 'Every figure with a source', flags: true },
+  },
+  '/en/data/doctors-pay-worldwide/': {
+    eyebrow: 'Data · international comparison',
+    title: 'What doctors earn\naround the world',
+    lead: 'A doctor’s pay relative to the average wage, the amount and purchasing power.',
+    panels: [{ height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, globeOgBody(MEDIA_W, PANEL_H)) }],
+    footer: { text: 'OECD and national statistical offices' },
   },
   '/en/data/': {
     eyebrow: 'Data',

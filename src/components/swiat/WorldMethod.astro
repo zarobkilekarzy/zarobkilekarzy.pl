@@ -1,0 +1,77 @@
+---
+/** Glob płac lekarzy: jak czytać dane i pełna lista źródeł (OECD, przeliczniki, urzędy krajowe); napisy z `model.t`. */
+import { linkAttrs } from '@/lib/links';
+import { PLN_PPP, USD_PER_PPS, type WorldModel } from '@/lib/swiat';
+
+interface Props {
+  model: WorldModel;
+}
+
+const { model } = Astro.props;
+const { t } = model;
+const T = t.method;
+const national = model.countries.filter((c) => c.nat?.sources?.length);
+const open = model.countries.filter((c) => c.transparency);
+const facts = {
+  aTable: model.rates.a.table,
+  date: t.date(model.rates.a.date),
+  pplPpp: t.num(PLN_PPP.value, 2),
+  pppYear: PLN_PPP.year,
+  usdPps: t.num(USD_PER_PPS.value, 2),
+  ppsYear: USD_PER_PPS.year,
+  bTable: model.rates.b.table,
+  bDate: t.date(model.rates.b.date),
+  transparent: open.length,
+};
+const HREFS = [
+  'https://data-explorer.oecd.org/vis?df[ds]=dsDisseminateFinalDMZ&df[id]=DSD_HEALTH_REAC_EMP%40DF_REMUN&df[ag]=OECD.ELS.HD',
+  'https://www.oecd.org/en/publications/2025/11/health-at-a-glance-2025_a894f72e/full-report/remuneration-of-general-practitioners_620b4d41.html',
+  'https://stats.oecd.org/wbos/fileview2.aspx?IDFile=e0150697-13c1-4896-9a5b-f67ed76ab61c',
+  'https://stat.gov.pl/obszary-tematyczne/rynek-pracy/pracujacy-zatrudnieni-wynagrodzenia-koszty-pracy/struktura-wynagrodzen-wedlug-zawodow-za-pazdziernik-2024-r-,5,9.html',
+  'https://data.worldbank.org/indicator/PA.NUS.PRVT.PP',
+  'https://ec.europa.eu/eurostat/databrowser/view/prc_ppp_ind/default/table',
+  'https://api.nbp.pl/',
+];
+const main = T.main(facts).map((label, i) => ({ label, href: HREFS[i]! }));
+---
+<div class="wm">
+  <div id={T.anchor}>
+    <h2 class="wm__title">{T.title}<span class="dot">.</span></h2>
+    <ul class="wm__list">{T.how(facts).map((s) => <li>{t.typo(s)}</li>)}</ul>
+  </div>
+  <div>
+    <h2 class="wm__title">{T.sources}<span class="dot">.</span></h2>
+    <details class="wm__more">
+      <summary>{T.summary.main(main.length)}</summary>
+      <ol class="wm__list">{main.map((s) => <li><a {...linkAttrs(s.href)}>{t.typo(s.label)}</a></li>)}</ol>
+    </details>
+    <details class="wm__more">
+      <summary>{T.summary.j(open.length)}</summary>
+      <ul class="wm__list wm__list--nat">
+        {open.map((c) => <li><strong>{c.name}:</strong> <a {...linkAttrs(c.transparency!.href)}>{t.typo(c.transparency!.law)}</a></li>)}
+      </ul>
+    </details>
+    <details class="wm__more">
+      <summary>{T.summary.nat(national.length)}</summary>
+      <ul class="wm__list wm__list--nat">
+        {national.map((c) => (
+          <li><strong>{c.name}:</strong> {c.nat!.sources!.map((s, i) => <>{i > 0 && '; '}<a {...linkAttrs(s.href)}>{t.typo(s.label)}</a></>)}</li>
+        ))}
+      </ul>
+    </details>
+  </div>
+</div>
+
+<style>
+  .wm { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px clamp(32px, 5vw, 72px); }
+  .wm__title { margin: 0 0 14px; font: 400 clamp(1.5rem, 2.2vw, 1.875rem)/1.15 var(--f-display); color: var(--ink); }
+  .wm__more { border-top: 1px solid var(--line-2); }
+  .wm__more:last-child { border-bottom: 1px solid var(--line-2); }
+  .wm__more summary { padding: 12px 0; cursor: pointer; font: 500 1rem/1.3 var(--f-display); color: var(--ink); }
+  .wm__more summary:hover { color: var(--blue); }
+  .wm__more[open] summary { padding-bottom: 10px; }
+  .wm__more .wm__list { padding-bottom: 16px; }
+  .wm__list { display: grid; gap: 8px; margin: 0; padding-left: 1.1em; font-size: 0.9375rem; color: var(--text); }
+  .wm__list--nat { font-size: 0.875rem; }
+  @media (max-width: 1024px) { .wm { grid-template-columns: minmax(0, 1fr); } }
+</style>

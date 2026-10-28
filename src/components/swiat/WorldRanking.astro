@@ -1,0 +1,84 @@
+---
+/**
+ * Tabela obok globu płac: jedna lista na formę pracy i miarę (lista „kwota” ma wartości w trzech walutach), a pod nią
+ * nazwy krajów, o których coś wiadomo, ale bez wartości w tym widoku (na globie szare). Wiersz rozwija szczegóły kraju
+ * (CountryDetails); bez JS widać widok domyślny z rozwiniętym krajem startowym. Listę, walutę i rozwinięty kraj
+ * przełącza skrypt globu.
+ */
+import { DEFAULT_VIEW, LEVEL_TONES, VIEW_KEYS, type RankList, type WorldModel } from '@/lib/swiat';
+import CountryDetails from './CountryDetails.astro';
+
+interface Props {
+  model: WorldModel;
+  /** kraj z rozwiniętym wierszem na starcie */
+  initial: string;
+}
+
+const { model, initial } = Astro.props;
+const { t } = model;
+const T = t.ranking;
+const byName = new Intl.Collator(t.collator);
+
+/** kraje z informacjami, ale bez wartości w widoku listy (na globie szare, klasa `c`), alfabetycznie */
+function rest(list: RankList) {
+  const at = VIEW_KEYS.indexOf(list.keys[0]!);
+  return model.countries.filter((c) => model.tones[c.id]?.[at] === 'c').sort((a, b) => byName.compare(a.name, b.name));
+}
+const isDefault = (list: RankList) => list.keys.includes(DEFAULT_VIEW);
+const open = (list: RankList, id: string) => isDefault(list) && id === initial;
+---
+<section class="wg-rank" aria-labelledby="wg-rank-title">
+  <div class="wg-rank__head">
+    <h2 class="wg-rank__title" id="wg-rank-title">{T.title}<span class="dot">.</span></h2>
+    {model.lists.map((list) => <span class="wg-rank__count" data-k={list.keys.join(' ')} hidden={!isDefault(list)}>{t.countries(list.rows.length)}</span>)}
+  </div>
+
+  {model.lists.map((list) => (
+    <div class="wg-rank__list" data-k={list.keys.join(' ')} hidden={!isDefault(list)}>
+      {list.keys.map((k) => (
+        <p class="wg-rank__unit" data-k={k} hidden={k !== DEFAULT_VIEW}>{t.typo(list.measure === 'j' ? model.views[k].sentence : `${model.views[k].sentence} ${T.note[list.form]}`)} {T.click}</p>
+      ))}
+      <ol class="wg-rank__rows">
+        {list.rows.map((row, i) => {
+          const est = row.obs[2] === 'E' || row.obs[2] === 'O';
+          return (
+            <li class:list={{ 'is-pl': row.id === '616', 'is-sel': open(list, row.id) }} data-id={row.id}>
+              <button type="button" data-id={row.id} aria-expanded={open(list, row.id) ? 'true' : 'false'} aria-controls={`wg-det-${row.id}`}>
+                <span class="wg-rank__no">{i + 1}</span>
+                <span class="wg-rank__name">{row.name}{row.obs[2] === 'D' && ' *'}</span>
+                <span class="wg-rank__bar">{list.measure === 'j' ? <i class={`is-lvl t${LEVEL_TONES[row.obs[0]]}`} style={`width:${row.width}%`} /> : <i class:list={{ 'is-est': est, 'is-nat': row.src === 'nat' }} style={`width:${row.width}%`} />}</span>
+                {list.keys.map((k) => <span class="wg-rank__v" data-k={k} hidden={list.keys.length > 1 && !k.endsWith(model.currency)}>{row.values[k]}</span>)}
+                <span class:list={['wg-rank__y', { 'is-old': row.obs[1] < 2022 }]} title={t.flags[row.obs[2]]}>{list.measure === 'j' ? '' : row.obs[1]}</span>
+              </button>
+              {open(list, row.id) && <CountryDetails country={model.byId[row.id]!} model={model} />}
+            </li>
+          );
+        })}
+      </ol>
+      {rest(list).length > 0 && (
+        <>
+          <p class="wg-rank__sub">{T.rest}</p>
+          <ul class="wg-rank__rest">
+            {rest(list).map((c) => (
+              <li class:list={{ 'is-sel': open(list, c.id) }} data-id={c.id}>
+                <button type="button" data-id={c.id} aria-expanded={open(list, c.id) ? 'true' : 'false'} aria-controls={`wg-det-${c.id}`}>{c.name}</button>
+              </li>
+            ))}
+          </ul>
+          {/* szczegóły kraju z listy nazw stoją pod nią, nie w środku zawijanej linii */}
+          <div class="wg-rank__restdet">{rest(list).some((c) => open(list, c.id)) && <CountryDetails country={model.byId[initial]!} model={model} />}</div>
+        </>
+      )}
+    </div>
+  ))}
+
+  <div class="wg-rank__key">
+    <span><i class="is-pl" />{T.key.pl}</span>
+    <span><i />{T.key.oecd}</span>
+    <span><i class="is-nat" />{T.key.nat}</span>
+    <span><i class="is-est" />{T.key.est}</span>
+    <span>{T.key.def}</span>
+    <span>{T.key.old}</span>
+    <span>{T.key.rates(t.date(model.rates.a.date), t.num(model.rates.mid.USD!, 4), t.num(model.rates.mid.EUR!, 4))}</span>
+  </div>
+</section>

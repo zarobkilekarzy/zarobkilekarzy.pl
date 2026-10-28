@@ -32,6 +32,7 @@ import { COUNTRIES, WINDOW, ratePer100k, type CountryKey } from '@/data/odpowied
 import { pseudonymDemo } from '@/data/postulat';
 import { createHmac } from 'node:crypto';
 import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
+import { globeOgBody } from '@/lib/swiat/og';
 import { CASES as COURT_CASES, CATALOG_HREF, GAME_HREF, SCALE as COURT_SCALE, caseHref, verdictLabel } from '@/data/sad-lekarski';
 
 import barometrOg from '@/assets/img/barometr-polityczny-og.png';
@@ -226,6 +227,14 @@ export const ogPages: Record<string, OgPage> = {
     footer: { text: `Dział danych · stan na ${formatDate(site.updated)}`, flags: true },
   },
   // liczby z danych monitoringu — po regeneracji JSON-a obrazek aktualizuje się sam
+  // glob w kolorach widoku „× przeciętna płaca”; bez napisów, ten sam rysunek na obrazku EN
+  '/dane/zarobki-lekarzy-na-swiecie/': {
+    eyebrow: 'Dane · porównanie międzynarodowe',
+    title: 'Ile zarabia lekarz\nna świecie',
+    lead: 'Płaca lekarza na tle przeciętnej płacy w kraju, kwota i siła nabywcza.',
+    panels: [{ height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, globeOgBody(MEDIA_W, PANEL_H)) }],
+    footer: { text: 'OECD i krajowe urzędy statystyczne' },
+  },
   '/dane/monitoring-watchdog/': {
     eyebrow: 'Dane · przeglądarka monitoringu',
     title: 'Kto ujawnił\npłace lekarzy,\na kto milczy',

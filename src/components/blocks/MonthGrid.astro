@@ -4,6 +4,8 @@
  * Dwa kolory: miesiąc zaznaczony (`marked`, np. objęty kontrolą) — kobalt; pozostały miesiąc z zakresu
  * `from`–`to` — czerwień (--bad, „tu nikt nie zajrzał”). Miesiące spoza zakresu — plus.
  * `breaks` — pionowa kreska przed wskazanym miesiącem (np. zmiana kodu), opisana w legendzie.
+ * `after` — od tego miesiąca niezaznaczone pola są pierścieniem zamiast kropki (ten sam kolor, inny okres,
+ *   np. rozliczenia pod nowym kodem); opis w `legend.after`.
  * SVG przy buildzie, bez skryptu.
  *
  *   <MonthGrid years={[2021, 2025]} from="2021-01" to="2025-12" marked={['2023-01', …]}
@@ -23,18 +25,23 @@ interface Props {
   marked: string[];
   /** kreski przed miesiącami (RRRR-MM) */
   breaks?: { at: string }[];
-  legend: { marked: string; rest: string; break?: string };
+  /** od tego miesiąca (RRRR-MM) niezaznaczone pola rysujemy pierścieniem */
+  after?: string;
+  legend: { marked: string; rest: string; after?: string; break?: string };
   /** opis dla czytników ekranu */
   label: string;
 }
 
-const { years, from, to, marked, breaks = [], legend, label } = Astro.props;
+const { years, from, to, marked, breaks = [], after, legend, label } = Astro.props;
 const MONTHS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 const P = 24, LEFT = 44, TOP = 20;
 const rows = Array.from({ length: years[1] - years[0] + 1 }, (_, i) => years[0] + i);
 const width = LEFT + 12 * P, height = TOP + rows.length * P;
 const key = (y: number, m: number) => `${y}-${String(m + 1).padStart(2, '0')}`;
-const cell = (k: string) => (k < from || k > to ? 'off' : marked.includes(k) ? 'on' : 'rest');
+const cell = (k: string) => (k < from || k > to ? 'off' : marked.includes(k) ? 'on' : after && k >= after ? 'after' : 'rest');
+/** pierścień: ten sam promień co kropka zapalona, kreska grubsza niż plus — czytelny w małej skali */
+const RING = `<circle cx="${CELL / 2}" cy="${CELL / 2}" r="${(CELL * 0.29).toFixed(2)}" fill="none" stroke="currentColor" stroke-width="${(CELL * 0.14).toFixed(2)}"/>`;
+const symbolOf = (c: string) => (c === 'off' ? 'off' : c === 'after' ? 'ring' : 'on');
 const breakAt = (at: string) => {
   const [y, m] = at.split('-').map(Number);
   return { x: LEFT + (m - 1) * P, y: TOP + (y - years[0]) * P };
@@ -46,6 +53,7 @@ const id = uid('mg');
     <defs>
       <symbol id={`${id}-on`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={SHAPES.on} />
       <symbol id={`${id}-off`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={SHAPES.off} />
+      <symbol id={`${id}-ring`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={RING} />
     </defs>
     {MONTHS.map((m, i) => (i % 3 === 0 ? <text class="mg__axis" x={LEFT + i * P + P / 2} y="12" text-anchor="middle">{m}</text> : null))}
     {rows.map((y, r) => (
@@ -53,7 +61,7 @@ const id = uid('mg');
         <text class="mg__axis" x="0" y={TOP + r * P + P / 2 + 4}>{y}</text>
         {MONTHS.map((_, m) => {
           const c = cell(key(y, m));
-          return <use href={`#${id}-${c === 'off' ? 'off' : 'on'}`} class={`mg__${c}`} x={LEFT + m * P} y={TOP + r * P} width={P} height={P} />;
+          return <use href={`#${id}-${symbolOf(c)}`} class={`mg__${c}`} x={LEFT + m * P} y={TOP + r * P} width={P} height={P} />;
         })}
       </>
     ))}
@@ -65,6 +73,7 @@ const id = uid('mg');
   <div class="mg__legend" aria-hidden="true">
     <span><svg width="14" height="14" class="mg__on"><use href={`#${id}-on`} width="14" height="14" /></svg>{typo(legend.marked)}</span>
     <span><svg width="14" height="14" class="mg__rest"><use href={`#${id}-on`} width="14" height="14" /></svg>{typo(legend.rest)}</span>
+    {after && legend.after && <span><svg width="14" height="14" class="mg__after"><use href={`#${id}-ring`} width="14" height="14" /></svg>{typo(legend.after)}</span>}
     {legend.break && <span><svg width="14" height="14"><line class="mg__break" x1="7" x2="7" y1="0" y2="14" /></svg>{typo(legend.break)}</span>}
   </div>
 </div>
@@ -74,7 +83,7 @@ const id = uid('mg');
   .mg__svg { display: block; max-width: 100%; height: auto; overflow: visible; }
   .mg__axis { font: 400 0.6875rem var(--f-mono); letter-spacing: .04em; fill: var(--muted); }
   .mg__on { color: var(--blue); }
-  .mg__rest { color: var(--bad); }
+  .mg__rest, .mg__after { color: var(--bad); }
   .mg__off { color: color-mix(in srgb, var(--muted) 45%, transparent); }
   .mg__break { stroke: var(--ink); stroke-width: 2; }
   .mg__legend {

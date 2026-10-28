@@ -54,6 +54,8 @@ const config = { keys: VIEW_KEYS, labels, tones: model.tones, national, initial,
       <figure class="wg-map">
         <div class="wg-box">
           <GlobeSvg model={model} selected={initial} class="wg-svg--live" label={labels[DEFAULT_VIEW]!} />
+          {/* zachęta do obracania: pokazuje ją skrypt (bez niego glob stoi), to samo mówi podpis pod globem */}
+          <span class="wg-nudge" aria-hidden="true" hidden>{T.nudge}</span>
           <div class="wg-tip" hidden></div>
           <div class="wg-zoom">
             <button type="button" data-zoom="1" aria-label={T.zoomIn}>+</button>
@@ -125,6 +127,26 @@ const config = { keys: VIEW_KEYS, labels, tones: model.tones, national, initial,
   .wg-svg--live .wg-land path.is-info { cursor: pointer; }
   .wg-svg--live .wg-land path:hover { stroke: var(--ink); stroke-width: 1; }
   .wg-tip { position: absolute; z-index: 5; pointer-events: none; max-width: 17rem; padding: 9px 11px; background: var(--inverse-2); color: #fff; /* kolor-stały: tekst na --inverse-2 */ font-size: 0.8125rem; line-height: 1.4; transform: translate(-50%, calc(-100% - 12px)); }
+  /* dymek „zakręć globusem” (jak dymek nad telefonem w prototypach mObywatela): podskakuje nad górną częścią
+     globu, żeby nie zasłaniać kraju na środku; przepuszcza przeciąganie i znika przy pierwszym dotknięciu globu */
+  .wg-nudge {
+    position: absolute; z-index: 4; left: 50%; top: 20%;
+    padding: 10px 16px;
+    background: var(--blue-fill);
+    color: #fff; /* kolor-stały: tekst na kobaltowym dymku, jak w ui/Button */
+    font: 500 0.9375rem/1.3 var(--f-body);
+    white-space: nowrap;
+    box-shadow: 0 12px 28px -10px rgb(4 11 27 / .55); /* kolor-stały: cień dymka nad globem */
+    pointer-events: none;
+    translate: -50% 0;
+    animation: wg-nudge 1.6s var(--ease) infinite;
+    transition: opacity .3s var(--ease), visibility .3s;
+  }
+  .wg-nudge::after { content: ''; position: absolute; left: 50%; top: 100%; border: 8px solid transparent; border-top-color: var(--blue-fill); translate: -50% 0; }
+  .wg-nudge.is-gone { opacity: 0; visibility: hidden; }
+  @keyframes wg-nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  @media (prefers-reduced-motion: reduce) { .wg-nudge { animation: none; } }
+  @media (forced-colors: active) { .wg-nudge { outline: 1px solid CanvasText; } }
   .wg-tip b { display: block; font-weight: 600; }
   .wg-tip span { display: block; opacity: .8; font-size: 0.75rem; }
   .wg-zoom { position: absolute; top: 0; right: 0; display: grid; }

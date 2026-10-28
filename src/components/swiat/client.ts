@@ -100,6 +100,14 @@ class ZlGlobe extends HTMLElement {
     this.svg.addEventListener('pointermove', (e) => this.hover(e));
     this.svg.addEventListener('pointerleave', () => (this.tip.hidden = true));
     this.drag();
+
+    // dymek „zakręć globusem”: dopiero ze skryptem (bez niego glob się nie obraca); znika przy pierwszym
+    // dotknięciu globu albo przycisków przybliżenia
+    const nudge = this.querySelector<HTMLElement>('.wg-nudge');
+    if (nudge) {
+      nudge.hidden = false;
+      this.querySelector('.wg-box')!.addEventListener('pointerdown', () => nudge.classList.add('is-gone'), { once: true });
+    }
   }
 
   private get key() {

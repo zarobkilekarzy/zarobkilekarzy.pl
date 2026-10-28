@@ -103,6 +103,8 @@ export const plText = {
     zoomOut: 'Oddal',
     kinds: { nat: 'dane krajowe, nie OECD', partial: 'dane cząstkowe', none: 'brak danych', notStudied: 'nie badaliśmy' },
     hint: 'Przeciągnij, aby obrócić · kliknij kraj',
+    /** podskakujący dymek nad globem, znika przy pierwszym dotknięciu */
+    nudge: 'Złap i zakręć globusem',
     /** komunikat dla czytnika ekranu po wyborze kraju na globie */
     announce: 'Szczegóły kraju: ',
   },

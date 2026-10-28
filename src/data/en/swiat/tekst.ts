@@ -93,6 +93,7 @@ export const enText: WorldText = {
     zoomOut: 'Zoom out',
     kinds: { nat: 'national data, not OECD', partial: 'partial data', none: 'no data', notStudied: 'not studied' },
     hint: 'Drag to rotate · click a country',
+    nudge: 'Grab and spin the globe',
     announce: 'Country details: ',
   },
 

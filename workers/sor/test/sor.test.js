@@ -1,8 +1,11 @@
-// Testy Workera SOR bez sieci: zaślepiony fetch, atrapa D1 i atrapa Cache API.
-// Uruchomienie z katalogu głównego repo:  node --test workers/sor/test/
+// Testy Workera SOR bez sieci: zaślepiony fetch, atrapa D1 i atrapa Cache API, a dla schematu tabel
+// i pliku migracji — prawdziwy SQLite (node:sqlite, pamięć).
+// Uruchomienie z katalogu głównego repo:  node --test workers/sor/test/sor.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { gunzipSync } from 'node:zlib';
+import { readFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import lista from '../../../src/data/sor/lista.json' with { type: 'json' };
 import worker, {
   ETAPY,
@@ -10,7 +13,7 @@ import worker, {
   PARTIE,
   USER_AGENT,
   ZRODLO,
-  kluczArchiwum,
+  kluczPomiaru,
   numeryPartii,
   numeryZListy,
   odczytaj,
@@ -61,7 +64,7 @@ class Zapytanie {
 
 class AtrapaD1 {
   teraz = null; // { json, aktualizacja }
-  archiwum = new Map(); // uruchomienie → { partia, gz }
+  pomiary = new Map(); // uruchomienie (s unix) → { partia, gz }
   odczyty = 0;
   prepare(sql) {
     return new Zapytanie(this, sql);
@@ -80,9 +83,10 @@ class AtrapaD1 {
       this.teraz = { json: args[0], aktualizacja: args[1] };
       return null;
     }
-    if (sql.startsWith('INSERT OR REPLACE INTO archiwum')) {
-      assert.ok(args[2] instanceof Uint8Array, 'archiwum jako BLOB');
-      this.archiwum.set(args[0], { partia: args[1], gz: args[2] });
+    if (sql.startsWith('INSERT OR REPLACE INTO pomiary')) {
+      assert.ok(Number.isInteger(args[0]), 'klucz pomiaru jako liczba całkowita');
+      assert.ok(args[2] instanceof Uint8Array, 'pomiar jako BLOB');
+      this.pomiary.set(args[0], { partia: args[1], gz: args[2] });
       return null;
     }
     throw new Error(`atrapa D1: nieznane zapytanie ${sql}`);
@@ -90,9 +94,41 @@ class AtrapaD1 {
   czytaj() {
     return this.teraz && JSON.parse(this.teraz.json);
   }
-  czytajArchiwum(klucz) {
-    const w = this.archiwum.get(klucz);
+  czytajPomiar(klucz) {
+    const w = this.pomiary.get(klucz);
     return w && { kolumnaPartia: w.partia, ...JSON.parse(gunzipSync(w.gz).toString('utf8')) };
+  }
+}
+
+// D1 na prawdziwym SQLite: ten sam interfejs co atrapa, ale zapytania wykonuje silnik — sprawdza
+// składnię i skutki SCHEMAT, zapisów Workera i pliku migracji. batch = transakcja, jak w D1.
+// node:sqlite nie wiąże `?1`, `?2` pozycyjnie, więc zamieniamy je na `?` z argumentami w kolejności wystąpień.
+class SqliteD1 {
+  db = new DatabaseSync(':memory:');
+  prepare(sqlD1) {
+    const numery = [...sqlD1.matchAll(/\?(\d+)/g)].map((m) => Number(m[1]) - 1);
+    const sql = sqlD1.replace(/\?\d+/g, '?');
+    const zapytanie = (args) => {
+      const wartosci = numery.length ? numery.map((i) => args[i]) : args;
+      return {
+        bind: (...nowe) => zapytanie(nowe),
+        first: async (kolumna) => this.db.prepare(sql).get(...wartosci)?.[kolumna] ?? null,
+        run: async () => (this.db.prepare(sql).run(...wartosci), { success: true }),
+      };
+    };
+    return zapytanie([]);
+  }
+  async batch(zapytania) {
+    this.db.exec('BEGIN');
+    try {
+      const wyniki = [];
+      for (const z of zapytania) wyniki.push(await z.run());
+      this.db.exec('COMMIT');
+      return wyniki;
+    } catch (err) {
+      this.db.exec('ROLLBACK');
+      throw err;
+    }
   }
 }
 
@@ -292,18 +328,20 @@ test('zbierz: pierwsza migawka ma dokładnie schemat strony i metadane HTTP', as
   }
   assert.equal(db.teraz.aktualizacja, migawka.aktualizacja);
 
-  const kluczA = kluczArchiwum(czas);
-  assert.match(kluczA, /^2026-10-17T\d\d:\d\d:00Z$/);
-  const archiwum = db.czytajArchiwum(kluczA);
-  assert.equal(archiwum.partia, 0);
-  assert.equal(archiwum.kolumnaPartia, 0);
-  assert.ok(db.archiwum.get(kluczA).gz.length < 4000, 'archiwum skompresowane');
-  assert.deepEqual(archiwum.sor, migawka.sor);
+  const kluczP = kluczPomiaru(czas);
+  assert.equal(kluczP, czas / 1000);
+  const pomiar = db.czytajPomiar(kluczP);
+  assert.equal(pomiar.partia, 0);
+  assert.equal(pomiar.kolumnaPartia, 0);
+  assert.equal(pomiar.uruchomienie, new Date(czas).toISOString().slice(0, 19) + 'Z');
+  assert.ok(db.pomiary.get(kluczP).gz.length < 4000, 'pomiar skompresowany');
+  assert.deepEqual(pomiar.sor, migawka.sor);
 });
 
-test('kluczArchiwum: czas crona jako ISO UTC', () => {
-  assert.equal(kluczArchiwum(Date.UTC(2026, 9, 17, 8, 4)), '2026-10-17T08:04:00Z');
-  assert.equal(kluczArchiwum(Date.UTC(2026, 11, 31, 23, 58)), '2026-12-31T23:58:00Z');
+test('kluczPomiaru: czas crona w sekundach unix, bez milisekund', () => {
+  assert.equal(kluczPomiaru(Date.UTC(2026, 9, 17, 8, 4)), 1792224240);
+  // na produkcji cron startuje kilkanaście sekund po pełnej minucie (np. 00:50:28)
+  assert.equal(kluczPomiaru(Date.UTC(2026, 9, 17, 0, 50, 28, 999)), 1792198228);
 });
 
 test('zbierz: błędy HTTP, czasu, sieci i formatu; poprzedni pomiar zostaje w wpisie błędu', async () => {
@@ -339,9 +377,9 @@ test('zbierz: błędy HTTP, czasu, sieci i formatu; poprzedni pomiar zostaje w w
   assert.equal(sor[nNull].blad, 'brak danych');
   assert.ok(sor[nNull].ts);
 
-  // archiwum trzyma surowy wynik uruchomienia — bez `poprzedni`
-  const archiwum = db.czytajArchiwum(kluczArchiwum(czas + PARTIE * OKRES_MS));
-  assert.deepEqual(Object.keys(archiwum.sor[n503]), ['t', 'blad']);
+  // pomiar trzyma surowy wynik uruchomienia — bez `poprzedni`
+  const pomiar = db.czytajPomiar(kluczPomiaru(czas + PARTIE * OKRES_MS));
+  assert.deepEqual(Object.keys(pomiar.sor[n503]), ['t', 'blad']);
 
   // 3. przebieg: dalej błąd — `poprzedni` przechodzi dalej bez zagnieżdżania
   await zbierz({ SOR_DB: db }, czas + 2 * PARTIE * OKRES_MS, { fetchFn });
@@ -403,7 +441,7 @@ test('scheduled: wyłącza ponowienia i pracuje na czasie crona', async () => {
     await worker.scheduled({ scheduledTime: czas, cron: '*/2 * * * *', noRetry: () => (bezPonowien = true) }, { SOR_DB: db });
     assert.ok(bezPonowien);
     assert.equal(zapytania.length, 49);
-    assert.ok(db.czytajArchiwum(kluczArchiwum(czas)));
+    assert.ok(db.czytajPomiar(kluczPomiaru(czas)));
   } finally {
     globalThis.fetch = oryginalny;
   }
@@ -462,3 +500,115 @@ test('odczytaj: migawka z D1 z nagłówkami, potem z cache bez czytania bazy', a
   assert.equal(await head.text(), '');
 });
 
+
+/* ---------- prawdziwy SQLite: tabela `pomiary` i migracja z `archiwum` ---------- */
+
+const isoS = (ms) => new Date(ms).toISOString().slice(0, 19) + 'Z';
+
+test('SQLite: pomiar w zwykłej tabeli (bez WITHOUT ROWID), klucz w sekundach, treść jako BLOB', async () => {
+  const d1 = new SqliteD1();
+  const czas = czasPartii(0) + 28_000;
+  await zbierz({ SOR_DB: d1 }, czas, { fetchFn: zaslepka().fetchFn });
+
+  const { sql } = d1.db.prepare("SELECT sql FROM sqlite_schema WHERE name = 'pomiary'").get();
+  assert.doesNotMatch(sql, /WITHOUT ROWID/i);
+  assert.equal(d1.db.prepare("SELECT COUNT(*) AS n FROM sqlite_schema WHERE name = 'archiwum'").get().n, 0);
+  const wiersze = d1.db.prepare('SELECT uruchomienie, typeof(uruchomienie) AS typ, partia, gz FROM pomiary').all();
+  assert.equal(wiersze.length, 1);
+  assert.equal(wiersze[0].uruchomienie, kluczPomiaru(czas));
+  assert.equal(wiersze[0].typ, 'integer');
+  assert.equal(wiersze[0].partia, 0);
+  const tresc = JSON.parse(gunzipSync(wiersze[0].gz));
+  assert.equal(tresc.uruchomienie, isoS(czas));
+  assert.equal(Object.keys(tresc.sor).length, 49);
+});
+
+// Bloki pliku migracji: „-- Krok N:” albo „-- Wycofanie:”, potem komentarze i jedno zapytanie.
+const MIGRACJA = readFileSync(new URL('../migracje/0001-pomiary.sql', import.meta.url), 'utf8');
+const BLOKI = (() => {
+  const czesci = MIGRACJA.split(/^-- (Krok \d+|Wycofanie):.*$/m);
+  const bloki = {};
+  for (let i = 1; i < czesci.length; i += 2) {
+    bloki[czesci[i]] = czesci[i + 1].split('\n').filter((l) => !l.startsWith('--')).join('\n').trim();
+  }
+  return bloki;
+})();
+
+// Stan bazy w chwili migracji: stara tabela z pomiarami sprzed wdrożenia (klucze jak na produkcji,
+// z sekundami :28) i nowy Worker, który zdążył już zapisać jeden pomiar do `pomiary`.
+async function bazaPrzedMigracja() {
+  const d1 = new SqliteD1();
+  d1.db.exec('CREATE TABLE archiwum (uruchomienie TEXT PRIMARY KEY, partia INTEGER NOT NULL, gz BLOB NOT NULL) WITHOUT ROWID');
+  const stare = [
+    ['2026-10-17T00:48:28Z', 4],
+    ['2026-10-17T00:50:28Z', 0],
+  ].map(([klucz, partia]) => ({ klucz, partia, gz: gzipSync(JSON.stringify({ uruchomienie: klucz, partia, sor: {} })) }));
+  for (const w of stare) d1.db.prepare('INSERT INTO archiwum (uruchomienie, partia, gz) VALUES (?, ?, ?)').run(w.klucz, w.partia, w.gz);
+  const czasNowego = Date.UTC(2026, 10, 1, 12, 0, 28);
+  await zbierz({ SOR_DB: d1 }, czasNowego, { fetchFn: zaslepka().fetchFn });
+  return { d1, stare, czasNowego };
+}
+
+test('migracja: plik ma kroki 0–3 i wycofanie, każdy z jednym zapytaniem', () => {
+  assert.deepEqual(Object.keys(BLOKI), ['Krok 0', 'Krok 1', 'Krok 2', 'Krok 3', 'Wycofanie']);
+  for (const [nazwa, zapytanie] of Object.entries(BLOKI)) {
+    assert.ok(zapytanie.endsWith(';'), `${nazwa}: zapytanie kończy się średnikiem`);
+    assert.equal(zapytanie.split(';').length, 2, `${nazwa}: jedno zapytanie`);
+  }
+});
+
+test('migracja: archiwum → pomiary — klucz w sekundach, BLOB bajt w bajt, kontrola, DROP', async () => {
+  const { d1, stare, czasNowego } = await bazaPrzedMigracja();
+  const wykonaj = (krok) => d1.db.prepare(BLOKI[krok]).all();
+
+  assert.deepEqual(wykonaj('Krok 0').map((w) => ({ ...w })), [{ nowe: 1, od: isoS(czasNowego) }]);
+
+  wykonaj('Krok 1');
+  wykonaj('Krok 1'); // powtórzenie niczego nie psuje
+  const pomiary = d1.db.prepare('SELECT uruchomienie, partia, gz FROM pomiary ORDER BY uruchomienie').all();
+  assert.deepEqual(
+    pomiary.map((w) => w.uruchomienie),
+    [1792198108, 1792198228, kluczPomiaru(czasNowego)],
+  );
+  for (const [i, w] of stare.entries()) {
+    assert.equal(pomiary[i].uruchomienie, Date.parse(w.klucz) / 1000);
+    assert.equal(pomiary[i].partia, w.partia);
+    assert.deepEqual(Buffer.from(pomiary[i].gz), w.gz);
+  }
+
+  assert.equal(wykonaj('Krok 2')[0].brakuje, 0);
+  wykonaj('Krok 3');
+  assert.equal(d1.db.prepare("SELECT COUNT(*) AS n FROM sqlite_schema WHERE name = 'archiwum'").get().n, 0);
+  assert.equal(d1.db.prepare('SELECT COUNT(*) AS n FROM pomiary').get().n, 3);
+
+  // Worker po migracji pisze dalej bez przeszkód (SCHEMAT nie odtwarza `archiwum`)
+  await zbierz({ SOR_DB: d1 }, czasNowego + OKRES_MS, { fetchFn: zaslepka().fetchFn });
+  assert.equal(d1.db.prepare('SELECT COUNT(*) AS n FROM pomiary').get().n, 4);
+  assert.equal(d1.db.prepare("SELECT COUNT(*) AS n FROM sqlite_schema WHERE name = 'archiwum'").get().n, 0);
+});
+
+test('migracja: kontrola wyłapuje klucz nie do odczytania i inną treść; krok 1 nie zmyśla klucza', async () => {
+  const { d1 } = await bazaPrzedMigracja();
+  const wykonaj = (krok) => d1.db.prepare(BLOKI[krok]).all();
+  d1.db.prepare('INSERT INTO archiwum (uruchomienie, partia, gz) VALUES (?, ?, ?)').run('zly-klucz', 1, gzipSync('{}'));
+
+  wykonaj('Krok 1');
+  assert.equal(d1.db.prepare('SELECT COUNT(*) AS n FROM pomiary').get().n, 3, 'zły klucz pominięty, bez nowego numeru wiersza');
+  assert.equal(wykonaj('Krok 2')[0].brakuje, 1);
+
+  d1.db.exec("DELETE FROM archiwum WHERE uruchomienie = 'zly-klucz'");
+  assert.equal(wykonaj('Krok 2')[0].brakuje, 0);
+  d1.db.prepare('UPDATE pomiary SET gz = ? WHERE uruchomienie = 1792198108').run(gzipSync('inna treść'));
+  assert.equal(wykonaj('Krok 2')[0].brakuje, 1);
+});
+
+test('migracja: wycofanie dopisuje do archiwum pomiary nowego Workera z kluczem ISO', async () => {
+  const { d1, czasNowego } = await bazaPrzedMigracja();
+  const wykonaj = (krok) => d1.db.prepare(BLOKI[krok]).all();
+  wykonaj('Krok 1');
+  wykonaj('Wycofanie');
+  const klucze = d1.db.prepare('SELECT uruchomienie FROM archiwum ORDER BY uruchomienie').all().map((w) => w.uruchomienie);
+  assert.deepEqual(klucze, ['2026-10-17T00:48:28Z', '2026-10-17T00:50:28Z', isoS(czasNowego)]);
+  const nowy = d1.db.prepare('SELECT gz FROM archiwum WHERE uruchomienie = ?').get(isoS(czasNowego));
+  assert.equal(JSON.parse(gunzipSync(nowy.gz)).uruchomienie, isoS(czasNowego));
+});

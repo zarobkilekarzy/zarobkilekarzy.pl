@@ -1,7 +1,7 @@
 // Worker `zarobkilekarzy-sor`: kolejki na szpitalnych oddziałach ratunkowych (SOR) z pacjent.gov.pl
 // (system TOPSOR) zapisywane do D1 (binding SOR_DB → baza `zarobki-sor`). Osobny od Workera strony
 // (worker/), z własną domeną dane.zarobkilekarzy.pl (przypina ją OpenTofu w repo infrastruktury).
-//   - `scheduled` (cron): zbiera kolejki i zapisuje migawkę oraz archiwum;
+//   - `scheduled` (cron): zbiera kolejki i zapisuje migawkę oraz surowy pomiar;
 //   - `fetch`: GET /sor/teraz.json podaje ostatnią migawkę — stąd czyta ją strona. Odpowiedź siedzi
 //     minutę w cache Workera (Cache API, osobno w każdej lokalizacji Cloudflare) i w przeglądarce,
 //     więc bazę czytamy najwyżej raz na minutę na lokalizację. Każde zapytanie to jednak wywołanie
@@ -20,10 +20,13 @@
 //
 // Zapis do D1 (tabele tworzy Worker sam, SCHEMAT niżej):
 //   teraz    — jeden wiersz z migawką wszystkich SOR (JSON); podmieniamy wpisy tej partii;
-//   archiwum — wiersz na uruchomienie: czas crona (ISO UTC), partia i surowa partia jako JSON
-//              skompresowany gzipem (BLOB, ok. 1,5 KB) — pod przyszłą warstwę „typowe obciążenie”.
-//              Limit bazy na planie Free to 500 MB, co przy 720 wierszach na dobę starcza na ok. rok;
-//              potem archiwum trzeba wyeksportować albo założyć nową bazę.
+//   pomiary  — wiersz na uruchomienie: czas crona (sekundy unix, klucz), partia i surowa partia jako
+//              JSON skompresowany gzipem (BLOB, średnio 1,1 KB) — pod przyszłą warstwę „typowe obciążenie”.
+//              Zwykła tabela z kluczem INTEGER: wiersz zajmuje w bazie ok. 1,34 KB, czyli ok. 1 MB na
+//              dobę, więc limit bazy na planie Free (500 MB) wypada ok. lutego–marca 2028.
+//              NIE WITHOUT ROWID: tam wiersz z BLOB-em ponad 976 B (86% wierszy) dostaje całą stronę
+//              przepełnienia (4 KB) i baza rosła 3 MB na dobę — tak było w tabeli `archiwum` (klucz
+//              ISO UTC), do której szły pomiary od 17.10.2026. Przeniesienie: migracje/0001-pomiary.sql.
 //
 // Schemat /sor/teraz.json (z niego korzysta strona):
 //   { "zrodlo": "pacjent.gov.pl (TOPSOR)", "aktualizacja": ISO UTC ostatniego zapisu,
@@ -72,12 +75,12 @@ const POPRZEDNI_MAKS_MS = 24 * 3_600_000;
 export const SCIEZKA_TERAZ = '/sor/teraz.json';
 const SCHEMAT = [
   'CREATE TABLE IF NOT EXISTS teraz (id INTEGER PRIMARY KEY CHECK (id = 1), json TEXT NOT NULL, aktualizacja TEXT NOT NULL)',
-  'CREATE TABLE IF NOT EXISTS archiwum (uruchomienie TEXT PRIMARY KEY, partia INTEGER NOT NULL, gz BLOB NOT NULL) WITHOUT ROWID',
+  'CREATE TABLE IF NOT EXISTS pomiary (uruchomienie INTEGER PRIMARY KEY, partia INTEGER NOT NULL, gz BLOB NOT NULL)',
 ];
 const SQL_ODCZYT = 'SELECT json FROM teraz WHERE id = 1';
 const SQL_TERAZ =
   'INSERT INTO teraz (id, json, aktualizacja) VALUES (1, ?1, ?2) ON CONFLICT (id) DO UPDATE SET json = excluded.json, aktualizacja = excluded.aktualizacja';
-const SQL_ARCHIWUM = 'INSERT OR REPLACE INTO archiwum (uruchomienie, partia, gz) VALUES (?1, ?2, ?3)';
+const SQL_POMIAR = 'INSERT OR REPLACE INTO pomiary (uruchomienie, partia, gz) VALUES (?1, ?2, ?3)';
 // Dane są publiczne (jawne z mocy ustawy o PRM, art. 33a ust. 6) — może je czytać każda strona.
 const NAGLOWKI_TERAZ = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -224,8 +227,8 @@ export function scal(stara, wpisy, numery, terazMs) {
   return { zrodlo: ZRODLO, aktualizacja: iso(terazMs), etapy: ETAPY, sor };
 }
 
-// Klucz wiersza archiwum: czas crona (ISO UTC).
-export const kluczArchiwum = (scheduledTime) => iso(scheduledTime);
+// Klucz wiersza pomiarów: czas crona w sekundach unix (w treści pomiaru ten sam czas jako ISO UTC).
+export const kluczPomiaru = (scheduledTime) => Math.floor(scheduledTime / 1000);
 
 // Tekst → gzip (BLOB do D1). CompressionStream jest w Workers i w Node.
 export async function gzip(tekst) {
@@ -233,7 +236,7 @@ export async function gzip(tekst) {
   return new Uint8Array(await new Response(strumien).arrayBuffer());
 }
 
-// Całe uruchomienie: zapytania tej partii → scalenie z migawką → zapis migawki i archiwum do D1.
+// Całe uruchomienie: zapytania tej partii → scalenie z migawką → zapis migawki i pomiaru do D1.
 // Domyślny fetch w opakowaniu: wywołany „luzem” z innym `this` w Workers rzuca „Illegal invocation”.
 export async function zbierz(env, scheduledTime, { fetchFn = (url, init) => fetch(url, init), numery = NUMERY } = {}) {
   const db = env.SOR_DB;
@@ -256,10 +259,10 @@ export async function zbierz(env, scheduledTime, { fetchFn = (url, init) => fetc
   }
   const teraz = Date.now();
   const migawka = scal(stara, wpisy, numery, teraz);
-  const archiwum = { zrodlo: ZRODLO, etapy: ETAPY, uruchomienie: iso(scheduledTime), partia, sor: Object.fromEntries(wpisy) };
+  const pomiar = { zrodlo: ZRODLO, etapy: ETAPY, uruchomienie: iso(scheduledTime), partia, sor: Object.fromEntries(wpisy) };
   await db.batch([
     db.prepare(SQL_TERAZ).bind(JSON.stringify(migawka), migawka.aktualizacja),
-    db.prepare(SQL_ARCHIWUM).bind(kluczArchiwum(scheduledTime), partia, await gzip(JSON.stringify(archiwum))),
+    db.prepare(SQL_POMIAR).bind(kluczPomiaru(scheduledTime), partia, await gzip(JSON.stringify(pomiar))),
   ]);
 
   const bledy = {};

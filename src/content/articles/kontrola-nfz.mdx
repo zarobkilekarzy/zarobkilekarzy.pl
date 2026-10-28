@@ -1,0 +1,282 @@
+---
+title: "Kontrola NFZ: kilka miesięcy z kilku lat"
+seoTitle: "Kontrola NFZ: jak Fundusz sprawdza rozliczenia szpitali"
+category: Mechanizm
+topic: platnik
+order: 3
+stat: { value: "8 z 40", unit: "miesięcy masowych rozliczeń H52 objęła kontrola NFZ" }
+date: 2026-10-28
+noindex: true
+summary: "Szpital dostaje punkty za to, jak opisze pobyt pacjenta, a NFZ sprawdza ten opis w wybranych miesiącach. Na przykładzie szpitala w Koszalinie — sprawy, którą wykrył i opisał nicolabo — pokazujemy, że nietypowe rozliczenia widać w otwartych danych latami, zanim sięgnie po nie kontrola."
+description: "Jak NFZ kontroluje rozliczenia szpitali: grupa JGP z opisu pobytu, kontrola wybranych miesięcy i wzorce widoczne w otwartych danych. Studium przypadku z Koszalina."
+keyPoints:
+  - "O zapłacie za pobyt decyduje grupa JGP z opisu leczenia: zabieg na kręgosłupie bez implantu jest wyceniony o 1/3 niżej niż z implantem."
+  - "Kontrola NFZ sprawdza wybrane miesiące: w Koszalinie objęła 8 z 40 miesięcy, w których szpital masowo rozliczał operacje z implantem."
+  - "Nietypowe wzorce widać w otwartych danych: w 2025 r. jeden szpital wykazał ponad połowę pobytów H53 w Polsce, w których pacjent wyszedł w dniu przyjęcia."
+editorial:
+  - >-
+    Nietypowe rozliczenia ze studium przypadku widać w danych, które NFZ sam publikuje — nicolabo zestawił je
+    miesiąc po miesiącu. Fundusz ma dane pełniejsze: pojedyncze rozliczenia, a nie sumy
+    z ukrytymi komórkami. Nie publikuje jednak, jak wybiera szpitale i miesiące do kontroli.
+  - >-
+    Nie twierdzimy, że kontrolerów jest za mało albo że kary są za niskie. Twierdzimy, że jawne dane
+    pozwalają lepiej wybierać, gdzie zajrzeć. Ta sama zasada stoi za naszym postulatem: łączne wypłaty
+    z publicznych pieniędzy dla każdej osoby, pod stałym identyfikatorem zamiast nazwiska.
+related:
+  - rozliczenia-nfz
+  - wycena-swiadczen
+  - fikcyjne-wizyty
+  - brak-jawnosci
+---
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Explainer from '@/components/blocks/Explainer.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import MonthGrid from '@/components/blocks/MonthGrid.astro';
+import XProfile from '@/components/blocks/XProfile.astro';
+import XPosts from '@/components/blocks/XPosts.astro';
+import IndexChart from '@/components/budzet/IndexChart.astro';
+import { LINKS, monthlyPoints, monthRange } from '@/data/kontrola-nfz';
+import nicoboguAvatar from '@/assets/people/nicobogu.jpg';
+import zabiegiJasna from '@/assets/articles/kontrola-nfz/zabiegi-kregoslupa-jasna.webp';
+import zabiegiCiemna from '@/assets/articles/kontrola-nfz/zabiegi-kregoslupa-ciemna.webp';
+
+export const SWITCH_CHART = {
+  xMin: 2019, xMax: 2026.25, yMin: 0, yMax: 180, ticks: [0, 50, 100, 150], unit: 'pobytów', years: [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
+  series: [
+    { id: 'h52', label: 'H52 — z implantem', tone: 'data', end: 'ok. 25', labelShift: 1, points: monthlyPoints('H52') },
+    { id: 'h53', label: 'H53 — bez implantu', tone: 'accent', end: 'ok. 78', labelShift: -1, points: monthlyPoints('H53') },
+    // kropki z dymkami: miesiąc przed przełączeniem i miesiąc po nim
+    { id: 'h52-switch', label: 'H52 — z implantem', tone: 'data', markers: true, points: monthlyPoints('H52').filter((p) => p.label === 'IV 2024' || p.label === 'V 2024') },
+    { id: 'h53-switch', label: 'H53 — bez implantu', tone: 'accent', markers: true, points: monthlyPoints('H53').filter((p) => p.label === 'IV 2024' || p.label === 'V 2024') },
+  ],
+  bands: [
+    {
+      from: 2023, to: 2023 + 8 / 12, label: 'Sprawdzone', kind: 'fill',
+      legend: 'Szare pole — styczeń–sierpień 2023 r.: jedyne miesiące rozliczeń H52, do których zajrzała kontrola NFZ. Zrobiła to dopiero druga kontrola, dwa lata później. Lat 2021–2022 i przełączenia na H53 nie sprawdziła żadna.',
+    },
+    {
+      from: 2024 + 4 / 12, label: 'Przełączenie H52 → H53', kind: 'line', row: 1,
+      legend: 'Kreska — 30 kwietnia 2024 r.: kończy się pierwsza kontrola (sprawdzała inną grupę, H55). Od maja szpital rozlicza zabiegi na kręgosłupie jako H53 zamiast H52: w kwietniu ok. 105 pobytów H52 i ok. 6 H53, w maju ok. 16 H52 i ok. 77 H53.',
+    },
+    {
+      from: 2025 + 7 / 12, to: 2026 + 3 / 12, label: 'Kontrola 2', kind: 'edges',
+      legend: 'Kontrola 2 — sierpień 2025 – marzec 2026 r.: sprawdza H52 ze stycznia–sierpnia 2023 r. i H55 z końca 2024 r. Rozliczeń H53 nie obejmuje.',
+    },
+  ],
+  caption:
+    'Szacowana miesięczna liczba hospitalizacji Szpitala Wojewódzkiego w Koszalinie w grupach H52 i H53, 2019–2025. ' +
+    'H52: do 2020 r. zwykle 10–40 miesięcznie, w 2021–2022 r. 60–170, w kwietniu 2024 r. ok. 105, w maju 2024 r. ok. 16, potem 13–25. ' +
+    'H53: do kwietnia 2024 r. zwykle kilka miesięcznie, w maju 2024 r. ok. 77, we wrześniu 2024 r. ok. 159, w 2025 r. 78–116. ' +
+    'Przełączenie z H52 na H53 nastąpiło w maju 2024 r., zaraz po zakończeniu pierwszej kontroli (30 kwietnia 2024 r.), która dotyczyła grupy H55. ' +
+    'Druga kontrola (sierpień 2025 – marzec 2026 r.) sprawdziła rozliczenia H52 tylko ze stycznia–sierpnia 2023 r.',
+};
+
+Za pobyt w szpitalu NFZ płaci według grupy, do której trafia opis leczenia. Czy opis zgadza się z tym, co zrobiono, sprawdza kontrola — ale tylko w miesiącach, które Fundusz wybierze. Pokazujemy ten mechanizm na przykładzie neurochirurgii Szpitala Wojewódzkiego im. Mikołaja Kopernika w Koszalinie, który NFZ skontrolował dwa razy i dwa razy ocenił negatywnie. Sprawę wykrył, opracował i opisał nicolabo, autor serwisu Hospitalizacje w Polsce — w artykule i w filmie.[^nicolabo] Prezentujemy wyniki jego śledztwa i analiz; liczby sprawdziliśmy w danych źródłowych NFZ.
+
+<XPosts
+  posts={[
+    { name: 'nicolabo', handle: 'nicobogu', avatar: nicoboguAvatar, kind: 'article', title: '„Recydywa” w Koszalinie', date: '2026-10-23', meta: '7 min czytania', url: 'https://x.com/nicobogu/status/2113508270941880443', embed: true },
+    { name: 'nicolabo', handle: 'nicobogu', avatar: nicoboguAvatar, kind: 'video', title: 'H52 w Koszalinie', date: '2026-10-28', meta: '3:50', url: 'https://x.com/nicobogu/status/2115373505990824130', embed: true },
+  ]}
+/>
+
+## Opis pobytu decyduje o cenie
+
+Szpital nie wystawia NFZ rachunku za poszczególne czynności. Po wypisie pacjenta system przypisuje pobyt do jednej z kilkuset Jednorodnych Grup Pacjentów (JGP) na podstawie rozpoznań i procedur wpisanych do sprawozdania. Każda grupa ma wartość w punktach. Jak z punktów powstaje zapłata, opisujemy w tekście [Rozliczenia NFZ](/mechanizmy/rozliczenia-nfz/).
+
+<Explainer
+  title="Od igły do śrub: o jakie zabiegi chodzi i dlaczego kosztują tak różnie"
+  lead="W sprawie z Koszalina pojawiają się trzy grupy zabiegów na kręgosłupie. Różnią się tym, co robi lekarz, czy pacjent leży na oddziale i ile płaci NFZ — od ok. tysiąca do prawie 14 tysięcy punktów."
+  imageAlt="Ten sam odcinek kręgosłupa w trzech ujęciach. Z lewej: igła wprowadzona przez skórę do stawu kręgosłupa, z rozgrzanym czubkiem przy nerwie. Pośrodku: operacja z rozwieraczami, w której usunięto fragment kości uciskający nerw. Z prawej: ta sama operacja z implantem — dwiema śrubami połączonymi prętem i koszyczkiem między kręgami."
+  image={zabiegiJasna}
+  imageDark={zabiegiCiemna}
+  scaleLabel="Wycena NFZ w punktach, 2025 r. — jedna skala dla wszystkich pasków"
+  max={13837}
+  steps={[
+    { tag: 'Z13 · poradnia', title: 'Termolezja w poradni', text: 'Przez skórę, bez cięcia, lekarz wysoką temperaturą wyłącza nerw, który przewodzi ból ze stawu kręgosłupa. Pacjent nie jest przyjmowany na oddział.', value: 1039, display: '1 039 pkt' },
+    { tag: 'H55 · oddział', title: 'Ta sama termolezja na oddziale', text: 'Zabieg jest ten sam, ale pacjent zostaje przyjęty do szpitala. Ustawa przewiduje leczenie w szpitalu wtedy, gdy celu nie da się osiągnąć w poradni.', value: 3362, display: '3 362 pkt', note: 'hospitalizacja jednego dnia' },
+    { tag: 'H53', title: 'Operacja na kręgosłupie bez implantu', text: 'Zabieg na sali operacyjnej: chirurg odbarcza kanał kręgowy, w którym uciśnięte są nerwy, albo usuwa przepuklinę krążka międzykręgowego.', value: 9225, display: '9 225 pkt', note: 'przyjęcie planowe' },
+    { tag: 'H52', title: 'Ta sama operacja z implantem', text: 'Do operacji dochodzi implant: koszyczek lub rozpórka między kręgami, gwintowane bolce kostne, proteza krążka albo urządzenie między wyrostkami kręgów. Implant trzeba wpisać do dokumentacji osobnym kodem.', value: 13837, display: '13 837 pkt', note: 'przyjęcie planowe', highlight: true },
+  ]}
+  takeaway="Po co opisywać prosty zabieg jako złożony?"
+>
+
+NFZ nie płaci za minuty ani za faktyczny koszt zabiegu, tylko za grupę, do której trafił opis. Różnica między szczeblami ma pokryć różnicę kosztów: salę operacyjną, znieczulenie, implant, łóżko na oddziale. Jeśli prostszy zabieg trafi szczebel wyżej, szpital dostaje pieniądze na koszty, których nie poniósł. Przy umowie, w której lekarz dostaje procent od wyceny NFZ, część tej różnicy trafia do niego — piszemy o tym w tekście [Kontrakt czy etat](/mechanizmy/kontrakt-vs-etat/).[^katalog]
+
+Szczeble 1 i 2 to ten sam zabieg. Szczeble 3 i 4 dzieli jeden kod: z 77 procedur, od których zależy przypisanie do H52 albo H53, 65 jest wspólnych, a o wyższej grupie decyduje wpisany implant.[^lista] Czy opis zgadza się z leczeniem, widać dopiero w dokumentacji medycznej. Obie kontrole w Koszalinie dotyczyły właśnie tych przejść: czy termolezja musiała odbywać się na oddziale (art. 58 ustawy o świadczeniach)[^art58] i czy pobyty H52 były prawidłowo zakwalifikowane.[^kontrole]
+
+</Explainer>
+
+Grupa ma jedną wartość bez względu na to, czy pacjent wyjdzie po dobie, czy po tygodniu. Dopiero po przekroczeniu określonej liczby dni płaci się dodatkowo za każdy kolejny (w H52 po 31 dniach). To zamierzony bodziec: szpital, który leczy krócej, zatrzymuje różnicę w kosztach. W części grup krótki pobyt wyceniono jednak niżej. W H53 pobyt krótszy niż doba to 9 225 punktów zamiast 10 026, a H55 ma osobną stawkę za hospitalizację jednego dnia. W H52 takiej stawki nie ma: pobyt zerodniowy — pacjent wychodzi w dniu przyjęcia — jest wyceniony tak samo jak kilkudniowy.[^katalog]
+
+Bodziec do opisywania pobytu jako droższego nie jest zarzutem — szerzej piszemy o nim w części [Punkty JGP](/mechanizmy/rozliczenia-nfz/#punkty-jgp-o-zaplacie-decyduje-opis-pobytu). Pytanie brzmi, jak system wyłapuje rozliczenia, które z opisem leczenia się nie zgadzają.
+
+## Co widać w otwartych danych
+
+NFZ publikuje w serwisie dane.gov.pl liczbę hospitalizacji każdego szpitala w każdej grupie JGP, miesiąc po miesiącu, z podziałem na długość pobytu, tryb przyjęcia, płeć i wiek pacjentów.[^d3009] Komórki z mniej niż pięcioma pobytami są ukryte, dlatego liczby jednego szpitala szacujemy — metoda jest pod wykresem. Krajowe sumy i liczby pobytów według długości podaje dokładnie portal statystyk JGP NFZ.[^stat]
+
+<Figure
+  title="W maju 2024 r., zaraz po pierwszej kontroli, szpital przełączył rozliczenia z grupy H52 na H53."
+  note="Liczby szpitala to szacunek: ukryte komórki (1–4 pobyty) liczymy średnią wartością takiej komórki w kraju dla danej grupy i roku, wyliczoną z dokładnych sum NFZ (ok. 1,3–1,5). Kropki w kwietniu i maju 2024 r. pokazują wartości po najechaniu lub dotknięciu."
+  source={[
+    { label: 'NFZ, dane.gov.pl, zbiór 3009', href: LINKS.d3009 },
+    { label: 'NFZ, statystyki JGP (sumy krajowe)', href: LINKS.stat },
+  ]}
+>
+  <IndexChart {...SWITCH_CHART} />
+</Figure>
+
+Do końca 2020 r. szpital rozliczał w grupie H52 zwykle od 10 do 40 pobytów miesięcznie. W 2021 r. było ich ok. 1150, w 2022 r. ok. 1630, w szczycie ponad 160 w miesiącu. Od stycznia 2021 do kwietnia 2024 r. — ok. 4,3 tys., najwięcej w Polsce: prawie trzy razy więcej, niż średnio rozliczyło dziesięć kolejnych szpitali.[^d3009]
+
+Nietypowa była też długość pobytu. W innych szpitalach po zabiegu z implantem pacjent zostaje zwykle trzy dni lub dłużej. W Koszalinie zdecydowana większość pacjentów wychodziła w dniu przyjęcia.
+
+<Figure
+  title="W Koszalinie dziewięć na dziesięć pobytów H52 kończyło się w dniu przyjęcia. W pozostałych szpitalach — cztery na sto."
+  note="Lata 2021–2023, pobyty z długością „0 dni”. Koszalin — szacunek (przedział przy ukrytych komórkach liczonych jako 1 albo 4: 78–95%); pozostałe szpitale — dokładna liczba krajowa NFZ minus szacunek Koszalina (przedział 2,8–4,2%)."
+  source={[
+    { label: 'NFZ, dane.gov.pl, zbiór 3009', href: LINKS.d3009 },
+    { label: 'NFZ, statystyki JGP', href: LINKS.stat },
+  ]}
+>
+  <BarChart
+    rows={[
+      { label: 'Szpital Wojewódzki w Koszalinie', value: 91, display: 'ok. 91%', highlight: true },
+      { label: 'Pozostałe szpitale w Polsce', value: 4, display: 'ok. 4%' },
+    ]}
+    max={100}
+    unit="%"
+    caption="Odsetek pobytów zerodniowych w grupie H52 w latach 2021–2023: Szpital Wojewódzki w Koszalinie ok. 91%, pozostałe szpitale w Polsce ok. 4%."
+  />
+</Figure>
+
+W latach 2021–2022 szpital wykazał ok. dwóch trzecich wszystkich zerodniowych pobytów H52 w Polsce.[^d3009][^stat] Tę różnicę NFZ widzi we własnych danych — w pełniejszej postaci niż publiczne zestawienie.
+
+W kwietniu 2024 r. zakończyła się pierwsza kontrola NFZ w szpitalu. Dotyczyła innej grupy — H55 — i rozliczeń z 2022 r. W kwietniu szpital rozliczył ok. 105 pobytów H52 i kilka H53. W maju — ok. 16 pobytów H52 i ok. 77 H53, a we wrześniu już ok. 159 H53. Grupa H52 nie wróciła do dawnego poziomu.
+
+Długość pobytu przeszła razem z grupą. W 2025 r. szpital rozliczył ok. 1,2 tys. pobytów H53 — ponad trzy razy więcej niż drugi szpital w kraju — i ok. 97% z nich zakończyło się w dniu przyjęcia. W pozostałych szpitalach taki pobyt w H53 to ok. 5%. Koszalin wykazał ponad połowę wszystkich zerodniowych pobytów H53 w Polsce.[^d3009]
+
+<Aside title="Uczciwie: czego te liczby nie rozstrzygają">
+
+- **Dane pokazują rozliczenie, a nie zabieg.** Krótki pobyt może wynikać z techniki (zabiegi małoinwazyjne), z doboru pacjentów albo ze sposobu kodowania. Czy opis zgadza się z leczeniem, rozstrzyga tylko dokumentacja medyczna.
+- **Zmiana grupy ma więcej niż jedno wyjaśnienie.** Szpital mógł zacząć kodować inaczej, mógł też zmienić rodzaj wykonywanych zabiegów. Z danych nie da się tego odróżnić.
+- **Liczby szpitala to szacunek.** Przy skrajnych założeniach o ukrytych komórkach obraz się nie zmienia: w latach 2021–2023 co najmniej 78% pobytów H52 w Koszalinie było zerodniowych, w pozostałych szpitalach — najwyżej 4,2%.
+
+</Aside>
+
+## Kontrola: próba z wybranych miesięcy
+
+Neurochirurgię szpitala NFZ skontrolował dwa razy. Obie kontrole przeprowadził Departament Kontroli centrali Funduszu przez wydział terenowy w Białymstoku i obie zakończyły się oceną negatywną.[^kontrole]
+
+<Figure
+  title="Dwie kontrole, dwie oceny negatywne, ok. 8,5 mln zł skutków finansowych."
+  note="Skutki finansowe to jedna kwota z wyników kontroli, bez podziału na zwroty i kary umowne. NFZ nie podaje, jaka jej część dotyczy grupy H52, a jaka H55."
+  source={{ label: 'NFZ, szczegółowe wyniki kontroli', href: LINKS.kontrole }}
+>
+  <Comparison
+    table={{
+      columns: ['', 'Kontrola 1', 'Kontrola 2'],
+      rows: [
+        { cells: ['Czas trwania', '6.02–30.04.2024', '4.08.2025–27.03.2026'] },
+        { cells: ['Sprawdzone rozliczenia', 'H55 z całego 2022 r.', 'próba pobytów: H52 z I–VIII 2023 r., H55 z VIII–XII 2024 r.; wykonanie zaleceń z kontroli 1'] },
+        { cells: ['Ustalenia', 'niezasadne hospitalizacje', 'niewykonanie zaleceń, świadczenia bez skierowania, niezasadne hospitalizacje, nieprawidłowe zakwalifikowanie świadczeń'] },
+        { cells: ['Skutki finansowe', '1 497 692,50 zł', '6 960 738,94 zł'], marked: true },
+      ],
+    }}
+  />
+</Figure>
+
+Kontrola nie sprawdza wszystkich rozliczeń. Fundusz wybiera grupy i miesiące, a w drugiej kontroli — jak zapisano w jej wynikach — sprawdzał próbę pobytów z tych miesięcy.[^kontrole] Tak działa kontrola przy ograniczonej liczbie kontrolerów i dokumentacji, którą trzeba przeczytać karta po karcie. Ma to jednak skutek: rozliczenia z miesięcy poza zakresem zostają takie, jak je sprawozdano.
+
+<Figure
+  title="Kontrola sprawdziła 8 z 40 miesięcy rozliczeń H52 i żadnego z 20 miesięcy po zmianie kodu na H53."
+  note="Każda kropka to miesiąc, w którym szpital rozliczał zabiegi na kręgosłupie w dużej liczbie: od stycznia 2021 do kwietnia 2024 r. w grupie H52, od maja 2024 do grudnia 2025 r. — w H53. Niebieskie: miesiące, których rozliczenia sprawdziła druga kontrola (próba pobytów). Czerwone: miesiące, których nie objęła żadna kontrola. Pierwsza kontrola sprawdzała inną grupę — H55."
+  source={{ label: 'NFZ, szczegółowe wyniki kontroli', href: LINKS.kontrole }}
+>
+  <MonthGrid
+    years={[2021, 2025]}
+    from="2021-01"
+    to="2025-12"
+    marked={monthRange('2023-01', '2023-08')}
+    breaks={[{ at: '2024-05' }]}
+    legend={{ marked: 'sprawdzone przez kontrolę', rest: 'niesprawdzone', break: 'maj 2024: zmiana kodu H52 → H53' }}
+    label="Miesiące rozliczeń zabiegów na kręgosłupie w Szpitalu Wojewódzkim w Koszalinie, 2021–2025. Z 40 miesięcy rozliczeń H52 (od stycznia 2021 do kwietnia 2024 r.) kontrola sprawdziła 8 — od stycznia do sierpnia 2023 r. Z 20 miesięcy rozliczeń H53 po zmianie kodu (od maja 2024 do grudnia 2025 r.) nie sprawdziła żadnego."
+  />
+</Figure>
+
+Poza kontrolą zostały lata 2021–2022, gdy szpital rozliczał najwięcej pobytów H52 i większość zerodniowych pobytów tej grupy w kraju, a także cały okres po zmianie kodu. Z opublikowanych wyników nie wynika, by NFZ badał tę zmianę.[^kontrole] W grupie H55 obie kontrole objęły łącznie 17 z 55 miesięcy: cały 2022 r. i okres od sierpnia do grudnia 2024 r.
+
+## Zalecenie „na bieżąco”, sprawdzone po 15 miesiącach
+
+Pierwsza kontrola zakończyła się 30 kwietnia 2024 r. zaleceniem: „Udzielać świadczeń w warunkach hospitalizacji jedynie w sytuacji, w której cel leczenia nie może być osiągnięty przez leczenie ambulatoryjnie”, z terminem „niezwłocznie, na bieżąco”.[^kontrole] Dotyczyło grupy H55, w której szpital rozlicza m.in. termolezję — przeciwbólowy zabieg na nerwach przy stawach kręgosłupa, wykonywany przez skórę. Można go zrobić w poradni albo na oddziale — za ponad trzy razy więcej punktów (szczeble 1 i 2 w ramce „Wyjaśniamy”).
+
+Dane NFZ pokazują, co działo się później. W 2024 r. termolezję w szpitalu wykonano u ok. 950 pacjentów, a w poradni — u żadnego.[^d4896] W 2025 r. szpital rozliczył w grupie H55 ok. 1,6 tys. pobytów, o ok. dwie trzecie więcej niż rok wcześniej, i był w tej grupie pierwszy w kraju.[^d3009] Termolezję w szpitalu wykonano w tym roku u ok. 1,4 tys. pacjentów, w poradni — znowu u żadnego. Od lipca 2025 do czerwca 2026 r., w czasie drugiej kontroli i po niej, w szpitalu zabieg miało ok. tysiąca pacjentów, a w poradni — mniej niż pięciu.[^d4896]
+
+Zalecenie miało termin „niezwłocznie, na bieżąco”, ale jego wykonanie NFZ sprawdził dopiero w drugiej kontroli, która zaczęła się w sierpniu 2025 r., 15 miesięcy później. Stwierdził, że zalecenia nie wykonano, i wydał je ponownie, znów z terminem „na bieżąco”.[^kontrole] Przez ten czas rosnącą liczbę pobytów było widać w danych, które Fundusz sam zbiera co miesiąc.
+
+## Skutki kontroli a wartość rozliczeń
+
+Ile warte były rozliczenia, pokazują zestawienia Centrum e-Zdrowia: wartość punktów rozliczonych przez każdego świadczeniodawcę w każdej grupie i w każdym roku.[^ezdrowie] Punkty grup się nie zmieniały, ale rosła ich cena. W neurochirurgii Koszalina punkt H52 był wart średnio ok. 1,12 zł w 2021 r. i ok. 1,90 zł w 2025 r. Jeden pobyt H52 był więc wart w rozliczeniu ok. 16,9 tys. zł, a cztery lata później — ok. 28,6 tys. zł.
+
+<Figure
+  title="Skutki obu kontroli to ok. 7 zł na każde 100 zł wykazane w sprawdzanych grupach."
+  note="Wartość jednostek rozliczonych w zakresie neurochirurgia — hospitalizacja, którego dotyczyły obie kontrole. W całym szpitalu, z ortopedią i chirurgią ogólną, grupy H52 i H55 dają ok. 136 mln zł. Skutki finansowe kontroli to jedna kwota z wyników, bez podziału na zwroty i kary umowne."
+  source={[
+    { label: 'Centrum e-Zdrowia, Liczba pacjentów JGP', href: LINKS.ezdrowie },
+    { label: 'NFZ, szczegółowe wyniki kontroli', href: LINKS.kontrole },
+  ]}
+>
+  <Comparison
+    table={{
+      columns: ['', 'Lata', 'Kwota'],
+      rows: [
+        { cells: ['Wykazane świadczenia H52', '2021–2025', '98,7 mln zł'] },
+        { cells: ['Wykazane świadczenia H55', '2021–2025', '21,8 mln zł'] },
+        { cells: ['Wykazane świadczenia H53 — poza kontrolami', '2024–2025', '38,0 mln zł'] },
+        { cells: ['Skutki finansowe obu kontroli', 'kontrole zakończone w 2024 i 2026', '8,5 mln zł'], marked: true },
+      ],
+    }}
+  />
+</Figure>
+
+Wykazana kwota to nie przelew. Szpital z sieci dostaje ryczałt, a nie zapłatę za każdy pobyt — opisujemy to w części [Próg 98%](/mechanizmy/rozliczenia-nfz/#prog-98-dzisiejsze-punkty-to-jutrzejszy-ryczalt). Ryczałt na kolejny okres zależy jednak od liczby jednostek „wykonanych i sprawozdanych” w okresie poprzednim.[^rozp-psz] Wykazane pobyty są więc podstawą przyszłego finansowania, także wtedy, gdy nikt ich nie sprawdził.
+
+Skutki finansowe kontroli wynikają z nieprawidłowości stwierdzonych w sprawdzonym zakresie. Dla szpitala rachunek zależy więc nie tylko od tego, ile rozliczeń jest nieprawidłowych, ale też od tego, ile z nich trafi do kontroli.
+
+## Co z tego wynika
+
+Kontrola z wyboru jest koniecznością: rozliczeń jest wielokrotnie więcej, niż kontrolerzy zdążą przeczytać. Liczy się więc to, jak NFZ wybiera szpitale, grupy i miesiące. Z opublikowanych wyników nie wynika, dlaczego w Koszalinie wybrano te, a nie inne miesiące. W opisanym przypadku sygnał był w danych publicznych: przez dwa lata jeden szpital odpowiadał za ok. dwie trzecie zerodniowych pobytów H52 w kraju, a po pierwszej kontroli ten sam wzorzec pojawił się w innej grupie. Takie odchylenia da się wyszukiwać automatycznie, we wszystkich szpitalach i grupach naraz.
+
+Otwarte dane nie zastąpią kontroli dokumentacji. Mogą jednak podpowiadać, gdzie zajrzeć — i pozwalają sprawdzić, czy Fundusz z tej podpowiedzi korzysta.
+
+<XProfile
+  name="nicolabo"
+  handle="nicobogu"
+  avatar={nicoboguAvatar}
+  width="md"
+  eyebrow="Autor śledztwa i analiz"
+  link={{ label: 'Hospitalizacje w Polsce', href: 'https://hospitalizacje-nfz.pages.dev/' }}
+>
+Temat wykrył, opracował i opisał nicolabo — w artykule „Recydywa w Koszalinie” i w filmie o historii kodu H52.[^nicolabo] Ten tekst prezentuje wyniki jego śledztwa i analiz. Liczby sprawdziliśmy w danych źródłowych NFZ.
+</XProfile>
+
+[^lista]: NFZ, [zarządzenie nr 48/2025/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43566/Zarzadzenie-48_2025_DSOZ) — charakterystyka grup H52, H53 i H55: listy procedur H52 i H53, lista implantów H7 (m.in. koszyczki i rozpórki między kręgami, gwintowane bolce kostne, protezy krążka, urządzenie międzykolczyste) oraz lista H55B z procedurą 03.96 „Przezskórne odnerwienie powierzchni stawowej wyrostka kręgu”. W poradni termolezja to procedura 04.25 „Zniszczenie nerwów czaszkowych lub obwodowych przez znieczulenie wywołane wysoką temperaturą” ([zarządzenie nr 132/2024/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43457/Zarzadzenie-132_2024_DSOZ)). Liczba wspólnych procedur H52 i H53 — nasze zestawienie obu list.
+
+[^katalog]: NFZ, [zarządzenie nr 48/2025/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43566/Zarzadzenie-48_2025_DSOZ), załącznik 1 — katalog grup JGP w leczeniu szpitalnym, poz. 291–293 (H52, H53, H55); wartości H52 i H55 bez zmian od 2020 r., stawki krótkich pobytów w H53 od 2023 r. Ambulatoryjna opieka specjalistyczna: [zarządzenie nr 132/2024/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43457/Zarzadzenie-132_2024_DSOZ) — grupa Z13, procedura 04.25.
+
+[^art58]: Ustawa z 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych, [tekst jednolity: Dz.U. 2024 poz. 146](https://api.sejm.gov.pl/eli/acts/DU/2024/146/text.pdf) ze zm., art. 58: prawo do leczenia szpitalnego, „jeżeli cel leczenia nie może być osiągnięty przez leczenie ambulatoryjne”.
+
+[^ezdrowie]: Centrum e-Zdrowia, [Liczba pacjentów JGP](https://ezdrowie.gov.pl/portal/home/badania-i-dane/zdrowe-dane/zestawienia/liczba-pacjentow-jgp), lata 2019–2025; świadczeniodawca 160000907, zakres 03.4570.030.02 (neurochirurgia — hospitalizacja), pole „Wartosc_jednostek_rozliczonych”. Sumy i cena punktu — nasze wyliczenie.
+
+[^rozp-psz]: Rozporządzenie Ministra Zdrowia z 22 września 2017 r. w sprawie sposobu ustalania ryczałtu systemu podstawowego szpitalnego zabezpieczenia świadczeń opieki zdrowotnej, [tekst jednolity: Dz.U. 2025 poz. 878](https://api.sejm.gov.pl/eli/acts/DU/2025/878/text.pdf), § 2 pkt 24b i § 3 ust. 1.
+
+[^d3009]: NFZ, dane.gov.pl, [zbiór 3009 „Dane dotyczące hospitalizacji rozliczonych JGP”](https://dane.gov.pl/pl/dataset/3009), pliki za lata 2017–2025. Nasze zestawienia dla NIP 6691044410 i całego kraju; ukryte komórki szacujemy, jak opisano pod wykresem.
+
+[^d4896]: NFZ, dane.gov.pl, [zbiór 4896 „Liczba pacjentów z danym rozpoznaniem ICD-10, u których wykonano procedurę ICD-9”](https://dane.gov.pl/pl/dataset/4896), zestawienia za 2024 r., 2025 r. oraz III kw. 2025 – II kw. 2026 r.; świadczeniodawca 160000907, procedury 03.96 (termolezja w szpitalu) i 04.25 (w poradni). Pacjent z kilkoma rozpoznaniami może być liczony więcej niż raz, a komórki poniżej 5 są ukryte — podajemy wartości przybliżone.
+
+[^stat]: NFZ, [Portal Statystyki — świadczenia JGP](https://statystyki.nfz.gov.pl/Benefits/1a) (API app-stat-api-jgp): histogram czasu pobytu w grupach H52, H53 i H55, lata 2017–2024.
+
+[^kontrole]: NFZ, [Szczegółowe wyniki kontroli](https://www.nfz.gov.pl/o-nfz/kontrole/kontrole-nfz/szczegolowe-wyniki-kontroli/) ([plik XLSX](https://www.nfz.gov.pl/download/gfx/nfz/pl/defaultstronaopisowa/1087/1/12/szczegolowe_informacje_o_wynikach_kontroli_7.xlsx)), wpisy DK.TWK-X.4840.006.2024 i DK.TWK-X.4840.026.2025.
+
+[^nicolabo]: nicolabo, [„Recydywa w Koszalinie”](https://x.com/nicobogu/status/2113508270941880443), X, 23.10.2026; [film „Historia kodu H52”](https://x.com/nicobogu/status/2115373505990824130), X, 28.10.2026.

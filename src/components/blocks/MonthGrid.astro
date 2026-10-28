@@ -1,0 +1,85 @@
+---
+/**
+ * Siatka miesięcy w motywie lib/siatka: wiersz = rok, kolumna = miesiąc, pole = kropka.
+ * Dwa kolory: miesiąc zaznaczony (`marked`, np. objęty kontrolą) — kobalt; pozostały miesiąc z zakresu
+ * `from`–`to` — czerwień (--bad, „tu nikt nie zajrzał”). Miesiące spoza zakresu — plus.
+ * `breaks` — pionowa kreska przed wskazanym miesiącem (np. zmiana kodu), opisana w legendzie.
+ * SVG przy buildzie, bez skryptu.
+ *
+ *   <MonthGrid years={[2021, 2025]} from="2021-01" to="2025-12" marked={['2023-01', …]}
+ *              breaks={[{ at: '2024-05' }]} legend={{ marked: 'sprawdzone', rest: 'niesprawdzone', break: 'zmiana kodu' }} label="…" />
+ */
+import { CELL, SHAPES } from '@/lib/siatka';
+import { typo } from '@/lib/format';
+import { uid } from '@/lib/uid';
+
+interface Props {
+  /** pierwszy i ostatni rok (wiersze) */
+  years: [number, number];
+  /** zakres liczonych miesięcy (RRRR-MM) — poza nim plusy */
+  from: string;
+  to: string;
+  /** zaznaczone miesiące (RRRR-MM) */
+  marked: string[];
+  /** kreski przed miesiącami (RRRR-MM) */
+  breaks?: { at: string }[];
+  legend: { marked: string; rest: string; break?: string };
+  /** opis dla czytników ekranu */
+  label: string;
+}
+
+const { years, from, to, marked, breaks = [], legend, label } = Astro.props;
+const MONTHS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+const P = 24, LEFT = 44, TOP = 20;
+const rows = Array.from({ length: years[1] - years[0] + 1 }, (_, i) => years[0] + i);
+const width = LEFT + 12 * P, height = TOP + rows.length * P;
+const key = (y: number, m: number) => `${y}-${String(m + 1).padStart(2, '0')}`;
+const cell = (k: string) => (k < from || k > to ? 'off' : marked.includes(k) ? 'on' : 'rest');
+const breakAt = (at: string) => {
+  const [y, m] = at.split('-').map(Number);
+  return { x: LEFT + (m - 1) * P, y: TOP + (y - years[0]) * P };
+};
+const id = uid('mg');
+---
+<div class="mg" role="img" aria-label={label}>
+  <svg class="mg__svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+    <defs>
+      <symbol id={`${id}-on`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={SHAPES.on} />
+      <symbol id={`${id}-off`} viewBox={`0 0 ${CELL} ${CELL}`} set:html={SHAPES.off} />
+    </defs>
+    {MONTHS.map((m, i) => (i % 3 === 0 ? <text class="mg__axis" x={LEFT + i * P + P / 2} y="12" text-anchor="middle">{m}</text> : null))}
+    {rows.map((y, r) => (
+      <>
+        <text class="mg__axis" x="0" y={TOP + r * P + P / 2 + 4}>{y}</text>
+        {MONTHS.map((_, m) => {
+          const c = cell(key(y, m));
+          return <use href={`#${id}-${c === 'off' ? 'off' : 'on'}`} class={`mg__${c}`} x={LEFT + m * P} y={TOP + r * P} width={P} height={P} />;
+        })}
+      </>
+    ))}
+    {breaks.map((b) => {
+      const { x, y } = breakAt(b.at);
+      return <line class="mg__break" x1={x} x2={x} y1={y - 3} y2={y + P + 3} />;
+    })}
+  </svg>
+  <div class="mg__legend" aria-hidden="true">
+    <span><svg width="14" height="14" class="mg__on"><use href={`#${id}-on`} width="14" height="14" /></svg>{typo(legend.marked)}</span>
+    <span><svg width="14" height="14" class="mg__rest"><use href={`#${id}-on`} width="14" height="14" /></svg>{typo(legend.rest)}</span>
+    {legend.break && <span><svg width="14" height="14"><line class="mg__break" x1="7" x2="7" y1="0" y2="14" /></svg>{typo(legend.break)}</span>}
+  </div>
+</div>
+
+<style>
+  .mg { display: grid; gap: 14px; }
+  .mg__svg { display: block; max-width: 100%; height: auto; overflow: visible; }
+  .mg__axis { font: 400 0.6875rem var(--f-mono); letter-spacing: .04em; fill: var(--muted); }
+  .mg__on { color: var(--blue); }
+  .mg__rest { color: var(--bad); }
+  .mg__off { color: color-mix(in srgb, var(--muted) 45%, transparent); }
+  .mg__break { stroke: var(--ink); stroke-width: 2; }
+  .mg__legend {
+    display: flex; flex-wrap: wrap; gap: 8px 20px;
+    font: 400 0.6875rem/1.3 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+  }
+  .mg__legend span { display: inline-flex; align-items: center; gap: 6px; }
+</style>

@@ -27,6 +27,12 @@ export const sectionOf = (article: Article) => SECTIONS[article.data.category];
 export const isPublished = (article: Article) => Boolean(article.body?.trim());
 
 /**
+ * Materiał z `noindex` (np. szkic pokazywany z linku) ma swoją podstronę, ale nie trafia do żadnego spisu:
+ * działów, „nowych i zaktualizowanych”, wyszukiwarki, kanałów ani powiązanych.
+ */
+const isListed = (article: Article) => !article.data.noindex;
+
+/**
  * Adres artykułu: podstrona dla opublikowanych, w przeciwnym razie tymczasowy
  * `href` z frontmattera (np. kotwica na stronie głównej) albo „#”.
  */
@@ -38,7 +44,7 @@ const freshness = (article: Article) => article.data.updated ?? article.data.dat
 
 /** Artykuły z datą, od najświeższych. */
 export async function getDatedArticles() {
-  const all = await getCollection('articles', (a) => freshness(a) !== undefined);
+  const all = await getCollection('articles', (a) => freshness(a) !== undefined && isListed(a));
   return all.sort((a, b) => freshness(b)!.valueOf() - freshness(a)!.valueOf());
 }
 
@@ -51,7 +57,7 @@ export async function getLatest(limit = 5) {
 }
 
 export async function getAllArticles() {
-  const all = await getCollection('articles');
+  const all = await getCollection('articles', isListed);
   return all.sort((a, b) => a.data.title.localeCompare(b.data.title, 'pl'));
 }
 
@@ -67,7 +73,7 @@ export async function getRelated(article: Article, limit = 3): Promise<Article[]
     const entries = await getEntries(article.data.related);
     return entries.filter((a): a is Article => Boolean(a)).slice(0, limit);
   }
-  const same = await getCollection('articles', (a) => a.data.category === article.data.category && a.id !== article.id);
+  const same = await getCollection('articles', (a) => a.data.category === article.data.category && a.id !== article.id && isListed(a));
   return same.sort((a, b) => a.data.title.localeCompare(b.data.title, 'pl')).slice(0, limit);
 }
 
@@ -99,7 +105,7 @@ const byOrder = (a: Article, b: Article) =>
  * a w dziale materiały według `order`, potem alfabetycznie.
  */
 export async function getTopicGroups<T extends TopicId, I>(topics: readonly T[], info: Record<T, I>) {
-  const entries = await getCollection('articles', (a) => a.data.topic !== undefined);
+  const entries = await getCollection('articles', (a) => a.data.topic !== undefined && isListed(a));
   return topics.map((topic) => ({
     topic,
     info: info[topic],

@@ -17,6 +17,7 @@ import { SOR_DATA_ORIGIN } from '../../src/lib/sor/source';
  * Cloudflare Turnstile (challenges.cloudflare.com: skrypt, ramka, zapytania) — niewidoczny widżet
  * przy zapisie wyniku egzaminu do statystyk (src/lib/egzamin/stats.ts).
  * YouTube (youtube-nocookie.com: tylko ramka) — film w artykule, osadzany dopiero po kliknięciu (blocks/YouTube).
+ * X (platform.twitter.com: skrypt widgets.js i ramka wpisu) — oficjalny widget wpisu z X (blocks/XPosts, `embed`).
  * HSTS celowo nie tutaj — ustawione strefowo w panelu Cloudflare (jedno źródło nagłówka).
  * Pułapka: `astro preview` nie nakłada `_headers` — CSP sprawdza `npm run preview:cf`.
  */
@@ -25,6 +26,8 @@ export function contentSecurityPolicy(frames = false): string {
   const TURNSTILE = 'https://challenges.cloudflare.com';
   // Filmy z YouTube (blocks/YouTube): ramka ładuje się dopiero po kliknięciu, z domeny bez ciasteczek
   const YOUTUBE = 'https://www.youtube-nocookie.com';
+  // Wpisy z X (blocks/XPosts, `embed`): skrypt widgets.js podmienia cytat na ramkę wpisu
+  const X = 'https://platform.twitter.com';
   const connect = ["'self'", TURNSTILE, 'https://cloudflareinsights.com', SOR_DATA_ORIGIN];
   if (newsletterOn) connect.push(new URL(newsletter.endpoint).origin);
   return [
@@ -34,11 +37,11 @@ export function contentSecurityPolicy(frames = false): string {
     `frame-ancestors ${frames ? "'self'" : "'none'"}`,
     "form-action 'self'",
     "img-src 'self' data:",
-    `script-src 'self' 'unsafe-inline' ${TURNSTILE} https://static.cloudflareinsights.com`,
+    `script-src 'self' 'unsafe-inline' ${TURNSTILE} https://static.cloudflareinsights.com ${X}`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
     `connect-src ${connect.join(' ')}`,
-    `frame-src ${frames ? "'self' " : ''}${TURNSTILE} ${YOUTUBE}`,
+    `frame-src ${frames ? "'self' " : ''}${TURNSTILE} ${YOUTUBE} ${X}`,
     "manifest-src 'self'",
     'upgrade-insecure-requests',
   ].join('; ');

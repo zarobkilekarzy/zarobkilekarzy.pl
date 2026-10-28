@@ -1,0 +1,140 @@
+---
+/**
+ * Karty wpisów z serwisu X (artykuł, film, wpis) — odnośnik do oryginału, np. publikacji, na której opiera się tekst.
+ * Jak XProfile: bez skryptu i ramki X, dane w propsach, awatar z lokalnej kopii. Czytelnik nie wysyła żadnego
+ * zapytania do X, dopóki sam nie kliknie. Karta nie przepisuje cudzej treści: rodzaj, tytuł, data, długość, link.
+ * W przeciwieństwie do linków XProfile odnośnik nie ma „nofollow” — to cytowane źródło, nie podziękowanie.
+ * Jedna karta albo kilka — od 640 px kontenera dwie w rzędzie.
+ *
+ * `embed: true` — zamiast naszej karty oficjalny widget X (blockquote + platform.twitter.com/widgets.js,
+ * z data-dnt i motywem strony). Skrypt X ładuje się z wejściem na stronę (przeglądarka czytelnika łączy się
+ * z X); CSP: platform.twitter.com w script-src i frame-src (integrations/seo/headers.ts). Gdy skrypt nie
+ * dojdzie (blokada treści), zostaje cytat z tytułem i linkiem w ramce w stylu serwisu.
+ *
+ *   <XPosts posts={[{ name: 'nicolabo', handle: 'nicobogu', avatar: img, kind: 'article',
+ *     title: '„Recydywa” w Koszalinie', date: '2026-10-23', meta: '7 min czytania', url: 'https://x.com/…' }]} />
+ */
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+import { uiOf } from '@/i18n/ui';
+
+interface Post {
+  name: string;
+  /** nazwa konta bez „@” */
+  handle: string;
+  avatar?: ImageMetadata;
+  kind: 'article' | 'video' | 'post';
+  title: string;
+  /** data publikacji, RRRR-MM-DD */
+  date: string;
+  /** długość, np. „7 min czytania”, „3:50” */
+  meta?: string;
+  url: string;
+  /** oficjalny widget X zamiast karty — zob. opis wyżej */
+  embed?: boolean;
+}
+
+interface Props {
+  posts: Post[];
+}
+
+const { posts } = Astro.props;
+const t = uiOf(Astro.url).xPost;
+const locale = localeOf(Astro.url.pathname) === 'en' ? 'en-GB' : 'pl-PL';
+const fmtDate = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+---
+<div class="xps-wrap">
+<ul class:list={['xps', { 'xps--one': posts.length === 1 }]} aria-label={t.list}>
+  {posts.map((p) => p.embed ? (
+    <li class="xpost xpost--embed">
+      <blockquote class="twitter-tweet" data-dnt="true" data-lang={locale === 'en-GB' ? 'en' : 'pl'} data-conversation="none">
+        <p>{typo(p.title)}</p>
+        — {p.name} (@{p.handle}) <a href={p.url}>{fmtDate(p.date)}</a>
+      </blockquote>
+    </li>
+  ) : (
+    <li class="xpost">
+      <article aria-label={t.card(p.title, p.name, p.handle)}>
+        <svg class="xpost__x" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+        <div class="xpost__who">
+          {p.avatar
+            ? <Image class="xpost__avatar" src={p.avatar} width={80} height={80} alt="" />
+            : <span class="xpost__avatar xpost__avatar--initial" aria-hidden="true">{p.name.charAt(0)}</span>}
+          <p><span class="xpost__name">{p.name}</span> <span class="xpost__handle">@{p.handle}</span></p>
+        </div>
+        <p class="xpost__kind">{t.kinds[p.kind]}</p>
+        <p class="xpost__title">{typo(p.title)}</p>
+        <p class="xpost__meta"><time datetime={p.date}>{fmtDate(p.date)}</time>{p.meta && <> · {p.meta}</>}</p>
+        <LinkArrow href={p.url} rel="noopener" class="xpost__cta">{t.open}</LinkArrow>
+      </article>
+    </li>
+  ))}
+</ul>
+</div>
+
+{posts.some((p) => p.embed) && (
+  <script>
+    // Widget X: motyw jak strona (data-theme albo system), potem jeden skrypt platform.twitter.com na stronę
+    const dark = document.documentElement.dataset.theme === 'dark'
+      || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.querySelectorAll<HTMLElement>('.xpost--embed .twitter-tweet').forEach((q) => { q.dataset.theme = dark ? 'dark' : 'light'; });
+    if (!document.querySelector('script[src="https://platform.twitter.com/widgets.js"]')) {
+      const s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://platform.twitter.com/widgets.js';
+      document.body.append(s);
+    }
+  </script>
+)}
+
+<style>
+  .xps-wrap { container: xps / inline-size; margin: 32px 0; }
+  .xps { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+  /* obok widgetu X nasza karta zostaje w swojej wysokości — bez pustego pola do wysokości ramki X */
+  .xps:has(.xpost--embed) { align-items: start; }
+  .xps--one { max-width: 560px; }
+  @container xps (min-width: 640px) {
+    .xps:not(.xps--one) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  /* :where — Prose ustawia marginesy i znaczniki list; karta ma własne */
+  .xps > :where(li) { margin: 0; padding: 0; }
+  .xps > :where(li)::before { content: none; }
+
+  .xpost > article {
+    position: relative; height: 100%; display: flex; flex-direction: column; gap: 10px;
+    padding: 20px 22px; background: var(--bg); border: 1px solid var(--line-2);
+  }
+  .xpost > article::before { content: ""; position: absolute; top: -4px; left: -4px; width: 7px; height: 7px; background: var(--ink); }
+  .xpost__x { position: absolute; top: 20px; right: 20px; fill: var(--ink); }
+
+  .xpost__who { display: flex; align-items: center; gap: 10px; padding-right: 24px; }
+  .xpost__who p { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+  .xpost__avatar { flex: none; width: 36px; height: 36px; object-fit: cover; background: var(--bg-soft); }
+  .xpost__avatar--initial { display: grid; place-items: center; background: var(--blue-fill); color: #fff; font: 400 1.125rem/1 var(--f-display); }
+  .xpost__name { font: 500 0.9375rem/1.3 var(--f-body); color: var(--ink); }
+  .xpost__handle { font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted); }
+
+  .xpost__kind { margin: 6px 0 0; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .xpost__title { margin: 0; font: 400 1.25rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .xpost__meta { margin: 0; font: 400 0.8125rem/1.4 var(--f-mono); color: var(--muted); }
+  .xpost__cta { align-self: flex-start; margin-top: auto; }
+
+  /* Widget X: zanim skrypt podmieni blockquote (albo gdy go zablokuje CSP / blokada treści) — prosta ramka */
+  .xpost--embed :global(.twitter-tweet:not(.twitter-tweet-rendered)) {
+    margin: 0; padding: 20px 22px; border: 1px solid var(--line-2); background: var(--bg);
+    font: 400 0.875rem/1.5 var(--f-body); color: var(--text);
+  }
+  .xpost--embed :global(.twitter-tweet p) { margin: 0 0 8px; font: 400 1.125rem/1.3 var(--f-display); color: var(--ink); }
+  .xpost--embed :global(.twitter-tweet a) { color: var(--blue); }
+  /* iframe widgetu ma własne marginesy — wyrównanie do kart obok */
+  .xpost--embed :global(.twitter-tweet-rendered) { margin: 0 !important; }
+  /* Dokument X w ramce ma białe tło pod zaokrągloną kartą — w trybie nocnym widać je w rogach jak błąd.
+     Przycinamy ramkę do promienia karty X (12 px) */
+  .xpost--embed :global(.twitter-tweet-rendered) { border-radius: 12px; overflow: hidden; }
+  .xpost--embed :global(iframe) { border-radius: 12px; }
+</style>

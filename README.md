@@ -76,7 +76,11 @@ src/
                            Callout, NewsletterForm, Aside, Steps, Screenshot,
                            JumpList, NumberTiles, DatasetCard, ArticleTable (wiersze),
                            TopicCatalog (działy z wierszami), QuestionBands (działy jako pytania),
-                           XProfile (karta profilu X bez skryptu X, awatar z lokalnej kopii; `size` full/compact, `width` fill/md/sm — w tekście artykułu md),
+                           XProfile (karta profilu X bez skryptu X, awatar z lokalnej kopii; `size` full/compact, `width` fill/md/sm — w tekście artykułu md;
+                           nasz kontekst — `eyebrow` i slot — stoi obok karty, poza ramką, karta pokazuje tylko dane z profilu),
+                           XPosts (karty wpisów z X: artykuł, film, wpis — link do oryginału bez skryptu X),
+                           Explainer (baner „Wyjaśniamy”: grafika jasna/ciemna, drabina pozycji z paskami w jednej skali, odpowiedź „po co”),
+                           MonthGrid (siatka miesięcy: sprawdzone / niesprawdzone, kreska zdarzenia),
                            StatusTrack (oś etapów), TwoLists (jawne / chronione), Faq (rozwijane pytania),
                            Comparison (tabela porównania; wąsko — karty),
                            ProposalList (kierunki: opis, fakt ze źródłem, spór, linki, opcjonalnie karta XProfile; numeracja od `start`),

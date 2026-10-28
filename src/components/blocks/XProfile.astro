@@ -1,6 +1,9 @@
 ---
 /**
  * Karta profilu w serwisie X — przedstawienie osoby albo podziękowanie (np. za pomoc przy danych).
+ * Karta pokazuje tylko to, co jest w profilu (awatar, nazwa, opis z profilu `bio`, link z profilu). Nasz kontekst —
+ * etykieta `eyebrow` i zdanie ze slotu — stoi OBOK karty, poza jej ramką, żeby nie udawał opisu profilu:
+ * na szerokim ekranie z lewej strony karty, na wąskim nad nią (kontener < 640 px).
  * Bez skryptu i ramki X: dane w propsach, awatar z lokalnej kopii w src/assets. Czytelnik nie wysyła
  * żadnego zapytania do X, dopóki sam nie kliknie w link do profilu.
  * Wszystkie linki karty (profil i strona z profilu) mają rel="nofollow noopener" — podziękowanie nie przekazuje
@@ -12,12 +15,14 @@
  *   </XProfile>
  *
  * size="compact" — mniejsza karta do wtrąceń (lista kierunków, koniec artykułu): awatar obok nazwy,
- * jedno zdanie kontekstu ze slotu, link do profilu i link z profilu w jednym wierszu, w tym samym stylu. Bez opisu z profilu (`bio`).
+ * link do profilu i link z profilu w jednym wierszu, w tym samym stylu. Bez opisu z profilu (`bio`).
  *
- * width — ile miejsca zajmuje karta (niezależnie od `size`):
+ * width — ile miejsca zajmuje karta (niezależnie od `size`), gdy kontekst stoi nad nią:
  *   fill — całą szerokość rodzica: komórka siatki, kolumna boczna (domyślnie dla size="full"),
  *   md   — do 560 px: karta wtrącona w tekst artykułu (domyślnie dla size="compact"),
  *   sm   — do 400 px: krótkie podziękowanie, karta obok innej treści.
+ * Gdy kontekst stoi obok, karta md i sm ma 380 px, a fill — połowę szerokości.
+ * `class` i pozostałe atrybuty trafiają na zewnętrzny element (karta + kontekst); karta to `.xp`.
  */
 import type { HTMLAttributes } from 'astro/types';
 import type { ImageMetadata } from 'astro';
@@ -26,13 +31,13 @@ import LinkArrow from '@/components/ui/LinkArrow.astro';
 import { linkAttrs } from '@/lib/links';
 import { uiOf } from '@/i18n/ui';
 
-interface Props extends HTMLAttributes<'article'> {
+interface Props extends HTMLAttributes<'div'> {
   name: string;
   /** nazwa konta bez „@” */
   handle: string;
   /** lokalna kopia awatara; bez niej — inicjał */
   avatar?: ImageMetadata;
-  /** etykieta nad kartą: rola osoby w projekcie */
+  /** nasza etykieta: rola osoby w projekcie (obok karty, nie w niej) */
   eyebrow?: string;
   /** opis z profilu, jeśli to coś więcej niż link (tylko w pełnej karcie) */
   bio?: string;
@@ -54,57 +59,82 @@ const host = link && new URL(link.href).host;
 const showHost = link && link.label.replace(/^www\./, '') !== host?.replace(/^www\./, '');
 const REL = 'nofollow noopener';
 const t = uiOf(Astro.url).xProfile;
+const hasNote = Astro.slots.has('default');
+const hasCtx = hasNote || !!eyebrow;
 ---
-<article class:list={['xp', `xp--${w}`, { 'xp--compact': compact }, className]} aria-label={t.card(name, handle)} {...rest}>
-  <div class="xp__top">
-    {eyebrow && <p class="xp__eyebrow">{eyebrow}</p>}
-    <svg class="xp__x" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  </div>
-
-  <div class="xp__id">
-    {avatar
-      ? <Image class="xp__avatar" src={avatar} width={128} height={128} alt="" />
-      : <span class="xp__avatar xp__avatar--initial" aria-hidden="true">{name.charAt(0)}</span>}
-    <div class="xp__who">
-      <p class="xp__name">{name}</p>
-      <p class="xp__handle">@{handle}</p>
-    </div>
-  </div>
-
-  {Astro.slots.has('default') && <div class="xp__credit"><slot /></div>}
-  {bio && !compact && <p class="xp__bio">{bio}</p>}
-
-  {linked && <div class="xp__actions">
-    {link && !compact && (
-      <a class="xp__link" {...{ ...linkAttrs(link.href), rel: REL }}>
-        <span class="xp__link-label">{t.inProfile}</span>
-        <span class="xp__link-title">{link.label}</span>
-        {showHost ? <span class="xp__link-host">{host} ↗</span> : <span class="xp__link-host" aria-hidden="true">↗</span>}
-      </a>
+<div class:list={['xpw', `xpw--${w}`, { 'has-note': hasNote, 'has-ctx': hasCtx }, className]} {...rest}>
+  <div class="xpw__grid">
+    {hasCtx && (
+      <div class="xpw__ctx">
+        {eyebrow && <p class="xpw__eyebrow">{eyebrow}</p>}
+        {hasNote && <div class="xpw__note"><slot /></div>}
+      </div>
     )}
-    <LinkArrow href={url} rel={REL} class="xp__cta">{compact ? t.profile : t.profileOf(handle)}</LinkArrow>
-    {link && compact && <LinkArrow href={link.href} rel={REL} class="xp__cta">{link.label}</LinkArrow>}
-  </div>}
-</article>
+    <article class:list={['xp', { 'xp--compact': compact }]} aria-label={t.card(name, handle)}>
+      <svg class="xp__x" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+
+      <div class="xp__id">
+        {avatar
+          ? <Image class="xp__avatar" src={avatar} width={128} height={128} alt="" />
+          : <span class="xp__avatar xp__avatar--initial" aria-hidden="true">{name.charAt(0)}</span>}
+        <div class="xp__who">
+          <p class="xp__name">{name}</p>
+          <p class="xp__handle">@{handle}</p>
+        </div>
+      </div>
+
+      {bio && !compact && <p class="xp__bio">{bio}</p>}
+
+      {linked && <div class="xp__actions">
+        {link && !compact && (
+          <a class="xp__link" {...{ ...linkAttrs(link.href), rel: REL }}>
+            <span class="xp__link-label">{t.inProfile}</span>
+            <span class="xp__link-title">{link.label}</span>
+            {showHost ? <span class="xp__link-host">{host} ↗</span> : <span class="xp__link-host" aria-hidden="true">↗</span>}
+          </a>
+        )}
+        <LinkArrow href={url} rel={REL} class="xp__cta">{compact ? t.profile : t.profileOf(handle)}</LinkArrow>
+        {link && compact && <LinkArrow href={link.href} rel={REL} class="xp__cta">{link.label}</LinkArrow>}
+      </div>}
+    </article>
+  </div>
+</div>
 
 <style>
+  /* Opakowanie: kontekst (nasz) + karta (profil). Kontener — układ zależy od miejsca, nie od ekranu */
+  .xpw { container: xpw / inline-size; }
+  .xpw__grid { display: grid; gap: 14px; justify-items: start; }
+  .xpw--fill .xpw__grid { justify-items: stretch; }
+  .xpw--md .xp { width: 100%; max-width: 560px; }
+  .xpw--sm .xp { width: 100%; max-width: 400px; }
+
+  /* Kontekst: nasza etykieta i zdanie — kreska z lewej, jak przypis do karty, nie jak treść profilu */
+  .xpw__ctx { display: grid; gap: 6px; align-content: start; padding-left: 14px; border-left: 2px solid var(--blue); }
+  .xpw__eyebrow { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+  .xpw__note { font-size: 0.96875rem; line-height: 1.6; color: var(--prose, var(--text-strong)); }
+  .xpw__note :global(strong) { color: var(--ink); font-weight: 600; }
+  .xpw__note :global(a:not([data-footnote-ref])) { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* Obok: kontekst z lewej, karta z prawej (gdy jest zdanie kontekstu i miejsce) */
+  @container xpw (min-width: 640px) {
+    .xpw.has-note:is(.xpw--md, .xpw--sm) .xpw__grid { grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; align-items: start; }
+    .xpw.has-note:is(.xpw--md, .xpw--sm) .xp { max-width: none; }
+    .xpw.has-note .xpw__ctx { padding-top: 4px; }
+  }
+  @container xpw (min-width: 760px) {
+    .xpw.has-note.xpw--fill .xpw__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+  }
+
   .xp {
     position: relative; display: flex; flex-direction: column; gap: 20px;
     padding: 24px; background: var(--bg); border: 1px solid var(--line-2);
   }
   .xp::before { content: ""; position: absolute; top: -4px; left: -4px; width: 7px; height: 7px; background: var(--ink); }
+  .xp__x { position: absolute; top: 22px; right: 22px; fill: var(--ink); }
 
-  /* Szerokość: fill = cała szerokość rodzica; md i sm — karta przy lewej krawędzi, reszta miejsca zostaje tekstowi */
-  .xp--md { max-width: 560px; }
-  .xp--sm { max-width: 400px; }
-
-  .xp__top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-  .xp__eyebrow { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-  .xp__x { flex: none; margin-left: auto; fill: var(--ink); }
-
-  .xp__id { display: flex; align-items: center; gap: 16px; }
+  .xp__id { display: flex; align-items: center; gap: 16px; padding-right: 28px; }
   .xp__avatar { flex: none; width: 64px; height: 64px; object-fit: cover; background: var(--bg-soft); }
   .xp__avatar--initial {
     display: grid; place-items: center; background: var(--blue-fill); color: #fff;
@@ -113,8 +143,6 @@ const t = uiOf(Astro.url).xProfile;
   .xp__name { font: 400 1.5rem/1.1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
   .xp__handle { margin-top: 4px; font: 400 0.8125rem/1.3 var(--f-mono); color: var(--muted); }
 
-  .xp__credit { font-size: 0.96875rem; line-height: 1.6; color: var(--text); }
-  .xp__credit :global(strong) { color: var(--ink); font-weight: 600; }
   .xp__bio { font-size: 0.90625rem; line-height: 1.55; color: var(--text); }
 
   /* W pełnej karcie link z profilu i link do profilu to osobne pozycje kolumny */
@@ -131,21 +159,19 @@ const t = uiOf(Astro.url).xProfile;
 
   .xp__cta { align-self: flex-start; margin-top: auto; }
 
-  /* ---------- Kompakt: awatar | etykieta, nazwa, kontekst, linki ---------- */
+  /* ---------- Kompakt: awatar | nazwa, linki ---------- */
   .xp--compact {
     display: grid; grid-template-columns: 48px minmax(0, 1fr);
-    grid-template-areas: "av top" "av who" ". credit" ". actions";
+    grid-template-areas: "av who" ". actions";
     column-gap: 16px; padding: 18px 20px 20px;
   }
-  .xp--compact .xp__top { grid-area: top; }
-  .xp--compact .xp__x { width: 15px; height: 15px; }
+  .xp--compact .xp__x { top: 18px; right: 18px; width: 15px; height: 15px; }
   .xp--compact .xp__id { display: contents; }
   .xp--compact .xp__avatar { grid-area: av; width: 48px; height: 48px; align-self: start; }
   .xp--compact .xp__avatar--initial { font-size: 1.375rem; }
-  .xp--compact .xp__who { grid-area: who; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-top: 3px; }
+  .xp--compact .xp__who { grid-area: who; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-top: 3px; padding-right: 24px; }
   .xp--compact .xp__name { font-size: 1.1875rem; }
   .xp--compact .xp__handle { margin-top: 0; font-size: 0.75rem; }
-  .xp--compact .xp__credit { grid-area: credit; margin-top: 12px; font-size: 0.90625rem; line-height: 1.55; }
 
   .xp--compact .xp__actions {
     grid-area: actions; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 22px; margin-top: 14px;
@@ -154,6 +180,6 @@ const t = uiOf(Astro.url).xProfile;
   .xp--compact .xp__cta { margin-top: 0; }
 
   @media (max-width: 480px) {
-    .xp--compact { grid-template-areas: "av top" "av who" "credit credit" "actions actions"; column-gap: 14px; padding: 16px; }
+    .xp--compact { grid-template-areas: "av who" "actions actions"; column-gap: 14px; padding: 16px; }
   }
 </style>

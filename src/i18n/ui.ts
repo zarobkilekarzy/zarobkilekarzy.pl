@@ -74,6 +74,13 @@ const pl = {
     profile: 'Profil na X',
     profileOf: (handle: string) => `Profil @${handle} na X`,
   },
+  /** blocks/XPosts — karty wpisów z X */
+  xPost: {
+    list: 'Wpisy w serwisie X',
+    kinds: { article: 'Artykuł na X', video: 'Film na X', post: 'Wpis na X' },
+    open: 'Otwórz na X',
+    card: (title: string, name: string, handle: string) => `${title} — ${name} (@${handle}) w serwisie X`,
+  },
   share: { label: 'Udostępnij', copy: 'Kopiuj link', copied: 'Skopiowano ✓', failed: 'Nie udało się' },
   /** lista źródeł strony (article/SourceList) */
   sources: { title: 'Źródła', note: 'Linkujemy wyłącznie do ogólnodostępnych dokumentów i publikacji.' },
@@ -187,6 +194,12 @@ const en: Ui = {
     inProfile: 'In the profile',
     profile: 'Profile on X',
     profileOf: (handle: string) => `@${handle} on X`,
+  },
+  xPost: {
+    list: 'Posts on X',
+    kinds: { article: 'Article on X', video: 'Video on X', post: 'Post on X' },
+    open: 'Open on X',
+    card: (title: string, name: string, handle: string) => `${title} — ${name} (@${handle}) on X`,
   },
   share: { label: 'Share', copy: 'Copy link', copied: 'Copied ✓', failed: 'Could not copy' },
   sources: { title: 'Sources', note: 'We link only to publicly available documents and publications.' },

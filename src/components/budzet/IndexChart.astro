@@ -21,6 +21,13 @@
  * dostaje `caption`, dlatego kropki nie łapią fokusu.
  * Na stronach angielskich (/en/) liczby w dymkach w zapisie angielskim i „index” zamiast „indeks”;
  * pozostałe napisy (serie, podpisy, `caption`) przychodzą w propsach.
+ * `bands` — przedziały osi czasu pod liniami (np. okresy objęte kontrolą): `fill` to blade pole,
+ * `edges` to same włoskowe krawędzie (okres, w którym coś trwało), `line` — jedna wyraźna kreska
+ * w chwili zdarzenia (`from`, bez `to`), z etykietą po lewej. Etykieta mono wersalikami u góry
+ * przedziału; `row` 1–2 przesuwa ją o wiersz niżej, gdy przedziały stoją blisko. `legend` — zdanie
+ * objaśnienia pod wykresem, obok próbki pola, krawędzi albo kreski.
+ * Seria bez `end` nie ma podpisu na końcu — tak dokłada się kropki z dymkami w wybranych punktach
+ * innej serii (np. miesiąc przed i po zdarzeniu).
  */
 import type { HTMLAttributes } from 'astro/types';
 import { formatNumber, typo } from '@/lib/format';
@@ -44,11 +51,22 @@ interface Series {
   id: string;
   label: string;
   tone: 'accent' | 'data' | 'ref';
-  /** podpis wartości na końcu linii, np. „×3,1” */
-  end: string;
+  /** podpis wartości na końcu linii, np. „×3,1”; bez niego seria nie ma podpisu */
+  end?: string;
   labelShift?: number;
   markers?: boolean;
   points: Point[];
+}
+
+interface Band {
+  from: number;
+  /** koniec przedziału; przy `line` bez znaczenia */
+  to?: number;
+  label: string;
+  kind?: 'fill' | 'edges' | 'line';
+  row?: 0 | 1 | 2;
+  /** objaśnienie pod wykresem */
+  legend?: string;
 }
 
 interface Props extends HTMLAttributes<'div'> {
@@ -68,9 +86,11 @@ interface Props extends HTMLAttributes<'div'> {
   caption: string;
   /** rysowanie linii po przewinięciu do wykresu */
   animate?: boolean;
+  /** przedziały osi czasu pod liniami — zob. opis wyżej */
+  bands?: Band[];
 }
 
-const { xMin, xMax, yMin, yMax, ticks, years, series, base, unit, caption, animate = false, class: className, ...rest } = Astro.props;
+const { xMin, xMax, yMin, yMax, ticks, years, series, base, unit, caption, animate = false, bands = [], class: className, ...rest } = Astro.props;
 
 const top = Math.max(...ticks);
 const isBase = (t: number) => base !== undefined && t === 100;
@@ -115,6 +135,14 @@ function paths(points: Point[]) {
       </span>
     ))}
     <div class="ix__area">
+      {bands.map((b) => (
+        <span
+          class:list={['ix__band', `ix__band--${b.kind ?? 'fill'}`]}
+          style={`left: ${pct(b.from, xMin, xMax)}%; width: ${b.kind === 'line' ? 0 : ((((b.to ?? b.from) - b.from) / (xMax - xMin)) * 100).toFixed(3)}%; --row: ${b.row ?? 0}`}
+        >
+          <span class="ix__band-label">{typo(b.label)}</span>
+        </span>
+      ))}
       <svg class="ix__svg" viewBox="0 0 1000 1000" preserveAspectRatio="none" focusable="false">
         {series.map((s) => {
           const { runs, gaps } = paths(s.points);
@@ -139,12 +167,12 @@ function paths(points: Point[]) {
           </span>
         )),
       )}
-      {series.map((s) => {
+      {series.filter((s) => s.end).map((s) => {
         const last = s.points.at(-1)!;
         return (
           <p class={`ix__end ix__end--${s.tone}`} style={`bottom: ${pct(last.v, yMin, yMax)}%; --shift: ${s.labelShift ?? 0}`}>
             <span class="ix__name">{typo(s.label)}</span>
-            <span class="ix__val">{typo(s.end)}</span>
+            <span class="ix__val">{typo(s.end!)}</span>
           </p>
         );
       })}
@@ -153,6 +181,13 @@ function paths(points: Point[]) {
   <div class="ix__years" aria-hidden="true">
     {years.map((y) => <span style={`left: ${pct(y, xMin, xMax)}%; width: ${(100 / (xMax - xMin)).toFixed(3)}%`}>{y}</span>)}
   </div>
+  {bands.some((b) => b.legend) && (
+    <ul class="ix__key">
+      {bands.filter((b) => b.legend).map((b) => (
+        <li><span class:list={['ix__swatch', `ix__swatch--${b.kind ?? 'fill'}`]} aria-hidden="true" />{typo(b.legend!)}</li>
+      ))}
+    </ul>
+  )}
   <p class="sr-only">{caption}</p>
 </div>
 
@@ -216,6 +251,19 @@ function paths(points: Point[]) {
 
   .ix__area { position: absolute; inset: 0 var(--reserve) 0 0; }
   .ix__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+  /* Przedział osi czasu: blade pole albo włoskowe krawędzie, etykieta u góry od lewej krawędzi */
+  .ix__band { position: absolute; top: 0; bottom: 0; }
+  .ix__band--fill { background: color-mix(in srgb, var(--chart-soft) 60%, transparent); }
+  .ix__band--edges { border-inline: 1px solid color-mix(in srgb, var(--ink) 45%, transparent); }
+  .ix__band--line { border-left: 2px solid var(--ink); translate: -1px 0; }
+  /* etykieta zdarzenia po lewej stronie kreski — po prawej często nie ma już miejsca */
+  .ix__band--line .ix__band-label { left: auto; right: 6px; }
+  .ix__band-label {
+    position: absolute; left: 4px; top: calc(4px + var(--row) * 14px);
+    font: 500 0.59375rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink); white-space: nowrap;
+  }
   .ix__line polyline, .ix__line line { fill: none; stroke-linejoin: round; stroke-linecap: round; }
   .ix__line--data :is(polyline, line) { stroke: var(--chart); stroke-width: 2.5px; }
   .ix__line--ref :is(polyline, line) { stroke: var(--muted); stroke-width: 1.5px; stroke-dasharray: 5 4; }
@@ -271,6 +319,14 @@ function paths(points: Point[]) {
     font: 400 0.6875rem/1 var(--f-mono); color: var(--muted);
   }
   .ix__years span::before { content: ""; position: absolute; top: 0; left: 0; width: 1px; height: 6px; background: var(--line-2); }
+
+  /* Objaśnienia przedziałów pod wykresem: próbka (pole, krawędzie, kreska) i zdanie */
+  .ix__key { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+  .ix__key li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; font: 400 0.8125rem/1.45 var(--f-body); color: var(--text); }
+  .ix__swatch { display: block; width: 22px; height: 14px; margin-top: 2px; }
+  .ix__swatch--fill { background: color-mix(in srgb, var(--chart-soft) 60%, transparent); }
+  .ix__swatch--edges { border-inline: 1px solid color-mix(in srgb, var(--ink) 45%, transparent); }
+  .ix__swatch--line { width: 2px; margin-left: 10px; background: var(--ink); }
 
   /* Rysowanie: obszar wykresu odsłania się od lewej (linie, kropki), margines z podpisami na końcu.
      Ujemne wcięcia, żeby kropki i grube linie na brzegach nie były przycięte. */

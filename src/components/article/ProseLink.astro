@@ -1,9 +1,160 @@
 ---
-/** Link w treści MDX (mapowany na `<a>`) — zewnętrzne otwierają się w nowej karcie, jak w reszcie serwisu. */
+/**
+ * Link w treści MDX (mapowany na `<a>`) — zewnętrzne otwierają się w nowej karcie, jak w reszcie serwisu.
+ *
+ * Link do strony serwisu dostaje `data-internal` (wygląd „zakreślenia” w article/Prose), a gdy strona ma
+ * zapowiedź z frontmattera (lib/previews) — `data-peek` z danymi do dymka: dział, tytuł, liczba i opis.
+ * Dymek pojawia się po najechaniu kursorem albo fokusie z klawiatury; dotyk od razu otwiera stronę.
+ * Kotwica na tej samej stronie i plik do pobrania (PDF, CSV) zostają zwykłymi linkami.
+ */
 import type { HTMLAttributes } from 'astro/types';
 import { linkAttrs } from '@/lib/links';
+import { previewOf } from '@/lib/previews';
+import { localeOf } from '@/i18n/locales';
 
 type Props = HTMLAttributes<'a'>;
 const { href, ...rest } = Astro.props;
+const url = String(href ?? '');
+const internal = /^\/(?!\/)/.test(url) && !/\.\w+$/.test(url.split(/[?#]/)[0]);
+const preview = internal ? await previewOf(url, localeOf(Astro.url.pathname)) : undefined;
 ---
-<a {...rest} {...linkAttrs(String(href ?? ''))}><slot /></a>
+<a {...rest} {...linkAttrs(url)} data-internal={internal ? '' : undefined} data-peek={preview && JSON.stringify(preview)}><slot /></a>
+
+<script>
+  import type { Preview } from '@/lib/previews';
+
+  const OPEN_DELAY = 300;
+  const CLOSE_DELAY = 100;
+  /** odstęp dymka od wiersza i od krawędzi okna */
+  const GAP = 10;
+  const EDGE = 16;
+
+  const canHover = matchMedia('(hover: hover) and (pointer: fine)');
+  let card: HTMLElement | undefined;
+  let current: HTMLAnchorElement | undefined;
+  let openTimer: number | undefined;
+  let closeTimer: number | undefined;
+
+  function el(tag: string, className: string, text = '') {
+    const node = document.createElement(tag);
+    node.className = className;
+    node.textContent = text;
+    return node;
+  }
+
+  /** Jeden dymek na stronę, budowany przy pierwszym użyciu; treść wyłącznie przez textContent */
+  function fill(data: Preview): HTMLElement {
+    if (!card) {
+      card = Object.assign(document.createElement('div'), { id: 'link-peek', className: 'link-peek', hidden: true });
+      card.setAttribute('role', 'tooltip');
+    }
+    const title = el('span', 'link-peek__title', data.title);
+    if (!/[.?!…]$/.test(data.title)) title.append(el('span', 'dot', '.'));
+    const parts: HTMLElement[] = [el('span', 'link-peek__label mono-label', data.label), title];
+    if (data.stat) {
+      const stat = el('span', 'link-peek__stat');
+      stat.append(el('span', 'link-peek__num', data.stat.value), el('span', 'link-peek__unit', data.stat.unit));
+      parts.push(stat);
+    }
+    parts.push(el('span', 'link-peek__sum', data.summary));
+    card.replaceChildren(...parts);
+    card.classList.toggle('link-peek--no-stat', !data.stat);
+    if (!card.isConnected) document.body.append(card);
+    return card;
+  }
+
+  /** Link łamany na kilka wierszy: dymek staje przy wierszu, w którym jest kursor (przy fokusie — przy pierwszym) */
+  function place(link: HTMLAnchorElement, panel: HTMLElement, y?: number) {
+    const rects = [...link.getClientRects()];
+    const mid = (r: DOMRect) => (r.top + r.bottom) / 2;
+    const rect = y === undefined ? rects[0] : rects.reduce((a, r) => (Math.abs(mid(r) - y) < Math.abs(mid(a) - y) ? r : a));
+    const top = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 0) + EDGE;
+    const { offsetWidth: w, offsetHeight: h } = panel;
+    const above = rect.top - h - GAP >= top;
+    panel.dataset.side = above ? 'top' : 'bottom';
+    panel.style.left = `${Math.max(EDGE, Math.min(rect.left, innerWidth - w - EDGE))}px`;
+    panel.style.top = `${above ? rect.top - h - GAP : rect.bottom + GAP}px`;
+  }
+
+  function show(link: HTMLAnchorElement, y?: number) {
+    clearTimeout(closeTimer);
+    if (current === link) return;
+    hide();
+    current = link;
+    const panel = fill(JSON.parse(link.dataset.peek!) as Preview);
+    panel.hidden = false;
+    link.setAttribute('aria-describedby', panel.id);
+    place(link, panel, y);
+  }
+
+  function hide() {
+    clearTimeout(openTimer);
+    if (!current) return;
+    current.removeAttribute('aria-describedby');
+    current = undefined;
+    if (card) card.hidden = true;
+  }
+
+  document.querySelectorAll<HTMLAnchorElement>('.prose a[data-peek]').forEach((link) => {
+    if (link.closest('.footnotes')) return;
+    link.addEventListener('pointerenter', (e) => {
+      if (!canHover.matches || e.pointerType !== 'mouse') return;
+      clearTimeout(openTimer);
+      clearTimeout(closeTimer);
+      // z jednego linku na drugi — bez ponownego czekania
+      openTimer = window.setTimeout(() => show(link, e.clientY), current ? 0 : OPEN_DELAY);
+    });
+    link.addEventListener('pointerleave', () => {
+      clearTimeout(openTimer);
+      closeTimer = window.setTimeout(hide, CLOSE_DELAY);
+    });
+    link.addEventListener('pointerdown', hide);
+    link.addEventListener('focus', () => { if (link.matches(':focus-visible')) show(link); });
+    link.addEventListener('blur', hide);
+  });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
+  addEventListener('scroll', hide, { passive: true });
+  addEventListener('resize', hide);
+</script>
+
+<style is:global>
+  /* Dymek z zapowiedzią (budowany w skrypcie wyżej, poza komponentem — stąd styl globalny).
+     Wygląd jak ui/Popover: w dzień jasna powierzchnia z ramką i cieniem, w nocy granat uniesiony nad tło. */
+  .link-peek {
+    position: fixed; z-index: 30; /* pod przyklejonym nagłówkiem (40) */
+    width: min(20rem, calc(100vw - 32px)); padding: 16px 18px;
+    background: light-dark(var(--surface), var(--inverse-2));
+    color: var(--text);
+    font: 400 0.84375rem/1.55 var(--f-body);
+    box-shadow:
+      inset 0 0 0 1px light-dark(var(--line-2), transparent),
+      0 20px 40px -16px light-dark(rgba(4, 11, 27, .18), rgba(4, 11, 27, .5)),
+      0 2px 6px light-dark(rgba(4, 11, 27, .06), transparent);
+    pointer-events: none;
+  }
+  .link-peek[hidden] { display: none; }
+  /* w nocy --muted ma na granacie dymka za mały kontrast — etykieta w --text */
+  .link-peek__label { display: block; color: light-dark(var(--muted), var(--text)); }
+  .link-peek__title { display: block; margin-top: 8px; font: 500 1.1875rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .link-peek__stat {
+    display: flex; align-items: baseline; gap: 10px; margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid light-dark(var(--line), rgba(255, 255, 255, .12)); /* kolor-stały: w nocy linia na granatowym dymku */
+  }
+  .link-peek__num { flex: none; font: 300 1.75rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--blue); }
+  .link-peek__unit { font-size: 0.8125rem; line-height: 1.35; }
+  .link-peek__sum {
+    display: -webkit-box; margin-top: 10px; overflow: hidden;
+    -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3;
+  }
+  /* bez liczby jest miejsce na dłuższy opis */
+  .link-peek--no-stat .link-peek__sum { -webkit-line-clamp: 5; line-clamp: 5; }
+  @media (prefers-reduced-motion: no-preference) {
+    .link-peek:not([hidden]) { animation: link-peek-in .14s var(--ease); }
+    .link-peek[data-side="bottom"]:not([hidden]) { animation-name: link-peek-in-down; }
+    @keyframes link-peek-in { from { opacity: 0; translate: 0 4px; } }
+    @keyframes link-peek-in-down { from { opacity: 0; translate: 0 -4px; } }
+  }
+  @media (forced-colors: active) {
+    .link-peek { border: 1px solid CanvasText; }
+  }
+</style>

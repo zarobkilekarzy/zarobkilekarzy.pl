@@ -50,6 +50,23 @@ const { class: className, ...rest } = Astro.props;
      a przypisy (numer w tekście i lista) — swój, ze styles/footnotes.css */
   .prose :global(a:not([class], [data-footnote-ref], .footnotes a)) { color: var(--blue); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
   .prose :global(a:not([class], [data-footnote-ref], .footnotes a):hover) { text-decoration-thickness: 2px; }
+  /* Link do strony serwisu (ProseLink: data-internal) — „zakreślony”: pas bladego kobaltu pod dolną częścią
+     wiersza i kobaltowa linia; po najechaniu i przy otwartym dymku z zapowiedzią (data-peek) pas wypełnia wiersz */
+  .prose :global(a[data-internal]:not(.footnotes a)) {
+    color: var(--ink); font-weight: 500; text-decoration: none;
+    padding: 0 .1em; margin: 0 -.1em;
+    background: linear-gradient(var(--blue-100), var(--blue-100)) 0 100% / 100% .45em no-repeat;
+    box-shadow: inset 0 -1.5px var(--blue);
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  }
+  .prose :global(a[data-internal]:not(.footnotes a):is(:hover, :focus-visible, [aria-describedby])) { background-size: 100% 100%; }
+  @media (prefers-reduced-motion: no-preference) {
+    .prose :global(a[data-internal]:not(.footnotes a)) { transition: background-size .25s var(--ease); }
+  }
+  /* Tryb wysokiego kontrastu i wydruk gubią tło i cień — zostaje zwykłe podkreślenie */
+  @media print, (forced-colors: active) {
+    .prose :global(a[data-internal]:not(.footnotes a)) { text-decoration: underline; text-underline-offset: 3px; }
+  }
 
   .prose > :global(blockquote) {
     padding-left: 24px; border-left: 2px solid var(--blue);

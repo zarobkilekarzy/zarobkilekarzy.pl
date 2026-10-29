@@ -2,15 +2,16 @@
  * Zapowiedzi tekstów do dymka przy linku w treści (article/ProseLink): adres strony → dział, tytuł, liczba, opis.
  * Wszystko z frontmattera, nic do pisania ręcznie. Po polsku — z `articles`, także z wpisów bez treści, które
  * wskazują stronę narzędzia przez `href`. Po angielsku — z tłumaczeń, bez liczby, bo `stat` jest zapisany po polsku.
- * Strona spoza kolekcji (np. /postulat/) zapowiedzi nie ma — link jest tylko zakreślony.
+ * Dział podpisany jak w nagłówku artykułu (sectionOf / SECTIONS_EN). Strona spoza kolekcji (np. /postulat/)
+ * zapowiedzi nie ma — link jest tylko zakreślony.
  */
-import { articleHref, getAllArticles } from '@/lib/content';
+import { articleHref, getAllArticles, isPublished, sectionOf } from '@/lib/content';
 import { typo } from '@/lib/format';
 import { SECTIONS_EN, enHref, getTranslations } from '@/i18n/translations';
 import type { Locale } from '@/i18n/locales';
 
 export interface Preview {
-  /** dział: „Analiza”, „Dane”… */
+  /** dział: „Analizy”, „Dane”… */
   label: string;
   title: string;
   stat?: { value: string; unit: string };
@@ -18,7 +19,7 @@ export interface Preview {
 }
 
 /** Adres bez kotwicy i parametrów, zawsze z końcowym „/” — jak `articleHref()` */
-const pathOf = (href: string) => href.split(/[?#]/)[0].replace(/\/?$/, '/');
+export const pathOf = (href: string) => href.split(/[?#]/)[0].replace(/\/?$/, '/');
 
 async function load(locale: Locale): Promise<Map<string, Preview>> {
   if (locale === 'en') {
@@ -27,18 +28,22 @@ async function load(locale: Locale): Promise<Map<string, Preview>> {
       .filter(({ article }) => !article.data.noindex)
       .map((t) => [enHref(t), { label: SECTIONS_EN[t.source.data.category].label, title: t.article.data.title, summary: t.article.data.summary }]));
   }
-  const articles = await getAllArticles();
-  return new Map(articles.flatMap((article): [string, Preview][] => {
+  const map = new Map<string, Preview>();
+  // Najpierw artykuły z treścią: wpis-odnośnik do tej samej strony nie nadpisuje jej zapowiedzi
+  const articles = [...(await getAllArticles())].sort((a, b) => Number(isPublished(b)) - Number(isPublished(a)));
+  for (const article of articles) {
     const href = articleHref(article);
-    if (!href.startsWith('/')) return [];
-    const { category, title, stat, summary } = article.data;
-    return [[pathOf(href), {
-      label: category,
+    // `href` z kotwicą (sekcja innej strony) opisywałby całą stronę pod tym adresem — bez zapowiedzi
+    if (!href.startsWith('/') || href.includes('#') || map.has(pathOf(href))) continue;
+    const { title, stat, summary } = article.data;
+    map.set(pathOf(href), {
+      label: sectionOf(article).label,
       title: typo(title),
       stat: stat && { value: typo(stat.value), unit: typo(stat.unit) },
       summary: typo(summary),
-    }]];
-  }));
+    });
+  }
+  return map;
 }
 
 const cache = new Map<Locale, Promise<Map<string, Preview>>>();

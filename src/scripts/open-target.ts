@@ -3,9 +3,11 @@
  * powrót z przypisu — zwiniętą odpowiedź w FAQ, `#zrodla` — listę źródeł (SourceList).
  * Rozwija też wszystkie zwinięte <details> wyżej, gdy cel leży głębiej.
  */
+import { hashId } from '@/scripts/anchors';
+
 const openTarget = (hash: string) => {
   if (!hash) return;
-  let node = document.getElementById(decodeURIComponent(hash.slice(1)))?.closest('details');
+  let node = document.getElementById(hashId(hash))?.closest('details');
   while (node) {
     node.open = true;
     node = node.parentElement?.closest('details');

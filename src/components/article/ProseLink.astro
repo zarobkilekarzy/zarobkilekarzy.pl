@@ -2,23 +2,27 @@
 /**
  * Link w treści MDX (mapowany na `<a>`) — zewnętrzne otwierają się w nowej karcie, jak w reszcie serwisu.
  *
- * Link do strony serwisu dostaje `data-internal` (wygląd „zakreślenia” w article/Prose), a gdy strona ma
- * zapowiedź z frontmattera (lib/previews) — `data-peek` z danymi do dymka: dział, tytuł, liczba i opis.
+ * Link do innej strony serwisu dostaje `data-internal` (wygląd „zakreślenia” w article/Prose), a gdy strona ma
+ * zapowiedź z frontmattera (lib/previews) — dymek z działem, tytułem, liczbą i opisem. Dane dymka (`data-peek`)
+ * stoją tylko przy pierwszym linku do danego adresu na stronie; kolejne biorą je stamtąd.
  * Dymek pojawia się po najechaniu kursorem albo fokusie z klawiatury; dotyk od razu otwiera stronę.
- * Kotwica na tej samej stronie i plik do pobrania (PDF, CSV) zostają zwykłymi linkami.
+ * Kotwica na tej samej stronie (także zapisana pełnym adresem) i plik do pobrania (PDF, CSV) zostają zwykłymi linkami.
  */
 import type { HTMLAttributes } from 'astro/types';
 import { linkAttrs } from '@/lib/links';
-import { previewOf } from '@/lib/previews';
+import { pathOf, previewOf } from '@/lib/previews';
 import { localeOf } from '@/i18n/locales';
 
 type Props = HTMLAttributes<'a'>;
 const { href, ...rest } = Astro.props;
 const url = String(href ?? '');
-const internal = /^\/(?!\/)/.test(url) && !/\.\w+$/.test(url.split(/[?#]/)[0]);
+const internal = /^\/(?!\/)/.test(url) && !/\.\w+$/.test(url.split(/[?#]/)[0]) && pathOf(url) !== pathOf(Astro.url.pathname);
 const preview = internal ? await previewOf(url, localeOf(Astro.url.pathname)) : undefined;
+const peeked = (Astro.locals.peeked ??= new Set());
+const first = preview && !peeked.has(pathOf(url));
+if (first) peeked.add(pathOf(url));
 ---
-<a {...rest} {...linkAttrs(url)} data-internal={internal ? '' : undefined} data-peek={preview && JSON.stringify(preview)}><slot /></a>
+<a {...rest} {...linkAttrs(url)} data-internal={internal ? '' : undefined} data-peek={first ? JSON.stringify(preview) : undefined}><slot /></a>
 
 <script>
   import type { Preview } from '@/lib/previews';
@@ -30,8 +34,13 @@ const preview = internal ? await previewOf(url, localeOf(Astro.url.pathname)) : 
   const EDGE = 16;
 
   const canHover = matchMedia('(hover: hover) and (pointer: fine)');
+  /** adres → zapowiedź (dane stoją przy pierwszym linku do adresu) */
+  const byPath = new Map<string, Preview>();
+  const pathOf = (a: HTMLAnchorElement) => a.pathname.replace(/\/?$/, '/');
   let card: HTMLElement | undefined;
   let current: HTMLAnchorElement | undefined;
+  /** wysokość kursora w oknie przy otwarciu (przy fokusie z klawiatury — brak) */
+  let currentY: number | undefined;
   let openTimer: number | undefined;
   let closeTimer: number | undefined;
 
@@ -72,7 +81,8 @@ const preview = internal ? await previewOf(url, localeOf(Astro.url.pathname)) : 
     const { offsetWidth: w, offsetHeight: h } = panel;
     const above = rect.top - h - GAP >= top;
     panel.dataset.side = above ? 'top' : 'bottom';
-    panel.style.left = `${Math.max(EDGE, Math.min(rect.left, innerWidth - w - EDGE))}px`;
+    // clientWidth, nie innerWidth: bez paska przewijania, gdy system go pokazuje na stałe
+    panel.style.left = `${Math.max(EDGE, Math.min(rect.left, document.documentElement.clientWidth - w - EDGE))}px`;
     panel.style.top = `${above ? rect.top - h - GAP : rect.bottom + GAP}px`;
   }
 
@@ -81,9 +91,10 @@ const preview = internal ? await previewOf(url, localeOf(Astro.url.pathname)) : 
     if (current === link) return;
     hide();
     current = link;
-    const panel = fill(JSON.parse(link.dataset.peek!) as Preview);
+    const panel = fill(byPath.get(pathOf(link))!);
     panel.hidden = false;
     link.setAttribute('aria-describedby', panel.id);
+    currentY = y;
     place(link, panel, y);
   }
 
@@ -95,8 +106,16 @@ const preview = internal ? await previewOf(url, localeOf(Astro.url.pathname)) : 
     if (card) card.hidden = true;
   }
 
-  document.querySelectorAll<HTMLAnchorElement>('.prose a[data-peek]').forEach((link) => {
-    if (link.closest('.footnotes')) return;
+  /** Po zjechaniu kursorem dymek wraca do linku z fokusem z klawiatury, jeśli taki jest — inaczej znika */
+  function leave() {
+    const focused = document.activeElement;
+    if (focused instanceof HTMLAnchorElement && byPath.has(pathOf(focused)) && focused.matches('.prose a[data-internal]:focus-visible')) show(focused);
+    else hide();
+  }
+
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.prose a[data-internal]')].filter((a) => !a.closest('.footnotes'));
+  links.forEach((a) => { if (a.dataset.peek) byPath.set(pathOf(a), JSON.parse(a.dataset.peek) as Preview); });
+  links.filter((a) => byPath.has(pathOf(a))).forEach((link) => {
     link.addEventListener('pointerenter', (e) => {
       if (!canHover.matches || e.pointerType !== 'mouse') return;
       clearTimeout(openTimer);
@@ -106,30 +125,36 @@ const preview = internal ? await previewOf(url, localeOf(Astro.url.pathname)) : 
     });
     link.addEventListener('pointerleave', () => {
       clearTimeout(openTimer);
-      closeTimer = window.setTimeout(hide, CLOSE_DELAY);
+      closeTimer = window.setTimeout(leave, CLOSE_DELAY);
     });
     link.addEventListener('pointerdown', hide);
     link.addEventListener('focus', () => { if (link.matches(':focus-visible')) show(link); });
     link.addEventListener('blur', hide);
   });
   addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
-  addEventListener('scroll', hide, { passive: true });
-  addEventListener('resize', hide);
+  // Przewinięcie (także płynne, które robi Tab na linku poza ekranem): dymek idzie za linkiem; gdy link jest
+  // poza ekranem albo pod nagłówkiem, dymek czeka ukryty i wraca, kiedy link się pojawi
+  const follow = () => {
+    if (!current || !card) return;
+    const r = current.getBoundingClientRect();
+    const header = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 0;
+    card.hidden = r.bottom < header || r.top > innerHeight;
+    if (!card.hidden) place(current, card, currentY);
+  };
+  addEventListener('scroll', follow, { passive: true });
+  addEventListener('resize', follow);
 </script>
 
 <style is:global>
   /* Dymek z zapowiedzią (budowany w skrypcie wyżej, poza komponentem — stąd styl globalny).
-     Wygląd jak ui/Popover: w dzień jasna powierzchnia z ramką i cieniem, w nocy granat uniesiony nad tło. */
+     Tło i cień wspólne z ui/Popover (--float-bg, --shadow-float w tokens.css). */
   .link-peek {
     position: fixed; z-index: 30; /* pod przyklejonym nagłówkiem (40) */
     width: min(20rem, calc(100vw - 32px)); padding: 16px 18px;
-    background: light-dark(var(--surface), var(--inverse-2));
+    background: var(--float-bg);
     color: var(--text);
     font: 400 0.84375rem/1.55 var(--f-body);
-    box-shadow:
-      inset 0 0 0 1px light-dark(var(--line-2), transparent),
-      0 20px 40px -16px light-dark(rgba(4, 11, 27, .18), rgba(4, 11, 27, .5)),
-      0 2px 6px light-dark(rgba(4, 11, 27, .06), transparent);
+    box-shadow: var(--shadow-float);
     pointer-events: none;
   }
   .link-peek[hidden] { display: none; }

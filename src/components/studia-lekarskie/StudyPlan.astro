@@ -50,7 +50,7 @@ const info = (y: string, x: PlanSubject) => `${x.name} — ${T.year(y)} · ${x.h
 const hint = T.hint;
 ---
 <figure class="sp" data-show="all">
-  <div class="sp__switch" role="group" aria-label={T.show} hidden>
+  <div class="sp__switch" role="group" aria-label={T.show}>
     <button type="button" class="sp__opt" data-show="all" aria-pressed="true">{T.all}</button>
     <button type="button" class="sp__opt" data-show="ex" aria-pressed="false">{T.onlyExams}</button>
   </div>
@@ -79,7 +79,7 @@ const hint = T.hint;
   <div class="sp__legend" aria-hidden="true">
     <span><i class="is-ex"></i>{T.legend[0]}</span><span><i></i>{T.legend[1]}</span><span><i class="is-pr"></i>{T.legend[2]}</span>
   </div>
-  <p class="sp__info" aria-live="polite" hidden>{hint}</p>
+  <p class="sp__info" aria-live="polite">{hint}</p>
   <figcaption class="sr-only">
     {T.caption(fmt(PLAN_TOTAL.hours), PLAN_TOTAL.exams)}
     {WUM_PLAN.map((y) => T.captionYear(y.year, y.hours, y.subjects.map((x) => T.captionSubject(x, T.form[x.form])).join('; ')))}
@@ -92,8 +92,7 @@ const hint = T.hint;
     const hint = info.textContent ?? '';
     const segs = [...sp.querySelectorAll<HTMLButtonElement>('.sp__s')];
     const opts = [...sp.querySelectorAll<HTMLButtonElement>('.sp__opt')];
-    sp.querySelector<HTMLElement>('.sp__switch')!.hidden = false;
-    info.hidden = false;
+    sp.dataset.ready = '';
 
     // Podpis zostaje, gdy najdłuższe słowo mieści się w całości albo po jednym podziale (hyphens: auto)
     const ctx = document.createElement('canvas').getContext('2d')!;
@@ -129,8 +128,11 @@ const hint = T.hint;
 
 <style>
   .sp { container-type: inline-size; margin: 0; }
+  /* Przełącznik i podpowiedź działają tylko ze skryptem. Miejsce na nie jest zajęte od początku, żeby treść
+     nie przesuwała się w dół, gdy skrypt je pokaże (data-ready); bez JS ich nie ma. */
+  .sp:not([data-ready]) :is(.sp__switch, .sp__info) { visibility: hidden; }
+  @media (scripting: none) { .sp :is(.sp__switch, .sp__info) { display: none; } }
   .sp__switch { display: inline-flex; margin: 0 0 16px; border: 1px solid var(--line-2); font: 400 0.75rem/1.55 var(--f-mono); }
-  .sp__switch[hidden] { display: none; }
   .sp__opt { padding: 6px 12px; border: 0; background: none; font: inherit; color: var(--text-strong); cursor: pointer; transition: color .2s, background-color .2s; }
   .sp__opt + .sp__opt { border-left: 1px solid var(--line-2); }
   .sp__opt:hover { color: var(--blue); }
@@ -164,7 +166,6 @@ const hint = T.hint;
   .sp__legend i.is-ex { background: var(--blue-fill); }
   .sp__legend i.is-pr { background: repeating-linear-gradient(135deg, var(--chart-soft) 0 3px, transparent 3px 5px); box-shadow: inset 0 0 0 1px var(--chart-soft); }
   .sp__info { min-height: 2.9em; margin: 10px 0 0; font-size: 0.875rem; line-height: 1.45; color: var(--text-strong); }
-  .sp__info[hidden] { display: none; }
 
   @container (max-width: 560px) {
     .sp__yr { grid-template-columns: 52px minmax(0, 1fr); gap: 10px; }

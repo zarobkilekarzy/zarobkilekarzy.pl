@@ -40,3 +40,13 @@ export function anchorBefore(node: Node): string | null {
 /** Pełny adres strony z kotwicą (i opcjonalnie dyrektywą fragmentu tekstu #…:~:text=…). */
 export const pageUrl = (anchor: string | null, directive = '') =>
   `${location.origin}${location.pathname}${location.search}${anchor || directive ? `#${anchor ?? ''}${directive}` : ''}`;
+
+/** Id z kotwicy adresu („#sekcja” → „sekcja”) bez wyjątku przy błędnym kodowaniu, np. ręcznie wpisanego „#50%”. */
+export function hashId(hash = location.hash): string {
+  const raw = hash.slice(1);
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}

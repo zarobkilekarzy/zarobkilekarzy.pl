@@ -698,8 +698,9 @@ const studiaLekarskie: InfographicSet = {
   route: '/analizy/studia-lekarskie/',
   page: 'Analiza: Studia lekarskie: od matury do LEK',
   filePrefix: 'zarobkilekarzy-studia-lekarskie',
-  // porównanie zdawalności LEK z innymi egzaminami — ten sam wykres jest w sekcji o LEK
-  also: ['egzamin'],
+  // porównanie zdawalności LEK z innymi egzaminami — ten sam wykres jest w sekcji o LEK;
+  // z analizy o odsiewie: lejek od studiów do NFZ (sekcja o stażu) i zdawalność PES (sekcja o specjalizacji)
+  also: ['egzamin', 'odsiew-na-medycynie'],
   items: [
     {
       id: 'kolejka-i-prog',

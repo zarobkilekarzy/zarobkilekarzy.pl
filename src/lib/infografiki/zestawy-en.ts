@@ -616,6 +616,8 @@ const studiaLekarskie: InfographicSet = {
   page: 'Analysis: Medical studies in Poland',
   filePrefix: 'zarobkilekarzy-en',
   locale: 'en',
+  // jak w wersji polskiej: z analizy o odsiewie lejek od studiów do NFZ i zdawalność PES (zestawu „egzamin” po angielsku nie ma)
+  also: ['odsiew-na-medycynie'],
   items: [
     {
       id: 'queue-and-threshold',

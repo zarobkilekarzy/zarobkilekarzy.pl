@@ -69,10 +69,13 @@ const pl = {
     changelogLatest: 'ostatnia zmiana',
     /** etykieta wpisu-sprostowania (poprawka błędu) */
     correction: 'Sprostowanie',
-    /** podpis w nagłówku artykułu: kto opracował tekst i jak (link do opisu pracy redakcji) */
+    /** podpis w nagłówku artykułu (link do opisu pracy redakcji); bez „AI” obok „Przypisy … ze źródłami” — AI nie jest źródłem */
     byline: 'Opracowanie',
-    bylineText: 'Redakcja, z pomocą AI',
+    bylineText: 'Redakcja',
     bylineHref: '/o-projekcie/#jak-powstaja-teksty',
+    /** nota pod treścią: najpierw źródła, potem rola narzędzi AI, na końcu odpowiedzialność redakcji */
+    madeTitle: 'Jak powstał ten tekst.',
+    madeText: 'Źródła to publiczne dokumenty, dane i akty prawne — każde z linkiem w przypisach. Narzędzia AI pomagają je opracować: uporządkować, policzyć i zredagować tekst. O tezach decyduje redakcja, która zatwierdza każdą publikację.',
     updatedOn: (date: string) => `aktualizacja ${date}`,
   },
   /** karta profilu w serwisie X (blocks/XProfile) */
@@ -198,8 +201,10 @@ const en: Ui = {
     changelogLatest: 'latest change',
     correction: 'Correction',
     byline: 'Written by',
-    bylineText: 'Editors, AI-assisted',
+    bylineText: 'Editors',
     bylineHref: '/en/about/#how-we-work',
+    madeTitle: 'How this text was made.',
+    madeText: 'The sources are public documents, data and legal acts — each linked in the notes. AI tools help process them: organise, calculate and edit the text. The editors decide on the arguments and approve every publication.',
     updatedOn: (date: string) => `updated ${date}`,
   },
   xProfile: {

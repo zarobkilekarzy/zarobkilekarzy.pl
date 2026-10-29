@@ -24,7 +24,7 @@ export const legalPages = {
     docTitle: 'O projekcie: cel, zasady, sprostowania',
     lead: 'Obywatelski serwis o tym, jak płynie publiczny pieniądz w ochronie zdrowia — od składki po wynagrodzenia. Krytykujemy mechanizmy, nie zawód.',
     description: 'Po co powstał zarobkilekarzy.pl, jak powstają teksty, skąd są pieniądze, na jakich zasadach dobieramy źródła i jak zgłosić błąd.',
-    updated: '28.10.2026',
+    updated: '29.10.2026',
   },
 };
 

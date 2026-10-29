@@ -14,6 +14,7 @@
 import { CELL, SHAPES } from '@/lib/siatka';
 import { typo } from '@/lib/format';
 import { uid } from '@/lib/uid';
+import { localeOf } from '@/i18n/locales';
 
 interface Props {
   /** pierwszy i ostatni rok (wiersze) */
@@ -33,7 +34,10 @@ interface Props {
 }
 
 const { years, from, to, marked, breaks = [], after, legend, label } = Astro.props;
-const MONTHS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+// oś miesięcy: po polsku liczby rzymskie, po angielsku skróty nazw
+const MONTHS = localeOf(Astro.url.pathname) === 'en'
+  ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  : ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 const P = 24, LEFT = 44, TOP = 20;
 const rows = Array.from({ length: years[1] - years[0] + 1 }, (_, i) => years[0] + i);
 const width = LEFT + 12 * P, height = TOP + rows.length * P;

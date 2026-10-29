@@ -115,6 +115,78 @@ export function columnChart(cols: Column[], width: number, height: number, max =
   return s;
 }
 
+/* ---------- Siatka miesięcy pod lupą: układ jak blocks/MonthGrid ---------- */
+
+export type MonthCell = 'on' | 'rest' | 'after';
+
+export interface MonthGridData {
+  /** pierwszy i ostatni rok (wiersze) */
+  years: [number, number];
+  /** zakres liczonych miesięcy (RRRR-MM) — poza nim plusy */
+  from: string;
+  to: string;
+  /** zaznaczone miesiące — kobalt */
+  marked: string[];
+  /** od tego miesiąca niezaznaczone pola są pierścieniem */
+  after?: string;
+  /** lupa: środek szkła na granicy przed miesiącem `at` (RRRR-MM), w jego wierszu */
+  lens?: { at: string; zoom?: number };
+  /** podpisy osi co trzy miesiące (styczeń, kwiecień, lipiec, październik); domyślnie liczby rzymskie */
+  axis?: string[];
+  /** wiersze legendy pod siatką: znak pola, liczba (wyróżniona) i opis */
+  legend: { cell: MonthCell; count: string; text: string }[];
+}
+
+/**
+ * Rok × miesiąc: zaznaczone pole kobaltem, pozostałe z zakresu czerwienią (--bad), po dacie `after` pierścieniem,
+ * spoza zakresu plusem. Lupa powiększa pola pod szkłem (obrazek „Kontrola NFZ”: kontrola widzi wycinek).
+ * Zwraca treść <svg> i wysokość panelu.
+ */
+export function monthGrid(d: MonthGridData, width: number): { body: string; height: number } {
+  const LEFT = 56, TOP = 26, P = (width - LEFT) / 12, ROW = 32;
+  const rows = d.years[1] - d.years[0] + 1;
+  const gridBottom = TOP + rows * P;
+  const height = gridBottom + 24 + d.legend.length * ROW;
+  const key = (y: number, m: number) => `${y}-${String(m + 1).padStart(2, '0')}`;
+  const cell = (k: string): MonthCell | 'off' =>
+    k < d.from || k > d.to ? 'off' : d.marked.includes(k) ? 'on' : d.after && k >= d.after ? 'after' : 'rest';
+  const shape = (kind: MonthCell | 'off', cx: number, cy: number, p = P) => {
+    if (kind === 'off') {
+      const arm = p * GEOMETRY.arm;
+      return `<path d="M${f1(cx)} ${f1(cy - arm)}v${f1(2 * arm)}M${f1(cx - arm)} ${f1(cy)}h${f1(2 * arm)}" stroke="${c('muted')}" stroke-opacity=".45" stroke-width="${f1(p * GEOMETRY.stroke)}" fill="none"/>`;
+    }
+    if (kind === 'after') return `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(p * 0.29)}" fill="none" stroke="${c('bad')}" stroke-width="${f1(p * 0.14)}"/>`;
+    return `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(p * GEOMETRY.on)}" fill="${c(kind === 'on' ? 'blue' : 'bad')}"/>`;
+  };
+
+  let fields = '';
+  for (let r = 0; r < rows; r++) {
+    for (let m = 0; m < 12; m++) fields += shape(cell(key(d.years[0] + r, m)), LEFT + m * P + P / 2, TOP + r * P + P / 2);
+  }
+  let s = fields;
+  (d.axis ?? ['I', 'IV', 'VII', 'X']).forEach((m, i) => { s += label(LEFT + i * 3 * P + P / 2, 14, m, [], 'middle'); });
+  for (let r = 0; r < rows; r++) s += label(0, TOP + r * P + P / 2 + 5, String(d.years[0] + r));
+
+  if (d.lens) {
+    // szkło: białe tło, pod nim te same pola w powiększeniu (przycięte do koła), obręcz i rączka w dół w prawo
+    const [y, m] = d.lens.at.split('-').map(Number);
+    const cx = LEFT + (m - 1) * P, cy = TOP + (y - d.years[0]) * P + P / 2, R = P * 1.85, zoom = d.lens.zoom ?? 2.3, a = Math.SQRT1_2;
+    s += `<defs><clipPath id="szklo"><circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(R)}"/></clipPath></defs>`
+      + `<line x1="${f1(cx + R * a)}" y1="${f1(cy + R * a)}" x2="${f1(cx + (R + 78) * a)}" y2="${f1(cy + (R + 78) * a)}" stroke="${c('ink')}" stroke-width="16"/>`
+      + `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(R)}" fill="#fff"/>`
+      + `<g clip-path="url(#szklo)"><g transform="translate(${f1(cx)} ${f1(cy)}) scale(${zoom}) translate(${f1(-cx)} ${f1(-cy)})">${fields}</g></g>`
+      + `<circle cx="${f1(cx)}" cy="${f1(cy)}" r="${f1(R)}" fill="none" stroke="${c('ink')}" stroke-width="7"/>`;
+  }
+
+  d.legend.forEach((l, i) => {
+    const cy = gridBottom + 24 + i * ROW + ROW / 2 - 6;
+    s += shape(l.cell, 11, cy, 24);
+    s += label(32, cy + 5, l.count, [l.cell === 'on' ? 'blue' : 'strong']);
+    s += label(32 + 9 * (l.count.length + 1), cy + 5, l.text);
+  });
+  return { body: s, height };
+}
+
 /* ---------- COVID-19: wirus ---------- */
 
 /**

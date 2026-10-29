@@ -1,0 +1,288 @@
+---
+title: "NFZ inspection: a few months out of several years"
+seoTitle: "How the NFZ inspects hospital billing"
+summary: "A hospital receives points for how it describes a patient’s stay, and the NFZ checks that description in selected months. Using the example of a hospital in Koszalin — a case uncovered and described by nicolabo — we show that unusual billing is visible in open data for years before an inspection reaches it."
+description: "How the NFZ inspects hospital billing: the JGP group from the description of the stay, inspection of selected months and patterns visible in open data. A case study from Koszalin."
+keyPoints:
+  - "Payment for a stay depends on the JGP group taken from the description of treatment: spinal surgery without an implant is valued a third lower than with an implant."
+  - "An NFZ inspection checks selected months: in Koszalin it covered 8 of the 40 months in which the hospital billed surgery with an implant on a mass scale."
+  - "Unusual patterns are visible in open data: in 2025 one hospital reported more than half of the H53 stays in Poland in which the patient left on the day of admission."
+editorial:
+  - >-
+    The unusual billing in this case study is visible in data that the NFZ itself publishes — nicolabo compiled it
+    month by month. The Fund has fuller data: individual bills rather than totals with hidden cells. But it does not
+    publish how it chooses hospitals and months for inspection.
+  - >-
+    We do not claim that there are too few inspectors or that penalties are too low. We claim that open data make it
+    possible to choose better where to look. The same principle underlies our demand: total payments from public
+    money for each person, under a permanent identifier instead of a name.
+translation:
+  of: kontrola-nfz
+  files: [src/data/kontrola-nfz.ts]
+  hash: "180242ca9b01"
+  date: 2026-10-29
+---
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Explainer from '@/components/blocks/Explainer.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import MonthGrid from '@/components/blocks/MonthGrid.astro';
+import XProfile from '@/components/blocks/XProfile.astro';
+import XPosts from '@/components/blocks/XPosts.astro';
+import IndexChart from '@/components/budzet/IndexChart.astro';
+import Money from '@/components/ui/Money.astro';
+import { LINKS, monthRange } from '@/data/kontrola-nfz';
+import { monthlyPointsEn, pln } from '@/data/en/kontrola-nfz';
+import nicoboguAvatar from '@/assets/people/nicobogu.jpg';
+import zabiegiJasna from '@/assets/articles/kontrola-nfz/zabiegi-kregoslupa-jasna.webp';
+import zabiegiCiemna from '@/assets/articles/kontrola-nfz/zabiegi-kregoslupa-ciemna.webp';
+
+{/* Tłumaczenie src/content/articles/kontrola-nfz.mdx; liczby z src/data/kontrola-nfz.ts, kwoty przez src/data/en/kontrola-nfz.ts */}
+export const M = (n) => pln(n * 1e6, { scale: 'million', decimals: 1 });
+
+export const SWITCH_CHART = {
+  xMin: 2019, xMax: 2026.25, yMin: 0, yMax: 180, ticks: [0, 50, 100, 150], unit: 'stays', years: [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
+  series: [
+    { id: 'h52', label: 'H52 — with implant', tone: 'data', end: 'approx. 25', labelShift: 1, points: monthlyPointsEn('H52') },
+    { id: 'h53', label: 'H53 — without implant', tone: 'accent', end: 'approx. 78', labelShift: -1, points: monthlyPointsEn('H53') },
+    // dots with tooltips: the month before the switch and the month after it
+    { id: 'h52-switch', label: 'H52 — with implant', tone: 'data', markers: true, points: monthlyPointsEn('H52').filter((p) => p.label === 'Apr 2024' || p.label === 'May 2024') },
+    { id: 'h53-switch', label: 'H53 — without implant', tone: 'accent', markers: true, points: monthlyPointsEn('H53').filter((p) => p.label === 'Apr 2024' || p.label === 'May 2024') },
+  ],
+  bands: [
+    {
+      from: 2023, to: 2023 + 8 / 12, label: 'Checked', kind: 'fill',
+      legend: 'Grey area — January–August 2023: the only months of H52 billing examined by an NFZ inspection. This was done only by the second inspection, two years later. No inspection examined 2021–2022 or the switch to H53.',
+    },
+    {
+      from: 2024 + 4 / 12, label: 'Switch H52 → H53', kind: 'line', row: 1,
+      legend: 'Line — 30 April 2024: the first inspection ends (it examined a different group, H55). From May the hospital bills spinal procedures as H53 instead of H52: in April about 105 H52 stays and about 6 H53, in May about 16 H52 and about 77 H53.',
+    },
+    {
+      from: 2025 + 7 / 12, to: 2026 + 3 / 12, label: 'Inspection 2', kind: 'edges',
+      legend: 'Inspection 2 — August 2025 – March 2026: it checks H52 from January–August 2023 and H55 from the end of 2024. It does not cover H53 billing.',
+    },
+  ],
+  caption:
+    'Estimated monthly number of stays at the Provincial Hospital in Koszalin in groups H52 and H53, 2019–2025. ' +
+    'H52: until 2020 usually 10–40 a month, in 2021–2022 60–170, in April 2024 about 105, in May 2024 about 16, then 13–25. ' +
+    'H53: until April 2024 usually a few a month, in May 2024 about 77, in September 2024 about 159, in 2025 78–116. ' +
+    'The switch from H52 to H53 took place in May 2024, right after the end of the first inspection (30 April 2024), which concerned group H55. ' +
+    'The second inspection (August 2025 – March 2026) checked H52 billing only from January–August 2023.',
+};
+
+The National Health Fund (NFZ) pays for a hospital stay according to the group into which the description of treatment falls. Whether the description matches what was done is checked by an inspection — but only in the months the Fund chooses. We show this mechanism using the example of the neurosurgery department of the Nicolaus Copernicus Provincial Hospital in Koszalin, which the NFZ inspected twice and twice assessed negatively. The case was uncovered, researched and described by nicolabo, author of the site Hospitalizacje w Polsce (“Hospital stays in Poland”) — in an article and in a film.[^nicolabo] We present the results of that investigation and analyses; we checked the figures against the NFZ source data.
+
+<XPosts
+  posts={[
+    { name: 'nicolabo', handle: 'nicobogu', avatar: nicoboguAvatar, kind: 'article', title: '“Recidivism” in Koszalin', date: '2026-10-23', meta: '7 min read', url: 'https://x.com/nicobogu/status/2113508270941880443', embed: true },
+    { name: 'nicolabo', handle: 'nicobogu', avatar: nicoboguAvatar, kind: 'video', title: 'The history of code H52 in Koszalin', date: '2026-10-28', meta: '3:50', url: 'https://x.com/nicobogu/status/2115373505990824130', embed: true },
+  ]}
+/>
+
+## The description of the stay sets the price
+
+A hospital does not send the NFZ a bill for individual activities. After the patient is discharged, the system assigns the stay to one of several hundred Diagnosis-Related Groups (JGP, *Jednorodne Grupy Pacjentów*) on the basis of the diagnoses and procedures entered in the report. Each group has a value in points. How the points turn into payment is described in our text [How the NFZ pays hospitals](/en/mechanisms/nfz-payment-system/).
+
+<Explainer
+  eyebrow="Explainer"
+  title="From needle to screws: which procedures are involved and why their prices differ so much"
+  lead="Three groups of spinal procedures appear in the Koszalin case. They differ in what the doctor does, whether the patient is admitted to a ward and how much the NFZ pays — from about one thousand to over 15 thousand points."
+  imageAlt="The same section of the spine in three views. On the left: a needle inserted through the skin into a spinal joint, with a heated tip next to a nerve. In the middle: an operation with retractors in which a piece of bone pressing on a nerve was removed. On the right: the same operation with an implant — two screws joined by a rod and a cage between the vertebrae."
+  image={zabiegiJasna}
+  imageDark={zabiegiCiemna}
+  scaleLabel="NFZ valuation in points, 2025, stay shorter than one day — as billed by the hospital; one scale for all bars"
+  max={15040}
+  steps={[
+    { tag: 'Z13 · outpatient clinic', title: 'Denervation in an outpatient clinic', text: 'Through the skin, without an incision, the doctor uses high temperature to switch off the nerve that carries pain from a spinal joint (radiofrequency denervation, or thermolesion). The patient is not admitted to a ward.', value: 1039, display: '1,039 points' },
+    { tag: 'H55 · ward', title: 'The same denervation on a ward', text: 'The procedure is the same, but the patient is admitted to hospital. The law provides for hospital treatment when the aim cannot be achieved in an outpatient clinic.', value: 3639, display: '3,639 points', note: 'stay shorter than one day' },
+    { tag: 'H53', title: 'Spinal surgery without an implant', text: 'An operation in the operating theatre: the surgeon decompresses the spinal canal where nerves are compressed, or removes a herniated intervertebral disc.', value: 9225, display: '9,225 points', note: 'stay shorter than one day' },
+    { tag: 'H52', title: 'The same surgery with an implant', text: 'An implant is added to the operation: a cage or spacer between the vertebrae, threaded bone screws, a disc prosthesis or a device between the spinous processes. The implant must be entered in the records with a separate code.', value: 15040, display: '15,040 points', note: 'every stay, including one shorter than a day', highlight: true },
+  ]}
+  takeaway="Why describe a simple procedure as a complex one?"
+>
+
+The NFZ does not pay for minutes or for the actual cost of a procedure, but for the group into which the description fell. The difference between the rungs is meant to cover the difference in costs: the operating theatre, anaesthesia, the implant, a bed on the ward. If a simpler procedure lands one rung higher, the hospital receives money for costs it did not incur. Under a contract in which the doctor receives a percentage of the NFZ valuation, part of this difference goes to the doctor — we write about this in [Contract or employment](/en/mechanisms/contract-vs-employment/).[^katalog]
+
+Rungs 1 and 2 are the same procedure. Rungs 3 and 4 are separated by a single code: of the 77 procedures on which assignment to H52 or H53 depends, 65 are shared, and the higher group is decided by the recorded implant.[^lista] Whether the description matches the treatment can only be seen in the medical records. Both inspections in Koszalin concerned exactly these steps: whether the denervation had to take place on a ward (Article 58 of the Act on healthcare services)[^art58] and whether the H52 stays were correctly classified.[^kontrole]
+
+</Explainer>
+
+A group has one value regardless of whether the patient leaves after a day or after a week. Only after a set number of days is an extra amount paid for each further day (in H52, after 31 days). This is a deliberate incentive: a hospital that treats patients for a shorter time keeps the difference in costs. In some groups, however, a short stay is valued lower: in H53 a stay shorter than one day is worth 9,225 points instead of 10,026, in H55 — 3,639 instead of 3,955. H52 has no such rate: a zero-day stay — the patient leaves on the day of admission — is valued the same as a stay of several days, at 15,040 points.[^katalog]
+
+The catalogue also lists lower rates for “planned hospitalisation” (in H52 — 13,837 points), but they apply only under a separate type of contract with the NFZ.[^umowy] The neurosurgery department in Koszalin has a contract for ordinary hospitalisation and billed every one of its H52 stays at 15,040 points: in the compilations of the e-Health Centre (*Centrum e-Zdrowia*), the sum of points in this group divides by 15,040 with no remainder — 1,150 stays in 2021 and 1,597 in 2022.[^ezdrowie] nicolabo drew our attention to the difference between the rates.
+
+The incentive to describe a stay as more expensive is not an accusation — we write about it in more detail in the section [JGP points](/en/mechanisms/nfz-payment-system/#jgp-points-the-description-of-the-stay-decides-the-payment). The question is how the system catches billing that does not match the description of treatment.
+
+## What can be seen in open data
+
+On the dane.gov.pl portal the NFZ publishes the number of hospital stays in each hospital in each JGP group, month by month, broken down by length of stay, admission mode, sex and age of patients.[^d3009] Cells with fewer than five stays are hidden, so we estimate the figures for a single hospital — the method is described below the chart. National totals and the numbers of stays by length are given exactly by the NFZ JGP statistics portal.[^stat]
+
+<Figure
+  title="In May 2024, right after the first inspection, the hospital switched its billing from group H52 to H53."
+  note="The hospital’s figures are an estimate: hidden cells (1–4 stays) are counted at the national average value of such a cell for the given group and year, calculated from exact NFZ totals (about 1.3–1.5). The dots in April and May 2024 show values on hover or tap."
+  source={[
+    { label: 'NFZ, dane.gov.pl, dataset 3009', href: LINKS.d3009 },
+    { label: 'NFZ, JGP statistics (national totals)', href: LINKS.stat },
+  ]}
+>
+  <IndexChart {...SWITCH_CHART} />
+</Figure>
+
+Until the end of 2020 the hospital usually billed between 10 and 40 H52 stays a month. In 2021 there were about 1,150, in 2022 about 1,630, at the peak over 160 a month. From January 2021 to April 2024 — about 4.3 thousand, the most in Poland: almost three times as many as the next ten hospitals billed on average.[^d3009]
+
+The length of stay was also unusual. In other hospitals a patient usually stays three days or longer after a procedure with an implant. In Koszalin the vast majority of patients left on the day of admission.
+
+<Figure
+  title="In Koszalin nine out of ten H52 stays ended on the day of admission. In other hospitals — four in a hundred."
+  note="2021–2023, stays with a length of “0 days”. Koszalin — estimate (range with hidden cells counted as 1 or 4: 78–95%); other hospitals — exact NFZ national figure minus the Koszalin estimate (range 2.8–4.2%)."
+  source={[
+    { label: 'NFZ, dane.gov.pl, dataset 3009', href: LINKS.d3009 },
+    { label: 'NFZ, JGP statistics', href: LINKS.stat },
+  ]}
+>
+  <BarChart
+    rows={[
+      { label: 'Provincial Hospital in Koszalin', value: 91, display: 'approx. 91%', highlight: true },
+      { label: 'Other hospitals in Poland', value: 4, display: 'approx. 4%' },
+    ]}
+    max={100}
+    unit="%"
+    caption="Share of zero-day stays in group H52 in 2021–2023: Provincial Hospital in Koszalin about 91%, other hospitals in Poland about 4%."
+  />
+</Figure>
+
+In 2021–2022 the hospital reported about two thirds of all zero-day H52 stays in Poland.[^d3009][^stat] The NFZ sees this difference in its own data — in a fuller form than the public compilation.
+
+In April 2024 the first NFZ inspection at the hospital ended. It concerned a different group — H55 — and billing from 2022. In April the hospital billed about 105 H52 stays and a few H53. In May — about 16 H52 stays and about 77 H53, and in September as many as about 159 H53. Group H52 did not return to its former level.
+
+The length of stay moved together with the group. In 2025 the hospital billed about 1.2 thousand H53 stays — over three times as many as the second hospital in the country — and about 97% of them ended on the day of admission. In other hospitals such an H53 stay accounts for about 5%. Koszalin reported more than half of all zero-day H53 stays in Poland.[^d3009]
+
+<Aside title="To be fair: what these figures do not settle">
+
+- **The data show billing, not the procedure.** A short stay may result from the technique (minimally invasive procedures), from patient selection or from the way of coding. Whether the description matches the treatment can only be settled by the medical records.
+- **The change of group has more than one explanation.** The hospital may have started coding differently, or it may have changed the type of procedures it performs. The data cannot tell these apart.
+- **The hospital’s figures are an estimate.** Under extreme assumptions about the hidden cells the picture does not change: in 2021–2023 at least 78% of H52 stays in Koszalin were zero-day stays, in other hospitals — at most 4.2%.
+
+</Aside>
+
+## Inspection: a sample of selected months
+
+The NFZ inspected the hospital’s neurosurgery department twice. Both inspections were carried out by the Inspection Department of the Fund’s headquarters through its field unit in Białystok, and both ended with a negative assessment.[^kontrole]
+
+<Figure
+  title={`Two inspections, two negative assessments, about ${M(8.5)} in financial consequences.`}
+  note="The financial consequences are a single amount from the inspection results, not broken down into repayments and contractual penalties. The NFZ does not say what part of it concerns group H52 and what part H55."
+  source={{ label: 'NFZ, detailed inspection results', href: LINKS.kontrole }}
+>
+  <Comparison
+    table={{
+      columns: ['', 'Inspection 1', 'Inspection 2'],
+      rows: [
+        { cells: ['Duration', '6.02–30.04.2024', '4.08.2025–27.03.2026'] },
+        { cells: ['Billing checked', 'H55 from the whole of 2022', 'sample of stays: H52 from January–August 2023, H55 from August–December 2024; implementation of the recommendations of inspection 1'] },
+        { cells: ['Findings', 'unjustified hospitalisations', 'failure to implement recommendations, services without a referral, unjustified hospitalisations, incorrect classification of services'] },
+        { cells: ['Financial consequences', pln(1497692.5), pln(6960738.94)], marked: true },
+      ],
+    }}
+  />
+</Figure>
+
+An inspection does not check all billing. The Fund chooses groups and months, and in the second inspection — as recorded in its results — it checked a sample of stays from those months.[^kontrole] This is how inspection works with a limited number of inspectors and records that have to be read file by file. It does, however, have a consequence: billing from months outside the scope remains as reported.
+
+<Figure
+  title="The inspection checked 8 of 40 months of H52 billing and none of the 20 months after the change of code to H53."
+  note="Each dot is a month in which the hospital billed spinal procedures in large numbers: from January 2021 to April 2024 in group H52, from May 2024 to December 2025 in H53. Blue: months whose billing was checked by the second inspection (a sample of stays). Red: months not covered by any inspection — full dots are H52 billing, rings are H53 after the change of code. The first inspection checked a different group — H55."
+  source={{ label: 'NFZ, detailed inspection results', href: LINKS.kontrole }}
+>
+  <MonthGrid
+    years={[2021, 2025]}
+    from="2021-01"
+    to="2025-12"
+    marked={monthRange('2023-01', '2023-08')}
+    breaks={[{ at: '2024-05' }]}
+    after="2024-05"
+    legend={{ marked: 'checked by the inspection', rest: 'unchecked — H52', after: 'unchecked — H53, after the code change', break: 'May 2024: code change H52 → H53' }}
+    label="Months of billing for spinal procedures at the Provincial Hospital in Koszalin, 2021–2025. Of 40 months of H52 billing (January 2021 to April 2024), the inspection checked 8 — January to August 2023. Of 20 months of H53 billing after the change of code (May 2024 to December 2025), it checked none."
+  />
+</Figure>
+
+Left outside the inspections were 2021–2022, when the hospital billed the most H52 stays and most of the zero-day stays in this group nationwide, as well as the whole period after the change of code. The published results do not show that the NFZ examined this change.[^kontrole] In group H55 the two inspections together covered 17 of 55 months: the whole of 2022 and the period from August to December 2024.
+
+## A recommendation “on an ongoing basis”, checked after 15 months
+
+The first inspection ended on 30 April 2024 with a recommendation: “Provide services in hospital conditions only where the aim of treatment cannot be achieved by outpatient treatment”, with the deadline “immediately, on an ongoing basis”.[^kontrole] It concerned group H55, in which the hospital bills, among other things, radiofrequency denervation — a pain-relief procedure on the nerves at the spinal joints, performed through the skin. It can be done in an outpatient clinic or on a ward — for more than three times as many points (rungs 1 and 2 in the “Explainer” box).
+
+NFZ data show what happened next. In 2024 denervation was performed in the hospital on about 950 patients, and in the outpatient clinic on none.[^d4896] In 2025 the hospital billed about 1.6 thousand stays in group H55, about two thirds more than a year earlier, and was first in the country in this group.[^d3009] That year denervation was performed in the hospital on about 1.4 thousand patients, and in the clinic — again on none. From July 2025 to June 2026, during and after the second inspection, about a thousand patients had the procedure in the hospital, and fewer than five in the clinic.[^d4896]
+
+The recommendation had the deadline “immediately, on an ongoing basis”, but the NFZ checked its implementation only in the second inspection, which began in August 2025, 15 months later. It found that the recommendation had not been implemented and issued it again, once more with the deadline “on an ongoing basis”.[^kontrole] Throughout this time the growing number of stays was visible in data that the Fund itself collects every month.
+
+## Inspection consequences and the value of billing
+
+How much the billing was worth is shown by the e-Health Centre compilations: the value of points billed by each provider in each group and in each year.[^ezdrowie] The groups’ points did not change, but their price rose. In the Koszalin neurosurgery department an H52 point was worth on average about <Money value={1.12} decimals={2} /> in 2021 and about <Money value={1.9} decimals={2} /> in 2025. A single H52 stay was therefore worth about <Money value={16900} scale="thousand" decimals={1} /> in billing, and four years later about <Money value={28600} scale="thousand" decimals={1} />.
+
+<Figure
+  title="The consequences of both inspections amount to about PLN 5 for every PLN 100 reported in three groups of spinal procedures."
+  note={`The value of units billed under the scope “neurosurgery — hospitalisation”, which both inspections concerned. No inspection covered H53 billing; without it the consequences come to about PLN 7 per PLN 100. In the whole hospital, including orthopaedics and general surgery, the three groups amount to about ${pln(176e6, { scale: 'million', decimals: 0 })}. The financial consequences of the inspections are a single amount from the results, not broken down into repayments and contractual penalties.`}
+  source={[
+    { label: 'e-Health Centre, number of JGP patients', href: LINKS.ezdrowie },
+    { label: 'NFZ, detailed inspection results', href: LINKS.kontrole },
+  ]}
+>
+  <Comparison
+    table={{
+      columns: ['', 'Years', 'Amount'],
+      rows: [
+        { cells: ['Reported H52 services', '2021–2025', M(98.7)] },
+        { cells: ['Reported H53 services — outside the inspections', `2021–2025 (${M(38.0)} in 2024–2025)`, M(38.5)] },
+        { cells: ['Reported H55 services', '2021–2025', M(21.8)] },
+        { cells: ['Total, three groups', '2021–2025', M(159.0)] },
+        { cells: ['Financial consequences of both inspections', 'inspections completed in 2024 and 2026', M(8.5)], marked: true },
+      ],
+    }}
+  />
+</Figure>
+
+A reported amount is not a transfer. A hospital in the network receives a lump sum, not a payment for each stay — we describe this in the section [The 98% threshold](/en/mechanisms/nfz-payment-system/#the-98-threshold-today-s-points-are-tomorrow-s-lump-sum). The lump sum for the next period does, however, depend on the number of units “performed and reported” in the previous period.[^rozp-psz] Reported stays are thus the basis of future funding, even when nobody has checked them.
+
+The financial consequences of an inspection follow from irregularities found within the checked scope. For a hospital, the balance therefore depends not only on how much of its billing is irregular, but also on how much of it reaches an inspection.
+
+## What follows from this
+
+Selective inspection is a necessity: there is many times more billing than inspectors can read. What matters, then, is how the NFZ chooses hospitals, groups and months. The published results do not show why these months, and not others, were chosen in Koszalin. In the case described, the signal was in public data: for two years one hospital accounted for about two thirds of zero-day H52 stays in the country, and after the first inspection the same pattern appeared in another group. Such deviations can be searched for automatically, in all hospitals and groups at once.
+
+Open data will not replace an inspection of the records. But they can suggest where to look — and make it possible to check whether the Fund takes the hint.
+
+<XProfile
+  name="nicolabo"
+  handle="nicobogu"
+  avatar={nicoboguAvatar}
+  width="md"
+  eyebrow="Author of the investigation and analyses"
+  link={{ label: 'Hospitalizacje w Polsce', href: 'https://hospitalizacje-nfz.pages.dev/' }}
+>
+The case was uncovered, researched and described by nicolabo — in the article “Recidivism in Koszalin” and in a film about the history of code H52.[^nicolabo] This text presents the results of that investigation and analyses. We checked the figures against the NFZ source data.
+</XProfile>
+
+[^lista]: NFZ, [order no. 48/2025/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43566/Zarzadzenie-48_2025_DSOZ) (in Polish) — characteristics of groups H52, H53 and H55: the H52 and H53 procedure lists, the H7 implant list (including cages and spacers between vertebrae, threaded bone screws, disc prostheses and an interspinous device) and list H55B with procedure 03.96 “<span lang="pl">Przezskórne odnerwienie powierzchni stawowej wyrostka kręgu</span>” (percutaneous denervation of the facet joint surface). In outpatient care, denervation is procedure 04.25 “<span lang="pl">Zniszczenie nerwów czaszkowych lub obwodowych przez znieczulenie wywołane wysoką temperaturą</span>” (destruction of cranial or peripheral nerves by high-temperature anaesthesia) ([order no. 132/2024/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43457/Zarzadzenie-132_2024_DSOZ), in Polish). The number of procedures shared by H52 and H53 — our comparison of both lists.
+
+[^katalog]: NFZ, [order no. 48/2025/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43566/Zarzadzenie-48_2025_DSOZ) (in Polish), annex 1 — catalogue of JGP groups in hospital treatment, items 291–293: H52 — 15,040 points (hospitalisation), 13,837 (planned hospitalisation), no short-stay rates; H53 — 10,026 and 9,225, stay shorter than one day 9,225; H55 — 3,955 and 3,639, stay shorter than one day 3,639, “one-day treatment” 3,362. H52 and H55 values unchanged since 2020, short-stay rates in H53 since 2023. Outpatient specialist care: [order no. 132/2024/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43457/Zarzadzenie-132_2024_DSOZ) (in Polish) — group Z13, procedure 04.25.
+
+[^umowy]: NFZ, [order no. 37/2024/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43217/Zarzadzenie-37_2024_DSOZ) (in Polish), § 4(2): a contract for hospital treatment is concluded “<span lang="pl">w ramach hospitalizacji albo w ramach hospitalizacji planowej, albo w ramach »leczenia jednego dnia«</span>” (for hospitalisation, for planned hospitalisation or for “one-day treatment”). The Koszalin hospital’s contract: scope 03.4570.030.02, neurosurgery — hospitalisation (NFZ inspection results).
+
+[^art58]: Act of 27 August 2004 on publicly funded healthcare services, [consolidated text: Dz.U. 2024 item 146](https://api.sejm.gov.pl/eli/acts/DU/2024/146/text.pdf) (in Polish) as amended, Article 58: the right to hospital treatment “<span lang="pl">jeżeli cel leczenia nie może być osiągnięty przez leczenie ambulatoryjne</span>” (if the aim of treatment cannot be achieved by outpatient treatment).
+
+[^ezdrowie]: e-Health Centre, [“<span lang="pl">Liczba pacjentów JGP</span>”](https://ezdrowie.gov.pl/portal/home/badania-i-dane/zdrowe-dane/zestawienia/liczba-pacjentow-jgp) (“Number of JGP patients”, in Polish), 2019–2025; provider 160000907, scope 03.4570.030.02 (neurosurgery — hospitalisation), field “Wartosc_jednostek_rozliczonych”. Totals and the point price — our calculation. H52 points divided by 15,040 give a whole number in 2020–2022 and 2024–2025; in 2023 the remainder equals 6 bed-days at 334 points.
+
+[^rozp-psz]: Regulation of the Minister of Health of 22 September 2017 on the method of setting the lump sum of the basic hospital system for securing healthcare services, [consolidated text: Dz.U. 2025 item 878](https://api.sejm.gov.pl/eli/acts/DU/2025/878/text.pdf) (in Polish), § 2(24b) and § 3(1).
+
+[^d3009]: NFZ, dane.gov.pl, [dataset 3009 “<span lang="pl">Dane dotyczące hospitalizacji rozliczonych JGP</span>”](https://dane.gov.pl/pl/dataset/3009) (“Data on hospital stays billed under JGP”, in Polish), files for 2017–2025. Our compilations for tax ID (NIP) 6691044410 and the whole country; hidden cells are estimated as described below the chart.
+
+[^d4896]: NFZ, dane.gov.pl, [dataset 4896 “<span lang="pl">Liczba pacjentów z danym rozpoznaniem ICD-10, u których wykonano procedurę ICD-9</span>”](https://dane.gov.pl/pl/dataset/4896) (“Number of patients with a given ICD-10 diagnosis who underwent an ICD-9 procedure”, in Polish), compilations for 2024, 2025 and Q3 2025 – Q2 2026; provider 160000907, procedures 03.96 (denervation in hospital) and 04.25 (in an outpatient clinic). A patient with several diagnoses may be counted more than once, and cells below 5 are hidden — we give approximate values.
+
+[^stat]: NFZ, [Statistics Portal — JGP services](https://statystyki.nfz.gov.pl/Benefits/1a) (in Polish; app-stat-api-jgp API): histogram of length of stay in groups H52, H53 and H55, 2017–2024.
+
+[^kontrole]: NFZ, [“<span lang="pl">Szczegółowe wyniki kontroli</span>”](https://www.nfz.gov.pl/o-nfz/kontrole/kontrole-nfz/szczegolowe-wyniki-kontroli/) (“Detailed inspection results”, in Polish; [XLSX file](https://www.nfz.gov.pl/download/gfx/nfz/pl/defaultstronaopisowa/1087/1/12/szczegolowe_informacje_o_wynikach_kontroli_7.xlsx)), entries DK.TWK-X.4840.006.2024 and DK.TWK-X.4840.026.2025.
+
+[^nicolabo]: nicolabo, [“<span lang="pl">Recydywa w Koszalinie</span>”](https://x.com/nicobogu/status/2113508270941880443) (“Recidivism in Koszalin”), X, 23.10.2026; [film “<span lang="pl">Historia kodu H52</span>”](https://x.com/nicobogu/status/2115373505990824130) (“The history of code H52”), X, 28.10.2026.

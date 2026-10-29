@@ -17,7 +17,7 @@ import { columnChart, svg } from '@/lib/og/charts';
 import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
 import { globeOgBody } from '@/lib/swiat/og';
 import { newsIllustration } from '@/lib/news';
-import { dataUpdated, hemicyclePanel } from '@/data/og';
+import { controlPanels, dataUpdated, hemicyclePanel } from '@/data/og';
 import { BUDGET } from '@/data/budzet-nfz';
 import { AOS_FIRST, AOS_LAST, WHC_2022, WHC_2024, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
 import { WINDOW, ratePer100k, type CountryKey } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
@@ -131,6 +131,13 @@ export const ogArticleMediaEn: Record<string, Pick<OgPage, 'bars' | 'panels' | '
     },
   },
   '/analizy/limity-wynagrodzen-medykow/': { panels: VOTE_PANEL },
+  '/mechanizmy/kontrola-nfz/': {
+    panels: controlPanels({
+      head: 'Months of H52 and H53 billing, 2021–2025',
+      axis: ['Jan', 'Apr', 'Jul', 'Oct'],
+      legend: ['checked by the NFZ inspection', 'unchecked — H52', 'unchecked — H53 after the code change'],
+    }),
+  },
   '/analizy/odpowiedzialnosc-zawodowa-lekarzy/': {
     bars: {
       head: `Licence revocations per 100,000 doctors a year, ${WINDOW.from}–${WINDOW.to}`,

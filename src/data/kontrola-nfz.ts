@@ -68,3 +68,19 @@ export const monthRange = (from: string, to: string) => {
   }
   return out;
 };
+
+/** Zasięg drugiej kontroli w siatce miesięcy (obrazek OG): masowe rozliczenia H52 do kwietnia 2024 r., potem H53 */
+export const CONTROL_GRID = {
+  years: [2021, 2025] as [number, number],
+  from: '2021-01',
+  to: '2025-12',
+  marked: monthRange('2023-01', '2023-08'),
+  switchAt: '2024-05',
+};
+const gridMonths = monthRange(CONTROL_GRID.from, CONTROL_GRID.to);
+/** liczby do legendy: sprawdzone, niesprawdzone H52, niesprawdzone H53 po zmianie kodu */
+export const CONTROL_COUNTS = {
+  checked: CONTROL_GRID.marked.length,
+  h52: gridMonths.filter((k) => k < CONTROL_GRID.switchAt && !CONTROL_GRID.marked.includes(k)).length,
+  h53: gridMonths.filter((k) => k >= CONTROL_GRID.switchAt).length,
+};

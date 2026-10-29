@@ -20,7 +20,7 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { simulatorOgPanels } from '@/lib/podaz/og';
 import { nurseSimulatorOgPanels } from '@/lib/podaz/pielegniarki/og';
-import { columnChart, label, stageTrack, svg, virus } from '@/lib/og/charts';
+import { columnChart, label, monthGrid, stageTrack, svg, virus } from '@/lib/og/charts';
 import { hemicycle, tallyClubs } from '@/lib/sejm/hemicycle';
 import { tokenColor } from '@/lib/tokens';
 import { CLUBS_LAST, limityVoting } from '@/data/glosowania';
@@ -30,6 +30,7 @@ import filmDobaOg from '@/assets/aktualnosci/film-doba-og.webp';
 import stronaPoAngielsku from '@/assets/aktualnosci/strona-po-angielsku.webp';
 import { AOS_FIRST, AOS_LAST, WHC_2022, WHC_2024, pct as change } from '@/data/wizyty-prywatne-kolejka-cena';
 import { funnelRows } from '@/data/odsiew-na-medycynie';
+import { CONTROL_COUNTS, CONTROL_GRID } from '@/data/kontrola-nfz';
 import { EXAMS_2025, passRate } from '@/data/zdawalnosc-egzaminow';
 import { COUNTRIES, WINDOW, ratePer100k, type CountryKey } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
 import { pseudonymDemo } from '@/data/postulat';
@@ -115,6 +116,28 @@ const LIMITY_BARS: OgPage['bars'] = {
   ],
 };
 
+/** Kontrola NFZ: siatka miesięcy pod lupą — szkło nad miesiącami, które sprawdziła kontrola; podpisy w języku obrazka. */
+const CONTROL_PL = {
+  head: 'Miesiące rozliczeń H52 i H53, 2021–2025',
+  axis: ['I', 'IV', 'VII', 'X'],
+  legend: ['sprawdzonych przez kontrolę NFZ', 'niesprawdzonych — H52', 'niesprawdzonych — H53 po zmianie kodu'],
+};
+
+export function controlPanels(text: typeof CONTROL_PL = CONTROL_PL): OgPage['panels'] {
+  const { body, height } = monthGrid({
+    ...CONTROL_GRID,
+    after: CONTROL_GRID.switchAt,
+    axis: text.axis,
+    lens: { at: '2023-05' },
+    legend: [
+      { cell: 'on', count: String(CONTROL_COUNTS.checked), text: text.legend[0] },
+      { cell: 'rest', count: String(CONTROL_COUNTS.h52), text: text.legend[1] },
+      { cell: 'after', count: String(CONTROL_COUNTS.h53), text: text.legend[2] },
+    ],
+  }, MEDIA_W);
+  return [{ head: text.head, height, svg: svg(MEDIA_W, height, body) }];
+}
+
 /** Podpisy półkola: legenda (za, przeciw, wstrzymało się, nie głosowało) i opis wyniku pod łukiem. */
 const HEMICYCLE_PL = { legend: ['za', 'przeciw', 'wstrz.', 'nie gł.'], result: 'za : przeciw' };
 
@@ -145,6 +168,7 @@ export function hemicyclePanel(text: typeof HEMICYCLE_PL = HEMICYCLE_PL): string
 }
 
 export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps' | 'illustration' | 'position'>> = {
+  '/mechanizmy/kontrola-nfz/': { panels: controlPanels() },
   '/analizy/covid-pieniadz-publiczny/': { panels: [{ height: MEDIA_W, svg: svg(MEDIA_W, MEDIA_W, virus(MEDIA_W)) }] },
   // wpis w aktualnościach: pieczątki jak na obrazku katalogu (okładka wpisu przycięta pokazałaby tylko tytuł)
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },

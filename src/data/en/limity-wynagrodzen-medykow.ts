@@ -16,6 +16,7 @@ export const LINKS = {
   druk: 'https://api.sejm.gov.pl/sejm/term10/prints/3157/3157.pdf',
   sprawozdanie: 'https://api.sejm.gov.pl/sejm/term10/prints/3193/3193.pdf',
   dodatkowe: 'https://api.sejm.gov.pl/sejm/term10/prints/3193-A/3193-A.pdf',
+  senat: 'https://www.senat.gov.pl/download/gfx/senat/pl/senatdruki/14799/druk/893.pdf',
   min2026: 'https://api.sejm.gov.pl/eli/acts/DU/2025/1242/text.pdf',
   min2027: 'https://api.sejm.gov.pl/eli/acts/DU/2026/1213/text.pdf',
   przecietne: 'https://api.sejm.gov.pl/eli/acts/MP/2026/192/text.pdf',

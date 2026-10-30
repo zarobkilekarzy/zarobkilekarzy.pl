@@ -1,7 +1,7 @@
 ---
 title: "Pytania barometru wysłane do klubów, kół i NIL"
 date: 2026-10-18
-summary: "Te same pytania o politykę zdrowotną trafiły do 11 klubów i kół poselskich oraz do Naczelnej Izby Lekarskiej. Odpowiedzi przyjmujemy do 2 listopada 2026 r."
+summary: "Te same pytania o politykę zdrowotną trafiły do 11 klubów i kół poselskich oraz do Naczelnej Izby Lekarskiej. Odpowiedzi przyjmujemy do 12 listopada 2026 r. (termin przedłużony 30 października)."
 cover: ../../assets/img/barometr-polityczny-og.png
 coverAlt: "Grafika barometru politycznego: półokrągła skala od „publiczna” do „prywatna” ze wskazówką ustawioną pionowo pośrodku."
 links:
@@ -19,7 +19,7 @@ Pytania dotyczą **6 obszarów**: finansowania, kadr (osobno lekarze, pielęgnia
 
 ## Co dalej
 
-- Odpowiedzi przyjmujemy do **2 listopada 2026 r.**
+- Odpowiedzi przyjmujemy do **12 listopada 2026 r.** Pierwotny termin to 2 listopada; [przedłużyliśmy go 30 października](/aktualnosci/barometr-termin-przedluzony/).
 - Odpowiedź publikujemy w nadesłanym brzmieniu, z dokumentami wskazanymi przez partię. Sami nie skracamy i nie dobieramy dokumentów za partię.
 - Przy partii, która nie odpowie, napiszemy wprost: „bez odpowiedzi”, z datą wysłania pytań.
 

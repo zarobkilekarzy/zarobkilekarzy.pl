@@ -33,7 +33,7 @@ export const barometrPage = {
   seoTitle: 'Barometr: polityka zdrowotna partii',
   lead: 'Co partie proponują w ochronie zdrowia — według tych samych pytań dla każdej z nich i ze źródłem przy każdej tezie. Zaczynamy od zaproszenia: każda partia może przedstawić nam swój program.',
   description: 'Polityka zdrowotna partii według tych samych pytań i ze źródłami. Zaproszenie dla partii do przesłania programu w ochronie zdrowia.',
-  updated: new Date('2026-10-26'),
+  updated: new Date('2026-10-30'),
   /** true = szkic: noindex (także podstron partii). Opublikowane 17.10.2026; wzór opisu zostaje noindex zawsze. */
   draft: false,
 };
@@ -43,6 +43,10 @@ export const barometrPage = {
  * i układzie, nie każda poprawka. Zapis wpisu: lib/inline (**b**, [a](href)). Nowy wpis = też `barometrPage.updated`.
  */
 export const barometrChangelog: { date: Date; text: string }[] = [
+  {
+    date: new Date('2026-10-30'),
+    text: 'Termin odpowiedzi przedłużony dla wszystkich z 02.11.2026 do 12.11.2026. Po tej dacie przy partii, która nie odpowie, napiszemy „Bez odpowiedzi”. Więcej: [wpis w aktualnościach](/aktualnosci/barometr-termin-przedluzony/).',
+  },
   {
     date: new Date('2026-10-26'),
     text: 'Nowa sekcja [„Politycy”](#politycy): posłowie, senatorowie i politycy partii z listy mogą wypowiedzieć się pod własnym nazwiskiem — na tych samych zasadach co partie. Wypowiedź podpisujemy jako zdanie tej osoby, nie stanowisko partii.',
@@ -66,22 +70,20 @@ export const barometrContact = {
 };
 
 /**
- * Wysyłka pytań: jednego dnia do wszystkich na liście (decyzje redakcji 17.10.2026), termin na odpowiedź liczony
- * od wysyłki. Po wysłaniu wpisać `status: { stage: 'wyslane', sent }` przy partiach; po terminie — `brak`
- * u tych, które nie odpowiedziały (statusy nie zmieniają się same: strona jest statyczna).
+ * Wysyłka pytań: jednego dnia do wszystkich na liście (decyzje redakcji 17.10.2026). Po wysłaniu wpisać
+ * `status: { stage: 'wyslane', sent }` przy partiach; po terminie — `brak` u tych, które nie odpowiedziały
+ * (statusy nie zmieniają się same: strona jest statyczna).
  */
 export const barometrSchedule = {
-  // pytania poszły w niedzielę 18.10, dzień przed zapowiedzią — do wszystkich naraz; termin bez zmian (decyzja redakcji 18.10.2026)
+  // pytania poszły w niedzielę 18.10, dzień przed zapowiedzią — do wszystkich naraz
   sendOn: new Date('2026-10-18'),
-  answerWeeks: 2,
-  deadline: new Date('2026-11-02'),
+  // pierwotnie 2.11.2026; przedłużony dla wszystkich (decyzja redakcji 30.10.2026)
+  deadline: new Date('2026-11-12'),
 };
 /** ostatni dzień na odpowiedź */
 export const answerDeadline = barometrSchedule.deadline;
 /** status po wysyłce pytań — ten sam dzień u wszystkich */
 const SENT: BarometrStatus = { stage: 'wyslane', sent: barometrSchedule.sendOn };
-/** „3 tygodnie” */
-export const answerTime = `${barometrSchedule.answerWeeks} ${plural(barometrSchedule.answerWeeks, ['tydzień', 'tygodnie', 'tygodni'])}`;
 
 /**
  * Limit odpowiedzi w jednym obszarze: znaki ze spacjami, bez podziałów akapitów (decyzja redakcji 17.10.2026).
@@ -216,7 +218,7 @@ export const barometrRules: TextItem[] = [
   },
   {
     title: 'Bez odpowiedzi — piszemy to wprost',
-    text: `Na odpowiedź każda partia ma ${answerTime}. Potem przy karcie partii, która nie odpowiedziała, piszemy „Bez odpowiedzi” i datę wysłania pytań — bez opisu za partię. Spóźnioną odpowiedź dodamy, gdy tylko przyjdzie. Pominięty obszar też oznaczamy wprost: „Partia nie odniosła się do tego obszaru”.`,
+    text: `Na odpowiedź każda partia ma czas do ${formatDate(answerDeadline)}. Potem przy karcie partii, która nie odpowiedziała, piszemy „Bez odpowiedzi” i datę wysłania pytań — bez opisu za partię. Spóźnioną odpowiedź dodamy, gdy tylko przyjdzie. Pominięty obszar też oznaczamy wprost: „Partia nie odniosła się do tego obszaru”.`,
   },
   {
     title: 'Prawo do poprawki',

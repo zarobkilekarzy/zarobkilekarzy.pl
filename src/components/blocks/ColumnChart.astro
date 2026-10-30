@@ -9,6 +9,8 @@
  * luki do tej kolumny — żeby było widać, ile do niej brakuje.
  * Kolumny „rosną” przy przewijaniu (data-reveal="grow" → .is-armed → .is-in, scripts/reveal.ts).
  * `dense` — w wąskim kontenerze podpisana jest co druga kolumna (np. 15 lat akademickich), żeby etykiety na siebie nie wchodziły.
+ * `pair` przy kolumnie — druga miara obok, w akcencie (--blue), np. „pierwsze / kolejne podejście”; `series` = podpisy
+ * obu miar w legendzie nad wykresem (pierwsza łupkiem, druga kobaltem).
  */
 import { typo } from '@/lib/format';
 
@@ -19,6 +21,8 @@ interface Column {
   value: number;
   /** podpis nad kolumną */
   display: string;
+  /** druga miara obok (kolumna w akcencie) */
+  pair?: { value: number; display: string };
 }
 
 interface Props {
@@ -29,16 +33,24 @@ interface Props {
   ref?: { index: number; label: string };
   /** w wąskim kontenerze podpis co drugiej kolumny */
   dense?: boolean;
+  /** legenda przy kolumnach z `pair`: [pierwsza miara, druga miara] */
+  series?: [string, string];
   /** pełny opis danych dla czytników ekranu */
   caption: string;
 }
 
-const { columns, max, gap, ref, dense, caption } = Astro.props;
+const { columns, max, gap, ref, dense, series, caption } = Astro.props;
 const n = columns.length;
 const k = (v: number) => (v / max).toFixed(4);
 const inGap = (i: number) => gap !== undefined && i >= gap.from && i <= gap.to;
 ---
 <figure class:list={['cc', { 'cc--dense': dense }]} data-reveal="grow" style={`--n: ${n}`}>
+  {series && (
+    <div class="cc__legend" aria-hidden="true">
+      <span><i class="cc__sw"></i>{typo(series[0])}</span>
+      <span><i class="cc__sw cc__sw--pair"></i>{typo(series[1])}</span>
+    </div>
+  )}
   <div class="cc__plot" aria-hidden="true">
     {gap && (
       <div class="cc__gap" style={`--from: ${gap.from}; --span: ${gap.to - gap.from + 1}`}>
@@ -52,9 +64,13 @@ const inGap = (i: number) => gap !== undefined && i >= gap.from && i <= gap.to;
       </div>
     )}
     {columns.map((c, i) => (
-      <div class:list={['cc__col', { 'is-gap': inGap(i) }]} style={`--k: ${k(c.value)}; --i: ${i}`}>
-        <span class="cc__val">{c.display}</span>
-        <span class="cc__bar"></span>
+      <div class:list={['cc__col', { 'is-gap': inGap(i), 'has-pair': c.pair }]} style={`--i: ${i}`}>
+        {[{ value: c.value, display: c.display }, ...(c.pair ? [c.pair] : [])].map((u, j) => (
+          <div class:list={['cc__unit', { 'is-pair': j === 1 }]} style={`--k: ${k(u.value)}`}>
+            <span class="cc__val">{u.display}</span>
+            <span class="cc__bar"></span>
+          </div>
+        ))}
       </div>
     ))}
   </div>
@@ -101,6 +117,23 @@ const inGap = (i: number) => gap !== undefined && i >= gap.from && i <= gap.to;
   }
 
   .cc__col { position: relative; z-index: 1; }
+  .cc__unit { position: absolute; inset: 0; }
+  /* Para: dwie kolumny przy sobie (szczelina 4 px) na środku pola, każda z wartością nad sobą */
+  .cc__col.has-pair .cc__unit { --bw: min(76%, 44px); right: calc(50% + 2px); }
+  .cc__col.has-pair .cc__unit.is-pair { left: calc(50% + 2px); right: 0; }
+  .cc__col.has-pair .cc__bar { width: var(--bw); left: auto; right: 0; translate: none; }
+  .cc__col.has-pair .cc__unit.is-pair .cc__bar { left: 0; right: auto; }
+  .cc__col.has-pair .cc__val { left: auto; right: calc(var(--bw) / 2); translate: 50% 0; font-size: clamp(0.6875rem, 2.2cqi, 0.9375rem); }
+  .cc__col.has-pair .cc__unit.is-pair .cc__val { left: calc(var(--bw) / 2); right: auto; translate: -50% 0; }
+  .cc__unit.is-pair .cc__bar { background: var(--blue); }
+
+  .cc__legend {
+    display: flex; flex-wrap: wrap; gap: 6px 20px; margin-bottom: 12px;
+    font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted);
+  }
+  .cc__legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .cc__sw { width: 10px; height: 10px; background: var(--chart); }
+  .cc__sw--pair { background: var(--blue); }
   .cc__bar {
     position: absolute; bottom: 0; left: 50%; translate: -50% 0;
     width: min(70%, 56px); height: calc(var(--k) * (100% - var(--label)));

@@ -12,6 +12,7 @@ import type { HTMLAttributes } from 'astro/types';
 import Infographics from '@/components/blocks/Infographics.astro';
 import { infographicSets } from '@/lib/infografiki/zestawy';
 import { infographicSetsEn } from '@/lib/infografiki/zestawy-en';
+import { setEntries, withAlso } from '@/lib/infografiki/render';
 import { plural } from '@/lib/format';
 import { localeOf } from '@/i18n/locales';
 
@@ -23,8 +24,8 @@ interface Props extends HTMLAttributes<'details'> {
 const { set, class: className, ...rest } = Astro.props;
 const en = localeOf(Astro.url.pathname) === 'en';
 const all = en ? infographicSetsEn : infographicSets;
-const keys = [set, ...(all[set]?.also ?? [])];
-const count = keys.reduce((n, key) => n + (all[key]?.items.length ?? 0), 0);
+const keys = withAlso(all, set);
+const count = setEntries(all, keys).length;
 if (!count) throw new Error(`[infografiki] nieznany albo pusty zestaw „${set}”`);
 ---
 <details class:list={['igs', className]} {...rest}>

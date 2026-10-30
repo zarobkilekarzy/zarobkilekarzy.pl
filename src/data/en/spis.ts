@@ -118,6 +118,10 @@ export const cards: Record<string, CardEn> = {
     stat: { of: '32,8', value: '32.8', unit: 'applicants per place in medicine at the University of Warsaw in 2026' },
     coverAlt: 'A wooden pencil case with six empty compartments, and behind it a crowd of hundreds of standing pencils',
   },
+  'specjalizacja-lekarska': {
+    stat: { of: '500', value: '500', unit: 'operations a future general surgeon must perform independently' },
+    coverAlt: 'A white doctor’s coat on a hanger with an empty name-badge holder; a long tape measure runs from its hem across the floor',
+  },
   'english-division': { stat: { of: '17%', value: '17%', unit: 'of places in medicine are degree programmes taught in a foreign language' } },
   'odpowiedzialnosc-zawodowa-lekarzy': {
     stat: { of: '20', value: '20', unit: 'doctors finally stripped of the right to practise in 2010–2025' },

@@ -336,9 +336,25 @@ export interface InfographicSet {
   locale?: Locale;
   /**
    * klucze zestawów innych stron, których grafiki pokazujemy też w sekcji „Infografiki do pobrania” tej strony
-   * (bez kopii plików: adres, QR i podpis prowadzą do strony źródłowej; na /media/ grafika jest raz)
+   * (bez kopii plików: adres, QR i podpis prowadzą do strony źródłowej; na /media/ grafika jest raz);
+   * `klucz#id` — tylko jedna grafika z tamtego zestawu
    */
   also?: string[];
+}
+
+/** Klucz strony i klucze z jej `also` — kolejność siatki w sekcji „Infografiki do pobrania”. */
+export const withAlso = (all: Record<string, InfographicSet>, key: string) => (all[key] ? [key, ...(all[key].also ?? [])] : []);
+
+/** Grafiki z listy kluczy (`klucz` = cały zestaw, `klucz#id` = jedna grafika) razem z zestawem, z którego pochodzą. */
+export function setEntries(all: Record<string, InfographicSet>, refs: string[]) {
+  return refs.flatMap((ref) => {
+    const [key, only] = ref.split('#');
+    const set = all[key];
+    if (!set) throw new Error(`[infografiki] nieznany zestaw „${key}”`);
+    const items = only ? set.items.filter((item) => item.id === only) : set.items;
+    if (only && !items.length) throw new Error(`[infografiki] brak grafiki „${only}” w zestawie „${key}”`);
+    return items.map((item) => ({ set, item }));
+  });
 }
 
 /** Akapit nad siatką infografik: formaty i to, co jest na grafice. */

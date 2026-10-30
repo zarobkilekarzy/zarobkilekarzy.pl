@@ -10,7 +10,7 @@
  * Podgląd to zawsze wersja jasna, więc w trybie nocnym dostaje ramkę 1 px, żeby biała karta
  * nie zlewała się z tłem bez granicy.
  */
-import { FORMATS, THEMES, infographicUrl, infographicsLead, type FormatKey, type InfographicSet, type ThemeKey } from '@/lib/infografiki/render';
+import { FORMATS, THEMES, infographicUrl, infographicsLead, setEntries, type FormatKey, type InfographicSet, type ThemeKey } from '@/lib/infografiki/render';
 import { infographicSets } from '@/lib/infografiki/zestawy';
 import { infographicSetsEn } from '@/lib/infografiki/zestawy-en';
 import { typo } from '@/lib/format';
@@ -19,7 +19,7 @@ import Icon from '@/components/ui/Icon.astro';
 import type { IconName } from '@/icons';
 
 interface Props {
-  /** klucz zestawu = ostatni człon trasy strony; kilka kluczy = jedna siatka (strona /media/) */
+  /** klucz zestawu = ostatni człon trasy strony; kilka kluczy = jedna siatka (strona /media/); `klucz#id` = jedna grafika */
   set: string | string[];
   /** akapit o formatach nad siatką; strona zbiorcza pisze go raz u góry */
   lead?: boolean;
@@ -30,12 +30,10 @@ interface Props {
 const { lead = true, source = false } = Astro.props;
 // na stronach EN ten sam klucz wskazuje zestaw angielski (lib/infografiki/zestawy-en.ts)
 const en = localeOf(Astro.url.pathname) === 'en';
-const sets = [Astro.props.set].flat().map((key) => {
-  const set = (en ? infographicSetsEn : infographicSets)[key];
-  if (!set) throw new Error(`[infografiki] nieznany zestaw „${key}”`);
-  return set;
-});
-const entries = sets.flatMap((set) => set.items.map((item) => ({ set, item })));
+const all = en ? infographicSetsEn : infographicSets;
+const refs = [Astro.props.set].flat();
+const entries = setEntries(all, refs);
+const first = all[refs[0].split('#')[0]];
 const formats = Object.keys(FORMATS) as FormatKey[];
 const themes = Object.keys(THEMES) as ThemeKey[];
 const formatIcon: Record<FormatKey, IconName> = { pion: 'format-pion', poziom: 'format-poziom' };
@@ -61,7 +59,7 @@ const LEAD_EN = (count: number) =>
           <img src={infographicUrl(set, item.id, 'pion')} width={FORMATS.pion.width} height={FORMATS.pion.height} alt={item.alt} loading="lazy" decoding="async" />
         </a>
         <p class="ig__title">{typo([item.title, item.titleAccent].filter(Boolean).join(' ').replace(/\n/g, ' '))}</p>
-        {(source === true || (source === 'others' && set !== sets[0])) && <p class="ig__source"><a href={set.route}>{typo(set.page)}</a></p>}
+        {(source === true || (source === 'others' && set !== first)) &&<p class="ig__source"><a href={set.route}>{typo(set.page)}</a></p>}
         <div class="ig__dl">
           {themes.map((t) => (
             <p class="ig__dl-row">

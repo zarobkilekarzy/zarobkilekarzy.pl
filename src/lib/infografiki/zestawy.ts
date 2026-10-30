@@ -713,8 +713,18 @@ const studiaLekarskie: InfographicSet = {
   ],
 };
 
+// specjalizacja: własnych grafik nie ma; zdawalność testu PES (2025) pochodzi z analizy o odsiewie
+const specjalizacja: InfographicSet = {
+  route: '/analizy/specjalizacja-lekarska/',
+  page: 'Analiza: Specjalizacja lekarska: od stażu do tytułu specjalisty',
+  filePrefix: 'zarobkilekarzy-specjalizacja-lekarska',
+  also: ['odsiew-na-medycynie#zdawalnosc-pes'],
+  items: [],
+};
+
 export const infographicSets: Record<string, InfographicSet> = {
   'studia-lekarskie': studiaLekarskie,
+  'specjalizacja-lekarska': specjalizacja,
   'film-doba': filmDoba,
   'nil-a-kontrakty-lekarskie': nil,
   egzamin,

@@ -630,8 +630,20 @@ const studiaLekarskie: InfographicSet = {
   ],
 };
 
+/* ---------- Specjalizacja lekarska: własnych grafik nie ma, zdawalność PES z analizy o odsiewie ---------- */
+
+const specjalizacja: InfographicSet = {
+  route: '/en/analysis/specialist-training-for-doctors/',
+  page: 'Analysis: Specialist training for doctors in Poland',
+  filePrefix: 'zarobkilekarzy-en',
+  locale: 'en',
+  also: ['odsiew-na-medycynie#pes-pass-rate'],
+  items: [],
+};
+
 export const infographicSetsEn: Record<string, InfographicSet> = {
   'studia-lekarskie': studiaLekarskie,
+  'specjalizacja-lekarska': specjalizacja,
   'film-doba': filmDoba,
   'nil-a-kontrakty-lekarskie': nil,
   'odpowiedzialnosc-zawodowa-lekarzy': odpowiedzialnosc,

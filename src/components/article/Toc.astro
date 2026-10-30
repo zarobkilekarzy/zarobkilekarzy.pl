@@ -1,7 +1,8 @@
 ---
 /**
- * Spis treści z nagłówków h2 artykułu. Na szerokim ekranie przyklejony z boku
- * i podświetla bieżącą sekcję; na wąskim — rozwijany (<details>) nad treścią.
+ * Spis treści z nagłówków h2 artykułu. Na szerokim ekranie przyklejony z boku,
+ * podświetla bieżącą sekcję, a linia po lewej wypełnia się płynnie za przewijaniem;
+ * na wąskim — rozwijany (<details>) nad treścią.
  */
 import type { MarkdownHeading } from 'astro';
 import { uiOf } from '@/i18n/ui';
@@ -28,7 +29,8 @@ const items = headings.filter((h) => h.depth === 2);
 )}
 
 <script>
-  // Podświetla w spisie sekcję, której nagłówek ostatnio minął górę ekranu
+  // Podświetla w spisie sekcję, której nagłówek ostatnio minął górę ekranu,
+  // i wypełnia linię postępu: wewnątrz pozycji spisu tak, jak przewinięta jest jej sekcja
   class ZlToc extends HTMLElement {
     connectedCallback() {
       const links = [...this.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')];
@@ -36,23 +38,36 @@ const items = headings.filter((h) => h.depth === 2);
         .map((a) => document.getElementById(decodeURIComponent(a.hash.slice(1))))
         .filter((el): el is HTMLElement => Boolean(el));
       if (!targets.length) return;
+      const list = this.querySelector('ol')!;
+      const content = targets[targets.length - 1].parentElement!;
 
-      const setActive = () => {
+      const update = () => {
         const offset = window.innerHeight * 0.25;
+        const tops = targets.map((el) => el.getBoundingClientRect().top);
         let current = 0;
-        targets.forEach((el, i) => {
-          if (el.getBoundingClientRect().top <= offset) current = i;
+        tops.forEach((top, i) => {
+          if (top <= offset) current = i;
         });
         links.forEach((a, i) => a.toggleAttribute('aria-current', i === current));
+
+        // Ostatnia sekcja kończy się z treścią, a gdy strona jest za krótka, by treść doszła do progu — z końcem strony
+        const scrollLeft = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+        const end = tops[current + 1] ?? Math.min(content.getBoundingClientRect().bottom, offset + scrollLeft);
+        const progress = Math.min(Math.max((offset - tops[current]) / (end - tops[current]), 0), 1);
+        const from = links[current].offsetTop;
+        const to = links[current + 1]?.offsetTop ?? list.offsetHeight;
+        list.style.setProperty('--toc-fill', String((from + progress * (to - from)) / (list.offsetHeight || 1)));
       };
 
       let ticking = false;
-      window.addEventListener('scroll', () => {
+      const schedule = () => {
         if (ticking) return;
         ticking = true;
-        requestAnimationFrame(() => { setActive(); ticking = false; });
-      }, { passive: true });
-      setActive();
+        requestAnimationFrame(() => { update(); ticking = false; });
+      };
+      window.addEventListener('scroll', schedule, { passive: true });
+      window.addEventListener('resize', schedule, { passive: true });
+      update();
 
       // Na wąskim ekranie spis jest zwinięty domyślnie
       const details = this.querySelector('details');
@@ -71,19 +86,20 @@ const items = headings.filter((h) => h.depth === 2);
     padding-bottom: 14px; border-bottom: 1px solid var(--ink);
   }
   .toc__title::-webkit-details-marker { display: none; }
-  ol { counter-reset: toc; }
+  ol { position: relative; counter-reset: toc; }
+  /* Linia postępu: szyna przez cały spis i wypełnienie skalowane z przewijania, bez transition — ma iść 1:1 ze scrollem */
+  ol::before, ol::after { content: ""; position: absolute; left: -16px; top: 0; bottom: 0; width: 2px; background: var(--line); }
+  ol::after { background: var(--blue); transform: scaleY(var(--toc-fill, 0)); transform-origin: top; }
   li { counter-increment: toc; border-bottom: 1px solid var(--line); }
   a {
-    position: relative; display: grid; grid-template-columns: 28px 1fr; gap: 4px;
+    display: grid; grid-template-columns: 28px 1fr; gap: 4px;
     padding: 12px 0; font-size: 0.875rem; line-height: 1.4; color: var(--text);
     transition: color .2s;
   }
   a::before { content: counter(toc, decimal-leading-zero); font: 400 0.6875rem/1.9 var(--f-mono); color: var(--muted); }
-  a::after { content: ""; position: absolute; left: -16px; top: 12px; bottom: 12px; width: 2px; background: var(--blue); opacity: 0; transition: opacity .2s; }
   a:hover { color: var(--blue); }
   a[aria-current] { color: var(--ink); font-weight: 500; }
   a[aria-current]::before { color: var(--blue); }
-  a[aria-current]::after { opacity: 1; }
 
   @media (max-width: 1024px) {
     .toc { border: 1px solid var(--line-2); padding: 14px 18px; }
@@ -91,6 +107,6 @@ const items = headings.filter((h) => h.depth === 2);
     .toc__title::after { content: "+"; font-size: 1rem; color: var(--blue); }
     details[open] .toc__title::after { content: "–"; }
     details[open] .toc__title { padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
-    a::after { display: none; }
+    ol::before, ol::after { display: none; }
   }
 </style>

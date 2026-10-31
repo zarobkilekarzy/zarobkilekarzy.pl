@@ -1,0 +1,125 @@
+name: Archiwum list oczekujących NFZ
+
+# Archiwizuje pliki NFZ z listami oczekujących i wyciąga z nich programy lekowe (README → „Archiwum list
+# oczekujących do programów lekowych”). NFZ aktualizuje je raz w miesiącu i nie udostępnia poprzednich, więc
+# niezapisany miesiąc przepada. Bez nowych plików przebieg niczego nie zapisuje.
+# Kod wyjścia archiwum.mjs to 0 także przy błędzie danych: surowe pliki mają się zapisać, a problem zgłosić.
+# Czerwony wynik daje ostatni krok, według pola `status` w raporcie.
+on:
+  workflow_dispatch:
+    inputs:
+      sucho:
+        description: 'Suchy przebieg: pobierz i sprawdź, nic nie zapisuj'
+        type: boolean
+        default: true
+      proba_zgloszenia:
+        description: 'Próba powiadomienia: otwórz zgłoszenie błędu (następny przebieg je zamknie)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: archiwum-nfz
+
+jobs:
+  archiwum:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Testy
+        run: node --test tools/programy-lekowe/test/archiwum.test.mjs
+
+      - name: Próba zgłoszenia
+        if: ${{ inputs.proba_zgloszenia }}
+        run: |
+          echo '{ "status": "blad", "bledy": ["Próba powiadomienia uruchomiona ręcznie. To nie jest prawdziwy błąd."], "ostrzezenia": [] }' > raport.json
+
+      - name: Suchy przebieg
+        if: ${{ inputs.sucho && !inputs.proba_zgloszenia }}
+        run: node tools/programy-lekowe/archiwum.mjs --sucho --raport raport.json
+
+      # Token tylko na zapis zawartości i tylko dla tych dwóch repozytoriów.
+      - name: Token zapisu
+        id: token
+        if: ${{ !inputs.sucho && !inputs.proba_zgloszenia }}
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.DANE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.DANE_APP_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            ${{ github.event.repository.name }}
+            zarobkilekarzy-dane-nfz
+          permission-contents: write
+
+      - name: Checkout surowych plików
+        if: ${{ !inputs.sucho && !inputs.proba_zgloszenia }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.repository_owner }}/zarobkilekarzy-dane-nfz
+          token: ${{ steps.token.outputs.token }}
+          path: .surowe
+
+      - name: Archiwum
+        if: ${{ !inputs.sucho && !inputs.proba_zgloszenia }}
+        run: node tools/programy-lekowe/archiwum.mjs --raw .surowe --raport raport.json
+
+      - name: Zapis surowych plików
+        if: ${{ !inputs.sucho && !inputs.proba_zgloszenia }}
+        working-directory: .surowe
+        run: |
+          git config user.name zarobkilekarzy
+          git config user.email noreply@zarobkilekarzy.pl
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Pliki NFZ: $(node -p "JSON.parse(require('fs').readFileSync('../raport.json','utf8')).wersja")"
+          git push
+
+      # Commit nakładamy na najnowszy main, bo w trakcie przebiegu mogło na nim coś przybyć. Płytki klon
+      # wyklucza rebase, więc cherry-pick. Push uruchamia zwykły deploy.
+      - name: Zapis przetworzonych danych
+        if: ${{ !inputs.sucho && !inputs.proba_zgloszenia }}
+        env:
+          TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          git config user.name zarobkilekarzy
+          git config user.email noreply@zarobkilekarzy.pl
+          git add src/data/programy-lekowe
+          git diff --cached --quiet && exit 0
+          git commit -m "Programy lekowe: dane NFZ za $(node -p "JSON.parse(require('fs').readFileSync('raport.json','utf8')).okres")"
+          SHA=$(git rev-parse HEAD)
+          URL="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          for proba in 1 2 3; do
+            git fetch --depth=1 "$URL" main
+            git checkout -q --detach FETCH_HEAD
+            if git cherry-pick "$SHA" && git push "$URL" HEAD:refs/heads/main; then exit 0; fi
+            git cherry-pick --abort || true
+            sleep 20
+          done
+          exit 1
+
+      - name: Zgłoszenie
+        if: ${{ always() && (!inputs.sucho || inputs.proba_zgloszenia) }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STAN_ZADANIA: ${{ job.status }}
+        run: node tools/programy-lekowe/raport.mjs raport.json
+
+      - name: Wynik
+        if: ${{ always() }}
+        run: |
+          test -f raport.json
+          ! grep -q '"status": "blad"' raport.json

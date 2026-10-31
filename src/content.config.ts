@@ -172,6 +172,8 @@ const news = defineCollection({
     coverAlt: z.string().optional(),
     /** podpis pod zdjęciem wpisu */
     coverCaption: z.string().optional(),
+    /** miniatura na listach zamiast `cover`, gdy wpis sam pokazuje obraz w treści (np. okładkę w odtwarzaczu): nie stoi nad tekstem */
+    thumb: image().optional(),
   }).refine((d) => !d.cover || d.coverAlt, { message: 'Zdjęcie wpisu (`cover`) wymaga opisu `coverAlt`.', path: ['coverAlt'] }),
 });
 

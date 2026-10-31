@@ -180,6 +180,7 @@ export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'do
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },
   // wpis o filmie „Doba”: pionowy wariant miniatury w kolorze (miniatura 16:9 przycięta do panelu gubiłaby liczby)
   '/aktualnosci/film-doba/': { illustration: filmDobaOg },
+  '/aktualnosci/podcasty/': { dots: MIKROFON_DOTS },
   // wpis o wersji angielskiej: ilustracja w kolorze, kadr na stronie angielskiej (z przodu)
   '/aktualnosci/strona-po-angielsku/': { illustration: stronaPoAngielsku, position: '66% 50%' },
   // wpis o analizie limitów płac: paski jak na obrazku analizy (zdjęciem wpisu jest obrazek OG analizy)

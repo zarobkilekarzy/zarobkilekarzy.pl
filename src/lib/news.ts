@@ -24,9 +24,11 @@ export const newsIllustration = {
   alt: 'Ilustracja: linia EKG na granatowej siatce z trzema uderzeniami; nad każdym kwadratowy znacznik, pod każdym zarys krótkiego wpisu.',
 };
 
-/** Zdjęcie wpisu na liście i na obrazku OG: własne (`cover`) albo ilustracja działu. */
+/** Zdjęcie wpisu na liście i na obrazku OG: własne (`cover`), sama miniatura (`thumb`) albo ilustracja działu. */
 export const newsImage = (entry: News) =>
-  entry.data.cover ? { src: entry.data.cover, alt: entry.data.coverAlt ?? '' } : newsIllustration;
+  entry.data.cover ? { src: entry.data.cover, alt: entry.data.coverAlt ?? '' }
+    : entry.data.thumb ? { src: entry.data.thumb, alt: '' }
+    : newsIllustration;
 
 /**
  * Czy miniaturę pokazać w całości: obraz szerszy niż kadr listy (infografika, obrazek OG) przycięty

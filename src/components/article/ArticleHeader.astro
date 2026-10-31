@@ -1,8 +1,8 @@
 ---
 /**
  * Nagłówek artykułu: okruszki, kategoria, tytuł, lead, metadane (data — z linkiem do historii zmian, podpis
- * „Redakcja” z linkiem do opisu pracy — rolę AI opisuje nota pod treścią, nie podpis obok przypisów —, czas czytania,
- * przypisy) i ramka „W skrócie”.
+ * „Redakcja” z linkiem do opisu pracy — rolę AI opisuje nota pod treścią, nie podpis obok przypisów; tekst gościnny
+ * podpisuje autor z linkiem do profilu X —, czas czytania, przypisy) i ramka „W skrócie”.
  * Z `aside` slot „aside” zajmuje miejsce ramki — dla materiałów, których hakiem jest narzędzie
  * (np. licznik długu w /dane/zadluzenie-szpitali/); obie kolumny są wtedy równe. Flaga zamiast
  * Astro.slots.has(): slot przekazany warunkowo kompilator rejestruje zawsze.
@@ -12,6 +12,7 @@ import Eyebrow from '@/components/ui/Eyebrow.astro';
 import Heading from '@/components/ui/Heading.astro';
 import Num from '@/components/ui/Num.astro';
 import { formatDateIn, isoDate, typo } from '@/lib/format';
+import { linkAttrs } from '@/lib/links';
 import { localeOf } from '@/i18n/locales';
 import { uiOf } from '@/i18n/ui';
 import type { Crumb } from '@/lib/seo';
@@ -27,6 +28,8 @@ interface Props {
   published?: Date;
   /** artykuł ma „Historię zmian” — data aktualizacji prowadzi do niej */
   changelog?: boolean;
+  /** tekst gościnny: podpis autora zamiast „Redakcja” */
+  author?: { name: string; handle: string; role: string };
   minutes: number;
   /** liczba przypisów — lista „Przypisy” (#przypisy) na końcu treści */
   notesCount?: number;
@@ -35,7 +38,7 @@ interface Props {
   aside?: boolean;
 }
 
-const { title, summary, section, crumbs, updated, published, changelog = false, minutes, notesCount = 0, keyPoints = [], aside = false } = Astro.props;
+const { title, summary, section, crumbs, updated, published, changelog = false, author, minutes, notesCount = 0, keyPoints = [], aside = false } = Astro.props;
 const date = updated ?? published;
 const t = uiOf(Astro.url).article;
 const locale = localeOf(Astro.url.pathname);
@@ -60,7 +63,9 @@ const locale = localeOf(Astro.url.pathname);
             </dd>
           </div>
         )}
-        <div><dt>{t.byline}</dt><dd><a href={t.bylineHref}>{t.bylineText}</a></dd></div>
+        {author
+          ? <div><dt>{author.role}</dt><dd><a {...{ ...linkAttrs(`https://x.com/${author.handle}`), rel: 'nofollow noopener' }}>{author.name}</a></dd></div>
+          : <div><dt>{t.byline}</dt><dd><a href={t.bylineHref}>{t.bylineText}</a></dd></div>}
         <div><dt>{t.readingTime}</dt><dd>{minutes} min</dd></div>
         {notesCount > 0 && <div><dt>{t.notes}</dt><dd><a href={`#${t.notesId}`}>{t.notesWithSources(notesCount)}</a></dd></div>}
       </dl>

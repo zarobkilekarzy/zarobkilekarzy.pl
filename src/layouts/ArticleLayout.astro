@@ -22,6 +22,7 @@ import Series from '@/components/article/Series.astro';
 import TranslationNote from '@/components/article/TranslationNote.astro';
 import ArticleList from '@/components/blocks/ArticleList.astro';
 import Aside from '@/components/blocks/Aside.astro';
+import XProfile from '@/components/blocks/XProfile.astro';
 import InfographicsSection from '@/components/blocks/InfographicsSection.astro';
 import PostulatCta from '@/components/site/PostulatCta.astro';
 import { articleHref, getFootnotes, getRelated, readingMinutes, sectionOf, type Article } from '@/lib/content';
@@ -49,6 +50,8 @@ const en = 'source' in props;
 const source = 'source' in props ? props.source : (article as Article);
 const { updated, date } = source.data;
 const changelog = article.data.changelog;
+// Tekst gościnny; etykieta `role` jest po polsku, a tłumaczeń takich tekstów jeszcze nie ma
+const author = en ? undefined : source.data.author;
 
 const sectionEn = en ? SECTIONS_EN[source.data.category] : undefined;
 const section = sectionEn ?? sectionOf(source);
@@ -120,6 +123,7 @@ const seo: SeoInput = {
       updated={updated}
       published={date}
       changelog={Boolean(changelog)}
+      author={author}
       minutes={readingMinutes(article)}
       notesCount={footnotes.count}
       keyPoints={keyPoints}
@@ -149,7 +153,9 @@ const seo: SeoInput = {
         {changelog && <Changelog entries={changelog} class="article__log" />}
 
         <footer class="article__foot">
-          <p class="article__made"><strong>{t.article.madeTitle}</strong> {t.article.madeText}</p>
+          {author
+            ? <XProfile name={author.name} handle={author.handle} avatar={author.avatar} bio={author.bio} eyebrow={`${author.role} tekstu`} width="md" />
+            : <p class="article__made"><strong>{t.article.madeTitle}</strong> {t.article.madeText}</p>}
           <div class="article__fix">
             <p><strong>{t.article.fixTitle}</strong> {t.article.fixText}</p>
             <LinkArrow href={t.article.fixHref}>{t.article.fixLink}</LinkArrow>

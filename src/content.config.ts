@@ -85,6 +85,13 @@ const articles = defineCollection({
       description: z.string().optional(),
       /** materiał z treścią, który nie ma trafić do wyszukiwarek (noindex, poza sitemapą) */
       noindex: z.boolean().default(false),
+      /**
+       * Tekst gościnny: podpis w nagłówku zamiast „Redakcja” i karta X pod treścią zamiast noty „Jak powstał ten tekst”.
+       * `role` = etykieta podpisu („Autorka”, „Autor”); `name`, `bio`, `avatar` — tylko to, co jest w profilu X.
+       */
+      author: z
+        .object({ name: z.string(), handle: z.string(), role: z.string(), bio: z.string().optional(), avatar: image().optional() })
+        .optional(),
       /** schema.org/Dataset dla działu Dane — uzupełnienia domyślnych wartości (licencja, zasięg) */
       dataset: z
         .object({

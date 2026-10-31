@@ -1,0 +1,129 @@
+---
+/**
+ * Podstrona odcinka podcastu, np. /podcasty/pol-etatu/ (treść: src/data/podcasty.ts): opis, odtwarzacz YouTube
+ * (Google ładuje się dopiero po kliknięciu), źródła i nota o tym, jak powstał odcinek. Nagrań nie trzymamy w serwisie.
+ * Układ nagłówka i stopki jak we wpisie aktualności.
+ */
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
+import { Image } from 'astro:assets';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import Breadcrumbs from '@/components/layout/Breadcrumbs.astro';
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Prose from '@/components/article/Prose.astro';
+import ShareLinks from '@/components/article/ShareLinks.astro';
+import YouTube from '@/components/blocks/YouTube.astro';
+import { episodeHref, episodes, podcastPage } from '@/data/podcasty';
+import { contact } from '@/data/o-serwisie';
+import { formatDate, isoDate, typo } from '@/lib/format';
+import { variantWidths } from '@/lib/images';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+export const getStaticPaths = (() => episodes.map((ep) => ({ params: { slug: ep.slug }, props: { ep } }))) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { ep } = Astro.props;
+const url = new URL(episodeHref(ep), Astro.site).href;
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: podcastPage.title, href: podcastPage.href }, { label: ep.title }];
+const seo: SeoInput = {
+  title: ep.title,
+  description: ep.summary,
+  type: 'article',
+  dates: { published: ep.date },
+  section: podcastPage.title,
+  breadcrumbs: crumbs,
+  entities: [{ kind: 'article' }],
+};
+const mail = `mailto:${contact.email}`;
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="ep">
+    <header>
+      <Breadcrumbs items={crumbs} />
+      <div class="ep__intro">
+        <Eyebrow>Podcast · odcinek {ep.number}</Eyebrow>
+        {/* tytuł łamany po dwukropku, jak na okładce odcinka */}
+        <Heading as="h1" size="display" class="ep__title">{ep.title.split(/(?<=:)\s/).map((wiersz, i) => <Fragment>{i > 0 && <br />}{typo(wiersz)}</Fragment>)}</Heading>
+        <p class="lead ep__lead">{typo(ep.lead)}</p>
+        <p class="ep__meta"><time datetime={isoDate(ep.date)}>{formatDate(ep.date)}</time> · {ep.duration}</p>
+      </div>
+    </header>
+
+    <div class="ep__player">
+      {ep.youtube
+        ? <YouTube id={ep.youtube} title={ep.title} channel="zarobkilekarzy.pl" duration={ep.duration} cover={ep.cover} minimal />
+        : (
+          <Fragment>
+            {ep.cover && <Image class="ep__cover" src={ep.cover} alt="" widths={variantWidths(ep.cover, [640, 960])} sizes="(min-width: 1025px) 950px, calc(100vw - 32px)" />}
+            <p class="ep__soon">Odtwarzacz pojawi się po publikacji odcinka na YouTube.</p>
+          </Fragment>
+        )}
+    </div>
+    <p class="ep__note">{typo(ep.note)}</p>
+
+    <div class="ep__body">
+      <Prose><h2 id="zrodla">Źródła odcinka</h2></Prose>
+      <dl class="ep__src">
+        {ep.sources.map((g) => (
+          <div>
+            <dt>{typo(g.title)}</dt>
+            <dd>
+              <ul>{g.sources.map((s) => <li><a href={s.href}>{typo(s.label)}</a></li>)}</ul>
+              {g.note && <p>{typo(g.note)}</p>}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <Prose class="ep__made">
+        <h2 id="jak-powstal">Jak powstał ten odcinek</h2>
+        <p>Liczby, cytaty i opisy przepisów pochodzą z publicznych dokumentów i danych wymienionych wyżej. Narzędzia AI pomagają przygotować scenariusz i głosy. O tezach decyduje redakcja, która odpowiada za odcinek. <a href="/o-projekcie/#jak-powstaja-teksty">Więcej o zasadach pracy</a>.</p>
+        <p>Jeśli w odcinku jest błąd, napisz: <a href={mail}>{contact.email}</a>. Sprostowania publikujemy <a href="/o-projekcie/#sprostowania">w jednym rejestrze</a>.</p>
+      </Prose>
+
+      <footer class="ep__foot">
+        <ShareLinks url={url} title={ep.title} />
+        <LinkArrow href={podcastPage.href}>Wszystkie odcinki</LinkArrow>
+      </footer>
+    </div>
+  </Section>
+</BaseLayout>
+
+<style>
+  .ep { padding-top: clamp(32px, 4vw, 56px); }
+  .ep__intro { margin-top: 40px; }
+  .ep :global(.ep__title) { font-size: clamp(2.25rem, 4.2vw, 3.75rem); margin-bottom: 24px; }
+  .ep__lead { font-size: 1.1875rem; max-width: 40em; }
+  .ep__meta { margin-top: 20px; font: 400 0.8125rem/1.2 var(--f-mono); letter-spacing: .02em; color: var(--muted); }
+
+  .ep__player { margin-top: clamp(32px, 4vw, 48px); max-width: 1000px; }
+  .ep :global(.ep__cover) { display: block; width: 100%; height: auto; border: 1px solid var(--line); }
+  .ep__soon { margin: 8px 0 0; font: 400 0.75rem/1.55 var(--f-mono); color: var(--muted); }
+  .ep__note { margin: 12px 0 0; max-width: 780px; font: 400 0.8125rem/1.5 var(--f-body); color: var(--muted); }
+
+  .ep__body { margin-top: clamp(40px, 5vw, 64px); padding-top: 40px; border-top: 1px solid var(--line); }
+  /* Źródła w dwóch kolumnach na szerokim ekranie; grupa tematu się nie rozdziela */
+  .ep__src { max-width: 1000px; margin: 20px 0 0; column-width: 340px; column-gap: 48px; }
+  .ep__src > div { break-inside: avoid; padding-bottom: 24px; }
+  .ep__src dt { font: 500 0.9375rem/1.4 var(--f-body); color: var(--text-strong); }
+  .ep__src dd { margin: 6px 0 0; }
+  .ep__src ul { margin: 0; padding: 0; list-style: none; }
+  .ep__src li { margin-top: 4px; }
+  .ep__src dd, .ep__src dd p { font: 400 0.875rem/1.45 var(--f-body); color: var(--text); }
+  .ep__src dd p { margin: 6px 0 0; color: var(--muted); }
+  .ep__src a { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .ep__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
+
+  .ep :global(.ep__made) { margin-top: 32px; }
+  .ep__foot {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px 40px;
+    margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--line); max-width: 780px;
+  }
+
+  @media (max-width: 720px) {
+    .ep__lead { font-size: 1.0625rem; }
+  }
+</style>

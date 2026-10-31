@@ -3,7 +3,7 @@
  * Artykuły mają je automatycznie (lib/og/presets.ts) i nadpisują polem `og` we frontmatterze.
  * Strona główna jest też obrazkiem domyślnym dla tras bez własnego wpisu.
  */
-import type { OgPage, OgStamp } from '@/types';
+import type { OgDots, OgPage, OgStamp } from '@/types';
 import { danePage, dataTopics } from '@/data/dane';
 import { getArticle, getTopicGroups } from '@/lib/content';
 import { lastUpdated } from '@/i18n/entries';
@@ -36,6 +36,9 @@ import { COUNTRIES, WINDOW, ratePer100k, type CountryKey } from '@/data/odpowied
 import { pseudonymDemo } from '@/data/postulat';
 import { createHmac } from 'node:crypto';
 import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
+import { frameLines } from '@/lib/siatka';
+import { PICTOGRAMS } from '@/lib/siatka/piktogramy';
+import { episodeHref, episodes } from '@/data/podcasty';
 import { globeOgBody } from '@/lib/swiat/og';
 import { CASES as COURT_CASES, CATALOG_HREF, GAME_HREF, SCALE as COURT_SCALE, caseHref, verdictLabel } from '@/data/sad-lekarski';
 
@@ -49,6 +52,9 @@ const answered = (...r: Response[]) => monitoring.facilities.filter((f) => r.inc
 const fullLists = monitoring.facilities.filter((f) => f.payroll).length;
 
 /* ---------- Wykresy na obrazkach (strony i artykuły) ---------- */
+
+// ramka 21 pól zamiast domyślnych 20: mikrofon ma nieparzystą szerokość i inaczej stałby o pół pola poza środkiem
+const MIKROFON_DOTS: OgDots = { mask: frameLines(PICTOGRAMS.mikrofon, 21, 22), codes: { '#': { size: 'on', color: 'blue' }, o: { size: 'mid', color: 'blue' } } };
 
 const MEDIA_W = 470; // kolumna mediów w lib/og/render.ts
 const PANEL_H = 440;
@@ -369,6 +375,20 @@ export const ogPages: Record<string, OgPage> = {
     position: '70% 50%',
     footer: { text: 'Co nowego w projekcie' },
   },
+  '/podcasty/': {
+    eyebrow: 'Publicystyka',
+    title: 'Podcasty',
+    lead: 'Rozmowy o pieniądzach publicznych w ochronie zdrowia i o przepisach, które o nich decydują.',
+    footer: { text: 'Źródła przy każdym odcinku' },
+    dots: MIKROFON_DOTS,
+  },
+  ...Object.fromEntries(episodes.map((ep) => [episodeHref(ep), {
+    eyebrow: `Podcast · odcinek ${ep.number}`,
+    title: ep.title.replace(': ', ':\n'),
+    lead: ep.summary,
+    footer: { text: 'Źródła pod odcinkiem' },
+    dots: MIKROFON_DOTS,
+  }])),
   '/media/': {
     eyebrow: 'O serwisie',
     title: 'Materiały\nmedialne',

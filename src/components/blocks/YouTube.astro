@@ -5,10 +5,12 @@
  * opcjonalnie na tle kadru z filmu trzymanego u nas (`poster`, czarno-biały i przyciemniony),
  * a po kliknięciu skrypt podmienia ją na ramkę z youtube-nocookie.com (CSP: frame-src w
  * integrations/seo/headers.ts). Bez JavaScriptu okładka jest zwykłym linkiem do filmu.
+ * Własny film może mieć gotową okładkę (`cover`, 16:9, w kolorze, z tytułem w grafice), która zastępuje okładkę serwisu.
  *   <YouTube id="bNMPCu5xpEY" title="…" channel="…" duration="3:27" />
  */
 import { Image } from 'astro:assets';
 import { typo } from '@/lib/format';
+import { variantWidths } from '@/lib/images';
 import { localeOf } from '@/i18n/locales';
 
 interface Props {
@@ -22,27 +24,40 @@ interface Props {
   duration?: string;
   /** kadr z filmu na tło okładki (src/assets/…, bez metadanych — research/grafiki `wydaj`) */
   poster?: ImageMetadata;
+  /** gotowa okładka filmu (16:9): bez filtra i bez paska z tytułem, przycisk w prawym dolnym rogu; ma pierwszeństwo przed `poster` */
+  cover?: ImageMetadata;
+  /**
+   * Odtwarzacz z najmniejszą liczbą elementów, jaką dopuszcza YouTube, z przewijaniem i pełnym ekranem: bez adnotacji.
+   * Tylko udokumentowane parametry (developers.google.com/youtube/player_parameters): polityka zakazuje nakładek i zmian
+   * spoza dokumentacji, a `modestbranding` i `showinfo` już nie działają. `controls=0` zabrałoby przewijanie.
+   */
+  minimal?: boolean;
 }
 
-const { id, title, channel, duration, poster } = Astro.props;
+const { id, title, channel, duration, poster, cover, minimal } = Astro.props;
 const watch = `https://www.youtube.com/watch?v=${id}`;
-const embed = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
+const embed = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0${minimal ? '&iv_load_policy=3&playsinline=1' : ''}`;
 const text = localeOf(Astro.url.pathname) === 'en'
   ? { play: 'Play the video', note: 'Clicking loads the YouTube player (Google).' }
   : { play: 'Odtwórz film', note: 'Kliknięcie załaduje odtwarzacz YouTube (Google).' };
 ---
-<div class="yt" data-yt-embed={embed} data-yt-title={title}>
+<div class:list={['yt', cover && 'yt--cover']} data-yt-embed={embed} data-yt-title={title}>
   <a class="yt__cover" href={watch} rel="noopener">
-    {poster && <Image class="yt__poster" src={poster} alt="" widths={[poster.width]} sizes="(min-width: 1025px) 950px, calc(100vw - 32px)" loading="lazy" />}
+    {cover
+      ? <Image class="yt__image" src={cover} alt={`${text.play}: ${title}`} widths={variantWidths(cover, [640, 960])} sizes="(min-width: 1025px) 950px, calc(100vw - 32px)" loading="lazy" />
+      : poster && <Image class="yt__poster" src={poster} alt="" widths={[poster.width]} sizes="(min-width: 1025px) 950px, calc(100vw - 32px)" loading="lazy" />}
     <span class="yt__play" aria-hidden="true">
       <svg viewBox="0 0 24 24" width="28" height="28"><path d="M8 5.5v13l11-6.5z" fill="currentColor" /></svg>
     </span>
-    <span class="yt__meta">
-      <span class="yt__eyebrow">YouTube · {channel}{duration && ` · ${duration}`}</span>
-      <span class="yt__title">{typo(title)}</span>
-      <span class="yt__note">{text.play}. {text.note}</span>
-    </span>
+    {!cover && (
+      <span class="yt__meta">
+        <span class="yt__eyebrow">YouTube · {channel}{duration && ` · ${duration}`}</span>
+        <span class="yt__title">{typo(title)}</span>
+        <span class="yt__note">{text.play}. {text.note}</span>
+      </span>
+    )}
   </a>
+  {cover && <p class="yt__below">YouTube · {channel}{duration && ` · ${duration}`}. {text.note}</p>}
 </div>
 
 <script>
@@ -60,6 +75,7 @@ const text = localeOf(Astro.url.pathname) === 'en'
       frame.referrerPolicy = 'strict-origin-when-cross-origin';
       frame.className = 'yt__frame';
       cover.replaceWith(frame);
+      box.querySelector('.yt__below')?.remove();
       frame.focus();
     });
   });
@@ -71,6 +87,8 @@ const text = localeOf(Astro.url.pathname) === 'en'
   .yt__cover, .yt :global(.yt__frame) {
     display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--line);
   }
+  /* polityka YouTube: wnętrze odtwarzacza co najmniej 200×200 px (16:9 na telefonie wyszłoby ok. 190 px); 202 = 200 + obramowanie */
+  .yt :global(.yt__frame) { min-height: 202px; }
   .yt__cover {
     position: relative; overflow: hidden; color: #fff; text-decoration: none;
     background:
@@ -87,6 +105,10 @@ const text = localeOf(Astro.url.pathname) === 'en'
     background: var(--blue-fill); color: #fff; transition: transform 0.2s;
   }
   .yt__cover:hover .yt__play, .yt__cover:focus-visible .yt__play { transform: scale(1.08); }
+  /* gotowa okładka: obraz bez filtra, przycisk w wolnym polu obok tytułu; biały, bo okładka bywa kobaltowa */
+  .yt__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .yt--cover .yt__play { left: auto; right: 5%; top: auto; bottom: 8%; translate: none; background: #fff; color: var(--blue-fill); } /* kolor-stały: przycisk na okładce w stałych barwach, niezależnie od motywu */
+  .yt__below { margin: 8px 0 0; font: 400 0.8125rem/1.4 var(--f-body); color: var(--muted); }
   .yt__meta {
     position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; display: grid; gap: 4px; padding: 16px 20px;
     background: linear-gradient(transparent, color-mix(in oklab, var(--inverse) 92%, transparent) 40%);

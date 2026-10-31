@@ -178,6 +178,27 @@ export const PICTOGRAMS = {
     '..######..',
     '...####...',
   ],
+  // mikrofon (/podcasty/): wąska kapsuła z kratką, uchwyt obejmuje jej dolną połowę (szersza kapsuła czytała się jak fotel)
+  mikrofon: [
+    '.....###.....',
+    '....#####....',
+    '....#ooo#....',
+    '....#####....',
+    '....#ooo#....',
+    '....#####....',
+    '....#ooo#....',
+    '.#..#####..#.',
+    '.#..#####..#.',
+    '.#..#####..#.',
+    '.#..#####..#.',
+    '.#...###...#.',
+    '.##.......##.',
+    '..##.....##..',
+    '...#######...',
+    '......#......',
+    '......#......',
+    '....#####....',
+  ],
 } as const satisfies Record<string, readonly string[]>;
 
 export type PictogramName = keyof typeof PICTOGRAMS;

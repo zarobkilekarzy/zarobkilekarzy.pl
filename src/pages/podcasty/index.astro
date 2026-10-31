@@ -1,0 +1,79 @@
+---
+/**
+ * /podcasty/ — indeks odcinków podcastu, od najnowszego (treść: src/data/podcasty.ts).
+ * Odtwarzacz i źródła są na podstronie odcinka (./[slug].astro). Układ listy jak w /aktualnosci/.
+ */
+import { Image } from 'astro:assets';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import Icon from '@/components/ui/Icon.astro';
+import { episodeHref, episodes, podcastPage } from '@/data/podcasty';
+import { formatDate, isoDate, plural, typo } from '@/lib/format';
+import { variantWidths } from '@/lib/images';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: podcastPage.title }];
+const seo: SeoInput = {
+  title: podcastPage.seoTitle,
+  description: podcastPage.description,
+  breadcrumbs: crumbs,
+  page: { type: 'CollectionPage', items: episodes.map((ep) => ({ name: ep.title, url: episodeHref(ep) })) },
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="pods-top">
+    <PageHeader title={podcastPage.title} lead={podcastPage.lead} eyebrow="Publicystyka" crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: plural(episodes.length, ['Odcinek', 'Odcinki', 'Odcinków']), value: episodes.length },
+          { label: 'Najnowszy', value: episodes[0].date },
+        ]}
+      />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom">
+    <ol class="eps">
+      {episodes.map((ep) => (
+        <li class="eps__item">
+          <a href={episodeHref(ep)}>
+            {ep.cover && <Image class="eps__img" src={ep.cover} alt="" widths={variantWidths(ep.cover, [360, 720])} sizes="(min-width: 721px) 360px, calc(100vw - 32px)" />}
+            <span class="eps__body">
+              <span class="eps__meta">Odcinek {ep.number} · <time datetime={isoDate(ep.date)}>{formatDate(ep.date)}</time> · {ep.duration}</span>
+              <h2 class="eps__title">{typo(ep.title)}</h2>
+              <p class="eps__desc">{typo(ep.summary)}</p>
+            </span>
+            <Icon name="arrow-ne" class="eps__arrow" />
+          </a>
+        </li>
+      ))}
+    </ol>
+  </Section>
+</BaseLayout>
+
+<style>
+  .pods-top { padding-top: clamp(32px, 4vw, 56px); }
+
+  .eps { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+  .eps__item a {
+    position: relative; display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 16px 32px; align-items: start;
+    padding: 26px 48px 28px 0; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none;
+  }
+  .eps :global(.eps__img) { display: block; width: 100%; height: auto; border: 1px solid var(--line); }
+  .eps__meta { display: block; margin-bottom: 10px; font: 400 0.8125rem/1.2 var(--f-mono); letter-spacing: .02em; color: var(--muted); }
+  .eps__title { margin: 0 0 10px; font: 500 1.5rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); transition: color .2s; }
+  .eps__desc { max-width: 60ch; font-size: 1rem; line-height: 1.6; }
+  .eps :global(.eps__arrow) { position: absolute; top: 30px; right: 0; color: var(--line-2); transition: color .2s, transform .3s var(--ease); }
+  .eps__item a:hover .eps__title { color: var(--blue); }
+  .eps__item a:hover :global(.eps__arrow) { color: var(--blue); transform: translate(2px, -2px); }
+
+  @media (max-width: 1024px) {
+    .eps__item a { grid-template-columns: 280px minmax(0, 1fr); gap: 16px 24px; }
+  }
+  @media (max-width: 720px) {
+    .eps__item a { grid-template-columns: minmax(0, 1fr); padding-right: 36px; }
+    .eps__title { font-size: 1.25rem; }
+  }
+</style>

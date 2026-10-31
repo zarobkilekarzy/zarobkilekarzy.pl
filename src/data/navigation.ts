@@ -3,6 +3,7 @@ import type { IndexRef, Link, NavGroup, SearchDoc } from '@/types';
 import { rightsGroups } from '@/data/prawa-pacjenta';
 import { programGroups, programPage } from '@/data/program';
 import { dzialajPage, writeToolOn } from '@/data/dzialaj';
+import { episodeHref, episodes, podcastPage } from '@/data/podcasty';
 import { barometrOthers, barometrPage, barometrParties } from '@/data/barometr-polityczny';
 import { monitoring } from '@/lib/monitoring';
 import { formatPL, plural } from '@/lib/format';
@@ -68,6 +69,7 @@ export const footerNav: NavGroup[] = [
       { label: 'Barometr polityczny', href: '/barometr-polityczny/' },
       { label: 'Najczęstsze zarzuty', href: '/faq/' },
       { label: 'Materiały medialne', href: '/media/' },
+      { label: 'Podcasty', href: podcastPage.href },
       { label: 'Metodologia', href: '/o-projekcie/#zasady' },
       { label: 'Sprostowania', href: '/o-projekcie/#sprostowania' },
       { label: 'Jak możesz pomóc', href: '/dzialaj/' },
@@ -134,6 +136,8 @@ export const searchExtras: SearchDoc[] = [
   },
   { id: 'o-projekcie', title: 'O projekcie: cel, zasady, sprostowania', category: 'O serwisie', href: '/o-projekcie/', keywords: ['kontakt', 'sprostowanie', 'metodologia', 'zasady', 'kto prowadzi'] },
   { id: 'media', title: 'Materiały medialne: infografiki do pobrania', category: 'O serwisie', href: '/media/', keywords: ['infografika', 'grafiki', 'do pobrania', 'dla mediów', 'press kit', 'dziennikarze', 'licencja'] },
+  { id: 'podcasty', title: 'Podcasty: rozmowy o pieniądzach w ochronie zdrowia', category: 'O serwisie', href: podcastPage.href, keywords: ['podcast', 'odcinki', 'rozmowa', 'YouTube'] },
+  ...episodes.map((ep) => ({ id: `podcast-${ep.slug}`, title: `Podcast: ${ep.title}`, category: 'O serwisie', href: episodeHref(ep), keywords: ['podcast', 'odcinek'], summary: ep.summary })),
   { id: 'prywatnosc', title: 'Polityka prywatności', category: 'O serwisie', href: '/prywatnosc/', keywords: ['RODO', 'dane osobowe', 'ciasteczka', 'cookies', 'prywatność'] },
   { id: 'sad-lekarski', title: 'Czy orzekasz jak sąd lekarski? Gra na orzeczeniach', category: 'Przewodnik', href: '/sad-lekarski/', keywords: ['gra', 'quiz', 'sąd lekarski', 'kary', 'odpowiedzialność zawodowa', 'NSL'] },
   { id: 'orzeczenia-sadow-lekarskich', title: 'Katalog orzeczeń sądów lekarskich', category: 'Przewodnik', href: '/sad-lekarski/orzeczenia/', keywords: ['orzeczenia', 'wyroki', 'rejestr', 'sąd lekarski', 'kary', 'pozbawienie prawa do zawodu', 'upomnienie', 'nagana'] },

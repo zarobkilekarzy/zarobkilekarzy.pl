@@ -69,9 +69,19 @@ const items = headings.filter((h) => h.depth === 2);
       window.addEventListener('resize', schedule, { passive: true });
       update();
 
-      // Na wąskim ekranie spis jest zwinięty domyślnie
-      const details = this.querySelector('details');
-      if (details && window.matchMedia('(max-width: 1024px)').matches) details.open = false;
+      // Na wąskim ekranie nagłówek zwija i rozwija spis (domyślnie zwinięty); na szerokim spis jest zawsze otwarty
+      const details = this.querySelector('details')!;
+      const summary = details.querySelector('summary')!;
+      const narrow = window.matchMedia('(max-width: 1024px)');
+      const syncLayout = () => {
+        details.open = !narrow.matches;
+        summary.tabIndex = narrow.matches ? 0 : -1;
+      };
+      summary.addEventListener('click', (event) => {
+        if (!narrow.matches) event.preventDefault();
+      });
+      narrow.addEventListener('change', syncLayout);
+      syncLayout();
     }
   }
 

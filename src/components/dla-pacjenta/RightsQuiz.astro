@@ -1,0 +1,199 @@
+---
+/**
+ * „Tak czy nie?”: pytania z data/prawa-pacjenta.ts jako krótki test. Odpowiedź odsłania werdykt, jedno zdanie
+ * i artykuł ustawy. Nic nie zapisujemy ani nie wysyłamy. Bez JS wszystkie pytania stoją na liście z odpowiedziami.
+ */
+import Button from '@/components/ui/Button.astro';
+import Icon from '@/components/ui/Icon.astro';
+import { SHAPES } from '@/lib/siatka';
+import { localeOf } from '@/i18n/locales';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+const en = localeOf(Astro.url.pathname) === 'en';
+const { ACT, rightsGroups } = en ? await import('@/data/en/prawa-pacjenta') : await import('@/data/prawa-pacjenta');
+const { QUIZ_IDS } = en ? await import('@/data/en/dla-pacjenta') : await import('@/data/dla-pacjenta');
+const T = en
+  ? {
+      head: 'Yes or no?', yes: 'Yes', no: 'No', hit: 'Correct.', miss: 'The other way round.', act: 'of the Act on patient rights',
+      answer: 'Full answer →', next: 'Next question', result: 'See the result', of: 'correct', rights: '/en/patient-rights/',
+      end: 'All the rights, with the article of the act for each answer and a sentence you can calmly say in the surgery, are on one page.',
+      know: 'See patient rights', again: 'Try again', skipQ: 'Prefer the answers straight away?', skip: 'All the rights are on one page',
+      count: 'Question {n} of {m}', score: 'Result',
+    }
+  : {
+      head: 'Tak czy nie?', yes: 'Tak', no: 'Nie', hit: 'Dobrze.', miss: 'Odwrotnie.', act: 'ustawy o prawach pacjenta',
+      answer: 'Cała odpowiedź →', next: 'Następne pytanie', result: 'Zobacz wynik', of: 'dobrze', rights: '/prawa-pacjenta/',
+      end: 'Wszystkie prawa, z artykułem ustawy przy każdej odpowiedzi i zdaniem, które da się spokojnie powiedzieć w gabinecie, są na jednej stronie.',
+      know: 'Poznaj prawa pacjenta', again: 'Jeszcze raz', skipQ: 'Wolisz od razu odpowiedzi?', skip: 'Wszystkie prawa są na jednej stronie',
+      count: 'Pytanie {n} z {m}', score: 'Wynik',
+    };
+
+const all = rightsGroups.flatMap((g) => g.items);
+const items = QUIZ_IDS.map((id) => {
+  const item = all.find((i) => i.id === id);
+  if (!item) throw new Error(`RightsQuiz: brak pytania „${id}” w data/prawa-pacjenta.ts`);
+  return item;
+});
+---
+<zl-rights-quiz class="quiz" data-count-text={T.count} data-score-text={T.score}>
+  <div class="mono-label tool-head">
+    <p><span>{T.head}</span> <span class="quiz__count" data-count role="status"></span></p>
+    <ol class="quiz__dots" aria-hidden="true">
+      {items.map(() => (
+        <li data-dot>
+          <svg viewBox="0 0 12 12">
+            <g class="s-off" set:html={SHAPES.off} />
+            <g class="s-hit" set:html={SHAPES.on} />
+            <g class="s-miss" set:html={SHAPES.miss} />
+          </svg>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  {items.map((item, i) => (
+    <article class="quiz__card" data-card data-verdict={item.verdict}>
+      <p class="quiz__q">{typo(item.q)}</p>
+      <div class="quiz__choices">
+        <button type="button" class="quiz__choice" data-pick={T.yes}>{T.yes}</button>
+        <button type="button" class="quiz__choice" data-pick={T.no}>{T.no}</button>
+      </div>
+      <div class="quiz__answer">
+        <p class="quiz__verdict">
+          <span class="quiz__mark quiz__mark--hit"><Icon name="check" size={18} /> {T.hit}</span>
+          <span class="quiz__mark quiz__mark--miss"><Icon name="close" size={18} /> {T.miss}</span>
+          <strong>{item.verdict}</strong>
+        </p>
+        <p class="quiz__short">{typo(item.short)}</p>
+        <p class="quiz__basis"><a {...linkAttrs(ACT.url)}>{item.basis} {T.act}</a><a href={`${T.rights}#${item.id}`}>{T.answer}</a></p>
+        <div class="quiz__next"><Button data-next>{i < items.length - 1 ? T.next : T.result}</Button></div>
+      </div>
+    </article>
+  ))}
+
+  <div class="quiz__end" data-end hidden>
+    <p class="quiz__score"><span data-score>0</span> <span class="quiz__of">{en ? 'of' : 'z'} {items.length} {T.of}</span></p>
+    <p class="quiz__short">{T.end}</p>
+    <div class="quiz__end-actions">
+      <Button href={T.rights}>{T.know}</Button>
+      <Button variant="ghost" icon="refresh" data-restart>{T.again}</Button>
+    </div>
+  </div>
+
+  <p class="quiz__skip">{T.skipQ} <a href={T.rights}>{T.skip}</a>.</p>
+</zl-rights-quiz>
+
+<script>
+  class RightsQuiz extends HTMLElement {
+    connectedCallback() {
+      const cards = [...this.querySelectorAll<HTMLElement>('[data-card]')];
+      const dots = [...this.querySelectorAll<HTMLElement>('[data-dot]')];
+      const count = this.querySelector<HTMLElement>('[data-count]')!;
+      const end = this.querySelector<HTMLElement>('[data-end]')!;
+      const score = this.querySelector<HTMLElement>('[data-score]')!;
+      let hits = 0;
+
+      const show = (n: number, focus = false) => {
+        cards.forEach((c, k) => c.classList.toggle('is-current', k === n));
+        dots.forEach((d, k) => d.classList.toggle('is-current', k === n));
+        end.hidden = n < cards.length;
+        count.textContent = n < cards.length
+          ? (this.dataset.countText ?? '').replace('{n}', String(n + 1)).replace('{m}', String(cards.length))
+          : this.dataset.scoreText ?? '';
+        score.textContent = String(hits);
+        if (focus) (n < cards.length ? cards[n].querySelector<HTMLElement>('[data-pick]') : end.querySelector<HTMLElement>('a'))?.focus({ preventScroll: true });
+      };
+
+      cards.forEach((card, k) => {
+        card.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            if (card.classList.contains('is-done')) return;
+            const hit = btn.dataset.pick === card.dataset.verdict;
+            hits += hit ? 1 : 0;
+            btn.classList.add('is-picked');
+            card.classList.add('is-done', hit ? 'is-hit' : 'is-miss');
+            card.querySelector<HTMLElement>(`[data-pick="${card.dataset.verdict}"]`)?.classList.add('is-right');
+            dots[k].dataset.state = hit ? 'hit' : 'miss';
+            card.querySelector<HTMLElement>('[data-next]')?.focus({ preventScroll: true });
+          });
+        });
+        card.querySelector('[data-next]')?.addEventListener('click', () => show(k + 1, true));
+      });
+
+      this.querySelector('[data-restart]')?.addEventListener('click', () => {
+        hits = 0;
+        cards.forEach((c) => {
+          c.classList.remove('is-done', 'is-hit', 'is-miss');
+          c.querySelectorAll('[data-pick]').forEach((b) => b.classList.remove('is-picked', 'is-right'));
+        });
+        dots.forEach((d) => { delete d.dataset.state; });
+        show(0, true);
+      });
+
+      show(0);
+    }
+  }
+
+  if (!customElements.get('zl-rights-quiz')) customElements.define('zl-rights-quiz', RightsQuiz);
+</script>
+
+<style>
+  .quiz { display: block; }
+  .quiz__count { margin-left: 8px; color: var(--ink); }
+  .quiz__dots { display: none; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .quiz__dots li { width: 18px; height: 18px; color: var(--blue); }
+  .quiz__dots svg { display: block; width: 100%; height: 100%; }
+  .quiz__dots g { display: none; }
+  .quiz__dots .s-off { display: block; opacity: .6; }
+  .quiz__dots li.is-current .s-off { opacity: 1; }
+  .quiz__dots li[data-state] .s-off { display: none; }
+  .quiz__dots li[data-state="hit"] .s-hit { display: block; }
+  .quiz__dots li[data-state="miss"] .s-miss { display: block; }
+  .quiz__dots li[data-state="miss"] { color: var(--ink); }
+  zl-rights-quiz:defined .quiz__dots { display: flex; }
+
+  /* bez JS: lista pytań z odpowiedziami */
+  .quiz__card { padding-top: 18px; }
+  .quiz__card + .quiz__card { margin-top: 18px; border-top: 1px solid var(--line); }
+  .quiz__choices, .quiz__next, .quiz__mark { display: none; }
+  zl-rights-quiz:defined .quiz__card { display: none; margin-top: 0; border-top: 0; }
+  zl-rights-quiz:defined .quiz__card.is-current { display: block; }
+  zl-rights-quiz:defined .quiz__choices { display: grid; }
+  zl-rights-quiz:defined .quiz__answer { display: none; }
+  zl-rights-quiz:defined .is-done .quiz__answer { display: block; animation: quiz-in .25s var(--ease); }
+  zl-rights-quiz:defined .quiz__next { display: block; }
+  @keyframes quiz-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .quiz__q { font: 400 clamp(1.375rem, 2.2vw, 1.625rem)/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .quiz__choices { grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+  .quiz__choice {
+    min-height: 56px; background: transparent; border: 1px solid var(--line-2); color: var(--ink); cursor: pointer;
+    font: 400 1.375rem/1 var(--f-display); letter-spacing: -0.01em; transition: background .15s, border-color .15s, color .15s;
+  }
+  .quiz__choice:hover { border-color: var(--ink); background: var(--bg-soft); }
+  .is-done .quiz__choice { cursor: default; color: var(--muted); }
+  .is-done .quiz__choice:hover { border-color: var(--line-2); background: transparent; }
+  .is-done .quiz__choice.is-right, .is-done .quiz__choice.is-right:hover { background: var(--ok); border-color: var(--ok); color: var(--on-ink); }
+  .is-miss .quiz__choice.is-picked, .is-miss .quiz__choice.is-picked:hover { border-color: var(--ink); color: var(--ink); text-decoration: line-through; }
+
+  .quiz__answer { margin-top: 18px; }
+  .quiz__verdict { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 1rem; color: var(--ink); }
+  .quiz__mark { align-items: center; gap: 6px; font-weight: 500; }
+  .is-hit .quiz__mark--hit { display: inline-flex; color: var(--ok); }
+  .is-miss .quiz__mark--miss { display: inline-flex; color: var(--ink); }
+  .quiz__verdict strong { font-weight: 600; }
+  .quiz__short { margin-top: 8px; font-size: 1rem; line-height: 1.55; color: var(--text-strong); }
+  .quiz__basis { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; margin-top: 10px; font-size: 0.8125rem; line-height: 1.5; }
+  .quiz__basis a { color: var(--blue-700); text-underline-offset: 3px; }
+  .quiz__next { margin-top: 18px; }
+
+  .quiz__end { padding-top: 22px; }
+  .quiz__end[hidden] { display: none; }
+  .quiz__score { font: 300 clamp(3rem, 6vw, 4.5rem)/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .quiz__of { font: 400 1.125rem/1 var(--f-body); letter-spacing: 0; color: var(--text); }
+  .quiz__end-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .quiz__skip { margin-top: 16px; font-size: 0.875rem; line-height: 1.5; color: var(--text); }
+  .quiz__skip a { color: var(--blue-700); text-underline-offset: 3px; }
+  zl-rights-quiz:not(:defined) .quiz__skip { display: none; }
+</style>

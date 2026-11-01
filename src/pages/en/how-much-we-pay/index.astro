@@ -1,0 +1,141 @@
+---
+/**
+ * /en/how-much-we-pay/ — tłumaczenie /ile-placimy/ (src/pages/ile-placimy/index.astro): ten sam układ, teksty z src/data/en/ile-placimy.ts,
+ * narzędzia z components/ile-placimy (dwujęzyczne lokalnie). Para i stempel w src/i18n/pages.json.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import ArticleTable from '@/components/blocks/ArticleTable.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Heading from '@/components/ui/Heading.astro';
+import PostulatCta from '@/components/site/PostulatCta.astro';
+import Calculator from '@/components/ile-placimy/Calculator.astro';
+import Path from '@/components/ile-placimy/Path.astro';
+import Stop from '@/components/ile-placimy/Stop.astro';
+import Reading from '@/components/ile-placimy/Reading.astro';
+import Links from '@/components/ile-placimy/Links.astro';
+import PlanSplit from '@/components/ile-placimy/PlanSplit.astro';
+import YearBars from '@/components/ile-placimy/YearBars.astro';
+import LumpSum from '@/components/ile-placimy/LumpSum.astro';
+import WhoSees from '@/components/ile-placimy/WhoSees.astro';
+import { after, links, pathPage, sources, startFigures, stops } from '@/data/en/ile-placimy';
+import { MEDIAN_MAX, medianCaption, medianRows } from '@/data/en/rozklad-wynagrodzen';
+import { pathEntryResolver, type PathLinkEn } from '@/data/en/sciezki';
+import { pagePairOf } from '@/i18n/pages';
+import { getRates } from '@/i18n/rates';
+import { ratesNote } from '@/i18n/money';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { linkAttrs } from '@/lib/links';
+import { formatDateIn, typo } from '@/lib/format';
+
+const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: pathPage.title }];
+const seo: SeoInput = { title: pathPage.docTitle, description: pathPage.description, breadcrumbs: crumbs, index: !pagePairOf(Astro.url.pathname)?.draft };
+
+const resolve = await pathEntryResolver();
+const listsOf = (id: string) => Promise.all(links[id].map(async (l) => ({ label: l.label, items: await Promise.all(l.items.map(resolve)) })));
+const [skladka, plan, rozliczenie, wyplata] = await Promise.all(stops.map((s) => listsOf(s.id)));
+const afterLists = await Promise.all(after.map(async (a) => ({ ...a, links: await Promise.all(a.items.map((l: PathLinkEn) => resolve(l))) })));
+const textCount = new Set([...[skladka, plan, rozliczenie, wyplata].flat().flatMap((l) => l.items), ...afterLists.flatMap((a) => a.links)].map((l) => l.href)).size;
+
+const total = stops.length;
+const rates = await getRates();
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="ip-top">
+    <PageHeader title={pathPage.title} lead={pathPage.lead} eyebrow={pathPage.eyebrow} crumbs={crumbs}>
+      <PageMeta items={[{ label: 'Stops', value: total }, { label: 'Texts', value: textCount }]} />
+      <Calculator slot="aside" />
+    </PageHeader>
+    <div class="ip-note"><PageTranslationNote /></div>
+  </Section>
+
+  <Section space="bottom">
+    <Path stops={stops}>
+      <Stop stop={stops[0]} n={1} total={total}>
+        <Fragment slot="texts">{skladka.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <Reading value={startFigures.year} my="year" unit="PLN per year" accuracy="est">
+          That is your health contribution <span data-my="phrase">{startFigures.phrase}</span> (<span data-my="yearEur"></span>). Contributions make up most of the NFZ’s revenue, but not all of it.
+          <Fragment slot="source">Wage source: <a {...linkAttrs(sources.median.href)}>{sources.median.label}</a>. The contribution is our calculation for an employment contract.</Fragment>
+        </Reading>
+        <PlanSplit />
+      </Stop>
+
+      <Stop stop={stops[1]} n={2} total={total}>
+        <Fragment slot="texts">{plan.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <Reading value={startFigures.ratio} my="ratio" suffix="%" unit="of average NFZ costs per resident" accuracy="est">
+          In the NFZ plan for 2026 there is on average about PLN {startFigures.person} of costs per resident, and your contribution is PLN <span data-my="year">{startFigures.year}</span>. But it is not a payment for your own treatment: you pay the contribution according to income and use healthcare according to need.
+          <Fragment slot="source">Sources: <a {...linkAttrs(sources.plan.href)}>{sources.plan.label}</a>, <a {...linkAttrs(sources.people.href)}>{sources.people.label}</a>. The average per resident is our calculation.</Fragment>
+        </Reading>
+        <YearBars />
+      </Stop>
+
+      <Stop stop={stops[2]} n={3} total={total}>
+        <Fragment slot="texts">{rozliczenie.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <Reading value={startFigures.visits} my="visits" unit="services at a specialist clinic" accuracy="est">
+          That is how many your annual contribution would cover, namely PLN <span data-my="year">{startFigures.year}</span>. In {startFigures.aosYear}, specialist clinics cost the NFZ PLN {startFigures.aosCost} billion for {startFigures.aosServices} million services, an average of PLN {startFigures.aos} each: a consultation or a test such as a CT or MRI scan. A network hospital is settled differently: it receives mainly a lump sum, not payment for each service.
+          <Fragment slot="source">Source: <a {...linkAttrs(sources.aos.href)}>{sources.aos.label}</a>. The average and the conversion to your contribution are our calculation.</Fragment>
+        </Reading>
+        <LumpSum />
+      </Stop>
+
+      <Stop stop={stops[3]} n={4} total={total}>
+        <Fragment slot="texts">{wyplata.map((l, i) => <Links label={l.label} items={l.items} start={i === 0} />)}</Fragment>
+        <Reading value="—" unit="here the trail ends">
+          The NFZ pays the facility, the facility pays the doctor, and nobody publishes the total for one person. That is why we do not state what share of the contribution goes to doctors: it cannot be calculated honestly.
+        </Reading>
+        <WhoSees />
+        <Fragment slot="wide">
+          <div class="ip-pieces">
+            <Figure title="Only fragments are known: each of these amounts is a payment from one facility" source={{ label: sources.pay.label, href: sources.pay.href }}>
+              <BarChart rows={medianRows} max={MEDIAN_MAX} unit="PLN" caption={medianCaption} />
+            </Figure>
+            <Aside title="To be fair">
+              <p>{typo('A contract is not an abuse, and the missing total cuts both ways. You cannot see billings that one person could not possibly have worked. Nor can anyone show that a doctor who takes on-call shifts in the neighbouring county, because otherwise the ward would stop, earns an ordinary amount.')}</p>
+            </Aside>
+          </div>
+        </Fragment>
+      </Stop>
+    </Path>
+  </Section>
+
+  <Section id="next" tone="soft" aria-labelledby="next-title">
+    <Heading id="next-title" punct="?" class="ip-after__title">What next</Heading>
+    <div class="ip-after" data-i18n-skip>
+      {afterLists.map((a) => (
+        <div class="ip-after__row">
+          <div>
+            <p class="ip-after__name">{typo(a.title)}</p>
+            <p class="ip-after__lead">{typo(a.lead)}</p>
+          </div>
+          <ArticleTable articles={a.links} format={false} />
+        </div>
+      ))}
+    </div>
+    <p class="ip-rates">{ratesNote(rates, formatDateIn(new Date(rates.date), 'en'))}</p>
+  </Section>
+
+  <Section>
+    <PostulatCta />
+  </Section>
+</BaseLayout>
+
+<style>
+  .ip-top { padding-top: clamp(32px, 4vw, 56px); }
+  .ip-note { margin-top: clamp(24px, 3vw, 40px); }
+  .ip-pieces { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px clamp(40px, 5vw, 72px); align-items: start; }
+
+  .ip-after { display: grid; gap: 64px; margin-top: 32px; }
+  .ip-after__row { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 24px clamp(40px, 6vw, 88px); align-items: start; }
+  .ip-after__name { font: 400 clamp(1.375rem, 2.2vw, 1.75rem)/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .ip-after__lead { margin-top: 10px; max-width: 34em; font-size: 1.0625rem; line-height: 1.6; color: var(--ink-2); }
+  .ip-rates { max-width: 52em; margin-top: 32px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+
+  @media (max-width: 1024px) {
+    .ip-pieces, .ip-after__row { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

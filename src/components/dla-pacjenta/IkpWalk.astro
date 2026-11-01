@@ -1,0 +1,173 @@
+---
+/**
+ * Droga do historii wizyt w IKP na zrzutach z artykułu „Wizyty, których nie było”, wykadrowanych do samej treści
+ * (bez okna przeglądarki). Wszystkie kroki i to, co zrobić, gdy wpis się nie zgadza, stoją na stronie; wybór kroku albo klik
+ * w pulsujące pole na zrzucie zmienia tylko obrazek. To obrazki, nic się tu nie loguje. Bez JS zrzuty stoją jeden pod drugim.
+ */
+import { Image } from 'astro:assets';
+import Button from '@/components/ui/Button.astro';
+import Icon from '@/components/ui/Icon.astro';
+import { localeOf } from '@/i18n/locales';
+import { variantWidths } from '@/lib/images';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+import shot1 from '@/assets/articles/fikcyjne-wizyty/ikp-1-logowanie.png';
+import shot2 from '@/assets/articles/fikcyjne-wizyty/ikp-2-historia-leczenia.png';
+import shot3 from '@/assets/articles/fikcyjne-wizyty/ikp-3-swiadczenia-nfz.png';
+import shot4 from '@/assets/articles/fikcyjne-wizyty/ikp-4-twoje-wizyty.png';
+
+const en = localeOf(Astro.url.pathname) === 'en';
+const { ikpEnd, ikpSteps } = en ? await import('@/data/en/dla-pacjenta') : await import('@/data/dla-pacjenta');
+const T = en
+  ? {
+      head: 'The way to your visit history, step by step', next: (tip: string) => `Next: click “${tip}”`, click: (tip: string) => `Click “${tip}”`,
+      open: 'Open pacjent.gov.pl (in Polish)', note: 'These are only screenshots: you do not log in to anything here. Reports in 2024: almost 3,500 objections, more than 1,600 of them justified.', source: 'Source:',
+    }
+  : {
+      head: 'Droga do historii wizyt, krok po kroku', next: (tip: string) => `Dalej: kliknij „${tip}”`, click: (tip: string) => `Kliknij „${tip}”`,
+      open: 'Otwórz pacjent.gov.pl', note: 'To tylko zrzuty ekranu: tutaj niczego nie logujesz. Zgłoszenia w 2024 r.: blisko 3,5 tys. zastrzeżeń, ponad 1,6 tys. zasadnych.', source: 'Źródło:',
+    };
+const shots = [shot1, shot2, shot3, shot4];
+const SIZES = '(min-width: 1025px) 700px, calc(100vw - 32px)';
+
+/** Kadr: treść okna w pikselach pliku (bok 50–1050, góra 78; dół zależy od wysokości zrzutu), bez ramki i cienia. */
+const crop = (height: number) => {
+  const h = (height > 800 ? 815 : 672) - 78;
+  return `--ar: 1000 / ${h}; --top: ${(-78 / h * 100).toFixed(2)}%`;
+};
+---
+<zl-ikp-walk class="walk">
+  <p class="mono-label tool-head" id="walk-ask">{T.head}</p>
+
+  {ikpSteps.map((s, i) => (
+    <figure class="walk__step" data-step>
+      <div class="walk__crop" style={crop(shots[i].height)}>
+        <div class="walk__shot">
+          <Image src={shots[i]} alt={s.alt} widths={variantWidths(shots[i], [480, 720, 960])} sizes={SIZES} format="webp" quality={80} />
+          <button
+            type="button" class:list={['walk__hot', { 'walk__hot--end': s.end }]} data-hot
+            style={`left:${s.hot.x}%;top:${s.hot.y}%;width:${s.hot.w}%;height:${s.hot.h}%`}
+            aria-label={T.next(s.tip)}
+          >
+            <span class="walk__tip" aria-hidden="true">{T.click(s.tip)}</span>
+          </button>
+        </div>
+      </div>
+    </figure>
+  ))}
+
+  <ol class="walk__list" aria-labelledby="walk-ask">
+    {ikpSteps.map((s, i) => (
+      <li>
+        <button type="button" class="walk__row" data-go={i} aria-pressed={i === 0 ? 'true' : 'false'}>
+          <span class="walk__n" aria-hidden="true">{i + 1}</span>
+          <span class="walk__text">{typo(s.text)}</span>
+        </button>
+      </li>
+    ))}
+  </ol>
+
+  <div class="walk__end" data-end>
+    <p class="walk__end-title">{typo(ikpEnd.title)}</p>
+    <p class="walk__end-text">{typo(ikpEnd.text)}</p>
+    <p class="walk__end-check"><Icon name="info" size={18} /><span>{typo(ikpEnd.check)}</span></p>
+    <div class="walk__actions">
+      <Button href="https://pacjent.gov.pl/">{T.open}</Button>
+    </div>
+  </div>
+
+  <p class="walk__src">{typo(T.note)} {T.source} <a {...linkAttrs(ikpEnd.source.href)}>{ikpEnd.source.label}</a>.</p>
+</zl-ikp-walk>
+
+<script>
+  class IkpWalk extends HTMLElement {
+    connectedCallback() {
+      const steps = [...this.querySelectorAll<HTMLElement>('[data-step]')];
+      const rows = [...this.querySelectorAll<HTMLButtonElement>('[data-go]')];
+      const end = this.querySelector<HTMLElement>('[data-end]')!;
+
+      const show = (n: number) => {
+        steps.forEach((s, k) => s.classList.toggle('is-current', k === n));
+        rows.forEach((r, k) => r.setAttribute('aria-pressed', String(k === n)));
+      };
+
+      rows.forEach((row, k) => row.addEventListener('click', () => show(k)));
+      steps.forEach((s, k) => s.querySelector('[data-hot]')?.addEventListener('click', () => {
+        if (k < steps.length - 1) {
+          show(k + 1);
+          steps[k + 1].querySelector<HTMLElement>('[data-hot]')?.focus({ preventScroll: true });
+        } else {
+          // ostatni krok prowadzi do tego, co zrobić z podejrzanym wpisem
+          end.querySelector<HTMLElement>('a')?.focus();
+        }
+      }));
+      show(0);
+
+      // ukryte kroki nie ładują się same (lazy): pobieramy je, gdy narzędzie zbliża się do ekranu, żeby klik nie trafiał w pustkę
+      const io = new IntersectionObserver((entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        this.querySelectorAll('img').forEach((img) => { img.loading = 'eager'; });
+      }, { rootMargin: '400px 0px' });
+      io.observe(this);
+    }
+  }
+
+  if (!customElements.get('zl-ikp-walk')) customElements.define('zl-ikp-walk', IkpWalk);
+</script>
+
+<style>
+  .walk { display: block; }
+
+  .walk__step { margin: 16px 0 0; }
+  .walk__crop { position: relative; overflow: hidden; aspect-ratio: var(--ar); border: 1px solid var(--line-2); }
+  .walk__shot { position: absolute; left: -5%; top: var(--top); width: 110%; }
+  .walk__shot :global(img) { display: block; width: 100%; height: auto; filter: var(--photo-filter); }
+
+  .walk__hot { display: none; position: absolute; padding: 0; background: transparent; border: 2px solid var(--blue-fill); cursor: pointer; box-shadow: 0 0 0 0 color-mix(in srgb, var(--blue-fill) 55%, transparent); animation: walk-pulse 1.6s cubic-bezier(.2, .6, .4, 1) infinite; }
+  .walk__hot:hover, .walk__hot:focus-visible { background: color-mix(in srgb, var(--blue-fill) 18%, transparent); outline: 2px solid var(--ink); outline-offset: 2px; }
+  @keyframes walk-pulse { to { box-shadow: 0 0 0 14px color-mix(in srgb, var(--blue-fill) 0%, transparent); } }
+  /* dymek pod przyciskiem: nad nim kadr ucina pierwszy zrzut */
+  .walk__tip {
+    position: absolute; left: 50%; top: calc(100% + 8px); transform: translateX(-50%); padding: 6px 10px; white-space: nowrap;
+    background: var(--blue-fill); color: #fff; /* kolor-stały: biały na kobalcie */
+    font: 500 0.8125rem/1.2 var(--f-body); animation: walk-bob 1.6s ease-in-out infinite;
+  }
+  .walk__tip::after { content: ""; position: absolute; left: 50%; bottom: 100%; width: 8px; height: 8px; background: inherit; transform: translate(-50%, 50%) rotate(45deg); }
+  .walk__hot--end .walk__tip { left: auto; right: 0; transform: none; }
+  .walk__hot--end .walk__tip::after { left: auto; right: 20px; transform: translate(0, 50%) rotate(45deg); }
+  @keyframes walk-bob { 50% { translate: 0 4px; } }
+
+  zl-ikp-walk:defined .walk__step { display: none; }
+  zl-ikp-walk:defined .walk__step.is-current { display: block; }
+  zl-ikp-walk:defined .walk__hot { display: block; }
+
+  /* kroki stoją na stałe; zaznaczony to ten, którego zrzut widać wyżej */
+  .walk__list { display: grid; margin: 12px 0 0; padding: 0; border-top: 1px solid var(--line-2); list-style: none; }
+  .walk__row {
+    display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; width: 100%; padding: 10px 12px 10px 15px; border: 0; border-bottom: 1px solid var(--line);
+    box-shadow: inset 3px 0 0 transparent; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background .15s, box-shadow .15s;
+  }
+  .walk__row:hover { background: var(--bg-soft); }
+  .walk__row:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .walk__row[aria-pressed="true"] { box-shadow: inset 3px 0 0 var(--ink); background: var(--bg-soft); }
+  zl-ikp-walk:not(:defined) .walk__row { pointer-events: none; }
+  .walk__n { font: 500 0.875rem/1.55 var(--f-mono); color: var(--muted); }
+  .walk__row[aria-pressed="true"] .walk__n { color: var(--ink); }
+  .walk__text { font-size: 0.9375rem; line-height: 1.55; color: var(--text-strong); }
+
+  .walk__end { margin-top: 16px; padding: 16px 18px; background: var(--blue-50); border-left: 2px solid var(--blue); }
+  .walk__end-title { font: 400 1.375rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .walk__end-text { margin-top: 6px; font-size: 1rem; line-height: 1.55; color: var(--text-strong); }
+  .walk__end-check { display: flex; gap: 8px; margin-top: 10px; font-size: 0.9375rem; line-height: 1.5; color: var(--text-strong); }
+  .walk__end-check :global(svg) { flex: none; margin-top: 2px; color: var(--blue); }
+  .walk__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+  .walk__src { margin-top: 12px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .walk__src a { color: var(--blue-700); text-underline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .walk__hot, .walk__tip { animation: none; }
+  }
+</style>

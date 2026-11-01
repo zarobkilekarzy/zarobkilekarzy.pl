@@ -52,24 +52,23 @@ export const paths: PathCard[] = aligned('paths', pathsPl, [
   {
     kicker: 'I am a patient',
     title: 'Rights, queues and your account',
-    desc: 'What you are entitled to at the doctor’s, how to check the visits billed in your Internet Patient Account (IKP) and where to report a breach — with the legal basis.',
-    tags: ['Patient rights', 'IKP', 'Queues'],
-    href: '#patient',
+    desc: 'What you are entitled to at the doctor’s, how the emergency department queue works, how to check the visits billed in your Internet Patient Account (IKP) and where to go when something goes wrong.',
+    tags: ['Patient rights', 'Emergency', 'IKP'],
+    href: '/en/for-patients/',
   },
   {
     kicker: 'I want to understand pay',
     title: 'How much we pay doctors, and for what',
-    desc: 'From a resident’s salary to the top 1%. Employment, contracts, on-call duty and hourly rates in 29 specialties.',
-    tags: ['Specialties', 'Contracts', 'On-call duty'],
-    href: '#data',
+    desc: 'From your contribution to a doctor’s pay, in four stops. Totals are visible at each of them, but the total for one person is public at none.',
+    tags: ['Contribution', 'NFZ plan', 'Contracts'],
+    href: '/en/how-much-we-pay/',
   },
   {
     kicker: 'I am going to study medicine',
     title: 'The road to the profession, step by step',
-    desc: 'Limits on places, the LEK exam, residency and the choice of specialty. What awaits you after the diploma and how long it takes.',
-    tags: ['LEK', 'Residency', 'Limits'],
-    // PL: blok „Sprawdź sam” z egzaminem i symulatorami — w EN go nie ma, więc dział analiz o kształceniu
-    href: '/en/analysis/#ksztalcenie',
+    desc: 'Admissions, studies, the LEK with the internship, and specialist training: what awaits you at each stage and how long it takes.',
+    tags: ['Thresholds', 'LEK', 'Specialist training'],
+    href: '/en/road-to-the-profession/',
   },
 ]);
 

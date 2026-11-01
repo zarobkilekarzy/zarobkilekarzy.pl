@@ -1,0 +1,149 @@
+---
+/**
+ * „Twój wynik a progi z 2026 r.”: suwak procentu maksimum i wykres punktowy progów (oś 50–100%, bo to pozycje, a nie długości).
+ * Kwadrat pełny: wynik sięga progu, pusty: nie sięga; kobaltowa linia to wynik czytelnika. Bez JS sam wykres progów, bez suwaka.
+ * Dane i definicje progów: data/studia-lekarskie.ts. Liczy przeglądarka, nic nie jest zapisywane.
+ */
+import { localeOf } from '@/i18n/locales';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+const en = localeOf(Astro.url.pathname) === 'en';
+const { LINKS, thresholdRows } = en ? await import('@/data/en/studia-lekarskie') : await import('@/data/studia-lekarskie');
+const T = en
+  ? {
+      head: 'Your result and the 2026 thresholds', you: 'Your result:', ofMax: 'of the maximum score', unit: 'thresholds are within reach of this result', of: 'of',
+      note: 'Each university has its own formula, so this is an approximation, not an admissions result. The threshold depends on the number of applicants, so next year it will be different. Universities that do not publish a threshold are left out. Under the name we give the points and the definition of the threshold when it is not the last person admitted after all rounds. “New” is a university with its first admissions limit from 2015/16.',
+      sources: 'Sources:', and: 'and', all: 'list of all universities', allHref: '/en/analysis/medical-studies-in-poland/#the-matura-and-admissions', calc: 'The percentage of the maximum is our calculation.',
+      caption: 'Threshold for medicine in 2026 as a percentage of the maximum score:',
+    }
+  : {
+      head: 'Twój wynik a progi z 2026 r.', you: 'Twój wynik:', ofMax: 'maksymalnej liczby punktów', unit: 'progów jest w zasięgu tego wyniku', of: 'z',
+      note: 'Każda uczelnia ma własny wzór, więc to przybliżenie, a nie wynik rekrutacji. Próg zależy od liczby chętnych, więc za rok będzie inny. Uczelnie, które progu nie publikują, pominęliśmy. Pod nazwą podajemy punkty i definicję progu, gdy to nie ostatnia osoba przyjęta po wszystkich turach. „Nowa” to uczelnia z pierwszym limitem przyjęć od roku 2015/16.',
+      sources: 'Źródła:', and: 'i', all: 'wykaz wszystkich uczelni', allHref: '/analizy/studia-lekarskie/#matura-i-rekrutacja', calc: 'Procent maksimum to nasz rachunek.',
+      caption: 'Próg na kierunku lekarskim w 2026 r. jako procent maksymalnej liczby punktów:',
+    };
+
+const AXIS = { min: 50, max: 100 };
+const START = 80;
+const position = (v: number) => ((v - AXIS.min) / (AXIS.max - AXIS.min)) * 100;
+const reached = thresholdRows.filter((r) => START >= r.value).length;
+---
+<zl-score-check class="sc" data-min={AXIS.min} data-max={AXIS.max} style={`--score: ${position(START)}`}>
+  <div class="tool-head"><p class="mono-label">{T.head}</p></div>
+
+  <div class="sc__control" data-road-controls hidden>
+    <label class="sc__label" for="sc-range">{T.you} <b data-sc="score">{START}%</b> {T.ofMax}</label>
+    <input class="sc__range" id="sc-range" type="range" min={AXIS.min} max={AXIS.max} step="1" value={START} style={`--p: ${position(START)}%`} />
+    <p class="sc__value" aria-live="polite"><span data-sc="in">{reached}</span> <span class="sc__unit">{T.of} {thresholdRows.length} {T.unit}</span></p>
+  </div>
+
+  <figure class="sc__fig">
+    <ol class="sc__rows" aria-hidden="true">
+      <li class="sc__row sc__row--axis">
+        <span></span>
+        <span class="sc__axis"><span>50%</span><span>75%</span><span>100%</span></span>
+        <span></span>
+      </li>
+      {thresholdRows.map((r) => (
+        <li class:list={['sc__row', { 'is-in': START >= r.value }]} data-threshold={r.value} style={`--v: ${position(r.value)}`}>
+          <span class="sc__name">{typo(r.label)}<em>{typo(r.note ?? '')}</em></span>
+          <span class="sc__plot"><span class="sc__mark"></span></span>
+          <span class="sc__pct">{r.display}</span>
+        </li>
+      ))}
+    </ol>
+    <figcaption class="sr-only">{`${T.caption} ${thresholdRows.map((r) => `${r.label} ${r.display}`).join('; ')}.`}</figcaption>
+  </figure>
+
+  <p class="sc__note">
+    {typo(T.note)}
+    {' '}<span class="sc__src">{T.sources} <a {...linkAttrs(LINKS.ujStat)}>UJ</a>, <a {...linkAttrs(LINKS.uwProgi)}>UW</a>, <a {...linkAttrs(LINKS.wumProgi)}>WUM</a> {T.and} <a href={T.allHref}>{T.all}</a>. {T.calc}</span>
+  </p>
+</zl-score-check>
+
+<script>
+  class ScoreCheck extends HTMLElement {
+    connectedCallback() {
+      const min = Number(this.dataset.min), max = Number(this.dataset.max);
+      const range = this.querySelector<HTMLInputElement>('input[type="range"]')!;
+      const rows = [...this.querySelectorAll<HTMLElement>('[data-threshold]')];
+      const score = this.querySelector('[data-sc="score"]')!;
+      const count = this.querySelector('[data-sc="in"]')!;
+
+      const apply = () => {
+        const value = Number(range.value);
+        const position = ((value - min) / (max - min)) * 100;
+        this.style.setProperty('--score', String(position));
+        range.style.setProperty('--p', `${position}%`);
+        score.textContent = `${value}%`;
+        let reached = 0;
+        rows.forEach((row) => {
+          const hit = value >= Number(row.dataset.threshold);
+          row.classList.toggle('is-in', hit);
+          if (hit) reached += 1;
+        });
+        count.textContent = String(reached);
+      };
+
+      range.addEventListener('input', apply);
+      this.querySelector('.sc__fig')?.classList.add('has-score');
+      apply();
+    }
+  }
+
+  if (!customElements.get('zl-score-check')) customElements.define('zl-score-check', ScoreCheck);
+</script>
+
+<style>
+  .sc { display: block; min-width: 0; }
+  .sc__control { display: grid; gap: 8px; margin-top: 16px; }
+  .sc__control[hidden] { display: none; }
+  .sc__label { font-size: 0.9375rem; color: var(--text-strong); }
+  .sc__label b { font-weight: 600; color: var(--ink); }
+
+  /* suwak jak w symulatorze podaży; pan-y, bo pełne przechwycenie dotyku blokuje przewijanie strony na telefonie */
+  .sc__range { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 36px; margin: 0; background: transparent; cursor: pointer; touch-action: pan-y; }
+  .sc__range::-webkit-slider-runnable-track { height: 4px; background: linear-gradient(var(--blue), var(--blue)) 0 / var(--p, 50%) 100% no-repeat, var(--line-2); }
+  .sc__range::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -10px; background: var(--blue-fill); border: 0; border-radius: 0; }
+  .sc__range::-moz-range-track { height: 4px; background: var(--line-2); }
+  .sc__range::-moz-range-progress { height: 4px; background: var(--blue); }
+  .sc__range::-moz-range-thumb { width: 24px; height: 24px; background: var(--blue-fill); border: 0; border-radius: 0; }
+  .sc__range:focus-visible { outline: 0; }
+  .sc__range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .sc__range:focus-visible::-moz-range-thumb { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .sc__value { font: 300 clamp(2.5rem, 4.5vw, 3.25rem)/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .sc__unit { font: 400 1rem/1.2 var(--f-body); letter-spacing: 0; color: var(--text); }
+
+  .sc__fig { margin-top: 20px; }
+  .sc__rows { display: grid; }
+  .sc__row { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) 3.25rem; gap: 12px; align-items: stretch; padding-block: 5px; }
+  .sc__row--axis { padding-block: 0 6px; }
+  .sc__axis { display: flex; justify-content: space-between; font: 400 0.6875rem/1.3 var(--f-mono); color: var(--muted); }
+  .sc__name { font-size: 0.875rem; line-height: 1.25; color: var(--ink); }
+  .sc__name em { display: block; font-style: normal; font-size: 0.75rem; color: var(--muted); }
+  .sc__pct { align-self: center; text-align: right; font: 400 0.9375rem/1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+
+  /* pozioma kreska osi, kwadrat progu i pionowa linia wyniku (tylko z JS); odcinki linii łączą się przez przerwy między wierszami */
+  .sc__plot { position: relative; min-height: 22px; }
+  .sc__plot::before { content: ""; position: absolute; top: 50%; right: 0; left: 0; border-top: 1px solid var(--line-2); }
+  .sc__mark {
+    position: absolute; top: 50%; left: calc(var(--v) * 1%); z-index: 1; width: 11px; height: 11px; translate: -50% -50%;
+    border: 2px solid var(--chart); background: var(--bg); transition: background .15s, border-color .15s;
+  }
+  .is-in .sc__mark { border-color: var(--ink); background: var(--ink); }
+  .has-score .sc__plot::after { content: ""; position: absolute; top: -5px; bottom: -5px; left: calc(var(--score) * 1%); width: 2px; margin-left: -1px; background: var(--blue); }
+
+  .sc__note { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 0.875rem; line-height: 1.55; color: var(--text); }
+  .sc__src { color: var(--muted); }
+  .sc__src a { color: var(--blue-700); text-underline-offset: 3px; }
+
+  @media (max-width: 720px) {
+    .sc__row { grid-template-columns: minmax(0, 1fr) 3.25rem; gap: 2px 8px; padding-block: 7px; }
+    .sc__row--axis > :first-child, .sc__row--axis > :last-child { display: none; }
+    .sc__row--axis .sc__axis { grid-column: 1; }
+    .sc__name { grid-column: 1 / -1; }
+    .sc__plot { grid-column: 1; }
+  }
+</style>

@@ -11,7 +11,7 @@ export const linkAttrs = (href: string) =>
  * `match` pozwala oznaczyć całą sekcję, np. '/mechanizmy/' dla wszystkich artykułów w niej.
  */
 export function isCurrent(link: Link, pathname: string): boolean {
-  if (link.match) return pathname.startsWith(link.match);
+  if (link.match) return pathname.startsWith(link.match) || Boolean(link.also && pathname.startsWith(link.also));
   if (link.href.includes('#') || isExternal(link.href)) return false;
   const clean = (p: string) => p.replace(/\/+$/, '') || '/';
   return clean(link.href) === clean(pathname);

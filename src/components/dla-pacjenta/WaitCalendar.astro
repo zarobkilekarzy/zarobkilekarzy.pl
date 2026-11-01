@@ -1,0 +1,174 @@
+---
+/**
+ * „Zapisujesz się dziś. Do kogo?”: średnia z Barometru WHC przełożona na miesiące czekania i przybliżony termin
+ * od dzisiejszej daty (liczy przeglądarka); wybór zmienia też liczbę na zdjęciu sekcji. To rachunek na średniej,
+ * stąd flaga „Szacunek”. Pod spodem przeciętna cena prywatnej wizyty (GUS). Bez JS zostaje lista wartości.
+ */
+import Flag from '@/components/ui/Flag.astro';
+import { SHAPES } from '@/lib/siatka';
+import { getRates } from '@/i18n/rates';
+import { withEur } from '@/i18n/money';
+import { localeOf } from '@/i18n/locales';
+import { linkAttrs } from '@/lib/links';
+import { formatNumber, typo } from '@/lib/format';
+
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
+const { privateVisit, waitOptions, waitSource, waitWhy } = en ? await import('@/data/en/dla-pacjenta') : await import('@/data/dla-pacjenta');
+const num = (n: number, d = 1) => formatNumber(n, d, locale);
+const T = en
+  ? {
+      ask: 'You sign up today. Who for?', unit: 'months', when: 'Visit around', noscriptUnit: 'months',
+      price: `${withEur(privateVisit.value, 'PLN', await getRates())}: the average price of a private visit to a specialist in ${privateVisit.year}.`,
+      src: 'The number next to each name is months, and one field is a month in the queue. This is a calculation on an average, not your appointment: today’s date plus the average waiting time.',
+      sources: 'Sources:', avg: 'months on average for a specialist appointment', who: 'months on average:',
+    }
+  : {
+      ask: 'Zapisujesz się dziś. Do kogo?', unit: 'mies.', when: 'Wizyta około', noscriptUnit: 'mies.',
+      price: '', src: 'Liczba przy nazwie to miesiące, jedno pole to miesiąc w kolejce. To rachunek na średniej, nie Twój termin: dzisiejsza data plus średni czas oczekiwania.',
+      sources: 'Źródła:', avg: 'mies. średnio na poradę specjalisty', who: 'mies. średnio:',
+    };
+
+/** tyle pól ma pasek: najdłuższa kolejka z danych, w górę do pełnego miesiąca */
+const MONTHS = Math.ceil(Math.max(...waitOptions.map((o) => o.value)));
+const start = waitOptions[0];
+---
+<zl-wait class="wait" data-locale={locale} data-avg={T.avg} data-who={T.who}>
+  <p class="mono-label tool-head" id="wait-ask">{T.ask}</p>
+  <div class="wait__chips" role="group" aria-labelledby="wait-ask">
+    {waitOptions.map((o, i) => (
+      <button type="button" class="wait__chip" data-months={o.value} data-label={o.label} aria-pressed={i === 0 ? 'true' : 'false'}>{o.label} <b>{num(o.value)}</b></button>
+    ))}
+  </div>
+
+  <div class="wait__out" role="status">
+    <p class="wait__val"><span data-val>{num(start.value)}</span> <span class="wait__unit">{T.unit}</span></p>
+    <p class="wait__when"><span>{T.when}</span> <strong data-when>—</strong> <Flag accuracy="est" /></p>
+  </div>
+
+  <ol class="wait__track" aria-hidden="true">
+    {Array.from({ length: MONTHS }, (_, i) => (
+      <li class="wait__m" data-m>
+        <svg viewBox="0 0 12 12">
+          <g class="s-off" set:html={SHAPES.off} />
+          <g class="s-mid" set:html={SHAPES.mid} />
+          <g class="s-on" set:html={SHAPES.on} />
+        </svg>
+        <span>{i + 1}</span>
+      </li>
+    ))}
+  </ol>
+
+  <noscript>
+    <ul class="wait__plain">{waitOptions.map((o) => <li>{o.label}: {num(o.value)} {T.noscriptUnit}</li>)}</ul>
+  </noscript>
+
+  {en
+    ? <p class="wait__private">{typo(T.price)}</p>
+    : <p class="wait__private"><strong>{num(privateVisit.value, 2)} zł</strong>: {typo(`tyle przeciętnie kosztowała prywatna wizyta u specjalisty w ${privateVisit.year} r.`)}</p>}
+
+  <p class="wait__src">{typo(T.src)} {T.sources} <a {...linkAttrs(waitSource.href)}>{waitSource.label}</a>, <a {...linkAttrs(privateVisit.source.href)}>{privateVisit.source.label}</a>, {waitWhy.map((w, i) => <>{i > 0 && ', '}<a href={w.href}>{w.label}</a></>)}.</p>
+</zl-wait>
+
+<script>
+  import { formatNumber, typo } from '@/lib/format';
+  import type { Locale } from '@/i18n/locales';
+  import { setBadge } from './badge';
+
+  const AVG_MONTH_DAYS = 30.44;
+  // z dniem w formacie Intl podaje miesiąc w dopełniaczu: „około marca 2027”
+  const dateParts = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' });
+  const monthYearEn = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' });
+  const monthYear = (d: Date, locale: Locale) => {
+    if (locale === 'en') return monthYearEn.format(d);
+    const parts = dateParts.formatToParts(d);
+    return `${parts.find((p) => p.type === 'month')?.value} ${parts.find((p) => p.type === 'year')?.value}`;
+  };
+
+  /** dzisiaj + m miesięcy: pełne miesiące kalendarzowo (bez przeskoku 31.10 → 3.12), reszta w dniach */
+  const addMonths = (from: Date, m: number) => {
+    const whole = Math.floor(m);
+    const d = new Date(from.getFullYear(), from.getMonth() + whole, 1);
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    d.setDate(Math.min(from.getDate(), lastDay));
+    d.setDate(d.getDate() + Math.round((m - whole) * AVG_MONTH_DAYS));
+    return d;
+  };
+
+  class Wait extends HTMLElement {
+    connectedCallback() {
+      const chips = [...this.querySelectorAll<HTMLButtonElement>('.wait__chip')];
+      const cells = [...this.querySelectorAll<HTMLElement>('[data-m]')];
+      const val = this.querySelector<HTMLElement>('[data-val]')!;
+      const when = this.querySelector<HTMLElement>('[data-when]')!;
+      const section = this.closest('section');
+      const locale = (this.dataset.locale ?? 'pl') as Locale;
+
+      const pick = (chip: HTMLButtonElement, first = false) => {
+        const m = Number(chip.dataset.months);
+        chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+        val.textContent = formatNumber(m, 1, locale);
+        when.textContent = monthYear(addMonths(new Date(), m), locale);
+        cells.forEach((cell, k) => {
+          cell.dataset.state = k + 1 <= m ? 'on' : k < m ? 'mid' : 'off';
+          cell.classList.toggle('is-visit', k === Math.ceil(m) - 1);
+          cell.style.setProperty('--d', `${k * 28}ms`);
+        });
+        // na starcie liczba na zdjęciu już jest (ten sam opis z danych); wybór podmienia ją na wybraną poradnię
+        if (!first) {
+          const who = chip === chips[0] ? this.dataset.avg ?? '' : `${this.dataset.who} ${chip.dataset.label?.toLocaleLowerCase(locale)}`;
+          setBadge(section, typo(formatNumber(m, 1, locale)), typo(who));
+        }
+      };
+
+      chips.forEach((c) => c.addEventListener('click', () => pick(c)));
+      pick(chips[0], true);
+    }
+  }
+
+  if (!customElements.get('zl-wait')) customElements.define('zl-wait', Wait);
+</script>
+
+<style>
+  .wait { display: block; }
+  /* bez JS zostaje lista z <noscript> i cena */
+  zl-wait:not(:defined) .wait__chips, zl-wait:not(:defined) .wait__out, zl-wait:not(:defined) .wait__track { display: none; }
+  .wait__chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+  .wait__chip {
+    min-height: 40px; padding: 8px 10px; background: transparent; border: 1px solid var(--line-2); cursor: pointer;
+    color: var(--ink); font: 400 0.875rem/1.2 var(--f-body); transition: background .15s, border-color .15s, color .15s;
+  }
+  .wait__chip b { font-weight: 600; }
+  .wait__chip:hover { border-color: var(--ink); }
+  .wait__chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+
+  .wait__out { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; margin-top: 20px; }
+  .wait__val { font: 300 clamp(2.5rem, 4.5vw, 3.25rem)/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
+  .wait__unit { font: 400 1rem/1 var(--f-body); letter-spacing: 0; color: var(--text); }
+  .wait__when { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 0.9375rem; color: var(--text); }
+  .wait__when strong { font: 400 1.25rem/1.2 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+
+  .wait__track { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 2px; margin: 16px 0 0; padding: 0; list-style: none; }
+  .wait__m { display: grid; justify-items: center; gap: 2px; padding: 2px 0 4px; color: var(--blue); font: 400 0.6875rem/1 var(--f-mono); }
+  .wait__m span { color: var(--muted); }
+  .wait__m svg { display: block; width: 100%; max-width: 32px; }
+  .wait__m g { transition: opacity .15s var(--d, 0ms), transform .25s var(--ease) var(--d, 0ms); transform-origin: 6px 6px; opacity: 0; transform: scale(.4); }
+  .wait__m .s-off { opacity: .55; transform: none; }
+  .wait__m[data-state="on"] .s-off, .wait__m[data-state="mid"] .s-off { opacity: 0; }
+  .wait__m[data-state="on"] .s-on, .wait__m[data-state="mid"] .s-mid { opacity: 1; transform: none; }
+  .wait__m.is-visit { box-shadow: inset 0 0 0 1px var(--blue); }
+  .wait__m.is-visit span { color: var(--ink); font-weight: 500; }
+  .wait__plain { margin: 12px 0 0; padding-left: 18px; font-size: 0.9375rem; color: var(--text-strong); }
+
+  .wait__private { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 0.9375rem; line-height: 1.5; color: var(--text-strong); }
+  .wait__private strong { font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .wait__src { margin-top: 10px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .wait__src a { color: var(--blue-700); text-underline-offset: 3px; }
+
+  @media (max-width: 520px) {
+    .wait__track { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wait__m g { transition: none; }
+  }
+</style>

@@ -1,0 +1,128 @@
+---
+/**
+ * /en/road-to-the-profession/ — tłumaczenie /droga-do-zawodu/ (src/pages/droga-do-zawodu/index.astro): ten sam układ, teksty z
+ * src/data/en/droga-do-zawodu.ts, narzędzia z components/droga-do-zawodu (dwujęzyczne lokalnie). Para i stempel w src/i18n/pages.json.
+ * Pytanie z LEK zostaje po polsku, bo egzamin jest tylko po polsku: tu w jego miejscu wykres zdawalności z tłumaczenia „Studiów lekarskich”.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import ArticleTable from '@/components/blocks/ArticleTable.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Heading from '@/components/ui/Heading.astro';
+import PostulatCta from '@/components/site/PostulatCta.astro';
+import EmptyPlaces from '@/components/dlaczego-brakuje-lekarzy/EmptyPlaces.astro';
+import StudyPlan from '@/components/studia-lekarskie/StudyPlan.astro';
+import Links from '@/components/ile-placimy/Links.astro';
+import FieldPicker from '@/components/droga-do-zawodu/FieldPicker.astro';
+import Planner from '@/components/droga-do-zawodu/Planner.astro';
+import Road from '@/components/droga-do-zawodu/Road.astro';
+import ScoreCheck from '@/components/droga-do-zawodu/ScoreCheck.astro';
+import Stop from '@/components/droga-do-zawodu/Stop.astro';
+import { after, links, pathPage, stops } from '@/data/en/droga-do-zawodu';
+import { pathEntryResolver, type PathLinkEn } from '@/data/en/sciezki';
+import { LINKS as STUDY_LINKS, PLAN_TOTAL, examRows, examSources, lekRate } from '@/data/en/studia-lekarskie';
+import { pagePairOf } from '@/i18n/pages';
+import { getRates } from '@/i18n/rates';
+import { ratesNote } from '@/i18n/money';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { formatDateIn, formatEN, typo } from '@/lib/format';
+
+const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: pathPage.title }];
+const seo: SeoInput = { title: pathPage.docTitle, description: pathPage.description, breadcrumbs: crumbs, index: !pagePairOf(Astro.url.pathname)?.draft };
+
+const resolve = await pathEntryResolver();
+const listsOf = (id: string) => Promise.all(links[id].map(async (l) => ({ label: l.label, items: await Promise.all(l.items.map(resolve)) })));
+const [rekrutacja, studia, staz, specjalizacja] = await Promise.all(stops.map((s) => listsOf(s.id)));
+const afterLists = await Promise.all(after.map(async (a) => ({ ...a, links: await Promise.all(a.items.map((l: PathLinkEn) => resolve(l))) })));
+const textCount = new Set([...[rekrutacja, studia, staz, specjalizacja].flat().flatMap((l) => l.items), ...afterLists.flatMap((a) => a.links)].map((l) => l.href)).size;
+
+const total = stops.length;
+const rates = await getRates();
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="dz-top">
+    <PageHeader title={pathPage.title} lead={pathPage.lead} eyebrow={pathPage.eyebrow} crumbs={crumbs}>
+      <PageMeta items={[{ label: 'Stops', value: total }, { label: 'Texts', value: textCount }]} />
+      <Planner slot="aside" />
+    </PageHeader>
+    <div class="dz-note"><PageTranslationNote /></div>
+  </Section>
+
+  <Section space="bottom">
+    <Road stops={stops}>
+      <Stop stop={stops[0]} n={1} total={total}>
+        <Fragment slot="texts">{rekrutacja.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <ScoreCheck />
+      </Stop>
+
+      <Stop stop={stops[1]} n={2} total={total}>
+        <Fragment slot="texts">{studia.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <Figure
+          title={`Six years, ${formatEN(PLAN_TOTAL.hours)} hours and ${PLAN_TOTAL.exams} exams: the medical study plan at WUM`}
+          note={typo('The length of a segment is the number of hours for the subject; all years are on the same scale. The education standard is common to all universities, but the arrangement of subjects across the years differs.')}
+          source={{ label: 'WUM, study programme for the cycle starting in 2026/2027', href: STUDY_LINKS.wumPlan }}
+        >
+          <StudyPlan />
+        </Figure>
+      </Stop>
+
+      <Stop stop={stops[2]} n={3} total={total}>
+        <Fragment slot="texts">{staz.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <div data-i18n-skip>
+          <Figure
+            title={`In autumn 2025, ${lekRate}% of candidates passed the LEK, more than in the exams for several other professions of public trust`}
+            note={typo('Share of candidates who passed, of all attempts in the session, including repeats. The exam is in Polish, so the sample question and the full test are available only on the Polish site.')}
+            source={examSources}
+          >
+            <BarChart rows={examRows} max={100} unit="%" caption={`Pass rates of exams in 2025: ${examRows.map((r) => `${r.label} ${r.display}`).join('; ')}.`} />
+          </Figure>
+        </div>
+      </Stop>
+
+      <Stop stop={stops[3]} n={4} total={total}>
+        <Fragment slot="texts">{specjalizacja.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <FieldPicker />
+        <EmptyPlaces />
+      </Stop>
+    </Road>
+  </Section>
+
+  <Section id="next" tone="soft" aria-labelledby="next-title">
+    <Heading id="next-title" punct="?" class="dz-after__title">What next</Heading>
+    <div class="dz-after" data-i18n-skip>
+      {afterLists.map((a) => (
+        <div class="dz-after__row">
+          <div>
+            <p class="dz-after__name">{typo(a.title)}</p>
+            <p class="dz-after__lead">{typo(a.lead)}</p>
+          </div>
+          <ArticleTable articles={a.links} format={false} />
+        </div>
+      ))}
+    </div>
+    <p class="dz-rates">{ratesNote(rates, formatDateIn(new Date(rates.date), 'en'))}</p>
+  </Section>
+
+  <Section>
+    <PostulatCta />
+  </Section>
+</BaseLayout>
+
+<style>
+  .dz-top { padding-top: clamp(32px, 4vw, 56px); }
+  .dz-note { margin-top: clamp(24px, 3vw, 40px); }
+
+  .dz-after { display: grid; gap: 64px; margin-top: 32px; }
+  .dz-after__row { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 24px clamp(40px, 6vw, 88px); align-items: start; }
+  .dz-after__name { font: 400 clamp(1.375rem, 2.2vw, 1.75rem)/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .dz-after__lead { margin-top: 10px; max-width: 34em; font-size: 1.0625rem; line-height: 1.6; color: var(--ink-2); }
+  .dz-rates { max-width: 52em; margin-top: 32px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+
+  @media (max-width: 1024px) {
+    .dz-after__row { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

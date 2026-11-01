@@ -1,0 +1,180 @@
+---
+/**
+ * Droga: u góry linijka lat (długość odcinka to czas trwania etapu), pod nią karty czterech przystanków (kotwice),
+ * a dalej wszystkie przystanki jeden pod drugim (slot, komponenty Stop). Nic nie jest schowane za kliknięciem.
+ * Linijkę i lata przelicza Planner; linia przy przystankach wypełnia się kobaltem do miejsca, które czytelnik właśnie czyta.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import { INTERNSHIP_MONTHS, STUDIES_MONTHS } from './road';
+import type { RoadStop } from '@/data/droga-do-zawodu';
+import { localeOf } from '@/i18n/locales';
+import { plural, typo } from '@/lib/format';
+
+interface Props {
+  stops: RoadStop[];
+}
+
+const { stops } = Astro.props;
+const en = localeOf(Astro.url.pathname) === 'en';
+const { links, startField, startLabels } = en ? await import('@/data/en/droga-do-zawodu') : await import('@/data/droga-do-zawodu');
+const T = en
+  ? {
+      nav: 'Stops on the path', studies: 'Studies', studiesLen: '6 years', internship: 'Internship', spec: 'Specialist training', today: 'today', matura: 'matura', specialist: 'specialist',
+      stop: 'Stop ', go: 'Go · ', forms: ['text', 'texts', 'texts'] as [string, string, string],
+    }
+  : {
+      nav: 'Przystanki ścieżki', studies: 'Studia', studiesLen: '6 lat', internship: 'Staż', spec: 'Specjalizacja', today: 'dziś', matura: 'matura', specialist: 'specjalista',
+      stop: 'Przystanek ', go: 'Przejdź · ', forms: ['tekst', 'teksty', 'tekstów'] as [string, string, string],
+    };
+const textsOf = (id: string) => {
+  const n = links[id].flatMap((l: { items: unknown[] }) => l.items).length;
+  return `${n} ${plural(n, T.forms)}`;
+};
+---
+<zl-road class="road">
+  <nav aria-label={T.nav}>
+    <div class="ruler" aria-hidden="true">
+      <div class="ruler__bar">
+        <a class="seg" href="#studia" tabindex="-1" style={`flex-grow: ${STUDIES_MONTHS}`}><span class="seg__name">{T.studies}</span> <span class="seg__len">{T.studiesLen}</span></a>
+        <a class="seg" href="#staz" tabindex="-1" style={`flex-grow: ${INTERNSHIP_MONTHS}`}><span class="seg__name">{T.internship}</span></a>
+        <a class="seg" href="#specjalizacja" tabindex="-1" style={`flex-grow: ${startField.months}`} data-road-grow="spec"><span class="seg__name">{T.spec}</span> <span class="seg__len" data-road="specLen">{startLabels.specLen}</span></a>
+        <span class="ruler__today" data-road-today hidden><span>{T.today}</span></span>
+      </div>
+      <div class="ruler__years">
+        <span class="yr" style={`flex-grow: ${STUDIES_MONTHS}`}><b data-road="year">{startLabels.year}</b> <span class="yr__what">{T.matura}</span></span>
+        <span class="yr yr--mid" style={`flex-grow: ${INTERNSHIP_MONTHS}`}><b data-road="studiesEnd">{startLabels.studiesEnd}</b></span>
+        <span class="yr yr--last" style={`flex-grow: ${startField.months}`} data-road-grow="spec">
+          <b class="yr--mid" data-road="internshipEnd">{startLabels.internshipEnd}</b>
+          <span class="yr__end"><span class="yr__what">{T.specialist}</span> <b data-road="end">{startLabels.end}</b></span>
+        </span>
+      </div>
+    </div>
+
+    <div class="road__cards">
+      {stops.map((s, i) => (
+        <a class="step" href={`#${s.id}`}>
+          <span class="step__idx"><span class="step__word">{T.stop}</span>{i + 1} · <span data-road={s.span}>{startLabels[s.span]}</span></span>
+          <span class="step__name">{typo(s.question)}?</span>
+          <span class="step__value">{s.figure.value}{s.figure.suffix && <span class="step__suffix">{s.figure.suffix}</span>}</span>
+          <span class="step__unit">{typo(s.figure.unit)}</span>
+          <span class="step__go">
+            <span><span class="step__verb">{T.go}</span>{textsOf(s.id)}</span>
+            <span class="step__arrow"><Icon name="arrow" size={16} style="transform: rotate(90deg)" /></span>
+          </span>
+        </a>
+      ))}
+    </div>
+  </nav>
+  <div class="road__stops"><slot /></div>
+</zl-road>
+
+<script>
+  class ZlRoad extends HTMLElement {
+    connectedCallback() {
+      const stops = [...this.querySelectorAll<HTMLElement>('[data-stop]')];
+      let queued = false;
+
+      // linia wypełnia się do punktu czytania: 40% wysokości okna
+      const update = () => {
+        queued = false;
+        const reading = innerHeight * 0.4;
+        stops.forEach((stop) => {
+          const box = stop.getBoundingClientRect();
+          stop.style.setProperty('--p', Math.min(1, Math.max(0, (reading - box.top) / box.height)).toFixed(3));
+          stop.classList.toggle('is-reached', box.top <= reading);
+          stop.classList.toggle('is-done', box.bottom <= reading);
+        });
+      };
+      const queue = () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(update);
+      };
+      addEventListener('scroll', queue, { passive: true });
+      addEventListener('resize', queue);
+      update();
+    }
+  }
+
+  if (!customElements.get('zl-road')) customElements.define('zl-road', ZlRoad);
+</script>
+
+<style>
+  .road { display: block; --gap: 8px; }
+  .road__stops { margin-top: clamp(56px, 7vw, 88px); }
+
+  /* linijka: szczelina 2 px dzieli odcinki, a długość odcinka zmienia się razem z wybraną dziedziną.
+     Dopełnienie dawałoby krótkim odcinkom stałą nadwyżkę, więc odstęp tekstu to margines: długości są dokładnie w skali czasu. */
+  .ruler__bar { position: relative; display: flex; gap: 2px; height: 40px; }
+  .seg {
+    flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap;
+    background: var(--chart-soft); color: var(--ink); text-decoration: none;
+    font-size: 0.875rem; transition: flex-grow .35s var(--ease), background .15s, color .15s;
+  }
+  .seg__name { margin-left: 12px; font-weight: 500; }
+  .seg__len { color: var(--text-strong); transition: color .15s; }
+  .seg:hover { background: var(--blue-fill); color: #fff; }
+  .seg:hover .seg__len { color: inherit; }
+
+  .ruler__today { position: absolute; top: -6px; bottom: -6px; width: 3px; margin-left: -1px; background: var(--blue); pointer-events: none; }
+  .ruler__today[hidden] { display: none; }
+  .ruler__today span { position: absolute; bottom: 100%; left: 50%; translate: -50% 0; padding-bottom: 2px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--blue-700); }
+
+  .ruler__years { display: flex; gap: 2px; margin-top: 8px; font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted); }
+  /* ten sam odstęp co w odcinku: lata stoją pod nazwami odcinków */
+  .yr { flex: 1 1 0; min-width: 0; white-space: nowrap; transition: flex-grow .35s var(--ease); }
+  .yr > :first-child { margin-left: 12px; }
+  .yr b { font-weight: 500; color: var(--ink); }
+  .yr--last { display: flex; gap: 8px; }
+  .yr__end { margin-left: auto; margin-right: 12px; }
+
+  .road__cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); margin-top: 20px; }
+  .step {
+    position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px 16px 0;
+    border: 1px solid var(--line-2); background: var(--bg); color: inherit; text-decoration: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .step:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .step__idx { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .step__name { min-height: 2.5em; font: 500 1.125rem/1.25 var(--f-display); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance; transition: color .15s; }
+  .step__value { margin-top: 4px; font: 300 clamp(1.75rem, 3vw, 2.5rem)/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
+  .step__suffix { font-size: .55em; letter-spacing: 0; }
+  .step__unit { min-height: 2.6em; margin-bottom: 14px; font-size: 0.8125rem; line-height: 1.3; color: var(--text); }
+
+  /* stopka karty: mówi, co czeka niżej, i wygląda jak przycisk */
+  .step__go {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px;
+    margin: auto -16px 0; padding-left: 16px; border-top: 1px solid var(--line-2);
+    font-size: 0.875rem; font-weight: 500; color: var(--blue-700);
+    transition: border-color .15s;
+  }
+  .step__arrow { display: grid; place-items: center; align-self: stretch; width: 44px; background: var(--blue-50); color: var(--blue); transition: background .15s, color .15s; }
+  .step__arrow :global(svg) { transition: translate .25s var(--ease); }
+
+  .step:hover { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+  .step:hover .step__name { color: var(--blue-700); }
+  .step:hover .step__go { border-top-color: var(--blue); }
+  .step:hover .step__arrow { background: var(--blue-fill); color: #fff; }
+  .step:hover .step__arrow :global(svg) { translate: 0 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .seg, .yr { transition: background .15s, color .15s; }
+  }
+
+  /* telefon: linijka bez napisów w odcinkach i bez lat pośrednich, karty dwa na dwa */
+  @media (max-width: 720px) {
+    .ruler__bar { height: 16px; }
+    .seg > * { display: none; }
+    .yr > :first-child { margin-left: 0; }
+    .yr__end { margin-right: 0; }
+    .ruler__years .yr--mid { display: none; }
+    .road__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }
+    .step { gap: 4px; padding: 12px 12px 0; }
+    .step__word, .step__verb { display: none; }
+    .step__name { min-height: 3.75em; font-size: 1rem; }
+    .step__unit { display: none; }
+    .step__value { margin: 0 0 12px; font-size: 1.5rem; }
+    .step__go { margin: auto -12px 0; padding-left: 12px; font-size: 0.8125rem; min-height: 40px; }
+    .step__arrow { width: 40px; }
+  }
+</style>

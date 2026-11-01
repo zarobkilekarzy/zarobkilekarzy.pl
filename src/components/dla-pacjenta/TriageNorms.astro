@@ -1,0 +1,173 @@
+---
+/**
+ * Kolor po triażu → najdłuższy dopuszczalny czas do lekarza (zakładki `blocks/Tabs`, normy z lib/sor/measure).
+ * Czas stoi na każdej zakładce, a wybór koloru pokazuje go na skali z pól: jedno pole = 10 minut.
+ * Zasady wspólne dla wszystkich kategorii są na stałe pod spodem. Skrypt pobiera migawkę SOR, gdy sekcja zbliża się do ekranu (każde pobranie
+ * to wywołanie Workera SOR), i wstawia liczbę na zdjęcie oraz do linii z mapą; bez danych zostaje stały opis.
+ */
+import Tabs from '@/components/blocks/Tabs.astro';
+import DotGrid from '@/components/ui/DotGrid.astro';
+import { STAGES, normText } from '@/lib/sor/measure';
+import { SOR_DATA_URL } from '@/lib/sor/source';
+import type { Cell } from '@/lib/siatka';
+import { localeOf } from '@/i18n/locales';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
+const { triageBasis, triageNotes } = en ? await import('@/data/en/dla-pacjenta') : await import('@/data/dla-pacjenta');
+const sor = en ? await import('@/data/en/kolejki-sor') : undefined;
+const T = en
+  ? {
+      ask: 'What colour will you get after triage?',
+      axis: ['0', '2 hrs', '4 hrs'],
+      live: 'The map of all departments shows how many people are waiting for a doctor and whether the time is within the limit.',
+      map: 'Queue map →', mapHref: '/en/patient-rights/emergency-department/',
+      src: 'Longest permitted time to a doctor:', cell: 'One field is', minutes: 'minutes',
+      script: { people: ['person is waiting', 'people are waiting', 'people are waiting'], now: 'now for a doctor in emergency departments', stamp: 'as of {t} · live', over: 'Now: in {over} of {all} emergency departments the wait is over the limit (as of {t}).' },
+    }
+  : {
+      ask: 'Jaki kolor dostaniesz po triażu?',
+      axis: ['0', '2 godz.', '4 godz.'],
+      live: 'Mapa wszystkich oddziałów pokazuje, ile osób czeka na lekarza i czy czas mieści się w normie.',
+      map: 'Mapa kolejek →', mapHref: '/prawa-pacjenta/sor/',
+      src: 'Najdłuższy dopuszczalny czas do lekarza:', cell: 'Jedno pole to', minutes: 'minut',
+      script: { people: ['osoba czeka', 'osoby czekają', 'osób czeka'], now: 'teraz na lekarza na SOR-ach', stamp: 'stan z {t} · na żywo', over: 'Teraz: w {over} z {all} SOR-ów czas oczekiwania jest ponad normą (stan z {t}).' },
+    };
+
+const norms = STAGES.filter((s) => s.norm != null);
+const stagesEn = sor?.sorLiveText.stages.filter((s) => s.color);
+const colorOf = (i: number) => stagesEn?.[i].color ?? norms[i].color!;
+const catOf = (i: number) => (sor ? sor.labels.priority(stagesEn![i].label) : `priorytet ${norms[i].label.toLowerCase()}`);
+const timeOf = (norm: number) => (sor ? normText(norm, sor.sorLiveText) : normText(norm));
+const capitalize = (s: string) => s[0].toLocaleUpperCase('pl') + s.slice(1);
+/** kategoria otwarta na starcie: średnia, bo tu norma najlepiej widać na skali */
+const START = 2;
+const STEP = 10, CELLS = 24;
+const scale = (norm: number) => Array.from({ length: CELLS }, (_, i): Cell => ((i + 1) * STEP <= norm ? 'on' : 'off'));
+const src = import.meta.env.PUBLIC_SOR_URL || SOR_DATA_URL;
+---
+<zl-triage class="tri" data-src={src} data-locale={locale} data-text={JSON.stringify(T.script)}>
+  <p class="mono-label tool-head" id="tri-ask">{T.ask}</p>
+  <Tabs>
+    <div class="tri__tabs" role="tablist" aria-labelledby="tri-ask">
+      {norms.map((n, i) => (
+        <button
+          type="button" role="tab" class="tri__tab" data-c={i}
+          id={`tri-tab-${i}`} aria-controls={`tri-panel-${i}`}
+          aria-selected={i === START ? 'true' : 'false'} tabindex={i === START ? 0 : -1}
+        >
+          <span class="tri__band" aria-hidden="true"></span>
+          <span class="tri__name">{capitalize(colorOf(i))}</span>
+          <span class="tri__time">{typo(timeOf(n.norm!))}</span>
+        </button>
+      ))}
+    </div>
+    {norms.map((n, i) => (
+      <div class="tri__panel" role="tabpanel" id={`tri-panel-${i}`} aria-labelledby={`tri-tab-${i}`} hidden={i !== START}>
+        <p class="tri__norm">{typo(timeOf(n.norm!))}</p>
+        <p class="tri__cat">{capitalize(colorOf(i))} · {catOf(i)}</p>
+        <div class="tri__scale">
+          <DotGrid cells={scale(n.norm!)} cols={CELLS} />
+          <p class="tri__axis">{T.axis.map((label) => <span>{label}</span>)}</p>
+        </div>
+      </div>
+    ))}
+  </Tabs>
+  <ul class="tri__notes">
+    {triageNotes.map((note) => <li>{typo(note)}</li>)}
+  </ul>
+  <p class="tri__live" data-live>
+    <span data-live-text>{T.live}</span>
+    <a href={T.mapHref}>{T.map}</a>
+  </p>
+  <p class="tri__src">{T.src} <a {...linkAttrs(triageBasis.href)}>{triageBasis.label}</a>. {T.cell} {STEP} {T.minutes}.</p>
+</zl-triage>
+
+<script>
+  import { formatNumber, plural, typo } from '@/lib/format';
+  import type { Locale } from '@/i18n/locales';
+  import { hm, isOutdated, isSnapshot, summarize } from '@/lib/sor/summary';
+  import { setBadge } from './badge';
+
+  class Triage extends HTMLElement {
+    connectedCallback() {
+      const section = this.closest('section');
+      if (!section || !('IntersectionObserver' in window)) return void this.load(section);
+      const io = new IntersectionObserver((entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        io.disconnect();
+        void this.load(section);
+      }, { rootMargin: '400px 0px' });
+      io.observe(section);
+    }
+
+    private async load(section: Element | null) {
+      try {
+        const res = await fetch(this.dataset.src!);
+        if (!res.ok) return;
+        const data: unknown = await res.json();
+        if (!isSnapshot(data)) return;
+        const s = summarize(data);
+        if (!s.measured || isOutdated(s.freshest)) return;
+        const locale = (this.dataset.locale ?? 'pl') as Locale;
+        const t = JSON.parse(this.dataset.text ?? '{}') as { people: [string, string, string]; now: string; stamp: string; over: string };
+        const time = hm(s.freshest, locale);
+        const over = s.counts[2] + s.counts[3];
+        setBadge(section, typo(formatNumber(s.before, 0, locale)), typo(`${plural(s.before, t.people)} ${t.now}`), typo(t.stamp.replace('{t}', time)));
+        const text = this.querySelector('[data-live-text]');
+        if (text) text.textContent = typo(t.over.replace('{over}', String(over)).replace('{all}', String(s.measured)).replace('{t}', time));
+      } catch {
+        // bez danych zostaje stały opis
+      }
+    }
+  }
+
+  if (!customElements.get('zl-triage')) customElements.define('zl-triage', Triage);
+</script>
+
+<style>
+  .tri { display: block; }
+  .tri__tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 16px; }
+  .tri__tab {
+    display: grid; gap: 6px; align-content: start; padding: 0 0 8px; background: transparent; border: 0; border-bottom: 2px solid transparent; cursor: pointer;
+    color: var(--text); font: 400 0.8125rem/1.2 var(--f-body); text-align: left; transition: border-color .15s, color .15s;
+  }
+  .tri__tab:hover { color: var(--ink); border-bottom-color: var(--line-2); }
+  .tri__tab[aria-selected="true"] { border-bottom-color: var(--ink); color: var(--ink); font-weight: 500; }
+  .tri__band { display: block; height: 28px; background: var(--c); transition: transform .15s var(--ease); transform-origin: 50% 100%; }
+  .tri__tab:hover .tri__band, .tri__tab[aria-selected="true"] .tri__band { transform: scaleY(1.2); }
+  .tri__name { overflow-wrap: anywhere; }
+  .tri__time { font-size: 0.75rem; color: var(--text); }
+  .tri__tab[aria-selected="true"] .tri__time { color: var(--ink); }
+  .tri__tab[data-c="0"] { --c: #D93025; } /* kolor-stały: kolor kategorii triażu */
+  .tri__tab[data-c="1"] { --c: #EC7A1C; } /* kolor-stały: kolor kategorii triażu */
+  .tri__tab[data-c="2"] { --c: #F5C518; } /* kolor-stały: kolor kategorii triażu */
+  .tri__tab[data-c="3"] { --c: #2E9E5B; } /* kolor-stały: kolor kategorii triażu */
+  .tri__tab[data-c="4"] { --c: #2F7DE1; } /* kolor-stały: kolor kategorii triażu */
+
+  /* bez JS zakładki nie działają: wszystkie kategorie jedna pod drugą, bez przełącznika */
+  zl-tabs:not(:defined) .tri__tabs { display: none; }
+  zl-tabs:not(:defined) .tri__panel[hidden] { display: block !important; } /* base.css: [hidden] z !important */
+  .tri__panel { margin-top: 20px; }
+  .tri__norm { font: 300 clamp(2.5rem, 4.5vw, 3.25rem)/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .tri__cat { margin-top: 8px; font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .tri__scale { margin-top: 16px; }
+  .tri__axis { display: flex; justify-content: space-between; margin-top: 4px; font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted); }
+  .tri__notes { display: grid; gap: 8px; margin: 16px 0 0; padding: 14px 0 0 18px; border-top: 1px solid var(--line); list-style: square; font-size: 0.9375rem; line-height: 1.5; color: var(--text-strong); }
+  .tri__notes li::marker { color: var(--blue); }
+  .tri__live { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 0.9375rem; line-height: 1.5; color: var(--text-strong); }
+  .tri__live a { font-weight: 500; color: var(--blue); white-space: nowrap; }
+  .tri__src { margin-top: 10px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .tri__src a { color: var(--blue-700); text-underline-offset: 3px; }
+
+  @media (max-width: 520px) {
+    .tri__name { display: none; }
+    .tri__band { height: 36px; }
+    .tri__time { font-size: 0.625rem; letter-spacing: -0.01em; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tri__band { transition: none; }
+  }
+</style>

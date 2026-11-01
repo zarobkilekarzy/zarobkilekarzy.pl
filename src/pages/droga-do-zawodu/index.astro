@@ -1,0 +1,137 @@
+---
+/**
+ * /droga-do-zawodu/ — strona-ścieżka dla osób, które myślą o medycynie. Osią jest czas: rok matury i dziedzina
+ * wstawiają lata na linijce i przy czterech przystankach. Przystanki stoją jeden pod drugim, nic nie jest schowane za kliknięciem.
+ * Treść: src/data/droga-do-zawodu.ts. Komponenty: components/droga-do-zawodu (listy tekstów wspólne z /ile-placimy/).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import ArticleTable from '@/components/blocks/ArticleTable.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Heading from '@/components/ui/Heading.astro';
+import PostulatCta from '@/components/site/PostulatCta.astro';
+import EmptyPlaces from '@/components/dlaczego-brakuje-lekarzy/EmptyPlaces.astro';
+import QuestionTeaser from '@/components/egzamin/QuestionTeaser.astro';
+import StudyPlan from '@/components/studia-lekarskie/StudyPlan.astro';
+import Links from '@/components/ile-placimy/Links.astro';
+import FieldPicker from '@/components/droga-do-zawodu/FieldPicker.astro';
+import Planner from '@/components/droga-do-zawodu/Planner.astro';
+import Road from '@/components/droga-do-zawodu/Road.astro';
+import ScoreCheck from '@/components/droga-do-zawodu/ScoreCheck.astro';
+import Stop from '@/components/droga-do-zawodu/Stop.astro';
+import { after, links, pathPage, stops, type RoadLink } from '@/data/droga-do-zawodu';
+import { EXAMS, FIELDS, RULES, SESSIONS, sampleQuestion } from '@/data/egzamin';
+import { LINKS as STUDY_LINKS, PLAN_TOTAL } from '@/data/studia-lekarskie';
+import { getArticle } from '@/lib/content';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { entryOf, type Entry } from '@/i18n/entries';
+import { formatPL, typo } from '@/lib/format';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: pathPage.title }];
+const seo: SeoInput = { title: pathPage.docTitle, description: pathPage.description, breadcrumbs: crumbs };
+
+/** Wiersz spisu: artykuł, jego dział z własnym opisem (bez liczby z karty artykułu) albo strona spoza kolekcji. */
+const resolve = async (link: RoadLink): Promise<Entry> => {
+  if (!link.ref) return { id: link.href!, href: link.href!, title: link.label!, summary: link.text!, category: 'Analiza' };
+  const entry = entryOf(await getArticle(link.ref));
+  const section = link.text ? { summary: link.text, stat: undefined } : {};
+  return { ...entry, ...section, href: `${entry.href}${link.anchor ?? ''}`, title: link.label ?? entry.title };
+};
+const listsOf = (id: string) => Promise.all(links[id].map(async (l) => ({ label: l.label, items: await Promise.all(l.items.map(resolve)) })));
+const [rekrutacja, studia, staz, specjalizacja] = await Promise.all(stops.map((s) => listsOf(s.id)));
+const afterLists = await Promise.all(after.map(async (a) => ({ ...a, links: await Promise.all(a.items.map(resolve)) })));
+const textCount = new Set([...[rekrutacja, studia, staz, specjalizacja].flat().flatMap((l) => l.items), ...afterLists.flatMap((a) => a.links)].map((l) => l.href)).size;
+
+const total = stops.length;
+const fieldLabel = FIELDS[sampleQuestion.exam].find((f) => f.id === sampleQuestion.field)?.label ?? sampleQuestion.field;
+const sampleSource = `${EXAMS.find((e) => e.id === sampleQuestion.exam)?.label ?? ''} ${SESSIONS.find((s) => s.id === sampleQuestion.session)?.label ?? sampleQuestion.session} · nr ${sampleQuestion.nr}`;
+const examFacts = [
+  { value: String(RULES.questions), label: 'pytań' },
+  { value: String(RULES.minutes / 60), label: 'godziny' },
+  { value: `${Math.round(RULES.threshold * 100)}%`, label: 'próg' },
+];
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="dz-top">
+    <PageHeader title={pathPage.title} lead={pathPage.lead} eyebrow={pathPage.eyebrow} crumbs={crumbs}>
+      <PageMeta items={[{ label: 'Przystanki', value: total }, { label: 'Teksty', value: textCount }]} />
+      <Planner slot="aside" />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom">
+    <Road stops={stops}>
+      <Stop stop={stops[0]} n={1} total={total}>
+        <Fragment slot="texts">{rekrutacja.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <ScoreCheck />
+      </Stop>
+
+      <Stop stop={stops[1]} n={2} total={total}>
+        <Fragment slot="texts">{studia.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <Figure
+          title={`Sześć lat, ${formatPL(PLAN_TOTAL.hours)} godzin i ${PLAN_TOTAL.exams} egzaminów: plan studiów lekarskich na WUM`}
+          note={typo('Długość odcinka to liczba godzin przedmiotu; wszystkie lata są w tej samej skali. Standard kształcenia jest wspólny dla wszystkich uczelni, ale układ przedmiotów na latach się różni.')}
+          source={{ label: 'WUM, program studiów dla cyklu kształcenia rozpoczynającego się w roku 2026/2027', href: STUDY_LINKS.wumPlan }}
+        >
+          <StudyPlan />
+        </Figure>
+      </Stop>
+
+      <Stop stop={stops[2]} n={3} total={total}>
+        <Fragment slot="texts">{staz.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        {/* po angielsku w tym miejscu wykres zdawalności, bo egzamin jest tylko po polsku; warianty „1,2.” kontrola tłumaczeń czytałaby jak liczby */}
+        <div data-i18n-skip>
+          <QuestionTeaser
+            question={sampleQuestion}
+            fieldLabel={fieldLabel}
+            facts={examFacts}
+            label="Jedno pytanie z LEK"
+            source={sampleSource}
+            note="Po odpowiedzi zobaczysz klucz i to, jak odpowiadała sala. Pytania pochodzą z jawnej bazy CEM."
+            cta={{ label: 'Rozwiąż pełny test', href: '/egzamin/' }}
+          />
+        </div>
+      </Stop>
+
+      <Stop stop={stops[3]} n={4} total={total}>
+        <Fragment slot="texts">{specjalizacja.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <FieldPicker />
+        <EmptyPlaces />
+      </Stop>
+    </Road>
+  </Section>
+
+  <Section id="dalej" tone="soft" aria-labelledby="dalej-title">
+    <Heading id="dalej-title" punct="?" class="dz-after__title">Co dalej</Heading>
+    <div class="dz-after" data-i18n-skip>
+      {afterLists.map((a) => (
+        <div class="dz-after__row">
+          <div>
+            <p class="dz-after__name">{typo(a.title)}</p>
+            <p class="dz-after__lead">{typo(a.lead)}</p>
+          </div>
+          <ArticleTable articles={a.links} format={false} />
+        </div>
+      ))}
+    </div>
+  </Section>
+
+  <Section>
+    <PostulatCta />
+  </Section>
+</BaseLayout>
+
+<style>
+  .dz-top { padding-top: clamp(32px, 4vw, 56px); }
+
+  .dz-after { display: grid; gap: 64px; margin-top: 32px; }
+  .dz-after__row { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 24px clamp(40px, 6vw, 88px); align-items: start; }
+  .dz-after__name { font: 400 clamp(1.375rem, 2.2vw, 1.75rem)/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .dz-after__lead { margin-top: 10px; max-width: 34em; font-size: 1.0625rem; line-height: 1.6; color: var(--ink-2); }
+
+  @media (max-width: 1024px) {
+    .dz-after__row { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

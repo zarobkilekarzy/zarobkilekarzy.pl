@@ -1,0 +1,103 @@
+---
+/**
+ * /dla-pacjenta/ — strona-ścieżka w układzie stron działu: nagłówek i wejścia jak /prawa-pacjenta/,
+ * sekcje-pytania jak /mechanizmy/, a w każdej sekcji małe narzędzie.
+ * Treść: src/data/dla-pacjenta.ts. Komponenty: components/dla-pacjenta.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import Band, { type ResolvedLink } from '@/components/dla-pacjenta/Band.astro';
+import RightsQuiz from '@/components/dla-pacjenta/RightsQuiz.astro';
+import TriageNorms from '@/components/dla-pacjenta/TriageNorms.astro';
+import IkpWalk from '@/components/dla-pacjenta/IkpWalk.astro';
+import WaitCalendar from '@/components/dla-pacjenta/WaitCalendar.astro';
+import RoutePicker from '@/components/dla-pacjenta/RoutePicker.astro';
+import HelpCard from '@/components/pacjent/HelpCard.astro';
+import EntryCards from '@/components/pacjent/EntryCards.astro';
+import PrintPromo from '@/components/pacjent/PrintPromo.astro';
+import CallBar from '@/components/pacjent/CallBar.astro';
+import { pathPage, stops, type StopLink } from '@/data/dla-pacjenta';
+import { emergency, helpline, page as rightsPage } from '@/data/prawa-pacjenta';
+import { articleHref, getArticle, isPublished, readingMinutes } from '@/lib/content';
+import { PDF_FILES, pdfMeta } from '@/lib/pacjent/downloads';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { typo } from '@/lib/format';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: pathPage.title }];
+const seo: SeoInput = { title: pathPage.docTitle, description: pathPage.description, breadcrumbs: crumbs };
+
+/** Adres, tytuł i czas czytania z kolekcji. */
+const resolve = async (link: StopLink): Promise<ResolvedLink> => {
+  if (!link.ref) return { href: link.href!, title: link.label! };
+  const article = await getArticle(link.ref);
+  return {
+    href: `${articleHref(article)}${link.anchor ?? ''}`,
+    title: link.label ?? article.data.title,
+    minutes: isPublished(article) ? readingMinutes(article) : undefined,
+  };
+};
+const resolved = await Promise.all(stops.map(async (stop) => ({
+  stop,
+  main: await resolve(stop.main),
+  more: await Promise.all(stop.more.map(resolve)),
+})));
+const tools = [RightsQuiz, TriageNorms, IkpWalk, WaitCalendar, RoutePicker];
+const entries = stops.map((s) => ({ href: `#${s.id}`, title: `${s.question}?`, ...s.entry }));
+/** Ścieżka kończy się działaniem: po ostatnim pytaniu karta do druku. */
+const nextOf = (i: number) => {
+  const next = stops[i + 1];
+  return next ? { href: `#${next.id}`, label: `Dalej: ${next.question}?` } : { href: '#druk', label: 'Na koniec: karta kieszonkowa do druku' };
+};
+---
+<BaseLayout seo={seo}>
+  <div class="dp">
+    <Section space="bottom" class="dp-top">
+      <PageHeader title={pathPage.title} lead={pathPage.lead} eyebrow={pathPage.eyebrow} crumbs={crumbs}>
+        <HelpCard slot="aside" helpline={helpline} emergency={emergency} />
+      </PageHeader>
+      <EntryCards class="dp-entries" title="W jakiej jesteś sytuacji?" items={entries} />
+    </Section>
+
+    <Section space="bottom">
+      <div class="dp-guide">
+        {resolved.map(({ stop, main, more }, i) => {
+          const Tool = tools[i];
+          return (
+            <Band stop={stop} n={i + 1} main={main} more={more} next={nextOf(i)} flip={i % 2 === 1}>
+              <Tool />
+            </Band>
+          );
+        })}
+      </div>
+    </Section>
+
+    <Section id="druk" tone="soft" aria-labelledby="druk-title">
+      <PrintPromo
+        title="Karta kieszonkowa"
+        text="Najważniejsze prawa, terminy i numery na jednej karcie: do torebki, do teczki z dokumentacją albo dla rodzica. Drukujesz na zwykłej kartce A4, przecinasz i składasz."
+        phone={helpline.phone.display}
+        actions={[
+          { label: 'Pobierz kartę', meta: `${await pdfMeta('card')} · 2 karty na A4`, href: PDF_FILES.card.href, download: PDF_FILES.card.download, icon: 'doc' },
+          { label: 'Duży druk', meta: `${await pdfMeta('large')} · 2 strony, tekst 14 pt`, href: PDF_FILES.large.href, download: PDF_FILES.large.download, icon: 'text-size' },
+          { label: 'Jak wydrukować i złożyć', meta: 'instrukcja i podgląd karty', href: '/prawa-pacjenta/druk/', icon: 'print' },
+        ]}
+      />
+      <p class="dp-note">{typo(rightsPage.disclaimer)}</p>
+    </Section>
+  </div>
+
+  <CallBar phone={helpline.phone} label="Infolinia" />
+</BaseLayout>
+
+<style>
+  .dp-top { padding-top: clamp(32px, 4vw, 56px); }
+  .dp :global(.dp-entries) { margin-top: clamp(48px, 6vw, 80px); }
+  .dp-guide { display: grid; gap: clamp(80px, 9vw, 136px); }
+  .dp-note { max-width: 52em; margin-top: clamp(32px, 4vw, 48px); padding-top: 16px; border-top: 1px solid var(--line-2); font-size: 0.875rem; line-height: 1.6; color: var(--text); }
+
+  /* miejsce na przycisk infolinii przy dolnej krawędzi */
+  @media (max-width: 720px) {
+    .dp { padding-bottom: 4rem; }
+  }
+</style>

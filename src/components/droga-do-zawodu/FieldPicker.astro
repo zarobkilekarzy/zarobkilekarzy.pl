@@ -1,0 +1,90 @@
+---
+/**
+ * Karta dziedziny przy przystanku o specjalizacji. Pole wyboru jest zsynchronizowane z tym w Planner, więc zmiana tu
+ * przelicza też linijkę lat, a liczby podmienia skrypt Plannera (`data-road="f-…"`).
+ * Czego źródło nie podaje, tego nie zgadujemy: w polu stoi „nie podano”. Bez JS karta pokazuje dziedzinę startową.
+ */
+import { LINKS, PAY_ACT } from '@/data/wedlug-specjalizacji';
+import { localeOf } from '@/i18n/locales';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+const en = localeOf(Astro.url.pathname) === 'en';
+const { fields, startField, startRoad } = en ? await import('@/data/en/droga-do-zawodu') : await import('@/data/droga-do-zawodu');
+const T = en
+  ? {
+      head: 'Selected specialty', all: 'All 29 in the table', allHref: '/en/data/residents-pay-by-specialty/', field: 'Specialty', sources: 'Sources:',
+      labels: ['Training', 'Resident’s pay, gross', 'Applicants per place, autumn 2025', 'Places, autumn 2025', 'PES test passed, 2023–2025', 'Rate in job ads, 2023'],
+      lengthNote: 'at least, without a prior specialisation',
+      note: 'These are 29 of the 77 specialties. Pay: basic pay from 1 July 2026, without the voluntary commitment to work in Poland. The rate is an average from job ads, not pay. The PES test figure is the share of attempts with a score of at least 60%.',
+      act: 'Dz.U. 2023 item 975, annex 5', pay: 'Dz.U. 2026 item 856', cmkp: 'CMKP, list of places', head2: 'summary by the CMKP director, via beautyrazem.pl', report: 'report “Lekarze – oferty pracy” (doctors’ job offers)',
+    }
+  : {
+      head: 'Wybrana dziedzina', all: 'Wszystkie 29 w tabeli', allHref: '/dane/wedlug-specjalizacji/', field: 'Dziedzina', sources: 'Źródła:',
+      labels: ['Szkolenie', 'Pensja rezydenta, brutto', 'Chętni na miejsce, jesień 2025', 'Miejsca, jesień 2025', 'Zdany test PES, 2023–2025', 'Stawka w ogłoszeniach, 2023'],
+      lengthNote: 'co najmniej, bez wcześniejszej specjalizacji',
+      note: 'To 29 z 77 dziedzin. Pensja: wynagrodzenie zasadnicze od 1 lipca 2026 r., bez dobrowolnego zobowiązania do pracy w Polsce. Stawka to średnia z ogłoszeń, a nie płaca. Test PES to odsetek podejść z wynikiem co najmniej 60%.',
+      act: 'Dz.U. 2023 poz. 975, zał. nr 5', pay: PAY_ACT.label, cmkp: 'CMKP, wykaz miejsc', head2: 'zestawienie dyrektora CMKP, za: beautyrazem.pl', report: 'raport „Lekarze – oferty pracy”',
+    };
+
+const facts = [
+  { key: 'length', label: T.labels[0], note: T.lengthNote },
+  { key: 'payFirst', label: T.labels[1], noteKey: 'payLater' },
+  { key: 'candidates', label: T.labels[2], noteKey: 'candidatesNote' },
+  { key: 'places', label: T.labels[3], noteKey: 'placesNote' },
+  { key: 'pes', label: T.labels[4], noteKey: 'pesNote' },
+  { key: 'rate', label: T.labels[5], noteKey: 'rateNote' },
+] as const;
+---
+<div class="fp">
+  <div class="tool-head"><p class="mono-label">{T.head}</p><a class="fp__all" href={T.allHref}>{T.all}</a></div>
+  <label class="fp__select" data-road-controls hidden>
+    <span class="sr-only">{T.field}</span>
+    <select data-road-field>
+      {fields.map((f) => <option value={f.id} selected={f.id === startRoad.field}>{f.name} · {f.length}</option>)}
+    </select>
+  </label>
+  <p class="fp__status" data-road="f-priority">{startField.priority}</p>
+  <dl class="fp__facts">
+    {facts.map((f) => (
+      <div class="fp__fact">
+        <dt>{f.label}</dt>
+        <dd>
+          <b data-road={`f-${f.key}`}>{startField[f.key]}</b>
+          {'noteKey' in f
+            ? <span data-road={`f-${f.noteKey}`}>{startField[f.noteKey]}</span>
+            : <span>{f.note}</span>}
+        </dd>
+      </div>
+    ))}
+  </dl>
+  <p class="fp__src">
+    {typo(T.note)}
+    {' '}{T.sources} <a {...linkAttrs('https://api.sejm.gov.pl/eli/acts/DU/2023/975/text.pdf')}>{T.act}</a>, <a {...linkAttrs(PAY_ACT.href)}>{T.pay}</a>, <a {...linkAttrs(LINKS.cmkpPlaces)}>{T.cmkp}</a>, <a {...linkAttrs(LINKS.candidates)}>{T.head2}</a>, <a {...linkAttrs(LINKS.pes)}>CEM</a>, <a {...linkAttrs(LINKS.offers2023)}>{T.report}</a>.
+  </p>
+</div>
+
+<style>
+  .fp { min-width: 0; }
+  .fp__all { font-size: 0.875rem; color: var(--blue-700); text-underline-offset: 3px; }
+
+  .fp__select { display: block; margin-top: 16px; }
+  .fp__select[hidden] { display: none; }
+  .fp__select select {
+    width: 100%; height: 46px; padding: 0 32px 0 12px; border: 1px solid var(--line-2); border-radius: 0; appearance: none; -webkit-appearance: none;
+    background: var(--bg) var(--select-arrow) no-repeat right 12px center; color: var(--ink); font: 400 1rem/1.2 var(--f-body); text-overflow: ellipsis;
+  }
+  .fp__select select:focus { border-color: var(--blue); outline: 0; box-shadow: inset 0 0 0 1px var(--blue); }
+
+  .fp__status { margin-top: 12px; font-size: 0.9375rem; color: var(--text-strong); }
+
+  .fp__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px clamp(12px, 3vw, 24px); margin: 16px 0 0; }
+  .fp__fact { padding-top: 10px; border-top: 1px solid var(--line-2); }
+  .fp__fact dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .fp__fact dd { display: grid; gap: 2px; margin: 6px 0 0; }
+  .fp__fact b { font: 400 clamp(1.25rem, 4vw, 1.5rem)/1.15 var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .fp__fact span { font-size: 0.8125rem; line-height: 1.4; color: var(--text); }
+
+  .fp__src { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .fp__src a { color: var(--blue-700); text-underline-offset: 3px; }
+</style>

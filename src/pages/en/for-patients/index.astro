@@ -1,0 +1,109 @@
+---
+/**
+ * /en/for-patients/ — tłumaczenie /dla-pacjenta/ (src/pages/dla-pacjenta/index.astro): ten sam układ, teksty z src/data/en/dla-pacjenta.ts,
+ * narzędzia z components/dla-pacjenta (dwujęzyczne lokalnie). Para i stempel w src/i18n/pages.json.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import Band, { type ResolvedLink } from '@/components/dla-pacjenta/Band.astro';
+import RightsQuiz from '@/components/dla-pacjenta/RightsQuiz.astro';
+import TriageNorms from '@/components/dla-pacjenta/TriageNorms.astro';
+import IkpWalk from '@/components/dla-pacjenta/IkpWalk.astro';
+import WaitCalendar from '@/components/dla-pacjenta/WaitCalendar.astro';
+import RoutePicker from '@/components/dla-pacjenta/RoutePicker.astro';
+import HelpCard from '@/components/pacjent/HelpCard.astro';
+import EntryCards from '@/components/pacjent/EntryCards.astro';
+import PrintPromo from '@/components/pacjent/PrintPromo.astro';
+import CallBar from '@/components/pacjent/CallBar.astro';
+import { pathPage, stops } from '@/data/en/dla-pacjenta';
+import type { PathLinkEn } from '@/data/en/sciezki';
+import { emergency, helpline, page as rightsPage } from '@/data/en/prawa-pacjenta';
+import { pagePairOf } from '@/i18n/pages';
+import { getRates } from '@/i18n/rates';
+import { ratesNote } from '@/i18n/money';
+import { enHref, getTranslations } from '@/i18n/translations';
+import { ui } from '@/i18n/ui';
+import { readingMinutes } from '@/lib/content';
+import { PDF_FILES_EN, pdfMetaEn } from '@/lib/pacjent/downloads-en';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { formatDateIn, typo } from '@/lib/format';
+
+const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: pathPage.title }];
+const seo: SeoInput = { title: pathPage.docTitle, description: pathPage.description, breadcrumbs: crumbs, index: !pagePairOf(Astro.url.pathname)?.draft };
+
+const translations = await getTranslations();
+const rates = await getRates();
+
+/** Adres, tytuł i czas czytania z tłumaczenia; strona bez tłumaczenia z dopiskiem „(in Polish)”. */
+const resolve = (link: PathLinkEn): ResolvedLink => {
+  if (!link.ref) return { href: link.href!, title: `${link.label!}${link.polish ? ui.en.inPolish : ''}`, hreflang: link.polish ? 'pl' : undefined };
+  const translated = translations.find((t) => t.source.id === link.ref);
+  if (!translated) throw new Error(`[en] /en/for-patients/: brak tłumaczenia „${link.ref}”`);
+  return { href: `${enHref(translated)}${link.anchor ?? ''}`, title: link.label ?? translated.article.data.title, minutes: readingMinutes(translated.article) };
+};
+const resolved = stops.map((stop) => ({ stop, main: resolve(stop.main), more: stop.more.map(resolve) }));
+const tools = [RightsQuiz, TriageNorms, IkpWalk, WaitCalendar, RoutePicker];
+const entries = stops.map((s) => ({ href: `#${s.id}`, title: `${s.question}?`, ...s.entry }));
+/** Ścieżka kończy się działaniem: po ostatnim pytaniu karta do druku. */
+const nextOf = (i: number) => {
+  const next = stops[i + 1];
+  return next ? { href: `#${next.id}`, label: `Next: ${next.question}?` } : { href: '#print', label: 'Finally: a pocket card to print' };
+};
+---
+<BaseLayout seo={seo}>
+  <div class="dp">
+    <Section space="bottom" class="dp-top">
+      <PageHeader title={pathPage.title} lead={pathPage.lead} eyebrow={pathPage.eyebrow} crumbs={crumbs}>
+        <HelpCard slot="aside" helpline={helpline} emergency={emergency} />
+      </PageHeader>
+      <div class="dp-note-top"><PageTranslationNote /></div>
+      <EntryCards class="dp-entries" title="What situation are you in?" items={entries} />
+    </Section>
+
+    <Section space="bottom">
+      <div class="dp-guide">
+        {resolved.map(({ stop, main, more }, i) => {
+          const Tool = tools[i];
+          return (
+            <Band stop={stop} n={i + 1} main={main} more={more} next={nextOf(i)} flip={i % 2 === 1}>
+              <Tool />
+            </Band>
+          );
+        })}
+      </div>
+    </Section>
+
+    <Section id="print" tone="soft" aria-labelledby="druk-title">
+      <PrintPromo
+        title="Pocket card"
+        text="The most important rights, deadlines and numbers on a single card: for your handbag, for the folder with your medical records or for a parent. You print it on an ordinary sheet of A4, cut it and fold it."
+        phone={helpline.phone.display}
+        actions={[
+          { label: 'Download the card', meta: `${await pdfMetaEn('card')} · 2 cards on A4`, href: PDF_FILES_EN.card.href, download: PDF_FILES_EN.card.download, icon: 'doc' },
+          { label: 'Large print', meta: `${await pdfMetaEn('large')} · 2 pages, 14 pt text`, href: PDF_FILES_EN.large.href, download: PDF_FILES_EN.large.download, icon: 'text-size' },
+          { label: 'How to print and fold it', meta: 'instructions and a preview of the card', href: '/en/patient-rights/print/', icon: 'print' },
+        ]}
+      />
+      <p class="dp-note">{typo(rightsPage.disclaimer)}</p>
+      <p class="dp-rates">{ratesNote(rates, formatDateIn(new Date(rates.date), 'en'))}</p>
+    </Section>
+  </div>
+
+  <CallBar phone={helpline.phone} label="Helpline" />
+</BaseLayout>
+
+<style>
+  .dp-top { padding-top: clamp(32px, 4vw, 56px); }
+  .dp-note-top { margin-top: clamp(24px, 3vw, 40px); }
+  .dp :global(.dp-entries) { margin-top: clamp(32px, 4vw, 56px); }
+  .dp-guide { display: grid; gap: clamp(80px, 9vw, 136px); }
+  .dp-note { max-width: 52em; margin-top: clamp(32px, 4vw, 48px); padding-top: 16px; border-top: 1px solid var(--line-2); font-size: 0.875rem; line-height: 1.6; color: var(--text); }
+  .dp-rates { max-width: 52em; margin-top: 12px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+
+  /* miejsce na przycisk infolinii przy dolnej krawędzi */
+  @media (max-width: 720px) {
+    .dp { padding-bottom: 4rem; }
+  }
+</style>

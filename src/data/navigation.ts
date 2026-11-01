@@ -24,7 +24,7 @@ export const mainNav: Link[] = [
   { label: 'Dane', href: '/dane/', match: '/dane/' },
   { label: 'Mechanizmy', href: '/mechanizmy/', match: '/mechanizmy/' },
   { label: 'Analizy', href: '/analizy/', match: '/analizy/' },
-  { label: 'Dla pacjenta', href: '/prawa-pacjenta/', match: '/prawa-pacjenta/' },
+  { label: 'Dla pacjenta', href: '/dla-pacjenta/', match: '/dla-pacjenta/', also: '/prawa-pacjenta/' },
   { label: 'Zdaj LEK', href: '/egzamin/', match: '/egzamin/' },
   { label: 'Postulat', href: '/postulat/', match: '/postulat/' },
 ];
@@ -57,6 +57,9 @@ export const footerNav: NavGroup[] = [
       { label: 'Mechanizmy', href: '/mechanizmy/' },
       { label: 'Dane', href: '/dane/' },
       { label: 'Analizy', href: '/analizy/' },
+      { label: 'Dla pacjenta', href: '/dla-pacjenta/' },
+      { label: 'Ile i za co płacimy', href: '/ile-placimy/' },
+      { label: 'Droga do zawodu', href: '/droga-do-zawodu/' },
       { label: 'Słownik pojęć', href: '/slownik/' },
     ],
   },
@@ -91,6 +94,50 @@ export const footerNav: NavGroup[] = [
 
 /** Cele wyszukiwania, których nie ma w kolekcjach ani danych (sekcje stron). */
 export const searchExtras: SearchDoc[] = [
+  // strony-ścieżki: przystanki jako sekcje, „ryczałt” albo „LEK” prowadzi prosto do właściwego miejsca
+  {
+    id: 'dla-pacjenta',
+    title: 'Dla pacjenta: prawa, kolejki, konto i skargi',
+    category: 'Przewodnik',
+    href: '/dla-pacjenta/',
+    summary: 'Pięć sytuacji pacjenta: co Ci przysługuje, jak działa kolejka na SOR, jak sprawdzić IKP, dlaczego się czeka i dokąd iść, gdy coś poszło nie tak.',
+    keywords: ['pacjent', 'skarga', 'gdzie zgłosić', 'triaż', 'IKP', 'czas oczekiwania', 'infolinia'],
+    sections: [
+      { title: 'Co mi przysługuje?', anchor: 'prawa' },
+      { title: 'Jak działa kolejka na SOR?', anchor: 'pilnie' },
+      { title: 'Czy na moim koncie wszystko się zgadza?', anchor: 'konto' },
+      { title: 'Dlaczego tak długo czekam?', anchor: 'kolejka' },
+      { title: 'Dokąd z tym iść?', anchor: 'skarga' },
+    ],
+  },
+  {
+    id: 'ile-placimy',
+    title: 'Ile i za co płacimy lekarzom: od składki do wypłaty',
+    category: 'Przewodnik',
+    href: '/ile-placimy/',
+    summary: 'Od składki zdrowotnej do wypłaty lekarza w czterech przystankach. Sumy widać na każdym z nich, a łącznej kwoty dla jednej osoby publicznie na żadnym.',
+    keywords: ['składka zdrowotna', 'kalkulator składki', 'budżet NFZ', 'ryczałt', 'kontrakt', 'kto widzi sumę'],
+    sections: [
+      { title: 'Skąd są te pieniądze?', anchor: 'skladka' },
+      { title: 'Co się z nimi dzieje w NFZ?', anchor: 'plan' },
+      { title: 'Za co NFZ płaci szpitalowi?', anchor: 'rozliczenie' },
+      { title: 'Ile z tego dostaje lekarz?', anchor: 'wyplata' },
+    ],
+  },
+  {
+    id: 'droga-do-zawodu',
+    title: 'Droga do zawodu lekarza: od matury do specjalisty',
+    category: 'Przewodnik',
+    href: '/droga-do-zawodu/',
+    summary: 'Od przyjęcia na studia do tytułu specjalisty mija od 11 do 13 lat. Rekrutacja, studia, LEK ze stażem i specjalizacja.',
+    keywords: ['medycyna', 'progi', 'rekrutacja', 'matura', 'staż', 'rezydentura', 'ile trwa specjalizacja', 'PES'],
+    sections: [
+      { title: 'Jak się dostać?', anchor: 'rekrutacja' },
+      { title: 'Co czeka na studiach?', anchor: 'studia' },
+      { title: 'Co po dyplomie?', anchor: 'staz' },
+      { title: 'Kim zostać i jak długo to trwa?', anchor: 'specjalizacja' },
+    ],
+  },
   { id: 'postulat', title: 'Postulat: jawne kwoty, chronione nazwiska', category: 'Postulat', href: '/postulat/', keywords: ['jawny rejestr', 'jawność wynagrodzeń', 'pseudonimizacja'] },
   {
     id: 'dzialaj',

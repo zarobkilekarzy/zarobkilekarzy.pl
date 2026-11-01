@@ -13,7 +13,7 @@ export const mainNav: Link[] = [
   { label: 'Data', href: '/en/data/', match: '/en/data/' },
   { label: 'Mechanisms', href: '/en/mechanisms/', match: '/en/mechanisms/' },
   { label: 'Analysis', href: '/en/analysis/', match: '/en/analysis/' },
-  { label: 'For patients', href: '/en/patient-rights/', match: '/en/patient-rights/' },
+  { label: 'For patients', href: '/en/for-patients/', match: '/en/for-patients/', also: '/en/patient-rights/' },
 ];
 
 export const topbarLinks: Link[] = [{ label: 'Polish site', href: '/' }, x];
@@ -26,6 +26,9 @@ export const footerNav: NavGroup[] = [
       { label: 'Data', href: '/en/data/' },
       { label: 'Mechanisms', href: '/en/mechanisms/' },
       { label: 'Analysis', href: '/en/analysis/' },
+      { label: 'For patients', href: '/en/for-patients/' },
+      { label: 'How much we pay', href: '/en/how-much-we-pay/' },
+      { label: 'The road to the profession', href: '/en/road-to-the-profession/' },
       { label: 'Patient rights', href: '/en/patient-rights/' },
       { label: 'Emergency department queues', href: '/en/patient-rights/emergency-department/' },
       { label: 'Glossary', href: '/en/glossary/' },
@@ -57,6 +60,50 @@ export const footerNav: NavGroup[] = [
 
 /** Cele wyszukiwarki EN spoza artykułów (lib/search/build-en.ts); id jak w polskim searchExtras, gdy strona ma odpowiednik. */
 export const searchExtras: SearchDoc[] = [
+  // strony-ścieżki: przystanki jako sekcje
+  {
+    id: 'dla-pacjenta',
+    title: 'For patients: rights, queues, your account',
+    category: 'For patients',
+    href: '/en/for-patients/',
+    summary: 'Five patient situations: what you are entitled to, how the emergency queue works, how to check your IKP, why you wait and where to go when something goes wrong.',
+    keywords: ['patient', 'complaint', 'where to report', 'triage', 'IKP', 'waiting time', 'helpline'],
+    sections: [
+      { title: 'What am I entitled to?', anchor: 'prawa' },
+      { title: 'How does the emergency department queue work?', anchor: 'pilnie' },
+      { title: 'Is everything right on my account?', anchor: 'konto' },
+      { title: 'Why am I waiting so long?', anchor: 'kolejka' },
+      { title: 'Where do I take this?', anchor: 'skarga' },
+    ],
+  },
+  {
+    id: 'ile-placimy',
+    title: 'How much we pay Polish doctors, and for what',
+    category: 'Data',
+    href: '/en/how-much-we-pay/',
+    summary: 'From the health contribution to a doctor’s pay in four stops. Totals are visible at each of them, but the total for one person is public at none.',
+    keywords: ['health contribution', 'contribution calculator', 'NFZ budget', 'lump sum', 'contract', 'who can see the total'],
+    sections: [
+      { title: 'Where does this money come from?', anchor: 'skladka' },
+      { title: 'What happens to it in the NFZ?', anchor: 'plan' },
+      { title: 'What does the NFZ pay a hospital for?', anchor: 'rozliczenie' },
+      { title: 'How much of it does a doctor get?', anchor: 'wyplata' },
+    ],
+  },
+  {
+    id: 'droga-do-zawodu',
+    title: 'The road to becoming a doctor in Poland',
+    category: 'Analysis',
+    href: '/en/road-to-the-profession/',
+    summary: 'It takes 11 to 13 years from admission to medical school to the specialist title. Admissions, studies, the LEK with the internship, and specialist training.',
+    keywords: ['medicine', 'thresholds', 'admissions', 'matura', 'internship', 'residency', 'how long specialist training takes', 'PES'],
+    sections: [
+      { title: 'How to get in?', anchor: 'rekrutacja' },
+      { title: 'What the studies involve?', anchor: 'studia' },
+      { title: 'What comes after the diploma?', anchor: 'staz' },
+      { title: 'What to become and how long it takes?', anchor: 'specjalizacja' },
+    ],
+  },
   { id: 'postulat', title: 'Our demand: public amounts, protected names', category: 'Our demand', href: '/en/demand/', keywords: ['demand', 'transparency', 'register', 'pseudonym', 'permanent identifier', 'draft act', 'GDPR'] },
   {
     id: 'prawa-pacjenta',

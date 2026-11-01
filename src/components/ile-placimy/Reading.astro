@@ -1,0 +1,38 @@
+---
+/**
+ * Rachunek na przystanku: duża liczba (`data-my` podmienia ją kalkulator), jednostka, flaga dokładności
+ * i wyjaśnienie w slocie. Slot `source`: linki do źródeł. Bez `accuracy` flagi nie ma (np. pole bez liczby).
+ * Liczba zależna od płacy ma link do kalkulatora na górze strony; odsłania go skrypt kalkulatora, bo bez JS nie ma suwaka.
+ */
+import Flag from '@/components/ui/Flag.astro';
+import type { Accuracy } from '@/types';
+import { localeOf } from '@/i18n/locales';
+import { typo } from '@/lib/format';
+
+interface Props {
+  value: string;
+  /** klucz kalkulatora, gdy liczba zależy od płacy czytelnika */
+  my?: string;
+  /** znak tuż za liczbą, np. „%” */
+  suffix?: string;
+  unit: string;
+  accuracy?: Accuracy;
+}
+
+const { value, my, suffix, unit, accuracy } = Astro.props;
+const change = { pl: 'Zmień płacę', en: 'Change the wage' }[localeOf(Astro.url.pathname)];
+---
+<div class="reading">
+  <p class="reading__value"><span data-my={my}>{value}</span>{suffix} <span class="reading__unit">{typo(unit)}</span></p>
+  <p class="reading__text"><slot />{accuracy && <> <Flag accuracy={accuracy} /></>}</p>
+  {Astro.slots.has('source') && <p class="reading__src"><slot name="source" />{my && <> <a class="reading__change" href="#placa" data-wage-link hidden>{change}</a></>}</p>}
+</div>
+
+<style>
+  .reading__value { font: 300 clamp(2.5rem, 5vw, 3.75rem)/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .reading__unit { font: 400 1.0625rem/1.3 var(--f-body); letter-spacing: 0; color: var(--text); }
+  .reading__text { margin-top: 12px; max-width: 40em; font-size: 1.0625rem; line-height: 1.6; color: var(--text-strong); }
+  .reading__src { margin-top: 8px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .reading__src :global(a) { color: var(--blue-700); text-underline-offset: 3px; }
+  .reading__change { white-space: nowrap; font-weight: 500; }
+</style>

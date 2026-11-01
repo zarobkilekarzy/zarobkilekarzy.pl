@@ -458,6 +458,28 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Osiem kierunków — od ewidencji czasu pracy po sądy lekarskie. Przy każdym fakt ze źródłem i najmocniejszy kontrargument.',
     footer: { text: 'Kierunki, nie projekt ustawy' },
   },
+  // strony-ścieżki: te same piktogramy co na ich kartach na stronie głównej
+  '/dla-pacjenta/': {
+    eyebrow: 'Ścieżka · dla pacjenta',
+    title: 'Prawa, kolejki,\nTwoje konto\ni skargi',
+    lead: 'Pięć sytuacji, w których dobrze wiedzieć, na czym stoisz. Przy każdej jest coś do sprawdzenia od razu.',
+    footer: { text: 'Prostym językiem, ze źródłami' },
+    pictogram: 'serce',
+  },
+  '/ile-placimy/': {
+    eyebrow: 'Ścieżka · od składki do wypłaty',
+    title: 'Ile i za co\npłacimy lekarzom',
+    lead: 'Cztery przystanki publicznych pieniędzy. Sumy widać na każdym z nich, a łącznej kwoty dla jednej osoby na żadnym.',
+    footer: { text: 'Każda liczba ze źródłem' },
+    pictogram: 'pieniadze',
+  },
+  '/droga-do-zawodu/': {
+    eyebrow: 'Ścieżka · od matury do specjalisty',
+    title: 'Droga\ndo zawodu lekarza',
+    lead: 'Rekrutacja, studia, LEK ze stażem i specjalizacja: od 11 do 13 lat od przyjęcia na studia do tytułu specjalisty.',
+    footer: { text: 'Każda liczba ze źródłem' },
+    pictogram: 'torba',
+  },
   // „0 zł” zamiast numeru infolinii: 11 znaków numeru nie mieści się w karcie liczby bez łamania
   '/prawa-pacjenta/': {
     eyebrow: 'Dla pacjenta',

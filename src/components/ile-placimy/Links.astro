@@ -1,0 +1,30 @@
+---
+/**
+ * Teksty przy przystanku: podpis grupy i wiersze jak w spisach działów (`blocks/ArticleTable`): tytuł, lead, liczba.
+ * Lead bez limitu szerokości, żeby na długiej stronie wiersze były niskie.
+ * Pierwszy tekst pierwszej grupy dostaje etykietę „Zacznij tu” (`start`), reszta swój dział.
+ */
+import ArticleTable from '@/components/blocks/ArticleTable.astro';
+import type { Entry } from '@/i18n/entries';
+import { localeOf } from '@/i18n/locales';
+
+interface Props {
+  label: string;
+  items: Entry[];
+  start?: boolean;
+}
+
+const { label, items, start = false } = Astro.props;
+const startLabel = { pl: 'Zacznij tu', en: 'Start here' }[localeOf(Astro.url.pathname)];
+const rows = items.map((item, i) => ({ ...item, format: start && i === 0 ? startLabel : (item.label ?? item.category) }));
+---
+<div class="pl" data-i18n-skip>
+  <p class="pl__label">{label}</p>
+  <ArticleTable articles={rows} />
+</div>
+
+<style>
+  .pl__label { margin-bottom: 16px; font: 400 clamp(1.25rem, 2vw, 1.5rem)/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .pl :global(.drow) { padding: 20px 0; }
+  .pl :global(.drow__desc) { max-width: none; }
+</style>

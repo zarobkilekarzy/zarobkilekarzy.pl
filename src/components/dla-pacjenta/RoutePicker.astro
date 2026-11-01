@@ -1,0 +1,104 @@
+---
+/**
+ * „Co się stało?” → adres: te same sytuacje co `pacjent/RouteFinder`, w wąskiej kolumnie sekcji. Adresat stoi w każdym
+ * wierszu także po zwinięciu; rozwinięcie (`<details name>`, otwarty jeden naraz, bez JS) dodaje trzy najważniejsze fakty.
+ * Całość na /prawa-pacjenta/#<id>.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { localeOf } from '@/i18n/locales';
+import { articleHref, getAllArticles } from '@/lib/content';
+import { inline, type Resolve } from '@/lib/inline';
+import { linkAttrs, isExternal } from '@/lib/links';
+import { pad2, typo } from '@/lib/format';
+
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
+const { routes, routesNote } = en ? await import('@/data/en/prawa-pacjenta') : await import('@/data/prawa-pacjenta');
+const T = en
+  ? { head: 'What happened?', to: 'Where to: ', how: 'How', cost: 'Cost', full: 'Full description', base: '/en/patient-rights/' }
+  : { head: 'Co się stało?', to: 'Dokąd: ', how: 'Jak', cost: 'Koszt', full: 'Pełny opis', base: '/prawa-pacjenta/' };
+
+const hrefs = new Map((await getAllArticles()).map((a) => [a.id, articleHref(a)]));
+const resolve: Resolve = (href) => {
+  if (!href.startsWith('ref:')) return href;
+  return hrefs.get(href.slice(4));
+};
+
+/** najpierw to, o co pacjent pyta najpierw: termin, potem jak i za ile */
+const rank = (f: { label: string; urgent?: boolean }) => (f.urgent ? 0 : f.label === T.how ? 1 : f.label === T.cost ? 2 : 3);
+const topFacts = (facts: (typeof routes)[number]['facts']) => [...facts].sort((a, b) => rank(a) - rank(b)).slice(0, 3);
+/** przyciski z RouteFinder: kotwice prowadziły w obrębie strony praw pacjenta */
+const actionHref = (href: string) => (href.startsWith('#') ? `${T.base}${href}` : href);
+---
+<div class="rp">
+  <p class="mono-label tool-head">{T.head}</p>
+  {routes.map((r, i) => (
+    <details class="rp__row" name="co-sie-stalo" open={i === 0}>
+      <summary>
+        <span class="rp__n" aria-hidden="true">{pad2(i + 1)}</span>
+        <span class="rp__head">
+          <span class="rp__sit">{typo(r.situation)}</span>
+          <span class="rp__to"><span class="sr-only">{T.to}</span><span aria-hidden="true">→ </span>{typo(r.to)}</span>
+        </span>
+        <span class="rp__toggle" aria-hidden="true"></span>
+      </summary>
+      <div class="rp__body">
+        <dl class="rp__facts">
+          {topFacts(r.facts).map((f) => (
+            <div class:list={{ 'is-urgent': f.urgent }}>
+              <dt>{f.label}</dt>
+              <dd set:html={en ? inline(f.text, undefined, undefined, 'en') : inline(f.text, resolve)} />
+            </div>
+          ))}
+        </dl>
+        <div class="rp__actions">
+          {r.actions?.map((a) => {
+            const href = actionHref(a.href);
+            const icon = a.icon ?? (isExternal(href) ? 'arrow-ne' : 'arrow');
+            return <a class="rp__action" {...linkAttrs(href)}><Icon name={icon} size={16} /><span>{a.label}</span></a>;
+          })}
+          <LinkArrow href={`${T.base}#${r.id}`}>{T.full}</LinkArrow>
+        </div>
+      </div>
+    </details>
+  ))}
+  <p class="rp__note" set:html={en ? inline(routesNote, undefined, undefined, 'en') : inline(routesNote, resolve)} />
+</div>
+
+<style>
+  .rp__row { border-bottom: 1px solid var(--line); }
+  summary {
+    display: grid; grid-template-columns: 32px minmax(0, 1fr) 16px; align-items: baseline; gap: 8px;
+    padding: 12px 0; cursor: pointer; list-style: none;
+    font-size: 1rem; line-height: 1.35; color: var(--ink); transition: color .2s;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { color: var(--blue); }
+  .rp__n { font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+  .rp__head { display: grid; gap: 2px; }
+  .rp__sit { font-weight: 500; }
+  .rp__to { font-size: 0.9375rem; color: var(--text-strong); }
+  summary:hover .rp__to { color: inherit; }
+  /* plus, który po otwarciu traci pionową kreskę */
+  .rp__toggle { position: relative; align-self: center; width: 12px; height: 12px; color: var(--blue); }
+  .rp__toggle::before, .rp__toggle::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1.5px; margin-top: -0.75px; background: currentColor; transition: transform .2s var(--ease); }
+  .rp__toggle::after { transform: rotate(90deg); }
+  .rp__row[open] .rp__toggle::after { transform: rotate(0deg); }
+
+  .rp__body { padding: 0 0 18px 40px; }
+  .rp__facts { display: grid; gap: 10px; margin: 4px 0 0; }
+  .rp__facts dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .rp__facts dd { margin: 2px 0 0; font-size: 0.9375rem; line-height: 1.5; color: var(--text-strong); }
+  .rp__facts dd :global(a) { color: var(--blue-700); text-underline-offset: 3px; }
+  .rp__facts .is-urgent dt { color: var(--amber); }
+  .rp__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 14px; }
+  .rp__action { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line-2); color: var(--ink); font-size: 0.875rem; text-decoration: none; transition: border-color .15s; }
+  .rp__action:hover { border-color: var(--ink); }
+  .rp__note { margin-top: 14px; font-size: 0.9375rem; line-height: 1.55; color: var(--text-strong); }
+  .rp__note :global(a) { color: var(--blue-700); text-underline-offset: 3px; }
+
+  @media (max-width: 720px) {
+    .rp__body { padding-left: 0; }
+  }
+</style>

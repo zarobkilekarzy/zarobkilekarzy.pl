@@ -1,0 +1,143 @@
+---
+/**
+ * „Twoja droga”: rok matury i dziedzina → lata na linijce, na kartach i przy przystankach (elementy `data-road`).
+ * Każdy `<select data-road-field>` na stronie steruje tym samym, więc wybór przy czwartym przystanku też przelicza linijkę.
+ * Liczy przeglądarka, nic nie jest wysyłane ani zapisywane. Bez JS kontrolek nie ma, a strona zostaje przy stanie startowym (wynik i lata widać).
+ */
+import Card from '@/components/ui/Card.astro';
+import Flag from '@/components/ui/Flag.astro';
+import { localeOf } from '@/i18n/locales';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
+const { fields, MATURA_RANGE, startLabels, startRoad } = en ? await import('@/data/en/droga-do-zawodu') : await import('@/data/droga-do-zawodu');
+const T = en
+  ? {
+      label: 'Your road', year: 'Year of your matura', earlier: 'One year earlier', later: 'One year later', result: 'Specialist at the earliest', field: 'Specialty',
+      fine: 'Our calculation: the sum of the periods in the regulations, without breaks, repeats or waiting for a place.', sources: 'Sources:', studies: 'studies', internship: 'internship', specs: 'specialties',
+    }
+  : {
+      label: 'Twoja droga', year: 'Rok matury', earlier: 'Rok wcześniej', later: 'Rok później', result: 'Specjalista najwcześniej', field: 'Specjalizacja',
+      fine: 'Nasz rachunek: suma okresów z przepisów, bez przerw, powtórek i czekania na miejsce.', sources: 'Źródła:', studies: 'studia', internship: 'staż', specs: 'specjalizacje',
+    };
+---
+<zl-road-plan id="twoja-droga" data-fields={JSON.stringify(fields)} data-locale={locale}>
+  <Card label={T.label}>
+    <div class="plan__controls">
+      <div class="plan__field" data-road-controls hidden>
+        <span class="plan__label" id="plan-year">{T.year}</span>
+        <div class="plan__stepper">
+          <button type="button" data-step="-1" aria-label={T.earlier}>−</button>
+          <input type="number" inputmode="numeric" min={MATURA_RANGE.min} max={MATURA_RANGE.max} value={startRoad.matura} aria-labelledby="plan-year" data-road-year />
+          <button type="button" data-step="1" aria-label={T.later}>+</button>
+        </div>
+      </div>
+      <p class="plan__result" aria-live="polite">
+        <span class="plan__label">{T.result}</span>
+        <span class="plan__value" data-road="end">{startLabels.end}</span>
+      </p>
+      <label class="plan__field plan__field--wide" data-road-controls hidden>
+        <span class="plan__label">{T.field}</span>
+        <select data-road-field>
+          {fields.map((f) => <option value={f.id} selected={f.id === startRoad.field}>{f.name} · {f.length}</option>)}
+        </select>
+      </label>
+    </div>
+    <p class="plan__note">
+      {en
+        ? <>Studies, internship and specialist training add up to <span data-road="total">{startLabels.total}</span>. You will then be about <span data-road="age">{startLabels.age}</span>, if you take the matura at 19. </>
+        : <>Studia, staż i specjalizacja to razem <span data-road="total">{startLabels.total}</span>. Będziesz mieć wtedy ok. <span data-road="age">{startLabels.age}</span>, jeśli maturę zdasz w wieku 19 lat. </>}
+      <Flag accuracy="est" />
+    </p>
+    <p class="plan__fine">{typo(T.fine)} {T.sources} <a {...linkAttrs('https://api.sejm.gov.pl/eli/acts/DU/2021/755/text.pdf')}>{T.studies}</a>, <a {...linkAttrs('https://api.sejm.gov.pl/eli/acts/DU/2023/377/text.pdf')}>{T.internship}</a>, <a {...linkAttrs('https://api.sejm.gov.pl/eli/acts/DU/2023/975/text.pdf')}>{T.specs}</a>.</p>
+  </Card>
+</zl-road-plan>
+
+<script>
+  import { roadOf, STUDIES_MONTHS, INTERNSHIP_MONTHS } from './road';
+  import type { Locale } from '@/i18n/locales';
+
+  interface Field { id: string; months: number; [key: string]: string | number }
+
+  class RoadPlan extends HTMLElement {
+    connectedCallback() {
+      const fields = JSON.parse(this.dataset.fields ?? '[]') as Field[];
+      const locale = (this.dataset.locale ?? 'pl') as Locale;
+      const year = this.querySelector<HTMLInputElement>('[data-road-year]')!;
+      const selects = [...document.querySelectorAll<HTMLSelectElement>('[data-road-field]')];
+      const min = Number(year.min), max = Number(year.max);
+      const today = document.querySelector<HTMLElement>('[data-road-today]');
+      const specSegments = document.querySelectorAll<HTMLElement>('[data-road-grow="spec"]');
+
+      const fill = (key: string, text: string) => document.querySelectorAll(`[data-road="${key}"]`).forEach((el) => { el.textContent = text; });
+
+      const apply = () => {
+        const matura = Math.min(max, Math.max(min, Number(year.value) || min));
+        const field = fields.find((f) => f.id === selects[0].value) ?? fields[0];
+        const road = roadOf(matura, field.months, locale);
+        Object.entries(road.labels).forEach(([key, text]) => fill(key, text));
+        Object.entries(field).forEach(([key, text]) => fill(`f-${key}`, String(text)));
+        specSegments.forEach((el) => { el.style.flexGrow = String(field.months); });
+
+        // kobalt na linijce to „tu jesteś”: znacznik tylko wtedy, gdy dzisiejsza data wypada na tej drodze
+        const now = new Date();
+        const at = now.getFullYear() * 12 + now.getMonth();
+        const inside = at >= road.start && at <= road.end;
+        if (today) {
+          today.hidden = !inside;
+          today.style.left = `${((at - road.start) / (STUDIES_MONTHS + INTERNSHIP_MONTHS + field.months)) * 100}%`;
+        }
+      };
+
+      this.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((button) => button.addEventListener('click', () => {
+        year.value = String(Math.min(max, Math.max(min, Number(year.value) + Number(button.dataset.step))));
+        apply();
+      }));
+      year.addEventListener('input', () => { if (year.value.length === 4) apply(); });
+      year.addEventListener('change', () => {
+        year.value = String(Math.min(max, Math.max(min, Number(year.value) || min)));
+        apply();
+      });
+      selects.forEach((select) => select.addEventListener('change', () => {
+        selects.forEach((other) => { other.value = select.value; });
+        apply();
+      }));
+      document.querySelectorAll<HTMLElement>('[data-road-controls]').forEach((el) => { el.hidden = false; });
+      apply();
+    }
+  }
+
+  if (!customElements.get('zl-road-plan')) customElements.define('zl-road-plan', RoadPlan);
+</script>
+
+<style>
+  zl-road-plan { display: block; }
+  /* rok i wynik w jednym rzędzie, żeby efekt stał tuż przy kontrolce; pole dziedziny na całą szerokość, bo nazwy są długie */
+  .plan__controls { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px 24px; margin-top: 14px; }
+  .plan__field { display: grid; gap: 6px; min-width: 0; }
+  .plan__field--wide { grid-column: 1 / -1; }
+  .plan__result { display: grid; gap: 6px; align-content: start; text-align: right; }
+  .plan__label { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  .plan__stepper { display: flex; width: fit-content; border: 1px solid var(--line-2); background: var(--bg); }
+  .plan__stepper button { width: 44px; height: 44px; padding: 0; border: 0; background: transparent; color: var(--ink); font: 400 1.25rem/1 var(--f-body); cursor: pointer; transition: background .15s; }
+  .plan__stepper button:hover { background: var(--blue-50); color: var(--blue-700); }
+  .plan__stepper button:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .plan__stepper input { width: 4.25rem; min-height: 44px; padding: 0; border: 0; border-inline: 1px solid var(--line-2); border-radius: 0; background: transparent; color: var(--ink); font: 400 1.0625rem/1 var(--f-body); text-align: center; appearance: textfield; -moz-appearance: textfield; }
+  .plan__stepper input::-webkit-outer-spin-button, .plan__stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .plan__stepper input:focus { outline: 2px solid var(--blue); outline-offset: -2px; }
+
+  /* własny wygląd pola: Safari bez appearance: none rysuje zaokrąglony natywny select */
+  .plan__field select {
+    width: 100%; height: 46px; padding: 0 32px 0 12px; border: 1px solid var(--line-2); border-radius: 0; appearance: none; -webkit-appearance: none;
+    background: var(--bg) var(--select-arrow) no-repeat right 12px center; color: var(--ink); font: 400 0.9375rem/1.2 var(--f-body); text-overflow: ellipsis;
+  }
+  .plan__field select:focus { border-color: var(--blue); outline: 0; box-shadow: inset 0 0 0 1px var(--blue); }
+
+  .plan__value { font: 300 clamp(2.5rem, 4.5vw, 3.25rem)/46px var(--f-display); letter-spacing: -0.03em; color: var(--ink); }
+  .plan__note { margin-top: 14px; font-size: 0.9375rem; line-height: 1.5; color: var(--text-strong); }
+  .plan__fine { margin-top: 8px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .plan__fine a { color: var(--blue-700); text-underline-offset: 3px; }
+</style>

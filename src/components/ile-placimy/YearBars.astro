@@ -1,0 +1,134 @@
+---
+/**
+ * „Rok po roku”: słupek = koszty w planie NFZ. Nad słupkiem kwota w mld zł, pod rokiem średni czas oczekiwania z Barometru WHC,
+ * więc obie serie widać bez klikania. Najechanie albo klik pokazuje dokładną kwotę i krotność wobec 2015 r.
+ * Rok w toku ma słupek jak szacunek (blady z krawędzią). Bez JS zostają słupki i dane ostatniego pełnego roku.
+ */
+import { years } from '@/data/ile-placimy';
+import { localeOf } from '@/i18n/locales';
+import { linkAttrs } from '@/lib/links';
+import { formatNumber, typo } from '@/lib/format';
+
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
+const { sources } = en ? await import('@/data/en/ile-placimy') : await import('@/data/ile-placimy');
+const T = en
+  ? {
+      head: 'Year by year: costs in the NFZ plan and the queue', key: 'Above the bar: costs in the plan, PLN billion. Below the year: average wait for a service, months.',
+      pick: 'Choose a year', waitSub: 'average wait for a service', wait: 'wait', none: 'no edition', planLink: 'NFZ plan',
+      note: 'Nominal amounts; after inflation, costs have roughly doubled since 2015. Sources:',
+      script: { costs: 'PLN {v} billion', times: '{v} times the {y} level', start: 'starting point', queue: '{v} months', none: 'no edition', progress: ' · plan in progress' },
+    }
+  : {
+      head: 'Rok po roku: koszty w planie NFZ i kolejka', key: 'Nad słupkiem: koszty w planie, mld zł. Pod rokiem: średnie oczekiwanie na świadczenie, miesiące.',
+      pick: 'Wybierz rok', waitSub: 'średnie oczekiwanie na świadczenie', wait: 'oczekiwanie', none: 'brak edycji', planLink: 'plan NFZ',
+      note: 'Kwoty nominalne; po odliczeniu inflacji koszty wzrosły od 2015 r. mniej więcej dwukrotnie. Źródła:',
+      script: { costs: '{v} mld zł', times: '{v} raza tyle co w {y} r.', start: 'punkt wyjścia', queue: '{v} mies.', none: 'brak edycji', progress: ' · plan w toku' },
+    };
+const fmt = (n: number, d = 0) => formatNumber(n, d, locale);
+
+const MAX = Math.max(...years.map((y) => y.costs));
+const BASE = years[0].costs;
+/** na starcie ostatni rok z planem ostatecznym */
+const start = years.findLast((y) => !y.inProgress)!;
+const money = (n: number) => T.script.costs.replace('{v}', fmt(n, 2));
+const times = (n: number) => T.script.times.replace('{v}', fmt(n / BASE, 1)).replace('{y}', String(years[0].year));
+const queueText = (q: number) => T.script.queue.replace('{v}', fmt(q, 1));
+---
+<zl-years class="yb" data-base={BASE} data-base-year={years[0].year} data-locale={locale} data-text={JSON.stringify(T.script)}>
+  <p class="mono-label tool-head">{T.head}</p>
+  <p class="yb__key">{typo(T.key)}</p>
+  <div class="yb__bars" role="group" aria-label={T.pick}>
+    {years.map((y) => (
+      <button
+        type="button" class:list={['yb__bar', { 'is-plan': y.inProgress }]} style={`--h: ${(y.costs / MAX) * 100}%`}
+        data-year={y.year} data-costs={y.costs} data-queue={y.queue ?? ''} data-href={y.href} data-progress={y.inProgress ? '' : undefined}
+        aria-pressed={y === start ? 'true' : 'false'}
+      >
+        <span class="yb__plot">
+          <span class="yb__num" aria-hidden="true">{fmt(Math.round(y.costs))}</span>
+          <span class="yb__fill"></span>
+        </span>
+        <span class="yb__label" aria-hidden="true">{String(y.year).slice(2)}</span>
+        <span class="yb__queue" aria-hidden="true">{y.queue === null ? '—' : fmt(y.queue, 1)}</span>
+        <span class="sr-only">{y.year}: {money(y.costs)}, {T.wait} {y.queue === null ? T.none : queueText(y.queue)}</span>
+      </button>
+    ))}
+  </div>
+  <div class="yb__out" role="status">
+    <p class="yb__year" data-out="year">{start.year}</p>
+    <div>
+      <p class="yb__value" data-out="costs">{money(start.costs)}</p>
+      <p class="yb__sub" data-out="times">{typo(times(start.costs))}</p>
+    </div>
+    <div>
+      <p class="yb__value" data-out="queue">{start.queue === null ? '—' : queueText(start.queue)}</p>
+      <p class="yb__sub">{T.waitSub}</p>
+    </div>
+  </div>
+  <p class="yb__src">{T.note} <a {...linkAttrs(start.href)} data-out="href">{T.planLink}</a>, <a {...linkAttrs(sources.whc.href)}>{sources.whc.label}</a>.</p>
+</zl-years>
+
+<script>
+  import { formatNumber } from '@/lib/format';
+  import type { Locale } from '@/i18n/locales';
+
+  class Years extends HTMLElement {
+    connectedCallback() {
+      const base = Number(this.dataset.base), baseYear = this.dataset.baseYear ?? '';
+      const locale = (this.dataset.locale ?? 'pl') as Locale;
+      const t = JSON.parse(this.dataset.text ?? '{}') as { costs: string; times: string; start: string; queue: string; none: string; progress: string };
+      const bars = [...this.querySelectorAll<HTMLButtonElement>('[data-year]')];
+      const out = (key: string) => this.querySelector<HTMLElement>(`[data-out="${key}"]`)!;
+
+      const pick = (bar: HTMLButtonElement) => {
+        bars.forEach((b) => b.setAttribute('aria-pressed', String(b === bar)));
+        const costs = Number(bar.dataset.costs), queue = bar.dataset.queue;
+        out('year').textContent = `${bar.dataset.year}${bar.dataset.progress === undefined ? '' : t.progress}`;
+        out('costs').textContent = t.costs.replace('{v}', formatNumber(costs, 2, locale));
+        out('times').textContent = bar.dataset.year === baseYear ? t.start : t.times.replace('{v}', formatNumber(costs / base, 1, locale)).replace('{y}', baseYear);
+        out('queue').textContent = queue ? t.queue.replace('{v}', formatNumber(Number(queue), 1, locale)) : t.none;
+        out('href').setAttribute('href', bar.dataset.href ?? '');
+      };
+
+      bars.forEach((bar) => {
+        bar.addEventListener('click', () => pick(bar));
+        bar.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pick(bar); });
+      });
+    }
+  }
+
+  if (!customElements.get('zl-years')) customElements.define('zl-years', Years);
+</script>
+
+<style>
+  .yb { display: block; }
+  .yb__key { margin-top: 12px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .yb__bars { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(2px, .5vw, 6px); margin-top: 12px; }
+  .yb__bar { display: grid; gap: 4px; min-width: 0; padding: 0; background: transparent; border: 0; cursor: pointer; }
+  /* wysokość słupka liczona od całego pola: 1.2em na kwotę nad najwyższym słupkiem */
+  .yb__plot { display: flex; flex-direction: column; justify-content: flex-end; height: 180px; }
+  .yb__num { margin-bottom: 3px; font: 400 0.6875rem/1.2 var(--f-mono); text-align: center; color: var(--text); transition: color .15s; }
+  .yb__fill { display: block; flex: none; height: calc(var(--h) - 1.2em); background: var(--chart); transition: background .15s; }
+  .yb__bar.is-plan .yb__fill { background: var(--chart-proj); box-shadow: inset 0 0 0 1px var(--blue); }
+  .yb__bar:hover .yb__fill { background: var(--blue); }
+  .yb__bar[aria-pressed="true"] .yb__fill { background: var(--blue-fill); box-shadow: none; }
+  .yb__bar[aria-pressed="true"] .yb__num { color: var(--ink); font-weight: 500; }
+  .yb__bar:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .yb__label { font: 400 0.6875rem/1.3 var(--f-mono); text-align: center; color: var(--muted); }
+  .yb__bar[aria-pressed="true"] .yb__label { color: var(--ink); font-weight: 500; }
+  .yb__queue { font: 400 0.6875rem/1.3 var(--f-mono); text-align: center; color: var(--text); }
+  .yb__bar[aria-pressed="true"] .yb__queue { color: var(--ink); font-weight: 500; }
+
+  .yb__out { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 24px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .yb__year { grid-column: 1 / -1; font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .06em; color: var(--muted); }
+  .yb__value { font: 300 clamp(1.625rem, 2.8vw, 2.25rem)/1.1 var(--f-display); letter-spacing: -0.025em; color: var(--ink); }
+  .yb__sub { margin-top: 2px; font-size: 0.875rem; line-height: 1.4; color: var(--text); }
+  .yb__src { margin-top: 12px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .yb__src a { color: var(--blue-700); text-underline-offset: 3px; }
+
+  /* telefon: przy dwunastu wąskich kolumnach drobniejsze liczby, żeby „227” i „4,2” mieściły się w słupku */
+  @media (max-width: 520px) {
+    .yb__num, .yb__label, .yb__queue { font-size: 0.5625rem; letter-spacing: -0.02em; }
+  }
+</style>

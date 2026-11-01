@@ -1,0 +1,118 @@
+---
+/**
+ * Próg 98%: suwak „ile punktów wykazał szpital” → podstawa kolejnego ryczałtu (reguła z § 3 ust. 1 pkt 3 rozporządzenia,
+ * tabela w artykule „Rozliczenia”). Pomijamy korekty, zmianę taryf i współczynnik jakości. Próg dotyczy szpitali z sieci.
+ * Bez JS zostaje jeden stan (97%) i opis reguły w słowach.
+ */
+import { localeOf } from '@/i18n/locales';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+const en = localeOf(Astro.url.pathname) === 'en';
+const { sources } = en ? await import('@/data/en/ile-placimy') : await import('@/data/ile-placimy');
+
+const MIN = 50, MAX = 120, START = 97, LIMIT = 98;
+const pct = (v: number) => `${(v / MAX) * 100}%`;
+const T = en
+  ? {
+      head: 'How many points did the hospital report?', hint: `The slider is at ${START}%. Move it one point to the right.`, range: 'Points reported against the lump-sum base, per cent',
+      shown: 'Points reported', next: 'Base of the next lump sum', limit: `threshold ${LIMIT}%`, source: 'Source:',
+      below: 'Below the threshold, the base becomes the number of points actually reported.',
+      full: 'From the threshold upwards the lump sum stays at its full base, even with fewer than 100% of points.',
+      over: 'Above 100% the base stays full and the surplus counts only in part.', extra: '100% and part of the surplus',
+      src: `A hospital that reports at least ${LIMIT}% of points keeps the lump sum at its full base, so today’s points decide tomorrow’s money. Applies to network hospitals; we omit adjustments and tariff changes.`,
+    }
+  : {
+      head: 'Ile punktów wykazał szpital?', hint: `Suwak stoi na ${START}%. Przesuń go o jeden punkt w prawo.`, range: 'Punkty wykazane wobec podstawy ryczałtu, procent',
+      shown: 'Wykazane punkty', next: 'Podstawa kolejnego ryczałtu', limit: `próg ${LIMIT}%`, source: 'Źródło:',
+      below: 'Poniżej progu podstawą staje się liczba punktów faktycznie wykazanych.',
+      full: 'Od progu ryczałt zostaje w pełnej podstawie, nawet gdy punktów jest mniej niż 100%.',
+      over: 'Ponad 100% podstawa zostaje pełna, a nadwyżka liczy się tylko częściowo.', extra: '100% i część nadwyżki',
+      src: `Szpital, który wykaże co najmniej ${LIMIT}% punktów, zachowuje ryczałt w pełnej podstawie, więc dzisiejsze punkty decydują o jutrzejszych pieniądzach. Dotyczy szpitali z sieci; pomijamy korekty i zmianę taryf.`,
+    };
+---
+<zl-lump class="lump" data-limit={LIMIT} data-below={T.below} data-full={T.full} data-over={T.over} data-extra={T.extra}>
+  <p class="mono-label tool-head">{T.head}</p>
+  <p class="lump__hint">{T.hint}</p>
+  <input class="lump__range" type="range" min={MIN} max={MAX} step="1" value={START} style={`--p: ${((START - MIN) / (MAX - MIN)) * 100}%`} aria-label={T.range} data-range />
+
+  <div class="lump__rows" style={`--limit: ${pct(LIMIT)}`}>
+    <div class="lump__row">
+      <p class="lump__label">{T.shown}</p>
+      <div class="lump__track"><span class="lump__bar" data-bar="shown" style={`width: ${pct(START)}`}></span></div>
+      <p class="lump__num" data-num="shown">{START}%</p>
+    </div>
+    <div class="lump__row">
+      <p class="lump__label">{T.next}</p>
+      <div class="lump__track"><span class="lump__bar lump__bar--next" data-bar="next" style={`width: ${pct(START)}`}></span><span class="lump__extra" data-bar="extra"></span></div>
+      <p class="lump__num" data-num="next">{START}%</p>
+    </div>
+    <p class="lump__limit">{T.limit}</p>
+  </div>
+
+  <p class="lump__msg" role="status" data-msg>{typo(T.below)}</p>
+  <p class="lump__src">{typo(T.src)} {T.source} <a {...linkAttrs(sources.lump.href)}>{sources.lump.label}</a>.</p>
+</zl-lump>
+
+<script>
+  class Lump extends HTMLElement {
+    connectedCallback() {
+      const limit = Number(this.dataset.limit);
+      const range = this.querySelector<HTMLInputElement>('[data-range]')!;
+      const max = Number(range.max), min = Number(range.min);
+      const bar = (k: string) => this.querySelector<HTMLElement>(`[data-bar="${k}"]`)!;
+      const num = (k: string) => this.querySelector<HTMLElement>(`[data-num="${k}"]`)!;
+      const msg = this.querySelector<HTMLElement>('[data-msg]')!;
+      const share = (v: number) => `${(v / max) * 100}%`;
+
+      const update = () => {
+        const v = Number(range.value);
+        const next = v >= limit ? 100 : v;
+        const extra = Math.max(0, v - 100);
+        range.style.setProperty('--p', `${((v - min) / (max - min)) * 100}%`);
+        bar('shown').style.width = share(v);
+        bar('next').style.width = share(next);
+        bar('extra').style.width = share(extra);
+        num('shown').textContent = `${v}%`;
+        num('next').textContent = extra ? this.dataset.extra ?? '' : `${next}%`;
+        msg.textContent = (v < limit ? this.dataset.below : v <= 100 ? this.dataset.full : this.dataset.over) ?? '';
+      };
+      range.addEventListener('input', update);
+    }
+  }
+
+  if (!customElements.get('zl-lump')) customElements.define('zl-lump', Lump);
+</script>
+
+<style>
+  .lump { display: block; }
+  zl-lump:not(:defined) .lump__hint, zl-lump:not(:defined) .lump__range { display: none; }
+  .lump__hint { margin-top: 12px; font-size: 0.9375rem; line-height: 1.5; color: var(--text); }
+
+  .lump__range { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 36px; margin: 8px 0 0; background: transparent; cursor: pointer; touch-action: pan-y; }
+  .lump__range::-webkit-slider-runnable-track { height: 4px; background: linear-gradient(var(--blue), var(--blue)) 0 / var(--p, 50%) 100% no-repeat, var(--line-2); }
+  .lump__range::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -10px; background: var(--blue-fill); border: 0; border-radius: 0; }
+  .lump__range::-moz-range-track { height: 4px; background: var(--line-2); }
+  .lump__range::-moz-range-progress { height: 4px; background: var(--blue); }
+  .lump__range::-moz-range-thumb { width: 24px; height: 24px; background: var(--blue-fill); border: 0; border-radius: 0; }
+  .lump__range:focus-visible { outline: 0; }
+  .lump__range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .lump__range:focus-visible::-moz-range-thumb { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .lump__rows { position: relative; display: grid; gap: 14px; margin-top: 14px; padding-bottom: 20px; }
+  .lump__label { font-size: 0.875rem; line-height: 1.3; color: var(--text); }
+  .lump__track { display: flex; height: 20px; margin-top: 4px; background: var(--bg-soft); }
+  .lump__bar { display: block; height: 100%; background: var(--chart); transition: width .2s var(--ease); }
+  .lump__bar--next { background: var(--blue-fill); }
+  .lump__extra { display: block; width: 0; height: 100%; background: var(--chart-proj); box-shadow: inset 0 0 0 1px var(--blue); transition: width .2s var(--ease); }
+  .lump__num { margin-top: 4px; font: 400 1.5rem/1.1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  /* próg: jedna linia przez oba paski */
+  .lump__rows::after { content: ""; position: absolute; top: 0; bottom: 18px; left: var(--limit); border-left: 1px dashed var(--ink); pointer-events: none; }
+  .lump__limit { position: absolute; bottom: 0; left: var(--limit); transform: translateX(-50%); font: 400 0.6875rem/1.3 var(--f-mono); color: var(--ink); white-space: nowrap; }
+
+  .lump__msg { margin-top: 8px; font-size: 1.0625rem; line-height: 1.55; font-weight: 500; color: var(--ink); }
+  .lump__src { margin-top: 8px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .lump__src a { color: var(--blue-700); text-underline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { .lump__bar, .lump__extra { transition: none; } }
+</style>

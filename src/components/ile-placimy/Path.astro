@@ -1,0 +1,160 @@
+---
+/**
+ * Ścieżka: u góry przegląd czterech przystanków (karty z liczbą, kotwice), a pod nim wszystkie przystanki jeden pod drugim
+ * (slot, komponenty Stop). Nic nie jest schowane: treść widać, przewijając, a karta tylko do niej przenosi.
+ * Linia biegnie też pionowo przez przystanki i wypełnia się kobaltem do miejsca, które czytelnik właśnie czyta.
+ * Odcinek do ostatniego przystanku jest przerywany, a na ostatnim linia się kończy: tam urywa się ślad pieniędzy.
+ * Zmiana płacy (zdarzenie `zl-wage` z Calculator) puszcza punkt po linii nad kartami i błyska liczbami.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import Meter from './Meter.astro';
+import type { PathStop } from '@/data/ile-placimy';
+import { localeOf } from '@/i18n/locales';
+import { plural, typo } from '@/lib/format';
+
+interface Props {
+  stops: PathStop[];
+}
+
+const { stops } = Astro.props;
+const en = localeOf(Astro.url.pathname) === 'en';
+const { links } = en ? await import('@/data/en/ile-placimy') : await import('@/data/ile-placimy');
+const T = en
+  ? { nav: 'Stops on the path', stop: 'Stop ', go: 'Go · ', forms: ['text', 'texts', 'texts'] as [string, string, string] }
+  : { nav: 'Przystanki ścieżki', stop: 'Przystanek ', go: 'Przejdź · ', forms: ['tekst', 'teksty', 'tekstów'] as [string, string, string] };
+const textsOf = (id: string) => {
+  const n = links[id].flatMap((l: { items: unknown[] }) => l.items).length;
+  return `${n} ${plural(n, T.forms)}`;
+};
+---
+<zl-path class="path">
+  <nav aria-label={T.nav}>
+    <div class="path__rail" aria-hidden="true">
+      {stops.map(() => <span class="path__cell"></span>)}
+      <span class="path__flow"></span>
+    </div>
+    <div class="path__steps">
+      {stops.map((s, i) => (
+        <a class="step" href={`#${s.id}`}>
+          <span class="step__idx"><span class="step__word">{T.stop}</span>{i + 1}</span>
+          <span class="step__name">{typo(s.question)}?</span>
+          <span class="step__value"><span data-my={s.figure.my}>{s.figure.value}</span>{s.figure.suffix && <span class="step__suffix">{s.figure.suffix}</span>}</span>
+          <span class="step__unit">{typo(s.figure.unit)}</span>
+          <Meter level={s.route.level} label={s.route.levelLabel} />
+          <span class="step__go">
+            <span><span class="step__verb">{T.go}</span>{textsOf(s.id)}</span>
+            <span class="step__arrow"><Icon name="arrow" size={16} style="transform: rotate(90deg)" /></span>
+          </span>
+        </a>
+      ))}
+    </div>
+  </nav>
+  <div class="path__stops"><slot /></div>
+</zl-path>
+
+<script>
+  class ZlPath extends HTMLElement {
+    connectedCallback() {
+      const stops = [...this.querySelectorAll<HTMLElement>('[data-stop]')];
+      let queued = false;
+
+      // linia wypełnia się do punktu czytania: 40% wysokości okna
+      const update = () => {
+        queued = false;
+        const reading = innerHeight * 0.4;
+        stops.forEach((stop) => {
+          const box = stop.getBoundingClientRect();
+          stop.style.setProperty('--p', Math.min(1, Math.max(0, (reading - box.top) / box.height)).toFixed(3));
+          stop.classList.toggle('is-reached', box.top <= reading);
+        });
+      };
+      const queue = () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(update);
+      };
+      addEventListener('scroll', queue, { passive: true });
+      addEventListener('resize', queue);
+      update();
+
+      // zmiana płacy: punkt biegnie po linii, liczby błyskają; nie restartujemy w trakcie, żeby suwak nie szarpał
+      document.addEventListener('zl-wage', () => this.classList.add('is-flow'));
+      this.querySelector('.path__flow')?.addEventListener('animationend', () => this.classList.remove('is-flow'));
+    }
+  }
+
+  if (!customElements.get('zl-path')) customElements.define('zl-path', ZlPath);
+</script>
+
+<style>
+  .path { display: block; --gap: 8px; }
+  .path__stops { margin-top: clamp(56px, 7vw, 88px); }
+
+  /* linia nad kartami: kwadrat przy każdej karcie, przerywana do ostatniej, a ostatni kwadrat pusty */
+  .path__rail { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); height: 15px; }
+  .path__cell { position: relative; }
+  .path__cell::before { content: ""; position: absolute; top: 6px; left: 0; width: calc(100% + var(--gap)); border-top: 3px solid var(--line-2); }
+  .path__cell::after { content: ""; position: absolute; top: 0; left: 0; width: 15px; height: 15px; background: var(--line-2); }
+  .path__cell:nth-child(3)::before { border-top-style: dashed; }
+  .path__cell:nth-child(4)::before { display: none; }
+  .path__cell:nth-child(4)::after { background: var(--bg); border: 3px solid var(--line-2); }
+  .path__flow { position: absolute; top: 4px; left: 0; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); opacity: 0; }
+  .is-flow .path__flow { animation: path-flow .8s cubic-bezier(.3, .1, .3, 1); }
+  @keyframes path-flow {
+    0% { left: 0; opacity: 1; }
+    90% { opacity: 1; }
+    100% { left: 50%; opacity: 0; }
+  }
+
+  .path__steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); margin-top: 8px; }
+  .step {
+    position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px 16px 0;
+    border: 1px solid var(--line-2); background: var(--bg); color: inherit; text-decoration: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .step:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .step__idx { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .step__name { min-height: 2.5em; font: 500 1.125rem/1.25 var(--f-display); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance; transition: color .15s; }
+  .step__value { margin-top: 4px; font: 300 clamp(1.75rem, 3vw, 2.5rem)/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; transition: color .2s; }
+  .step__suffix { font-size: .55em; letter-spacing: 0; }
+  .step__unit { min-height: 2.6em; font-size: 0.8125rem; line-height: 1.3; color: var(--text); }
+
+  /* stopka karty: mówi, co czeka niżej, i wygląda jak przycisk */
+  .step__go {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px;
+    margin: auto -16px 0; padding-left: 16px; border-top: 1px solid var(--line-2);
+    font-size: 0.875rem; font-weight: 500; color: var(--blue-700);
+    transition: border-color .15s;
+  }
+  .step :global(.meter) { margin-bottom: 14px; }
+  .step__arrow { display: grid; place-items: center; align-self: stretch; width: 44px; background: var(--blue-50); color: var(--blue); transition: background .15s, color .15s; }
+  .step__arrow :global(svg) { transition: translate .25s var(--ease); }
+
+  .step:hover { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+  .step:hover .step__name { color: var(--blue-700); }
+  .step:hover .step__go { border-top-color: var(--blue); }
+  .step:hover .step__arrow { background: var(--blue-fill); color: #fff; }
+  .step:hover .step__arrow :global(svg) { translate: 0 3px; }
+
+  .is-flow .step__value { animation: path-flash .8s; }
+  @keyframes path-flash { 25% { color: var(--blue); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .path__flow { display: none; }
+    .is-flow .step__value { animation: none; }
+  }
+
+  /* telefon: karty dwa na dwa, bez jednostki i oceny (są przy przystanku), bez linii */
+  @media (max-width: 720px) {
+    .path__rail { display: none; }
+    .path__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0; }
+    .step { gap: 4px; padding: 12px 12px 0; }
+    .step__name { min-height: 3.75em; font-size: 1rem; }
+    .step__unit, .step :global(.meter) { display: none; }
+    .step__word { display: none; }
+    .step__verb { display: none; }
+    .step__value { margin: 0 0 12px; font-size: 1.5rem; }
+    .step__go { margin: auto -12px 0; padding-left: 12px; font-size: 0.8125rem; min-height: 40px; }
+    .step__arrow { width: 40px; }
+  }
+</style>

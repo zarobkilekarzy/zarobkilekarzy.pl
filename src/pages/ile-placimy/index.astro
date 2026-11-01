@@ -1,0 +1,140 @@
+---
+/**
+ * /ile-placimy/ — strona-ścieżka o pieniądzach. Kolejność ma tu znaczenie, więc to cztery przystanki na jednej linii,
+ * jeden pod drugim: nic nie jest schowane za kliknięciem, a karty u góry tylko przenoszą do przystanku.
+ * Suwak płacy zmienia liczby na trzech pierwszych, czwarty zostaje „—”: tam ślad się urywa.
+ * Treść: src/data/ile-placimy.ts. Komponenty: components/ile-placimy.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import ArticleTable from '@/components/blocks/ArticleTable.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Heading from '@/components/ui/Heading.astro';
+import PostulatCta from '@/components/site/PostulatCta.astro';
+import Calculator from '@/components/ile-placimy/Calculator.astro';
+import Path from '@/components/ile-placimy/Path.astro';
+import Stop from '@/components/ile-placimy/Stop.astro';
+import Reading from '@/components/ile-placimy/Reading.astro';
+import Links from '@/components/ile-placimy/Links.astro';
+import PlanSplit from '@/components/ile-placimy/PlanSplit.astro';
+import YearBars from '@/components/ile-placimy/YearBars.astro';
+import LumpSum from '@/components/ile-placimy/LumpSum.astro';
+import WhoSees from '@/components/ile-placimy/WhoSees.astro';
+import { after, links, pathPage, sources, startFigures, stops, type PathLink } from '@/data/ile-placimy';
+import { MEDIAN_MAX, medianCaption, medianRows } from '@/data/rozklad-wynagrodzen';
+import { getArticle } from '@/lib/content';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { entryOf, type Entry } from '@/i18n/entries';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: pathPage.title }];
+const seo: SeoInput = { title: pathPage.docTitle, description: pathPage.description, breadcrumbs: crumbs };
+
+/** Wiersz spisu: artykuł z kolekcji (tytuł, lead, liczba z karty) albo strona spoza niej z własnym opisem. */
+const resolve = async (link: PathLink): Promise<Entry> => {
+  if (!link.ref) return { id: link.href!, href: link.href!, title: link.label!, summary: link.text!, category: 'Analiza' };
+  const entry = entryOf(await getArticle(link.ref));
+  return { ...entry, href: `${entry.href}${link.anchor ?? ''}`, title: link.label ?? entry.title };
+};
+const listsOf = (id: string) => Promise.all(links[id].map(async (l) => ({ label: l.label, items: await Promise.all(l.items.map(resolve)) })));
+const [skladka, plan, rozliczenie, wyplata] = await Promise.all(stops.map((s) => listsOf(s.id)));
+const afterLists = await Promise.all(after.map(async (a) => ({ ...a, links: await Promise.all(a.items.map(resolve)) })));
+const textCount = new Set([...[skladka, plan, rozliczenie, wyplata].flat().flatMap((l) => l.items), ...afterLists.flatMap((a) => a.links)].map((l) => l.href)).size;
+
+const total = stops.length;
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="ip-top">
+    <PageHeader title={pathPage.title} lead={pathPage.lead} eyebrow={pathPage.eyebrow} crumbs={crumbs}>
+      <PageMeta items={[{ label: 'Przystanki', value: total }, { label: 'Teksty', value: textCount }]} />
+      <Calculator slot="aside" />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom">
+    <Path stops={stops}>
+      <Stop stop={stops[0]} n={1} total={total}>
+        <Fragment slot="texts">{skladka.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <Reading value={startFigures.year} my="year" unit="zł rocznie" accuracy="est">
+          Tyle wynosi Twoja składka zdrowotna <span data-my="phrase">{startFigures.phrase}</span>. Składki to większość przychodów NFZ, ale nie całość.
+          <Fragment slot="source">Źródło płacy: <a {...linkAttrs(sources.median.href)}>{sources.median.label}</a>. Składka to nasz rachunek przy umowie o pracę.</Fragment>
+        </Reading>
+        <PlanSplit />
+      </Stop>
+
+      <Stop stop={stops[1]} n={2} total={total}>
+        <Fragment slot="texts">{plan.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <Reading value={startFigures.ratio} my="ratio" suffix="%" unit="średnich kosztów NFZ na mieszkańca" accuracy="est">
+          W planie NFZ na 2026 r. na jednego mieszkańca przypada średnio ok. {startFigures.person} zł kosztów, a Twoja składka to <span data-my="year">{startFigures.year}</span> zł. To nie jest jednak opłata za Twoje leczenie: składkę płacisz od dochodu, a z leczenia korzystasz według potrzeb.
+          <Fragment slot="source">Źródła: <a {...linkAttrs(sources.plan.href)}>{sources.plan.label}</a>, <a {...linkAttrs(sources.people.href)}>{sources.people.label}</a>. Średnia na mieszkańca to nasz rachunek.</Fragment>
+        </Reading>
+        <YearBars />
+      </Stop>
+
+      <Stop stop={stops[2]} n={3} total={total}>
+        <Fragment slot="texts">{rozliczenie.map((l) => <Links label={l.label} items={l.items} start />)}</Fragment>
+        <Reading value={startFigures.visits} my="visits" unit="świadczeń w poradni specjalistycznej" accuracy="est">
+          Na tyle wystarczyłaby Twoja roczna składka, czyli <span data-my="year">{startFigures.year}</span> zł. W {startFigures.aosYear} r. poradnie specjalistyczne kosztowały NFZ {startFigures.aosCost} mld zł przy {startFigures.aosServices} mln świadczeń, czyli średnio {startFigures.aos} zł na jedno: poradę albo badanie takie jak tomografia czy rezonans. Szpital z sieci rozlicza się inaczej: dostaje głównie ryczałt, a nie zapłatę za każde świadczenie.
+          <Fragment slot="source">Źródło: <a {...linkAttrs(sources.aos.href)}>{sources.aos.label}</a>. Średnia i przeliczenie na składkę to nasz rachunek.</Fragment>
+        </Reading>
+        <LumpSum />
+      </Stop>
+
+      <Stop stop={stops[3]} n={4} total={total}>
+        <Fragment slot="texts">{wyplata.map((l, i) => <Links label={l.label} items={l.items} start={i === 0} />)}</Fragment>
+        <Reading value="—" unit="tu ślad się urywa">
+          NFZ płaci placówce, placówka lekarzowi, a łącznej kwoty dla jednej osoby nikt nie publikuje. Dlatego nie podajemy, jaka część składki trafia do lekarzy: tego nie da się uczciwie policzyć.
+        </Reading>
+        <WhoSees />
+        <Fragment slot="wide">
+          <div class="ip-pieces">
+            <Figure title="Znane są tylko kawałki: każda z tych kwot to wypłata z jednej placówki" source={{ label: sources.pay.label, href: sources.pay.href }}>
+              <BarChart rows={medianRows} max={MEDIAN_MAX} unit="zł" caption={medianCaption} />
+            </Figure>
+            <Aside title="Uczciwie">
+              <p>{typo('Kontrakt nie jest nadużyciem, a brak sumy działa w obie strony. Nie widać rozliczeń, których jedna osoba nie mogła przepracować. Nie da się też pokazać, że lekarz, który dyżuruje w sąsiednim powiecie, bo inaczej oddział by stanął, zarabia kwotę zwyczajną.')}</p>
+            </Aside>
+          </div>
+        </Fragment>
+      </Stop>
+    </Path>
+  </Section>
+
+  <Section id="dalej" tone="soft" aria-labelledby="dalej-title">
+    <Heading id="dalej-title" punct="?" class="ip-after__title">Co dalej</Heading>
+    <div class="ip-after" data-i18n-skip>
+      {afterLists.map((a) => (
+        <div class="ip-after__row">
+          <div>
+            <p class="ip-after__name">{typo(a.title)}</p>
+            <p class="ip-after__lead">{typo(a.lead)}</p>
+          </div>
+          <ArticleTable articles={a.links} format={false} />
+        </div>
+      ))}
+    </div>
+  </Section>
+
+  <Section>
+    <PostulatCta />
+  </Section>
+</BaseLayout>
+
+<style>
+  .ip-top { padding-top: clamp(32px, 4vw, 56px); }
+  .ip-pieces { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px clamp(40px, 5vw, 72px); align-items: start; }
+
+  .ip-after { display: grid; gap: 64px; margin-top: 32px; }
+  .ip-after__row { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 24px clamp(40px, 6vw, 88px); align-items: start; }
+  .ip-after__name { font: 400 clamp(1.375rem, 2.2vw, 1.75rem)/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .ip-after__lead { margin-top: 10px; max-width: 34em; font-size: 1.0625rem; line-height: 1.6; color: var(--ink-2); }
+
+  @media (max-width: 1024px) {
+    .ip-pieces, .ip-after__row { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

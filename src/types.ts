@@ -59,6 +59,8 @@ export interface Link {
   href: string;
   /** prefiks ścieżki, przy którym pozycja menu jest aktywna (np. '/mechanizmy/') */
   match?: string;
+  /** drugi taki prefiks, gdy pozycja obejmuje dwa drzewa adresów (np. „Dla pacjenta”: ścieżka i prawa pacjenta) */
+  also?: string;
 }
 
 export interface NavGroup {

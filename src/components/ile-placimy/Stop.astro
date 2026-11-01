@@ -1,0 +1,108 @@
+---
+/**
+ * Przystanek ścieżki; wszystkie stoją jeden pod drugim. Po lewej biegnie linia ścieżki: `Path` wypełnia ją (`--p`)
+ * do miejsca, które czytelnik właśnie czyta. Odcinek do ostatniego przystanku jest przerywany, a na ostatnim linia się kończy.
+ * W środku dwie kolumny: pytanie, ocena jawności i objaśnienie ze źródłami, obok rachunek i narzędzie (slot domyślny).
+ * Pod nimi na całą szerokość: dłuższe ilustracje (slot `wide`), „co widać / czego nie” i teksty przystanku (slot `texts`).
+ */
+import Eyebrow from '@/components/ui/Eyebrow.astro';
+import Heading from '@/components/ui/Heading.astro';
+import Meter from './Meter.astro';
+import type { PathStop } from '@/data/ile-placimy';
+import { localeOf } from '@/i18n/locales';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+interface Props {
+  stop: PathStop;
+  n: number;
+  total: number;
+}
+
+const { stop, n, total } = Astro.props;
+const T = {
+  pl: { stop: 'Przystanek', of: 'z', sources: 'Źródła:', visible: 'Co da się sprawdzić', hidden: 'Czego nie widać' },
+  en: { stop: 'Stop', of: 'of', sources: 'Sources:', visible: 'What can be checked', hidden: 'What cannot be seen' },
+}[localeOf(Astro.url.pathname)];
+---
+<section class:list={['stop', { 'stop--broken': n === total - 1, 'stop--end': n === total }]} id={stop.id} data-stop>
+  <span class="stop__fill" aria-hidden="true"></span>
+  <span class="stop__mark" aria-hidden="true"></span>
+  <div class="stop__grid">
+    <div class="stop__side">
+      <Eyebrow>{`${T.stop} ${n} ${T.of} ${total} · `}{typo(stop.route.name)}</Eyebrow>
+      <Heading punct="?" class="stop__title">{typo(stop.question)}</Heading>
+      <div class="stop__meter"><Meter level={stop.route.level} label={stop.route.levelLabel} /></div>
+      <p class="stop__lead">{typo(stop.lead)}</p>
+      <div class="stop__body">
+        {stop.body.map((p) => <p set:html={typo(p)} />)}
+      </div>
+      <p class="stop__src">{T.sources} {stop.sources.map((s, i) => <>{i > 0 && ', '}<a {...linkAttrs(s.href)}>{s.label}</a></>)}.</p>
+    </div>
+    <div class="stop__main"><slot /></div>
+    {Astro.slots.has('wide') && <div class="stop__wide"><slot name="wide" /></div>}
+    <dl class="stop__seen">
+      <div>
+        <dt>{T.visible}</dt>
+        <dd>{typo(stop.route.visible)}</dd>
+      </div>
+      <div>
+        <dt>{T.hidden}</dt>
+        <dd>{typo(stop.route.hidden)}</dd>
+      </div>
+    </dl>
+    <div class="stop__texts"><slot name="texts" /></div>
+  </div>
+</section>
+
+<style>
+  .stop { position: relative; padding: 0 0 clamp(72px, 9vw, 112px) 48px; }
+
+  /* linia ścieżki: szara, kobalt do miejsca czytania; kwadrat to przystanek */
+  .stop::before { content: ""; position: absolute; top: 0; bottom: 0; left: 6px; border-left: 3px solid var(--line-2); }
+  .stop__fill { position: absolute; top: 0; left: 6px; height: calc(var(--p, 0) * 100%); border-left: 3px solid var(--blue); }
+  .stop__mark { position: absolute; top: 0; left: 0; width: 15px; height: 15px; background: var(--line-2); transition: background .2s; }
+  .stop.is-reached .stop__mark { background: var(--blue); }
+  .stop--broken::before, .stop--broken .stop__fill { border-left-style: dashed; }
+  /* ostatni przystanek: pusty kwadrat i koniec linii, tu urywa się ślad */
+  .stop--end { padding-bottom: 0; }
+  .stop--end::before, .stop--end .stop__fill { display: none; }
+  .stop--end .stop__mark { background: var(--bg); border: 3px solid var(--line-2); }
+  .stop--end.is-reached .stop__mark { background: var(--bg); border-color: var(--blue); }
+
+  .stop__grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px clamp(40px, 5vw, 72px); align-items: start; }
+
+  .stop :global(.stop__title) { font-size: clamp(1.875rem, 3vw, 2.625rem); line-height: 1.1; max-width: 14em; }
+  .stop__meter { margin-top: 14px; }
+  .stop__meter :global(.meter__label) { flex-basis: auto; }
+  .stop__lead { margin-top: 16px; font-size: 1.125rem; line-height: 1.6; color: var(--text-strong); }
+  .stop__body { display: grid; gap: 14px; margin-top: 14px; font-size: 1.0625rem; line-height: 1.65; color: var(--text); }
+  .stop__body :global(strong) { color: var(--ink); font-weight: 600; }
+  .stop__src { margin-top: 12px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .stop__src a { color: var(--blue-700); text-underline-offset: 3px; }
+
+  /* na całą szerokość, żeby zamykało cały przystanek: objaśnienie i narzędzie */
+  .stop__seen { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 16px clamp(40px, 5vw, 72px); margin: 0; padding-top: 20px; border-top: 1px solid var(--line-2); }
+  .stop__seen dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .stop__seen dd { margin: 4px 0 0; font-size: 1rem; line-height: 1.55; color: var(--text-strong); }
+  .stop__wide { grid-column: 1 / -1; min-width: 0; }
+
+  .stop__main { display: grid; gap: 36px; min-width: 0; }
+  /* etykieta narzędzia: jak nagłówek listy tekstów */
+  .stop__main :global(.tool-head) { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+
+  .stop__texts { grid-column: 1 / -1; display: grid; gap: 48px; min-width: 0; }
+
+  @media (max-width: 1024px) {
+    /* jedna kolumna: pytanie z objaśnieniem, narzędzie, teksty przystanku */
+    .stop__grid { grid-template-columns: minmax(0, 1fr); row-gap: 40px; }
+  }
+
+  /* telefon: bez linii z boku, szerokość zostaje dla treści */
+  @media (max-width: 720px) {
+    .stop__seen { grid-template-columns: minmax(0, 1fr); }
+    .stop { padding-left: 0; padding-bottom: 72px; }
+    .stop--end { padding-bottom: 0; }
+    .stop::before, .stop__fill, .stop__mark { display: none; }
+  }
+</style>

@@ -223,6 +223,28 @@ export const ogPagesEn: Record<string, OgPage> = {
     lead: 'Key healthcare terms in a few sentences. Each entry gives its legal basis or source.',
     footer: { text: 'Definitions without judgement, with sources' },
   },
+  // strony-ścieżki: te same piktogramy co po polsku
+  '/en/for-patients/': {
+    eyebrow: 'Path · for patients',
+    title: 'Rights, queues,\nyour account\nand complaints',
+    lead: 'Five situations in which it helps to know where you stand. Each one has something you can check straight away.',
+    footer: { text: 'In plain language, with sources' },
+    pictogram: 'serce',
+  },
+  '/en/how-much-we-pay/': {
+    eyebrow: 'Path · from contribution to pay',
+    title: 'How much we pay\ndoctors, and for what',
+    lead: 'Four stops of public money. Totals are visible at each of them, but the total for one person is public at none.',
+    footer: { text: 'Every figure with a source' },
+    pictogram: 'pieniadze',
+  },
+  '/en/road-to-the-profession/': {
+    eyebrow: 'Path · from the matura to specialist',
+    title: 'The road to becoming\na doctor in Poland',
+    lead: 'Admissions, studies, the LEK with the internship, and specialist training: 11 to 13 years from admission to the specialist title.',
+    footer: { text: 'Every figure with a source' },
+    pictogram: 'torba',
+  },
   '/en/patient-rights/': {
     eyebrow: 'For patients',
     title: 'Patient rights in Poland.\nWhat you are entitled to\nand where to report it',

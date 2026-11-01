@@ -1,0 +1,32 @@
+---
+/**
+ * Ocena jawności przystanku z analizy „Śladem publicznej złotówki”. Podpisana wprost i neutralna kolorystycznie:
+ * kobalt na ścieżce znaczy „tu jesteś”, więc ocena nie może wyglądać jak stan aktywny albo wyłączony.
+ */
+import { localeOf } from '@/i18n/locales';
+import { typo } from '@/lib/format';
+
+interface Props {
+  level: number;
+  label: string;
+}
+
+const { level, label } = Astro.props;
+const MAX = 3;
+const T = { pl: { name: 'Jawność', of: 'na' }, en: { name: 'Transparency', of: 'of' } }[localeOf(Astro.url.pathname)];
+---
+<span class="meter">
+  <span class="meter__name">{T.name}</span>
+  <span class="meter__dots" aria-hidden="true">
+    {Array.from({ length: MAX }, (_, d) => <span class:list={['meter__dot', { 'is-on': d < level }]}></span>)}
+  </span>
+  <span class="meter__label"><span class="sr-only">{level} {T.of} {MAX}: </span>{typo(label)}</span>
+</span>
+
+<style>
+  .meter { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .meter__dots { display: inline-flex; gap: 3px; }
+  .meter__dot { width: 9px; height: 9px; border: 1.5px solid var(--line-2); }
+  .meter__dot.is-on { background: var(--text); border-color: var(--text); }
+  .meter__label { flex-basis: 100%; }
+</style>

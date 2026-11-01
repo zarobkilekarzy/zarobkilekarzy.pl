@@ -17,7 +17,7 @@ const { title, items, class: className, ...rest } = Astro.props;
 ---
 <nav class:list={['entries', className]} aria-labelledby="entries-title" {...rest}>
   <h2 class="entries__title" id="entries-title">{title}</h2>
-  <ul>
+  <ul style={`--entries: ${items.length}`}>
     {items.map((item) => (
       <li>
         <a href={item.href}>
@@ -36,7 +36,7 @@ const { title, items, class: className, ...rest } = Astro.props;
     padding-bottom: 0.75rem; border-bottom: 1px solid var(--ink);
     font: 500 0.75rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text);
   }
-  ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  ul { display: grid; grid-template-columns: repeat(var(--entries), minmax(0, 1fr)); }
   li + li { border-left: 1px solid var(--line-2); }
   a {
     position: relative;
@@ -57,8 +57,15 @@ const { title, items, class: className, ...rest } = Astro.props;
 
   @media (max-width: 1024px) {
     ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    li:nth-child(odd) { border-left: 0; }
+    /* „li + li” w tej samej formie: samo li:nth-child(odd) ma po scopingu niższą wagę i kreska zostawała */
+    li + li:nth-child(odd) { border-left: 0; }
     li:nth-child(odd) a { padding-left: 0; }
+    /* Nieparzysta liczba pozycji: ostatnia na całą szerokość, ikona obok tekstu, bez pustej komórki */
+    li:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    li:last-child:nth-child(odd) a { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; gap: 0.125rem 0.875rem; }
+    li:last-child:nth-child(odd) .entries__icon { grid-row: 1 / span 2; align-self: center; margin: 0; }
+    li:last-child:nth-child(odd) .entries__name, li:last-child:nth-child(odd) .entries__text { grid-column: 2; }
+    li:last-child:nth-child(odd) :global(.entries__arrow) { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
   }
 
   /* Telefon: zwarte wiersze — ikona, nazwa i opis obok siebie, cel dotyku na całą szerokość */

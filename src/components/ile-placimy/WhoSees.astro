@@ -1,0 +1,129 @@
+---
+/**
+ * „Kto widzi sumę?”: pięciu obserwatorów stoi na liście z opisem i odpowiedzią, a wybór jednego z nich pokazuje na planszach,
+ * co widzi (motyw „każdy widzi swój kawałek” z infografiki „trzy okna”). Plansze to ilustracja bez kwot: trzy umowy jednej osoby i ich suma.
+ * Stan czytamy z kształtu: kropka widać, mała kropka częściowo, plus nie widać, krzyżyk sumy nie ma.
+ * Bez JS zostaje sama lista.
+ */
+import DotGrid from '@/components/ui/DotGrid.astro';
+import type { View } from '@/data/ile-placimy';
+import type { Cell } from '@/lib/siatka';
+import { localeOf } from '@/i18n/locales';
+import { typo } from '@/lib/format';
+
+const en = localeOf(Astro.url.pathname) === 'en';
+const { viewers } = en ? await import('@/data/en/ile-placimy') : await import('@/data/ile-placimy');
+const T = en
+  ? {
+      ask: 'Who can see the total?', boards: ['Facility 1', '+ Facility 2', '+ Facility 3', '= Total'], on: 'On the boards:',
+      legend: 'An illustration without amounts: three contracts of one person. Dot: visible. Small dot: partly or on request. Plus: not visible. Cross: no total exists.',
+    }
+  : {
+      ask: 'Kto widzi sumę?', boards: ['Placówka 1', '+ Placówka 2', '+ Placówka 3', '= Suma'], on: 'Na planszach:',
+      legend: 'Ilustracja bez kwot: trzy umowy jednej osoby. Kropka: widać. Mała kropka: częściowo albo na żądanie. Plus: nie widać. Krzyżyk: sumy nie ma.',
+    };
+
+const COLS = 8, ROWS = 5;
+/** zapalone pola na planszach; ostatnia to suma pierwszych trzech */
+const SIZES = [16, 10, 6];
+const boards = [
+  { label: T.boards[0], n: SIZES[0] },
+  { label: T.boards[1], n: SIZES[1] },
+  { label: T.boards[2], n: SIZES[2] },
+  { label: T.boards[3], n: SIZES[0] + SIZES[1] + SIZES[2] },
+];
+const VIEWS: View[] = ['on', 'mid', 'off', 'miss'];
+const cells = (n: number, view: View) => Array.from({ length: COLS * ROWS }, (_, i): Cell => (i < n ? view : 'off'));
+const start = viewers[0];
+const stateOf = (i: number, v = start) => (i < 3 ? v.boards[i] : v.sum);
+---
+<zl-who class="who">
+  <p class="mono-label who__head" id="who-ask">{T.ask}</p>
+
+  <div class="who__boards" aria-hidden="true">
+    {boards.map((b, i) => (
+      <div class="who__board" data-board data-show={stateOf(i)}>
+        <p class="who__label">{b.label}</p>
+        <div class="who__stack">
+          {VIEWS.map((view) => <div class:list={['who__view', `who__view--${view}`]}><DotGrid cells={cells(b.n, view)} cols={COLS} /></div>)}
+        </div>
+      </div>
+    ))}
+  </div>
+  <p class="who__legend">{T.on} <strong data-who-name>{start.label}</strong>. {T.legend}</p>
+
+  <div class="who__rows" role="group" aria-labelledby="who-ask">
+    {viewers.map((v, i) => (
+      <button type="button" class="who__row" data-viewer={v.id} data-label={v.label} data-boards={[...v.boards, v.sum].join(' ')} aria-pressed={i === 0 ? 'true' : 'false'}>
+        <span class="who__name">{v.label}</span>
+        <span class="who__sum">{v.sumLabel}</span>
+        <span class="who__text">{typo(v.text)}</span>
+      </button>
+    ))}
+  </div>
+</zl-who>
+
+<script>
+  class Who extends HTMLElement {
+    connectedCallback() {
+      const rows = [...this.querySelectorAll<HTMLButtonElement>('[data-viewer]')];
+      const boards = [...this.querySelectorAll<HTMLElement>('[data-board]')];
+      const name = this.querySelector<HTMLElement>('[data-who-name]')!;
+      rows.forEach((row) => {
+        const pick = () => {
+          rows.forEach((r) => r.setAttribute('aria-pressed', String(r === row)));
+          const state = row.dataset.boards?.split(' ') ?? [];
+          boards.forEach((b, i) => { b.dataset.show = state[i]; });
+          name.textContent = row.dataset.label ?? '';
+        };
+        row.addEventListener('click', pick);
+        row.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') pick(); });
+      });
+    }
+  }
+
+  if (!customElements.get('zl-who')) customElements.define('zl-who', Who);
+</script>
+
+<style>
+  /* przystanek gasi swój piktogram; plansze niosą treść, więc zostają w kobalcie */
+  .who {
+    display: block;
+    --dg-on: var(--blue);
+    --dg-mid: color-mix(in srgb, var(--blue) 75%, transparent);
+    --dg-off: color-mix(in srgb, var(--blue) 38%, transparent);
+    --dg-miss: color-mix(in srgb, var(--muted) 70%, transparent);
+  }
+  .who__head { padding-bottom: 12px; border-bottom: 1px solid var(--ink); }
+  /* bez JS: sama lista, bez plansz i bez wyglądu przycisku */
+  zl-who:not(:defined) .who__boards, zl-who:not(:defined) .who__legend { display: none; }
+  zl-who:not(:defined) .who__row { pointer-events: none; }
+
+  .who__boards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+  .who__label { margin-bottom: 6px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .who__stack { display: grid; }
+  .who__view { grid-area: 1 / 1; opacity: 0; transition: opacity .2s; }
+  [data-show="on"] .who__view--on, [data-show="mid"] .who__view--mid, [data-show="off"] .who__view--off, [data-show="miss"] .who__view--miss { opacity: 1; }
+  .who__board:last-child .who__label { color: var(--ink); }
+  .who__legend { margin-top: 10px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .who__legend strong { font-weight: 600; color: var(--ink); }
+
+  .who__rows { display: grid; margin-top: 16px; border-top: 1px solid var(--line-2); }
+  .who__row {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; padding: 12px 12px 12px 15px; border: 0; border-bottom: 1px solid var(--line);
+    box-shadow: inset 3px 0 0 transparent; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background .15s, box-shadow .15s;
+  }
+  .who__row:hover { background: var(--bg-soft); }
+  .who__row:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .who__row[aria-pressed="true"] { box-shadow: inset 3px 0 0 var(--ink); background: var(--bg-soft); }
+  .who__name { font-weight: 600; color: var(--ink); }
+  .who__sum { align-self: center; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .who__text { grid-column: 1 / -1; font-size: 0.9375rem; line-height: 1.55; color: var(--text); }
+
+  @media (max-width: 520px) {
+    .who__boards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .who__view { transition: none; }
+  }
+</style>

@@ -170,6 +170,7 @@ export const links: Record<string, { label: string; items: PathLinkEn[] }[]> = {
   specjalizacja: [{
     label: TEXTS,
     items: [
+      { ref: 'specjalizacja-lekarska' },
       { ref: 'wedlug-specjalizacji' },
       { ref: studies, anchor: '#specialist-training', label: 'Specialist training: modules, modes and the ranking', text: 'How the basic module works, how a residency differs from a non-residency place and how the ranking is calculated.' },
       { ref: 'dlaczego-brakuje-lekarzy', anchor: '#specialist-training-places-more-empty-than-filled', label: 'Specialist training places: more empty than filled', text: 'Why there are doctors who did not qualify anywhere alongside empty places, and what the Supreme Audit Office found about the award of residencies.' },

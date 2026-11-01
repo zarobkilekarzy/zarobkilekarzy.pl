@@ -267,6 +267,7 @@ export const links: Record<string, { label: string; items: RoadLink[] }[]> = {
   specjalizacja: [{
     label: TEXTS,
     items: [
+      { ref: 'specjalizacja-lekarska' },
       { ref: 'wedlug-specjalizacji' },
       { ref: studies, anchor: '#specjalizacja', label: 'Specjalizacja: moduły, tryby i ranking', text: 'Jak działa moduł podstawowy, czym różni się rezydentura od miejsca pozarezydenckiego i jak liczy się ranking.' },
       { ref: 'dlaczego-brakuje-lekarzy', anchor: '#miejsca-specjalizacyjne-wiecej-pustych-niz-obsadzonych', label: 'Miejsca specjalizacyjne: więcej pustych niż obsadzonych', text: 'Dlaczego obok pustych miejsc są lekarze, którzy nie zakwalifikowali się nigdzie, i co NIK ustaliła o przyznawaniu rezydentur.' },

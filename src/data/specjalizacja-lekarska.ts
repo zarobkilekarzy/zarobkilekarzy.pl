@@ -104,6 +104,36 @@ export const countryColumns = COUNTRIES.map((c) => ({
   pair: { value: c.all, display: formatPL(c.all) },
 }));
 
+/* ── Miejsca szkoleniowe ─────────────────────────────────────────────────────── */
+
+/*
+ * Wykaz CMKP na sesję jesień 2026 (publikacja 27.08.2026): suma 16 województw, liczenie własne; w każdym województwie
+ * suma dziedzin zgadza się z wierszem „Suma”. 83 dziedziny, razem z lekarsko-dentystycznymi; rezydenckie z 69 doktoranckimi.
+ * Na wykresie pięć dziedzin z największą liczbą miejsc rezydenckich.
+ */
+export const PLACES_2026 = {
+  fields: 83,
+  rez: 6530,
+  nonRez: 7752,
+  top: [
+    { name: 'Choroby wewnętrzne', rez: 774, nonRez: 2373 },
+    { name: 'Medycyna rodzinna', rez: 749, nonRez: 1429 },
+    { name: 'Pediatria', rez: 443, nonRez: 248 },
+    { name: 'Medycyna ratunkowa', rez: 331, nonRez: 283 },
+    { name: 'Chirurgia ogólna', rez: 297, nonRez: 139 },
+  ],
+};
+
+/** Choroby wewnętrzne i medycyna rodzinna: udział w miejscach pozarezydenckich (teza wykresu). */
+export const twoFieldsNonRezShare = share(PLACES_2026.top[0].nonRez + PLACES_2026.top[1].nonRez, PLACES_2026.nonRez);
+
+export const placesColumns = PLACES_2026.top.map((f) => ({
+  label: f.name,
+  value: f.rez,
+  display: formatPL(f.rez),
+  pair: { value: f.nonRez, display: formatPL(f.nonRez) },
+}));
+
 /* ── Programy ───────────────────────────────────────────────────────────────── */
 
 /*
@@ -140,6 +170,107 @@ export const programSources = [
   { label: 'CMKP, program specjalizacji w dziedzinie kardiologii (aktualizacja 2024)', href: LINKS.cardiology },
   { label: 'CMKP, program specjalizacji w dziedzinie medycyny rodzinnej (2023)', href: LINKS.family },
 ];
+
+/*
+ * Przebieg czterech programów moduł po module (blok ProgramPlan). Tabele „Przebieg szkolenia specjalizacyjnego” z programów CMKP:
+ * tygodnie staży, dni kursów, samokształcenia, urlopów i dni wolnych. W każdym module suma dni zgadza się z programem
+ * (np. chirurgia ogólna 522 + 1044). Programy podają staże na moduł; rok modułu podaje tylko program chirurgii ogólnej.
+ */
+export type PlanKind = 'base' | 'dir' | 'course' | 'self' | 'leave';
+export interface PlanPart { kind: PlanKind; name: string; days: number; year?: string }
+export interface PlanModule { name: string; years: number; parts: PlanPart[]; courses: number }
+export interface ProgramPlan { id: string; name: string; modules: PlanModule[] }
+
+const planModule = (
+  name: string,
+  years: number,
+  baseWeeks: number,
+  dirs: [string, number, string?][],
+  courses: { count: number; days: number },
+  selfDays: number,
+  leaveDays: number,
+): PlanModule => ({
+  name,
+  years,
+  courses: courses.count,
+  parts: [
+    { kind: 'base', name: 'Staż podstawowy', days: baseWeeks * 5 },
+    ...dirs.map(([dirName, weeks, year]): PlanPart => ({ kind: 'dir', name: dirName, days: weeks * 5, year })),
+    { kind: 'course', name: 'Kursy', days: courses.days },
+    { kind: 'self', name: 'Samokształcenie', days: selfDays },
+    { kind: 'leave', name: 'Urlopy i dni wolne', days: leaveDays },
+  ],
+});
+
+const INTERNAL_BASIC = planModule('Moduł podstawowy: choroby wewnętrzne', 2, 67, [['Intensywna opieka medyczna', 4], ['Szpitalny oddział ratunkowy', 12]], { count: 10, days: 26 }, 3, 78);
+
+export const PROGRAM_PLANS: ProgramPlan[] = [
+  {
+    id: 'chirurgia',
+    name: 'Chirurgia ogólna',
+    modules: [
+      planModule('Moduł podstawowy', 2, 63, [
+        ['Ortopedia i traumatologia', 6],
+        ['Anestezjologia i intensywna terapia', 2],
+        ['Chirurgia laparoskopowa', 4],
+        ['Poradnia chirurgii ogólnej', 4],
+        ['Szpitalny oddział ratunkowy', 6, 'rok 2'],
+      ], { count: 6, days: 15 }, 4, 78),
+      planModule('Moduł specjalistyczny', 4, 128, [
+        ['Ultrasonografia', 2, 'rok 1'],
+        ['Chirurgia naczyniowa', 4, 'rok 1 lub 2'],
+        ['Endoskopia', 4, 'rok 1 lub 2'],
+        ['Ortopedia i traumatologia', 4, 'rok 2'],
+        ['Chirurgia nowotworów', 4, 'rok 3'],
+        ['Chirurgia laparoskopowa', 8, 'rok 3 lub 4'],
+        ['Neurotraumatologia', 2, 'rok 3 lub 4'],
+        ['Chirurgia klatki piersiowej', 4, 'rok 4'],
+        ['Urologia', 4, 'rok 4'],
+        ['Chirurgia ogólna w innym ośrodku', 8, 'rok 4'],
+      ], { count: 6, days: 16 }, 6, 162),
+    ],
+  },
+  {
+    id: 'interna',
+    name: 'Choroby wewnętrzne',
+    modules: [
+      { ...INTERNAL_BASIC, name: 'Moduł podstawowy' },
+      planModule('Moduł specjalistyczny', 3, 89, [
+        ['Kardiologia', 4], ['Choroby płuc', 3], ['Gastroenterologia', 3], ['Endokrynologia', 3], ['Nefrologia', 3], ['Hematologia', 3],
+        ['Reumatologia', 3], ['Choroby zakaźne', 3], ['Medycyna paliatywna', 2], ['Psychiatria', 4], ['Szpitalny oddział ratunkowy', 8],
+      ], { count: 2, days: 15 }, 5, 123),
+    ],
+  },
+  {
+    id: 'kardiologia',
+    name: 'Kardiologia',
+    modules: [
+      INTERNAL_BASIC,
+      planModule('Moduł specjalistyczny', 3, 64, [
+        ['Intensywna terapia kardiologiczna', 16], ['Elektrofizjologia i elektroterapia', 8], ['Kardiologia interwencyjna', 8], ['Echokardiografia', 4],
+        ['Kardiologia dziecięca', 4], ['Wady serca u dorosłych', 4], ['Kardiochirurgia', 4], ['Nieinwazyjna diagnostyka elektrokardiograficzna', 6],
+        ['Radiologia i diagnostyka obrazowa', 4], ['Angiologia', 2],
+      ], { count: 18, days: 37 }, 3, 123),
+    ],
+  },
+  {
+    id: 'rodzinna',
+    name: 'Medycyna rodzinna',
+    modules: [
+      planModule('Moduł jednolity', 4, 99, [
+        ['Choroby wewnętrzne', 13], ['Diabetologia', 4], ['Kardiologia', 4], ['Pediatria', 21], ['Chirurgia ogólna', 3], ['Szpitalny oddział ratunkowy', 4],
+        ['Neonatologia', 2], ['Psychiatria', 3], ['Geriatria', 2], ['Dermatologia', 2], ['Otorynolaryngologia', 2], ['Medycyna paliatywna', 4],
+      ], { count: 16, days: 60 }, 7, 162),
+    ],
+  },
+];
+
+export const moduleDays = (m: PlanModule) => m.parts.reduce((n, p) => n + p.days, 0);
+const planDays = (p: ProgramPlan) => p.modules.reduce((n, m) => n + moduleDays(m), 0);
+const baseDays = (p: ProgramPlan) => p.modules.reduce((n, m) => n + m.parts[0].days, 0);
+
+/** Staż podstawowy jako odsetek dni szkolenia w danym programie (teza bloku). */
+export const planBaseShare = (p: ProgramPlan) => share(baseDays(p), planDays(p));
 
 /* ── PES ────────────────────────────────────────────────────────────────────── */
 

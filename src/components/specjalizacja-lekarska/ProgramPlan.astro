@@ -1,0 +1,160 @@
+---
+/**
+ * Przebieg czterech programów specjalizacji moduł po module (PROGRAM_PLANS w data/specjalizacja-lekarska.ts).
+ * Zakładka = program, wiersz = moduł, odcinek = staż, kursy albo urlopy, długość ∝ dni robocze (jedna skala we wszystkich
+ * programach). Szczegóły odcinka w dymku (ui/Popover, wariant `cell`); lista staży kierunkowych widoczna zawsze.
+ * Bez JS: wszystkie programy jeden pod drugim. Pod /en/ nazwy z src/data/en/specjalizacja-lekarska.ts i napisy po angielsku.
+ */
+import Tabs from '@/components/blocks/Tabs.astro';
+import Popover from '@/components/ui/Popover.astro';
+import { PROGRAM_PLANS as PLANS_PL, moduleDays, planBaseShare, type PlanPart } from '@/data/specjalizacja-lekarska';
+import { PROGRAM_PLANS as PLANS_EN } from '@/data/en/specjalizacja-lekarska';
+import { formatEN, formatPL, plural, typo } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+
+const en = localeOf(Astro.url.pathname) === 'en';
+const PROGRAM_PLANS = en ? PLANS_EN : PLANS_PL;
+const fmt = en ? formatEN : formatPL;
+const T = en
+  ? {
+      weeks: 'weeks',
+      years: (n: number) => `${n} years`,
+      days: (n: number) => `${fmt(n)} working days`,
+      courses: (n: number) => `${n} ${n === 1 ? 'course' : 'courses'}`,
+      shortDays: 'days',
+      dir: 'Specialty placement',
+      dirs: 'Specialty placements',
+      coursesLabel: 'Courses',
+      year: (y: string) => `, ${y} of the module`,
+      sum: [', of which the basic placement is ', ' of working days'],
+      tablist: 'Specialist training programme',
+      legend: ['basic placement', 'specialty placements', 'courses', 'self-study, leave and days off'],
+      hint: 'Hover over a segment or tap it to see the details.',
+    }
+  : {
+      weeks: 'tyg.',
+      years: (n: number) => `${n} ${n === 1 ? 'rok' : n < 5 ? 'lata' : 'lat'}`,
+      days: (n: number) => `${fmt(n)} ${plural(n, ['dzień roboczy', 'dni robocze', 'dni roboczych'])}`,
+      courses: (n: number) => `${n} ${plural(n, ['kurs', 'kursy', 'kursów'])}`,
+      shortDays: 'dni',
+      dir: 'Staż kierunkowy',
+      dirs: 'Staże kierunkowe',
+      coursesLabel: 'Kursy',
+      year: (y: string) => `, ${y} modułu`,
+      sum: [', z czego staż podstawowy to ', ' dni roboczych'],
+      tablist: 'Program specjalizacji',
+      legend: ['staż podstawowy', 'staże kierunkowe', 'kursy', 'samokształcenie, urlopy i dni wolne'],
+      hint: 'Najedź na odcinek albo go dotknij, żeby zobaczyć szczegóły.',
+    };
+
+const longest = Math.max(...PROGRAM_PLANS.flatMap((p) => p.modules.map(moduleDays)));
+const weeks = (days: number) => `${fmt(days / 5)} ${T.weeks}`;
+const heading = (p: PlanPart) => (p.kind === 'dir' ? `${T.dir}: ${p.name.toLowerCase()}` : p.name);
+const detail = (p: PlanPart, courses: number) => {
+  if (p.kind === 'course') return `${T.courses(courses)}, ${T.days(p.days)}`;
+  if (p.kind === 'self' || p.kind === 'leave') return T.days(p.days);
+  return `${weeks(p.days)} (${T.days(p.days)})${p.year ? T.year(p.year) : ''}`;
+};
+const label = (p: PlanPart) => (p.kind === 'base' ? `${p.name}, ${weeks(p.days)}` : p.kind === 'dir' ? p.name : '');
+const dirs = (parts: PlanPart[]) => parts.filter((p) => p.kind === 'dir');
+const dirDays = (parts: PlanPart[]) => dirs(parts).reduce((n, p) => n + p.days, 0);
+---
+<div class="pp">
+  <Tabs>
+    <div class="pp__tabs" role="tablist" aria-label={T.tablist}>
+      {PROGRAM_PLANS.map((p, i) => (
+        <button type="button" role="tab" class="pp__tab" id={`pp-tab-${p.id}`} aria-controls={`pp-${p.id}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1}>{p.name}</button>
+      ))}
+    </div>
+    {PROGRAM_PLANS.map((p, i) => (
+      <div class="pp__panel" role="tabpanel" id={`pp-${p.id}`} aria-labelledby={`pp-tab-${p.id}`} hidden={i !== 0}>
+        <p class="pp__name">{p.name}</p>
+        <p class="pp__sum">
+          <b>{T.years(p.modules.reduce((n, m) => n + m.years, 0))}</b>{T.sum[0]}<b>{fmt(planBaseShare(p), 1)}%</b>{T.sum[1]}
+        </p>
+        {p.modules.map((m) => (
+          <div class="pp__mod">
+            <p class="pp__head">{m.name}<small>{T.years(m.years)}</small></p>
+            <div class="pp__bar" style={`--w: ${((moduleDays(m) / longest) * 100).toFixed(2)}%`}>
+              {m.parts.map((x) => (
+                <Popover variant="cell" class={`pp__s is-${x.kind}`} style={`--d: ${x.days}`} label={`${heading(x)}: ${detail(x, m.courses)}`} heading={heading(x)}>
+                  <Fragment slot="trigger">{label(x) && <span class="pp__label">{label(x)}</span>}</Fragment>
+                  {detail(x, m.courses)}
+                </Popover>
+              ))}
+            </div>
+            <p class="pp__list">
+              <b>{T.dirs}, {weeks(dirDays(m.parts))}:</b>{' '}
+              {typo(dirs(m.parts).map((x) => `${x.name.toLowerCase()} ${weeks(x.days)}${x.year ? ` (${x.year})` : ''}`).join(', ').replace(/\.?$/, '.'))}
+              {' '}<b>{T.coursesLabel}:</b> {T.courses(m.courses)}, {fmt(m.parts.find((x) => x.kind === 'course')!.days)} {T.shortDays}.
+            </p>
+          </div>
+        ))}
+      </div>
+    ))}
+  </Tabs>
+  <div class="pp__legend" aria-hidden="true">
+    <span><i class="is-base"></i>{T.legend[0]}</span><span><i class="is-dir"></i>{T.legend[1]}</span><span><i class="is-course"></i>{T.legend[2]}</span><span><i class="is-leave"></i>{T.legend[3]}</span>
+  </div>
+  <p class="pp__hint">{T.hint}</p>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.pp').forEach((pp) => {
+    const labels = [...pp.querySelectorAll<HTMLElement>('.pp__label')];
+    // Podpis zostaje tylko wtedy, gdy mieści się w odcinku
+    const fit = () => labels.forEach((label) => {
+      label.hidden = false;
+      label.hidden = label.scrollHeight > label.clientHeight + 1 || label.scrollWidth > label.clientWidth + 1;
+    });
+    fit();
+    new ResizeObserver(fit).observe(pp);
+    pp.querySelectorAll('[role="tab"]').forEach((tab) => tab.addEventListener('click', fit));
+  });
+</script>
+
+<style>
+  .pp { container-type: inline-size; }
+  .pp__tabs { display: flex; flex-wrap: wrap; margin: 0 0 18px; border: 1px solid var(--line-2); width: fit-content; max-width: 100%; font: 400 0.75rem/1.55 var(--f-mono); }
+  .pp__tab { padding: 6px 12px; border: 0; background: none; font: inherit; color: var(--text-strong); cursor: pointer; transition: color .2s, background-color .2s; }
+  .pp__tab + .pp__tab { border-left: 1px solid var(--line-2); }
+  .pp__tab:hover { color: var(--blue); }
+  .pp__tab[aria-selected='true'] { background: var(--blue-50); color: var(--blue); }
+  .pp__name { display: none; margin: 0 0 4px; font: 600 1rem/1.3 var(--f-display); color: var(--ink); }
+  .pp__sum { margin: 0 0 18px; font-size: 0.9375rem; line-height: 1.45; color: var(--text-strong); }
+  .pp__sum b { font-weight: 600; color: var(--ink); }
+  @media (scripting: none) {
+    .pp__tabs { display: none; }
+    .pp__panel[hidden] { display: block; margin-top: 24px; }
+    .pp__name { display: block; }
+  }
+
+  .pp__mod + .pp__mod { margin-top: 20px; }
+  .pp__head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font: 600 0.9375rem/1.2 var(--f-display); color: var(--ink); }
+  .pp__head small { font: 400 0.6875rem/1.4 var(--f-mono); color: var(--muted); }
+  .pp__bar { display: flex; gap: 2px; width: var(--w); height: 48px; }
+  .pp__bar :global(.pp__s) { position: relative; display: block; flex: var(--d) 1 0; min-width: 2px; border-radius: 1px; background: var(--chart-soft); }
+  .pp__bar :global(.pp__s.is-dir) { background: var(--blue-fill); }
+  .pp__bar :global(.pp__s.is-course) { background: var(--chart); }
+  .pp__bar :global(.pp__s.is-self), .pp__bar :global(.pp__s.is-leave) { background: repeating-linear-gradient(135deg, var(--chart-soft) 0 4px, transparent 4px 7px); box-shadow: inset 0 0 0 1px var(--chart-soft); }
+  .pp__bar :global(.pop__trigger--cell) { border-radius: 0; }
+  .pp__label { position: absolute; inset: 5px 3px 3px 5px; overflow: hidden; text-align: left; hyphens: auto; font: 500 0.6875rem/1.15 var(--f-body); color: var(--ink); }
+  .pp__label[hidden] { display: none; }
+  .pp__bar :global(.pp__s.is-dir) .pp__label { color: #fff; } /* kolor-stały: biały podpis na stałym kobalcie (--blue-fill) */
+  .pp__list { margin: 8px 0 0; font-size: 0.8125rem; line-height: 1.5; color: var(--text); }
+  .pp__list b { font-weight: 600; color: var(--text-strong); }
+
+  .pp__legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; font-size: 0.8125rem; color: var(--text); }
+  .pp__legend i { display: inline-block; width: 18px; height: 10px; margin-right: 6px; vertical-align: -1px; background: var(--chart-soft); }
+  .pp__legend i.is-dir { background: var(--blue-fill); }
+  .pp__legend i.is-course { background: var(--chart); }
+  .pp__legend i.is-leave { background: repeating-linear-gradient(135deg, var(--chart-soft) 0 3px, transparent 3px 5px); box-shadow: inset 0 0 0 1px var(--chart-soft); }
+  .pp__hint { margin: 8px 0 0; font-size: 0.8125rem; line-height: 1.45; color: var(--muted); }
+
+  @container (max-width: 560px) {
+    .pp__bar { height: 36px; }
+    .pp__tabs { width: auto; }
+    .pp__tab { flex: 1 1 45%; }
+    .pp__tab + .pp__tab { border-left: 0; }
+  }
+</style>

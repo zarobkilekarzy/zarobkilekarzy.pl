@@ -15,6 +15,9 @@ keyPoints:
   - "Programy chirurgii i chorób wewnętrznych przewidują średnio 10 godzin 5 minut dyżurów tygodniowo."
   - "Przy umowie cywilnoprawnej o szkolenie ustawa gwarantuje lekarzowi tylko minimalną stawkę godzinową — w 2026 r. 31,40 zł."
   - "Wiosną 2026 r. test egzaminu specjalizacyjnego zdało 82,4% podejść, a w pierwszym podejściu 90,4%."
+changelog:
+  - date: 2026-11-01
+    text: "Dodany wykres miejsc rezydenckich i pozarezydenckich na jesienny nabór 2026 r. oraz przebieg czterech programów specjalizacji moduł po module."
 related:
   - studia-lekarskie
   - wedlug-specjalizacji
@@ -27,12 +30,13 @@ import DotRows from '@/components/blocks/DotRows.astro';
 import ColumnChart from '@/components/blocks/ColumnChart.astro';
 import Comparison from '@/components/blocks/Comparison.astro';
 import ToolCard from '@/components/blocks/ToolCard.astro';
+import ProgramPlan from '@/components/specjalizacja-lekarska/ProgramPlan.astro';
 import Verdict from '@/components/blocks/Verdict.astro';
 import Photo from '@/components/ui/Photo.astro';
 import szwy from '@/assets/articles/specjalizacja-lekarska/szwy.jpg';
 import studiaCover from '@/assets/img/studia-olowki-piornik.jpg';
 import { formatPL } from '@/lib/format';
-import { LINKS, FIELDS, durationRows, fiveOrSix, PROGRAMS_TABLE, programSources, countryColumns, pesAttemptColumns, pesAttemptRange, pes2025, pesLatest, PES_ORAL, pesFields, IN_TRAINING, IN_TRAINING_2022, budget } from '@/data/specjalizacja-lekarska';
+import { LINKS, FIELDS, durationRows, fiveOrSix, PROGRAMS_TABLE, programSources, countryColumns, pesAttemptColumns, pesAttemptRange, pes2025, pesLatest, PES_ORAL, pesFields, IN_TRAINING, IN_TRAINING_2022, budget, PLACES_2026, placesColumns, twoFieldsNonRezShare } from '@/data/specjalizacja-lekarska';
 import { RESIDENT_PAY, PRIORITY_FIELDS, COMMITMENT } from '@/data/wedlug-specjalizacji';
 
 Po stażu i Lekarskim Egzaminie Końcowym lekarz może leczyć samodzielnie. Żeby zostać chirurgiem, kardiologiem albo lekarzem rodzinnym, musi jeszcze odbyć szkolenie specjalizacyjne. To od czterech do sześciu lat pracy w szpitalu albo przychodni według programu, który wymienia kursy, staże w innych oddziałach, dyżury i zabiegi, jakie lekarz musi wykonać sam. Szkolenie kończy Państwowy Egzamin Specjalizacyjny.
@@ -113,6 +117,14 @@ Różni się też początek drogi. W Czechach szkolenie od pierwszego dnia toczy
 Specjalizacja to praca według programu. Program dla każdej dziedziny przygotowuje co najmniej raz na pięć lat zespół ekspertów, w którym są m.in. konsultant krajowy, przedstawiciel towarzystwa naukowego i przedstawiciele Naczelnej Rady Lekarskiej, w tym lekarz w trakcie specjalizacji. Program redaguje CMKP, a zatwierdza minister zdrowia.[^uzl] Ustawa wymienia, z czego program się składa: z kursu wprowadzającego w pierwszym roku, kursów specjalizacyjnych, stażu podstawowego z określoną liczbą zabiegów, staży kierunkowych w innych oddziałach, dyżurów, samokształcenia i kursu atestacyjnego na koniec.[^uzl]
 
 <Figure
+  title="Od 47 do 61% czasu szkolenia to staż podstawowy"
+  note="Długość odcinka odpowiada liczbie dni roboczych, we wszystkich programach ta sama skala. Programy podają staże i kursy na moduł, a ich kolejność na wykresie jest umowna: plan ustala kierownik specjalizacji. Rok modułu (w nawiasie) podaje tylko program chirurgii ogólnej. Odsetki — obliczenia własne."
+  source={programSources}
+>
+  <ProgramPlan />
+</Figure>
+
+<Figure
   title="Program wymienia, ile zabiegów lekarz musi wykonać sam — w chirurgii ogólnej to co najmniej 500 operacji"
   note="Minima z programów CMKP dla lekarzy bez specjalizacji. „Samodzielnie” to w programach kod A: wykonanie z asystą lub pod nadzorem kierownika specjalizacji albo wyznaczonego przez niego specjalisty. Liczba kursów i dni — liczenie własne z tabel programów. Szkolenie z kardiologii zaczyna się od dwuletniego modułu podstawowego chorób wewnętrznych."
   source={programSources}
@@ -177,6 +189,19 @@ To ma się zmienić w projekcie nowelizacji ustawy, który przygotowało Ministe
 ## Tryb rezydencki i pozarezydencki
 
 Specjalizację można odbywać w dwóch trybach. Różnią się tym, kto płaci lekarzowi i na jakiej umowie pracuje. Program i egzamin na końcu są w obu trybach te same.[^uzl] Według stanu na {IN_TRAINING.date} szkolenie specjalizacyjne odbywało **{formatPL(IN_TRAINING.all)}** lekarzy i lekarzy dentystów, o {formatPL(IN_TRAINING.all - IN_TRAINING.in2015)} więcej niż pod koniec 2015 r.[^mz13211] Większość szkoli się na rezydenturze: w połowie 2022 r. — to najnowszy podział na tryby, jaki znaleźliśmy — na rezydenturze było {formatPL(IN_TRAINING_2022.resident)} z {formatPL(IN_TRAINING_2022.all)} osób, a w trybie pozarezydenckim {formatPL(IN_TRAINING_2022.nonResident)}.[^nik23]
+
+<Figure
+  title="Prawie połowa miejsc pozarezydenckich przypada na dwie dziedziny"
+  note={`Liczba miejsc na jesienny nabór 2026 r., suma 16 województw; pięć dziedzin z największą liczbą miejsc rezydenckich. Choroby wewnętrzne i medycyna rodzinna mają razem ${formatPL(twoFieldsNonRezShare, 1)}% miejsc pozarezydenckich. W całym kraju jest ${formatPL(PLACES_2026.rez)} miejsc rezydenckich, w tym 69 doktoranckich, i ${formatPL(PLACES_2026.nonRez)} pozarezydenckich w ${PLACES_2026.fields} dziedzinach, razem z lekarsko-dentystycznymi.`}
+  source={{ label: 'CMKP, liczba miejsc szkoleniowych, sesja jesień 2026 — obliczenia własne', href: LINKS.cmkpPlaces }}
+>
+  <ColumnChart
+    columns={placesColumns}
+    max={2500}
+    series={['miejsca rezydenckie', 'miejsca pozarezydenckie']}
+    caption={`Liczba miejsc na jesienny nabór 2026 r.: ${placesColumns.map((c) => `${c.label} — ${c.display} rezydenckich, ${c.pair.display} pozarezydenckich`).join('; ')}.`}
+  />
+</Figure>
 
 ### Rezydentura
 

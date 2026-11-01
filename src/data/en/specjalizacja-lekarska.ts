@@ -5,6 +5,7 @@
  */
 import type { CompareTable } from '@/types';
 import { formatEN } from '@/lib/format';
+import type { ProgramPlan } from '@/data/specjalizacja-lekarska';
 import { PES_2025, pesYear } from '@/data/odsiew-na-medycynie';
 import {
   COUNTRIES as COUNTRIES_PL,
@@ -13,6 +14,9 @@ import {
   IN_TRAINING as IN_TRAINING_PL,
   LINKS,
   PES_ORAL as PES_ORAL_PL,
+  PLACES_2026,
+  PROGRAM_PLANS as PROGRAM_PLANS_PL,
+  twoFieldsNonRezShare as twoFieldsNonRezSharePl,
   pesAttempts as pesAttemptsPl,
   pesRows,
 } from '@/data/specjalizacja-lekarska';
@@ -48,6 +52,21 @@ export const countryColumns = COUNTRIES_PL.map((c, i) => ({
 
 export const IN_TRAINING = { ...IN_TRAINING_PL, date: '30 September 2025' } as const;
 
+/* ── Miejsca szkoleniowe ─────────────────────────────────────────────────────── */
+
+const PLACE_NAMES = ['Internal medicine', 'Family medicine', 'Paediatrics', 'Emergency medicine', 'General surgery'];
+
+export const twoFieldsNonRezShare = twoFieldsNonRezSharePl;
+
+export const placesColumns = PLACES_2026.top.map((f, i) => ({
+  label: PLACE_NAMES[i],
+  value: f.rez,
+  display: formatEN(f.rez),
+  pair: { value: f.nonRez, display: formatEN(f.nonRez) },
+}));
+
+export { PLACES_2026 };
+
 /* ── Programy ───────────────────────────────────────────────────────────────── */
 
 export const PROGRAMS_TABLE: CompareTable = {
@@ -75,6 +94,81 @@ export const programSources = [
   { label: 'CMKP, specialist training programme in cardiology (2024 update, in Polish)', href: LINKS.cardiology },
   { label: 'CMKP, specialist training programme in family medicine (2023, in Polish)', href: LINKS.family },
 ];
+
+/* Przebieg programów: te same dni co w PL, tylko nazwy; brak nazwy w słowniku zatrzymuje build. */
+const PLAN_NAMES: Record<string, string> = {
+  'Chirurgia ogólna': 'General surgery',
+  'Choroby wewnętrzne': 'Internal medicine',
+  Kardiologia: 'Cardiology',
+  'Medycyna rodzinna': 'Family medicine',
+  'Moduł podstawowy': 'Basic module',
+  'Moduł podstawowy: choroby wewnętrzne': 'Basic module: internal medicine',
+  'Moduł specjalistyczny': 'Specialist module',
+  'Moduł jednolity': 'Single module',
+  'Staż podstawowy': 'Basic placement',
+  Kursy: 'Courses',
+  Samokształcenie: 'Self-study',
+  'Urlopy i dni wolne': 'Leave and days off',
+  'Ortopedia i traumatologia': 'Orthopaedics and traumatology',
+  'Anestezjologia i intensywna terapia': 'Anaesthesiology and intensive care',
+  'Chirurgia laparoskopowa': 'Laparoscopic surgery',
+  'Poradnia chirurgii ogólnej': 'General surgery outpatient clinic',
+  'Szpitalny oddział ratunkowy': 'Hospital emergency department',
+  Ultrasonografia: 'Ultrasonography',
+  'Chirurgia naczyniowa': 'Vascular surgery',
+  Endoskopia: 'Endoscopy',
+  'Chirurgia nowotworów': 'Cancer surgery',
+  Neurotraumatologia: 'Neurotraumatology',
+  'Chirurgia klatki piersiowej': 'Thoracic surgery',
+  Urologia: 'Urology',
+  'Chirurgia ogólna w innym ośrodku': 'General surgery at another centre',
+  'Intensywna opieka medyczna': 'Intensive medical care',
+  'Choroby płuc': 'Pulmonology',
+  Gastroenterologia: 'Gastroenterology',
+  Endokrynologia: 'Endocrinology',
+  Nefrologia: 'Nephrology',
+  Hematologia: 'Haematology',
+  Reumatologia: 'Rheumatology',
+  'Choroby zakaźne': 'Infectious diseases',
+  'Medycyna paliatywna': 'Palliative medicine',
+  Psychiatria: 'Psychiatry',
+  'Intensywna terapia kardiologiczna': 'Cardiac intensive care',
+  'Elektrofizjologia i elektroterapia': 'Electrophysiology and electrotherapy',
+  'Kardiologia interwencyjna': 'Interventional cardiology',
+  Echokardiografia: 'Echocardiography',
+  'Kardiologia dziecięca': 'Paediatric cardiology',
+  'Wady serca u dorosłych': 'Heart defects in adults',
+  Kardiochirurgia: 'Cardiac surgery',
+  'Nieinwazyjna diagnostyka elektrokardiograficzna': 'Non-invasive electrocardiographic diagnostics',
+  'Radiologia i diagnostyka obrazowa': 'Radiology and diagnostic imaging',
+  Angiologia: 'Angiology',
+  Diabetologia: 'Diabetology',
+  Pediatria: 'Paediatrics',
+  Neonatologia: 'Neonatology',
+  Geriatria: 'Geriatrics',
+  Dermatologia: 'Dermatology',
+  Otorynolaryngologia: 'Otorhinolaryngology',
+};
+
+const planName = (name: string) => {
+  const en = PLAN_NAMES[name];
+  if (!en) throw new Error(`Brak angielskiej nazwy w PLAN_NAMES: ${name}`);
+  return en;
+};
+
+export const PROGRAM_PLANS: ProgramPlan[] = PROGRAM_PLANS_PL.map((plan) => ({
+  ...plan,
+  name: planName(plan.name),
+  modules: plan.modules.map((m) => ({
+    ...m,
+    name: planName(m.name),
+    parts: m.parts.map((part) => ({
+      ...part,
+      name: planName(part.name),
+      year: part.year?.replace('rok', 'year').replace('lub', 'or'),
+    })),
+  })),
+}));
 
 /* ── PES ────────────────────────────────────────────────────────────────────── */
 

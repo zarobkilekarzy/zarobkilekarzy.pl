@@ -8,10 +8,13 @@ keyPoints:
   - "The surgery and internal medicine programmes provide for an average of 10 hours 5 minutes of on-call duty a week."
   - "Under a civil-law training contract, the act guarantees a doctor only the minimum hourly rate — PLN 31.40 in 2026."
   - "In spring 2026, 82.4% of attempts at the test of the specialty examination were successful, and 90.4% of first attempts."
+changelog:
+  - date: 2026-11-01
+    text: "Added a chart of residency and non-residency places for the autumn 2026 recruitment and the course of four specialist training programmes, module by module."
 translation:
   of: specjalizacja-lekarska
   files: [src/data/specjalizacja-lekarska.ts]
-  hash: "109165070c6c"
+  hash: "3c24ae3417a5"
   date: 2026-11-01
 ---
 import StatRow from '@/components/blocks/StatRow.astro';
@@ -20,13 +23,14 @@ import DotRows from '@/components/blocks/DotRows.astro';
 import ColumnChart from '@/components/blocks/ColumnChart.astro';
 import Comparison from '@/components/blocks/Comparison.astro';
 import ToolCard from '@/components/blocks/ToolCard.astro';
+import ProgramPlan from '@/components/specjalizacja-lekarska/ProgramPlan.astro';
 import Verdict from '@/components/blocks/Verdict.astro';
 import Photo from '@/components/ui/Photo.astro';
 import Money from '@/components/ui/Money.astro';
 import szwy from '@/assets/articles/specjalizacja-lekarska/szwy.jpg';
 import studiaCover from '@/assets/img/studia-olowki-piornik.jpg';
 import { formatEN } from '@/lib/format';
-import { LINKS, FIELDS, BUDGET, durationRows, fiveOrSix, PROGRAMS_TABLE, programSources, countryColumns, pesAttemptColumns, pesAttemptRange, pes2025, pesLatest, PES_ORAL, pesFields, IN_TRAINING, IN_TRAINING_2022 } from '@/data/en/specjalizacja-lekarska';
+import { LINKS, FIELDS, BUDGET, durationRows, fiveOrSix, PROGRAMS_TABLE, programSources, countryColumns, pesAttemptColumns, pesAttemptRange, pes2025, pesLatest, PES_ORAL, pesFields, IN_TRAINING, IN_TRAINING_2022, PLACES_2026, placesColumns, twoFieldsNonRezShare } from '@/data/en/specjalizacja-lekarska';
 import { RESIDENT_PAY, PRIORITY_FIELDS, COMMITMENT } from '@/data/wedlug-specjalizacji';
 
 {/* Tłumaczenie src/content/articles/specjalizacja-lekarska.mdx; liczby i teksty wykresów — src/data/en/specjalizacja-lekarska.ts */}
@@ -109,6 +113,14 @@ The start of the path differs too. In Czechia, training takes place in the chose
 Specialist training is work under a programme. The programme for each field is drawn up at least once every five years by a team of experts that includes the national consultant, a representative of the scientific society and representatives of the Supreme Medical Council, one of them a doctor in training. The CMKP edits the programme and the minister of health approves it.[^uzl] The act lists what the programme consists of: an introductory course in the first year, specialty courses, a basic placement with a set number of procedures, specialty placements on other wards, on-call duty, self-study and an attestation course at the end.[^uzl]
 
 <Figure
+  title="From 47 to 61% of training time is the basic placement"
+  note="The length of a segment corresponds to the number of working days, on the same scale in all programmes. The programmes give placements and courses per module, and their order on the chart is arbitrary: the plan is set by the specialisation supervisor. Only the general surgery programme gives the year of the module (in brackets). Percentages — our calculations."
+  source={programSources}
+>
+  <ProgramPlan />
+</Figure>
+
+<Figure
   title="The programme lists how many procedures a doctor must perform independently — in general surgery, at least 500 operations"
   note="Minimums from the CMKP programmes for doctors without a specialty. “Independently” means code A in the programmes: performed with assistance or under the supervision of the specialisation supervisor or a specialist they appoint. Number of courses and days — our count from the programme tables. Training in cardiology begins with a two-year basic module in internal medicine."
   source={programSources}
@@ -173,6 +185,19 @@ This is to change under a draft amendment to the act prepared by the Ministry of
 ## Residency and non-residency modes
 
 Specialist training can be completed in two modes. They differ in who pays the doctor and under what contract. The programme and the examination at the end are the same in both modes.[^uzl] As of {IN_TRAINING.date}, **{formatEN(IN_TRAINING.all)}** doctors and dentists were in specialist training, {formatEN(IN_TRAINING.all - IN_TRAINING.in2015)} more than at the end of 2015.[^mz13211] Most train on a residency: in mid-2022 — the latest split between the modes we have found — {formatEN(IN_TRAINING_2022.resident)} of {formatEN(IN_TRAINING_2022.all)} people were on a residency and {formatEN(IN_TRAINING_2022.nonResident)} in the non-residency mode.[^nik23]
+
+<Figure
+  title="Almost half of non-residency places are in two fields"
+  note={`Number of places for the autumn 2026 recruitment, total for the 16 voivodeships; the five fields with the most residency places. Internal medicine and family medicine together have ${formatEN(twoFieldsNonRezShare, 1)}% of non-residency places. Nationwide there are ${formatEN(PLACES_2026.rez)} residency places, including 69 doctoral ones, and ${formatEN(PLACES_2026.nonRez)} non-residency places in ${PLACES_2026.fields} fields, including dental ones.`}
+  source={{ label: 'CMKP, number of training places, autumn 2026 session (in Polish) — our calculations', href: LINKS.cmkpPlaces }}
+>
+  <ColumnChart
+    columns={placesColumns}
+    max={2500}
+    series={['residency places', 'non-residency places']}
+    caption={`Number of places for the autumn 2026 recruitment: ${placesColumns.map((c) => `${c.label} — ${c.display} residency, ${c.pair.display} non-residency`).join('; ')}.`}
+  />
+</Figure>
 
 ### Residency
 

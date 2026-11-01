@@ -13,7 +13,7 @@ import { MEDIANS } from '@/data/rozklad-wynagrodzen';
 import { pseudonymDemo } from '@/data/en/postulat';
 import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
-import { columnChart, svg } from '@/lib/og/charts';
+import { columnChart, svg, visitList } from '@/lib/og/charts';
 import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
 import { globeOgBody } from '@/lib/swiat/og';
 import { newsIllustration } from '@/lib/news';
@@ -131,6 +131,7 @@ export const ogArticleMediaEn: Record<string, Pick<OgPage, 'bars' | 'panels' | '
     },
   },
   '/analizy/limity-wynagrodzen-medykow/': { panels: VOTE_PANEL },
+  '/mechanizmy/fikcyjne-wizyty/': { panels: [{ head: 'Visit history in the IKP', height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, visitList('Added visit', MEDIA_W)) }] },
   '/mechanizmy/kontrola-nfz/': {
     panels: controlPanels({
       head: 'Months of H52 and H53 billing, 2021–2025',
@@ -202,6 +203,7 @@ export const ogPagesEn: Record<string, OgPage> = {
     title: 'About the project\nzarobkilekarzy.pl',
     lead: 'Why the site exists, how we choose sources and how to report an error.',
     footer: { text: 'Mechanisms, not names' },
+    logo: 'znak',
   },
   '/en/news/': {
     eyebrow: 'About the site',

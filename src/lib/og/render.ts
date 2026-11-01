@@ -346,7 +346,8 @@ const panels = (m: Extract<OgMedia, { kind: 'panels' }>) =>
 
 /**
  * Logo partii wprost na białej karcie, bez ramki i cienia. Każde logo ma tę samą powierzchnię (neutralność, jak karty
- * w barometr/PartyList): szerokie są niższe, wysokie węższe. 'serwis' = logo serwisu w miejscu logo partii (wzór).
+ * w barometr/PartyList): szerokie są niższe, wysokie węższe. 'serwis' = logo serwisu w miejscu logo partii (wzór),
+ * 'znak' = sam znak serwisu.
  */
 const LOGO_AREA = 63000;
 const LOGO_MAX_W = 380;
@@ -354,7 +355,9 @@ const LOGO_MAX_H = 220;
 
 async function partyLogo(m: Extract<OgMedia, { kind: 'logo' }>) {
   let inner: Node;
-  if (m.logo === 'serwis') {
+  if (m.logo === 'znak') {
+    inner = h('img', { src: iconUri('logo', C.blue), width: 300, height: 300 });
+  } else if (m.logo === 'serwis') {
     // proporcje jak na stronie wzoru (barometr-polityczny/[id]: znak 40 px, napis 28 px), ×1,6
     inner = h('div', { style: { alignItems: 'center', fontFamily: DISPLAY, fontWeight: 500, fontSize: 45, letterSpacing: '-0.03em', color: C.ink } },
       h('img', { src: iconUri('logo', C.blue), width: 64, height: 64, style: { marginRight: 22 } }),

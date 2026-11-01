@@ -309,9 +309,10 @@ export interface OgPage extends OgOverride {
   panels?: { head?: string; svg: string; height: number }[];
   /**
    * logo w miejscu zdjęcia, na białym polu (barometr: logo partii, ta sama powierzchnia dla każdej);
-   * 'serwis' = logo serwisu w miejscu logo partii (wzór na fikcyjnej partii)
+   * 'serwis' = logo serwisu w miejscu logo partii (wzór na fikcyjnej partii);
+   * 'znak' = sam znak serwisu, gdy nazwa stoi już w tytule (/o-projekcie/)
    */
-  logo?: ImageMetadata | 'serwis';
+  logo?: ImageMetadata | 'serwis' | 'znak';
   /** lead także przy długim tytule (domyślnie znika, gdy tytuł ma ponad 34 znaki) — np. nazwa partii nad „Stanowisko…” */
   leadAlways?: boolean;
   /** grafika z kropek w miejscu zdjęcia, np. mapa kraju (lib/siatka/kraje.ts) */

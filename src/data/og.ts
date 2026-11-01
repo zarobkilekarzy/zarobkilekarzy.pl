@@ -20,7 +20,7 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { simulatorOgPanels } from '@/lib/podaz/og';
 import { nurseSimulatorOgPanels } from '@/lib/podaz/pielegniarki/og';
-import { columnChart, label, monthGrid, stageTrack, svg, virus } from '@/lib/og/charts';
+import { columnChart, label, monthGrid, stageTrack, svg, virus, visitList } from '@/lib/og/charts';
 import { hemicycle, tallyClubs } from '@/lib/sejm/hemicycle';
 import { tokenColor } from '@/lib/tokens';
 import { CLUBS_LAST, limityVoting } from '@/data/glosowania';
@@ -175,6 +175,7 @@ export function hemicyclePanel(text: typeof HEMICYCLE_PL = HEMICYCLE_PL): string
 
 export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps' | 'illustration' | 'position'>> = {
   '/mechanizmy/kontrola-nfz/': { panels: controlPanels() },
+  '/mechanizmy/fikcyjne-wizyty/': { panels: [{ head: 'Historia wizyt w IKP', height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, visitList('Dopisana wizyta', MEDIA_W)) }] },
   '/analizy/covid-pieniadz-publiczny/': { panels: [{ height: MEDIA_W, svg: svg(MEDIA_W, MEDIA_W, virus(MEDIA_W)) }] },
   // wpis w aktualnościach: pieczątki jak na obrazku katalogu (okładka wpisu przycięta pokazałaby tylko tytuł)
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },
@@ -367,6 +368,7 @@ export const ogPages: Record<string, OgPage> = {
     title: 'O projekcie\nzarobkilekarzy.pl',
     lead: 'Po co powstał serwis, na jakich zasadach dobieramy źródła i jak zgłosić błąd.',
     footer: { text: 'Mechanizmy, nie nazwiska' },
+    logo: 'znak',
   },
   '/aktualnosci/': {
     eyebrow: 'O serwisie',

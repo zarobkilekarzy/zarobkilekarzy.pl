@@ -5,7 +5,7 @@
  */
 import type { ImageMetadata } from 'astro';
 import type { IconName } from '@/icons';
-import type { Category, OgCover, OgDots, OgOverride, OgPage, OgStat } from '@/types';
+import type { OgCover, OgDots, OgOverride, OgPage, OgStat } from '@/types';
 import { PICTOGRAMS, type PictogramName } from '@/lib/siatka/piktogramy';
 import { ekgLines, frameLines } from '@/lib/siatka';
 import { articleHref, getFootnotes, readingMinutes, sectionOf, type Article } from '@/lib/content';
@@ -72,8 +72,6 @@ interface Defaults {
   logo?: OgPage['logo'];
   dots?: OgDots;
   stamps?: OgPage['stamps'];
-  /** piktogram, gdy obrazek nie ma innej grafiki */
-  pictogram?: PictogramName | 'ekg';
   leadAlways?: boolean;
   redact?: string;
   locale?: Locale;
@@ -83,16 +81,11 @@ interface Defaults {
 const DOT_COLS = 20;
 const DOT_ROWS = 22;
 
-/** Piktogram albo uderzenie EKG z kropek na polu z plusów — grafika obrazka bez zdjęcia i wykresu. */
+/** Piktogram albo uderzenie EKG z kropek na polu z plusów — grafika wybrana wprost (`og.pictogram`). */
 const pictogramDots = (name: PictogramName | 'ekg'): OgDots =>
   name === 'ekg'
     ? { mask: ekgLines(DOT_COLS, DOT_ROWS), codes: { '#': { size: 'on', color: 'blue' } } }
     : { mask: frameLines(PICTOGRAMS[name], DOT_COLS, DOT_ROWS), codes: { '#': { size: 'on', color: 'blue' }, o: { size: 'mid', color: 'blue' } } };
-
-/** Piktogram artykułu bez grafiki — wg kategorii (działu). */
-const CATEGORY_PICTOGRAM: Record<Category, PictogramName> = {
-  Mechanizm: 'umowa', Analiza: 'szpital', Dane: 'pieniadze', Przewodnik: 'serce', 'Projekt ustawy': 'umowa', Narzędzie: 'torba',
-};
 
 /** Skróty, po których kropka nie kończy zdania („500 tys. CAD”, „art. 27a”; „approx. PLN”, „print No. 3157”). */
 const ABBR: Record<Locale, RegExp> = {
@@ -115,9 +108,11 @@ function compose(route: string, d: Defaults, o: OgOverride & { cover?: OgCover }
 
   const photo = o.illustration ?? o.photo ?? d.photo;
   const mode = o.media ?? 'auto';
-  // grafika z kropek zabiera kolumnę mediów — za długi tytuł zostaje na całą szerokość, bez niej
+  // piktogram zabiera kolumnę mediów — za długi tytuł zostaje na całą szerokość, bez niego
   const fitsNarrow = title.includes('\n') || title.length <= NARROW_TITLE_MAX;
-  const kind = mode === 'auto' ? (d.redact ? 'none' : o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : d.panels ? 'panels' : d.logo ? 'logo' : d.stamps ? 'stamps' : fitsNarrow || d.dots ? 'dots' : 'none') : mode;
+  const dots = d.dots ?? (o.pictogram && fitsNarrow ? pictogramDots(o.pictogram) : undefined);
+  // obrazek domyślny jest bez ilustracji: grafikę ma tylko strona, która ją sobie wybrała
+  const kind = mode === 'auto' ? (d.redact ? 'none' : o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : d.panels ? 'panels' : d.logo ? 'logo' : d.stamps ? 'stamps' : dots ? 'dots' : 'none') : mode;
 
   let media: OgMedia = { kind: 'none' };
   if (kind === 'stat' && o.stat) {
@@ -128,8 +123,8 @@ function compose(route: string, d: Defaults, o: OgOverride & { cover?: OgCover }
     media = { kind: 'bars', ...d.bars };
   } else if (kind === 'panels' && d.panels) {
     media = { kind: 'panels', panels: d.panels };
-  } else if (kind === 'dots') {
-    media = { kind: 'dots', ...(d.dots ?? pictogramDots(o.pictogram ?? d.pictogram ?? 'ekg')) };
+  } else if (kind === 'dots' && dots) {
+    media = { kind: 'dots', ...dots };
   } else if (kind === 'stamps' && d.stamps) {
     media = { kind: 'stamps', stamps: d.stamps };
   } else if (kind === 'logo' && d.logo) {
@@ -187,7 +182,6 @@ export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels
       badge,
       // ta sama ikona co etykieta na okładce w blocks/ArticleFeature
       icon: 'pin',
-      pictogram: CATEGORY_PICTOGRAM[article.data.category],
       footer: { text: footer },
       ...media,
     },
@@ -196,7 +190,7 @@ export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels
 }
 
 /**
- * Tłumaczenie artykułu (/en/…): tekst i stopka po angielsku, grafika z polskiego oryginału (okładka, piktogram działu).
+ * Tłumaczenie artykułu (/en/…): tekst i stopka po angielsku, grafika z polskiego oryginału (okładka, piktogram).
  * `media` — wykres z podpisami po angielsku (src/data/en/og.ts); z polskiego `og` przechodzi tylko grafika bez tekstu
  * (zdjęcie, ilustracja, kadr, piktogram), a tekst nadpisuje `og` tłumaczenia.
  */
@@ -223,7 +217,6 @@ export function articleOgEn({ article, source }: Translated, media: Pick<OgPage,
       photo: cover,
       position: coverPosition,
       icon: 'pin',
-      pictogram: CATEGORY_PICTOGRAM[category],
       footer: { text: footer },
       locale: 'en',
       ...media,

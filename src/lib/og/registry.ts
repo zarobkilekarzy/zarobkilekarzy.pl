@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import type { ImageMetadata } from 'astro';
 import { raw } from '@/lib/images';
 import { articleHref, getPublishedArticles } from '@/lib/content';
-import { getNews, newsHref, newsImage } from '@/lib/news';
+import { getNews, newsHref, type News } from '@/lib/news';
 import { ogArticleMedia, ogPages } from '@/data/og';
 import { ogArticleMediaEn, ogPagesEn } from '@/data/en/og';
 import { getTranslations } from '@/i18n/translations';
@@ -20,6 +20,9 @@ export { OG_HEIGHT, OG_WIDTH } from './presets';
 const DEFAULT_ROUTE = '/';
 const DEFAULT_ROUTE_EN = '/en/';
 
+/** Zdjęcie wpisu aktualności na obrazku: tylko własne; wpis bez okładki dostaje obrazek domyślny, bez ilustracji. */
+const newsCover = (entry: News) => (entry.data.cover ? { photo: entry.data.cover, position: '0% 0%' } : {});
+
 async function collect(): Promise<OgEntry[]> {
   const [articles, news] = await Promise.all([getPublishedArticles(), getNews()]);
   // Wpis aktualności: preset strony z tytułem i leadem wpisu — bez daty na obrazku (na OG nic, co się zmienia).
@@ -29,7 +32,7 @@ async function collect(): Promise<OgEntry[]> {
       eyebrow: 'Aktualności',
       title: entry.data.title,
       lead: entry.data.summary,
-      ...(ogArticleMedia[newsHref(entry)] ?? { photo: newsImage(entry).src, position: entry.data.cover ? '0% 0%' : '70% 50%' }),
+      ...(ogArticleMedia[newsHref(entry)] ?? newsCover(entry)),
       footer: { text: 'Co nowego w projekcie' },
     }),
   );
@@ -44,7 +47,7 @@ async function collectEn(): Promise<OgEntry[]> {
   const [translations, news] = await Promise.all([getTranslations(), getPublishedNewsTranslations()]);
   const newsOg = news.map((t) => {
     const route = newsHref(t.source);
-    const media = ogArticleMediaEn[route] ?? ogArticleMedia[route] ?? { photo: newsImage(t.source).src, position: t.source.data.cover ? '0% 0%' : '70% 50%' };
+    const media = ogArticleMediaEn[route] ?? ogArticleMedia[route] ?? newsCover(t.source);
     return pageOg(newsEnHref(t), { eyebrow: 'News', title: t.entry.data.title, lead: t.entry.data.summary, ...media, footer: { text: 'What’s new in the project' } }, 'en');
   });
   return [

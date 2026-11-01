@@ -220,6 +220,50 @@ export function virus(size: number): string {
     + `<path d="${inner}" stroke="#fff" stroke-opacity=".45" stroke-width="${stroke}" fill="none"/>${dots}`;
 }
 
+/* ---------- Dopisywanie wizyt: historia wizyt jak w IKP ---------- */
+
+/** Ołówek: grot w (x, y), korpus w górę i w prawo pod kątem 45°. */
+const pencil = (x: number, y: number, k = 1) =>
+  `<g transform="translate(${f1(x)} ${f1(y)}) rotate(-45) scale(${k})">`
+  + `<polygon points="0,0 15,-8 15,8" fill="${c('ink')}"/>`
+  + `<rect x="15" y="-8" width="52" height="16" fill="${c('blue')}"/>`
+  + `<rect x="67" y="-8" width="6" height="16" fill="#fff" stroke="${c('blue')}" stroke-width="1.5"/>`
+  + `<rect x="73" y="-8" width="13" height="16" fill="${c('chart')}"/></g>`;
+
+/**
+ * Szare wiersze z kreskami zamiast dat (rysunek, nie wycinek czyjegoś konta) to wizyty, które były. Kobaltowe z plusem
+ * są dopisane; ostatni właśnie powstaje: przerywana ramka i ołówek z grotem na końcu napisu `added`. Wysokość: 432.
+ */
+export function visitList(added: string, width: number): string {
+  const rowH = 76, addedH = 84, writingH = 112, inset = 4, dotX = 36, textX = 66;
+  const plus = (cy: number) => `<path d="M${dotX} ${f1(cy - 13)}v26M${dotX - 13} ${f1(cy)}h26" stroke="${c('blue')}" stroke-width="4" fill="none"/>`;
+  const visit = (y: number, date: number) => {
+    const cy = y + rowH / 2;
+    return `<circle cx="${dotX}" cy="${f1(cy)}" r="9" fill="${c('chart')}"/>`
+      + `<rect x="${textX}" y="${f1(cy - 15)}" width="${date}" height="11" fill="${c('chart')}"/>`
+      + `<rect x="${textX}" y="${f1(cy + 6)}" width="104" height="9" fill="${c('line-2')}"/>`
+      + `<rect x="${width - 92}" y="${f1(cy - 14)}" width="74" height="28" fill="${c('line')}"/>`;
+  };
+  let y = inset;
+  let s = visit(y, 188);
+  y += rowH;
+  s += `<line x1="${inset}" x2="${width - inset}" y1="${y}" y2="${y}" stroke="${c('line')}"/>`;
+  s += visit(y, 148);
+  y += rowH;
+  s += `<rect x="${inset}" y="${y}" width="${width - 2 * inset}" height="${addedH}" fill="${c('blue-50')}"/>`;
+  s += plus(y + addedH / 2) + label(textX, y + addedH / 2 + 9, added, ['big', 'blue']);
+  y += addedH;
+  s += visit(y, 212);
+  y += rowH;
+  const cy = y + writingH / 2;
+  s += `<rect x="${inset}" y="${y}" width="${width - 2 * inset}" height="${writingH}" fill="${c('blue-50')}" stroke="${c('blue')}" stroke-width="2" stroke-dasharray="9 7"/>`;
+  s += `<rect x="0" y="${y - inset}" width="9" height="9" fill="${c('blue')}"/><rect x="${width - 9}" y="${y + writingH - 5}" width="9" height="9" fill="${c('blue')}"/>`;
+  s += plus(cy) + label(textX, cy + 9, added, ['big', 'blue']);
+  // napis stoi w tekście Satori, nad SVG: koniec szacowany z długości (≈0,45 em na znak przy 26 px)
+  s += pencil(textX + added.length * 11.6 + 4, cy + 9, 1.15);
+  return s;
+}
+
 /* ---------- Oś etapów: ten sam kształt co blocks/StatusTrack (oś pionowa) ---------- */
 
 export interface TrackRow {

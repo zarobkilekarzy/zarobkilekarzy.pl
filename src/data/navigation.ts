@@ -73,7 +73,6 @@ export const footerNav: NavGroup[] = [
       { label: 'Najczęstsze zarzuty', href: '/faq/' },
       { label: 'Materiały medialne', href: '/media/' },
       { label: 'Podcasty', href: podcastPage.href },
-      { label: 'Sklep i grafiki do druku', href: '/sklep/' },
       { label: 'Metodologia', href: '/o-projekcie/#zasady' },
       { label: 'Sprostowania', href: '/o-projekcie/#sprostowania' },
       { label: 'Jak możesz pomóc', href: '/dzialaj/' },
@@ -89,6 +88,7 @@ export const footerNav: NavGroup[] = [
       { label: 'Wykop', href: 'https://wykop.pl/ludzie/zarobkilekarzy' },
       { label: 'Kod źródłowy (GitHub)', href: 'https://github.com/zarobkilekarzy/zarobkilekarzy.pl' },
       { label: 'Wesprzyj projekt na Suppi', href: 'https://suppi.pl/zarobkilekarzy' },
+      { label: 'Wesprzyj zakupem w sklepie', href: '/sklep/' },
     ],
   },
 ];

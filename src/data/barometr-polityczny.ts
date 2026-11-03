@@ -33,7 +33,7 @@ export const barometrPage = {
   seoTitle: 'Barometr: polityka zdrowotna partii',
   lead: 'Co partie proponują w ochronie zdrowia — według tych samych pytań dla każdej z nich i ze źródłem przy każdej tezie. Zaczynamy od zaproszenia: każda partia może przedstawić nam swój program.',
   description: 'Polityka zdrowotna partii według tych samych pytań i ze źródłami. Zaproszenie dla partii do przesłania programu w ochronie zdrowia.',
-  updated: new Date('2026-11-03'),
+  updated: new Date('2026-11-04'),
   /** true = szkic: noindex (także podstron partii). Opublikowane 17.10.2026; wzór opisu zostaje noindex zawsze. */
   draft: false,
 };
@@ -43,6 +43,10 @@ export const barometrPage = {
  * i układzie, nie każda poprawka. Zapis wpisu: lib/inline (**b**, [a](href)). Nowy wpis = też `barometrPage.updated`.
  */
 export const barometrChangelog: { date: Date; text: string }[] = [
+  {
+    date: new Date('2026-11-04'),
+    text: 'Odpowiedź [Lewicy](/barometr-polityczny/lewica/) — stanowisko partii w nadesłanym brzmieniu.',
+  },
   {
     date: new Date('2026-11-03'),
     text: 'Pierwsza odpowiedź: [KORWiN](/barometr-polityczny/korwin/) — stanowisko partii w nadesłanym brzmieniu.',
@@ -303,6 +307,9 @@ export const barometrSejm = {
   asOf: new Date('2026-10-17'),
 };
 
+/** Stan kontaktu z Lewicą — ten sam na karcie i na podstronie. */
+const LEWICA_STATUS: Extract<BarometrStatus, { stage: 'odpowiedz' }> = { stage: 'odpowiedz', sent: barometrSchedule.sendOn, answered: new Date('2026-11-03') };
+
 /** Partie z klubem albo kołem w Sejmie — na stronie alfabetycznie (zasada „te same pytania dla wszystkich”). */
 export const barometrParties: BarometrParty[] = (
   [
@@ -311,7 +318,7 @@ export const barometrParties: BarometrParty[] = (
     { id: 'koalicja-obywatelska', name: 'Koalicja Obywatelska', club: 'Klub Parlamentarny Koalicja Obywatelska – Platforma Obywatelska, Nowoczesna, Inicjatywa Polska, Zieloni', logo: koLogo, status: SENT },
     { id: 'konfederacja', name: 'Konfederacja Wolność i Niepodległość', club: 'Klub Poselski Konfederacja', logo: konfederacjaLogo, status: SENT },
     { id: 'konfederacja-korony-polskiej', name: 'Konfederacja Korony Polskiej', club: 'Koło Poselskie Konfederacja Korony Polskiej', logo: kkpLogo, status: SENT },
-    { id: 'lewica', name: 'Lewica', club: 'Koalicyjny Klub Parlamentarny Lewicy (Nowa Lewica, PPS, Unia Pracy)', logo: lewicaLogo, status: SENT },
+    { id: 'lewica', name: 'Lewica', club: 'Koalicyjny Klub Parlamentarny Lewicy (Nowa Lewica, PPS, Unia Pracy)', logo: lewicaLogo, status: LEWICA_STATUS },
     { id: 'polska-2050', name: 'Polska 2050', club: 'Klub Parlamentarny Polska 2050', logo: polska2050Logo, status: SENT },
     { id: 'psl', name: 'Polskie Stronnictwo Ludowe', club: 'Klub Parlamentarny Polskie Stronnictwo Ludowe – Trzecia Droga', logo: pslLogo, status: SENT },
     { id: 'pis', name: 'Prawo i Sprawiedliwość', club: 'Klub Parlamentarny Prawo i Sprawiedliwość', logo: pisLogo, status: SENT },
@@ -599,8 +606,114 @@ const barometrKorwin: BarometrProfile = {
   changes: [{ date: new Date('2026-11-03'), text: 'Opis opublikowany: odpowiedź partii w nadesłanym brzmieniu.' }],
 };
 
+/**
+ * Odpowiedź Lewicy (plik od partii, 03.11.2026). Tekst słowo w słowo, w podziale na akapity jak w nadesłanym pliku —
+ * nie poprawiać ani nie skracać; zmiana tylko na prośbę partii, z datą w `changes`. Pominięte tylko dopiski partii
+ * z liczbą znaków na końcu każdej odpowiedzi i podwójna spacja. Partia nie wskazała dokumentów.
+ * „Czy podano”: wprost tylko w finansowaniu — koszt (9% PKB), źródło (podatek zdrowotny, opłata od żywności
+ * wysokoprzetworzonej, akcyza) i termin (4 lata); w pozostałych odpowiedziach nie ma kwot, źródeł ani dat
+ * (decyzja redakcji 4.11.2026).
+ */
+const barometrLewica: BarometrProfile = {
+  id: 'lewica',
+  href: profileHref('lewica'),
+  name: 'Lewica',
+  club: 'Koalicyjny Klub Parlamentarny Lewicy (Nowa Lewica, PPS, Unia Pracy)',
+  logo: lewicaLogo,
+  status: LEWICA_STATUS,
+  updated: new Date('2026-11-04'),
+  areas: [
+    {
+      area: 'finansowanie',
+      answer: [
+        'Pogłębiająca się luka finansowa w budżecie NFZ dowodzi, że system oparty na składce zdrowotnej nie sprawdza się. Liczne wyjątki, ulgi i przywileje czynią system niesprawiedliwym i niedostatecznie finansowanym. Nie zgadzamy się na prywatyzację systemu ochrony zdrowia. Publiczne placówki, publiczne finansowanie są gwarantem zapewnienia sprawiedliwego dostępu do opieki medycznej.',
+        'Lewica postuluje likwidację składki zdrowotnej i zastąpienie jej podatkiem zdrowotnym. Jednolita stawka dla wszystkich podatników z kwotą wolną w wysokości 30 tys zł - dla większości podatników nic się nie zmieni. Do systemu ochrony zdrowia więcej zaczną dokładać najbogatsi płatnicy PIT oraz - to nowość - najwięksi płatnicy CIT. Duże firmy, międzynarodowe korporacje korzystające z pracy polskich pracowników dofinansują system ochrony zdrowia. Dodatkowe źródła finansowania to opłata od żywności wysokoprzetworzonej, wzorowana na opłacie cukrowej, oraz jednolita akcyza na alkohol i tytoń. Fundusze z tych danin będą przeznaczane na profilaktykę, by osiągnąć średnią unijną wydatków na mieszkańca w tej kategorii. W Narodowym Programie Zdrowia oszczędności generowane przez 1 zł wydaną na programy profilaktyczne szczuje się na 27 zł oszczędności w wydatkach całego systemu ochrony zdrowia.',
+        'Sprzeciwiamy się ulgom dotującym prywatną opiekę zdrowotną z budżetu, bo to droga do prywatyzacji systemu.',
+        'Celem zmian jest osiągnięcie poziomu finansowania ochrony zdrowia w wysokości 9% PKB w perspektywie 4 lat.',
+      ],
+      documents: [],
+      checks: { cost: true, funding: true, deadline: true },
+    },
+    {
+      area: 'kadry',
+      part: 'lekarze',
+      answer: [
+        'Systematycznie rośnie ilość miejsc na kierunkach lekarskich. Kluczowe jest, aby liczba osób kończących studia i podejmujących pracę w publicznym systemie była zbliżona do liczby osób je rozpoczynających. Wyzwaniem pozostaje luka pokoleniowa. Struktura wiekowa kadry przypomina klepsydrę - wielu lekarzy w wieku około emerytalnym, najmniej w średnim wieku, oraz znaczna w okresie rezydentury lub tuż po niej. Konieczne jest utrzymanie najstarszych wiekiem lekarzy w systemie do czasu aż uda się spłaszczyć strukturę wiekową.',
+        'Wyzwaniem jest zapewnienie kadr dla mniejszych szpitali powiatowych. System rynkowy spowodował powstanie gigantycznych kominów płacowych i drenaż budżetów mniejszych placówek. Wprowadzenie górnych limitów zarobków, bez rozróżnienia geograficznego nie polepszy sytuacji szpitali w małych i średnich miastach.',
+        'Wypoczęty lekarz to dobry lekarz i dobrze zaopiekowany pacjent, praca ponad siły nie jest rozwiązaniem problemów kadrowych i stanowi zagrożenie dla pacjentów. Wprowadzamy ewidencje czasu pracy, ale docelowo powinna być oparta o system informatyczny, bez papierowych oświadczeń i biurokracji, która generuje koszty i zabiera czas lekarzom i kadrze pomocniczej.',
+        'Polska jest atrakcyjnym krajem dla lekarzy spoza UE, musimy być gotowi na sprawną weryfikację umiejętności zdobytych na uczelniach pozaeuropejskich. Trzeba wypracować sprawny system egzaminacji i nadzoru, który z jednej strony nie będzie odstraszać, z drugiej będzie dawał gwarancję należytej opieki nad pacjentami.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'pielegniarki',
+      answer: [
+        'Pielęgniarki i położne są filarem systemu, a ich praca musi być godnie wynagradzana. Sytuacja kadrowa w tej grupie zawodowej jest najbardziej dramatyczna. 40% aktywnych zawodowo pielęgniarek jest w wieku 50-59 lat, znaczna część osób kończących pielęgniarstwo nie rozpoczyna pracy z pacjentem w publicznym systemie ochrony zdrowia. Obecnie to już nie kwestie finansowe a systemowe zniechęcają młodych do pracy w publicznych szpitalach. Konieczne jest odciążenie personelu pielęgniarskiego. W tym celu do standardu powinna wejść minimalna obsada opiekunów medycznych. Należy kontynuować poszerzanie uprawnień pielęgniarek oraz wprowadzić Zaawansowaną Praktykę Pielęgniarską.',
+        'Dla środowiska pielęgniarskiego kluczowe jest ostateczne uznanie kwalifikacji posiadanych nad wymaganymi przy zaliczeniu do grupy płacowej, co przerwie spiralę procesów wytaczanych podmiotom medycznym przez personel pielęgniarski wynagradzania poniżej swoich umiejętności.',
+        'Nie możemy zapomnieć o położnych. Spadająca dzietność rodzi zagrożenie dla miejsc pracy osób wykonujących ten zawód medyczny. Położna powinna powinna być przewodniczką w zakresie kobiecości przez cały okres życia kobiety. Rozszerzenie opieki położnych na okres menopauzalny, dostęp do kursów i szkoleń zwiększających możliwe dalsze ścieżki rozwoju zawodowego oraz odpowiednie wynagrodzenie za tym płynące to odpowiedź na wyzwania związane z demografia całego społeczeństwa.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'inne-zawody',
+      answer: [
+        'Ratownicy medyczni, fizjoterapeuci, diagności laboratoryjni i inni pracownicy ochrony zdrowia wraz z lekarzami i pielęgniarkami tworzą jeden zespół, a ich praca zasługuje na godne wynagrodzenie. Popieramy rozwój kształcenia w tych zawodach i dostosowanie liczby miejsc na studiach do potrzeb systemu.',
+        'Zwiększanie uprawnień innych zawodów medycznych leży w interesie pacjentów. Poziom wykształcenie np. farmaceutów umożliwia im przejęcie części dotychczas zarezerwowanych dla innych zawodów uprawnień. Wpłynie to pozytywnie na dostępność świadczeń, długość kolejek oraz koszty funkcjonowania systemu ochrony zdrowia. Poszerzenia uprawnień musi odbywać się w atmosferze dialogu między środowiskami zawodowymi, lecz bez ulegania nadmiernym żądaniom i dotychczasowym przyzwyczajeniom.',
+        'Sprawnie działający system opieki medycznej musi przewidywać stałe miejsce dla opiekunów medycznych. Ich wykształcenie i posiadane umiejętności pozwolą znacząco odciążyć personel pielęgniarski i usprawnić opiekę nad chorymi.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'wynagrodzenia',
+      answer: [
+        'Jawność wynagrodzeń jest konieczna, dla zapewnienia przejrzystości publicznego systemu ochrony zdrowia. Domyślną i główną formą zatrudnienia powinien być etat, dający ochronę Kodeksu pracy oraz kończący z patologiczną sytuacją, w której pacjent płaci wyższe podatki niż leczący go lekarz.',
+        'Powiązanie górnych limitów zarobków w ochronie zdrowia z najniższą płacą to mechanizm prosty, sprawny i sprawiedliwy. Docelowo w ten sposób powinny być waloryzowane kwoty minimalne ustalane dla poszczególnych grup zawodowych w systemie ochrony zdrowia. Zmiany w tym zakresie muszą być poprzedzone realnym dialogiem ze stroną związkową.',
+        'Należy obserwować skutki wprowadzonych limitów zarobków i elastycznie reagować, by poziomem płac zapewniać równy dostęp do ochrony zdrowia na terenie całego kraju oraz zmniejszyć deficyty kadrowe w kluczowych specjalizacjach.',
+        'Potrzebne jest wyjście naprzeciw oczekiwaniom poszczególnych grup zawodowych, w szczególności pielęgniarek i położnych, dla których konieczne jest ostateczne uregulowanie kwestii umiejętności posiadanych i wymaganych na danym stanowisku.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'dostep',
+      answer: [
+        'Celem jest znaczące skrócenie kolejek do lekarzy specjalistów i na planowe zabiegi medyczne. E-rejestracja i e-kolejka już ułatwiają zapisanie się i odwołanie wizyty, a to początek cyfryzacji w ochronie zdrowia. Wykorzystanie nowych technologii w komunikacji lekarz pacjent, w diagnostyce i ocenie ryzyk zdrowotnych może w perspektywie najbliższych kilku lat znacząco usprawnić przebieg procesu leczenia. Z punktu widzenia dostępu do specjalistów konieczne jest, by pacjent już podczas pierwszych dwóch wizyt otrzymywał właściwą diagnozę i dokładny plan leczenia i opieki, bez konieczności ponownego przeprowadzania badań, poza wskazaniami czysto kontrolnymi oraz wizyt w gabinecie poza sytuacjami nagłej zmiany stanu zdrowia.',
+        'Systematycznie rosną wydatki z tytułu refundacji leków. Żaden system nie będzie w stanie opłacić wszystkich terapii i najdroższych leków, dlatego w tam gdzie to możliwe bez szkody dla pacjenta pierwszeństwo w wyborze terapii powinny mieć leki generyczne. W tym aspekcie należy również wspomnieć o zapewnieniu bezpieczeństwa lekowego i konieczności rozwoju produkcji podstawowych substancji czynnych na terenie Polski.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'szpitale',
+      answer: [
+        'Szpitale powinny być przede wszystkim publiczne, prowadzone przez państwo i samorząd. Jednak rozdrobnienie struktury właścicielskiej generuje liczne problemy. Spadająca liczba ludności w połączeniu z migracją do większych miast zwiększa koszty funkcjonowania szpitali w mniejszych miejscowościach. Polska utrzymuje wyraźnie wyższą od średniej UE liczbę łóżek szpitalnych w przeliczeniu na 100 tys mieszkańców. Konieczna jest zmiana struktury właścicielskiej szpitali. Dotychczasowe szpitale miejskie i powiatowe, powinny zostać zintegrowane ze szpitalami wojewódzkimi, tworząc spójną sieć dającą gwarancję redukcji kosztów operacyjnych, zapewniających dostęp do wykwalifikowanej i doświadczonej kadry oraz nowoczesnej aparatury diagnostycznej. Z poziomu obejmującego kilka powiatów dużo łatwiej jest zarządzać strukturą łóżek szpitalnych na poszczególnych oddziałach, bez ryzyka pozbawiania całych regionów dostępu np. do porodówek.',
+        'Postępujące zadłużenie szpitali jest zagrożeniem dla stabilności systemu. Integracja z jednej strony pozwoli na zmniejszenie części kosztów, ale to nie wystarczy. Potrzebne jest częstsze aktualizowanie wycen procedur medycznych. W tym celu należy wzmocnić kadrowo i finansowo AOTMiT. Dodatkowo dla najbardziej zadłużonych placówek, które nawet w wyniku integracji z innymi podmiotami nie są w stanie samodzielnie spłacić zobowiązań potrzebny jest system częściowego oddłużenia, po spełnieniu odpowiednich kryteriów.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'pacjent',
+      answer: [
+        'Popieramy przejrzystość i dostęp do danych, pacjent ma prawo do rzetelnej i przystępnej informacji o jakości leczenia i skutecznego dochodzenia roszczeń w przypadku błędów medycznych. Ma również prawo do ochrony przed dezinformacją medyczną.',
+        'Organizacje pacjenckie są równym partnerem w dyskusji o kształcie systemu ochrony zdrowia. Ich głos musi być słyszany i brany pod uwagę przy planowaniu zmian.',
+        'Sztuczna inteligencja już jest wykorzystywana we wsparciu diagnozowania pacjentów, trwają liczne i intensywne prace wspierane przez rząd nad polskimi rozwiązaniami w zakresie AI w medycynie. Kluczowe jest aby nowe technologie były uzupełnieniem a nie zastępstwem dla personelu medycznego, aby dane medyczne były bezpieczne. Ostateczna decyzja o sposobie i rodzaju leczenia musi pozostać w ręku lekarza, na tym polu żaden algorytm nie może zastąpić człowieka.',
+        'Wyzwaniem jest wykorzystanie AI w samoleczeniu, w dezinformacji medycznej. Po stronie publicznego systemu ochrony zdrowia jest budowa zaufania pacjenta do lekarza i jego diagnozy.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+  ],
+  changes: [{ date: new Date('2026-11-04'), text: 'Opis opublikowany: odpowiedź partii w nadesłanym brzmieniu.' }],
+};
+
 /** Opisy z własną podstroną. Prawdziwy opis: id = id karty partii, dane partii z barometrParties. */
-export const barometrProfiles: BarometrProfile[] = [barometrExample, barometrKorwin];
+export const barometrProfiles: BarometrProfile[] = [barometrExample, barometrKorwin, barometrLewica];
 
 /* ---------- Politycy pod nazwiskiem (sekcja #politycy, podstrony /barometr-polityczny/politycy/<id>/) ---------- */
 
@@ -756,12 +869,18 @@ const surname = (name: string) => name.split(' ').at(-1) ?? name;
 export const barometrPoliticians: BarometrPolitician[] = [barometrStatementExample, ...(import.meta.env.DEV ? previewExamples : [])]
   .sort((a, b) => surname(a.name).localeCompare(surname(b.name), 'pl'));
 
+/**
+ * Odpowiedzi przyjęte ponad limit — dokładna długość, więc każda zmiana tekstu znów zatrzyma build.
+ * Lewica, kadry/lekarze: partia policzyła 1485 znaków, naszą miarą 1504; przyjęte bez skracania (decyzja redakcji 4.11.2026).
+ */
+const acceptedOverLimit: Record<string, number> = { 'lewica/kadry/lekarze': 1504 };
+
 // Strażnik limitu: odpowiedź dłuższa niż ANSWER_LIMIT zatrzymuje build — nie publikujemy jej skróconej przez nas.
 for (const profile of barometrProfiles) {
   for (const entry of profile.areas) {
     const n = entry.answer ? answerLength(entry.answer) : 0;
-    if (n > ANSWER_LIMIT) {
-      const where = entry.part ? `${entry.area}/${entry.part}` : entry.area;
+    const where = entry.part ? `${entry.area}/${entry.part}` : entry.area;
+    if (n > ANSWER_LIMIT && acceptedOverLimit[`${profile.id}/${where}`] !== n) {
       throw new Error(`Barometr: odpowiedź „${profile.name}” w „${where}” ma ${n} znaków (limit ${ANSWER_LIMIT}) — odesłać partii do skrócenia`);
     }
   }

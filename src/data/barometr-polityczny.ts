@@ -33,7 +33,7 @@ export const barometrPage = {
   seoTitle: 'Barometr: polityka zdrowotna partii',
   lead: 'Co partie proponują w ochronie zdrowia — według tych samych pytań dla każdej z nich i ze źródłem przy każdej tezie. Zaczynamy od zaproszenia: każda partia może przedstawić nam swój program.',
   description: 'Polityka zdrowotna partii według tych samych pytań i ze źródłami. Zaproszenie dla partii do przesłania programu w ochronie zdrowia.',
-  updated: new Date('2026-10-30'),
+  updated: new Date('2026-11-03'),
   /** true = szkic: noindex (także podstron partii). Opublikowane 17.10.2026; wzór opisu zostaje noindex zawsze. */
   draft: false,
 };
@@ -43,6 +43,10 @@ export const barometrPage = {
  * i układzie, nie każda poprawka. Zapis wpisu: lib/inline (**b**, [a](href)). Nowy wpis = też `barometrPage.updated`.
  */
 export const barometrChangelog: { date: Date; text: string }[] = [
+  {
+    date: new Date('2026-11-03'),
+    text: 'Pierwsza odpowiedź: [KORWiN](/barometr-polityczny/korwin/) — stanowisko partii w nadesłanym brzmieniu.',
+  },
   {
     date: new Date('2026-10-30'),
     text: 'Termin odpowiedzi przedłużony dla wszystkich z 02.11.2026 do 12.11.2026. Po tej dacie przy partii, która nie odpowie, napiszemy „Bez odpowiedzi”. Więcej: [wpis w aktualnościach](/aktualnosci/barometr-termin-przedluzony/).',
@@ -316,6 +320,9 @@ export const barometrParties: BarometrParty[] = (
   ] satisfies BarometrParty[]
 ).sort((a, b) => a.name.localeCompare(b.name, 'pl'));
 
+/** Stan kontaktu z KORWiN — ten sam na karcie i na podstronie. Pytania poszły dzień po klubach i kołach (decyzja redakcji 19.10.2026); termin ten sam. */
+const KORWIN_STATUS: Extract<BarometrStatus, { stage: 'odpowiedz' }> = { stage: 'odpowiedz', sent: new Date('2026-10-19'), answered: new Date('2026-11-02') };
+
 /**
  * Spoza wykazu klubów i kół — za partiami w Sejmie: partie bez klubu i koła w Sejmie (etykieta „Poza Sejmem”)
  * i uczestnicy sporu o politykę zdrowotną, którzy nie są partiami (etykieta „Nie partia”).
@@ -330,11 +337,10 @@ export const barometrOthers: BarometrParty[] = [
     outsideSejm: true,
     about: {
       heading: 'Dlaczego KORWiN jest na liście',
-      text: 'KORWiN nie ma w Sejmie X kadencji klubu ani koła, dlatego nie ma jej w wykazie klubów. Dopisaliśmy ją do barometru jako partię spoza Sejmu: dostaje te same pytania, a jej stanowisko opiszemy na tych samych zasadach.',
+      text: 'KORWiN nie ma w Sejmie X kadencji klubu ani koła, dlatego nie ma jej w wykazie klubów. Dopisaliśmy ją do barometru jako partię spoza Sejmu: dostaje te same pytania, a jej stanowisko publikujemy na tych samych zasadach.',
       source: { label: 'Sejm RP, „Kluby i koła” (X kadencja)', href: 'https://www.sejm.gov.pl/Sejm10.nsf/kluby.xsp' },
     },
-    // pytania poszły dzień po klubach i kołach (decyzja redakcji 19.10.2026); termin ten sam
-    status: { stage: 'wyslane', sent: new Date('2026-10-19') },
+    status: KORWIN_STATUS,
   },
   {
     id: 'nil',
@@ -493,8 +499,108 @@ export const barometrExample: BarometrProfile = {
   changes: [{ date: new Date('2026-10-17'), text: 'Wzór opisu — pierwsza wersja.' }],
 };
 
+/**
+ * Odpowiedź KORWiN (plik od partii, 02.11.2026). Tekst słowo w słowo, w podziale na akapity jak w nadesłanym pliku —
+ * nie poprawiać ani nie skracać; zmiana tylko na prośbę partii, z datą w `changes`. Partia nie wskazała dokumentów.
+ * „Czy podano”: w odpowiedzi nie ma kwot ani dat, więc koszt i termin = nie podano; źródło pieniędzy wprost tylko
+ * w finansowaniu i dostępie: częściowa odpłatność, dopłaty (decyzja redakcji 3.11.2026).
+ */
+const barometrKorwin: BarometrProfile = {
+  id: 'korwin',
+  href: profileHref('korwin'),
+  name: 'KORWiN',
+  club: 'bez klubu i koła w X kadencji',
+  logo: korwinLogo,
+  status: KORWIN_STATUS,
+  updated: new Date('2026-11-03'),
+  areas: [
+    {
+      area: 'finansowanie',
+      answer: [
+        'Celem KORWiN jest odejście od państwowego monopolu na finansowanie leczenia i świadczenie usług. Docelowo państwo powinno wycofać się z bezpośredniego prowadzenia i finansowania usług takich jak ochrona zdrowia czy edukacja. Obywatel powinien sam decydować, na co przeznacza swoje pieniądze, z jakich usług korzysta i jak zabezpiecza się na przyszłość. Ceny, jakość i dostępność powinny kształtować konkurencja oraz swoboda wyboru, a rolą państwa powinno być egzekwowanie prawa, ochrona przed oszustwami i zapewnienie uczciwych reguł gry.',
+        'Nie proponujemy chaotycznego zamknięcia NFZ z dnia na dzień. Potrzebny jest skoordynowany proces zmian w ochronie zdrowia, ubezpieczeniach i świadczeniach społecznych, uwzględniający sytuację emerytów i osób przewlekle chorych, których rynek może nie ubezpieczyć na dotychczasowych zasadach. W okresie przejściowym warto wykorzystać wybrane rozwiązania zagraniczne, m.in. elementy modelu singapurskiego, ale celem KORWiN pozostaje dobrowolność i ograniczenie przymusu państwowego.',
+        'Już teraz należy ograniczać zbędne wydatki, wprowadzać częściową odpłatność za wybrane podstawowe wizyty i procedury oraz ściśle kontrolować publiczne pieniądze. Składki przymusowe należy stopniowo obniżać i likwidować, pozostawiając środki obywatelom.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: true, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'lekarze',
+      answer: [
+        'Należy znieść administracyjne limity miejsc na studiach medycznych, otworzyć kształcenie na konkurencję i uprościć uznawanie kwalifikacji lekarzy zagranicznych, weryfikując ich rzeczywiste kompetencje. Nie popieramy przymusu odpracowywania rezydentury w Polsce ani w systemie publicznym. Nie należy administracyjnie ograniczać łącznego czasu pracy lekarzy. Dopóki istnieją publiczne kontrakty, trzeba jednak kontrolować rzeczywiste godziny pracy, wykonane świadczenia i wypłaty.',
+        'Lekarz to zawód wymagający wiedzy i odpowiedzialności, ale nie świętość ani powód do tworzenia uprzywilejowanej kasty. W normalnych warunkach rynkowych wynagrodzenia wynikają z popytu, podaży, kwalifikacji i odpowiedzialności. Nie należy obniżać ich ustawą — trzeba urynkowić usługi medyczne.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'pielegniarki',
+      answer: [
+        'Należy znieść limity kształcenia pielęgniarek i poszerzać ich samodzielne uprawnienia stosownie do kwalifikacji. Powinny móc udzielać porad, wykonywać procedury i wydawać zalecenia dotyczące stosowania leków. Pacjent nie powinien płacić za wizytę u lekarza wyłącznie po to, by formalnie przedłużyć leczenie, jeśli nie ma medycznych wskazań do ponownego badania.',
+        'O podziale zadań powinny decydować kompetencje, odpowiedzialność i umowy, a nie monopole zawodowe. Państwo ma chronić bezpieczeństwo pacjentów i ścigać oszustwa, a nie szczegółowo organizować rynek pracy medyków.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'inne-zawody',
+      answer: [
+        'Farmaceuci, ratownicy medyczni, fizjoterapeuci i diagności powinni móc przejmować zadania, do których mają odpowiednie kompetencje, w tym udzielać porad i wydawać zalecenia dotyczące leków. Należy zlikwidować zbędne bariery wejścia do zawodów i ograniczyć monopole korporacyjne. Pacjent ma wybierać usługodawcę według ceny, jakości i własnej oceny potrzeb.',
+        'Zakres uprawnień powinien wynikać z kwalifikacji i odpowiedzialności za wykonaną usługę. Nie ma powodu, by lekarz musiał zatwierdzać każdą czynność innego specjalisty. Konkurencja zwiększy dostępność świadczeń, a likwidacja zbędnych procedur pozwoli lepiej wykorzystać personel.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'wynagrodzenia',
+      answer: [
+        'Nie popieramy ustawowego ograniczania wynagrodzeń lekarzy ani narzucania jednej formy zatrudnienia. Płace powinny wynikać z umów i warunków rynkowych. Obecna sytuacja — wielomilionowe wypłaty z publicznych pieniędzy, rozliczanie nieobecności czy płacenie za niewykonane świadczenia — wymaga zdecydowanej reakcji. Problem dotyczy nie tylko medyków, lecz także korupcji w NFZ, politycznych zarządów szpitali i osób rozdzielających publiczne środki.',
+        'Dopóki istnieją publiczne wydatki, jawne muszą być wszystkie ich przeznaczenia: wynagrodzenia, kontrakty, zakupy, refundacje leków, świadczenia i koszty administracyjne. Decyzje refundacyjne muszą opierać się na jasnych kryteriach, a osoby odpowiedzialne za niegospodarność, konflikt interesów lub naruszenie prawa powinny ponosić odpowiedzialność. Konieczne są niezależne audyty i kontrola wykonania umów.',
+        'Kradniesz — idziesz siedzieć. Udowodnione wyłudzenia, korupcja, fałszowanie dokumentacji i przywłaszczanie pieniędzy muszą oznaczać realną karę, zwrot środków i odebranie korzyści pochodzących z przestępstwa. Nie wystarczą limity płac ani kolejne formularze: potrzebne są jawność, kontrola i nieuchronne egzekwowanie prawa.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'dostep',
+      answer: [
+        'Kolejki wynikają m.in. z reglamentacji świadczeń, administracyjnego ustalania cen i ograniczania podaży. Docelowo pacjent powinien sam wybierać usługę, placówkę, ubezpieczenie i sposób zapłaty. Zamiast obiecywać ustawowe terminy, których państwo nie potrafi zagwarantować, trzeba uwolnić konkurencję, dopuścić przejrzyste dopłaty i publikować ceny.',
+        'Wiele zmian można jednak wprowadzić od razu, bez likwidowania NFZ. Należy ograniczyć zbędne skierowania i wizyty oraz umożliwić kontynuację leczenia bez kolejnej konsultacji, gdy nie ma ku niej wskazań medycznych. Należy znieść obowiązek uzyskiwania recept na leki. Lekarz ma leczyć i udzielać zaleceń, a nie wydawać pozwolenia na zakup preparatów. Decyzja o zakupie i stosowaniu leków należy do pacjenta. Trzeba uprościć zasady refundacji, jasno określić odpowiedzialność za decyzje i kontrolować wydatkowanie środków.',
+        'Częściowa odpłatność za wybrane podstawowe wizyty może ograniczyć wizyty niepotrzebne, przy zachowaniu rozwiązań dla osób rzeczywiście potrzebujących pomocy. Docelowo należy zlikwidować państwowy system refundacji leków i pozostawić pacjentom oraz specjalistom swobodę wyboru terapii.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: true, deadline: false },
+    },
+    {
+      area: 'szpitale',
+      answer: [
+        'Szpitale powinny docelowo działać jako podmioty prywatne, na własny rachunek i odpowiedzialność. Majątek publiczny należy stopniowo sprzedawać lub przekształcać, a strat źle zarządzanych placówek nie wolno automatycznie pokrywać z podatków. Zadłużenie powinno prowadzić do restrukturyzacji, zmiany właściciela albo upadłości zgodnie z prawem.',
+        'Już teraz potrzebne są audyty finansów, kontraktów, zakupów, wynagrodzeń i wykonanych świadczeń. Trzeba ustalić, gdzie pieniądze są marnowane i kto odpowiada za decyzje. Dotyczy to dyrektorów, politycznych nominatów, urzędników i personelu medycznego. Podejrzenia należy zbadać, a udowodnione kradzieże, korupcję i wyłudzenia surowo karać.',
+        'Państwo ma pilnować uczciwości i bezpieczeństwa, nie zarządzać szpitalami ani bez końca finansować ich nieefektywności. Konkurencja i odpowiedzialność właścicielska powinny zastąpić polityczne rozdawnictwo.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'pacjent',
+      answer: [
+        'Pacjent powinien sam decydować o leczeniu, wyborze lekarza i ubezpieczenia. Państwo nie powinno narzucać usług, badań ani procedur, jeśli nie uzasadnia ich konkretne zagrożenie bezpieczeństwa lub ochrona praw innych osób.',
+        'Już teraz trzeba zlikwidować zbędną biurokrację: administracyjny przymus medycyny pracy tam, gdzie nie uzasadnia go konkretne ryzyko, rutynowe zaświadczenia do pracy, na prawo jazdy i do innych celów bez rzeczywistych przesłanek medycznych oraz obowiązek wykonywania czynności wyłącznie dla spełnienia formalności. Należy uprościć skierowania i kontynuację leczenia. Pacjent nie powinien odbywać wizyty tylko po to, by uzyskać podpis, pieczątkę lub formalną zgodę na zakup leku. Lekarze powinni udzielać zaleceń, a decyzja o zakupie i przyjmowaniu leków należy do pacjenta. Nie oznacza to rezygnacji z badań chroniących życie i zdrowie innych.',
+        'O błędach medycznych powinny orzekać niezależne sądy powszechne, a nie wyłącznie sądy korporacyjne. Pacjent musi móc dochodzić odszkodowania, a jakość leczenia powinna być przejrzysta. Za szkody związane z użyciem AI odpowiadają podmioty stosownie do swojej roli i prawa.',
+        'Medycyna nie powinna być otoczona państwowym kultem. Żywność jest równie niezbędna do życia, a nikt nie tworzy narodowego funduszu jedzenia. Ta sama zasada dotyczy edukacji i innych usług. Państwo powinno chronić wolność wyboru, uczciwą konkurencję i bezpieczeństwo, rozbijać monopole oraz karać oszustów, a nie zarządzać całym życiem obywateli.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+  ],
+  changes: [{ date: new Date('2026-11-03'), text: 'Opis opublikowany: odpowiedź partii w nadesłanym brzmieniu.' }],
+};
+
 /** Opisy z własną podstroną. Prawdziwy opis: id = id karty partii, dane partii z barometrParties. */
-export const barometrProfiles: BarometrProfile[] = [barometrExample];
+export const barometrProfiles: BarometrProfile[] = [barometrExample, barometrKorwin];
 
 /* ---------- Politycy pod nazwiskiem (sekcja #politycy, podstrony /barometr-polityczny/politycy/<id>/) ---------- */
 

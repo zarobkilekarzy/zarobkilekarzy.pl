@@ -48,14 +48,18 @@ const stages: Stage[] = [
   { label: 'Poprawki partii', note: 'w każdej chwili, każda zmiana z datą', state: 'next' },
 ];
 
+// partia może nie wskazać żadnego dokumentu — nagłówek i opis SEO nie obiecują wtedy dokumentów
+const hasDocuments = profile.areas.some((e) => e.documents.length > 0);
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: barometrPage.title, href: barometrPage.href }, { label: profile.name }];
 const seo: SeoInput = {
   title: `${profile.name} — polityka zdrowotna`,
-  description: `${profile.name}: stanowisko w sześciu obszarach polityki zdrowotnej, dokumenty wskazane przez partię i to, czy przy propozycjach podano koszt, źródło pieniędzy i termin.`,
+  description: hasDocuments
+    ? `${profile.name}: stanowisko w sześciu obszarach polityki zdrowotnej, dokumenty wskazane przez partię i to, czy przy propozycjach podano koszt, źródło pieniędzy i termin.`
+    : `${profile.name}: stanowisko partii w sześciu obszarach polityki zdrowotnej, w nadesłanym brzmieniu: finansowanie, kadry, wynagrodzenia, dostęp, szpitale i pacjent.`,
   breadcrumbs: crumbs,
   index: !(profile.example || barometrPage.draft),
 };
-const lead = 'Stanowisko partii w sześciu obszarach polityki zdrowotnej — w nadesłanym brzmieniu, z dokumentami, które partia wskazała.';
+const lead = `Stanowisko partii w sześciu obszarach polityki zdrowotnej — w nadesłanym brzmieniu${hasDocuments ? ', z dokumentami, które partia wskazała' : ''}.`;
 const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(`Barometr polityczny — poprawka: ${profile.name}`)}`;
 ---
 <BaseLayout seo={seo}>

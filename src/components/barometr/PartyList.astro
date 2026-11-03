@@ -4,14 +4,14 @@
  * Za partiami (barometrOthers) — partie spoza Sejmu (etykieta „Poza Sejmem”) i uczestnicy sporu, którzy nie są
  * partiami (etykieta „Nie partia”).
  * Na karcie stan kontaktu (statusLabel): pytania niewysłane → wysłane → odpowiedź albo „Bez odpowiedzi”;
- * nad listą legenda stanów i link do wzoru podstrony partii.
+ * partia, która odpowiedziała, ma na karcie link do swojej podstrony; nad listą legenda stanów i link do wzoru podstrony partii.
  * Logo każdej partii ma tę samą powierzchnię (szerokie są niższe, wysokie węższe), żeby żadne
  * nie wyglądało na ważniejsze. Źródło nazw klubów pod listą, w osobnej linii.
  */
 import { Image } from 'astro:assets';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import Popover from '@/components/ui/Popover.astro';
-import { NOT_SENT, barometrExample, barometrOthers, barometrParties, barometrSejm, statusLabel, statusLegend } from '@/data/barometr-polityczny';
+import { NOT_SENT, barometrExample, barometrOthers, barometrParties, barometrProfiles, barometrSejm, statusLabel, statusLegend } from '@/data/barometr-polityczny';
 import { raw } from '@/lib/images';
 import { formatDate, typo } from '@/lib/format';
 
@@ -29,7 +29,8 @@ const parties = [...barometrParties, ...barometrOthers].map((party) => {
   w = Math.round(w * fit);
   h = Math.round(h * fit);
   const tag = party.notParty ? 'Nie partia' : party.outsideSejm ? 'Poza Sejmem' : undefined;
-  return { ...party, w, h, tag, status: party.status ?? NOT_SENT };
+  const profile = barometrProfiles.find((x) => x.id === party.id);
+  return { ...party, w, h, tag, profile, status: party.status ?? NOT_SENT };
 });
 ---
 <div class="legend">
@@ -61,6 +62,7 @@ const parties = [...barometrParties, ...barometrOthers].map((party) => {
       <h3 class="party__name">{typo(p.name)}</h3>
       <p class="party__club">{typo(p.club)}</p>
       <p class="party__status"><span class:list={['dot', `dot--${p.status.stage}`]} aria-hidden="true"></span>{statusLabel(p.status)}</p>
+      {p.profile && <p class="party__more"><LinkArrow href={p.profile.href} aria-label={`Stanowisko partii: ${p.name}`}>Stanowisko partii</LinkArrow></p>}
     </li>
   ))}
 </ul>
@@ -83,6 +85,8 @@ const parties = [...barometrParties, ...barometrOthers].map((party) => {
   .party__name { margin: 18px 20px 6px; font: 500 1.0625rem/1.3 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
   .party__club { margin: 0 20px; font-size: 0.84375rem; line-height: 1.5; color: var(--muted); }
   .party__status { display: flex; align-items: center; gap: 8px; margin: auto 20px 0; padding: 16px 0 18px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+
+  .party__more { margin: -6px 20px 18px; }
 
   /* znacznik stanu: pusty = pytania niewysłane, bursztyn = czekamy na odpowiedź, zieleń = odpowiedź, szary = bez odpowiedzi */
   .dot { flex: none; width: 8px; height: 8px; border: 1px solid var(--muted); }

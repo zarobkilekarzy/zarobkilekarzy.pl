@@ -387,3 +387,17 @@ export interface XProfileCard {
   link?: { label: string; href: string };
   note?: string;
 }
+
+/** Grafika z koszyka sklepu (/sklep/): pliki do pobrania leżą w src/data/sklep-grafiki.ts pod tym samym kluczem. */
+export interface ShopDesign {
+  /** klucz plików w SHOP_FILES (src/data/sklep-grafiki.ts) */
+  key: string;
+  /** hasło z grafiki */
+  title: string;
+  /** na czym jest w sklepie, np. „Kubek” */
+  product: string;
+  /** jak drukować: wielkość, uwagi */
+  note: string;
+  /** produkty w sklepie CupSell */
+  shop: { label: string; href: string }[];
+}

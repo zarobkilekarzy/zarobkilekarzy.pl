@@ -398,6 +398,12 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Infografiki do pobrania: źródła, adres strony i kod QR na każdej grafice.',
     footer: { text: 'Licencja CC BY 4.0' },
   },
+  '/sklep/': {
+    eyebrow: 'Działaj',
+    title: 'Sklep i grafiki\ndo druku',
+    lead: 'Koszulki, kubki, torba, body i podkładka. Wszystkie grafiki do pobrania i samodzielnego druku.',
+    footer: { text: 'Licencja CC BY 4.0' },
+  },
   '/prywatnosc/': {
     eyebrow: 'O serwisie',
     title: 'Polityka\nprywatności',

@@ -1,0 +1,72 @@
+---
+/**
+ * Baner sklepu (/sklep/): kobaltowe pole z zaproszeniem i przyciskiem do sklepu na CupSell, obok paragon
+ * „wychodzący” z górnej krawędzi, jak na banerze sklepu CupSell (wiersze „cena jawna”, na dole marża na sztuce).
+ * Paragon powtarza treść ze strony, więc jest ukryty przed czytnikami ekranu.
+ */
+import Button from '@/components/ui/Button.astro';
+import { typo } from '@/lib/format';
+
+interface Props {
+  label: string;
+  title: string;
+  text: string;
+  cta: string;
+  href: string;
+  receipt: { head: string; rows: string[]; rowValue: string; total: readonly [string, string] };
+}
+
+const { label, title, text, cta, href, receipt } = Astro.props;
+// dół paragonu: ząbki łamaną (12 px), jak na banerze sklepu
+const TEETH = 22;
+const zigzag = Array.from({ length: TEETH + 1 }, (_, i) => `${(100 - (i * 100) / TEETH).toFixed(3)}% ${i % 2 ? 'calc(100% - 12px)' : '100%'}`).join(', ');
+const clip = `polygon(0 0, 100% 0, ${zigzag})`;
+---
+<div class="shop-banner">
+  <div class="shop-banner__text">
+    <p class="mono-label shop-banner__label">{label}</p>
+    <h2 class="shop-banner__title">{typo(title)}<span class="shop-banner__dot">.</span></h2>
+    <p class="shop-banner__lead">{typo(text)}</p>
+    <Button href={href} class="shop-banner__btn">{cta}</Button>
+  </div>
+  <div class="shop-banner__receipt" style={`clip-path: ${clip}`} aria-hidden="true">
+    <p class="receipt__head">{receipt.head}</p>
+    <ul class="receipt__rows">
+      {receipt.rows.map((r) => <li><span>{r}</span><span>{receipt.rowValue}</span></li>)}
+    </ul>
+    <p class="receipt__total"><span>{receipt.total[0]}</span><span>{receipt.total[1]}</span></p>
+  </div>
+</div>
+
+<style>
+  /* kolor-stały: początek — baner jest kobaltowy w obu motywach (jak znak marki), paragon to biały papier
+     z granatowym drukiem; przycisk odwrócony: biały na kobalcie */
+  .shop-banner {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 380px); gap: 32px 48px; align-items: start;
+    padding: 48px clamp(24px, 4vw, 56px) 48px;
+    background: #2664EC; color: #fff;
+  }
+  .shop-banner__label { color: #C4D8FF; }
+  .shop-banner__title { margin: 12px 0 0; font: 400 clamp(2.25rem, 4.2vw, 3.5rem)/1.05 var(--f-display); letter-spacing: -0.03em; color: #fff; }
+  .shop-banner__dot { color: #C4D8FF; }
+  .shop-banner__lead { max-width: 30em; margin-top: 16px; font: 400 1.125rem/1.6 var(--f-body); color: #fff; }
+  .shop-banner__text :global(.shop-banner__btn) { margin-top: 28px; --btn-bg: #fff; --btn-fg: #040B1B; --btn-box: #2664EC; --btn-box-fg: #fff; }
+
+  .shop-banner__receipt {
+    margin-top: -48px; padding: 28px 24px 40px;
+    background: #fff; color: #040B1B;
+    font: 400 0.8125rem/1.5 var(--f-mono); letter-spacing: 0.02em; text-transform: uppercase;
+  }
+  .receipt__head { font-weight: 500; padding-bottom: 12px; border-bottom: 2px dashed #040B1B; }
+  .receipt__rows { margin: 12px 0 0; padding: 0 0 12px; list-style: none; border-bottom: 2px dashed #040B1B; }
+  .receipt__rows li, .receipt__total { display: flex; justify-content: space-between; gap: 16px; }
+  .receipt__rows li + li { margin-top: 6px; }
+  .receipt__total { margin-top: 12px; font-weight: 500; color: #2664EC; }
+  /* kolor-stały: koniec */
+
+  @media (max-width: 760px) {
+    .shop-banner { grid-template-columns: 1fr; padding-bottom: 32px; }
+    /* na wąskim ekranie paragon leży w polu pod tekstem, z kobaltem także pod ząbkami */
+    .shop-banner__receipt { margin-top: 0; }
+  }
+</style>

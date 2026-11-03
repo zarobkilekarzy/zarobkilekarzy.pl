@@ -1,0 +1,98 @@
+---
+/**
+ * Katalog grafik do samodzielnego druku (/sklep/): dla każdej grafiki opis po lewej, po prawej kafle z podglądem
+ * na tle, do którego wariant jest przeznaczony (biel albo granat), i przycisk pobrania PNG z wymiarami i wagą.
+ * Pod opisem linki do produktów w sklepie — zawsze w osobnych wierszach (jak „Źródło” na /media/).
+ */
+import Icon from '@/components/ui/Icon.astro';
+import { formatPL, typo } from '@/lib/format';
+import type { ShopDesign } from '@/types';
+import type { ShopFile } from '@/data/sklep-grafiki';
+
+interface Props {
+  designs: ShopDesign[];
+  files: ShopFile[];
+}
+
+const { designs, files } = Astro.props;
+const VARIANT: Record<ShopFile['variant'], string> = {
+  'na-jasne': 'Na jasne materiały',
+  'na-ciemne': 'Na ciemne materiały',
+  poziomo: 'Poziomo',
+  pionowo: 'Pionowo',
+};
+const mb = (b: number) => `${formatPL(b / 1e6, 1)} MB`;
+---
+<ul class="catalog">
+  {designs.map((d) => {
+    const own = files.filter((f) => f.key === d.key);
+    return (
+      <li class="design">
+        <div class="design__info">
+          <p class="mono-label design__product">{d.product}</p>
+          <h3 class="design__title">„{typo(d.title)}”</h3>
+          <p class="design__note">{typo(d.note)}</p>
+          <ul class="design__shop">
+            {d.shop.map((s) => (
+              <li><a href={s.href} target="_blank" rel="noopener">W sklepie: {typo(s.label)}<Icon name="arrow-ne" size={10} /><span class="sr-only"> (otwiera się w nowej karcie)</span></a></li>
+            ))}
+          </ul>
+        </div>
+        <ul class="design__files">
+          {own.map((f) => (
+            <li class="file">
+              <div class:list={['file__tile', `file__tile--${f.variant}`]}>
+                <img src={f.preview} width={f.previewWidth} height={f.previewHeight} alt={`${d.title} — ${VARIANT[f.variant].toLowerCase()}`} loading="lazy" decoding="async" />
+              </div>
+              <p class="file__variant">{VARIANT[f.variant]}</p>
+              <a class="file__dl" href={f.href} download aria-label={`Pobierz PNG: ${d.title}, ${VARIANT[f.variant].toLowerCase()}, ${f.width} na ${f.height} pikseli, ${mb(f.bytes)}`}>
+                <Icon name="doc" size={18} />
+                <span>PNG · {f.width}×{f.height} · {mb(f.bytes)}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </li>
+    );
+  })}
+</ul>
+
+<style>
+  .catalog { margin: 32px 0 0; padding: 0; list-style: none; }
+  .design { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 24px 40px; padding-block: 32px; border-top: 1px solid var(--ink); }
+  .design:last-child { padding-bottom: 0; }
+  .design__title { margin: 8px 0 0; font: 400 1.5rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .design__note { margin-top: 12px; font: 400 0.9375rem/1.6 var(--f-body); color: var(--text); }
+  .design__shop { margin: 16px 0 0; padding: 0; list-style: none; font: 400 0.875rem/1.5 var(--f-body); }
+  .design__shop li + li { margin-top: 6px; }
+  .design__shop a { display: inline-flex; align-items: center; gap: 6px; color: var(--blue); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .design__shop a:hover { text-decoration-color: currentColor; }
+
+  .design__files { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin: 0; padding: 0; list-style: none; }
+  .file { display: flex; flex-direction: column; }
+  .file__tile { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; padding: 24px; border: 1px solid var(--line); }
+  /* kolor-stały: początek — podgląd na tle, do którego wariant jest przeznaczony, niezależnie od motywu strony
+     (jak kafle logo na /media/) */
+  .file__tile--na-jasne { background: #fff; }
+  .file__tile--na-ciemne { background: #0a0f1c; }
+  .file__tile--poziomo, .file__tile--pionowo { background: #e3e9f2; }
+  /* kolor-stały: koniec */
+  .file__tile img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; }
+  .file__variant { margin-top: 10px; font: 500 0.9375rem/1.35 var(--f-display); color: var(--ink); }
+  .file__dl {
+    align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 4px 8px 4px 6px;
+    border: 1px solid var(--line-2); font: 400 0.75rem/1.55 var(--f-mono); color: var(--text-strong); text-decoration: none;
+    transition: color .2s, border-color .2s;
+  }
+  .file__dl :global(.icon) { color: var(--blue); }
+  .file__dl:hover { color: var(--blue); border-color: var(--blue); }
+  .file__dl:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  @media (max-width: 860px) {
+    .design { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 420px) {
+    .design__files { gap: 16px; }
+    .file__tile { padding: 12px; }
+  }
+</style>

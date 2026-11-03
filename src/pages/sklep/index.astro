@@ -1,0 +1,56 @@
+---
+/**
+ * /sklep/ — baner zapraszający do sklepu na CupSell, kto sprzedaje i jawna marża,
+ * katalog grafik do samodzielnego druku (warianty na jasne i ciemne materiały) i jak drukować.
+ * Treść: src/data/sklep.ts; pliki: src/data/sklep-grafiki.ts (generowany w repo ../zarobkilekarzy-sklep).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import Prose from '@/components/article/Prose.astro';
+import ShopBanner from '@/components/sklep/ShopBanner.astro';
+import GraphicsCatalog from '@/components/sklep/GraphicsCatalog.astro';
+import { shopPage, shopDesigns } from '@/data/sklep';
+import { SHOP_FILES } from '@/data/sklep-grafiki';
+import { inline } from '@/lib/inline';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: shopPage.title }];
+const seo: SeoInput = { title: shopPage.seoTitle, description: shopPage.description, breadcrumbs: crumbs };
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="shop-top">
+    <PageHeader title={shopPage.title} lead={shopPage.lead} eyebrow="Działaj" crumbs={crumbs} />
+    <div class="shop-banner-wrap">
+      <ShopBanner {...shopPage.banner} href={shopPage.url} />
+    </div>
+  </Section>
+
+  <Section space="bottom" aria-labelledby="marza">
+    <Prose>
+      <h2 id="marza">{shopPage.margin.title}</h2>
+      {shopPage.margin.paragraphs.map((p) => <p set:html={inline(p)} />)}
+    </Prose>
+  </Section>
+
+  <Section tone="soft" aria-labelledby="grafiki">
+    <SectionHead eyebrow="Do pobrania" title={shopPage.catalog.title} id="grafiki" aside={shopPage.catalog.lead} />
+    <GraphicsCatalog designs={shopDesigns} files={SHOP_FILES} />
+  </Section>
+
+  <Section aria-labelledby="druk">
+    <Prose>
+      <h2 id="druk">{shopPage.print.title}</h2>
+      <ul>
+        {shopPage.print.items.map((item) => <li set:html={inline(item)} />)}
+      </ul>
+      <p set:html={inline(shopPage.print.license)} />
+    </Prose>
+  </Section>
+</BaseLayout>
+
+<style>
+  .shop-top { padding-top: clamp(32px, 4vw, 56px); }
+  .shop-banner-wrap { margin-top: clamp(32px, 4vw, 48px); }
+</style>

@@ -43,6 +43,7 @@ import { globeOgBody } from '@/lib/swiat/og';
 import { CASES as COURT_CASES, CATALOG_HREF, GAME_HREF, SCALE as COURT_SCALE, caseHref, verdictLabel } from '@/data/sad-lekarski';
 
 import barometrOg from '@/assets/img/barometr-polityczny-og.png';
+import konstelacjaOg from '@/assets/konstelacja/og.png';
 import mobywatelOg from '@/assets/mobywatel/og-moje-zdrowie.png';
 import { newsIllustration } from '@/lib/news';
 import { barometrPoliticians, barometrProfiles } from '@/data/barometr-polityczny';
@@ -543,6 +544,8 @@ export const ogPages: Record<string, OgPage> = {
       },
     ]),
   ),
+  // Gotowa grafika: prawdziwy układ grafu bez podpisów, huby jako gwiazdy (generator poza repo, przy danych grafu).
+  '/konstelacja/': { image: konstelacjaOg, title: 'Konstelacja ochrony zdrowia — kto decyduje o publicznych pieniądzach i jak te osoby łączą się w danych' },
   '/szukaj/': {
     eyebrow: 'Wyszukiwarka',
     title: 'Szukaj w serwisie',

@@ -323,6 +323,17 @@ export interface OgPage extends OgOverride {
   stamps?: OgStamp[];
   /** ostatnie słowo tytułu zaczernione, na pasku podany identyfikator (postulat: pseudonim zamiast nazwiska); tytuł na całą szerokość */
   redact?: string;
+  /**
+   * porównanie dwóch partii (barometr): układ na całą kartę — tytuł nad ilustracją, pod nim loga obu partii
+   * po dwóch stronach skośnego pasa z „vs”, lead w stopce po lewej
+   */
+  versus?: [OgVersusSide, OgVersusSide];
+}
+
+/** Strona porównania na obrazku OG: nazwa i logo partii; 'serwis' = logo serwisu (wzór na fikcyjnych partiach). */
+export interface OgVersusSide {
+  name: string;
+  logo: ImageMetadata | 'serwis';
 }
 
 /** Pieczątka na obrazku OG — te same pola co ui/Stamp. */

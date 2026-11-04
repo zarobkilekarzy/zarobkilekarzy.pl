@@ -27,6 +27,7 @@ export type OgMedia =
   | { kind: 'logo'; logo: NonNullable<OgPage['logo']> }
   | ({ kind: 'dots' } & OgDots)
   | { kind: 'stamps'; stamps: NonNullable<OgPage['stamps']> }
+  | { kind: 'versus'; sides: NonNullable<OgPage['versus']> }
   | { kind: 'none' };
 
 /** Gotowa specyfikacja obrazka — wejście szablonu. */
@@ -72,6 +73,7 @@ interface Defaults {
   logo?: OgPage['logo'];
   dots?: OgDots;
   stamps?: OgPage['stamps'];
+  versus?: OgPage['versus'];
   leadAlways?: boolean;
   redact?: string;
   locale?: Locale;
@@ -103,7 +105,8 @@ export function firstSentence(text: string, locale: Locale = 'pl'): string | und
 
 function compose(route: string, d: Defaults, o: OgOverride & { cover?: OgCover } = {}): OgEntry {
   const title = o.title ?? d.title;
-  const alt = title.replace(/\s*\n\s*/g, ' ');
+  // porównanie: same nazwy partii są na obrazku tylko jako logo i podpis — w tekście alternatywnym wprost
+  const alt = title.replace(/\s*\n\s*/g, ' ') + (d.versus ? `: ${d.versus[0].name} i ${d.versus[1].name}` : '');
   if (o.image) return { route, alt, file: o.image };
 
   const photo = o.illustration ?? o.photo ?? d.photo;
@@ -112,7 +115,7 @@ function compose(route: string, d: Defaults, o: OgOverride & { cover?: OgCover }
   const fitsNarrow = title.includes('\n') || title.length <= NARROW_TITLE_MAX;
   const dots = d.dots ?? (o.pictogram && fitsNarrow ? pictogramDots(o.pictogram) : undefined);
   // obrazek domyślny jest bez ilustracji: grafikę ma tylko strona, która ją sobie wybrała
-  const kind = mode === 'auto' ? (d.redact ? 'none' : o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : d.panels ? 'panels' : d.logo ? 'logo' : d.stamps ? 'stamps' : dots ? 'dots' : 'none') : mode;
+  const kind = mode === 'auto' ? (d.redact ? 'none' : d.versus ? 'versus' : o.stat ? 'stat' : photo ? 'photo' : d.map ? 'map' : d.bars ? 'bars' : d.panels ? 'panels' : d.logo ? 'logo' : d.stamps ? 'stamps' : dots ? 'dots' : 'none') : mode;
 
   let media: OgMedia = { kind: 'none' };
   if (kind === 'stat' && o.stat) {
@@ -127,6 +130,8 @@ function compose(route: string, d: Defaults, o: OgOverride & { cover?: OgCover }
     media = { kind: 'dots', ...dots };
   } else if (kind === 'stamps' && d.stamps) {
     media = { kind: 'stamps', stamps: d.stamps };
+  } else if (kind === 'versus' && d.versus) {
+    media = { kind: 'versus', sides: d.versus };
   } else if (kind === 'logo' && d.logo) {
     media = { kind: 'logo', logo: d.logo };
   } else if (kind === 'photo' && o.illustration) {
@@ -228,6 +233,6 @@ export function articleOgEn({ article, source }: Translated, media: Pick<OgPage,
 const PAGE_FOOTER: Record<Locale, string> = { pl: 'Bez emocji, ze źródłami.', en: 'Calmly, with sources.' };
 
 /** Strona spoza kolekcji (src/data/og.ts, src/data/en/og.ts): wszystko podane wprost; stopka domyślnie z hasłem serwisu. */
-export function pageOg(route: string, { footer, badgeIcon, map, bars, panels, logo, dots, stamps, leadAlways, redact, ...page }: OgPage, locale: Locale = 'pl'): OgEntry {
-  return compose(route, { title: page.title, footer: footer ?? { text: PAGE_FOOTER[locale] }, icon: badgeIcon, map, bars, panels, logo, dots, stamps, leadAlways, redact, locale }, page);
+export function pageOg(route: string, { footer, badgeIcon, map, bars, panels, logo, dots, stamps, versus, leadAlways, redact, ...page }: OgPage, locale: Locale = 'pl'): OgEntry {
+  return compose(route, { title: page.title, footer: footer ?? { text: PAGE_FOOTER[locale] }, icon: badgeIcon, map, bars, panels, logo, dots, stamps, versus, leadAlways, redact, locale }, page);
 }

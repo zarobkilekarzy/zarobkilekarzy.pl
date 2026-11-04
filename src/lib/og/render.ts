@@ -353,29 +353,67 @@ const LOGO_AREA = 63000;
 const LOGO_MAX_W = 380;
 const LOGO_MAX_H = 220;
 
+/** Logo partii o zadanej powierzchni, w ramce maxW × maxH. */
+async function equalAreaLogo(logo: ImageMetadata, area: number, maxW: number, maxH: number) {
+  const { width, height } = raw(logo);
+  const ratio = width / height;
+  let w = Math.sqrt(area * ratio);
+  let hh = w / ratio;
+  const fit = Math.min(1, maxW / w, maxH / hh);
+  w = Math.round(w * fit);
+  hh = Math.round(hh * fit);
+  // SVG rasteryzujemy gęściej, żeby krawędzie były ostre także po skalowaniu w górę
+  const buf = await sharp(sourceFile(logo), { density: 300 }).resize(w * 2, hh * 2, { fit: 'inside' }).png().toBuffer();
+  return h('img', { src: `data:image/png;base64,${buf.toString('base64')}`, width: w, height: hh });
+}
+
+/** Logo serwisu w miejscu logo partii (wzór): znak `icon` px, napis `size` px. */
+const serviceLogo = (icon: number, size: number) =>
+  h('div', { style: { alignItems: 'center', fontFamily: DISPLAY, fontWeight: 500, fontSize: size, letterSpacing: '-0.03em', color: C.ink } },
+    h('img', { src: iconUri('logo', C.blue), width: icon, height: icon, style: { marginRight: Math.round(icon * 0.35) } }),
+    'zarobkilekarzy',
+    h('span', { style: { color: C.muted } }, '.pl'));
+
 async function partyLogo(m: Extract<OgMedia, { kind: 'logo' }>) {
-  let inner: Node;
-  if (m.logo === 'znak') {
-    inner = h('img', { src: iconUri('logo', C.blue), width: 300, height: 300 });
-  } else if (m.logo === 'serwis') {
-    // proporcje jak na stronie wzoru (barometr-polityczny/[id]: znak 40 px, napis 28 px), ×1,6
-    inner = h('div', { style: { alignItems: 'center', fontFamily: DISPLAY, fontWeight: 500, fontSize: 45, letterSpacing: '-0.03em', color: C.ink } },
-      h('img', { src: iconUri('logo', C.blue), width: 64, height: 64, style: { marginRight: 22 } }),
-      'zarobkilekarzy',
-      h('span', { style: { color: C.muted } }, '.pl'));
-  } else {
-    const { width, height } = raw(m.logo);
-    const ratio = width / height;
-    let w = Math.sqrt(LOGO_AREA * ratio);
-    let hh = w / ratio;
-    const fit = Math.min(1, LOGO_MAX_W / w, LOGO_MAX_H / hh);
-    w = Math.round(w * fit);
-    hh = Math.round(hh * fit);
-    // SVG rasteryzujemy gęściej, żeby krawędzie były ostre także po skalowaniu w górę
-    const buf = await sharp(sourceFile(m.logo), { density: 300 }).resize(w * 2, hh * 2, { fit: 'inside' }).png().toBuffer();
-    inner = h('img', { src: `data:image/png;base64,${buf.toString('base64')}`, width: w, height: hh });
-  }
+  // 'serwis': proporcje jak na stronie wzoru (barometr-polityczny/[id]: znak 40 px, napis 28 px), ×1,6
+  const inner =
+    m.logo === 'znak' ? h('img', { src: iconUri('logo', C.blue), width: 300, height: 300 })
+    : m.logo === 'serwis' ? serviceLogo(64, 45)
+    : await equalAreaLogo(m.logo, LOGO_AREA, LOGO_MAX_W, LOGO_MAX_H);
   return h('div', { style: { alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: MEDIA_W, height: MEDIA_H } }, inner);
+}
+
+/**
+ * Porównanie dwóch partii (barometr) — układ na całą kartę: logo serwisu, etykieta i tytuł, pod nimi dwa loga o tej
+ * samej powierzchni z nazwami, rozdzielone skośnym pasem z „vs” (jak cięcie ekranu wyboru postaci, ale spokojnie:
+ * obie połówki białe, bo loga partii zawsze stoją na białym). Stopka: lead po lewej, tekst stopki po prawej.
+ * Bez dat i stanów odpowiedzi — na OG nic, co się zmienia.
+ */
+const VS = { top: 246, bottom: 522, xTop: 640, xBottom: 560, band: 12, area: 30000, maxW: 290, maxH: 118, half: 480 };
+
+async function versus(spec: OgSpec, sides: Extract<OgMedia, { kind: 'versus' }>['sides']): Promise<Node> {
+  const { top, bottom, xTop, xBottom, band } = VS;
+  const cut = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${OG_WIDTH} ${OG_HEIGHT}"><polygon points="${xTop - band / 2},${top} ${xTop + band / 2},${top} ${xBottom + band / 2},${bottom} ${xBottom - band / 2},${bottom}" fill="${C.ink}"/></svg>`;
+  const logos = await Promise.all(sides.map((s) => (s.logo === 'serwis' ? serviceLogo(40, 28) : equalAreaLogo(s.logo, VS.area, VS.maxW, VS.maxH))));
+  // środki połówek na ¼ i ¾ szerokości; pas przechodzi między nimi
+  const side = (i: number) =>
+    h('div', { style: { position: 'absolute', left: OG_WIDTH * (i ? 0.75 : 0.25) - VS.half / 2, top: top + 8, width: VS.half, height: bottom - top - 16, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' } },
+      h('div', { style: { height: VS.maxH + 10, alignItems: 'center', justifyContent: 'center' } }, logos[i]),
+      h('div', { style: { marginTop: 22, maxWidth: VS.half - 40, justifyContent: 'center', textAlign: 'center', fontFamily: DISPLAY, fontWeight: 400, fontSize: 32, lineHeight: 1.1, letterSpacing: '-0.03em', color: C.ink } }, typo(sides[i].name)));
+  const mark = 72;
+  return h('div', { style: { position: 'relative', width: OG_WIDTH, height: OG_HEIGHT, background: '#fff', fontFamily: BODY, color: C.text } },
+    h('img', { src: `data:image/svg+xml;base64,${Buffer.from(cut).toString('base64')}`, width: OG_WIDTH, height: OG_HEIGHT, style: { position: 'absolute', top: 0, left: 0 } }),
+    h('div', { style: { position: 'absolute', left: PAD_X, top: PAD_Y } }, logo()),
+    h('div', { style: { position: 'absolute', left: PAD_X, top: 124, flexDirection: 'column' } },
+      spec.eyebrow && eyebrow(spec.eyebrow),
+      h('div', { style: { flexDirection: 'column', marginTop: 14, fontFamily: DISPLAY, fontWeight: 400, fontSize: 52, lineHeight: 1, letterSpacing: '-0.035em', color: C.ink } },
+        ...titleLines(typo(spec.title)))),
+    side(0),
+    side(1),
+    h('div', { style: { position: 'absolute', left: OG_WIDTH / 2 - mark / 2, top: (top + bottom) / 2 - mark / 2, width: mark, height: mark, alignItems: 'center', justifyContent: 'center', background: C.ink, color: '#fff', fontFamily: MONO, fontWeight: 500, fontSize: 26, letterSpacing: '0.02em' } }, 'vs'),
+    h('div', { style: { position: 'absolute', left: PAD_X, right: PAD_X, top: bottom + 30, paddingTop: 20, borderTop: `1px solid ${C.line}`, justifyContent: 'space-between', fontFamily: MONO, fontSize: 16, color: C.muted } },
+      h('div', {}, typo(spec.lead ?? '')),
+      spec.footer && h('div', {}, typo(spec.footer.text))));
 }
 
 /**
@@ -516,7 +554,8 @@ export async function renderOg(entry: OgEntry): Promise<Buffer> {
   const png = (img: Sharp) => img.png({ palette: true, quality: 90, compressionLevel: 9 }).toBuffer();
   if (entry.file) return png(sharp(sourceFile(entry.file)).resize(OG_WIDTH, OG_HEIGHT, { fit: 'cover' }));
 
-  const tree = entry.spec!.cover ? cover(entry.spec!.cover) : await layout(entry.spec!, entry.route);
+  const spec = entry.spec!;
+  const tree = spec.cover ? cover(spec.cover) : spec.media.kind === 'versus' ? await versus(spec, spec.media.sides) : await layout(spec, entry.route);
   const svg = await satori(tree as unknown as Parameters<typeof satori>[0], { width: OG_WIDTH, height: OG_HEIGHT, fonts: await loadFonts() });
   return png(sharp(Buffer.from(svg)));
 }

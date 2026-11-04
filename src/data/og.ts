@@ -46,7 +46,7 @@ import barometrOg from '@/assets/img/barometr-polityczny-og.png';
 import konstelacjaOg from '@/assets/konstelacja/og.png';
 import mobywatelOg from '@/assets/mobywatel/og-moje-zdrowie.png';
 import { newsIllustration } from '@/lib/news';
-import { barometrPoliticians, barometrProfiles } from '@/data/barometr-polityczny';
+import { barometrPoliticians, barometrProfiles, compareExample, compareExampleHref, compareHref, comparePairs } from '@/data/barometr-polityczny';
 
 // odpowiedzi placówek na wniosek o płace (monitoring Watchdog Polska)
 const answered = (...r: Response[]) => monitoring.facilities.filter((f) => r.includes(f.response)).length;
@@ -447,6 +447,23 @@ export const ogPages: Record<string, OgPage> = {
         footer: { text: 'Pieniądz publiczny, nie polityka' },
       },
     ]),
+  ),
+  // Porównanie dwóch partii: nad ilustracją kontekst (barometr, ochrona zdrowia, zestawienie stanowisk), pod nim loga
+  // obu partii o tej samej powierzchni po dwóch stronach skośnego pasa z „vs”. Bez dat i stanów odpowiedzi.
+  // Wzór na fikcyjnych partiach — logo serwisu w miejscu logo partii, jak na wzorze podstrony.
+  ...Object.fromEntries(
+    [[compareExampleHref, compareExample] as const, ...comparePairs.map((pair) => [compareHref(...pair), pair] as const)].map(
+      ([href, pair]): [string, OgPage] => [
+        href,
+        {
+          eyebrow: href === compareExampleHref ? 'Barometr polityczny · wzór' : 'Barometr polityczny · ochrona zdrowia',
+          title: 'Zestawienie stanowisk partii',
+          lead: 'Te same pytania, odpowiedzi obok siebie, bez zmian w treści',
+          versus: [{ name: pair[0].name, logo: pair[0].logo }, { name: pair[1].name, logo: pair[1].logo }],
+          footer: { text: 'Pieniądz publiczny, nie polityka' },
+        },
+      ],
+    ),
   ),
   // Wypowiedź polityka pod nazwiskiem: imię i nazwisko, bez dat i liczby obszarów.
   ...Object.fromEntries(

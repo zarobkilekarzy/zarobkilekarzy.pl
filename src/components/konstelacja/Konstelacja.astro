@@ -1,0 +1,372 @@
+---
+/**
+ * „Konstelacja ochrony zdrowia” — graf powiązań (<zl-konstelacja>, kod klienta: ./client.ts, logika: lib/konstelacja).
+ * Na komputerze graf + panel boczny (fakty, źródła, analiza), na telefonie graf nad panelem.
+ * Panel i podpisy rysuje skrypt, więc style są globalne, ale wszystkie pod `.kst`.
+ * Logotypy partii: oryginały z src/assets/partie/ (te same co w barometrze i półkolu), zawsze na białej plakietce.
+ */
+import { getImage } from 'astro:assets';
+import centrumLogo from '@/assets/partie/centrum.png';
+import koLogo from '@/assets/partie/ko.svg';
+import lewicaLogo from '@/assets/partie/lewica.png';
+import pisLogo from '@/assets/partie/pis.svg';
+import polska2050Logo from '@/assets/partie/polska2050.png';
+import pslLogo from '@/assets/partie/psl.svg';
+import rozwojLogo from '@/assets/partie/rozwoj.png';
+
+// nazwa partii w graf.json → logo (wysokość 48 px wystarcza na plakietkę 16 px przy gęstości 3×)
+const LOGOS = {
+  KO: koLogo, PiS: pisLogo, PSL: pslLogo, Lewica: lewicaLogo,
+  'Rozwój Plus': rozwojLogo, 'Polska 2050': polska2050Logo, Centrum: centrumLogo,
+};
+const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(async ([name, src]) =>
+  [name, (await getImage({ src, height: 48 })).src])));
+---
+<zl-konstelacja class="kst">
+  <script type="application/json" class="kst-config" set:html={JSON.stringify({ logos })} />
+
+  <div class="kst-bar" role="toolbar" aria-label="Filtry grafu">
+    <div class="group hist" role="group" aria-label="Historia">
+      <button class="btn" id="kst-hist-back" type="button" aria-label="Wstecz" title="Wstecz (Alt+←)" disabled>←</button>
+      <button class="btn" id="kst-hist-fwd" type="button" aria-label="Dalej" title="Dalej (Alt+→)" disabled>→</button>
+    </div>
+    <input type="search" id="kst-search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="kst-suggest" aria-expanded="false" placeholder="Szukaj osoby, faktu, źródła…" aria-label="Szukaj osoby lub instytucji; Enter szuka też w treści faktów i w źródłach" title="Nazwa z listy otwiera węzeł. Enter przy innym tekście: wyniki w osobach, treści faktów i źródłach." />
+    <div class="group" role="group" aria-label="Analiza">
+      <button class="chip" id="kst-an-toggle" type="button" aria-pressed="false" title="Ścieżka, porównanie, otoczenie, indeks źródeł, mosty">Analiza</button>
+    </div>
+    <div class="group" role="group" aria-label="Zakres osób">
+      <button class="chip is-on" data-mode="core" type="button" aria-pressed="true" title="Osoby łączące co najmniej dwie instytucje albo powiązane z inną osobą">Rdzeń</button>
+      <button class="chip" data-mode="all" type="button" aria-pressed="false">Wszyscy</button>
+    </div>
+    <div class="group" role="group" aria-label="Instytucje" id="kst-insts"><span class="mono-label">Tylko:</span></div>
+    <label class="chk"><input type="checkbox" id="kst-current" /> Tylko obecne funkcje</label>
+  </div>
+
+  <div class="kst-layout">
+    <section class="kst-stage" aria-label="Graf powiązań">
+      <div class="viewbar" id="kst-viewbar" aria-live="polite"><span class="mono-label">Widok</span><b id="kst-viewbar-title"></b><button type="button" id="kst-viewbar-close">Zamknij</button></div>
+      <svg class="kst-graph" aria-describedby="kst-hint"></svg>
+      <p class="mono-label hint" id="kst-hint">Przeciągaj węzły · dwuklik przybliża, Shift+dwuklik oddala · „+N” rozwija ukryte osoby · Shift+klik drugiej osoby — porównanie</p>
+      <div class="zoomctl" role="group" aria-label="Przybliżenie grafu">
+        <button class="btn" id="kst-zoom-in" type="button" aria-label="Przybliż" title="Przybliż (albo dwuklik)">+</button>
+        <input type="range" id="kst-zoom-range" aria-label="Przybliżenie" title="Przybliżenie" />
+        <button class="btn" id="kst-zoom-out" type="button" aria-label="Oddal" title="Oddal (albo Shift+dwuklik)">−</button>
+        <button class="btn" id="kst-zoom-fit" type="button" aria-label="Dopasuj widok" title="Dopasuj widok"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" /></svg></button>
+      </div>
+      <noscript><p class="kst-noscript">Graf działa z włączonym JavaScriptem. Metoda i granice danych są opisane niżej.</p></noscript>
+    </section>
+    <aside class="kst-panel" id="kst-panel" aria-label="Szczegóły">
+      <div class="detail" id="kst-detail" aria-live="polite"><p class="empty">Wczytywanie grafu…</p></div>
+      <details class="legend"><summary class="mono-label">Więcej filtrów: rodzaj, pewność, partie</summary><div class="legend-body" id="kst-legend-body"></div></details>
+    </aside>
+  </div>
+</zl-konstelacja>
+
+<script>
+  import data from '@/data/konstelacja/graf.json';
+  import type { GraphData } from '@/lib/konstelacja/types';
+  import { defineKonstelacja } from './client';
+
+  defineKonstelacja(data as GraphData);
+</script>
+
+<style is:global>
+  zl-konstelacja { display: block; }
+  .kst { --kst-h: clamp(520px, calc(100svh - var(--header-h, 72px) - 120px), 860px); color: var(--text); font: 400 0.9375rem/1.55 var(--f-body); }
+  .kst a { color: var(--blue); text-underline-offset: 2px; }
+  .kst button, .kst input, .kst select { font: inherit; color: inherit; }
+  .kst .btn, .kst .chip {
+    background: var(--surface); border: 1px solid var(--line-2); padding: 5px 10px; cursor: pointer; border-radius: 0;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-strong);
+  }
+  .kst .btn:hover, .kst .chip:hover { border-color: var(--ink); color: var(--ink); }
+  .kst .chip.is-on { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .kst .btn:disabled, .kst .btn:disabled:hover { color: var(--muted); border-color: var(--line); cursor: default; opacity: .6; }
+  .kst .btn:focus-visible, .kst .chip:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .kst .hist .btn { font-size: 0.875rem; line-height: 1; padding: 5px 9px; }
+
+  /* Podpowiedzi w polach wyszukiwania (lista pod polem, pozycja liczona w skrypcie) */
+  .kst .kst-suggest {
+    position: fixed; z-index: 60; margin: 0; padding: 4px 0; list-style: none; max-height: 340px; overflow-y: auto;
+    background: var(--bg); border: 1px solid var(--line-2); border-top: 2px solid var(--blue);
+  }
+  .kst .kst-suggest li {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 7px 12px; cursor: pointer;
+    font-size: 0.875rem; line-height: 1.35; color: var(--text-strong);
+  }
+  .kst .kst-suggest li[aria-selected="true"], .kst .kst-suggest li:hover { background: var(--blue-fill); color: var(--ink); }
+  .kst .kst-suggest mark { background: none; color: var(--blue); font-weight: 600; }
+  .kst .kst-suggest .tp { flex: none; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+  /* Pasek narzędzi nad grafem i panelem */
+  .kst-bar {
+    display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center;
+    padding: 8px 10px; background: var(--surface); border: 1px solid var(--line-2); border-bottom: 0;
+  }
+  .kst-bar input[type="search"] {
+    width: 240px; max-width: 100%; padding: 5px 8px; border: 1px solid var(--line-2); background: var(--bg); border-radius: 0;
+    font-size: 0.875rem;
+  }
+  .kst-bar input[type="search"]:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+  .kst .group { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .kst .group .mono-label { margin: 0 2px 0 0; }
+  .kst .chk { display: flex; gap: 6px; align-items: center; font-size: 0.8125rem; color: var(--text-strong); cursor: pointer; }
+  .kst .chk input { margin: 0; accent-color: var(--blue-fill); }
+  .kst .mono-label { font-size: 0.6875rem; letter-spacing: .06em; color: var(--muted); margin: 0; }
+
+  .kst-layout {
+    display: grid; grid-template-columns: minmax(0, 1fr) clamp(320px, 30vw, 420px); height: var(--kst-h);
+    border: 1px solid var(--line-2);
+  }
+  .kst-stage {
+    position: relative; min-height: 0; overflow: hidden;
+    background-color: var(--bg-soft);
+    background-image: radial-gradient(var(--line-2) 1px, transparent 1.2px);
+    background-size: 24px 24px;
+  }
+  .kst-graph { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; display: block; }
+  .kst-graph:active { cursor: grabbing; }
+  .kst .hint { position: absolute; left: 16px; right: 64px; bottom: 12px; pointer-events: none; }
+  .kst-noscript { position: absolute; inset: 0; display: grid; place-content: center; padding: 24px; text-align: center; color: var(--text-strong); }
+
+  /* Przybliżenie: przyciski i pionowy suwak w rogu płótna (zsynchronizowane z kółkiem, gestami i dwuklikiem). */
+  .kst .zoomctl {
+    position: absolute; right: 12px; bottom: 12px; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px;
+    background: var(--surface); border: 1px solid var(--line-2);
+  }
+  .kst .zoomctl .btn { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; font-size: 0.9375rem; line-height: 1; letter-spacing: 0; }
+  .kst .zoomctl svg { display: block; fill: none; stroke: currentColor; stroke-width: 1.5; }
+  .kst .zoomctl input[type="range"] {
+    writing-mode: vertical-lr; direction: rtl; width: 22px; height: 112px; margin: 2px 0;
+    accent-color: var(--blue-fill); cursor: pointer;
+  }
+  .kst .zoomctl input[type="range"]:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+  .kst .viewbar {
+    position: absolute; left: 12px; top: 12px; z-index: 2; max-width: min(640px, calc(100% - 24px));
+    display: none; gap: 10px; align-items: baseline; padding: 8px 12px;
+    background: var(--ink); color: var(--on-ink);
+  }
+  .kst .viewbar.is-on { display: flex; }
+  .kst .viewbar b { font: 500 0.9375rem/1.3 var(--f-body); }
+  .kst .viewbar .mono-label { color: var(--on-ink); opacity: .7; }
+  .kst .viewbar button { background: none; border: 0; color: var(--on-ink); cursor: pointer; font: 500 0.6875rem var(--f-mono); letter-spacing: .06em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+
+  .kst-panel { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
+  .kst .detail { flex: 1; overflow: auto; padding: 20px 24px 24px; overscroll-behavior: contain; }
+  .kst .legend { border-top: 1px solid var(--line); padding: 10px 24px 14px; }
+  .kst .legend summary { cursor: pointer; list-style: none; }
+  .kst .legend summary::-webkit-details-marker { display: none; }
+  .kst .legend summary::before { content: '+ '; }
+  .kst .legend[open] summary::before { content: '− '; }
+  .kst .legend-body { display: grid; gap: 12px; margin-top: 10px; max-height: 38vh; overflow: auto; }
+  .kst .legend-sub { margin-bottom: 6px; }
+
+  .kst .detail h2 { font: 400 1.75rem/1.15 var(--f-display); color: var(--ink); margin: 6px 0 10px; letter-spacing: -.01em; }
+  .kst .detail h3 { margin: 22px 0 8px; }
+  .kst .detail p { margin: 0 0 10px; color: var(--text-strong); }
+  .kst .detail details { margin-top: 18px; }
+  .kst .detail details summary { cursor: pointer; }
+  .kst .mt { margin-top: 12px !important; }
+  .kst .back {
+    display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 7px 12px 7px 8px; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--line-2); border-radius: 0; color: var(--ink);
+    font: 500 0.75rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase;
+  }
+  .kst .back:hover, .kst .back:focus-visible { border-color: var(--blue); color: var(--blue); }
+  .kst .back .back-ico { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; }
+  .kst .rules { margin: 0; padding-left: 18px; color: var(--text-strong); }
+  .kst .rules li { margin-bottom: 6px; }
+
+  .kst .views { display: grid; gap: 8px; }
+  .kst .view-card {
+    display: grid; gap: 4px; text-align: left; padding: 10px 12px; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--line-2);
+  }
+  .kst .view-card b { font: 500 0.9375rem/1.35 var(--f-body); color: var(--ink); }
+  .kst .view-card:hover { border-color: var(--ink); }
+  .kst .view-card:hover b { color: var(--blue); }
+
+  .kst .rels { list-style: none; margin: 0; padding: 0; }
+  .kst .rel { padding: 10px 0 12px; border-top: 1px solid var(--line); }
+  .kst .rel:first-child { border-top: 0; }
+  .kst .rel-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-bottom: 4px; }
+  .kst .rel p { margin: 0 0 4px; color: var(--text-strong); }
+  .kst .rel .pair { font: 500 0.875rem/1.3 var(--f-body); color: var(--ink); margin-bottom: 2px; }
+  .kst .src { font-size: 0.8125rem; color: var(--muted); }
+  .kst .detail p.src { color: var(--muted); }
+  .kst .src a { color: var(--muted); }
+  .kst .src a:hover { color: var(--blue); }
+  .kst .who { display: block; margin: 18px 0 2px; padding: 0; background: none; border: 0; cursor: pointer; text-align: left;
+    font: 500 1rem/1.3 var(--f-body); color: var(--ink); }
+  .kst .who:hover { color: var(--blue); }
+  .kst .who .count { font: 400 0.75rem var(--f-mono); color: var(--muted); margin-left: 6px; }
+  .kst .who--title { display: inline; margin: 0; font: inherit; }
+  .kst .names { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 4px 0 8px; }
+  .kst .names .who { display: inline; margin: 0; font-size: 0.9375rem; }
+  .kst .linkish { display: inline; background: none; border: 0; padding: 0; color: var(--blue); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .kst .empty { color: var(--muted); font-style: italic; }
+
+  .kst .flag { font: 500 0.625rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; padding: 3px 5px; border: 1px solid; white-space: nowrap; }
+  .kst .flag--record { color: var(--blue-700); background: var(--blue-50); border-color: var(--blue-50); }
+  .kst .flag--confirmed { color: var(--ink); border-color: var(--ink); }
+  .kst .flag--media { color: var(--muted); border-color: var(--line-2); border-style: dotted; }
+  .kst .flag--disputed { color: var(--amber); border-color: var(--amber); border-style: dashed; }
+  .kst .flag--only { color: var(--amber); border-color: var(--amber); }
+  .kst .kind { font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+  .kst .party { font: 500 0.6875rem/1 var(--f-mono); letter-spacing: .04em; padding: 3px 6px; border: 1px solid var(--line-2); color: var(--text-strong); background: var(--surface); cursor: pointer; }
+  .kst .party--former { border-style: dashed; color: var(--muted); }
+  .kst .party:hover, .kst .party.is-on { border-color: var(--ink); color: var(--ink); }
+  .kst .party.is-on { background: var(--blue-50); }
+  .kst .party img { height: 13px; width: auto; vertical-align: -2px; margin-right: 5px; background: #fff; /* kolor-stały: logotypy partii są robione pod białe tło */ padding: 1px 2px; }
+  .kst .party--former img { opacity: .45; }
+
+  .kst .charge { border-left: 2px solid var(--amber); background: var(--amber-bg); padding: 10px 12px; margin: 14px 0; }
+  .kst .charge .mono-label { color: var(--amber); margin-bottom: 4px; }
+
+  .kst .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+  .kst .legend-grid > .mono-label { grid-column: 1 / -1; }
+  .kst .legend svg { display: block; }
+  .kst .filter { display: grid; grid-template-columns: 16px 34px 1fr; align-items: center; gap: 4px 8px; font-size: 0.8125rem; color: var(--text-strong); cursor: pointer; }
+  .kst .filter input { margin: 0; accent-color: var(--blue-fill); }
+  .kst .parties { display: flex; flex-wrap: wrap; gap: 6px; }
+  .kst .defs { display: grid; grid-template-columns: 34px 1fr; gap: 8px 10px; align-items: baseline; margin: 0; }
+  .kst .defs dt { padding-top: 6px; }
+  .kst .defs dd { margin: 0; color: var(--text-strong); font-size: 0.875rem; }
+  .kst .defs dd b { font-weight: 600; color: var(--ink); }
+
+  /* SVG grafu */
+  .kst .node { cursor: pointer; outline: none; }
+  .kst .node text { pointer-events: none; }
+  .kst .shape--inst { fill: var(--ink); }
+  .kst .shape--act { fill: var(--blue-fill); }
+  .kst .shape--body { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; }
+  .kst .shape--entity { fill: var(--bg-soft); stroke: var(--text); stroke-width: 1.5; }
+  .kst .shape--person { fill: var(--blue-fill); }
+  .kst .charge-ring { fill: none; stroke: var(--amber); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .kst .t-short { font: 500 15px var(--f-display); fill: var(--on-ink); }
+  .kst .t-act { font: 500 12px var(--f-mono); letter-spacing: .04em; fill: #fff; /* kolor-stały: biały na stałym --blue-fill */ }
+  .kst .t-label { font: 500 12.5px var(--f-body); fill: var(--text-strong); }
+  .kst .t-hub { font: 500 9.5px var(--f-mono); letter-spacing: .08em; fill: var(--blue); }
+  .kst .t-init { font: 500 13px var(--f-display); fill: #fff; /* kolor-stały: biały na stałym --blue-fill */ }
+  .kst .t-name { font: 500 13.5px var(--f-body); fill: var(--ink); }
+  .kst .t-party { font: 500 10px var(--f-mono); letter-spacing: .04em; fill: var(--muted); }
+  .kst .party-logo rect { fill: #fff; /* kolor-stały: logotypy partii są robione pod białe tło */ stroke: var(--line-2); }
+  .kst .party-logo.is-former image { opacity: .45; }
+  .kst .party-logo.is-former rect { stroke-dasharray: 2 2; }
+  .kst .halo { paint-order: stroke; stroke: var(--bg-soft); stroke-width: 5px; stroke-linejoin: round; }
+  .kst .ring { fill: none; stroke: var(--blue); stroke-width: 2; opacity: 0; }
+  .kst .hub-mark { fill: none; stroke: var(--ink); stroke-width: 1; }
+  /* Huby jak gwiazdy: poświata i powolne, ledwie widoczne migotanie (bez ruchu przy prefers-reduced-motion). */
+  .kst .star-glow { fill: var(--blue); opacity: .4; filter: blur(9px); pointer-events: none; }
+  .kst .star-spark {
+    fill: var(--blue); opacity: .6; pointer-events: none; transform-box: fill-box; transform-origin: center;
+    animation: kst-twinkle 5s ease-in-out infinite;
+  }
+  @keyframes kst-twinkle {
+    0%, 100% { opacity: .35; transform: scale(.8) rotate(0deg); }
+    50% { opacity: .85; transform: scale(1.05) rotate(14deg); }
+  }
+  @media (prefers-reduced-motion: reduce) { .kst .star-spark { animation: none; } }
+  .kst .node.is-selected .ring, .kst .node:focus-visible .ring, .kst .node.is-end .ring { opacity: 1; }
+  .kst .more { cursor: pointer; }
+  .kst .more rect { fill: var(--blue-fill); }
+  .kst .more text { font: 500 10.5px var(--f-mono); fill: #fff; /* kolor-stały: biały na stałym --blue-fill */ }
+  .kst .more:hover rect { fill: var(--ink); }
+  .kst .more:hover text { fill: var(--on-ink); }
+  /* Mniej nazwisk: w trybie „wszyscy” podpisy mają tylko osoby z rdzenia, reszta po najechaniu albo przybliżeniu. */
+  .kst .mode-all:not(.zoomed-in) .node--person:not(.is-bridge):not(.is-selected):not(.is-label):not(:hover) .lbl { display: none; }
+  .kst .zoomed-out .node--person:not(.is-hub):not(.is-selected):not(.is-label):not(:hover) .lbl { display: none; }
+  .kst .link { cursor: pointer; }
+  .kst .link .hit { stroke: transparent; stroke-width: 14; fill: none; }
+  .kst .link .vis { fill: none; }
+  .kst .link.is-selected .vis { stroke: var(--blue) !important; }
+  .kst .vote-yes { fill: var(--ink); }
+  .kst .vote-no { fill: var(--bg-soft); stroke: var(--ink); stroke-width: 1.5; }
+  .kst .vote-abstain { fill: var(--ink); }
+  .kst .badge rect { fill: var(--surface); stroke: var(--line-2); }
+  .kst .badge text { font: 500 10px var(--f-mono); fill: var(--ink); }
+  .kst .dim { opacity: .12; }
+  .kst .node, .kst .link { transition: opacity .15s; }
+  .kst .link.is-hit .vis { stroke: var(--blue) !important; stroke-width: 3.5px !important; }
+  @media (prefers-reduced-motion: reduce) { .kst .node, .kst .link { transition: none; } }
+
+  /* Analiza: panel */
+  .kst .who--inline { display: inline; margin: 0; }
+  .kst .an-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 14px 0 4px; }
+  .kst .an-row .mono-label { margin: 0 2px 0 6px; }
+  .kst .an-row .mono-label:first-child { margin-left: 0; }
+  .kst .anform { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; margin: 6px 0 4px; }
+  .kst .anform label { display: grid; gap: 3px; min-width: 0; }
+  .kst .anform input, .kst .anform select {
+    box-sizing: border-box; width: 100%; height: 31px; padding: 0 8px; border: 1px solid var(--line-2); background: var(--bg);
+    border-radius: 0; font-size: 0.875rem; line-height: 1.2;
+  }
+  .kst .anform input:focus, .kst .anform select:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+  .kst .anform .btn { height: 31px; }
+  .kst .anform .err { grid-column: 1 / -1; }
+  .kst .err { color: var(--amber); font-size: 0.8125rem; margin: 2px 0 0; }
+  .kst .opts { display: grid; gap: 6px; margin: 10px 0 4px; }
+  .kst .opts .src { margin: 0; }
+  .kst .tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0 8px; }
+  .kst .note-an { border-top: 1px solid var(--line); margin-top: 20px !important; padding-top: 10px; font-size: 0.8125rem; color: var(--muted) !important; }
+  .kst .h2-sm { font-size: 1.375rem !important; line-height: 1.2 !important; overflow-wrap: anywhere; }
+  .kst .side { margin: 8px 0 0 !important; }
+  .kst .side + .rels .rel:first-child { padding-top: 4px; }
+  .kst .chain { list-style: none; margin: 8px 0 4px 5px; padding: 0 0 0 16px; border-left: 2px solid var(--blue); }
+  .kst .chain .hop { position: relative; padding: 4px 0 2px; }
+  .kst .chain .hop::before { content: ''; position: absolute; left: -23px; top: 10px; width: 12px; height: 12px; background: var(--blue-fill); }
+  .kst .chain .hop .who { display: inline; margin: 0 6px 0 0; }
+  .kst .chain .step { padding: 2px 0 6px; }
+  .kst .chain .step > .linkish { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; }
+  .kst .rank-wrap { overflow-x: auto; }
+  .kst .rank { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-top: 6px; }
+  .kst .rank th { text-align: left; padding: 4px 8px 6px 0; font-weight: 500; vertical-align: bottom; }
+  .kst .rank th button { background: none; border: 0; padding: 0; cursor: pointer; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: inherit; }
+  .kst .rank th button:hover, .kst .rank th button.is-on { color: var(--ink); }
+  .kst .rank th button.is-on::after { content: ' ↓'; }
+  .kst .rank td { padding: 7px 8px 7px 0; border-top: 1px solid var(--line); vertical-align: baseline; color: var(--text-strong); }
+  .kst .rank .num { text-align: right; white-space: nowrap; }
+  .kst .rank td.num { font: 400 0.8125rem var(--f-mono); }
+  .kst .rank th:last-child, .kst .rank td:last-child { padding-right: 0; }
+  .kst .rank .who, .kst .rank .pairbtn { display: inline; margin: 0; font-size: 0.875rem; text-align: left; }
+  .kst .rank .sub { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .kst .src-n {
+    margin-left: 4px; padding: 0 4px; border: 1px solid var(--line-2); background: var(--surface); cursor: pointer;
+    font: 500 0.625rem/1.5 var(--f-mono); color: var(--muted); vertical-align: 1px;
+  }
+  .kst .src-n:hover, .kst .src-n.is-on { border-color: var(--ink); color: var(--ink); }
+  .kst .pairbtn { display: inline; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; font: inherit; color: var(--ink); }
+  .kst .pairbtn:hover { color: var(--blue); }
+  .kst mark { background: var(--blue-50); color: var(--ink); box-shadow: 0 1px 0 var(--blue); }
+  .kst .hits { list-style: none; margin: 0; padding: 0; }
+  .kst .hits > li { padding: 10px 0; border-top: 1px solid var(--line); }
+  .kst .hits > li:first-child { border-top: 0; }
+  .kst .hits .who { display: inline; margin: 0 6px 0 0; }
+  .kst .hits p { margin: 2px 0 0; }
+
+  /* Telefon i wąski ekran: graf nad panelem, panel w naturalnej wysokości */
+  @media (max-width: 1024px) {
+    .kst-layout { grid-template-columns: minmax(0, 1fr); height: auto; }
+    .kst-stage { height: min(72svh, 620px); min-height: 420px; }
+    .kst-panel { border-left: 0; border-top: 1px solid var(--line); }
+    .kst .legend-body { max-height: none; }
+    .kst .detail { overflow: visible; }
+  }
+  @media (max-width: 720px) {
+    .kst-bar { padding: 8px; }
+    .kst-bar input[type="search"] { width: auto; flex: 1 1 180px; min-width: 0; }
+    .kst .detail, .kst .legend { padding-left: 16px; padding-right: 16px; }
+    .kst .viewbar { top: auto; bottom: 8px; left: 8px; max-width: calc(100% - 64px); flex-wrap: wrap; }
+    .kst .viewbar.is-on ~ .hint { display: none; } /* pasek widoku albo analizy zajmuje miejsce podpowiedzi */
+    .kst .hint { left: 8px; bottom: 8px; }
+    .kst .zoomctl { right: 8px; bottom: 8px; }
+    .kst .zoomctl input[type="range"] { height: 84px; }
+  }
+  @media (max-width: 480px) {
+    .kst .hint { display: none; } /* cztery wiersze podpowiedzi zasłaniały graf; to samo mówi „Jak czytać” */
+    .kst .anform { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .kst .anform .btn { grid-column: 1 / -1; justify-self: start; }
+  }
+</style>

@@ -1,0 +1,113 @@
+---
+/**
+ * /konstelacja/ — „Konstelacja ochrony zdrowia”: kto decyduje o publicznych pieniądzach w ochronie zdrowia
+ * i jak te osoby łączą się w ogólnodostępnych danych.
+ *
+ * Dane: src/data/konstelacja/graf.json = kopia research/powiazania/graf.json (źródło prawdy, walidator sprawdz.mjs).
+ * Teksty: src/data/konstelacja.ts. Logika: src/lib/konstelacja/ (port analiza.js i okresy.js). Widok: components/konstelacja/.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Konstelacja from '@/components/konstelacja/Konstelacja.astro';
+import graf from '@/data/konstelacja/graf.json';
+import { caveat, fixNote, howToRead, konstelacjaPage as page, limits, madeNote, method } from '@/data/konstelacja';
+import { wspolneOkresy } from '@/lib/konstelacja/okresy';
+import type { GraphData } from '@/lib/konstelacja/types';
+import { typo } from '@/lib/format';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const data = graf as GraphData;
+// Te same liczby co w panelu narzędzia: węzły tylko z krawędziami, powiązania bez samej struktury, z wyliczonymi okresami
+const edges = [...data.edges, ...wspolneOkresy(data.edges, data.asOf)];
+const used = new Set(edges.flatMap((e) => [e.from, e.to]));
+const people = data.nodes.filter((n) => n.type === 'person' && used.has(n.id)).length;
+const ties = edges.filter((e) => e.kind !== 'part').length;
+const sources = Object.keys(data.sources).length;
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: page.title }];
+const seo: SeoInput = { title: page.seoTitle, description: page.description, breadcrumbs: crumbs };
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="kst-top">
+    <PageHeader title={page.title} lead={page.lead} eyebrow={page.eyebrow} crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Stan danych', value: new Date(data.asOf) },
+          { label: 'Osoby', value: people },
+          { label: 'Powiązania', value: ties },
+          { label: 'Źródła', value: sources },
+        ]}
+      />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom" wrap={false} class="kst-full" aria-label="Graf powiązań">
+    <Konstelacja />
+    <p class="kst-caveat">{typo(caveat.text)} <a href={fixNote.href}>{caveat.link}</a></p>
+  </Section>
+
+  <Section tone="soft" aria-labelledby="kst-read">
+    <SectionHead eyebrow="Jak czytać" title="Linia to spotkanie w dokumentach, nie więź" id="kst-read" />
+    <p class="kst-intro">{typo(howToRead.intro)}</p>
+    <NumberedList items={howToRead.items} />
+  </Section>
+
+  <Section aria-labelledby="kst-method">
+    <div class="kst-cols">
+      <div>
+        <SectionHead eyebrow="Metoda" title="Każdy fakt ma źródło" id="kst-method" />
+        <p class="kst-p">{typo(method.sources)}</p>
+        <p class="kst-p">{typo(method.criteriaIntro)}</p>
+        <NumberedList items={method.criteria} />
+        <p class="kst-p kst-p--after">{typo(method.rules)}</p>
+      </div>
+      <div>
+        <SectionHead eyebrow="Granice" title="Czego graf nie mówi" id="kst-limits" />
+        <ul class="kst-limits">
+          {limits.map((t) => <li>{typo(t)}</li>)}
+        </ul>
+      </div>
+    </div>
+
+    <footer class="kst-foot">
+      <p class="kst-made"><strong>{madeNote.title}</strong> {typo(madeNote.text)}</p>
+      <div class="kst-fix">
+        <p><strong>{fixNote.title}</strong> {typo(fixNote.text)}</p>
+        <LinkArrow href={fixNote.href}>{fixNote.link}</LinkArrow>
+      </div>
+    </footer>
+  </Section>
+</BaseLayout>
+
+<style>
+  .kst-top { padding-top: clamp(32px, 4vw, 56px); }
+  .kst-full { padding-inline: clamp(16px, 2.5vw, 40px); }
+  .kst-caveat {
+    max-width: 90ch; margin: 16px 0 0; padding-left: 12px; border-left: 2px solid var(--line-2);
+    font-size: 0.875rem; line-height: 1.55; color: var(--text);
+  }
+  .kst-caveat a { color: var(--ink); }
+  .kst-intro { max-width: var(--measure, 780px); margin: 0 0 32px; font-size: 1.0625rem; line-height: 1.6; color: var(--text-strong); }
+  .kst-cols { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 48px clamp(40px, 6vw, 96px); align-items: start; }
+  .kst-p { max-width: 64ch; margin: 0 0 20px; line-height: 1.6; color: var(--text); }
+  .kst-p--after { margin-top: 24px; }
+  .kst-limits { margin: 0; padding: 0; list-style: none; display: grid; gap: 16px; }
+  .kst-limits li { padding-left: 16px; border-left: 2px solid var(--line-2); line-height: 1.6; color: var(--text-strong); }
+  .kst-foot { display: grid; gap: 32px; margin-top: 72px; padding-top: 32px; border-top: 1px solid var(--line); }
+  .kst-made { max-width: 64ch; margin: 0; font-size: 0.9375rem; line-height: 1.6; color: var(--text); }
+  .kst-made strong, .kst-fix strong { color: var(--ink); }
+  .kst-fix {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px;
+    padding: 20px 24px; background: var(--bg-soft); border-left: 2px solid var(--ink);
+  }
+  .kst-fix p { max-width: 52ch; margin: 0; font-size: 0.9375rem; line-height: 1.6; }
+
+  @media (max-width: 1024px) {
+    .kst-cols { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

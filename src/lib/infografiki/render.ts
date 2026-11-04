@@ -15,7 +15,8 @@
  * (indeksy albo liczby), nad wykresem duże liczby (zob. chartLayout). Trzeci, „proporcje” (pole
  * `split`): części całości — gruby pasek podzielony na segmenty albo kolumny 100% obok siebie
  * (zob. splitLayout). Czwarty, „tabela” (pole `table`): liczby rok po roku dla kilku podmiotów,
- * same liczby, bez pasków (zob. tableLayout). Piąty, „mapa” (pole `map`):
+ * same liczby, bez pasków (zob. tableLayout); z polem `highlightPeriods` — tabela rejestru z wyróżnionymi
+ * kategoriami, np. grupami wieku (zob. highlightTableLayout). Piąty, „mapa” (pole `map`):
  * warstwa z zestawu map (lib/mapa) — ten sam renderer co mapa na stronie, obok legenda (zob. mapLayout).
  * Szósty, „cytat” (pole `quote`): wypowiedź dosłownie, pod nią podpis funkcją i krótkie fakty (zob. quoteLayout).
  * Siódmy, „kropki” (pole `dots`): dwie plansze po 100 pól z siatki strony (lib/siatka) — część całości
@@ -171,6 +172,12 @@ export interface DataTable {
    * wartości do druku w kolejności `series`, `sub` — okres, gdy inny niż w tabeli.
    */
   summary: { label: string; sub?: string; values: string[] }[];
+  /**
+   * Indeksy `periods` z tezą (np. grupy wieku 61+): jasne tło i liczby w kobalcie, ostatnie podsumowanie
+   * też w kobalcie. Tabela z tym polem ma układ rejestru (zob. highlightTableLayout): okresy to kategorie
+   * (grupy wieku), liczby wyrównane do prawej krawędzi kolumny, nagłówki nad liczbami.
+   */
+  highlightPeriods?: number[];
 }
 
 export interface Quote {
@@ -741,6 +748,75 @@ function tableLayout(set: InfographicSet, i: Infographic, t: DataTable, f: Forma
   return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', width: inner } }, header, ...t.series.map(row)));
 }
 
+/**
+ * Tabela rejestru (pole `highlightPeriods`): kategorie (np. grupy wieku) w wierszach w pionie i w kolumnach w poziomie,
+ * podmioty — odwrotnie. Liczby i nagłówki wyrównane do prawej krawędzi kolumny, kategorie z tezą na jasnym tle
+ * w kobalcie, w tym samym kolorze ostatnie podsumowanie (np. „Ponad 60 lat”). Czytelniejsze od tabeli rok po roku
+ * przy dużych liczbach: grubszy krój, wyższe wiersze, etykiety kategorii zwykłym krojem.
+ */
+const HG = {
+  pion: { headH: 92, rowH: 50, sumH: 64, periodW: 170, padR: 20, num: 30, label: 22, sub: 16, period: 21, sumLabel: 17, sumSub: 12, total: 34 },
+  poziom: { headH: 40, rowH: 72, labelW: 150, sumW: 104, padR: 4, num: 18, label: 16, sub: 12, period: 13, sumLabel: 10, sumSub: 10, total: 24 },
+};
+
+function highlightTableLayout(set: InfographicSet, i: Infographic, t: DataTable, f: FormatKey, theme: ThemeKey): Node {
+  const C = THEMES[theme].colors;
+  const inner = FORMATS[f].width - 2 * G[f].padX;
+  const locale = set.locale ?? 'pl';
+  const hot = (k: number) => t.highlightPeriods?.includes(k) ?? false;
+  const last = t.summary.length - 1;
+  const line = (color: string) => `1px solid ${color}`;
+  const mono = (size: number, color: string) => ({ fontFamily: MONO, fontSize: size, lineHeight: 1.3, letterSpacing: '0.05em', textTransform: 'uppercase', color });
+  const numStyle = (k: number, size: number) => ({ fontFamily: DISPLAY, fontWeight: 400, fontSize: size, lineHeight: 1, letterSpacing: '-0.03em', color: hot(k) ? C.blue : C.ink });
+  const sumStyle = (k: number, size: number) => ({ fontFamily: DISPLAY, fontWeight: 500, fontSize: size, lineHeight: 1, letterSpacing: '-0.03em', color: k === last ? C.blue : C.ink });
+  // dopisek zwykłym krojem, nie wersalikami: to on odróżnia wiersze o tej samej nazwie („z prawem…” / „wykonujący…”)
+  const head = (s: TableSeries, g: { label: number; sub: number }, align: 'left' | 'right') => [
+    h('span', { style: { fontFamily: BODY, fontSize: g.label, lineHeight: 1.2, color: C.ink, textAlign: align } }, typo(s.label)),
+    s.sub && h('span', { style: { marginTop: 3, fontFamily: BODY, fontSize: g.sub, lineHeight: 1.2, color: C.muted, textAlign: align } }, typo(s.sub)),
+  ];
+  const sumHead = (row: DataTable['summary'][number], g: { sumLabel: number; sumSub: number }, k: number) => [
+    h('span', { style: mono(g.sumLabel, k === last ? C.blue : C.ink) }, typo(row.label)),
+    row.sub && h('span', { style: { marginTop: 2, ...mono(g.sumSub, C.muted) } }, typo(row.sub)),
+  ];
+
+  if (f === 'pion') {
+    const g = HG.pion;
+    const colW = Math.floor((inner - g.periodW) / t.series.length);
+    const cell = (child: Node) => h('div', { style: { width: colW, flexShrink: 0, alignItems: 'center', justifyContent: 'flex-end', paddingRight: g.padR } }, child);
+    const header = h('div', { style: { height: g.headH, borderBottom: line(C.ink) } },
+      h('div', { style: { width: g.periodW, flexShrink: 0 } }),
+      ...t.series.map((s) =>
+        h('div', { style: { width: colW, flexShrink: 0, flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-end', paddingRight: g.padR, paddingBottom: 12 } }, ...head(s, g, 'right'))));
+    const row = (period: string, k: number) =>
+      h('div', { style: { height: g.rowH, borderBottom: line(C.line), background: hot(k) ? C.tint : 'transparent' } },
+        h('div', { style: { width: g.periodW, flexShrink: 0, alignItems: 'center', paddingLeft: 8, fontFamily: BODY, fontSize: g.period, color: hot(k) ? C.blue : C.ink } }, typo(period)),
+        ...t.series.map((s) => cell(h('div', { style: numStyle(k, g.num) }, formatNumber(s.values[k], 0, locale)))));
+    // pierwsze podsumowanie oddziela od kategorii linia w kolorze tekstu, kolejne — zwykła
+    const summary = t.summary.map((sum, k) =>
+      h('div', { style: { height: g.sumH, borderTop: line(k ? C.line : C.ink) } },
+        h('div', { style: { width: g.periodW, flexShrink: 0, flexDirection: 'column', justifyContent: 'center', paddingLeft: 8 } }, ...sumHead(sum, g, k)),
+        ...sum.values.map((v) => cell(h('div', { style: sumStyle(k, g.total) }, v)))));
+    return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', width: inner } }, header, ...t.periods.map(row), ...summary));
+  }
+
+  const g = HG.poziom;
+  const cellW = Math.floor((inner - g.labelW - t.summary.length * g.sumW) / t.periods.length);
+  const header = h('div', { style: { height: g.headH, borderBottom: line(C.ink) } },
+    h('div', { style: { width: g.labelW, flexShrink: 0 } }),
+    ...t.periods.map((p, k) =>
+      h('div', { style: { width: cellW, flexShrink: 0, justifyContent: 'flex-end', alignItems: 'flex-end', paddingRight: g.padR, paddingBottom: 6, fontFamily: BODY, fontSize: g.period, color: hot(k) ? C.blue : C.ink, background: hot(k) ? C.tint : 'transparent' } }, typo(p))),
+    ...t.summary.map((sum, k) =>
+      h('div', { style: { width: g.sumW, flexShrink: 0, flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-end', paddingBottom: 6, paddingRight: 8, textAlign: 'right' } }, ...sumHead(sum, g, k))));
+  const row = (s: TableSeries, j: number) =>
+    h('div', { style: { height: g.rowH, borderBottom: line(C.line) } },
+      h('div', { style: { width: g.labelW, flexShrink: 0, flexDirection: 'column', justifyContent: 'center', paddingLeft: 4 } }, ...head(s, g, 'left')),
+      ...s.values.map((v, k) =>
+        h('div', { style: { width: cellW, flexShrink: 0, alignItems: 'center', justifyContent: 'flex-end', paddingRight: g.padR, background: hot(k) ? C.tint : 'transparent', ...numStyle(k, g.num) } }, formatNumber(v, 0, locale))),
+      ...t.summary.map((sum, k) =>
+        h('div', { style: { width: g.sumW, flexShrink: 0, alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8, ...sumStyle(k, g.total) } }, sum.values[j])));
+  return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column', width: inner } }, header, ...t.series.map(row)));
+}
+
 /* ---------- Styl „mapa”: warstwa z zestawu map, obok duża liczba i legenda ---------- */
 
 /** Geometria: pion — liczba nad mapą, legenda obok mapy; poziom — mapa po lewej, liczba i legenda po prawej. */
@@ -1157,7 +1233,7 @@ export async function renderInfographic(set: InfographicSet, i: Infographic, f: 
       : i.split
         ? splitLayout(set, i, i.split, f, theme)
         : i.table
-          ? tableLayout(set, i, i.table, f, theme)
+          ? (i.table.highlightPeriods ? highlightTableLayout : tableLayout)(set, i, i.table, f, theme)
           : i.dots
             ? dotsLayout(set, i, i.dots, f, theme)
             : i.views

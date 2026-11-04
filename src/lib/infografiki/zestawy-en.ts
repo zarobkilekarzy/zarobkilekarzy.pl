@@ -22,8 +22,9 @@ import { AOS_FIRST, AOS_LAST, LINKS as WIZYTA_LINKS, NIL_N, NO_CLINICAL, WHC_202
 import { BEAN, NORI } from '@/data/ai-w-medycynie-2026';
 import { SELF_GOVERNMENT_STANCES, SURPLUS_YEAR } from '@/data/reglamentacja-dostepu';
 import { DOBA_MODEL } from '@/data/film';
-import { formatEN } from '@/lib/format';
-import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment, ViewPart } from './render';
+import { OVER_60_GROUPS, REGISTER_BY_AGE, over60Share } from '@/data/dlaczego-brakuje-lekarzy';
+import { formatDateIn, formatEN } from '@/lib/format';
+import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment, TableSeries, ViewPart } from './render';
 
 /** Tłumaczenie z polskiej etykiety z modułu danych; brak tłumaczenia wywraca build (nowy wiersz po polsku = tłumaczenie tutaj). */
 const translate = (map: Record<string, string>, pl: string, what: string) => {
@@ -641,6 +642,46 @@ const specjalizacja: InfographicSet = {
   items: [],
 };
 
+/* ---------- Why Poland is short of doctors: age of doctors and dentists ---------- */
+
+const AGE = REGISTER_BY_AGE;
+const AGE_GROUPS_EN: Record<string, string> = { 'do 25': 'up to 25', '71+': '71+' };
+const ageGroups = AGE.groups.map((g) => (/^\d+–\d+$/.test(g) ? g : translate(AGE_GROUPS_EN, g, 'grupa wieku')));
+const ageSeries: TableSeries[] = [
+  { label: 'Doctors', sub: 'with the right to practise', values: AGE.doctors.members },
+  { label: 'Doctors', sub: 'practising', values: AGE.doctors.practising },
+  { label: 'Dentists', sub: 'with the right to practise', values: AGE.dentists.members },
+  { label: 'Dentists', sub: 'practising', values: AGE.dentists.practising },
+];
+const sumOf = (v: number[]) => v.reduce((n, x) => n + x, 0);
+// data z modułu polskiego w zapisie angielskim: 31.12.2025 → 31 December 2025
+const ageDate = formatDateIn(new Date(`${AGE.date.split('.').reverse().join('-')}T00:00:00Z`), 'en');
+
+const shortOfDoctors: InfographicSet = {
+  route: '/en/analysis/why-poland-is-short-of-doctors/',
+  page: 'Analysis: Why Poland is short of doctors',
+  filePrefix: 'zarobkilekarzy-en',
+  locale: 'en',
+  items: [
+    {
+      id: 'age-of-doctors',
+      title: 'One in three doctors is over 60',
+      measure: `doctors and dentists by age · ${ageDate}`,
+      table: {
+        periods: ageGroups,
+        highlightPeriods: OVER_60_GROUPS,
+        series: ageSeries,
+        summary: [
+          { label: 'Total', values: ageSeries.map((s) => formatEN(sumOf(s.values))) },
+          { label: 'Over 60', values: ageSeries.map((s) => `${f1(over60Share(s.values))}%`) },
+        ],
+      },
+      sources: `Source: Supreme Medical Chamber (NIL), register of doctors, table no. 3, as of ${ageDate}`,
+      alt: `Infographic, table “One in three doctors is over 60”: doctors and dentists by age, register of the Supreme Medical Chamber (NIL), as of ${ageDate}. ${ageSeries.map((s) => `${s.label} ${s.sub}: ${formatEN(sumOf(s.values))} in total, ${f1(over60Share(s.values))}% over 60; by age ${ageGroups.map((g, k) => `${g} — ${formatEN(s.values[k])}`).join(', ')}`).join('. ')}.`,
+    },
+  ],
+};
+
 export const infographicSetsEn: Record<string, InfographicSet> = {
   'studia-lekarskie': studiaLekarskie,
   'specjalizacja-lekarska': specjalizacja,
@@ -655,4 +696,5 @@ export const infographicSetsEn: Record<string, InfographicSet> = {
   'wizyty-prywatne-kolejka-cena': wizytyPrywatne,
   'ai-w-medycynie-2026': ai,
   'reglamentacja-dostepu': reglamentacja,
+  'dlaczego-brakuje-lekarzy': shortOfDoctors,
 };

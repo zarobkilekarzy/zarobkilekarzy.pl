@@ -20,10 +20,11 @@ import { BEAN, NORI } from '@/data/ai-w-medycynie-2026';
 import { SELF_GOVERNMENT_STANCES, SURPLUS_YEAR } from '@/data/reglamentacja-dostepu';
 import { DOBA_MODEL } from '@/data/film';
 import { uwQueueRows } from '@/data/studia-lekarskie';
+import { OVER_60_GROUPS, REGISTER_BY_AGE, over60Share } from '@/data/dlaczego-brakuje-lekarzy';
 import { formatPL } from '@/lib/format';
 import { monitoring } from '@/lib/monitoring';
 import { monitoringMap, opennessP } from '@/lib/monitoring/map';
-import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment, ViewPart } from './render';
+import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment, TableSeries, ViewPart } from './render';
 
 const span = `${WINDOW.from}–${WINDOW.to}`;
 // na grafice liczby całkowite: to porównanie rzędu wielkości, nie co do przecinka
@@ -722,6 +723,43 @@ const specjalizacja: InfographicSet = {
   items: [],
 };
 
+/* ---------- Dlaczego brakuje lekarzy: wiek lekarzy i lekarzy dentystów ---------- */
+
+// tabela jak wydruk NIL: grupy wieku × (lekarze, lekarze dentyści) × (z prawem wykonywania zawodu, wykonujący zawód);
+// grupy 61+ wyróżnione, pod tabelą razem i odsetek ponad 60 lat
+const AGE = REGISTER_BY_AGE;
+const ageSeries: TableSeries[] = [
+  { label: 'Lekarze', sub: 'z prawem wykonywania zawodu', values: AGE.doctors.members },
+  { label: 'Lekarze', sub: 'wykonujący zawód', values: AGE.doctors.practising },
+  { label: 'Lekarze dentyści', sub: 'z prawem wykonywania zawodu', values: AGE.dentists.members },
+  { label: 'Lekarze dentyści', sub: 'wykonujący zawód', values: AGE.dentists.practising },
+];
+const sumOf = (v: number[]) => v.reduce((n, x) => n + x, 0);
+
+const brakujeLekarzy: InfographicSet = {
+  route: '/analizy/dlaczego-brakuje-lekarzy/',
+  page: 'Analiza: Dlaczego brakuje lekarzy',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'wiek-lekarzy',
+      title: 'Co trzeci lekarz ma ponad 60 lat',
+      measure: `lekarze i lekarze dentyści według wieku · ${AGE.date}`,
+      table: {
+        periods: AGE.groups,
+        highlightPeriods: OVER_60_GROUPS,
+        series: ageSeries,
+        summary: [
+          { label: 'Razem', values: ageSeries.map((s) => formatPL(sumOf(s.values))) },
+          { label: 'Ponad 60 lat', values: ageSeries.map((s) => `${formatPL(over60Share(s.values), 1)}%`) },
+        ],
+      },
+      sources: `Źródło: Naczelna Izba Lekarska, rejestr lekarzy, zestawienie nr 3, stan na ${AGE.date}`,
+      alt: `Infografika, tabela „Co trzeci lekarz ma ponad 60 lat”: lekarze i lekarze dentyści według wieku, rejestr Naczelnej Izby Lekarskiej, stan na ${AGE.date}. ${ageSeries.map((s) => `${s.label} ${s.sub}: razem ${formatPL(sumOf(s.values))}, ponad 60 lat ${formatPL(over60Share(s.values), 1)}%; według wieku ${AGE.groups.map((g, k) => `${g} — ${formatPL(s.values[k])}`).join(', ')}`).join('. ')}.`,
+    },
+  ],
+};
+
 export const infographicSets: Record<string, InfographicSet> = {
   'studia-lekarskie': studiaLekarskie,
   'specjalizacja-lekarska': specjalizacja,
@@ -739,4 +777,5 @@ export const infographicSets: Record<string, InfographicSet> = {
   'wizyty-prywatne-kolejka-cena': wizytyPrywatne,
   'ai-w-medycynie-2026': ai,
   'reglamentacja-dostepu': reglamentacja,
+  'dlaczego-brakuje-lekarzy': brakujeLekarzy,
 };

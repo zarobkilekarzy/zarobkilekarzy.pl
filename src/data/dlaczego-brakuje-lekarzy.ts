@@ -24,6 +24,35 @@ export const LINKS = {
   gus2024: 'https://stat.gov.pl/obszary-tematyczne/zdrowie/zdrowie/zasoby-kadrowe-w-wybranych-zawodach-medycznych-na-podstawie-zrodel-administracyjnych-w-2024-r-,28,4.html',
 };
 
+/**
+ * Lekarze i lekarze dentyści według wieku — rejestr NIL, zestawienie nr 3, stan na 31.12.2025 (LINKS.nilRegister),
+ * kobiety i mężczyźni zsumowani. `members` = wszyscy aktualni członkowie izby (z prawem wykonywania zawodu),
+ * `practising` = wykonujący zawód. Grupy wieku z wydruku (rocznikowo) w kolejności `groups`. Bez osób z podwójnym
+ * PWZ (lekarza i lekarza dentysty: 600 członków, 461 wykonujących), które wydruk liczy w osobnej kolumnie.
+ * Lekarze wykonujący zawód = piramida startowa symulatora podaży (lib/podaz/model.ts, AGE_GROUPS i OVER_70).
+ * Infografika „Co trzeci lekarz ma ponad 60 lat” (lib/infografiki/zestawy.ts).
+ */
+export const REGISTER_BY_AGE = {
+  date: '31.12.2025',
+  groups: ['do 25', '26–30', '31–35', '36–40', '41–45', '46–50', '51–55', '56–60', '61–65', '66–70', '71+'],
+  doctors: {
+    members: [176, 20365, 19897, 17106, 12900, 11745, 12843, 16411, 15612, 15550, 31767],
+    practising: [176, 20346, 19834, 17008, 12787, 11607, 12563, 15963, 15183, 14830, 24595],
+  },
+  dentists: {
+    members: [517, 4395, 4990, 5087, 4367, 3994, 4057, 4727, 3996, 2858, 8157],
+    practising: [517, 4386, 4974, 5052, 4340, 3948, 4004, 4664, 3870, 2612, 4721],
+  },
+};
+/** Indeksy `REGISTER_BY_AGE.groups` od 61 lat wzwyż. */
+export const OVER_60_GROUPS = [8, 9, 10];
+
+/** Odsetek osób powyżej 60 lat (z jednym miejscem po przecinku). */
+export function over60Share(values: number[]) {
+  const total = values.reduce((n, v) => n + v, 0);
+  return Math.round((OVER_60_GROUPS.reduce((n, k) => n + values[k], 0) / total) * 1000) / 10;
+}
+
 export interface Session {
   /** „Jesień 2025” */
   label: string;

@@ -223,7 +223,21 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
   const root = svg.append('g');
   let linkSel: Selection<SVGGElement, L, SVGGElement, unknown>;
   let nodeSel: Selection<SVGGElement, N, SVGGElement, unknown>;
-  const zoom: ZoomBehavior<SVGSVGElement, unknown> = d3zoom<SVGSVGElement, unknown>().scaleExtent([0.25, 3]).on('zoom', (e) => {
+  // Gesty jak w mapach: poza pełnym ekranem jeden palec i samo kółko przewijają stronę; graf przesuwają i przybliżają
+  // dwa palce, Ctrl/⌘ + kółko (też gest szczypania na gładziku), przeciąganie myszą, dwuklik, suwak i przyciski.
+  const isFull = () => host.classList.contains('is-full');
+  function zoomFilter(e: Event) {
+    const m = e as MouseEvent;
+    if (isFull()) return (!m.ctrlKey || e.type === 'wheel') && !m.button;
+    if (e.type === 'wheel') {
+      if (m.ctrlKey || m.metaKey) return true;
+      gestureToast(/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ + kółko przybliża graf' : 'Ctrl + kółko przybliża graf');
+      return false;
+    }
+    if (e.type.startsWith('touch')) return (e as TouchEvent).touches.length >= 2;
+    return !m.button && !m.ctrlKey;
+  }
+  const zoom: ZoomBehavior<SVGSVGElement, unknown> = d3zoom<SVGSVGElement, unknown>().scaleExtent([0.25, 3]).filter(zoomFilter).on('zoom', (e) => {
     root.attr('transform', e.transform.toString());
     root.classed('zoomed-out', e.transform.k < 0.55);
     root.classed('zoomed-in', e.transform.k >= 0.9);
@@ -291,6 +305,8 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
       .on('mouseenter focus', (_e, d) => highlight({ node: d.id }, true))
       .on('mouseleave blur', () => highlight(selected))
       .call(drag<SVGGElement, N>()
+        // Przestawianie węzłów palcem tylko na pełnym ekranie (poza nim palec przewija stronę); myszą zawsze.
+        .filter((e: MouseEvent | TouchEvent) => ('touches' in e ? isFull() : !e.button && !e.ctrlKey))
         .on('start', (e: D3DragEvent<SVGGElement, N, N>, d) => { if (!e.active) sim.alphaTarget(0.12).restart(); d.fx = d.x; d.fy = d.y; })
         .on('drag', (e: D3DragEvent<SVGGElement, N, N>, d) => { d.fx = e.x; d.fy = e.y; })
         .on('end', (e: D3DragEvent<SVGGElement, N, N>, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
@@ -1816,10 +1832,69 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     }
   }
 
+  /* ---------- Gesty: komunikat, pełny ekran, okienko z instrukcją ---------- */
+  let toastTimer = 0;
+  function gestureToast(text: string) {
+    const el = $('toast');
+    if (!el.hidden && el.textContent === text) return;
+    el.textContent = text;
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => { el.hidden = true; }, 1600);
+  }
+  const INTRO_KEY = 'konstelacja-gesty-v1';
+  const coarse = () => matchMedia('(pointer: coarse)').matches;
+  function showIntro() {
+    $('intro-list').innerHTML = (coarse()
+      ? ['<b>Jednym palcem</b> przewijasz stronę.', '<b>Dwoma palcami</b> przesuwasz i przybliżasz graf.',
+        '<b>Stuknij punkt</b>, żeby zobaczyć szczegóły i źródła.', '<b>Ukośne strzałki</b> w rogu grafu otwierają go na pełnym ekranie — tam działa każdy gest.']
+      : ['<b>Kółko</b> przewija stronę, <b>Ctrl (⌘) + kółko</b> przybliża graf; przybliża też dwuklik i suwak.',
+        '<b>Przeciągnij tło</b>, żeby przesunąć graf, a <b>punkt</b> — żeby go przestawić.',
+        '<b>Kliknij punkt</b>, żeby zobaczyć szczegóły i źródła; Shift+klik drugiej osoby porównuje.', '<b>Ukośne strzałki</b> w rogu grafu — pełny ekran (Esc zamyka).'])
+      .map((x) => `<li>${x}</li>`).join('');
+    $('intro').hidden = false;
+  }
+  function hideIntro() {
+    $('intro').hidden = true;
+    try { localStorage.setItem(INTRO_KEY, '1'); } catch { /* bez pamięci — pokaże się przy następnej wizycie */ }
+  }
+  function setFull(on: boolean) {
+    host.classList.toggle('is-full', on);
+    document.documentElement.classList.toggle('kst-lock', on);
+    const b = $<HTMLButtonElement>('full');
+    b.setAttribute('aria-pressed', String(on));
+    b.setAttribute('aria-label', on ? 'Zamknij pełny ekran' : 'Pełny ekran');
+    b.title = on ? 'Zamknij pełny ekran (Esc)' : 'Pełny ekran';
+  }
+  function setupGestures() {
+    $('full').addEventListener('click', () => setFull(!isFull()));
+    $('help').addEventListener('click', showIntro);
+    $('intro-ok').addEventListener('click', hideIntro);
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (!$('intro').hidden) hideIntro();
+      else if (isFull()) setFull(false);
+    });
+    // Pierwsze dotknięcie płótna poza okienkiem zamyka instrukcję (i działa dalej jak zwykły gest).
+    svgEl.addEventListener('pointerdown', () => { if (!$('intro').hidden) hideIntro(); });
+    // Jeden palec poziomo po grafie (próba przesunięcia) — podpowiedź o dwóch palcach; pionowo to zwykłe przewijanie strony.
+    let start: { x: number; y: number } | null = null;
+    svgEl.addEventListener('touchstart', (e) => { start = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null; }, { passive: true });
+    svgEl.addEventListener('touchmove', (e) => {
+      if (!start || isFull() || e.touches.length !== 1) return;
+      const dx = Math.abs(e.touches[0].clientX - start.x), dy = Math.abs(e.touches[0].clientY - start.y);
+      if (dx > 24 && dx > dy * 1.5) { gestureToast('Użyj dwóch palców, aby przesuwać graf'); start = null; }
+    }, { passive: true });
+    let seen = false;
+    try { seen = localStorage.getItem(INTRO_KEY) === '1'; } catch { /* brak dostępu — pokaż */ }
+    if (!seen) showIntro();
+  }
+
   /* ---------- Start ---------- */
   layoutAll();
   draw();
   setupZoomControls();
+  setupGestures();
   setupToolbar();
   renderLegend();
   setupHistory(); // pierwszy applyFilter — ze stanem z adresu, jeśli jest

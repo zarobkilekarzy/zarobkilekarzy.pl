@@ -3,6 +3,7 @@
  * Odpowiedź partii w jednym obszarze albo jednej części obszaru (kadry: lekarze, pielęgniarki, inne zawody):
  * stanowisko w nadesłanym brzmieniu z licznikiem znaków, dokumenty wskazane przez partię i „Czy podano”.
  * Bez odpowiedzi — sama ramka z tekstem `missing`.
+ * `stacked` — kolumna porównania: warstwy jedna pod drugą, wiersze wyrównane z kolumną obok (subgrid rodzica).
  */
 import Icon from '@/components/ui/Icon.astro';
 import { answerLength, barometrChecks, type BarometrAreaEntry } from '@/data/barometr-polityczny';
@@ -13,9 +14,10 @@ interface Props {
   entry?: BarometrAreaEntry;
   /** tekst, gdy partia nie odpowiedziała, np. „Partia nie odniosła się do tego obszaru.” */
   missing: string;
+  stacked?: boolean;
 }
 
-const { entry, missing } = Astro.props;
+const { entry, missing, stacked = false } = Astro.props;
 
 /** długość odpowiedzi w znakach ze spacjami (bez podziałów akapitów) — ta sama miara co limit */
 const length = (answer: string[]) => {
@@ -24,7 +26,7 @@ const length = (answer: string[]) => {
 };
 ---
 {entry?.answer ? (
-  <div class="bp-area">
+  <div class:list={['bp-area', { 'bp-area--stacked': stacked }]}>
     <div class="bp-answer">
       <p class="mono-label bp-label">Stanowisko partii</p>
       <blockquote class="bp-quote">{entry.answer.map((p) => <p>{typo(p)}</p>)}</blockquote>
@@ -95,6 +97,13 @@ const length = (answer: string[]) => {
   .bp-check__val { font: 400 0.75rem/1.4 var(--f-mono); color: var(--ok); }
   .bp-check--no .bp-check__val { color: var(--muted); }
   .bp-check__na { width: 16px; text-align: center; color: var(--muted); }
+
+  /* porównanie: .bp-answer i .bp-side stają się wierszami siatki kolumny — stanowiska obu partii zaczynają się
+     na tej samej wysokości, dokumenty też */
+  .bp-area--stacked { display: contents; }
+  .bp-area--stacked .bp-quote { padding-left: 18px; }
+  .bp-area--stacked .bp-quote p { font-size: 1.0625rem; }
+  .bp-area--stacked .bp-note { padding-left: 20px; }
 
   @media (max-width: 900px) {
     .bp-area { grid-template-columns: minmax(0, 1fr); }

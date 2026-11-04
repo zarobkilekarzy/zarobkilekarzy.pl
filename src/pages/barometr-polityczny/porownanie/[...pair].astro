@@ -1,0 +1,269 @@
+---
+/**
+ * /barometr-polityczny/porownanie/<a>/<b>/ — odpowiedzi dwóch partii obok siebie, obszar po obszarze.
+ * Tylko zestawienie: bez oceny, bez punktacji i bez zaznaczania, gdzie partie się zgadzają, a gdzie różnią —
+ * to wymagałoby naszej interpretacji odpowiedzi. Kolumny i adres w kolejności alfabetycznej nazw (jeden adres na parę).
+ * Partia bez odpowiedzi też ma kolumnę: w każdym obszarze ramka ze stanem kontaktu zamiast stanowiska.
+ * Wzór na dwóch fikcyjnych partiach: /barometr-polityczny/porownanie/wzor/. Wszystkie strony par — noindex.
+ * Dane: src/data/barometr-polityczny.ts → comparePairs, compareExample.
+ */
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import JumpList from '@/components/blocks/JumpList.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Button from '@/components/ui/Button.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import AreaAnswer from '@/components/barometr/AreaAnswer.astro';
+import HintList from '@/components/barometr/HintList.astro';
+import PartyLogo from '@/components/barometr/PartyLogo.astro';
+import {
+  barometrAreas, barometrPage, compareExample, compareExampleHref, compareGroups, compareHref, compareHrefMap, compareNoAnswer, comparePage,
+  comparePairs, compareParties, statusLabel, type BarometrAreaEntry, type BarometrHint,
+} from '@/data/barometr-polityczny';
+import { pad2, typo } from '@/lib/format';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+export const getStaticPaths = (() => [
+  { params: { pair: 'wzor' }, props: { pair: compareExample, example: true } },
+  ...comparePairs.map((pair) => ({ params: { pair: `${pair[0].id}/${pair[1].id}` }, props: { pair, example: false } })),
+]) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+const { pair, example } = Astro.props;
+
+// wiersz porównania = obszar bez części albo jedna część kadr; w każdym po komórce na partię
+type Cell = { entry?: BarometrAreaEntry; missing: string };
+type Row = { id: string; label?: string; title?: string; text?: string; hints?: BarometrHint[]; cells: Cell[] };
+const areas = barometrAreas.map((area, i) => {
+  const cell = (part?: string) =>
+    pair.map((p): Cell => ({
+      entry: p.profile?.areas.find((e) => e.area === area.id && e.part === part),
+      // partia z opisem pominęła obszar — piszemy to wprost; partia bez opisu — stan kontaktu
+      missing: p.profile ? `Partia nie odniosła się do ${part ? 'tej części' : 'tego obszaru'}.` : compareNoAnswer(p.status),
+    }));
+  const rows: Row[] = area.parts
+    ? area.parts.map((part, j) => ({
+        id: `${area.id}-${part.id}`,
+        label: `${i + 1}${String.fromCharCode(97 + j)}`,
+        title: part.title,
+        text: part.text.charAt(0).toUpperCase() + part.text.slice(1),
+        hints: part.hints,
+        cells: cell(part.id),
+      }))
+    : [{ id: area.id, hints: area.hints, cells: cell() }];
+  return { ...area, n: i + 1, name: area.title.replace(/\.$/, ''), rows };
+});
+
+// wybór pary: wszystkie karty z listy, pogrupowane według stanu kontaktu (we wzorze — dwie fikcyjne partie)
+const pool = example ? compareExample : compareParties;
+const groups = compareGroups(pool);
+const hrefs = compareHrefMap(pool, example ? () => compareExampleHref : compareHref);
+
+const names = `${pair[0].name} i ${pair[1].name}`;
+const dates = pair.flatMap((p) => (p.profile ? [p.profile.updated.getTime()] : []));
+const updated = dates.length ? new Date(Math.max(...dates)) : barometrPage.updated;
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: barometrPage.title, href: barometrPage.href }, { label: comparePage.title }];
+const seo: SeoInput = {
+  title: `Porównanie: ${names}`,
+  description: `${names}: odpowiedzi na te same pytania o politykę zdrowotną, obok siebie, w nadesłanym brzmieniu.`,
+  breadcrumbs: crumbs,
+  // pary nie idą do wyszukiwarek: to te same odpowiedzi co na podstronach partii, inaczej ułożone
+  index: false,
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="cp-top">
+    <PageHeader title={comparePage.title} lead={comparePage.lead} eyebrow={barometrPage.title} crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Źródło', value: 'odpowiedzi partii' },
+          { label: 'Obszary', value: barometrAreas.length },
+          { label: 'Aktualizacja', value: updated },
+        ]}
+      />
+      <div slot="aside" class="cp-aside">
+        <form class="cp-pick" data-compare={JSON.stringify(hrefs)} aria-label="Wybierz dwie partie do porównania">
+          {pair.map((current, k) => (
+            <label class="cp-pick__f">
+              <span class="cp-pick__label">Partia {k + 1}</span>
+              <select name={`p${k}`}>
+                {groups.map((g) => (
+                  <optgroup label={g.label}>
+                    {g.parties.map((p) => <option value={p.id} selected={p.id === current.id}>{p.name}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+          ))}
+          <p class="cp-pick__warn" hidden aria-live="polite">Żadna z tych dwóch partii jeszcze nie odpowiedziała — nie ma czego porównać.</p>
+          <Button type="submit" class="cp-pick__go">Porównaj</Button>
+          <p class="cp-pick__note">Kolumny zawsze w kolejności alfabetycznej.</p>
+        </form>
+        <JumpList title="Obszary" items={areas.map((a) => ({ label: a.name, href: `#${a.id}` }))} />
+      </div>
+    </PageHeader>
+  </Section>
+
+  {example && (
+    <Section space="bottom" aria-label="To wzór">
+      <Aside variant="note" title="To wzór, a nie prawdziwe partie">
+        <p>Partia Przykładowa i Partia Wzorcowa nie istnieją. Ta strona pokazuje, jak wygląda porównanie dwóch partii, które odpowiedziały na pytania barometru. Teksty w ramkach opisują, co znajdzie się w danym miejscu, a w miejscu logo partii stoi logo serwisu.</p>
+      </Aside>
+    </Section>
+  )}
+
+  <Section space="bottom" aria-label="Porównywane partie">
+    <ul class="cp-pair">
+      {pair.map((p) => (
+        <li class="cp-party">
+          <PartyLogo class="cp-party__logo" logo={p.logo} name={p.name} area={11000} />
+          <div class="cp-party__body">
+            <h2 class="cp-party__name">{typo(p.name)}</h2>
+            <p class="cp-party__club">{typo(p.club)}</p>
+            <p class="cp-party__status"><span class:list={['dot', `dot--${p.status.stage}`]} aria-hidden="true"></span>{statusLabel(p.status)}</p>
+            {p.page && <LinkArrow href={p.page}>Pełny opis i historia zmian</LinkArrow>}
+          </div>
+        </li>
+      ))}
+    </ul>
+    <p class="cp-how">Każda kolumna to odpowiedź jednej partii w nadesłanym brzmieniu, z dokumentami, które partia wskazała, i z tym, czy podała koszt, źródło pieniędzy i termin. Jeśli partia nie odpowiedziała, piszemy to wprost w jej kolumnie. Nie oceniamy, która propozycja jest lepsza, i nie zaznaczamy, w czym partie się zgadzają, a w czym różnią — to zostawiamy czytelnikowi.</p>
+  </Section>
+
+  {areas.map((a, i) => (
+    <Section id={a.id} tone={i % 2 ? 'default' : 'soft'} aria-labelledby={`${a.id}-title`}>
+      <SectionHead eyebrow={`Obszar ${pad2(a.n)}`} title={a.name} id={`${a.id}-title`} aside={a.text} />
+      <div class="cp-rows">
+        {a.rows.map((row) => (
+          <div class:list={['cp-row', { 'cp-row--part': row.title }]} id={row.title ? row.id : undefined}>
+            {row.title && (
+              <div class="cp-row__head">
+                <h3 class="cp-row__title"><span class="cp-row__n">{row.label}</span>{row.title}</h3>
+                <p class="cp-row__text">{typo(row.text!)}</p>
+              </div>
+            )}
+            {row.hints && (
+              <details class="cp-hints">
+                <summary>Pytania pomocnicze · {row.hints.length}</summary>
+                <HintList hints={row.hints} label={`Pytania pomocnicze: ${row.title ?? a.name}`} />
+              </details>
+            )}
+            <div class="cp-cols">
+              {pair.map((p, k) => (
+                <div class="cp-col">
+                  <p class="cp-who"><span class="cp-who__n" aria-hidden="true">{k + 1}</span>{p.name}</p>
+                  <AreaAnswer entry={row.cells[k].entry} missing={row.cells[k].missing} stacked />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  ))}
+
+  <Section aria-label="Dalej">
+    <div class="cp-end">
+      {pair.map((p) => p.page && <LinkArrow href={p.page}>{p.name}: pełny opis</LinkArrow>)}
+      <LinkArrow href={barometrPage.href}>Wszystkie partie w barometrze</LinkArrow>
+    </div>
+  </Section>
+</BaseLayout>
+
+<script>
+  // wybór pary → adres porównania po przycisku „Porównaj” (nie od razu po zmianie pola — strzałki w zamkniętym polu
+  // przenosiłyby czytelnika z klawiatury na inną stronę). W polu obok wyłączona ta sama partia; dwie partie bez
+  // odpowiedzi nie mają strony pary — wtedy komunikat i nieaktywny przycisk.
+  for (const form of document.querySelectorAll<HTMLFormElement>('form[data-compare]')) {
+    const hrefs: Record<string, string> = JSON.parse(form.dataset.compare ?? '{}');
+    const selects = [...form.querySelectorAll<HTMLSelectElement>('select')];
+    const go = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    const warn = form.querySelector<HTMLElement>('.cp-pick__warn')!;
+    const target = () => hrefs[`${selects[0].value}|${selects[1].value}`];
+    const sync = () => {
+      selects.forEach((s, i) => {
+        const other = selects[1 - i].value;
+        for (const o of s.options) o.disabled = o.value === other;
+      });
+      const href = target();
+      warn.hidden = Boolean(href);
+      go.disabled = !href || href === location.pathname;
+    };
+    sync();
+    form.addEventListener('change', sync);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const href = target();
+      if (href) location.assign(href + location.hash);
+    });
+  }
+</script>
+
+<style>
+  .cp-top { padding-top: clamp(32px, 4vw, 56px); }
+  .cp-aside { display: grid; gap: 24px; }
+
+  .cp-pick { display: grid; gap: 12px; padding: 20px; background: var(--bg-soft); border: 1px solid var(--line); }
+  .cp-pick__f { display: grid; gap: 6px; }
+  .cp-pick__label { font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  /* własny wygląd pola — jak w filtrach egzaminu (Safari bez appearance: none rysuje zaokrąglony natywny select) */
+  .cp-pick select {
+    width: 100%; height: 44px; padding: 0 32px 0 10px; border: 1px solid var(--line-2); border-radius: 0; font-size: 0.90625rem; color: var(--ink);
+    -webkit-appearance: none; appearance: none; background: var(--surface) var(--select-arrow) no-repeat right 12px center;
+  }
+  .cp-pick select:focus { border-color: var(--blue); outline: 0; box-shadow: inset 0 0 0 1px var(--blue); }
+  .cp-pick__note { font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .cp-pick__warn { font-size: 0.8125rem; line-height: 1.5; color: var(--ink); }
+  .cp-pick :global(.cp-pick__go) { justify-self: start; }
+  .cp-pick :global(.cp-pick__go:disabled) { opacity: .45; cursor: default; pointer-events: none; }
+
+  .cp-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px clamp(24px, 4vw, 48px); }
+  .cp-party { display: flex; flex-direction: column; border: 1px solid var(--line-2); background: var(--surface); }
+  /* pole logo: biel w PartyLogo, wysokość jak karta na liście */
+  .cp-party :global(.cp-party__logo) { display: grid; place-items: center; height: 136px; padding: 16px; border-bottom: 1px solid var(--line-2); }
+  .cp-party__body { display: grid; gap: 6px; padding: 18px 20px 20px; }
+  .cp-party__name { font: 500 1.25rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .cp-party__club { font-size: 0.84375rem; line-height: 1.5; color: var(--muted); }
+  .cp-party__status { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
+  /* znacznik stanu jak na liście kart: bursztyn = czekamy, zieleń = odpowiedź, szary = bez odpowiedzi */
+  .dot { flex: none; width: 8px; height: 8px; border: 1px solid var(--muted); }
+  .dot--wyslane { background: var(--amber); border-color: var(--amber); }
+  .dot--odpowiedz { background: var(--ok); border-color: var(--ok); }
+  .dot--brak { background: var(--muted); }
+  .cp-how { margin-top: 28px; max-width: 72ch; font-size: 1rem; line-height: 1.65; color: var(--ink-2); }
+
+  .cp-rows { display: grid; gap: clamp(40px, 5vw, 64px); }
+  .cp-row--part { padding-top: 24px; border-top: 1px solid var(--line-2); }
+  .cp-row__title { display: flex; align-items: baseline; gap: 12px; font: 500 1.375rem/1.25 var(--f-display); letter-spacing: -0.02em; color: var(--ink); }
+  .cp-row__n { font: 500 0.8125rem/1 var(--f-mono); color: var(--muted); }
+  .cp-row__text { margin-top: 6px; max-width: 72ch; font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
+
+  /* pytania pomocnicze zwinięte — są te same dla obu partii, a odpowiedzi zajmują dużo miejsca */
+  .cp-hints { margin: 0 0 28px; max-width: 72ch; }
+  .cp-row__head + .cp-hints { margin-top: 16px; }
+  .cp-row__head:not(:has(+ .cp-hints)) { margin-bottom: 28px; }
+  .cp-hints summary { width: fit-content; cursor: pointer; font: 500 0.75rem/1.4 var(--f-mono); letter-spacing: .04em; color: var(--ink-2); }
+  .cp-hints summary:hover { color: var(--blue); }
+
+  /* dwie kolumny tej samej szerokości; wiersze (partia / stanowisko / dokumenty i „Czy podano”) wyrównane między kolumnami */
+  .cp-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto; gap: 0 clamp(32px, 4vw, 56px); }
+  .cp-col { display: grid; grid-row: span 3; grid-template-rows: subgrid; align-content: start; row-gap: 24px; }
+  .cp-col > :global(.bp-missing--area) { grid-row: span 2; align-self: start; }
+  .cp-who { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 2px solid var(--ink); font: 500 1rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .cp-who__n { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border: 1px solid var(--line-2); font: 500 0.6875rem/1 var(--f-mono); color: var(--muted); }
+
+  .cp-end { display: flex; flex-wrap: wrap; gap: 16px 40px; }
+
+  /* tablet i telefon: kolumny jedna pod drugą — najpierw cała odpowiedź partii 1, potem partii 2 */
+  @media (max-width: 900px) {
+    .cp-cols { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; row-gap: 40px; }
+    .cp-col { grid-row: auto; grid-template-rows: none; }
+    .cp-col > :global(.bp-missing--area) { grid-row: auto; }
+  }
+  @media (max-width: 600px) {
+    .cp-pair { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

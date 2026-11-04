@@ -7,11 +7,18 @@
  * partia, która odpowiedziała, ma na karcie link do swojej podstrony; nad listą legenda stanów i link do wzoru podstrony partii.
  * Logo każdej partii ma tę samą powierzchnię (szerokie są niższe, wysokie węższe), żeby żadne
  * nie wyglądało na ważniejsze. Źródło nazw klubów pod listą, w osobnej linii.
+ * Lista jest zarazem wejściem do porównania: każda karta ma przycisk „Porównaj” (także partia bez odpowiedzi —
+ * w porównaniu jej kolumna mówi to wprost); po zaznaczeniu dwóch u dołu listy przykleja się pasek z przyciskiem do pary.
+ * Dwie partie bez odpowiedzi nie mają strony pary — pasek mówi wtedy, że nie ma czego porównać.
  */
 import { Image } from 'astro:assets';
+import Button from '@/components/ui/Button.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import Popover from '@/components/ui/Popover.astro';
-import { NOT_SENT, barometrExample, barometrOthers, barometrParties, barometrProfiles, barometrSejm, statusLabel, statusLegend } from '@/data/barometr-polityczny';
+import {
+  NOT_SENT, barometrExample, barometrOthers, barometrParties, barometrProfiles, barometrSejm, compareExampleHref, compareHrefMap, compareParties,
+  statusLabel, statusLegend,
+} from '@/data/barometr-polityczny';
 import { raw } from '@/lib/images';
 import { formatDate, typo } from '@/lib/format';
 
@@ -32,6 +39,9 @@ const parties = [...barometrParties, ...barometrOthers].map((party) => {
   const profile = barometrProfiles.find((x) => x.id === party.id);
   return { ...party, w, h, tag, profile, status: party.status ?? NOT_SENT };
 });
+// porównanie ma sens, gdy odpowiedziała choć jedna partia; do tego czasu nie ma przycisków ani paska
+const canCompare = parties.some((p) => p.profile);
+const hrefs = compareHrefMap(compareParties);
 ---
 <div class="legend">
   <ul class="legend__list" aria-label="Stany kontaktu z partią">
@@ -39,10 +49,14 @@ const parties = [...barometrParties, ...barometrOthers].map((party) => {
       <li><span class:list={['dot', `dot--${st.stage}`]} aria-hidden="true"></span>{statusLabel(st)}</li>
     ))}
   </ul>
-  <LinkArrow href={barometrExample.href}>Wzór podstrony partii</LinkArrow>
+  <div class="legend__links">
+    <LinkArrow href={barometrExample.href}>Wzór podstrony partii</LinkArrow>
+    <LinkArrow href={compareExampleHref}>Wzór porównania</LinkArrow>
+  </div>
 </div>
+{canCompare && <p class="parties__how">Żeby zestawić odpowiedzi obok siebie, zaznacz „Porównaj” przy dwóch partiach.</p>}
 
-<ul class="parties">
+<ul class="parties" data-compare={canCompare ? JSON.stringify(hrefs) : undefined}>
   {parties.map((p) => (
     <li id={`partia-${p.id}`} class:list={['party', { 'party--other': p.tag }]}>
       <div class="party__logo">
@@ -63,14 +77,82 @@ const parties = [...barometrParties, ...barometrOthers].map((party) => {
       <p class="party__club">{typo(p.club)}</p>
       <p class="party__status"><span class:list={['dot', `dot--${p.status.stage}`]} aria-hidden="true"></span>{statusLabel(p.status)}</p>
       {p.profile && <p class="party__more"><LinkArrow href={p.profile.href} aria-label={`Stanowisko partii: ${p.name}`}>Stanowisko partii</LinkArrow></p>}
+      {canCompare && (
+        <button type="button" class="party__cmp" data-id={p.id} data-name={p.name} aria-pressed="false">
+          <span class="party__box" aria-hidden="true"></span>Porównaj
+        </button>
+      )}
     </li>
   ))}
 </ul>
 
+{canCompare && (
+  <div class="cmpbar" hidden aria-live="polite">
+    <p class="cmpbar__text"></p>
+    <div class="cmpbar__actions">
+      <button type="button" class="cmpbar__clear">Wyczyść</button>
+      <Button class="cmpbar__go">Porównaj</Button>
+    </div>
+  </div>
+)}
+
 <p class="parties__note">Logotypy należą do ich właścicieli; pokazujemy je tylko po to, żeby było jasne, kogo dotyczy opis.</p>
 <p class="parties__note">Źródło: <a href={barometrSejm.source}>{barometrSejm.label}</a>, stan na {formatDate(barometrSejm.asOf)}.</p>
 
+<script>
+  // zaznaczanie dwóch partii do porównania; trzecie zaznaczenie zastępuje najstarsze.
+  // Przycisk w pasku to <button>, nie link z pustym adresem — przechodzi do pary dopiero, gdy są dwie partie.
+  const list = document.querySelector<HTMLElement>('.parties[data-compare]');
+  const bar = document.querySelector<HTMLElement>('.cmpbar');
+  if (list && bar) {
+    const hrefs: Record<string, string> = JSON.parse(list.dataset.compare ?? '{}');
+    const text = bar.querySelector<HTMLElement>('.cmpbar__text')!;
+    const go = bar.querySelector<HTMLButtonElement>('.cmpbar__go')!;
+    const buttons = [...list.querySelectorAll<HTMLButtonElement>('.party__cmp')];
+    let picked: HTMLButtonElement[] = [];
+    let href: string | undefined;
+    const render = () => {
+      for (const b of buttons) b.setAttribute('aria-pressed', String(picked.includes(b)));
+      bar.hidden = picked.length === 0;
+      const names = picked.map((b) => b.dataset.name);
+      href = picked.length === 2 ? hrefs[`${picked[0].dataset.id}|${picked[1].dataset.id}`] : undefined;
+      text.textContent =
+        picked.length < 2 ? `Wybrana: ${names[0] ?? ''} — zaznacz drugą partię`
+        : href ? `Porównaj: ${names[0]} i ${names[1]}`
+        : `Ani ${names[0]}, ani ${names[1]} jeszcze nie odpowiedziały — nie ma czego porównać`;
+      go.disabled = !href;
+    };
+    for (const b of buttons) {
+      b.addEventListener('click', () => {
+        picked = picked.includes(b) ? picked.filter((x) => x !== b) : [...picked, b].slice(-2);
+        render();
+      });
+    }
+    bar.querySelector('.cmpbar__clear')!.addEventListener('click', () => { picked = []; render(); });
+    go.addEventListener('click', () => { if (href) location.assign(href); });
+  }
+</script>
+
 <style>
+  /* przycisk „Porównaj” na dole karty — jak pole wyboru: pusty kwadrat → zaznaczony */
+  .party__cmp { display: flex; align-items: center; gap: 10px; margin: -4px 20px 18px; padding: 10px 12px; border: 1px solid var(--line-2); background: none; font: 500 0.875rem/1.2 var(--f-body); color: var(--ink); cursor: pointer; }
+  .party__cmp:hover { border-color: var(--ink-2); }
+  .party__box { flex: none; width: 14px; height: 14px; border: 1px solid var(--muted); }
+  .party__cmp[aria-pressed="true"] { border-color: var(--blue); box-shadow: inset 0 0 0 1px var(--blue); }
+  .party__cmp[aria-pressed="true"] .party__box { background: var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='m3 7 3 3 5-6' fill='none' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E") center / 12px no-repeat; border-color: var(--blue); } /* kolor-stały: biały znacznik na niebieskim polu */
+  .party:has(.party__cmp[aria-pressed="true"]) { border-color: var(--blue); }
+
+  /* pasek porównania: przyklejony do dołu ekranu, dopóki widać listę */
+  .cmpbar { position: sticky; bottom: 16px; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin: 16px 0; padding: 14px 16px 14px 20px; background: var(--surface); border: 1px solid var(--ink); box-shadow: 0 8px 24px rgb(0 0 0 / .12); } /* kolor-stały: cień */
+  .cmpbar[hidden] { display: none; }
+  .cmpbar__text { font: 500 0.9375rem/1.4 var(--f-display); color: var(--ink); }
+  .cmpbar__actions { display: flex; align-items: center; gap: 16px; }
+  .cmpbar__clear { padding: 6px 0; border: 0; background: none; font: 400 0.8125rem/1.2 var(--f-mono); color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .cmpbar :global(.cmpbar__go:disabled) { opacity: .45; cursor: default; pointer-events: none; }
+
+  .legend__links { display: flex; flex-wrap: wrap; gap: 4px 28px; }
+  .parties__how { margin: -8px 0 20px; font-size: 0.9375rem; color: var(--ink-2); }
+
   .parties { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 232px), 1fr)); gap: 16px; }
   .party { display: flex; flex-direction: column; border: 1px solid var(--line-2); background: var(--surface); }
 

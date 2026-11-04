@@ -45,6 +45,10 @@ export const barometrPage = {
 export const barometrChangelog: { date: Date; text: string }[] = [
   {
     date: new Date('2026-11-04'),
+    text: 'Porównanie dwóch partii: zaznacz „Porównaj” przy dwóch kartach w sekcji [Partie](#partie) albo wybierz partię na podstronie innej — odpowiedzi stoją obok siebie, obszar po obszarze. Partia bez odpowiedzi też ma kolumnę, w której piszemy to wprost.',
+  },
+  {
+    date: new Date('2026-11-04'),
     text: 'Odpowiedź [Lewicy](/barometr-polityczny/lewica/) — stanowisko partii w nadesłanym brzmieniu.',
   },
   {
@@ -712,8 +716,159 @@ const barometrLewica: BarometrProfile = {
   changes: [{ date: new Date('2026-11-04'), text: 'Opis opublikowany: odpowiedź partii w nadesłanym brzmieniu.' }],
 };
 
+/**
+ * Druga fikcyjna partia — tylko do wzoru porównania (bez własnej podstrony). Pokazuje stany, których nie ma
+ * w pierwszym wzorze: obszar i część bez odpowiedzi, brak dokumentów, „nie dotyczy” w „Czy podano”.
+ * Jak w pierwszym wzorze: teksty opisują, co tu będzie — żadnych zmyślonych stanowisk.
+ */
+export const barometrExample2: BarometrProfile = {
+  id: 'wzor-2',
+  href: profileHref('wzor'),
+  name: 'Partia Wzorcowa',
+  club: 'Fikcyjne koło poselskie — wzór porównania',
+  example: true,
+  status: { stage: 'odpowiedz' },
+  updated: new Date('2026-10-20'),
+  areas: [
+    {
+      area: 'finansowanie',
+      answer: [
+        'Tu druga partia odpowiada na te same pytania o finansowanie. Jej odpowiedź może być krótsza od odpowiedzi obok — limit 1500 znaków to górna granica, nie wymóg.',
+        'W porównaniu obie odpowiedzi stoją obok siebie w tym samym obszarze, w nadesłanym brzmieniu. Nie zaznaczamy, w czym się zgadzają, a w czym różnią — to ocena czytelnika.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: true, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'lekarze',
+      answer: ['Tu druga partia odpowiada o lekarzach: o liczbie miejsc na studiach, obowiązku pracy po rezydenturze, czasie pracy we wszystkich miejscach i lekarzach spoza Unii Europejskiej.'],
+      documents: [{ kind: 'Program', title: 'Fragment programu partii o lekarzach, z linkiem do dokumentu na stronie partii' }],
+      checks: { cost: true, funding: true, deadline: true },
+    },
+    // pielęgniarki pominięte — w porównaniu widać wtedy ramkę „nie odniosła się do tej części”
+    {
+      area: 'kadry',
+      part: 'inne-zawody',
+      answer: ['Tu druga partia odpowiada o innych zawodach medycznych i o tym, czy mogłyby przejąć część zadań lekarzy.'],
+      documents: [],
+      checks: { cost: 'nie-dotyczy', funding: 'nie-dotyczy', deadline: true },
+    },
+    {
+      area: 'wynagrodzenia',
+      answer: ['Tu druga partia odpowiada o formie zatrudnienia w placówkach finansowanych przez NFZ i o projekcie nowelizacji przygotowanym przez serwis.'],
+      documents: [{ kind: 'Projekt ustawy', title: 'Projekt, który partia wskazała na poparcie odpowiedzi: tytuł, numer druku i link do strony Sejmu' }],
+      checks: { cost: 'nie-dotyczy', funding: 'nie-dotyczy', deadline: false },
+    },
+    // dostęp i kolejki pominięty — ramka „nie odniosła się do tego obszaru”
+    {
+      area: 'szpitale',
+      answer: ['Tu druga partia odpowiada, kto powinien prowadzić szpitale i czy zmieniać zasady postępowania z zadłużonymi szpitalami.'],
+      documents: [{ kind: 'Program', title: 'Fragment programu partii o szpitalach, z linkiem do dokumentu na stronie partii' }],
+      checks: { cost: true, funding: false, deadline: false },
+    },
+    {
+      area: 'pacjent',
+      answer: ['Tu druga partia odpowiada o odpowiedzialności zawodowej lekarzy i o sztucznej inteligencji w leczeniu.'],
+      documents: [],
+      checks: { cost: 'nie-dotyczy', funding: 'nie-dotyczy', deadline: true },
+    },
+  ],
+  changes: [{ date: new Date('2026-10-20'), text: 'Wzór porównania — pierwsza wersja.' }],
+};
+
 /** Opisy z własną podstroną. Prawdziwy opis: id = id karty partii, dane partii z barometrParties. */
 export const barometrProfiles: BarometrProfile[] = [barometrExample, barometrKorwin, barometrLewica];
+
+/* ---------- Porównanie dwóch partii (/barometr-polityczny/porownanie/<a>/<b>/) ---------- */
+
+/**
+ * Porównać można dowolne dwie karty z listy (barometrParties i barometrOthers), także bez odpowiedzi — kolumna takiej
+ * partii pokazuje wtedy w każdym obszarze stan kontaktu zamiast stanowiska (decyzja redakcji 4.11.2026).
+ * Para ma jeden adres: kolumny i adres w kolejności alfabetycznej nazw, niezależnie od tego, którą partię czytelnik
+ * wybrał pierwszą — jak na liście kart. Strony par są poza wyszukiwarkami (noindex): to te same odpowiedzi co na
+ * podstronach partii, inaczej ułożone. Wzór na dwóch fikcyjnych partiach: /barometr-polityczny/porownanie/wzor/.
+ */
+export const comparePage = {
+  href: `${barometrPage.href}porownanie/`,
+  title: 'Porównanie partii',
+  lead: 'Odpowiedzi dwóch partii na te same pytania, obszar po obszarze — obok siebie i w nadesłanym brzmieniu.',
+};
+
+/** Partia w porównaniu: dane karty z listy i opis, jeśli partia odpowiedziała. */
+export interface CompareParty {
+  id: string;
+  name: string;
+  club: string;
+  /** 'serwis' = logo serwisu we wzorze, jak na wzorze podstrony partii */
+  logo: ImageMetadata | 'serwis';
+  status: BarometrStatus;
+  /** opis partii; brak = partia nie odpowiedziała — w jej kolumnie stan kontaktu */
+  profile?: BarometrProfile;
+  /** adres podstrony partii, jeśli ją ma */
+  page?: string;
+}
+
+const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, 'pl');
+
+/** wszystkie karty z listy, alfabetycznie */
+export const compareParties: CompareParty[] = [...barometrParties, ...barometrOthers]
+  .map((party) => {
+    const profile = barometrProfiles.find((p) => p.id === party.id);
+    return { id: party.id, name: party.name, club: party.club, logo: party.logo, status: party.status ?? NOT_SENT, profile, page: profile?.href };
+  })
+  .sort(byName);
+
+/** wzór porównania: dwie fikcyjne partie; podstronę (wzór) ma tylko pierwsza */
+export const compareExample = [barometrExample, barometrExample2]
+  .map((profile): CompareParty => ({ id: profile.id, name: profile.name, club: profile.club, logo: 'serwis', status: profile.status, profile, page: profile === barometrExample ? profile.href : undefined }))
+  .sort(byName) as [CompareParty, CompareParty];
+export const compareExampleHref = `${comparePage.href}wzor/`;
+
+/** adres pary — zawsze w kolejności alfabetycznej nazw */
+export function compareHref(x: { id: string; name: string }, y: { id: string; name: string }): string {
+  const [a, b] = [x, y].sort(byName);
+  return `${comparePage.href}${a.id}/${b.id}/`;
+}
+
+/** mapa „id|id” → adres pary, dla pól wyboru i zaznaczania kart (skrypt w przeglądarce); bez par dwóch partii bez odpowiedzi */
+export function compareHrefMap(pool: CompareParty[], href: (a: CompareParty, b: CompareParty) => string = compareHref) {
+  return Object.fromEntries(
+    pool.flatMap((a) => pool.filter((b) => b !== a && (a.profile || b.profile)).map((b) => [`${a.id}|${b.id}`, href(a, b)])),
+  );
+}
+
+/**
+ * pary, w których odpowiedziała choć jedna partia — dwie kolumny bez odpowiedzi nie mają czego pokazać; każdą parę
+ * linkuje podstrona partii, która odpowiedziała
+ */
+export const comparePairs: [CompareParty, CompareParty][] = compareParties.flatMap((a, i) =>
+  compareParties.slice(i + 1).filter((b) => a.profile || b.profile).map((b) => [a, b] as [CompareParty, CompareParty]));
+
+/** grupy w polach wyboru partii — według stanu kontaktu, w kolejności etapów */
+const compareGroupLabels: Record<BarometrStatus['stage'], string> = {
+  odpowiedz: 'Odpowiedziały',
+  wyslane: 'Czekamy na odpowiedź',
+  brak: 'Bez odpowiedzi',
+  niewyslane: 'Pytania jeszcze niewysłane',
+};
+export function compareGroups(pool: CompareParty[]) {
+  return (['odpowiedz', 'wyslane', 'brak', 'niewyslane'] as const)
+    .map((stage) => ({ label: compareGroupLabels[stage], parties: pool.filter((p) => p.status.stage === stage) }))
+    .filter((g) => g.parties.length > 0);
+}
+
+/** ramka w kolumnie partii bez odpowiedzi — w każdym obszarze, zamiast stanowiska */
+export function compareNoAnswer(status: BarometrStatus): string {
+  const sent = 'sent' in status && status.sent ? ` Pytania wysłane ${formatDate(status.sent)}.` : '';
+  switch (status.stage) {
+    case 'wyslane': return `Jeszcze bez odpowiedzi — termin mija ${formatDate(answerDeadline)}.${sent}`;
+    case 'brak': return `Bez odpowiedzi.${sent}`;
+    case 'niewyslane': return 'Pytań jeszcze nie wysłaliśmy.';
+    case 'odpowiedz': return 'Partia nie odniosła się do tego obszaru.';
+  }
+}
+
 
 /* ---------- Politycy pod nazwiskiem (sekcja #politycy, podstrony /barometr-polityczny/politycy/<id>/) ---------- */
 
@@ -876,7 +1031,7 @@ export const barometrPoliticians: BarometrPolitician[] = [barometrStatementExamp
 const acceptedOverLimit: Record<string, number> = { 'lewica/kadry/lekarze': 1504 };
 
 // Strażnik limitu: odpowiedź dłuższa niż ANSWER_LIMIT zatrzymuje build — nie publikujemy jej skróconej przez nas.
-for (const profile of barometrProfiles) {
+for (const profile of [...barometrProfiles, barometrExample2]) {
   for (const entry of profile.areas) {
     const n = entry.answer ? answerLength(entry.answer) : 0;
     const where = entry.part ? `${entry.area}/${entry.part}` : entry.area;

@@ -33,7 +33,7 @@ export const barometrPage = {
   seoTitle: 'Barometr: polityka zdrowotna partii',
   lead: 'Co partie proponują w ochronie zdrowia — według tych samych pytań dla każdej z nich i ze źródłem przy każdej tezie. Zaczynamy od zaproszenia: każda partia może przedstawić nam swój program.',
   description: 'Polityka zdrowotna partii według tych samych pytań i ze źródłami. Zaproszenie dla partii do przesłania programu w ochronie zdrowia.',
-  updated: new Date('2026-11-04'),
+  updated: new Date('2026-11-06'),
   /** true = szkic: noindex (także podstron partii). Opublikowane 17.10.2026; wzór opisu zostaje noindex zawsze. */
   draft: false,
 };
@@ -43,6 +43,10 @@ export const barometrPage = {
  * i układzie, nie każda poprawka. Zapis wpisu: lib/inline (**b**, [a](href)). Nowy wpis = też `barometrPage.updated`.
  */
 export const barometrChangelog: { date: Date; text: string }[] = [
+  {
+    date: new Date('2026-11-06'),
+    text: 'Odpowiedź partii [Razem](/barometr-polityczny/razem/) — stanowisko partii w nadesłanym brzmieniu.',
+  },
   {
     date: new Date('2026-11-04'),
     text: 'Porównanie dwóch partii: zaznacz „Porównaj” przy dwóch kartach w sekcji [Partie](#partie) albo wybierz partię na podstronie innej — odpowiedzi stoją obok siebie, obszar po obszarze. Partia bez odpowiedzi też ma kolumnę, w której piszemy to wprost.',
@@ -311,6 +315,9 @@ export const barometrSejm = {
   asOf: new Date('2026-10-17'),
 };
 
+/** Stan kontaktu z Razem — ten sam na karcie i na podstronie. */
+const RAZEM_STATUS: Extract<BarometrStatus, { stage: 'odpowiedz' }> = { stage: 'odpowiedz', sent: barometrSchedule.sendOn, answered: new Date('2026-11-06') };
+
 /** Stan kontaktu z Lewicą — ten sam na karcie i na podstronie. */
 const LEWICA_STATUS: Extract<BarometrStatus, { stage: 'odpowiedz' }> = { stage: 'odpowiedz', sent: barometrSchedule.sendOn, answered: new Date('2026-11-03') };
 
@@ -326,7 +333,7 @@ export const barometrParties: BarometrParty[] = (
     { id: 'polska-2050', name: 'Polska 2050', club: 'Klub Parlamentarny Polska 2050', logo: polska2050Logo, status: SENT },
     { id: 'psl', name: 'Polskie Stronnictwo Ludowe', club: 'Klub Parlamentarny Polskie Stronnictwo Ludowe – Trzecia Droga', logo: pslLogo, status: SENT },
     { id: 'pis', name: 'Prawo i Sprawiedliwość', club: 'Klub Parlamentarny Prawo i Sprawiedliwość', logo: pisLogo, status: SENT },
-    { id: 'razem', name: 'Razem', club: 'Koło Poselskie Razem', logo: razemLogo, status: SENT },
+    { id: 'razem', name: 'Razem', club: 'Koło Poselskie Razem', logo: razemLogo, status: RAZEM_STATUS },
     { id: 'rozwoj-plus', name: 'Rozwój Plus', club: 'Klub Parlamentarny Rozwój Plus', logo: rozwojLogo, status: SENT },
   ] satisfies BarometrParty[]
 ).sort((a, b) => a.name.localeCompare(b.name, 'pl'));
@@ -717,6 +724,110 @@ const barometrLewica: BarometrProfile = {
 };
 
 /**
+ * Odpowiedź Razem (plik od partii, 06.11.2026). Tekst słowo w słowo, w podziale na akapity jak w nadesłanym pliku —
+ * nie poprawiać ani nie skracać; zmiana tylko na prośbę partii, z datą w `changes`. Pominięte tylko puste akapity
+ * i podwójne spacje. Partia nie wskazała dokumentów.
+ * „Czy podano”: w finansowaniu koszt (8% PKB, brakuje 78 mld zł) i źródło (progresywna danina, podatek zdrowotny
+ * dla podatników CIT, podatek cyfrowy i inne); w dostępie koszt (10 mld zł na „receptę za 5 zł”) i źródło (wpływy
+ * z rozwiązań podatkowych do NFZ); terminu nie podano nigdzie, w pozostałych odpowiedziach nie ma kwot ani źródeł
+ * (decyzja redakcji 6.11.2026).
+ */
+const barometrRazem: BarometrProfile = {
+  id: 'razem',
+  href: profileHref('razem'),
+  name: 'Razem',
+  club: 'Koło Poselskie Razem',
+  logo: razemLogo,
+  status: RAZEM_STATUS,
+  updated: new Date('2026-11-06'),
+  areas: [
+    {
+      area: 'finansowanie',
+      answer: [
+        'Leczenie powinno być finansowane ze środków publicznych. Prywatne ubezpieczenia i dopłaty pacjentów nie uzupełniają systemu, tylko pokazują, jak bardzo jest niedofinansowany. Badania wskazują, że najbardziej efektywne są usługi, gdzie pieniędzmi zarządza państwo.',
+        'Publiczna ochrona zdrowia potrzebuje co najmniej 8% PKB, liczonego od PKB z tego samego roku. W budżecie na 2027 do tego poziomu brakuje 78 mld zł. Partia Razem wie, skąd je wziąć. Wprowadzimy projekt jednolitej, progresywnej daniny, który pozwoli nam sfinansować wyższe nakłady na ochronę zdrowia oraz podatek zdrowotny dla podatników CIT i wielkich przedsiębiorstw.',
+        'Sposób pobierania środków na ochronę zdrowia trzeba zmienić. Nie przez podwyżkę składki dla zatrudnionych na etatach – bo już dziś płacą najwięcej. Partia Razem chce, żeby każdy dochód wiązał się z odprowadzaniem pieniędzy na ochronę zdrowia – na tych samych zasadach i proporcjonalnie do jego wysokości. Zniesiemy przywileje podatkowe i składkowe, które dziś pozwalają dobrze zarabiającym płacić mniej – ryczałt, podatek liniowy, specjalne stawki dla duchownych czy KRUS dla przedsiębiorców rolnych.',
+        'Te zmiany zasilą system z wielu stron. Wpływy z jednolitej daniny trafią do NFZ, a dodatkowe środki pochodzić będą również z nowe wpływów do budżetu państwa z podatku zdrowotnego dla podatników CIT i wielkich przedsiębiorstw, podatku cyfrowego, opodatkowania wielkich fortun i spekulacji. Najwyższy czas, żeby najbogatsi proporcjonalnie dołożyli się do społeczeństwa.',
+      ],
+      documents: [],
+      checks: { cost: true, funding: true, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'lekarze',
+      answer: [
+        'Sukcesywnie będziemy zwiększać liczbę miejsc na studiach i specjalizacjach, dostosowując limity do realnych potrzeb, przy zachowaniu najwyższych standardów kształcenia. Wymaga to stworzenia nowych miejsc kształcenia, szczególnie poza dużymi ośrodkami, gdzie niedobór specjalistów jest duży. Uważamy, że przestarzały hierarchiczny system podziału pracy i zadań zawodów medycznych marnuje potencjał zarówno lekarzy jak i zawodów medycznych w ogóle, dlatego będziemy dążyć do przenoszenia zadań tak, by wykorzystać potencjał wszystkich zawodów medycznych i poszerzyć dostęp pacjentów do świadczeń. Czas lekarzy jako samotnych kowbojów się skończył – nowoczesna medycyna wymaga zgranego, dobrze zintegrowanego zespołu specjalistów z różnych zawodów medycznych o różnych umiejętnościach, wspólnie dbających o dobro pacjenta. Nie widzimy obecnie potrzeby zmiany zasad ułatwiających pracę dla lekarzy z zagranicy, uważamy, że zasoby powinny skoncentrować się synergii między lekarzem a pozostałymi zawodami medycznymi.',
+        'Ewidencja czasu pracy lekarza musi być zbierana na bieżąco i zautomatyzowana z systemem P1. Wprowadzimy limity czasu pracy zarówno w publicznej jak i w prywatnej ochronie zdrowia ze względu na bezpieczeństwo pacjentów i jakość opieki. Nad przestrzeganiem limitów czuwać będą dofinansowane państwowe instytucje kontrolne. Docelowo zakażemy łączenia pracy w publicznej i prywatnej ochronie zdrowia.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'pielegniarki',
+      answer: [
+        'Podobnie jak w przypadku lekarzy – należy zwiększyć również liczbę kształconych pielęgniarek. Polska znacząco odstaje pod względem średniej OECD w liczbie pielęgniarek na 1000 osób. Pielęgniarki i położne są kluczowym elementem systemu. Ich kompetencje, tak jak wielu innych zawodów medycznych, są w polskim systemie ochrony zdrowia marnowane. Partia Razem proponuje poszerzenie kompetencji i przeniesienie zadań na personel pielęgniarski i położniczy wszędzie tam, gdzie może to zmniejszyć popyt na pracę lekarzy – w przychodniach POZ i specjalistycznych, ginekologii, medycynie szkolnej czy opiece długoterminowej. Dodatkowe zadania będą uwzględniane w proponowanej przez Razem sektorowej siatce wynagrodzeń.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'inne-zawody',
+      answer: [
+        'Dokonamy przeglądu możliwych do wprowadzenia zmian w podziale zadań między zawodami medycznymi. W porozumieniu z przedstawicielami personelu ochrony zdrowia przygotujemy kompleksowy plan przenoszenia i poszerzenia kompetencji.',
+        'Większa samodzielność zawodów medycznych to olbrzymi niewykorzystany potencjał. Tak samo jak pielęgniarki – farmaceuci, diagności laboratoryjni, ratownicy medyczni i fizjoterapeuci mogą zmniejszać popyt na drogą pracę lekarzy przez poszerzenie kompetencji i przenoszenie zadań np. w ramach opieki farmaceutycznej czy zlecania dodatkowych badań przez diagnostów laboratoryjnych. Takie rozwiązanie oszczędza też czas pacjentów i pieniądze NFZ kierowane na finansowanie wizyt lekarskich „po pieczątkę pod skierowaniem”. Będziemy dążyć do wprowadzenia ustawy o zawodzie dietetyka, by unormować zadania i kompetencje tego zawodu w systemie ochrony zdrowia.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'wynagrodzenia',
+      answer: [
+        'Wprowadzimy nową ustawę o wynagrodzeniach w ochronie zdrowia dla wszystkich zawodów medycznych oraz pomocniczych, obejmującą sektorową, obowiązującą w całym kraju siatkę płac z minimalnymi i maksymalnymi wynagrodzeniami uzależnioną od stażu, kwalifikacji oraz potrzeb zdrowotnych – w szczególności dotyczących terenów poza wielkimi miastami. Siatka płac negocjowana będzie z przedstawicielami związków zawodowych i izb.',
+        'Skończymy ze „śmieciówkami” i kontraktami. Podstawą zatrudnienia w publicznej opiece zdrowotnej powinna być umowa o pracę. Kontrakty i praca na podstawie umów cywilnoprawnych to nie tylko narzędzie stosowane przez lekarzy w celu optymalizacji podatkowej, ale także mechanizm odbierania praw pracowniczych i stabilności zatrudnienia pielęgniarkom, ratownikom medycznym i personelowi pomocniczemu.',
+        'Zapewnimy godne i regularnie waloryzowane pensje dla pielęgniarek, położnych, ratowników medycznych, fizjoterapeutów, farmaceutów i diagnostów laboratoryjnych oraz innych osób wykonujących zawody medyczne i działających w dziedzinach mających zastosowanie w ochronie zdrowia. Stawki będą waloryzowane w zależności od stażu pracy, specjalnych umiejętności oraz zapotrzebowania i lokalizacji wykonywania świadczeń. Podstawą będzie średnia krajowa, wyciągana ze sprawozdania GUS, co pół roku.',
+        'Partia Razem opowiada się za obowiązkową jawnością wynagrodzeń w całej gospodarce, a więc także dla zawodów medycznych.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'dostep',
+      answer: [
+        'Dzięki poszerzeniu i przenoszeniu kompetencji i zadań między zawodami medycznymi zlikwidujemy „pętle kolejkowe” w ochronie zdrowia. Ograniczymy w ten sposób liczbę bezsensownych wizyt lekarskich „po pieczątkę”. Wykorzystamy możliwość zlecenia dodatkowych badań przez diagnostę laboratoryjnego czy wystawiania recept, skierowań przez pielęgniarki i fizjoterapeutów. Poszerzymy zadania farmaceutów.',
+        'Zniesiemy limitowanie procedur medycznych – wprowadzimy ryczałtowe finansowanie na personel i bieżące utrzymanie placówek ochrony zdrowia, zgodne z lokalnymi potrzebami.',
+        'W Polsce problemem jest bariera ekonomiczna przy wykupie leków – to jedna z przyczyn rosnących nierówności w zdrowiu ze względu na zasobność portfela. W aptekach wprowadzimy system „recepta za 5 zł” tam gdzie leki już dziś nie są bezpłatne. Priorytet w stosowaniu będą miały leki generyczne produkowane w całości w Polsce. Pozwoli to na lepsze wykorzystanie budżetu na leki oraz na rozwój krajowego przemysłu farmaceutycznego – istotny dla bezpieczeństwa państwa i gospodarki. Szacunkowy koszt takiego rozwiązania to 10 mld zł – część dodatkowych środków skierowanych dzięki rozwiązaniom podatkowym do NFZ.',
+        'Szczególnym wyzwaniem jest dostęp do ochrony zdrowia psychicznego. Co najmniej 6% budżetu NFZ przeznaczymy na zakres zdrowia psychicznego i rozwój psychiatrii środowiskowej. Uregulujemy kształcenie zawodowe psychoterapeutów i opracujemy jednolite standardy postępowania, również dla podmiotów prywatnych.',
+      ],
+      documents: [],
+      checks: { cost: true, funding: true, deadline: false },
+    },
+    {
+      area: 'szpitale',
+      answer: [
+        'Razem opowiada się za zatrzymaniem komercjalizacji oraz dekomercjalizacją szpitali oraz przeniesieniem ich własności w ręce wojewodów lub samorządów wojewódzkich. Dzięki temu rozwiązaniu będzie możliwa bardziej racjonalna i skoordynowana polityka dotycząca rozmieszczenia szpitali i oddziałów zgodnie z potrzebami zdrowotnymi.',
+        'Nasza polityka cenowa dotycząca świadczeń zdrowotnych uwzględniać będzie potrzebę utrzymania niezbędnych oddziałów w szpitalach powiatowych – chirurgii, oddziałów chorób wewnętrznych, pediatrii i oddziałów ginekologiczno-położniczych, które przy obecnej polityce cenowej są dla szpitali „nieopłacalne”.',
+        'O tym, gdzie i jakie leczenie jest dostępne, powinno decydować to, czego potrzebują mieszkańcy danego terenu, a nie konkurencja o najbardziej opłacalne zabiegi.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'pacjent',
+      answer: [
+        'Polski system ochrony zdrowia bardzo często łamie prawa pacjenta. Dostęp do leczenia, prawo do informacji, autonomii i godności zbyt często brzmią jak pobożne życzenia.',
+        'W obszarze odpowiedzialności zawodowej porównanie liczby i charakteru kar, a co ważniejsze – efektów dla przestrzegania praw pacjentów np. z krajami skandynawskimi wskazuje, że polski system, w którym pracowników oceniają wolontaryjne sądy złożone z ich kolegów nie działa. Ze strony organizacyjnej akredytacja, certyfikacja placówek oraz kontrola przez konsultantów bywa równie nieskuteczna przy kontroli jakości opieki nad pacjentami.',
+        'Dlatego postulujemy wzmocnienie i dofinansowanie urzędu Rzecznika Praw Pacjenta. Należy rozważyć powołanie przy RPP niezależnego od izb zawodowych Państwowego Inspektoratu Ochrony Zdrowia, działającego w obszarze standardów organizacyjnych, standardów postępowania, błędów medycznych i łamania praw pacjenta. Kompetencje tej inspekcji obejmowałyby kontrolę działalności placówek ochrony zdrowia: wydawanie i kontrolę realizacji zaleceń oraz w razie potrzeby nakładanie kar administracyjnych jak również stosowanie środków dyscyplinarnych wobec personelu. W przypadku odbierania Praw Wykonywania Zawodu należy rozważyć powołanie przy RPP komisji złożonej z przedstawicieli personelu medycznego, pacjentów, i ekspertów prawa medycznego, która opiniowałaby stosowanie środków dyscyplinarnych przez RPP oraz wspierała Rzeczników Odpowiedzialności Zawodowej z izb zawodowych.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+  ],
+  changes: [{ date: new Date('2026-11-06'), text: 'Opis opublikowany: odpowiedź partii w nadesłanym brzmieniu.' }],
+};
+
+/**
  * Druga fikcyjna partia — tylko do wzoru porównania (bez własnej podstrony). Pokazuje stany, których nie ma
  * w pierwszym wzorze: obszar i część bez odpowiedzi, brak dokumentów, „nie dotyczy” w „Czy podano”.
  * Jak w pierwszym wzorze: teksty opisują, co tu będzie — żadnych zmyślonych stanowisk.
@@ -778,7 +889,7 @@ export const barometrExample2: BarometrProfile = {
 };
 
 /** Opisy z własną podstroną. Prawdziwy opis: id = id karty partii, dane partii z barometrParties. */
-export const barometrProfiles: BarometrProfile[] = [barometrExample, barometrKorwin, barometrLewica];
+export const barometrProfiles: BarometrProfile[] = [barometrExample, barometrKorwin, barometrLewica, barometrRazem];
 
 /* ---------- Porównanie dwóch partii (/barometr-polityczny/porownanie/<a>/<b>/) ---------- */
 

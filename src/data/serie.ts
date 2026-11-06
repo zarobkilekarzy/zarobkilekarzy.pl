@@ -71,7 +71,7 @@ export const series: Series[] = [
         title: 'Limity płac medyków',
         note: 'Ile wolno zapłacić i kto to sprawdza',
         state: 'bill',
-        status: 'Rządowy projekt w Sejmie · druk nr\u00a03157',
+        status: 'Poprawki Senatu, wraca do Sejmu · druk senacki nr\u00a0893',
       },
       {
         ref: 'projekt-nowelizacji-art-27a',

@@ -13,6 +13,10 @@ export { limityVoting, CLUBS_LAST } from '@/data/glosowania';
 
 export const LINKS = {
   proces: 'https://www.sejm.gov.pl/Sejm10.nsf/PrzebiegProc.xsp?nr=3157',
+  senatProces: 'https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawy-uchwalone-przez-sejm/ustawy-uchwalone-przez-sejm/ustawa,2214.html',
+  senatPoprawki: 'https://www.senat.gov.pl/download/gfx/senat/userfiles/_public/k11/dokumenty/druki/800/893a.pdf',
+  senatZestawienie: 'https://www.senat.gov.pl/download/gfx/senat/pl/senatdruki/14848/druk/893z.pdf',
+  senatGlosowania: 'https://www.senat.gov.pl/prace/posiedzenia/przebieg,670,3,glosowania.html',
   druk: 'https://api.sejm.gov.pl/sejm/term10/prints/3157/3157.pdf',
   sprawozdanie: 'https://api.sejm.gov.pl/sejm/term10/prints/3193/3193.pdf',
   dodatkowe: 'https://api.sejm.gov.pl/sejm/term10/prints/3193-A/3193-A.pdf',
@@ -36,12 +40,12 @@ const pln = (v: number) => `PLN ${formatEN(v, Number.isInteger(v) ? 0 : 2)}`;
 /* ── Monthly caps compared with the minimum and average wage (BarChart) ───────── */
 
 const CAPS = [
-  { label: 'Minimum wage in 2026', note: '1× the minimum wage', value: MIN, secondary: true },
-  { label: 'Average wage in 2025', note: `${formatEN(AVG / MIN, 2)}× the minimum wage`, value: AVG, secondary: true },
-  { label: 'Half-time post with one provider', note: '4× the minimum wage', value: MIN * 4 },
-  { label: 'Full-time post with one provider', note: '8× the minimum wage', value: MIN * 8 },
-  { label: 'Full-time post with allowances, e.g. for a managerial role', note: '12× the minimum wage', value: MIN * 12 },
-  { label: 'Total with all providers', note: '16× the minimum wage', value: MIN * 16, highlight: true },
+  { label: 'Minimum wage in 2027', note: '1× the minimum wage', value: MIN_2027, secondary: true },
+  { label: 'Average wage in 2025', note: `${formatEN(AVG / MIN_2027, 2)}× the minimum wage`, value: AVG, secondary: true },
+  { label: 'Half-time post with one provider', note: '4× the minimum wage', value: MIN_2027 * 4 },
+  { label: 'Full-time post with one provider', note: '8× the minimum wage', value: MIN_2027 * 8 },
+  { label: 'Full-time post with allowances, e.g. for a managerial role', note: '12× the minimum wage', value: MIN_2027 * 12 },
+  { label: 'Total with all providers', note: '16× the minimum wage', value: MIN_2027 * 16, highlight: true },
 ];
 
 export const capsRows: BarRow[] = CAPS.map((r) => ({ ...r, display: pln(r.value) }));
@@ -51,8 +55,8 @@ export const capsCaption = `Bar chart, monthly amounts: ${CAPS.map((r) => `${r.l
 /* ── Calculator ───────────────────────────────────────────────────────────────── */
 
 export const CALC_BASES = [
-  { id: 'min2026', label: 'Minimum wage 2026', amount: MIN, source: { label: 'Dz.U. 2025 item 1242', href: LINKS.min2026 } },
   { id: 'min2027', label: 'Minimum wage 2027', amount: MIN_2027, source: { label: 'Dz.U. 2026 item 1213', href: LINKS.min2027 } },
+  { id: 'min2026', label: 'Minimum wage 2026', amount: MIN, source: { label: 'Dz.U. 2025 item 1242', href: LINKS.min2026 } },
   { id: 'avg2025', label: 'Average wage 2025', amount: AVG, source: { label: 'M.P. 2026 item 192', href: LINKS.przecietne } },
 ];
 

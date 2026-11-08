@@ -66,7 +66,9 @@ function zDysku(katalog) {
 
 const czytajManifest = (raw) => (existsSync(join(raw, 'manifest.json')) ? JSON.parse(readFileSync(join(raw, 'manifest.json'), 'utf8')) : { zrodlo: URL_STRONY, wersje: [] });
 
-const ostatniaKompletna = (manifest) => manifest.wersje.filter((w) => w.kompletna).at(-1) ?? null;
+// O „ostatniej” wersji decyduje okres, nie kolejność zapisu: serwer NFZ potrafi chwilowo podać pliki sprzed
+// miesięcy (8.11.2026: maj zamiast września), a takie pliki zostają w archiwum jako historia.
+const ostatniaKompletna = (manifest) => manifest.wersje.filter((w) => w.kompletna).reduce((a, w) => (!a || w.okres >= a.okres ? w : a), null);
 
 function wolnaWersja(manifest, wersja) {
   const zajete = new Set(manifest.wersje.map((w) => w.wersja));
@@ -197,6 +199,16 @@ export async function przebieg({ raw, dane = KATALOG_DANYCH, sucho = false, pobr
     return raport;
   }
 
+  const okresy = new Set(pobrane.map((p) => p.okres));
+  const starszy = komplet && ost && okresy.size === 1 && !okresy.has(null) && [...okresy][0] < ost.okres ? [...okresy][0] : null;
+  if (starszy) {
+    const znane = new Set(manifest.wersje.flatMap((w) => Object.values(w.pliki).map((p) => p.sha256)));
+    if (!sucho && pobrane.some((p) => !znane.has(p.sha256))) raport.zapisanoSurowe = Boolean(zapiszSurowe(raw, manifest, pobrane, { wersja: nazwaWersji, teraz }));
+    raport.okres = ost.okres;
+    raport.ostrzezenia.push({ typ: 'starszy-okres', opis: `NFZ podał pliki za ${starszy}, starsze niż ostatni zapisany okres ${ost.okres}. ${raport.zapisanoSurowe ? 'Surowe pliki zostały w archiwum jako historia, d' : 'D'}ane bez zmian.` });
+    return raport;
+  }
+
   if (!sucho) {
     const wpis = zapiszSurowe(raw, manifest, pobrane, { wersja: nazwaWersji, teraz });
     if (wpis) {
@@ -241,10 +253,14 @@ export async function przebieg({ raw, dane = KATALOG_DANYCH, sucho = false, pobr
   return raport;
 }
 
-/** Przelicza wszystkie miesiące z ostatnich kompletnych wersji w archiwum. */
+/**
+ * Przelicza miesiące z ostatnich kompletnych wersji w archiwum, od pierwszego opublikowanego. Starsze okresy to pliki,
+ * które NFZ podał przypadkiem (często w dawnym formacie), więc zostają tylko w archiwum.
+ */
 export function przelicz({ raw, dane = KATALOG_DANYCH }) {
   const manifest = czytajManifest(raw);
-  const wersje = new Map(manifest.wersje.filter((w) => w.kompletna).map((w) => [w.okres, w]));
+  const od = czytajMiesiace(dane)[0]?.okres ?? '';
+  const wersje = new Map(manifest.wersje.filter((w) => w.kompletna && w.okres >= od).map((w) => [w.okres, w]));
   let poprzedni;
   const wyniki = [];
   for (const okres of [...wersje.keys()].sort()) {

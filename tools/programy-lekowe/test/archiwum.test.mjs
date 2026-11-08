@@ -262,6 +262,31 @@ test('przebieg: suchy nic nie zapisuje, a długi brak nowego okresu ostrzega', a
   rmSync(baza, { recursive: true });
 });
 
+test('przebieg: starszy okres z NFZ zostaje w archiwum, ale nie zmienia danych ani ostatniej wersji', async () => {
+  const { raw, dane, baza } = katalogi();
+  await przebieg({ raw, dane, pobrane: komplet(), teraz: TERAZ });
+  const przed = readFileSync(join(dane, '2026-09.json'));
+  const maj = () => komplet(() => ({ okres: '2026-05' }));
+
+  const r = await przebieg({ raw, dane, pobrane: maj(), teraz: new Date('2026-11-08T14:00:00Z') });
+  assert.deepEqual([r.status, r.okres, r.zapisanoSurowe, r.zapisanoDane], ['bez-zmian', '2026-09', true, false]);
+  assert.ok(r.ostrzezenia.some((o) => o.typ === 'starszy-okres'));
+  assert.equal(existsSync(join(raw, '2026-05', '2026-11-08', 'woj-01.xlsx')), true);
+  assert.equal(existsSync(join(dane, '2026-05.json')), false);
+
+  const r2 = await przebieg({ raw, dane, pobrane: maj(), teraz: new Date('2026-11-08T15:00:00Z') });
+  assert.equal(r2.zapisanoSurowe, false);
+  assert.equal(JSON.parse(readFileSync(join(raw, 'manifest.json'), 'utf8')).wersje.length, 2);
+
+  const r3 = await przebieg({ raw, dane, pobrane: komplet(), teraz: new Date('2026-11-17T06:00:00Z') });
+  assert.deepEqual([r3.status, r3.ostrzezenia.length], ['bez-zmian', 0]);
+
+  przelicz({ raw, dane });
+  assert.deepEqual(readFileSync(join(dane, '2026-09.json')), przed);
+  assert.equal(existsSync(join(dane, '2026-05.json')), false);
+  rmSync(baza, { recursive: true });
+});
+
 test('przelicz: wynik z surowych plików jest powtarzalny bajt w bajt', async () => {
   const { raw, dane, baza } = katalogi();
   await przebieg({ raw, dane, pobrane: komplet(), teraz: TERAZ });

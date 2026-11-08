@@ -329,7 +329,7 @@ NFZ publikuje raz w miesiącu [16 plików XLSX](https://gsl.nfz.gov.pl/GSL/GSL/P
 - **Błędy:** twarde (brak pliku, HTML zamiast XLSX, zmienione kolumny, różne okresy, nieczytelna liczba, nagły spadek liczby wierszy) nie publikują danych i kończą przebieg na czerwono, a następny udany przebieg zamyka zgłoszenie. Ostrzeżenia (nowy lub zniknięty program, skok sumy o ponad 30%, korekta, flagi, pominięty miesiąc, 45 dni bez nowego okresu) publikują dane i otwierają osobne zgłoszenie, które zamyka człowiek. Zgłoszenia są publiczne, więc bez nazw szpitali (`raport.mjs`).
 - **Ręcznie:** Actions → Run workflow z `sucho` (pobiera i sprawdza, nic nie zapisuje) albo `proba_zgloszenia` (test powiadomień). Lokalnie: `node tools/programy-lekowe/archiwum.mjs --sucho --raport /tmp/raport.json`; po zmianie metody `--przelicz --raw <klon surowego repo>`, wynik jest powtarzalny bajt w bajt.
 - **Sekrety:** `DANE_APP_CLIENT_ID`, `DANE_APP_KEY` (token tylko z `contents: write` dla tego i surowego repozytorium).
-- **Harmonogram:** workflow startuje na razie tylko ręcznie. Docelowo `schedule` z `0 6 3,17 * *`: pliki za 09.2026 powstały 15.10.2026, więc 17. łapie nowe dane, a 3. spóźnienia i korekty.
+- **Harmonogram:** `schedule` z `0 6 3,17 * *`: pliki za 09.2026 powstały 15.10.2026, więc 17. łapie nowe dane, a 3. spóźnienia i korekty. Przebieg z harmonogramu zapisuje dane, ręczny domyślnie jest suchy.
 - **Testy (bez sieci):** `node --test tools/programy-lekowe/test/archiwum.test.mjs`, na plikach XLSX budowanych w locie, plus kontrola wartości referencyjnych września 2026.
 
 ## Obrazki OG

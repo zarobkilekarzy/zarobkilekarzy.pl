@@ -35,6 +35,48 @@ const whcFirst = WHC_EDITIONS[0];
 const whcLast = WHC_EDITIONS.at(-1)!;
 const quarter = (label: string) => label.replace(' ', ' kw. ');
 
+// Archiwum list oczekujących do programów lekowych (tools/programy-lekowe): każdy zapisany miesiąc, nowe dochodzą same.
+interface ListyNfz {
+  okres: string;
+  programy: { kod: string; nazwa: string }[];
+  podmioty: { kod: string; nazwa: string; woj: string; ukryty?: boolean }[];
+  komorki: { nazwa: string; miasto: string }[];
+  /** [program, podmiot, komórka | null, pilny 0/1, czeka, przyjęci, dni | null] */
+  wiersze: [number, number, number | null, number, number, number, number | null][];
+  flagi: { podmiot: string }[];
+}
+const LISTY = Object.values(import.meta.glob<ListyNfz>('../../data/programy-lekowe/20??-??.json', { eager: true, import: 'default' })).sort((a, b) =>
+  a.okres.localeCompare(b.okres),
+);
+// kody oddziałów NFZ 01–16 idą alfabetycznie (to nie TERYT)
+const WOJ_NFZ = ['dolnośląskie', 'kujawsko-pomorskie', 'lubelskie', 'lubuskie', 'łódzkie', 'małopolskie', 'mazowieckie', 'opolskie', 'podkarpackie', 'podlaskie', 'pomorskie', 'śląskie', 'świętokrzyskie', 'warmińsko-mazurskie', 'wielkopolskie', 'zachodniopomorskie'];
+const MIESIACE = ['styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec', 'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień'];
+const miesiac = (okres: string) => `${MIESIACE[Number(okres.slice(5)) - 1]} ${okres.slice(0, 4)}`;
+const listyWiersze = (m: ListyNfz): Cell[][] => {
+  const doWyjasnienia = new Set(m.flagi.map((f) => f.podmiot));
+  return m.wiersze
+    .filter(([, , , , czeka, przyjeci]) => czeka > 0 || przyjeci > 0)
+    .map(([program, podmiot, komorka, pilny, czeka, przyjeci, dni]) => {
+      const p = m.podmioty[podmiot];
+      const k = komorka === null ? null : m.komorki[komorka];
+      return [
+        m.okres,
+        WOJ_NFZ[Number(p.woj) - 1],
+        m.programy[program].kod,
+        m.programy[program].nazwa,
+        p.ukryty ? null : p.kod,
+        p.nazwa,
+        k?.nazwa ?? null,
+        k?.miasto ?? null,
+        pilny ? 'pilny' : 'stabilny',
+        czeka,
+        przyjeci,
+        dni,
+        doWyjasnienia.has(p.kod) ? 'dane szpitala do wyjaśnienia' : null,
+      ];
+    });
+};
+
 export const DATASETS: Dataset[] = [
   {
     slug: 'limity-przyjec-kierunek-lekarski',
@@ -96,6 +138,16 @@ export const DATASETS: Dataset[] = [
     source: 'Ministerstwo Zdrowia, zobowiązania ogółem i wymagalne SPZOZ (dane ankietowe, kwartalne)',
     columns: ['kwartał', 'zobowiązania ogółem, mln zł', 'w tym wymagalne, mln zł', 'źródło'],
     rows: SPZOZ_QUARTERS.map(([label, total, overdue]) => [quarter(label), total, overdue, DEBT.mz]),
+  },
+  {
+    slug: 'programy-lekowe-listy-oczekujacych',
+    title: 'Programy lekowe: listy oczekujących',
+    desc: `Osoby na listach oczekujących do programów lekowych na koniec miesiąca (${LISTY.map((m) => miesiac(m.okres)).join(', ')}) według programu, szpitala i komórki: kategoria (pilny, stabilny), czekający, przyjęci w miesiącu i średni czas oczekiwania w dniach. Tylko komórki, w których ktoś czekał albo został przyjęty. Miesięcy, których NFZ już nie udostępnia, w pliku nie ma.`,
+    route: '/analizy/programy-lekowe-kolejki/',
+    page: 'Analiza: Kolejki do programów lekowych',
+    source: 'NFZ, Gdzie się leczyć — pliki z danymi o listach oczekujących, zapisywane co miesiąc przez redakcję; praktyki, których nazwa może zawierać imię i nazwisko, połączone w jedną pozycję na województwo',
+    columns: ['miesiąc', 'województwo', 'kod programu', 'program', 'kod świadczeniodawcy', 'świadczeniodawca', 'komórka', 'miejscowość', 'kategoria', 'czekający', 'przyjęci w miesiącu', 'średni czas oczekiwania, dni', 'uwagi'],
+    rows: LISTY.flatMap(listyWiersze),
   },
 ];
 

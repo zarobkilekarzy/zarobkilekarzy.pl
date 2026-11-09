@@ -1,0 +1,242 @@
+---
+title: "Kolejki do programów lekowych: średnio tygodnie, ale nie wszędzie"
+seoTitle: "Kolejki do programów lekowych w NFZ"
+category: Analiza
+topic: pieniadz
+stat: { value: "9–12 tys.", unit: "osób czekało na leczenie w programach lekowych na koniec września 2026 r." }
+date: 2026-11-09
+cover: ../../assets/img/programy-lekowe-stojaki-kroplowki.jpg
+coverPosition: "15% 50%"
+coverAlt: "Pięć jednakowych stojaków na kroplówki w rzędzie; tylko na najbliższym wisi worek z płynem, haki pozostałych są puste"
+summary: "Na koniec września 2026 r. na leczenie w programach lekowych czekało od 9 do 12 tys. osób. Zwykle kilka tygodni, ale w części programów i szpitali lista prawie nie schodzi, a ministerstwo i NFZ nie wiedzą, ilu chorych czeka dlatego, że szpitalowi skończyła się umowa."
+description: "Ilu pacjentów czeka na leczenie w programach lekowych NFZ, jak długo i dlaczego: dane NFZ za wrzesień 2026 r., limity w umowach i dane, których nikt nie zbiera."
+keyPoints:
+  - "Na koniec września 2026 r. na liście do programów lekowych było od 9 137 do 11 935 osób."
+  - "W reumatologii od 1% do 57% zakwalifikowanych czeka na pierwszą dawkę, zależnie od województwa."
+  - "MZ i NFZ nie mają danych, ilu chorych czeka przez wyczerpaną umowę szpitala."
+editorial:
+  - >-
+    Programy lekowe kosztowały w 2025 r. 15,53 mld zł publicznych pieniędzy. Umowa szpitala z NFZ ma limit,
+    więc o tym, kto zacznie leczenie w tym miesiącu, a kto w następnym, decyduje się w szpitalu, poza
+    publicznymi danymi. Nie twierdzimy, że kolejki są wszędzie za długie. Twierdzimy, że bez danych nie da się
+    sprawdzić, gdzie pieniądze rozmijają się z potrzebami.
+  - >-
+    Dlatego postulujemy jawność: dla każdego programu i szpitala liczba osób zakwalifikowanych, które czekają na
+    pierwszą dawkę, przyczyna czekania, wartość umowy i jej wykorzystanie, a także dane z poprzednich miesięcy,
+    bo NFZ publikuje tylko bieżący.
+related:
+  - rozliczenia-nfz
+  - apteka-pieniadz-publiczny
+  - wizyty-prywatne-kolejka-cena
+  - brak-jawnosci
+---
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import ColumnChart from '@/components/blocks/ColumnChart.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Button from '@/components/ui/Button.astro';
+import Actions from '@/components/layout/Actions.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import { formatPL } from '@/lib/format';
+
+export const LINKS = {
+  nfzPliki: 'https://gsl.nfz.gov.pl/GSL/GSL/PlikiZDanymi',
+  mz19419: 'https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDYSHTJ/i19419-o1.pdf',
+  mz19050: 'https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDXWJCG/i19050-o1.pdf',
+  api: 'https://api.nfz.gov.pl/app-stat-api-pl/',
+  ptr: 'https://ptr.info.pl/wp-content/uploads/2026/10/PTR_Sejm_22.10.2026_Marcin-Stajszczyk_Zespol-Parlamentarny_Reumatologia.pdf',
+};
+
+{/* Pliki NFZ „Gdzie się leczyć”, stan na koniec 09.2026 (wygenerowane 15.10.2026), wiersze z kodem świadczenia 90*,
+    bez Wielospecjalistycznego Szpitala Wojewódzkiego w Gorzowie Wlkp. Średni czas ważony liczbą przyjętych. */}
+export const PROGRAMS = [
+  { label: 'Choroby siatkówki', waiting: 1009, admitted: 1428, days: 16 },
+  { label: 'Reumatoidalne i młodzieńcze idiopatyczne zapalenie stawów', waiting: 749, admitted: 152, days: 64, highlight: true },
+  { label: 'Zaburzenia lipidowe', waiting: 559, admitted: 211, days: 31 },
+  { label: 'Przewlekłe wirusowe zapalenie wątroby typu C', waiting: 545, admitted: 218, days: 42 },
+  { label: 'Stwardnienie rozsiane', waiting: 466, admitted: 216, days: 50 },
+  { label: 'Rak gruczołu krokowego', waiting: 439, admitted: 142, days: 57 },
+  { label: 'Spastyczność kończyn', waiting: 359, admitted: 98, days: 68 },
+  { label: 'Dystonie', waiting: 277, admitted: 47, days: 60 },
+  { label: 'Polipy nosa', waiting: 267, admitted: 67, days: 54 },
+  { label: 'Przewlekłe wirusowe zapalenie wątroby typu B', waiting: 264, admitted: 82, days: 61 },
+];
+
+{/* API NFZ, statystyka programów lekowych: refundacja leków w programach (zł) i liczba leczonych, pobrane 30.10.2026 */}
+export const SPENDING = [
+  [2017, 3_225_731_401, 114_647], [2018, 3_478_321_951, 127_571], [2019, 3_934_971_176, 146_438],
+  [2020, 4_436_372_198, 154_900], [2021, 5_140_241_880, 170_268], [2022, 6_484_738_288, 203_294],
+  [2023, 9_034_109_079, 243_930], [2024, 11_561_851_558, 285_795], [2025, 13_954_245_588, 329_248],
+].map(([year, refund, patients]) => ({ label: String(year), value: refund / 1e9, display: formatPL(refund / 1e9, 2), patients }));
+
+{/* PTR na podstawie SMPT, stan na 19.10.2026: zakwalifikowani w I–IX 2026, którzy nie dostali pierwszej dawki (%) */}
+export const RHEUMA = [
+  ['dolnośląskie', 57], ['kujawsko-pomorskie', 51], ['wielkopolskie', 44], ['świętokrzyskie', 38],
+  ['małopolskie', 32], ['pomorskie', 31], ['lubuskie', 23], ['łódzkie', 16], ['opolskie', 16],
+  ['podkarpackie', 12], ['mazowieckie', 11], ['śląskie', 10], ['zachodniopomorskie', 9], ['podlaskie', 7],
+  ['warmińsko-mazurskie', 3], ['lubelskie', 1],
+].map(([label, value]) => ({ label, value, display: `${value}%`, highlight: value >= 50 }));
+
+Program lekowy to leczenie drogim lekiem, zwykle biologicznym albo onkologicznym, które NFZ finansuje w szpitalu według ściśle opisanych kryteriów. W 2025 r. NFZ rozliczył w programach lekowych **15,53 mld zł**, a leczyło się w nich 337 571 osób.[^mz19050] Na koniec września 2026 r. szpitale zgłosiły NFZ **11 935 osób** na listach oczekujących do 141 programów.[^nfz-pliki]
+
+<StatRow
+  label="Programy lekowe, wrzesień 2026 r."
+  items={[
+    { value: 11935, unit: 'osób', desc: 'na listach oczekujących, wszystkie zgłoszenia szpitali', accuracy: 'exact', source: 'NFZ, pliki z danymi', href: LINKS.nfzPliki },
+    { value: 9137, unit: 'osób', desc: 'po wyłączeniu jednego szpitala, którego dane wymagają wyjaśnienia', accuracy: 'exact', source: 'NFZ, pliki z danymi', href: LINKS.nfzPliki },
+    { value: 33.2, decimals: 1, unit: 'dnia', desc: 'średni czas oczekiwania osób przyjętych we wrześniu, bez tego szpitala', accuracy: 'exact', source: 'NFZ, pliki z danymi', href: LINKS.nfzPliki },
+    { value: 1.08, decimals: 2, unit: 'mld zł', desc: 'nierozliczonych nadwykonań w programach za I półrocze 2026 r.', accuracy: 'exact', source: 'MZ, odpowiedź na interpelację 19419', href: LINKS.mz19419 },
+  ]}
+/>
+
+## Prawo do leczenia, które ma limit
+
+Program lekowy jest świadczeniem gwarantowanym: kto spełnia kryteria, ma prawo do leczenia.[^ustawa] Ministerstwo Zdrowia podkreśla, że kwalifikacja ma być wyłącznie medyczna i że niedopuszczalne są ograniczenia wynikające z sytuacji finansowej szpitala.[^mz19050] Jednocześnie programy lekowe „zaliczane są do świadczeń limitowanych”: szpital dostaje pieniądze do wartości umowy z NFZ, a za leczenie ponad nią, czyli tzw. nadwykonania, NFZ płaci później, gdy ma na to środki.[^mz13697]
+
+Ministerstwo tłumaczy, że nie może podnosić wartości umów do bieżących potrzeb, bo najpierw muszą wystarczyć pieniądze na świadczenia bez limitu i na leczenie dzieci.[^mz13697] A potrzeby rosną szybko. Za same leki w programach NFZ zapłacił w 2025 r. **13,95 mld zł**, ponad cztery razy więcej niż w 2017 r., a liczba leczonych wzrosła w tym czasie prawie trzykrotnie.[^api-nfz]
+
+<Figure
+  title="Wydatki NFZ na leki w programach lekowych wzrosły od 2017 r. ponad czterokrotnie"
+  note="Refundacja samych leków w programach lekowych, bez kosztów świadczeń w szpitalu, w mld zł. Liczba leczonych: 114 647 w 2017 r. i 329 248 w 2025 r."
+  source={{ label: 'NFZ, statystyka programów lekowych (API)', href: LINKS.api }}
+>
+  <ColumnChart
+    columns={SPENDING}
+    max={15}
+    caption={`Refundacja leków w programach lekowych, mld zł: ${SPENDING.map((s) => `${s.label} ${s.display} (leczonych ${formatPL(s.patients)})`).join('; ')}.`}
+  />
+</Figure>
+
+Według relacji szpitali, które przytoczył Rzecznik Praw Obywatelskich, roczna umowa wyczerpuje się często po około pół roku, a dalej szpital kupuje leki na kredyt i czeka, aż NFZ zapłaci za nadwykonania.[^rpo] To relacja, nie pomiar. Skalę zaległości pokazują dane ministerstwa, opisane na końcu tekstu.
+
+W praktyce chory przechodzi kilka etapów, a na każdym może czekać.
+
+<NumberedList
+  layout="rows"
+  items={[
+    { title: 'Decyzja o refundacji.', text: 'Minister wpisuje lek i program na listę refundacyjną.' },
+    { title: 'Umowa ze szpitalem.', text: 'NFZ ogłasza postępowanie i podpisuje umowy. W 2025 r. trwało to średnio 104,8 dnia, w dolnośląskim prawie 185, przy założeniu do 80 dni.' },
+    { title: 'Kwalifikacja.', text: 'Lekarze sprawdzają, czy chory spełnia kryteria programu.' },
+    { title: 'Lista oczekujących i pierwsza dawka.', text: 'Zakwalifikowany czeka na rozpoczęcie leczenia. Ten etap opisują dane NFZ.' },
+  ]}
+/>
+
+Czas na zawarcie umów podało ministerstwo na posiedzeniu sejmowej podkomisji.[^stenogram] Dalej w tekście chodzi o ostatni etap, bo tylko on jest mierzony co miesiąc.
+
+## Ilu chorych czeka
+
+NFZ co miesiąc publikuje pliki z liczbą osób na listach oczekujących w każdej komórce szpitala, czyli w oddziale albo poradni, i średnim czasem oczekiwania.[^nfz-pliki] Wymaga tego ustawa.[^ustawa] Każdy chory na liście ma kategorię medyczną: stabilną albo pilną. Na liście nie ma osób, które już się leczą i kontynuują terapię, ani tych, których szpital w ogóle nie wpisał.
+
+<Aside variant="warn" title="Jeden szpital zgłasza prawie jedną czwartą kolejki">
+Wielospecjalistyczny Szpital Wojewódzki w Gorzowie Wielkopolskim zgłosił we wrześniu **2 798 czekających**, w tym 866 w programie leczenia zapalenia błony naczyniowej oka (ZBN). W całym kraju w tym programie leczono w 2025 r. **176 osób**,[^api-nfz] a umowa tego szpitala na ZBN na 2026 r. opiewa na kwoty symboliczne: 628,56 zł na świadczenia i 12 zł na leki rocznie,[^umowy] a mimo to szpital wykazał we wrześniu 61 przyjętych. To może być błąd w sprawozdaniu albo kolejka przy niemal pustej umowie. Nie wiemy, która wersja jest prawdziwa. To sprawa do wyjaśnienia, nie zarzut. Dlatego podajemy liczby z tym szpitalem i bez niego.
+</Aside>
+
+Bez tego szpitala na liście było **9 137 osób**, w tym 1 966 w stanie pilnym. We wrześniu leczenie zaczęło 4 531 osób z list.[^nfz-pliki] Wcześniejsze szacunki z danych NFZ mówiły o „około 9 tys.” w marcu i ponad 9 400 pod koniec kwietnia 2026 r.[^rpo][^pap] Nie wiemy, czy liczono je tak samo, więc nie porównujemy ich wprost.
+
+## Średnio kilka tygodni
+
+Osoby przyjęte do programów we wrześniu czekały średnio **33,2 dnia**, a z gorzowskim szpitalem 39,8 dnia.[^nfz-pliki] Bez tego szpitala połowa przyjętych trafiła do komórek, w których średni czas nie przekraczał 17 dni, a 90% do takich, gdzie nie przekraczał 79 dni. Do komórek ze średnią powyżej pół roku trafiło 2,8% przyjętych.
+
+Średnia ma jedną wadę: liczy tylko tych, których już przyjęto. Lista może być długa, ale schodzić szybko, albo krótsza i stać w miejscu. Dlatego obok liczby czekających trzeba patrzeć na to, ile osób przyjęto.
+
+<Figure
+  title="Największe kolejki: w chorobach siatkówki przyjęto we wrześniu więcej osób, niż czeka, w reumatologii prawie pięć razy mniej"
+  note="Programy z największą liczbą czekających na koniec września 2026 r., bez szpitala w Gorzowie Wlkp. Średni czas: średnia ważona liczbą osób przyjętych we wrześniu."
+  source={{ label: 'NFZ, Gdzie się leczyć, pliki z danymi; wyliczenia redakcji', href: LINKS.nfzPliki }}
+>
+  <BarChart
+    rows={PROGRAMS.map((p) => ({ label: p.label, value: p.waiting, display: formatPL(p.waiting), note: `przyjętych we wrześniu: ${formatPL(p.admitted)}, średnio ${p.days} dni`, highlight: p.highlight }))}
+    max={1100}
+    unit="osób"
+    caption={`Czekający na koniec września 2026 r.: ${PROGRAMS.map((p) => `${p.label} ${p.waiting} (przyjętych ${p.admitted}, średnio ${p.days} dni)`).join('; ')}.`}
+  />
+</Figure>
+
+Najwolniej lista schodzi w reumatologii. W programach reumatologicznych (bez szpitala w Gorzowie) czekało 1 531 osób, a przyjęto 267. W dolnośląskim czekało 400 osób, a przyjęto 15.[^nfz-pliki]
+
+## Adres ma znaczenie
+
+Lepszy obraz niż lista NFZ daje rejestr samych programów (SMPT), w którym widać, kiedy chorego zakwalifikowano i czy dostał pierwszą dawkę. Polskie Towarzystwo Reumatologiczne policzyło z niego, że z 5 027 osób zakwalifikowanych do leczenia w reumatologii od stycznia do września 2026 r. pierwszej dawki nie dostało **1 166**, czyli 23%.[^ptr] PTR uważa to za liczbę minimalną, bo nie obejmuje chorych, których ośrodki nie kwalifikowały z powodu trudności finansowych.
+
+<Figure
+  title="W dolnośląskim ponad połowa zakwalifikowanych czeka na pierwszą dawkę, w lubelskim 1%"
+  note="Reumatologia: osoby zakwalifikowane do programów lekowych od stycznia do września 2026 r., które do 19 października nie dostały pierwszej dawki. Część zakwalifikowanych we wrześniu mogła jeszcze czekać na wyznaczony termin."
+  source={{ label: 'Polskie Towarzystwo Reumatologiczne na podstawie SMPT, 22.10.2026', href: LINKS.ptr }}
+>
+  <BarChart
+    rows={RHEUMA}
+    max={60}
+    unit="%"
+    average={23}
+    averageLabel="średnio w kraju 23%"
+    caption={`Odsetek zakwalifikowanych bez pierwszej dawki według województw: ${RHEUMA.map((r) => `${r.label} ${r.display}`).join('; ')}. Średnio w kraju 23%.`}
+  />
+</Figure>
+
+Wśród zakwalifikowanych w styczniu 59 osób nie dostało pierwszej dawki do 19 października, czyli przez co najmniej 261 dni.[^ptr] Nie zawsze powodem są pieniądze: ministerstwo wskazuje też względy kliniczne i decyzje samych pacjentów.[^mz19419]
+
+Dla chorego to nie jest tylko statystyka. Według europejskich zaleceń EULAR reumatoidalne zapalenie stawów leczy się najpierw metotreksatem, a jeśli w ciągu 3–6 miesięcy nie działa wystarczająco, chorym z czynnikami złego rokowania dodaje się lek biologiczny albo podobny.[^eular] Miesiące czekania na pierwszą dawkę wydłużają okres, w którym według tych zaleceń leczenie powinno już zostać zmienione.
+
+Pojedyncze szpitale pokazują, jak limit działa w praktyce. W Szpitalu Uniwersyteckim nr 2 w Bydgoszczy w lutym wstrzymano kwalifikację do leczenia biologicznego w reumatologii.[^medexpress] Latem potrzeby szpitala szacowano na 170 mln zł wobec 127 mln zł w umowie, a oddział NFZ odpowiadał, że nie może zwiększyć limitu.[^money] Do października wartość umów szpitala na programy wzrosła do ok. 149 mln zł,[^umowy] ale we wrześniu szpital nadal zgłaszał 126 czekających i 5 przyjętych.[^nfz-pliki] W krakowskim Szpitalu im. Dietla czekało we wrześniu 166 osób, w tym 160 w stanie pilnym, a przyjęto jedną.[^nfz-pliki] Według relacji z lipca czekało tam wtedy 120 zakwalifikowanych, a nowoczesne leczenie od 8–9 miesięcy ograniczano do przypadków zagrożenia życia.[^dietl]
+
+## Onkologia i szpitale, które mówią co innego
+
+Spośród 142 programów lekowych 41 to programy onkologiczne.[^mz19050] W lipcu „Rzeczpospolita” opisała pismo, w którym Centralny Szpital Kliniczny Uniwersytetu Medycznego w Łodzi wyznaczył pacjentce z rakiem piersi rozpoczęcie leczenia na pierwszy kwartał 2027 r., z powodu braku możliwości sfinansowania.[^rz-lodz] Szpital zaprzeczył, że wstrzymał leczenie, a oddział NFZ potwierdził, że dostał zgłoszenia i prowadzi postępowanie wyjaśniające.[^nfz-lodz] We wrześniu szpital zgłosił we wszystkich programach 163 czekających, 78 przyjętych i średnio 15 dni czekania.[^nfz-pliki]
+
+Szpitale pytane w sierpniu o programy lekowe odpowiadały różnie. Narodowy Instytut Onkologii zapewniał, że kwalifikuje chorych na bieżąco i nie wydłuża czasu z przyczyn organizacyjnych ani lekowych. Na bieżąco kwalifikuje też Uniwersyteckie Centrum Kliniczne w Gdańsku, a jeden ze szpitali uniwersyteckich w Szczecinie przyznał, że kwalifikacja może się wydłużać.[^rynek-sierpien] Bez danych o tym, ilu chorych czeka po kwalifikacji i dlaczego, nie da się rozstrzygnąć, który z tych obrazów jest typowy.
+
+## Skąd się biorą rekordy po tysiąc dni
+
+W doniesieniach o programach lekowych często pojawiają się rekordy: 2 356 dni w zesztywniającym zapaleniu stawów kręgosłupa, 875 dni w mukowiscydozie.[^mzdrowie] Podało je narzędzie Obserwator, przygotowane z inicjatywy Komitetu Farmaceutycznego AmCham, który zrzesza firmy farmaceutyczne.[^pap] Rekordy pochodzą ze średnich, które szpitale podają dla pojedynczych komórek, więc nie opisują, jak długo czekał konkretny chory.
+
+Wartość 875 dni pochodzi z komórki, w której we wrześniu nie czekał nikt i nikogo nie przyjęto.[^nfz-pliki] W plikach za wrzesień takich wierszy w programach lekowych, z czasem oczekiwania przy zerze przyjętych, jest 663. Wartość 1 635 dni z analizy NFZ dla tego samego programu[^rynek-1635] Fundusz uznał w Sejmie za błąd sprawozdawczy. Na tym samym posiedzeniu NFZ podał jednak, że w dolnośląskim pierwszy termin w tym programie widoczny na stronie Funduszu przypadał na lata 2027–2028.[^stenogram] Problem jest więc realny, tylko rekord źle go mierzy. Dlatego w tym tekście podajemy średnie ważone liczbą przyjętych i liczbę czekających.
+
+## Czy kolejki rosną
+
+NFZ nie udostępnia poprzednich miesięcy, więc z jego strony nie da się tego sprawdzić. Strona zapisuje pliki od danych za wrzesień 2026 r., a maj udało się odzyskać, bo serwer NFZ podał je ponownie.[^nfz-pliki] Z tych dwóch punktów wynika, że lista bez gorzowskiego szpitala wydłużyła się o 18%: z **7 727** do **9 137** osób. Dwa punkty to sygnał, nie trend.
+
+Wszystkie miesiące są do pobrania w jednym pliku CSV, który otworzysz w arkuszu kalkulacyjnym: wiersz to miesiąc, program, szpital i komórka, w których ktoś czekał albo został przyjęty, z kategorią, liczbą czekających, przyjętych i średnim czasem. Nazwy praktyk, które mogą zawierać imię i nazwisko, są połączone w jedną pozycję na województwo.
+
+<Actions>
+  <Button href="/media/dane/programy-lekowe-listy-oczekujacych.csv" download="zarobkilekarzy-programy-lekowe-listy-oczekujacych.csv" icon="db">CSV · wszystkie miesiące</Button>
+  <Button href="/media/#dane" variant="ghost">Inne pliki z danymi</Button>
+</Actions>
+
+## Czego nie wiedzą ministerstwo i NFZ
+
+Ministerstwo Zdrowia napisało 7 października 2026 r., że ani ono, ani NFZ „nie posiadają danych” o pacjentach, którzy spełniają kryteria programu, ale czekają z przyczyn związanych z wartością umowy szpitala.[^mz19419] Wiadomo za to, ile szpitale leczyły ponad limit: za pierwsze półrocze 2026 r. na rozliczenie czekało **1 082 118 385,90 zł**, z czego 859,96 mln zł za leki.[^mz19419] W lipcu NFZ przeznaczył 566,1 mln zł na leki w programach lekowych i chemioterapii za I kwartał, a w październiku 3,36 mld zł na nadwykonania za II kwartał, także w innych świadczeniach. Nie podał, ile z tej drugiej kwoty trafiło na same programy lekowe.[^nfz-srodki]
+
+Lista oczekujących też nie mówi wszystkiego. Rzecznik Praw Obywatelskich opisywał sygnały o „nieformalnych listach” i wstrzymanej kwalifikacji,[^rpo] a takich chorych w danych NFZ nie ma.
+
+<Aside variant="info" title="Jeśli czekasz na leczenie w programie lekowym">
+- Szpital musi Cię poinformować o kategorii medycznej i terminie, a na Twoje żądanie uzasadnić, dlaczego wybrał taki termin.[^art20] W stanie nagłym świadczenie należy się niezwłocznie.[^art19]
+- W wyszukiwarce NFZ „Gdzie się leczyć” sprawdzisz, które szpitale prowadzą dany program.[^gsl]
+- Jeśli szpital odmawia kwalifikacji albo odkłada leczenie z powodów finansowych, możesz to zgłosić Rzecznikowi Praw Pacjenta (infolinia 800 190 590) i oddziałowi wojewódzkiemu NFZ. Rzecznik interweniował już w takiej sprawie.[^rpp] Więcej w przewodniku [Prawa pacjenta](/prawa-pacjenta/).
+</Aside>
+
+[^nfz-pliki]: NFZ, Gdzie się leczyć, [Pliki z danymi](https://gsl.nfz.gov.pl/GSL/GSL/PlikiZDanymi), stan na koniec września 2026 r. (pliki wygenerowane 15.10.2026). Programy lekowe to wiersze z kodem świadczenia zaczynającym się od 90. Sumy, średnie ważone i rozkład czasu oczekiwania policzyła redakcja.
+[^mz19050]: Ministerstwo Zdrowia, [odpowiedź na interpelację nr 19050](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDXWJCG/i19050-o1.pdf).
+[^ustawa]: [Ustawa z dnia 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf), Dz.U. 2025 poz. 1461: art. 15 ust. 2 pkt 15 (programy lekowe), art. 20 (listy oczekujących), art. 23 ust. 2 (publikacja przez NFZ).
+[^mz13697]: Ministerstwo Zdrowia, [odpowiedź na interpelację nr 13697](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDPMJTS/i13697-o1.pdf); to samo w [odpowiedzi na interpelację nr 14842](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDS3K98/i14842-o1.pdf).
+[^stenogram]: Sejm, Komisja Zdrowia, [Podkomisja stała do spraw organizacji ochrony zdrowia, posiedzenie 16.04.2026](https://api.sejm.gov.pl/sejm/term10/committees/ZDR01S/sittings/27/html), zapis przebiegu.
+[^api-nfz]: NFZ, [statystyka programów lekowych (API)](https://api.nfz.gov.pl/app-stat-api-pl/): refundacja leków i liczba leczonych w latach 2017–2025, pobrane 30.10.2026.
+[^umowy]: NFZ, [API umów](https://api.nfz.gov.pl/app-umw-api/), umowy szpitali na 2026 r., stan na październik 2026 r.
+[^rpo]: Rzecznik Praw Obywatelskich, [posiedzenie Komisji Ekspertów do spraw Zdrowia o programach lekowych](https://bip.brpo.gov.pl/pl/content/posiedzenie-komisji-ekspertow-zdrowie-programy-lekowe), 10.06.2026, dane NFZ.
+[^pap]: PAP, [Obserwator — platforma, która skróci kolejkę do programów lekowych](https://zdrowie.pap.pl/leczenie/obserwator-platforma-ktora-skroci-kolejke-do-programow-lekowych), dane narzędzia przygotowanego z inicjatywy firm farmaceutycznych.
+[^ptr]: Polskie Towarzystwo Reumatologiczne, [materiał na posiedzenie parlamentarnego zespołu 22.10.2026](https://ptr.info.pl/wp-content/uploads/2026/10/PTR_Sejm_22.10.2026_Marcin-Stajszczyk_Zespol-Parlamentarny_Reumatologia.pdf), dane z SMPT według stanu na 19.10.2026. Liczbę dni policzyła redakcja.
+[^mz19419]: Ministerstwo Zdrowia, [odpowiedź na interpelację nr 19419](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDYSHTJ/i19419-o1.pdf), 7.10.2026; kwota nadwykonań według stanu na 2.09.2026.
+[^medexpress]: MedExpress, [Programy lekowe: już w lutym zabrakło pieniędzy na włączanie nowych pacjentów](https://www.medexpress.pl/leki-technologie-medyczne/programy-lekowe-juz-w-lutym-zabraklo-pieniedzy-na-wlaczanie-nowych-pacjentow/), 27.02.2026.
+[^money]: money.pl, [Leki są na liście, pieniędzy brak](https://www.money.pl/finanse/leki-sa-na-liscie-pieniedzy-brak-pacjenci-utkneli-w-kolejce-7302692137203968a.html), 1.07.2026.
+[^dietl]: Rynek Zdrowia, [Nadwykonania w programach lekowych wydłużają kolejki do leczenia](https://www.rynekzdrowia.pl/Neurologia/Nadwykonania-w-programach-lekowych-wydluzaja-kolejki-do-leczenia-Pacjenci-musza-czekac,287167,208.html), 29.07.2026 (relacja z posiedzenia); liczby za wrzesień z plików NFZ.
+[^mzdrowie]: mZdrowie, [Najdłuższe kolejki do programów lekowych sięgają kilku lat](https://www.mzdrowie.pl/trendy/najdluzsze-kolejki-do-programow-lekowych-siegaja-kilku-lat/), 5.10.2026, za narzędziem Obserwator.
+[^rynek-1635]: Rynek Zdrowia, [Miał zesztywniające zapalenie, czekał 1635 dni](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Mial-zesztywniajace-zapalenie-czekal-1635-dni-Paradoksy-w-programach-lekowych-resort-i-NFZ-tlumacza,283341,1.html), 17.04.2026.
+[^nfz-srodki]: NFZ, [dodatkowe 600 mln zł na leki w programach lekowych i w chemioterapii](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/nfz-uruchamia-dodatkowe-600-mln-zl-na-leki-w-programach-lekowych-i-w-chemioterapii,8984.html), 23.07.2026; [3,3 mld zł na nadwykonania](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/nfz-uruchomil-3-3-mld-zl-na-nadwykonania-po-zwiekszeniu-dotacji-z-budzetu-panstwa,9039.html), 23.10.2026.
+[^eular]: Smolen J.S. i in., [EULAR recommendations for the management of rheumatoid arthritis with synthetic and biological disease-modifying antirheumatic drugs: 2022 update](https://doi.org/10.1136/ard-2022-223356), Annals of the Rheumatic Diseases 2023;82:3–18.
+[^rz-lodz]: Rzeczpospolita, [Szpital w Łodzi odsyła chorych na raka](https://www.rp.pl/ochrona-zdrowia/art44852461-szpital-w-lodzi-odsyla-chorych-na-raka-brak-mozliwosci-finansowania), 20.07.2026.
+[^nfz-lodz]: Łódzki Oddział Wojewódzki NFZ, [odpowiedź na wniosek o udostępnienie informacji publicznej](https://alivia.org.pl/wp-content/uploads/sites/10/2026/08/Odpowiedz-na-wniosek-o-udostepnienie-informacji-publicznej.pdf), 4.08.2026.
+[^rynek-sierpien]: Rynek Zdrowia, [Zadyszka w programach lekowych. Szpitale mają niezapłacone nadwykonania, pacjenci czekają na terapie](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Zadyszka-w-programach-lekowych-Szpitale-maja-niezaplacone-nadwykonania-pacjenci-czekaja-na-terapie,287652,1.html), 18.08.2026.
+[^art20]: [Ustawa o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf), art. 20 ust. 2 pkt 2.
+[^art19]: [Ustawa o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf), art. 19 ust. 1.
+[^gsl]: NFZ, [Gdzie się leczyć: programy lekowe](https://gsl.nfz.gov.pl/GSL/GSL/ProgramyLekowe).
+[^rpp]: Rzecznik Praw Pacjenta, [pismo do NFZ w sprawie odmów kwalifikacji do programów lekowych w Szczecinie](https://j-elita.org.pl/wp-content/uploads/2026/06/Zobacz-pismo-Rzecznika-Praw-Pacjenta.pdf), 12.06.2026, sygn. RzPP-DWS.071.49.2026.

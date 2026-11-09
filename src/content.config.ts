@@ -153,7 +153,7 @@ const glossary = defineCollection({
  * wysłane pisma, nowe etapy działań. Materiały merytoryczne to artykuły; tu tylko informacja „co i kiedy”.
  */
 const news = defineCollection({
-  // .md dla samego tekstu, .mdx gdy wpis osadza zdjęcia w treści (<Screenshot>, <Figure>) albo inne bloki
+  // zawsze .mdx: tylko w MDX link w treści dostaje ProseLink (zakreślenie i dymek), w .md wyszedłby zwykły <a>
   loader: glob({ base: './src/content/aktualnosci', pattern: '**/*.{md,mdx}' }),
   schema: ({ image }) => z.object({
     title: z.string(),
@@ -217,6 +217,7 @@ const articlesEn = defineCollection({
  * Wpis EN powstaje razem z polskim; wpisy sprzed startu EN przetłumaczone wszystkie (decyzja usera 27.10.2026).
  */
 const newsEn = defineCollection({
+  // zawsze .mdx, jak polskie wpisy (ProseLink)
   loader: glob({ base: './src/content/en/news', pattern: '**/*.{md,mdx}' }),
   schema: z.object({
     title: z.string(),

@@ -50,6 +50,11 @@ export const KOLUMNY = [
 ];
 const K = Object.fromEntries(KOLUMNY.map((k, i) => [k, i]));
 
+// Pliki za maj 2026 r. (serwer NFZ podał je ponownie 8.11.2026) mają na końcu jeszcze dwie kolumny z pierwszym
+// wolnym terminem. Pierwsze 15 kolumn jest takie samo, więc ten układ też czytamy, a termin pomijamy.
+export const KOLUMNY_TERMIN = ['Pierwszy wolny termin', 'Data przygotowania informacji o pierwszym wolnym terminie'];
+const UKLADY = [KOLUMNY, [...KOLUMNY, ...KOLUMNY_TERMIN]].map((k) => k.join('|'));
+
 // Wszystkie 141 kodów z tym początkiem we wrześniu 2026 r. to programy lekowe (sprawdzone z listą
 // produktów kontraktowych NFZ). Nazwy różnią się między bazami, więc filtrujemy po kodzie.
 export const PREFIKS_PROGRAMU = '90';
@@ -103,7 +108,7 @@ export function czytajPlik(buf, woj) {
     }
     if (!naglowek) {
       const kolumny = w.map(czysc);
-      if (kolumny.join('|') !== KOLUMNY.join('|')) throw new BladDanych(`woj. ${woj}: zmienione kolumny: ${kolumny.join(', ').slice(0, 300)}`);
+      if (!UKLADY.includes(kolumny.join('|'))) throw new BladDanych(`woj. ${woj}: zmienione kolumny: ${kolumny.join(', ').slice(0, 300)}`);
       naglowek = true;
       continue;
     }

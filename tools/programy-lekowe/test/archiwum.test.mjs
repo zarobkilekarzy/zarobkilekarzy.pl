@@ -6,7 +6,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { crc32, deflateRawSync } from 'node:zlib';
-import { BladDanych, KODY_WOJ, KOLUMNY, czytajOkres, czytajPlik, liczba } from '../format.mjs';
+import { BladDanych, KODY_WOJ, KOLUMNY, KOLUMNY_TERMIN, czytajOkres, czytajPlik, liczba } from '../format.mjs';
 import { czytajZip, otworzXlsx, toXlsx } from '../xlsx.mjs';
 import { doPliku, nazwaProgramu, ukryc, zlozOkres } from '../przetworz.mjs';
 import { odswiezLeczonych, przebieg, przelicz } from '../archiwum.mjs';
@@ -120,8 +120,16 @@ test('czytajPlik: wiersze programów bez telefonu i ulicy', () => {
   assert.equal(JSON.stringify(p).includes('TAJNA'), false);
 });
 
+test('czytajPlik: dawny układ z pierwszym wolnym terminem (maj 2026) daje te same liczby', () => {
+  const wiersze = [wiersz({ okres: '2026-05', czeka: '12', przyjeci: '3', dni: '40' })];
+  const nowy = czytajPlik(plik('01', { okres: '2026-05', wiersze }), '01');
+  const dawny = czytajPlik(plik('01', { okres: '2026-05', wiersze, kolumny: [...KOLUMNY, ...KOLUMNY_TERMIN] }), '01');
+  assert.deepEqual(dawny.programy, nowy.programy);
+});
+
 test('czytajPlik: odstępstwa od formatu to BladDanych', () => {
   assert.throws(() => czytajPlik(plik('01', { kolumny: [...KOLUMNY.slice(0, 14), 'Inna kolumna'] }), '01'), /zmienione kolumny/);
+  assert.throws(() => czytajPlik(plik('01', { kolumny: [...KOLUMNY, 'Inna kolumna'] }), '01'), /zmienione kolumny/);
   assert.throws(() => czytajPlik(plik('01'), '02'), /innego oddziału/);
   assert.throws(() => czytajPlik(plik('01', { wiersze: [wiersz({ okres: '2026-08' })] }), '01'), /ma okres/);
   assert.throws(() => czytajPlik(plik('01', { wiersze: [wiersz({ czeka: 'brak' })] }), '01'), /to nie jest liczba/);
@@ -275,7 +283,7 @@ test('przebieg: starszy okres z NFZ zostaje w archiwum, ale nie zmienia danych a
   assert.equal(existsSync(join(dane, '2026-05.json')), false);
 
   const r2 = await przebieg({ raw, dane, pobrane: maj(), teraz: new Date('2026-11-08T15:00:00Z') });
-  assert.equal(r2.zapisanoSurowe, false);
+  assert.deepEqual([r2.status, r2.zapisanoSurowe, r2.ostrzezenia.length], ['bez-zmian', false, 0]);
   assert.equal(JSON.parse(readFileSync(join(raw, 'manifest.json'), 'utf8')).wersje.length, 2);
 
   const r3 = await przebieg({ raw, dane, pobrane: komplet(), teraz: new Date('2026-11-17T06:00:00Z') });

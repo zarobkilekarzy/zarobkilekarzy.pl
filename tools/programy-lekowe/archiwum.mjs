@@ -203,9 +203,11 @@ export async function przebieg({ raw, dane = KATALOG_DANYCH, sucho = false, pobr
   const starszy = komplet && ost && okresy.size === 1 && !okresy.has(null) && [...okresy][0] < ost.okres ? [...okresy][0] : null;
   if (starszy) {
     const znane = new Set(manifest.wersje.flatMap((w) => Object.values(w.pliki).map((p) => p.sha256)));
-    if (!sucho && pobrane.some((p) => !znane.has(p.sha256))) raport.zapisanoSurowe = Boolean(zapiszSurowe(raw, manifest, pobrane, { wersja: nazwaWersji, teraz }));
+    // Te same stare pliki wracają przy kolejnych przebiegach (8.11.2026 co drugi przebieg), więc ostrzegamy raz.
+    const nowe = pobrane.some((p) => !znane.has(p.sha256));
+    if (!sucho && nowe) raport.zapisanoSurowe = Boolean(zapiszSurowe(raw, manifest, pobrane, { wersja: nazwaWersji, teraz }));
     raport.okres = ost.okres;
-    raport.ostrzezenia.push({ typ: 'starszy-okres', opis: `NFZ podał pliki za ${starszy}, starsze niż ostatni zapisany okres ${ost.okres}. ${raport.zapisanoSurowe ? 'Surowe pliki zostały w archiwum jako historia, d' : 'D'}ane bez zmian.` });
+    if (nowe) raport.ostrzezenia.push({ typ: 'starszy-okres', opis: `NFZ podał pliki za ${starszy}, starsze niż ostatni zapisany okres ${ost.okres}. ${raport.zapisanoSurowe ? 'Surowe pliki zostały w archiwum jako historia, d' : 'D'}ane bez zmian.` });
     return raport;
   }
 

@@ -27,6 +27,7 @@ import type { OgCover } from '@/types';
 import type { Accuracy, OgDots, OgStamp, OgStat } from '@/types';
 import type { Locale } from '@/i18n/locales';
 import { NARROW_TITLE_MAX, OG_HEIGHT, OG_WIDTH, type OgEntry, type OgMedia, type OgSpec } from './presets';
+import { INTER_TIGHT_400 } from './szerokosci';
 
 const PAD_X = 64;
 const PAD_Y = 56;
@@ -155,6 +156,71 @@ function titleSize(title: string, wide: boolean): number {
   const longest = Math.max(...lines.map((l) => l.length));
   const fit = Math.floor((wide ? WIDE_W : TEXT_W) / (longest * 0.46));
   return Math.max(byLength, Math.min(wide ? 104 : 80, fit));
+}
+
+/** Słowa, którymi nie kończymy wiersza tytułu: krótkie przyimki i spójniki idą do następnego wiersza. */
+const NO_LINE_END = new Set([
+  'a', 'i', 'o', 'u', 'w', 'z', 'do', 'na', 'od', 'po', 'za', 'ze', 'we', 'ku', 'że', 'by', 'bo', 'co', 'to', 'bez', 'dla', 'nad', 'pod',
+  'przy', 'przez', 'oraz', 'lub', 'czy', 'ale', 'jak', 'nie', 'gdy', 'kto', 'an', 'the', 'of', 'in', 'on', 'at', 'for', 'and', 'or', 'with',
+]);
+/** Słowo bez znaków interpunkcji, małymi literami; przy słowach sklejonych twardą spacją — ostatnie. */
+const bareWord = (item: string) => item.split('\u00A0').at(-1)!.toLowerCase().replace(/[^\p{L}]/gu, '');
+const TITLE_TRACKING = -0.04; // letterSpacing tytułu w layout()
+const wordWidth = (word: string, size: number) =>
+  size * [...word].reduce((s, ch) => s + (INTER_TIGHT_400[ch] ?? INTER_TIGHT_400.n) / 1000 + TITLE_TRACKING, 0);
+
+/**
+ * Podział tytułu bez ręcznych `\n` na wiersze według szerokości z metryk fontu. Sam flex-wrap łamie zachłannie,
+ * a sklejona wdowa potrafiła zostawić krótkie słowo w osobnym wierszu („kolejki / do / programów lekowych.”).
+ * Najpierw liczymy, jak złamie go flex-wrap: gdy żaden wiersz nie kończy się krótkim słowem, tytuł zostaje bez zmian.
+ * W przeciwnym razie spośród podziałów mieszczących się w kolumnie wybieramy: najmniej wierszy, potem bez krótkiego słowa na końcu
+ * wiersza, potem bez pojedynczego słowa w ostatnim wierszu, potem z podziałem po dwukropku albo myślniku, potem
+ * najrówniej wypełnione wiersze. Metryki zgadzają się z Satori co do kilku pikseli, stąd zapas 1 px.
+ * Gdy nic się nie mieści (bardzo długie słowo), zostaje zwykły flex-wrap.
+ */
+function breakTitle(title: string, size: number, width: number): string {
+  const words = title.split(' ');
+  if (words.length < 3 || words.length > 18) return title;
+  const end = /[.?!…]$/.test(title) ? '' : '.'; // titleLines dopisuje kropkę
+  const w = words.map((word, i) => wordWidth(i === words.length - 1 ? word + end : word, size));
+  const gap = 0.2 * size; // marginRight słowa w titleLines
+  const max = width - 1;
+  // flex-wrap w titleLines: dwa ostatnie słowa sklejone (noWidow), margines liczy się do szerokości każdego słowa poza ostatnim
+  const items = noWidow(title).split(' ');
+  let x = 0;
+  const lineEnds: string[] = [];
+  items.forEach((item, i) => {
+    const outer = wordWidth(i === items.length - 1 ? item + end : item, size) + (i < items.length - 1 ? gap : 0);
+    if (x > 0 && x + outer > width) {
+      lineEnds.push(items[i - 1]);
+      x = 0;
+    }
+    x += outer;
+  });
+  if (!lineEnds.some((item) => NO_LINE_END.has(bareWord(item)))) return title;
+  const lineWidth = (a: number, b: number) => w.slice(a, b).reduce((s, x) => s + x, 0) + gap * (b - a - 1);
+  let best: { cost: number[]; ends: number[] } | undefined;
+  const better = (a: number[], b: number[]) => {
+    const i = a.findIndex((x, k) => x !== b[k]);
+    return i >= 0 && a[i] < b[i];
+  };
+  const walk = (start: number, ends: number[]) => {
+    if (start === words.length) {
+      const starts = [0, ...ends.slice(0, -1)];
+      const shortEnds = ends.slice(0, -1).filter((e) => NO_LINE_END.has(bareWord(words[e - 1]))).length;
+      const widow = ends.length > 1 && ends.at(-1)! - starts.at(-1)! === 1 ? 1 : 0;
+      const phrase = ends.slice(0, -1).filter((e) => /[:—–]$/.test(words[e - 1])).length;
+      const ragged = starts.slice(0, -1).reduce((s, a, i) => s + ((max - lineWidth(a, ends[i])) / size) ** 2, 0);
+      const cost = [ends.length, shortEnds, widow, -phrase, ragged];
+      if (!best || better(cost, best.cost)) best = { cost, ends };
+      return;
+    }
+    for (let e = start + 1; e <= words.length && lineWidth(start, e) <= max; e++) walk(e, [...ends, e]);
+  };
+  walk(0, []);
+  if (!best) return title;
+  const { ends } = best;
+  return ends.map((e, i) => words.slice(i ? ends[i - 1] : 0, e).join(' ')).join('\n');
 }
 
 /** Bez wdowy: dwa ostatnie słowa razem (gdy wierszy jest więcej niż dwa słowa, żeby nie zablokować łamania). */
@@ -543,7 +609,7 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
       h('div', { style: { flexDirection: 'column', marginTop: 'auto', marginBottom: 'auto', paddingTop: 24, paddingBottom: 24 } },
         spec.eyebrow && eyebrow(spec.eyebrow),
         h('div', { style: { flexDirection: 'column', marginTop: spec.eyebrow ? 26 : 0, maxWidth: wide ? WIDE_W : '100%', fontFamily: DISPLAY, fontWeight: 400, fontSize: size, lineHeight: 1, letterSpacing: '-0.04em', color: C.ink } },
-          ...titleLines(title, spec.redact)),
+          ...titleLines(title.includes('\n') ? title : breakTitle(title, size, wide ? WIDE_W : TEXT_W), spec.redact)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
       spec.footer && footer(spec.footer, wide, spec.locale)),
     spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat, spec.locale) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : spec.media.kind === 'dots' ? dots(spec.media) : spec.media.kind === 'stamps' ? stamps(spec.media) : null);

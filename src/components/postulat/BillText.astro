@@ -37,19 +37,26 @@ const [kind, date, subject] = bill.heading;
 </div>
 
 <script>
+  import { announce, copyText } from '@/scripts/clipboard';
+
   // „§” przy ustępie: adres z kotwicą trafia do schowka i do paska adresu
+  let shown: HTMLElement | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   document.addEventListener('click', async (e) => {
     const link = (e.target as Element).closest<HTMLAnchorElement>('a[data-cite]');
     if (!link) return;
     e.preventDefault();
     history.replaceState(null, '', link.hash);
-    try {
-      await navigator.clipboard.writeText(location.href);
-      link.dataset.copied = '';
-      setTimeout(() => delete link.dataset.copied, 1600);
-    } catch {
-      // bez dostępu do schowka zostaje adres w pasku przeglądarki
-    }
+    // bez dostępu do schowka zostaje adres w pasku przeglądarki
+    if (!(await copyText(location.href))) return;
+    // jeden dymek naraz: nowe kopiowanie zdejmuje poprzedni i jego licznik
+    clearTimeout(timer);
+    if (shown) delete shown.dataset.copied;
+    link.dataset.copied = '';
+    shown = link;
+    timer = setTimeout(() => delete link.dataset.copied, 1600);
+    // dymek z ::after czytnik pomija
+    announce('Skopiowano link');
   });
 </script>
 
@@ -81,7 +88,7 @@ const [kind, date, subject] = bill.heading;
   }
   .bill__unit:hover .bill__cite, .bill__cite:focus-visible { color: var(--blue); }
   .bill__cite[data-copied]::after {
-    content: "Skopiowano link"; position: absolute; left: 0; bottom: 100%; white-space: nowrap;
+    content: "Skopiowano link" / ""; position: absolute; left: 0; bottom: 100%; white-space: nowrap;
     padding: 4px 8px; background: var(--inverse-2); color: #fff; font-size: 0.6875rem; line-height: 1.3;
   }
 

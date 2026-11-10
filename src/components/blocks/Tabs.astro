@@ -3,6 +3,8 @@
  * Zachowanie zakładek ARIA (klik, strzałki, Home/End) dla dowolnego markupu
  * z role="tab" / role="tabpanel" umieszczonego w slocie. Wygląd — po stronie konsumenta.
  * Panele wskazuje atrybut aria-controls zakładki.
+ * Nieaktywne panele mają hidden="until-found" — panel nie może mieć własnego display, paddingu ani ramki
+ * (Safari pokazałby wszystkie naraz, Chrome zostawiłby puste ramki); styl kładź na elemencie w środku.
  */
 import type { HTMLAttributes } from 'astro/types';
 
@@ -24,10 +26,18 @@ const { class: className, ...rest } = Astro.props;
           t.setAttribute('aria-selected', String(on));
           t.tabIndex = on ? 0 : -1;
           const panel = document.getElementById(t.getAttribute('aria-controls') ?? '');
-          if (panel) panel.hidden = !on;
+          // until-found: Cmd+F i linki do cytatów znajdują treść ukrytych paneli (Safari chowa jak zwykłe hidden)
+          if (panel) panel.hidden = on ? false : 'until-found';
         });
         if (focus) tab.focus();
       };
+
+      // Przeglądarka odsłania znaleziony panel sama — zakładka musi pójść za nim
+      this.addEventListener('beforematch', (e) => {
+        const id = (e.target as HTMLElement).id;
+        const tab = tabs.find((t) => t.getAttribute('aria-controls') === id);
+        if (tab) select(tab);
+      });
 
       tabs.forEach((tab, i) => {
         tab.addEventListener('click', () => select(tab));

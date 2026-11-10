@@ -60,9 +60,11 @@ const menu = nav.length + mobileExtras.length > 0;
   </div>
 
   {menu && <div class="mobile-menu" id="mobile-menu" data-mobile-menu hidden>
-    <ul>
-      {[...nav, ...mobileExtras].map((link) => <li><a href={link.href}>{link.label}</a></li>)}
-    </ul>
+    <nav aria-label={t.nav.main}>
+      <ul>
+        {[...nav, ...mobileExtras].map((link) => <li><a href={link.href}>{link.label}</a></li>)}
+      </ul>
+    </nav>
     {/* Na telefonie nagłówek mieści tylko tryb nocny — „Większy tekst” jest tu, z podpisem */}
     <div class="mobile-menu__prefs">
       <TextSizeToggle labelled />
@@ -90,6 +92,15 @@ const menu = nav.length + mobileExtras.length > 0;
   toggle?.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
   menu?.addEventListener('click', (e) => {
     if ((e.target as Element).closest('a')) setMenu(false);
+  });
+  // Esc zamyka menu i oddaje fokus przyciskowi — tylko gdy fokus jest w menu albo na przycisku,
+  // żeby nie zamykać go przy Esc, który chowa inną warstwę (dymek zaznaczenia, okno)
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || e.defaultPrevented || !menu || menu.hidden) return;
+    const el = document.activeElement;
+    if (el !== toggle && !menu.contains(el)) return;
+    setMenu(false);
+    toggle?.focus();
   });
   window.matchMedia('(min-width: 1025px)').addEventListener('change', (e) => e.matches && setMenu(false));
   // Otwarcie wyszukiwarki zamyka menu mobilne (zdarzenie z SearchDialog.astro)

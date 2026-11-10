@@ -346,7 +346,7 @@ export const routes: Route[] = [
       { label: 'Jak', text: 'pacjent.gov.pl → Historia leczenia → Historia wizyt → Szczegóły → „Zgłoś nieprawidłowość”. Kilka minut.' },
       { label: 'Co dalej', text: 'Zgłoszenie trafia do oddziału NFZ, który wyjaśnia sprawę. Nie zgłaszaj tego samego dwa razy — to tylko opóźnia wyjaśnienie.' },
       { label: 'Koszt', text: 'Bezpłatnie.' },
-      { label: 'Dobrze wiedzieć', text: 'W 2024 r. pacjenci zgłosili blisko 3,5 tys. takich świadczeń, a ponad 1,6 tys. zgłoszeń NFZ uznał za zasadne. Jesteś jedyną osobą spoza układu placówka–NFZ, która może to zauważyć.' },
+      { label: 'Dobrze wiedzieć', text: 'Od początku 2024 r. do sierpnia pacjenci zgłosili blisko 3,5 tys. takich świadczeń, a ponad 1,6 tys. zgłoszeń NFZ uznał za zasadne. Jesteś jedyną osobą spoza układu placówka–NFZ, która może to zauważyć.' },
     ],
     actions: [
       { label: 'Instrukcja krok po kroku', href: '/mechanizmy/fikcyjne-wizyty/#sprawdz-swoje-ikp-instrukcja', icon: 'arrow' },
@@ -517,7 +517,7 @@ export const card = {
 
 export const editorial = [
   'Bo prawa pacjenta działają tylko wtedy, gdy ktoś o nich wie. Bezpłatna pierwsza kopia dokumentacji przysługuje od lat, a w rejestracji nikt jej nie ogłasza. Zakaz opłat za pobyt rodzica przy dziecku jest w ustawie, a rachunki za „dostawkę” wciąż się zdarzają. Niewiedza też jest formą nieprzejrzystości.',
-  'Widać to na Internetowym Koncie Pacjenta. Gdy pacjenci zobaczyli własne rozliczenia, w jednym roku ponad 1600 z nich okazało się nie do obrony. IKP pokazuje koszt Twojej wizyty, ale nie pokazuje, ile publicznych pieniędzy trafiło łącznie do konkretnego lekarza ze wszystkich źródeł. To ta sama luka — [brak jawności jako warunek nadużyć](ref:brak-jawnosci).',
+  'Widać to na Internetowym Koncie Pacjenta. Gdy pacjenci zobaczyli własne rozliczenia, w niespełna osiem miesięcy ponad 1600 z nich okazało się nie do obrony. IKP pokazuje koszt Twojej wizyty, ale nie pokazuje, ile publicznych pieniędzy trafiło łącznie do konkretnego lekarza ze wszystkich źródeł. To ta sama luka — [brak jawności jako warunek nadużyć](ref:brak-jawnosci).',
   'Nie jesteśmy urzędem, kancelarią ani organizacją pacjentów, tylko obywatelskim serwisem o jawności pieniędzy publicznych. Opisujemy mechanizmy, nie osoby. Zdecydowana większość lekarzy i placówek pracuje rzetelnie; problemem jest system, w którym o swoich prawach dowiadujemy się zwykle wtedy, gdy już zostały naruszone.',
 ];
 

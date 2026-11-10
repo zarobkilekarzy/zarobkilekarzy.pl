@@ -80,7 +80,7 @@ export const cards: Record<string, CardEn> = {
   'zarobki-lekarzy-polska-sasiedzi': { stat: { of: '2,9', value: '2.9', unit: 'times the average wage — a salaried specialist in Poland (OECD)' } },
 
   // Mechanizmy
-  'fikcyjne-wizyty': { stat: { of: '>1 600', value: '>1,600', unit: 'justified reports from patients in 2024' } },
+  'fikcyjne-wizyty': { stat: { of: '>1 600', value: '>1,600', unit: 'justified reports from patients, January–August 2024' } },
   'brak-jawnosci': {
     stat: { of: '0', value: '0', unit: 'published totals of payments to one person' },
     coverAlt: 'Three doctors making the “see no evil, hear no evil, speak no evil” gesture',

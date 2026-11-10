@@ -43,7 +43,7 @@ const TEXT: Record<string, StopText> = {
     question: 'Is everything right on my account',
     lead: 'The National Health Fund (NFZ) pays for an entry in the system, not for the visit as such. You can check refunded visits from 2008 onwards in your Internet Patient Account (IKP). Below you can see the way there step by step before you log in.',
     entryText: 'See step by step how to reach your visit history in the Internet Patient Account (IKP).',
-    badge: { value: '>1,600', label: 'justified patient reports about IKP entries in 2024', note: 'NFZ via Rynek Zdrowia' },
+    badge: { value: '>1,600', label: 'justified patient reports about IKP entries, January–August 2024', note: 'NFZ via Rynek Zdrowia' },
     main: { ref: 'fikcyjne-wizyty' },
     more: [],
   },

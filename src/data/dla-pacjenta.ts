@@ -88,7 +88,7 @@ export const stops: Stop[] = [
     entry: { icon: 'doc', text: 'Zobacz krok po kroku, jak dojść do historii wizyt w Internetowym Koncie Pacjenta.' },
     image: imgKonto,
     effect: 'scan',
-    badge: { value: '>1 600', label: 'zasadnych zgłoszeń pacjentów do wpisów w IKP w 2024 r.', note: 'NFZ za: Rynek Zdrowia' },
+    badge: { value: '>1 600', label: 'zasadnych zgłoszeń pacjentów do wpisów w IKP od stycznia do sierpnia 2024 r.', note: 'NFZ za: Rynek Zdrowia' },
     main: { ref: 'fikcyjne-wizyty' },
     more: [],
   },

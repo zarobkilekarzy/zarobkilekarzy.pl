@@ -28,7 +28,7 @@ export const mechanismTopics: Record<(typeof MECHANISM_TOPICS)[number], Question
     question: 'Kto sprawdza, za co płacimy?',
     lead: 'Wizyty, których nie było, i brak rejestru, który by je wyłapał.',
     answer:
-      'Prawie nikt. Kontrole NFZ są wybiórcze, a sumy publicznych wypłat dla jednego lekarza nikt nie publikuje — od 2026 r. państwo może ją policzyć, ale jej nie ujawnia. Jedynym świadkiem spoza układu placówka–Fundusz jest pacjent: w 2024 r. pacjenci zgłosili blisko 3,5 tys. zastrzeżeń do wpisów w IKP, a ponad 1,6 tys. okazało się zasadnych.',
+      'Prawie nikt. Kontrole NFZ są wybiórcze, a sumy publicznych wypłat dla jednego lekarza nikt nie publikuje — od 2026 r. państwo może ją policzyć, ale jej nie ujawnia. Jedynym świadkiem spoza układu placówka–Fundusz jest pacjent: od początku 2024 r. do sierpnia pacjenci zgłosili blisko 3,5 tys. zastrzeżeń do wpisów w IKP, a ponad 1,6 tys. okazało się zasadnych.',
     image: imgJawnosc,
     position: '50% 50%',
   },

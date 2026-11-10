@@ -39,7 +39,7 @@ export const mechanismTopics: Record<(typeof MECHANISM_TOPICS)[number], Question
     question: 'Who checks what we pay for?',
     lead: 'Visits that never happened, and no register that would catch them.',
     answer:
-      'Almost nobody. NFZ inspections are selective, and nobody publishes the total of public payments to one doctor — since 2026 the state can calculate it, but does not disclose it. The only witness from outside the facility–Fund relationship is the patient: in 2024 patients filed almost 3,500 objections to entries in their Internet Patient Account (IKP), and more than 1,600 of them were found justified.',
+      'Almost nobody. NFZ inspections are selective, and nobody publishes the total of public payments to one doctor — since 2026 the state can calculate it, but does not disclose it. The only witness from outside the facility–Fund relationship is the patient: from the start of 2024 to August patients filed almost 3,500 objections to entries in their Internet Patient Account (IKP), and more than 1,600 of them were found justified.',
   },
   platnik: {
     ...topicsPl.platnik,

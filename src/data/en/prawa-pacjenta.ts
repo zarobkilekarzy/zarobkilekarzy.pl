@@ -354,7 +354,7 @@ export const routes: Route[] = [
       { label: 'How', text: 'pacjent.gov.pl → Historia leczenia (Treatment history) → Historia wizyt (Visit history) → Szczegóły (Details) → “Zgłoś nieprawidłowość” (Report an irregularity). It takes a few minutes.' },
       { label: 'What next', text: 'The report goes to the NFZ branch, which looks into the matter. Do not report the same thing twice — it only delays the investigation.' },
       { label: 'Cost', text: 'Free of charge.' },
-      { label: 'Good to know', text: 'In 2024 patients reported almost 3.5 thousand such services, and the NFZ found more than 1.6 thousand of the reports justified. You are the only person outside the facility–NFZ relationship who can notice this.' },
+      { label: 'Good to know', text: 'From the start of 2024 to August patients reported almost 3.5 thousand such services, and the NFZ found more than 1.6 thousand of the reports justified. You are the only person outside the facility–NFZ relationship who can notice this.' },
     ],
     actions: [
       { label: 'Step-by-step instructions', href: '/en/mechanisms/visits-that-never-happened/#check-your-ikp-instructions', icon: 'arrow' },
@@ -548,7 +548,7 @@ export const pdfText: PdfText = {
 
 export const editorial: Pl['editorial'] = [
   'Because patient rights work only when people know about them. The free first copy of medical records has been available for years, yet nobody announces it at reception. The ban on charging a parent for staying with their child is in the act, yet bills for an “extra bed” still happen. Lack of knowledge is also a form of opacity.',
-  'You can see this in the Internet Patient Account. When patients saw their own billing records, more than 1,600 of them turned out to be indefensible in a single year. The IKP shows the cost of your visit, but not how much public money in total went to a particular doctor from all sources. It is the same gap — [lack of transparency as a condition for abuse](/en/mechanisms/lack-of-transparency/).',
+  'You can see this in the Internet Patient Account. When patients saw their own billing records, more than 1,600 of them turned out to be indefensible in less than eight months. The IKP shows the cost of your visit, but not how much public money in total went to a particular doctor from all sources. It is the same gap — [lack of transparency as a condition for abuse](/en/mechanisms/lack-of-transparency/).',
   'We are not a public authority, a law firm or a patients’ organisation, but a citizens’ website about the transparency of public money. We describe mechanisms, not individuals. The vast majority of doctors and facilities work diligently; the problem is a system in which we usually learn about our rights only once they have already been violated.',
 ];
 
@@ -618,6 +618,11 @@ same(sources, PL.sources, 'źródła', (s) => s.url);
  * Nowy wpis po polsku = ten sam wpis tutaj.
  */
 export const changelog: { date: Date; text: string; correction?: boolean }[] = [
+  {
+    date: new Date('2026-11-10'),
+    text: 'Corrected: the almost 3.5 thousand reports of services in the IKP and more than 1.6 thousand justified ones are figures from the start of 2024 to August, not for the whole year.',
+    correction: true,
+  },
   {
     date: new Date('2026-10-21'),
     text: 'Corrected: a complaint to the professional liability officer does not have to be in writing or signed by hand, and the 3 years from the act (art. 64 ust. 1 of the Act on Medical Chambers) is the deadline for opening proceedings — the complaint has to be filed earlier.',

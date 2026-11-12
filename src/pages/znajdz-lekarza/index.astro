@@ -38,6 +38,15 @@ const seo: SeoInput = {
   breadcrumbs: crumbs,
 };
 
+// katalogi i sposób wywołania według dokumentacji narzędzi (sprawdzone 12.11.2026)
+const AGENTS = [
+  { name: 'Claude Code', dirs: ['~/.claude/skills/'], call: '<code>/znajdz-lekarza</code>' },
+  { name: 'Codex (OpenAI)', dirs: ['~/.agents/skills/'], call: '<code>$znajdz-lekarza</code> albo lista <code>/skills</code>' },
+  { name: 'Gemini CLI', dirs: ['~/.gemini/skills/', '~/.agents/skills/'], call: 'sam, gdy zapytasz o lekarza; poprosi o zgodę na użycie skilla' },
+  { name: 'Cursor', dirs: ['~/.cursor/skills/', '~/.agents/skills/'], call: '<code>/znajdz-lekarza</code> w oknie agenta' },
+  { name: 'GitHub Copilot w VS Code', dirs: ['~/.copilot/skills/'], call: '<code>/znajdz-lekarza</code> w oknie czatu' },
+];
+
 const jump = [
   { label: 'Co robi', href: '#co-robi' },
   { label: 'Instalacja', href: '#instalacja' },
@@ -117,18 +126,34 @@ const jump = [
         </ol>
       </Steps>
 
-      <h3 id="instalacja-recznie">Sposób 3: ręcznie</h3>
-      <Steps>
-        <ol>
-          <li><a href={ZIP}>Pobierz plik znajdz-lekarza.zip</a> i rozpakuj go. Dostaniesz folder <code>znajdz-lekarza</code>.</li>
-          <li>
-            Przenieś ten folder do katalogu skilli swojego asystenta: w Claude Code to <code>~/.claude/skills/</code>, w Codex <code>~/.agents/skills/</code>.
-            W innych narzędziach poszukaj w dokumentacji hasła „skills”.
-          </li>
-        </ol>
-      </Steps>
+      <h3 id="instalacja-recznie">Sposób 3: ręcznie, także poza Claude</h3>
+      <p>
+        Skill jest zapisany w otwartym formacie <a href="https://agentskills.io">Agent Skills</a>, więc działa nie tylko w Claude.{' '}
+        <a href={ZIP}>Pobierz plik znajdz-lekarza.zip</a>, rozpakuj go i przenieś folder <code>znajdz-lekarza</code> do katalogu skilli swojego asystenta:
+      </p>
+      <div class="zl-table">
+        <table>
+          <thead>
+            <tr><th scope="col">Asystent</th><th scope="col">Katalog skilli</th><th scope="col">Jak wywołać</th></tr>
+          </thead>
+          <tbody>
+            {AGENTS.map((a) => (
+              <tr>
+                <th scope="row">{a.name}</th>
+                <td>{a.dirs.map((d, i) => <>{i > 0 && ' albo '}<code>{d}</code></>)}</td>
+                <td set:html={a.call} />
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <strong>Jeden katalog dla kilku asystentów:</strong> <code>~/.agents/skills/</code> czytają jednocześnie Codex, Gemini CLI i Cursor.
+        Jeśli używasz więcej niż jednego, wystarczy umieścić folder tam.
+      </p>
       <p>
         Znak <code>~</code> oznacza folder domowy, w Windows na przykład <code>C:\Users\Anna</code>. Jeśli katalogu <code>skills</code> jeszcze nie ma, utwórz go.
+        Po skopiowaniu zacznij nową rozmowę albo uruchom asystenta ponownie. Innego narzędzia szukaj w jego dokumentacji pod hasłem „skills”.
       </p>
       <p>
         <strong>Sprawdź, czy działa:</strong> zacznij nową rozmowę i zapytaj „Jakie masz skille?”. Asystent powinien wymienić <code>znajdz-lekarza</code>.
@@ -140,7 +165,10 @@ const jump = [
         Wpisz w rozmowie z asystentem komendę <code>/znajdz-lekarza</code> i dopisz, z czym szukasz lekarza i gdzie mieszkasz:
       </p>
       <pre class="zl-cmd"><code>/znajdz-lekarza endokrynolog w Krakowie, mam guzek tarczycy</code></pre>
-      <p>Komenda nie jest konieczna. Asystent sięgnie po skill także wtedy, gdy napiszesz zwykłym zdaniem:</p>
+      <p>
+        W Codex zamiast ukośnika wpisz <code>$znajdz-lekarza</code>. Komenda nie jest konieczna w żadnym asystencie:
+        każdy sięgnie po skill także wtedy, gdy napiszesz zwykłym zdaniem:
+      </p>
       <ul>
         <li>„Szukam dobrego endokrynologa w Krakowie, mam guzek tarczycy.”</li>
         <li>„Do kogo pójść z nawracającym bólem barku po urazie? Jestem z Lublina.”</li>
@@ -212,5 +240,10 @@ const jump = [
 <style>
   .zl-top { padding-top: clamp(32px, 4vw, 56px); }
   .zl-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .zl-table { overflow-x: auto; }
+  .zl-table table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+  .zl-table th, .zl-table td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line-2); text-align: left; vertical-align: top; }
+  .zl-table thead th { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .zl-table tbody th { font-weight: 600; white-space: nowrap; }
   .zl-cmd { padding: 14px 16px; border: 1px solid var(--line-2); background: var(--surface); font: 400 0.9375rem/1.5 var(--f-mono); overflow-x: auto; }
 </style>

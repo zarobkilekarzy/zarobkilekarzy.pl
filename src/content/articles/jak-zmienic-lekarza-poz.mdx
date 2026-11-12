@@ -1,0 +1,160 @@
+---
+title: "Jak zmienić lekarza POZ i co dzieje się wtedy z pieniędzmi"
+seoTitle: "Jak zmienić lekarza POZ krok po kroku"
+category: Mechanizm
+topic: dostep
+stat: { value: "2", unit: "bezpłatne zmiany lekarza POZ w roku kalendarzowym" }
+date: 2026-11-12
+summary: "Lekarza POZ zmienisz w kilka minut w Internetowym Koncie Pacjenta, bezpłatnie dwa razy w roku. Razem z deklaracją do nowej przychodni przechodzi roczna stawka, którą NFZ płaci za Ciebie co miesiąc."
+description: "Jak zmienić lekarza POZ przez IKP albo w przychodni: kroki, terminy i opłaty. Do tego krótko o stawce kapitacyjnej, która idzie za deklaracją pacjenta."
+keyPoints:
+  - "Lekarza POZ można zmienić bezpłatnie 2 razy w roku kalendarzowym; każda kolejna zmiana kosztuje 80 zł."
+  - "Deklarację składa się w IKP albo w nowej przychodni. Poprzedniej placówki nie trzeba zawiadamiać."
+  - "Za deklaracją idzie roczna stawka kapitacyjna: od 232,56 zł za dorosłego w wieku 20–39 lat do 930,24 zł za dziecko do 2. roku życia."
+  - "Opiekę koordynowaną ma 55% placówek POZ. Czy ma ją Twoja, sprawdzisz na mapie NFZ."
+editorial:
+  - >-
+    Stawka za pacjenta wpływa do przychodni co miesiąc, niezależnie od tego, czy placówka
+    rozszerza zakres opieki, czy od lat nie zmienia niczego. Deklaracja wyboru jest jednym
+    z niewielu miejsc w systemie, w których o podziale publicznych pieniędzy decyduje sam pacjent.
+  - >-
+    Dlatego warto wybierać świadomie i zapisać się tam, gdzie widać starania o pacjenta.
+    To nie jest wybór przeciwko lekarzom: stawka trafia do placówki, a o jej organizacji
+    decyduje ten, kto ją prowadzi. Publicznego porównania jakości przychodni POZ nie ma,
+    więc pacjent wybiera dziś po kilku widocznych cechach, a nie po wynikach leczenia.
+related:
+  - poz-pieniadz-za-pacjenta
+  - fikcyjne-wizyty
+  - prawa-pacjenta
+---
+import StatRow from '@/components/blocks/StatRow.astro';
+import Steps from '@/components/blocks/Steps.astro';
+import Screenshot from '@/components/blocks/Screenshot.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Button from '@/components/ui/Button.astro';
+import { AGE_WEIGHTS, RATE } from '@/data/poz';
+import { formatPL } from '@/lib/format';
+import ikpLogowanie from '@/assets/articles/fikcyjne-wizyty/ikp-1-logowanie.png';
+import ikpSposoby from '@/assets/articles/jak-zmienic-lekarza-poz/ikp-2-logowanie-sposoby.png';
+import ikpKafelek from '@/assets/articles/jak-zmienic-lekarza-poz/ikp-3-kafelek-moje-konto.png';
+import ikpSekcjaPoz from '@/assets/articles/jak-zmienic-lekarza-poz/ikp-4-sekcja-twoja-poz.png';
+import ikpFormularz from '@/assets/articles/jak-zmienic-lekarza-poz/ikp-5-formularz-deklaracji.png';
+
+{/* Zrzuty z 12.11.2026; dane lekarza i placówki na zrzutach są przykładowe */}
+
+{/* Adresy przy liczbach w blokach; te same publikacje są w przypisach */}
+export const LINKS = {
+  ustawa: 'https://eli.gov.pl/eli/DU/2025/515/ogl/pol/pdf',
+  z65: 'https://baw.nfz.gov.pl/NFZ/document/43917/Zarzadzenie-65_2026_DSOZ',
+  ok: 'https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/ponad-2-7-mld-zl-na-opieke-koordynowana-w-podstawowej-opiece-zdrowotnej,9016.html',
+  mapa: 'https://koordynowana.nfz.gov.pl/przychodnie-poz-realizujace-opieke-koordynowana/',
+};
+
+{/* Stawka roczna dla grupy wieku = stawka bazowa × współczynnik (src/data/poz.ts) */}
+export const weights = AGE_WEIGHTS.filter((a) => a.group !== 'podopieczny DPS').map((a) => a.weight);
+export const rateMin = formatPL(RATE.rate * Math.min(...weights), 2);
+export const rateMax = formatPL(RATE.rate * Math.max(...weights), 2);
+export const rateSenior = formatPL(RATE.rate * AGE_WEIGHTS.find((a) => a.group === 'powyżej 75 lat').weight, 2);
+
+Deklaracja wyboru lekarza podstawowej opieki zdrowotnej (POZ) wygląda jak formalność załatwiana raz na wiele lat. W rzeczywistości decyduje o tym, do której przychodni NFZ co miesiąc przelewa pieniądze za Twoją opiekę. Zmiana lekarza jest prosta, przez większość roku bezpłatna i nie wymaga tłumaczenia się nikomu.[^ustawa]
+
+<StatRow
+  label="Zmiana lekarza POZ w liczbach"
+  items={[
+    { value: 2, unit: 'razy w roku', desc: 'można bezpłatnie zmienić lekarza POZ; każda kolejna zmiana kosztuje 80 zł', accuracy: 'exact', source: 'ustawa o POZ, art. 9', href: LINKS.ustawa },
+    { value: RATE.rate, decimals: 2, unit: 'zł rocznie', desc: `stawka bazowa za pacjenta w ${RATE.year} r., mnożona przez współczynnik wieku`, accuracy: 'exact', source: 'zarządzenie 65/2026/DSOZ', href: LINKS.z65 },
+    { value: 55, unit: '% placówek', desc: 'POZ ma umowę na opiekę koordynowaną (stan na 8.09.2026)', accuracy: 'exact', source: 'NFZ, 22.09.2026', href: LINKS.ok },
+  ]}
+/>
+
+## Za deklaracją idą pieniądze
+
+Przychodnia POZ nie dostaje pieniędzy za wizytę. NFZ płaci jej **roczną stawkę kapitacyjną za każdego pacjenta, który złożył deklarację**, w dwunastu miesięcznych częściach, także wtedy, gdy pacjent przez cały rok nie przyjdzie ani razu. W {RATE.year} r. stawka bazowa wynosi **{formatPL(RATE.rate, 2)} zł rocznie**.[^stawka]
+
+Stawkę mnoży się przez współczynnik wieku. Za dorosłego w wieku 20–39 lat przychodnia dostaje {rateMin} zł rocznie, za osobę powyżej 75 lat {rateSenior} zł, a za dziecko do 2. roku życia {rateMax} zł.[^stawka] Z tych pieniędzy placówka opłaca personel, lokal i podstawowe badania.
+
+Gdy zmieniasz lekarza, stawka przechodzi razem z deklaracją do nowej przychodni. Skąd bierze się jej wysokość, co przychodnia musi z niej sfinansować i jakie bodźce z tego wynikają, opisuje osobna analiza: [Pieniądz za pacjenta w POZ](/analizy/poz-pieniadz-za-pacjenta/).
+
+## Dlaczego warto wybierać świadomie
+
+Wysokość stawki kapitacyjnej zależy dziś przede wszystkim od wieku pacjenta, a nie od tego, jak przychodnia pracuje. Placówka, która ułatwia rejestrację, jeździ na wizyty domowe i pilnuje badań profilaktycznych, dostaje za tego samego pacjenta tę samą stawkę co placówka, która od lat nie zmienia niczego. Dodatkowe zadania, takie jak opieka koordynowana, NFZ opłaca osobno, ale tylko wtedy, gdy przychodnia sama po nie sięgnie.[^ok-pacjent]
+
+Pierwsze współczynniki zależne od jakości NFZ zapowiedział dopiero od maja 2027 r. Stawka za wybrane grupy wieku pacjentów ma być niższa o 5% w placówkach z najniższą zgłaszalnością na badania przesiewowe w kierunku raka piersi i raka szyjki macicy oraz o 10%, gdy przychodnia nie realizuje wizyt domowych albo nie udziela teleporad lub udziela ich w ponad połowie przypadków.[^jakosc]
+
+Skoro stawka prawie nie odróżnia przychodni, robi to pacjent. Pozostając na liście placówki, która nie inwestuje i się nie rozwija, co miesiąc kierujesz do niej swoją stawkę. Składając deklarację w przychodni, która się stara, przenosisz te same publiczne pieniądze tam, gdzie pracują na lepszą opiekę. Nie płacisz przy tym ani złotówki więcej.
+
+Jedna deklaracja to kilkaset złotych rocznie, więc pojedyncza zmiana nie zmieni budżetu żadnej przychodni. Liczy się suma: pełna lista jednego lekarza to ok. 2500 pacjentów, a o wielkości listy decydują wyłącznie deklaracje.[^stawka]
+
+<Aside title="Granice tego rozumowania" variant="note">
+
+Publicznego rankingu ani porównania jakości przychodni POZ nie ma, więc pacjent ocenia placówkę po cechach, które widać z zewnątrz. W wielu gminach działa jedna albo dwie przychodnie i wybór jest ograniczony. Stawka trafia do placówki, a nie wprost do lekarza: o inwestycjach i organizacji pracy decyduje ten, kto przychodnię prowadzi, a wielu lekarzy POZ pracuje w niej na etacie albo kontrakcie.
+
+</Aside>
+
+## Po czym poznać przychodnię, która się rozwija
+
+Kilka rzeczy można sprawdzić przed złożeniem deklaracji, bez znajomości wyników leczenia.
+
+- **Opieka koordynowana.** Przychodnia, która do niej przystąpiła, może sama zlecić m.in. Holter EKG, ECHO serca i USG Doppler oraz konsultację z kardiologiem, diabetologiem, endokrynologiem, pulmonologiem lub dietetykiem, a pacjenta prowadzi koordynator. Udział jest dobrowolny: umowę ma 55% placówek POZ.[^ok] Swoją i nową przychodnię sprawdzisz na [mapie NFZ](https://koordynowana.nfz.gov.pl/przychodnie-poz-realizujace-opieke-koordynowana/).[^ok-pacjent]
+- **Profilaktyka, wizyty domowe, teleporady.** To trzy obszary, które NFZ sam wybrał na wskaźniki jakości od 2027 r.[^jakosc] Zapytaj w rejestracji, czy lekarz jeździ na wizyty domowe, czy teleporada jest możliwością, a nie jedyną dostępną formą, i czy przychodnia zaprasza na badania przesiewowe.
+- **Rejestracja.** Przychodnia ma obowiązek przyjmować zapisy osobiście, telefonicznie, przez osobę trzecią i drogą elektroniczną.[^przychodnia] Jeśli działa tylko telefon, na który trudno się dodzwonić, to sygnał o organizacji pracy.
+- **Odległość.** Rejonizacja nie obowiązuje i można wybrać dowolną przychodnię w Polsce, ale przy dużej odległości wizyta domowa lekarza albo pielęgniarki może być trudna do zrealizowania.[^przychodnia]
+
+To cechy pośrednie. Mówią o tym, czy placówka korzysta z narzędzi, które daje jej system, a nie o tym, jak leczy konkretny lekarz.
+
+<Aside title="Porównanie przychodni z pomocą asystenta AI" variant="info">
+
+Te same cechy może zebrać za Ciebie asystent AI ze skillem [Znajdź lekarza](/znajdz-lekarza/). Po zainstalowaniu skilla wpisujesz w rozmowie komendę `/znajdz-lekarza` i piszesz na przykład: „szukam przychodni POZ na Bielanach w Warszawie”. Podajesz miejscowość i to, co jest dla Ciebie ważne, a asystent zestawia 2–4 przychodnie: opieka koordynowana, rejestracja, teleporady, wizyty domowe, opinie. Skill jest bezpłatny. Wynik warto sprawdzić w źródłach, do których asystent podaje linki, a o przyjmowanie nowych pacjentów zapytać w rejestracji.
+
+</Aside>
+
+## Jak zmienić lekarza POZ w IKP
+
+<Steps title="7 kroków · ok. 5 minut">
+
+1. Wejdź na **pacjent.gov.pl** i wybierz „Zaloguj się” w prawym górnym rogu.[^ikp]
+
+   <Screenshot src={ikpLogowanie} alt="Strona główna pacjent.gov.pl. W prawym górnym rogu niebieski przycisk „Zaloguj się”." />
+
+2. Wybierz sposób logowania: profil zaufany, aplikację mObywatel, bankowość elektroniczną albo e-dowód.
+
+   <Screenshot src={ikpSposoby} alt="Ekran login.gov.pl „Zaloguj się do usługi Internetowe Konto Pacjenta” z listą sposobów logowania: Profil zaufany, Aplikacja mObywatel, Bankowość elektroniczna, E-dowód." />
+
+3. Na stronie głównej konta przewiń do kafelka „Moje konto” i kliknij „Zobacz”.[^wybor]
+
+   <Screenshot src={ikpKafelek} alt="Strona główna IKP. Kafelek „Moje konto” z pozycjami: wybór lekarza POZ, pielęgniarki POZ i położnej, dane kontaktowe, zarządzanie powiadomieniami; pod nimi przycisk „Zobacz”." />
+
+4. W sekcji „Twoja Podstawowa Opieka Zdrowotna (POZ)” znajdź pozycję „Lekarz”. Jeśli masz już lekarza, zobaczysz jego nazwisko, przychodnię i datę złożenia deklaracji, a zmianę zaczynasz przyciskiem „Nowa deklaracja”. Jeśli nie masz jeszcze nikogo, w tym miejscu jest przycisk „Wypełnij deklarację”.
+
+   <Screenshot src={ikpSekcjaPoz} alt="Sekcja „Twoja Podstawowa Opieka Zdrowotna (POZ)”. Przy lekarzu przykładowe dane przychodni i data złożenia deklaracji oraz przyciski „Zobacz deklaracje” i „Nowa deklaracja”; przy pielęgniarce przycisk „Wypełnij deklarację”." caption="Dane lekarza i przychodni na zrzutach są przykładowe." />
+
+5. Wybierz województwo i miejscowość, potem placówkę z listy i lekarza. Zaznacz, czy w tym roku wybierasz po raz pierwszy lub drugi, czy po raz trzeci i kolejny,[^ustawa] i kliknij „Podpisz deklarację”.
+
+   <Screenshot src={ikpFormularz} alt="Formularz „Złóż nową deklarację POZ”: pola Województwo, Miejscowość, Ulica i „Wybierz placówkę z listy”, pytanie „W bieżącym roku kalendarzowym wybieram” z odpowiedziami „po raz pierwszy lub po raz drugi” i „po raz trzeci i kolejny”, niżej wybrany lekarz i przycisk „Podpisz deklarację”." />
+
+6. Poczekaj na potwierdzenie. Deklaracja trafia do nowej przychodni, a zmiana powinna nastąpić w ciągu 7 dni; według pacjent.gov.pl w praktyce bywa, że trwa to do 3 tygodni.[^wybor]
+
+7. Status sprawdzisz w tej samej sekcji pod przyciskiem „Zobacz deklaracje”. Jeśli przychodnia odrzuci deklarację, znajdziesz tam powód.[^wybor]
+</Steps>
+
+<Button href="https://pacjent.gov.pl">Przejdź do pacjent.gov.pl</Button>
+
+Bez internetu zrobisz to samo w rejestracji nowej przychodni: wypełniasz tam papierową deklarację wyboru. Trzecia droga to deklaracja w postaci elektronicznej, podpisana podpisem kwalifikowanym, zaufanym albo osobistym i wysłana do przychodni.[^ustawa] W każdym przypadku deklarację składasz tylko w nowej placówce. Poprzedniej nie trzeba o niczym zawiadamiać.[^przychodnia]
+
+## Zasady: ile razy, ile to kosztuje, co może pójść nie tak
+
+- **Dwie bezpłatne zmiany w roku kalendarzowym**, bez podawania powodu. Każda kolejna kosztuje 80 zł.[^ustawa]
+- **Opłaty nie ma**, gdy zmieniasz miejsce zamieszkania, gdy lekarz albo przychodnia przestają udzielać świadczeń lub gdy przyczyna leży po stronie placówki.[^ustawa]
+- **Przychodnia może odmówić**, na przykład gdy wybrany lekarz ma już pełną listę pacjentów. Jeśli placówka nie podejmie deklaracji w ciągu 7 dni, system może ją odrzucić automatycznie. Wtedy trzeba skontaktować się z przychodnią.[^wybor]
+- **Lekarza, pielęgniarkę i położną POZ wybierasz osobno.** Mogą pracować w tej samej przychodni albo w różnych.[^ustawa]
+- **W nagłym zachorowaniu poza domem** pomocy udzieli dowolny lekarz POZ, bez zmiany deklaracji.[^zmiana]
+
+[^ustawa]: Ustawa z 27 października 2017 r. o podstawowej opiece zdrowotnej, [tekst jednolity Dz.U. 2025 poz. 515](https://eli.gov.pl/eli/DU/2025/515/ogl/pol/pdf): art. 9 ust. 3–5 (wybór, dwie bezpłatne zmiany, opłata 80 zł i zwolnienia) oraz art. 10 ust. 1 i 3 (trzy formy deklaracji wyboru i jej treść).
+[^stawka]: Prezes NFZ, [zarządzenie nr 65/2026/DSOZ](https://baw.nfz.gov.pl/NFZ/document/43917/Zarzadzenie-65_2026_DSOZ) z 14.07.2026 (stawka bazowa od 1 lipca 2026 r.). Współczynniki wieku: zarządzenie nr 22/2025/DSOZ, § 23 ust. 2. Wyliczenia i historia stawki: [Pieniądz za pacjenta w POZ](/analizy/poz-pieniadz-za-pacjenta/).
+[^jakosc]: NFZ, [Zmiany w chirurgii i rozszerzenie modelu płacenia za jakość od 2027 r.](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/nfz-zmiany-w-chirurgii-i-rozszerzenie-modelu-placenia-za-jakosc-od-2027-r-,9018.html), komunikat z 24.09.2026; zasady określa [zarządzenie nr 103/2026/DSOZ](https://www.nfz.gov.pl/zarzadzenia-prezesa/zarzadzenia-prezesa-nfz/zarzadzenie-nr-1032026dsoz,7983.html).
+[^ok]: NFZ, [Ponad 2,7 mld zł na opiekę koordynowaną w podstawowej opiece zdrowotnej](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/ponad-2-7-mld-zl-na-opieke-koordynowana-w-podstawowej-opiece-zdrowotnej,9016.html), komunikat z 22.09.2026, dane według stanu na 8.09.2026.
+[^ok-pacjent]: NFZ, [Opieka koordynowana w POZ](https://www.nfz.gov.pl/dla-pacjenta/informacje-o-swiadczeniach/podstawowa-opieka-zdrowotna/opieka-koordynowana-w-poz/) — zakres badań i konsultacji, dobrowolny udział przychodni, mapa placówek.
+[^przychodnia]: pacjent.gov.pl, [Jak zostać pacjentem wybranej przychodni](https://pacjent.gov.pl/aktualnosc/jak-zostac-pacjentem-wybranej-przychodni), aktualizacja 25.03.2025.
+[^ikp]: pacjent.gov.pl, [Internetowe Konto Pacjenta](https://pacjent.gov.pl/internetowe-konto-pacjenta).
+[^wybor]: pacjent.gov.pl, [Wybór lekarza pierwszego kontaktu](https://pacjent.gov.pl/aktualnosc/wybor-lekarza-pierwszego-kontaktu), aktualizacja 20.08.2025.
+[^zmiana]: pacjent.gov.pl, [Jak wybrać lub zmienić świadczeniodawcę POZ](https://pacjent.gov.pl/jak-wybrac-lub-zmienic-swiadczeniodawce-poz), aktualizacja 3.03.2025.

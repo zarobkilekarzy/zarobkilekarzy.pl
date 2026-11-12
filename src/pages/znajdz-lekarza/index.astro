@@ -1,0 +1,216 @@
+---
+/**
+ * /znajdz-lekarza/ — opis i instrukcja skilla „Znajdź lekarza” dla asystentów AI
+ * (repozytorium github.com/zarobkilekarzy/znajdz-lekarza-skill, licencja MIT).
+ * Wyszukiwarka: searchExtras w data/navigation.ts; obrazek OG: data/og.ts (lupa z kropek).
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import JumpList from '@/components/blocks/JumpList.astro';
+import Prose from '@/components/article/Prose.astro';
+import Steps from '@/components/blocks/Steps.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import Button from '@/components/ui/Button.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Photo from '@/components/ui/Photo.astro';
+import robot from '@/assets/img/znajdz-lekarza-robot.jpg';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const REPO = 'https://github.com/zarobkilekarzy/znajdz-lekarza-skill';
+// stały adres paczki z najnowszego wydania (workflow release.yml w repozytorium skilla)
+const ZIP = `${REPO}/releases/latest/download/znajdz-lekarza.zip`;
+const INSTALL_PROMPT = `Zainstaluj skill „znajdz-lekarza”. Pobierz plik
+${ZIP}
+i rozpakuj folder znajdz-lekarza do swojego katalogu skilli użytkownika
+(tak, żeby plik SKILL.md leżał w <katalog skilli>/znajdz-lekarza/SKILL.md).
+Niczego innego nie instaluj. Na koniec potwierdź, gdzie leży skill i czy go widzisz.`;
+
+const title = 'Znajdź lekarza';
+const lead =
+  'Bezpłatny zestaw instrukcji dla asystenta AI. Asystent pyta o problem, dobiera specjalistę i szuka lekarza, który ma doświadczenie w podobnych przypadkach — na NFZ albo prywatnie.';
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Dla pacjenta', href: '/dla-pacjenta/' }, { label: title }];
+const seo: SeoInput = {
+  title: 'Znajdź lekarza — skill dla asystenta AI',
+  description:
+    'Jak zainstalować i używać skilla „Znajdź lekarza”: asystent AI dobiera specjalistę do problemu, sprawdza doświadczenie lekarzy, terminy NFZ i opinie.',
+  breadcrumbs: crumbs,
+};
+
+const jump = [
+  { label: 'Co robi', href: '#co-robi' },
+  { label: 'Instalacja', href: '#instalacja' },
+  { label: 'Jak używać', href: '#jak-uzywac' },
+  { label: 'Lekarz rodzinny (POZ)', href: '#poz' },
+  { label: 'Skąd bierze dane', href: '#dane' },
+  { label: 'Granice', href: '#granice' },
+];
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="zl-top">
+    <PageHeader title={title} lead={lead} eyebrow="Narzędzie dla pacjenta" crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Cena', value: 'bezpłatnie' },
+          { label: 'Licencja', value: 'MIT, kod otwarty' },
+          { label: 'Działa w', value: 'Windows, macOS, Linux' },
+        ]}
+      />
+      <JumpList slot="aside" title="Na tej stronie" items={jump} />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom">
+    <Prose>
+      <p>
+        Portale z opiniami pokazują, kto ma najwięcej gwiazdek. Nie pokazują, kto na co dzień leczy właśnie Twój problem.
+        Ten skill każe asystentowi szukać w odwrotnej kolejności: <strong>najpierw doświadczenie w konkretnej chorobie, potem dostępność, na końcu oceny</strong>.
+      </p>
+      <p>
+        Skill to folder z plikami tekstowymi, które asystent czyta przed rozmową. Nie jest programem i niczego nie instaluje na komputerze.
+        Działa w asystentach obsługujących otwarty format <a href="https://agentskills.io">Agent Skills</a>, m.in. w Claude i Codex.
+      </p>
+
+      <p>Po instalacji uruchamiasz go komendą <code>/znajdz-lekarza</code>.</p>
+
+      <p class="zl-actions">
+        <Button href={ZIP}>Pobierz skill (ZIP)</Button>
+        <Button href={REPO} variant="ghost">Kod na GitHubie</Button>
+      </p>
+
+      <Figure note="Zdjęcie ilustracyjne wygenerowane przez AI. Skill działa w zwykłym oknie rozmowy z asystentem.">
+        <Photo
+          src={robot}
+          alt="Starsza osoba siedzi tyłem przy biurku z laptopem; mały metalowy robot wskazuje palcem ekran, obok leży stetoskop"
+          ratio="3/2"
+          sizes="(min-width: 1025px) 950px, calc(100vw - 32px)"
+        />
+      </Figure>
+
+      <h2 id="co-robi">Co robi asystent ze skillem</h2>
+      <ol>
+        <li><strong>Sprawdza, czy to nie nagły przypadek.</strong> Przy objawach alarmowych przerywa i kieruje pod 112 albo na SOR.</li>
+        <li><strong>Zadaje kilka pytań:</strong> co dolega, od kiedy, gdzie mieszkasz, jak pilnie, NFZ czy prywatnie.</li>
+        <li><strong>Mówi, kogo będzie szukać</strong> — na przykład „ortopeda zajmujący się artroskopią barku” — i czeka na potwierdzenie.</li>
+        <li><strong>Szuka w trzech miejscach:</strong> w wyszukiwarce internetowej, na publicznych stronach ZnanyLekarz i w danych NFZ o terminach leczenia.</li>
+        <li><strong>Podaje 3–5 lekarzy.</strong> Przy każdym: kim jest, dlaczego pasuje, gdzie przyjmuje, oceny ze ZnanyLekarz i Google, cena albo czas oczekiwania na NFZ i sposób umówienia wizyty.</li>
+      </ol>
+      <p>Każde twierdzenie o lekarzu ma link do źródła. Czego nie udało się potwierdzić, asystent zaznacza wprost.</p>
+
+      <h2 id="instalacja">Instalacja</h2>
+      <p>Skill nie wymaga instalowania żadnych programów. Wybierz jeden sposób.</p>
+
+      <h3 id="instalacja-asystent">Sposób 1: poproś asystenta</h3>
+      <p>
+        Najprostszy, dla asystentów z dostępem do plików na Twoim komputerze: Claude Code, Codex, Gemini CLI, Cursor i podobnych. Wklej do rozmowy:
+      </p>
+      <pre class="zl-cmd"><code>{INSTALL_PROMPT}</code></pre>
+      <p>Asystent zapyta o zgodę na pobranie pliku. Potem zacznij nową rozmowę.</p>
+
+      <h3 id="instalacja-claude">Sposób 2: aplikacja Claude i claude.ai</h3>
+      <Steps>
+        <ol>
+          <li><a href={ZIP}>Pobierz plik znajdz-lekarza.zip</a>. Nie rozpakowuj go.</li>
+          <li>W aplikacji otwórz <strong>Ustawienia → Możliwości → Skille</strong> i prześlij pobrany plik.</li>
+          <li>Włącz skill na liście.</li>
+        </ol>
+      </Steps>
+
+      <h3 id="instalacja-recznie">Sposób 3: ręcznie</h3>
+      <Steps>
+        <ol>
+          <li><a href={ZIP}>Pobierz plik znajdz-lekarza.zip</a> i rozpakuj go. Dostaniesz folder <code>znajdz-lekarza</code>.</li>
+          <li>
+            Przenieś ten folder do katalogu skilli swojego asystenta: w Claude Code to <code>~/.claude/skills/</code>, w Codex <code>~/.agents/skills/</code>.
+            W innych narzędziach poszukaj w dokumentacji hasła „skills”.
+          </li>
+        </ol>
+      </Steps>
+      <p>
+        Znak <code>~</code> oznacza folder domowy, w Windows na przykład <code>C:\Users\Anna</code>. Jeśli katalogu <code>skills</code> jeszcze nie ma, utwórz go.
+      </p>
+      <p>
+        <strong>Sprawdź, czy działa:</strong> zacznij nową rozmowę i zapytaj „Jakie masz skille?”. Asystent powinien wymienić <code>znajdz-lekarza</code>.
+        Musi też mieć dostęp do internetu, czyli umieć wyszukiwać i czytać strony. Nowszą wersję instaluje się tak samo; listę zmian mają <a href={`${REPO}/releases`}>wydania na GitHubie</a>.
+      </p>
+
+      <h2 id="jak-uzywac">Jak używać</h2>
+      <p>
+        Wpisz w rozmowie z asystentem komendę <code>/znajdz-lekarza</code> i dopisz, z czym szukasz lekarza i gdzie mieszkasz:
+      </p>
+      <pre class="zl-cmd"><code>/znajdz-lekarza endokrynolog w Krakowie, mam guzek tarczycy</code></pre>
+      <p>Komenda nie jest konieczna. Asystent sięgnie po skill także wtedy, gdy napiszesz zwykłym zdaniem:</p>
+      <ul>
+        <li>„Szukam dobrego endokrynologa w Krakowie, mam guzek tarczycy.”</li>
+        <li>„Do kogo pójść z nawracającym bólem barku po urazie? Jestem z Lublina.”</li>
+        <li>„Potrzebuję neurologa dziecięcego na NFZ w okolicach Rzeszowa.”</li>
+        <li>„Ile się czeka do okulisty na NFZ w Gdańsku?”</li>
+      </ul>
+      <p>Kilka wskazówek:</p>
+      <ul>
+        <li><strong>Opisz problem konkretnie.</strong> „Guzek tarczycy 14 mm w USG” da lepszy wynik niż „coś z tarczycą”.</li>
+        <li><strong>Napisz o skierowaniu:</strong> czy je masz, do kogo i czy jest na nim dopisek „pilne”.</li>
+        <li><strong>Nie podawaj nazwiska ani numeru PESEL.</strong> Asystent ich nie potrzebuje.</li>
+        <li><strong>Poproś o ciąg dalszy:</strong> „poszerz szukanie na całe województwo”, „pokaż tylko NFZ”, „przygotuj pytania na pierwszą wizytę”.</li>
+      </ul>
+
+      <h2 id="poz">Lekarz rodzinny i przychodnia POZ</h2>
+      <p>
+        Skill pomaga też wybrać przychodnię podstawowej opieki zdrowotnej. Napisz na przykład: <code>/znajdz-lekarza chcę zmienić przychodnię, szukam lekarza rodzinnego na Bielanach w Warszawie</code>.
+      </p>
+      <p>
+        Asystent porównuje wtedy przychodnie po cechach, które da się sprawdzić z zewnątrz: opieka koordynowana, rejestracja przez internet, teleporady, wizyty domowe, godziny pracy, opinie o organizacji.
+        Publicznego rankingu jakości przychodni POZ nie ma, a o to, czy placówka przyjmuje nowych pacjentów, trzeba zapytać w rejestracji.
+      </p>
+      <p>
+        Samą zmianę opisuje instrukcja: <a href="/mechanizmy/jak-zmienic-lekarza-poz/">Jak zmienić lekarza POZ</a>.
+      </p>
+
+      <h2 id="dane">Skąd asystent bierze dane</h2>
+      <ul>
+        <li>
+          <strong>Terminy leczenia NFZ</strong> — oficjalne, otwarte <a href="https://api.nfz.gov.pl/app-itl-api/">API Narodowego Funduszu Zdrowia</a>.
+          Pokazuje średni czas oczekiwania i liczbę oczekujących w poradni, nie u konkretnego lekarza. Statystyki są miesięczne.
+        </li>
+        <li>
+          <strong>ZnanyLekarz</strong> — tylko publiczne strony list i profili, w niewielkiej liczbie.
+          Interfejs programistyczny serwisu wymaga logowania i nie jest używany. Wielu lekarzy pracujących w szpitalach nie ma tam profilu, dlatego to jedno z trzech źródeł.
+        </li>
+        <li>
+          <strong>Wyszukiwarka internetowa</strong> — strony szpitali i klinik, publikacje, oceny w wizytówkach Google.
+        </li>
+        <li>
+          <strong>Lista SOR</strong> — 250 szpitalnych oddziałów ratunkowych ze współrzędnymi (dane pacjent.gov.pl, stan na 24.09.2026), dołączona do skilla.
+          Bieżące kolejki pokazuje <a href="/prawa-pacjenta/sor/">mapa SOR</a>.
+        </li>
+      </ul>
+      <p>
+        Do wyszukiwarek trafia tylko specjalizacja, nazwa choroby i miejscowość. Opis objawów i dane osoby zostają w rozmowie z asystentem, na zasadach usługi, z której korzystasz.
+      </p>
+
+      <h2 id="granice">Granice</h2>
+      <Aside title="To nie jest porada lekarska ani ranking" variant="note">
+        <p>
+          Skill nie stawia diagnozy, nie zaleca leczenia i nie rezerwuje wizyt. Lista lekarzy powstaje z tego, co jest publicznie dostępne w internecie, więc bywa niepełna:
+          dobry lekarz bez strony i bez profilu może się na niej nie znaleźć.
+        </p>
+        <p>
+          Asystent AI może się pomylić. Terminy, ceny i zakres leczenia potwierdź w rejestracji, a linki do źródeł przy każdym lekarzu są po to, żeby dało się je sprawdzić.
+        </p>
+      </Aside>
+      <p>
+        <strong>W nagłej sytuacji nie szukaj lekarza przez asystenta. Zadzwoń pod 112 albo jedź na SOR.</strong>
+      </p>
+      <p>
+        Skill jest prowadzony jako projekt otwarty na licencji MIT. Błędy i nieaktualne adresy można zgłaszać w <a href={`${REPO}/issues`}>repozytorium</a>.
+      </p>
+    </Prose>
+  </Section>
+</BaseLayout>
+
+<style>
+  .zl-top { padding-top: clamp(32px, 4vw, 56px); }
+  .zl-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .zl-cmd { padding: 14px 16px; border: 1px solid var(--line-2); background: var(--surface); font: 400 0.9375rem/1.5 var(--f-mono); overflow-x: auto; }
+</style>

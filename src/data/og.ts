@@ -20,7 +20,7 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { simulatorOgPanels } from '@/lib/podaz/og';
 import { nurseSimulatorOgPanels } from '@/lib/podaz/pielegniarki/og';
-import { columnChart, label, monthGrid, stageTrack, svg, virus, visitList } from '@/lib/og/charts';
+import { columnChart, label, magnifier, monthGrid, stageTrack, svg, virus, visitList } from '@/lib/og/charts';
 import { hemicycle, tallyClubs } from '@/lib/sejm/hemicycle';
 import { tokenColor } from '@/lib/tokens';
 import { CLUBS_LAST, limityVoting } from '@/data/glosowania';
@@ -59,6 +59,7 @@ const MIKROFON_DOTS: OgDots = { mask: frameLines(PICTOGRAMS.mikrofon, 21, 22), c
 
 const MEDIA_W = 470; // kolumna mediów w lib/og/render.ts
 const PANEL_H = 440;
+const MAGNIFIER_H = 492; // 22 wiersze siatki 21-kolumnowej
 const TWO_PANELS_H = 196;
 
 // Projekt ustawy: droga do Sejmu z projekt-ustawy.ts — przestawienie etapu zmienia obrazek
@@ -563,6 +564,14 @@ export const ogPages: Record<string, OgPage> = {
   ),
   // Gotowa grafika: prawdziwy układ grafu bez podpisów, huby jako gwiazdy (generator poza repo, przy danych grafu).
   '/konstelacja/': { image: konstelacjaOg, title: 'Konstelacja ochrony zdrowia — kto decyduje o publicznych pieniądzach i jak te osoby łączą się w danych' },
+  // lupa z kropek na polu plusów (lib/og/charts.ts → magnifier); rączka = ukośnik komendy ze stopki
+  '/znajdz-lekarza/': {
+    eyebrow: 'Skill dla asystenta AI',
+    title: 'Znajdź lekarza',
+    lead: 'Asystent szuka lekarza, który leczy właśnie Twój problem. Gwiazdki są na końcu.',
+    panels: [{ height: MAGNIFIER_H, svg: svg(MEDIA_W, MAGNIFIER_H, magnifier(MEDIA_W, MAGNIFIER_H)) }],
+    footer: { text: 'Wpisz /znajdz-lekarza w swoim asystencie' },
+  },
   '/szukaj/': {
     eyebrow: 'Wyszukiwarka',
     title: 'Szukaj w serwisie',

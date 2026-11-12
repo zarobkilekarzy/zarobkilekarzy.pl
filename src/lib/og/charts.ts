@@ -264,6 +264,44 @@ export function visitList(added: string, width: number): string {
   return s;
 }
 
+/**
+ * Ilustracja „Znajdź lekarza”: lupa z kropek na polu plusów (siatka 21 kolumn, geometria lib/siatka).
+ * Plus tła czyta się jak krzyż medyczny — w soczewce plusy są powiększone, a środkowy staje się pełnym
+ * krzyżem w kobalcie. Rączka biegnie w lewo w dół jak ukośnik komendy `/znajdz-lekarza`.
+ */
+export function magnifier(width: number, height: number): string {
+  const COLS = 21, cell = width / COLS, rows = Math.floor(height / cell);
+  const cx = 13, cy = Math.round(rows / 2) - 3, R = 6;
+  const at = (i: number) => i * cell + cell / 2;
+  const key = (q: number, r: number) => `${q},${r}`;
+  // pierścień: okrąg rastrowany algorytmem punktu środkowego — równa, pojedyncza linia pól
+  const ring = new Set<string>();
+  for (let x = 0, y = R, d = 1 - R; x <= y; x++) {
+    for (const [dx, dy] of [[x, y], [y, x], [-x, y], [-y, x], [x, -y], [y, -x], [-x, -y], [-y, -x]]) ring.add(key(cx + dx, cy + dy));
+    if (d < 0) d += 2 * x + 3; else { d += 2 * (x - y) + 5; y--; }
+  }
+  // rączka: przekątna szeroka na dwa pola, od pierścienia w lewo w dół
+  const handle = new Set<string>();
+  for (let k = 5; k <= 11; k++) for (const q of [cx - k, cx - k - 1]) if (Math.hypot(q - cx, k) > R + 0.5) handle.add(key(q, cy + k));
+  const plus = (x: number, y: number, arm: number) => `M${f1(x)} ${f1(y - arm)}v${f1(2 * arm)}M${f1(x - arm)} ${f1(y)}h${f1(2 * arm)}`;
+  let field = '', dots = '', lens = '';
+  for (let r = 0; r < rows; r++) for (let q = 0; q < COLS; q++) {
+    const k = key(q, r), inside = Math.hypot(q - cx, r - cy) < R - 0.5;
+    if (ring.has(k) || handle.has(k)) dots += `<circle cx="${f1(at(q))}" cy="${f1(at(r))}" r="${f1(cell * GEOMETRY.on)}" fill="${c('blue')}"/>`;
+    else if (!inside) field += plus(at(q), at(r), cell * GEOMETRY.arm);
+  }
+  // soczewka: te same plusy w skali 2×, bez środkowego
+  const X = at(cx), Y = at(cy), step = 2 * cell;
+  for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) {
+    if ((i || j) && Math.hypot(i, j) * step < (R - 1.2) * cell) lens += plus(X + i * step, Y + j * step, 2 * cell * GEOMETRY.arm);
+  }
+  const arm = cell * 1.1;
+  return `<path d="${field}" stroke="${c('blue')}" stroke-opacity=".4" stroke-width="${f1(cell * GEOMETRY.stroke)}" fill="none"/>`
+    + `<path d="${lens}" stroke="${c('blue')}" stroke-opacity=".65" stroke-width="${f1(2 * cell * GEOMETRY.stroke)}" fill="none"/>`
+    + `<circle cx="${f1(X)}" cy="${f1(Y)}" r="${f1(cell * 1.8)}" fill="${c('blue-100')}"/>`
+    + `<path d="${plus(X, Y, arm)}" stroke="${c('blue')}" stroke-width="${f1(cell * 0.78)}" fill="none"/>${dots}`;
+}
+
 /* ---------- Oś etapów: ten sam kształt co blocks/StatusTrack (oś pionowa) ---------- */
 
 export interface TrackRow {

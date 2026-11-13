@@ -46,6 +46,10 @@ export const barometrPage = {
 export const barometrChangelog: { date: Date; text: string }[] = [
   {
     date: new Date('2026-11-13'),
+    text: 'Polska 2050 odpowiedziała 12.11.2026, ale odpowiedź przekracza dopuszczalny limit znaków, więc nie mogliśmy jej opublikować. 13.11.2026 wysłaliśmy partii prośbę o skrócenie.',
+  },
+  {
+    date: new Date('2026-11-13'),
     text: 'Pierwsza wypowiedź w sekcji [„Politycy”](#politycy): [Rafał Komarewicz](/barometr-polityczny/politycy/komarewicz/), poseł klubu Centrum — pod własnym nazwiskiem, w nadesłanym brzmieniu.',
   },
   {

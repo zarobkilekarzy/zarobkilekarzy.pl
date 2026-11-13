@@ -22,6 +22,7 @@ import polska2050Logo from '@/assets/partie/polska2050.png';
 import pslLogo from '@/assets/partie/psl.svg';
 import razemLogo from '@/assets/partie/razem.svg';
 import rozwojLogo from '@/assets/partie/rozwoj.png';
+import komarewiczPhoto from '@/assets/barometr/komarewicz.jpg';
 import wzorPhoto from '@/assets/barometr/wzor-zdjecie.png';
 
 export const barometrPage = {
@@ -33,7 +34,7 @@ export const barometrPage = {
   seoTitle: 'Barometr: polityka zdrowotna partii',
   lead: 'Co partie proponują w ochronie zdrowia — według tych samych pytań dla każdej z nich i ze źródłem przy każdej tezie. Zaczynamy od zaproszenia: każda partia może przedstawić nam swój program.',
   description: 'Polityka zdrowotna partii według tych samych pytań i ze źródłami. Zaproszenie dla partii do przesłania programu w ochronie zdrowia.',
-  updated: new Date('2026-11-06'),
+  updated: new Date('2026-11-13'),
   /** true = szkic: noindex (także podstron partii). Opublikowane 17.10.2026; wzór opisu zostaje noindex zawsze. */
   draft: false,
 };
@@ -43,6 +44,10 @@ export const barometrPage = {
  * i układzie, nie każda poprawka. Zapis wpisu: lib/inline (**b**, [a](href)). Nowy wpis = też `barometrPage.updated`.
  */
 export const barometrChangelog: { date: Date; text: string }[] = [
+  {
+    date: new Date('2026-11-13'),
+    text: 'Pierwsza wypowiedź w sekcji [„Politycy”](#politycy): [Rafał Komarewicz](/barometr-polityczny/politycy/komarewicz/), poseł klubu Centrum — pod własnym nazwiskiem, w nadesłanym brzmieniu.',
+  },
   {
     date: new Date('2026-11-06'),
     text: 'Odpowiedź partii [Razem](/barometr-polityczny/razem/) — stanowisko partii w nadesłanym brzmieniu.',
@@ -1017,10 +1022,11 @@ export interface BarometrPolitician {
    * Same fakty z oficjalnych danych (np. strona Sejmu: zawód, komisje, okręg) albo od autora — bez ocen.
    */
   about: string;
-  /** zdjęcie (opcjonalne) — nadesłane przez autora albo oficjalne, bez metadanych; na stronie czarno-białe jak wszystkie zdjęcia */
+  /** zdjęcie (opcjonalne) — nadesłane przez autora albo oficjalne, bez metadanych; w kolorze, jak awatary w kartach profili */
   photo?: ImageMetadata;
   /** profil w mediach społecznościowych (na razie X) — po nim czytelnik sprawdza, kto mówi */
-  x: { handle: string; avatar?: ImageMetadata };
+  /** `bio` = opis z profilu, przepisany bez zmian */
+  x: { handle: string; avatar?: ImageMetadata; bio?: string };
   statements: BarometrStatementEntry[];
   updated: Date;
   changes: { date: Date; text: string }[];
@@ -1128,11 +1134,104 @@ const previewExamples: BarometrPolitician[] = [
   },
 ];
 
+/**
+ * Rafał Komarewicz — wypowiedź z 10.11.2026 (plik tekstowy nadesłany przez posła), opublikowana 13.11.2026.
+ * Tekst w nadesłanym brzmieniu; pominięte tylko nagłówki obszarów i powtórzone pod nimi pytania barometru.
+ * „O autorze”: dane ze strony Sejmu (wykształcenie, zawód, okręg, funkcje w komisjach), stan na 13.11.2026.
+ * Zdjęcie i opis w karcie profilu: z profilu autora w serwisie X, stan na 13.11.2026.
+ */
+const barometrKomarewicz: BarometrPolitician = {
+  id: 'komarewicz',
+  href: politicianHref('komarewicz'),
+  name: 'Rafał Komarewicz',
+  role: 'Poseł na Sejm X kadencji',
+  party: { name: 'Centrum', logo: centrumLogo },
+  about: 'Z wykształcenia lekarz dentysta, z zawodu przedsiębiorca. Poseł z okręgu krakowskiego; w Sejmie przewodniczy Komisji Gospodarki i Rozwoju i jest zastępcą przewodniczącego Komisji do Spraw Energii, Klimatu i Aktywów Państwowych.',
+  photo: komarewiczPhoto,
+  x: { handle: 'RKomarewicz', bio: 'Poseł na Sejm RP | Przewodniczący Komisji Gospodarki i Rozwoju | Wiceprzewodniczący Komisji Energii, Klimatu i Aktywów Państwowych' },
+  statements: [
+    {
+      area: 'finansowanie',
+      text: [
+        'Na dziś podstawą finansowania ochrony zdrowia powinna pozostać składka zdrowotna. Warto jednak czerpać wzorce z rozwiązań Tajwanu czy Skandynawii jako przykładów dobrze działających systemów ochrony zdrowia.',
+        'Mamy również kilka przykładów prywatnej lub publicznej z elementami prywatnej ochrony zdrowia, jak Szwajcaria czy Singapur.',
+        'Ochrona zdrowia powinna przy tym pozostać zdecydowanie bardziej publiczna niż prywatna. Wymaga jednak bezwzględnej i głębokiej reformy.',
+        'Rynek usług medycznych jest ogromny, a dziś pozwalamy firmom czerpać z niego garściami - praktycznie nic nie wymagając w zamian.',
+        'Książkowym wręcz przykładem prywatyzacji zysków, a uspołeczniania strat jest leczenie powikłań po prywatnych zabiegach przez publiczną ochronę zdrowia.',
+        'Składkę zdrowotną również trzeba uporządkować. Dziś mamy różne składki, płacone w zależności od formy pracy. Jednak zanim to nastąpi, konieczne jest zatamowanie wycieku pieniędzy z NFZ, w tym na wynagrodzenia lekarzy.',
+        'Jednocześnie nie da się rzetelnie określić potrzeb systemu, skoro nie wiemy, ile wydajemy na wynagrodzenia lekarzy i personelu. W ciągu dekady publiczne nakłady na ochronę zdrowia wzrosły o ponad 130 mld zł, a jakość leczenia i czas oczekiwania realnie się nie poprawiły. Według obecnych szacunków może być nawet kilkanaście tysięcy lekarzy zarabiających powyżej miliona złotych z publicznej ochrony zdrowia. To absurd i jest on nie do utrzymania.',
+        'Najpierw przejrzystość wydatków, potem decyzje o kolejnych miliardach.',
+      ],
+    },
+    {
+      area: 'kadry',
+      part: 'lekarze',
+      text: [
+        'Należy dążyć do sukcesywnego zniesienia limitu miejsc na studiach lekarskich, a także na poszczególnych specjalizacjach - przy jednoczesnej kontroli jakości kształcenia oraz pracy.',
+        'Ostrzeżenia o nadmiernej liczbie lekarzy wydają się próbą ograniczenia konkurencji wśród medyków. Jeżeli oczekujemy ograniczenia wynagrodzeń lekarzy, a także poprawy jakości służby zdrowia, musimy doprowadzić do konkurencji. To rozwiązanie z korzyścią dla pacjentów.',
+        'Należy wprowadzić obowiązek pracy w Polsce przez określony czas dla lekarzy, którzy zostali wykształceni z pieniędzy polskich podatników. Określenie formy i czasu takiego zobowiązania musi być poprzedzone szeroką dyskusją i opierać się na sprawdzonych rozwiązaniach, funkcjonujących w innych państwach.',
+        'Dla bezpieczeństwa pacjentów, ale i samych lekarzy, należy wprowadzać ograniczenia w wymiarze czasu pracy. Państwo powinno mieć możliwość kontrolowania stosowania się do tych ograniczeń, dlatego powinno dysponować systemem informatycznym, który będzie zliczał łączny czas pracy nie tylko w publicznym systemie, ale także prywatnym.',
+      ],
+    },
+    {
+      area: 'kadry',
+      part: 'pielegniarki',
+      text: [
+        'Liczba miejsc na studiach pielęgniarskich powinna być zwiększana, gdy wymaga tego wzrost popytu na ten kierunek. Niepokoi mnie struktura wieku w tym zawodzie, czyli tzw. luka pokoleniowa. Średni wiek pielęgniarki w Polsce to już ok. 55 lat. Starzejące się polskie społeczeństwo będzie natomiast wymagać coraz większej ilości pielęgniarek, a już dziś jesteśmy w tyle względem państw europejskich, jeśli chodzi o ich ilość na 100 tysięcy mieszkańców.',
+        'Należy lepiej wykorzystywać kompetencje, które pielęgniarki już mają. Zakres ich uprawnień powinien zostać poszerzony, a dobrym rozwiązaniem jest samodzielna zaawansowana praktyka pielęgniarska, znana z wielu krajów. Prace nad nowymi uprawnieniami ciągną się jednak od miesięcy, a to rozwiązanie potrzebne jak najszybciej.',
+        'Zapowiedź Ministerstwa Zdrowia, by pielęgniarki mogły przy infekcjach przepisywać leki i wystawiać L4 do pięciu dni, to krok w dobrą stronę. W znaczący sposób obniży to koszty funkcjonowania przychodni bez spadku jakości opieki, a lekarzom pozwoli skupić się na pacjentach, którzy najbardziej ich potrzebują.',
+      ],
+    },
+    {
+      area: 'kadry',
+      part: 'inne-zawody',
+      text: [
+        'Uważam, że część zadań wykonywanych dziś przez lekarzy mogą przejąć także inne zawody medyczne, w tym farmaceuci. Powinni oni otrzymać szersze uprawnienia - w ich przypadku uproszczenie zasad wydawania niektórych leków bez konieczności wizyty u lekarza.',
+        'Farmaceuci to świetnie wykształceni eksperci, doskonale znający działanie leków i ich interakcje, a apteki są dostępne niemal wszędzie, często także wieczorami i w weekendy. Wielu pacjentów mogłoby więc szybciej otrzymać pomoc, bez czekania na termin w przychodni. Odciążyłoby to lekarzy podstawowej opieki zdrowotnej i obniżyło koszty systemu. Katalog takich leków i zasady ich wydawania powinny zostać jasno określone, tak aby bezpieczeństwo pacjentów pozostało priorytetem.',
+      ],
+    },
+    {
+      area: 'wynagrodzenia',
+      text: [
+        'Praca w publicznym systemie powinna opierać się przede wszystkim na rozwiązaniu etatowym. Dziś kontrakty wybierane są w znacznym stopniu z przyczyn podatkowych. Dopuszczono do sytuacji, w której osoby pracujące na etacie płacą niewspółmiernie większe podatki niż osoby rozliczające się ryczałtem, którego stawka w przypadku lekarzy wynosi 14%. Praca na etacie wiąże się ze znacznie większymi obciążeniami, szczególnie po przekroczeniu II progu, który nawet po obecnej nowelizacji będzie na absurdalnie niskim poziomie.',
+        'W związku z tym należy uporządkować system podatkowy i odciążyć osoby pracujące na etacie. W tym celu przygotowałem Pakiet dla Klasy Średniej - zakłada on II próg na poziomie 200 tys. złotych, kwotę wolną 45 tys. złotych oraz coroczną waloryzację obu tych kwot.',
+        'Jednocześnie, uważam za konieczne wprowadzenie jawnego rejestru wynagrodzeń lekarzy, tak aby obywatele mogli kontrolować sposób w jaki wydawane są ich pieniądze. Taki rejestr powinien obejmować zarobki lekarza we wszystkich placówkach przy zachowaniu ochrony jego danych osobowych. W tym celu powinny powstać identyfikatory dla każdego lekarza, których powiązanie z konkretną osobą będzie możliwe tylko dla właściwych organów.',
+        'Niezbędne są także limity wynagrodzeń dla lekarzy. Nie ma matematycznie możliwości spiąć systemu ochrony zdrowia, gdy zarobki są nieproporcjonalnie wysokie, a słyszymy o coraz większych grupach lekarzy zarabiających więcej niż 100 tysięcy miesięcznie.',
+      ],
+    },
+    {
+      area: 'dostep',
+      text: [
+        'Usługi medyczne finansowane z publicznych pieniędzy muszą podlegać rzetelnej ocenie - dotyczy to zarówno lekarzy, jak i szpitali. Mierniki jakości, z których rozliczani będą lekarze pracujący w publicznym sektorze powinien wdrożyć Narodowy Fundusz Zdrowia. Pacjent i płatnik muszą wiedzieć, za co płacą i jakie są efekty leczenia.',
+        'Po ograniczeniu wynagrodzeń lekarzy, NFZ będzie miał w budżecie więcej pieniędzy na opłacanie samych świadczeń. Problem długich kolejek jednak pozostanie. Jego główną przyczyną jest niestety wieloletnie ograniczanie dostępu do zawodu lekarza i do specjalizacji. Dlatego tak ważne jest docelowe zniesienie limitów miejsc na studiach lekarskich i specjalizacjach, o którym piszę w części dotyczącej kadr.',
+        'Trzeba też uczciwie powiedzieć, że efekty tych zmian zobaczymy dopiero w dłuższej perspektywie, bo wykształcenie lekarza specjalisty zajmuje wiele lat. Tym bardziej nie możemy dłużej zwlekać z wprowadzeniem takich rozwiązań.',
+      ],
+    },
+    {
+      area: 'szpitale',
+      text: [
+        'Uważam, że szpitale powinny być prowadzone zarówno przez państwo i samorządy, jak i przez podmioty prywatne. Należy przy tym rozgraniczyć pracę w systemie publicznym i prywatnym. Sprzęt finansowany z publicznych pieniędzy powinien bezwzględnie służyć tylko do leczenia w systemie publicznym. Należy więc wprowadzić przepisy determinujące konieczność wyboru formy pracy. Lekarz pracujący prywatnie nie powinien mieć możliwości jednoczesnej pracy w publicznym systemie. Może prowadzić to do uprzywilejowanego traktowania pacjentów przyjmowanych najpierw prywatnie, a potem w ramach publicznej ochrony zdrowia.',
+        'Należy zadbać, aby kadry zarządzające szpitalami składały się z profesjonalistów, a nie partyjnych nominatów niemających pojęcia o systemie ochrony zdrowia, czego przykładem była sytuacja w Szpitalu Południowym. Dlatego od lat postuluję odpolitycznienie w organach spółek i podmiotów publicznych.',
+      ],
+    },
+    {
+      area: 'pacjent',
+      text: [
+        'Samorząd lekarski nie wywiązuje się dziś ze swoich obowiązków, zwłaszcza w zakresie odpowiedzialności zawodowej. Widać to w statystykach: z danych Biura Rzecznika Praw Pacjenta, przedstawionych w tym roku w Sejmie, wynika, że średnio tylko 13% skarg pacjentów kończyło się wnioskiem o ukaranie lekarza. W analizowanym okresie sądy lekarskie orzekły zaledwie 5 kar pozbawienia prawa wykonywania zawodu, podczas gdy samorząd radców prawnych wydał 46 takich decyzji. Pacjenci skarżą się też na przewlekłość postępowań i przedawnianie się spraw.',
+        'Reforma tego systemu jest konieczna. Trudno mi jednak rekomendować przeniesienie tych spraw do sądów powszechnych. Wszyscy wiemy, w jakim stanie jest dziś polskie sądownictwo i jak długo trwa przeciętna sprawa, więc pacjenci mogliby czekać na rozstrzygnięcia jeszcze dłużej. Zmiany muszą sprawić, że postępowania w sprawie odpowiedzialności zawodowej lekarzy będą skuteczne, szybkie i przejrzyste dla pacjentów, dlatego poprawkę pozwalającą na stosowanie zakazu pracy na NFZ dla nieuczciwych lekarzy uważałem za dobre rozwiązanie i poparłem je w Sejmie.',
+        'Uważam, że to właśnie NFZ mógłby przejąć wyciąganie odpowiedzialności wobec lekarzy.',
+      ],
+    },
+  ],
+  updated: new Date('2026-11-13'),
+  changes: [{ date: new Date('2026-11-13'), text: 'Wypowiedź opublikowana: tekst z 10.11.2026 w nadesłanym brzmieniu.' }],
+};
+
 /** nazwisko = ostatni człon — do kolejności alfabetycznej */
 const surname = (name: string) => name.split(' ').at(-1) ?? name;
 
 /** Politycy na stronie — alfabetycznie według nazwiska (te same zasady dla wszystkich). */
-export const barometrPoliticians: BarometrPolitician[] = [barometrStatementExample, ...(import.meta.env.DEV ? previewExamples : [])]
+export const barometrPoliticians: BarometrPolitician[] = [barometrStatementExample, barometrKomarewicz, ...(import.meta.env.DEV ? previewExamples : [])]
   .sort((a, b) => surname(a.name).localeCompare(surname(b.name), 'pl'));
 
 /**

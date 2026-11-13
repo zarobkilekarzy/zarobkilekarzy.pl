@@ -75,16 +75,13 @@ const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(`Baro
       />
       <div slot="aside" class="pp-aside">
         {p.party?.logo && <PartyLogo class="pp-logo" logo={p.party.logo} name={p.party.name} area={5200} maxW={200} maxH={48} />}
-        <XProfile
-          name={p.name}
-          handle={p.x.handle}
-          avatar={p.x.avatar ?? p.photo}
-          eyebrow={p.example ? 'Wzór · osoba fikcyjna' : 'Profil autora'}
-          linked={!p.example}
-          class:list={[{ 'pp-x--example': p.example }]}
-        >
-          {p.example ? 'Tu będzie profil autora w mediach społecznościowych — po nim czytelnik sprawdza, kto mówi.' : 'Po tym profilu możesz sprawdzić, kto jest autorem wypowiedzi.'}
-        </XProfile>
+        {p.example ? (
+          <XProfile name={p.name} handle={p.x.handle} avatar={p.x.avatar ?? p.photo} eyebrow="Wzór · osoba fikcyjna" linked={false} class="pp-x--example">
+            Tu będzie profil autora w mediach społecznościowych — po nim czytelnik sprawdza, kto mówi.
+          </XProfile>
+        ) : (
+          <XProfile name={p.name} handle={p.x.handle} avatar={p.x.avatar ?? p.photo} bio={p.x.bio} />
+        )}
         <JumpList title="Obszary" items={areas.map((a) => ({ label: a.name, href: `#${a.id}` }))} />
       </div>
     </PageHeader>
@@ -136,8 +133,6 @@ const mail = `mailto:${barometrContact.email}?subject=${encodeURIComponent(`Baro
   .pp-aside :global(.pp-x--example .xp) { border-style: dashed; }
   /* logo partii nad profilem — niższe pole niż na podstronie partii, żeby nagłówek nie urósł */
   .pp-aside :global(.pp-logo) { display: grid; height: 88px; padding: 12px; border: 1px solid var(--line-2); }
-  /* zdjęcie autora w miejscu awatara — czarno-białe jak wszystkie zdjęcia na stronie */
-  .pp-aside :global(.xp__avatar) { filter: grayscale(1) contrast(1.05); }
 
   .pp-answer { max-width: 760px; }
   .pp-part + .pp-part { margin-top: clamp(32px, 4vw, 48px); }

@@ -1,0 +1,160 @@
+---
+title: "Zadowolenie z ochrony zdrowia: cztery badania, od 19% do 38%"
+seoTitle: Zadowolenie z ochrony zdrowia w Polsce
+category: Analiza
+topic: porownania
+order: 5
+stat: { value: "19–38%", unit: "Polaków dobrze ocenia ochronę zdrowia, zależnie od badania i pytania" }
+date: 2026-11-17
+summary: "Ochronę zdrowia dobrze ocenia od 19% do 38% Polaków, zależnie od badania. Cztery badania zadają cztery różne pytania, ale w każdym porównaniu międzynarodowym Polska jest pod koniec listy."
+description: "Ilu Polaków jest zadowolonych z ochrony zdrowia: wyniki CBOS, Ipsos, STADA i IRIS Network z lat 2025–2026, pytania, próby i miejsce Polski na tle innych krajów."
+keyPoints:
+  - "W czterech badaniach z lat 2025–2026 ochronę zdrowia dobrze ocenia od 19% do 38% Polaków."
+  - "W badaniu CBOS zadowolonych jest 25%, a niezadowolonych 70%. Od 2001 r. zadowoleni ani razu nie byli większością."
+  - "Polska jest 19. na 20 krajów w badaniu IRIS, 30. na 32 w indeksie Ipsos i 17. na 20 w badaniu STADA."
+  - "Najgorzej oceniana jest dostępność specjalistów (82% ocen negatywnych), najlepiej kompetencje lekarzy (73% pozytywnych)."
+related:
+  - wizyty-prywatne-kolejka-cena
+  - budzet-nfz
+  - dlaczego-brakuje-lekarzy
+  - reglamentacja-dostepu
+---
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import DivergingBars from '@/components/blocks/DivergingBars.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import SpreadRows from '@/components/blocks/SpreadRows.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import UnitChart from '@/components/blocks/UnitChart.astro';
+import IndexChart from '@/components/budzet/IndexChart.astro';
+import { CBOS_OPINIONS, CBOS_SERIES, IPSOS_COUNTRIES, IRIS_COUNTRIES, LINKS, STADA_COUNTRIES, STUDIES, study } from '@/data/zadowolenie-z-ochrony-zdrowia';
+
+export const countryRows = (rows) => rows.map(([label, value]) => ({ label, value, display: `${value}%`, highlight: label === 'Polska' }));
+export const countryCaption = (rows) => rows.map(([label, value]) => `${label} ${value}%`).join('; ');
+
+export const COUNTRIES = { iris: IRIS_COUNTRIES, ipsos: IPSOS_COUNTRIES, stada: STADA_COUNTRIES };
+export const SPREAD_ROWS = STUDIES.map((s) => ({
+  label: s.name,
+  note: `${s.measure}, ${s.when}`,
+  value: s.poland,
+  average: s.average,
+  dots: COUNTRIES[s.key]?.filter(([label]) => label !== 'Polska').map(([label, value]) => ({ label, value })),
+  empty: s.key === 'cbos' ? 'badanie tylko w Polsce' : undefined,
+}));
+
+export const CBOS_NOW = CBOS_SERIES.at(-1);
+export const cbosPoints = (key, note) => CBOS_SERIES.map((r) => ({ x: r.x, v: r[key], label: r.label, tip: `${r[key]}%`, note }));
+export const CBOS_LINES = {
+  xMin: 2000, xMax: 2028, yMin: 0, yMax: 100, ticks: [0, 25, 50, 75, 100], years: [2001, 2005, 2010, 2015, 2020, 2025], unit: '%',
+  series: [
+    { id: 'no', label: 'Niezadowoleni', tone: 'data', end: `${CBOS_NOW.dissatisfied}%`, markers: true, points: cbosPoints('dissatisfied', 'niezadowoleni') },
+    { id: 'yes', label: 'Zadowoleni', tone: 'accent', end: `${CBOS_NOW.satisfied}%`, markers: true, points: cbosPoints('satisfied', 'zadowoleni') },
+  ],
+  caption: `Zadowoleni i niezadowoleni z funkcjonowania opieki zdrowotnej według CBOS: ${CBOS_SERIES.map((r) => `${r.label} ${r.satisfied}% i ${r.dissatisfied}%`).join('; ')}.`,
+};
+
+export const METHOD_TABLE = {
+  caption: 'Cztery badania: o co pytano, kogo i jak',
+  columns: ['', 'Co mierzy liczba', 'Próba w Polsce', 'Sposób badania'],
+  rows: [
+    { cells: ['IRIS Network', 'odsetek wybierających odpowiedź „doskonały” albo „zasadniczo dobry” spośród czterech opisów systemu', '500–1000 dorosłych', 'metoda mieszana: internet, wywiady osobiste i telefoniczne'] },
+    { cells: ['CBOS', 'odsetek zadowolonych z tego, jak obecnie funkcjonuje opieka zdrowotna w kraju', '971 dorosłych, losowanych z rejestru PESEL', 'wywiady osobiste (63%), telefoniczne (24%) i internetowe (13%)'] },
+    { cells: ['Ipsos', 'średnia z pięciu pytań: jakość opieki, zaufanie do systemu, łatwość umówienia wizyty, dostęp do apteki, równy standard opieki', '500 osób w wieku 16–74 lat', 'panel internetowy'] },
+    { cells: ['STADA', 'odsetek zadowolonych z publicznego systemu ochrony zdrowia', '500–2000 osób w wieku 18–99 lat', 'ankieta internetowa'] },
+  ],
+};
+
+Na pytanie, ilu Polaków jest zadowolonych z ochrony zdrowia, nie ma jednej odpowiedzi. Cztery badania z lat 2025–2026 podają **19%, 25%, 35% i 38%**.[^iris][^cbos][^ipsos][^stada] Różnice biorą się z tego, że każde badanie zadaje inne pytanie innej grupie osób. Wniosek z nich jest jednak wspólny: dobrą ocenę wystawia wyraźnie mniej niż połowa badanych, a w porównaniach międzynarodowych Polska jest pod koniec listy.
+
+<StatRow label="Wynik Polski w czterech badaniach" items={[
+  { value: study('iris').poland, unit: '%', desc: 'ocenia system jako „doskonały” lub „zasadniczo dobry”; średnia 20 krajów to 45%', accuracy: 'exact', source: 'IRIS Network, 2025', href: LINKS.iris },
+  { value: study('cbos').poland, unit: '%', desc: 'jest zadowolonych z funkcjonowania opieki zdrowotnej; niezadowolonych jest 70%', accuracy: 'exact', source: 'CBOS, 86/2025', href: LINKS.cbos },
+  { value: study('ipsos').poland, unit: '%', desc: 'wynosi indeks postrzegania jakości opieki, średnia z pięciu pytań', accuracy: 'exact', source: 'Ipsos, 2026', href: LINKS.ipsos },
+  { value: study('stada').poland, unit: '%', desc: 'jest zadowolonych z publicznego systemu ochrony zdrowia; średnia 20 krajów to 56%', accuracy: 'exact', source: 'STADA, 2026', href: LINKS.stada },
+]} />
+
+## Cztery pytania, cztery liczby
+
+Najniższy wynik daje pytanie najostrzejsze. Sieć agencji badawczych IRIS Network prosi o wybór jednego z czterech opisów systemu: „doskonały”, „zasadniczo dobry”, „pogarsza się” albo „w stanie kryzysu”. Dwa pierwsze wybiera w Polsce 19% badanych.[^iris] CBOS pyta po prostu o zadowolenie z tego, jak obecnie funkcjonuje opieka zdrowotna w kraju, i dostaje 25%.[^cbos]
+
+Najwyższe wyniki pochodzą z badań internetowych. Indeks Ipsos to średnia z pięciu pytań, a jedno z nich dotyczy łatwego dostępu do apteki, który zwykle ocenia się lepiej niż dostęp do lekarza.[^ipsos] STADA pyta o zadowolenie z publicznego systemu ochrony zdrowia; dokładnego brzmienia pytania raport nie przytacza.[^stada]
+
+<Figure title="W każdym badaniu Polska jest w dolnej części stawki" note="Każdy wiersz to inne pytanie i inna próba, dlatego liczb z różnych wierszy nie należy uśredniać ani odejmować od siebie. Ipsos nie podaje średniej indeksu, a raport STADA wymienia wyniki 15 z 20 krajów." source={[
+  { label: 'IRIS Network, Health Care Confidence Report 2025', href: LINKS.iris },
+  { label: 'CBOS, komunikat nr 86/2025', href: LINKS.cbos },
+  { label: 'Ipsos Health Service Report 2026', href: LINKS.ipsos },
+  { label: 'STADA Health Report 2026', href: LINKS.stada },
+]}>
+  <SpreadRows rows={SPREAD_ROWS} subject="Polska" dotLabel="inny kraj" averageLabel="średnia badania"
+    caption={`Wynik Polski na tle innych krajów w czterech badaniach. ${STUDIES.map((s) => `${s.name}, ${s.measure}, ${s.when}: Polska ${s.poland}%${s.average ? `, średnia ${s.average}%` : ''}${COUNTRIES[s.key] ? `; kraje: ${countryCaption(COUNTRIES[s.key])}` : '; badanie tylko w Polsce'}`).join('. ')}.`} />
+</Figure>
+
+Jak czytać ten wykres: kobaltowa kropka to Polska, szare kropki to pozostałe kraje, a pionowa kreska to średnia podana w raporcie. Poniżej zestawienie tego, o co i kogo pytano.
+
+<Comparison table={METHOD_TABLE} />
+
+Próby internetowe liczą po kilkaset osób, więc pojedynczy wynik ma szeroki margines. Ipsos podaje dla próby 500 osób przedział wiarygodności ±5 pkt proc.[^ipsos] Różnica między 35% a 38% mieści się w tym marginesie; różnica między Polską a średnią badania już nie.
+
+## CBOS: zadowoleni są mniejszością od 2001 roku
+
+CBOS zadaje to samo pytanie od ćwierć wieku, więc tylko to badanie pokazuje zmianę w czasie. W czerwcu 2025 r. zadowolonych było 25% badanych, a niezadowolonych 70%. Dwa lata wcześniej było to 27% i 70%.[^cbos]
+
+<UnitChart title="Na 100 badanych 25 jest zadowolonych, a 70 niezadowolonych" unit={1} unitLabel="badany na 100" cols={20} exact
+  groups={[
+    { value: CBOS_NOW.satisfied, kind: 'on', label: 'zadowoleni' },
+    { value: 100 - CBOS_NOW.satisfied - CBOS_NOW.dissatisfied, kind: 'mid', label: 'trudno powiedzieć' },
+    { value: CBOS_NOW.dissatisfied, kind: 'off', label: 'niezadowoleni' },
+  ]}
+  source="CBOS, komunikat nr 86/2025, czerwiec 2025" href={LINKS.cbos} />
+
+W czternastu pomiarach od 2001 r. zadowoleni ani razu nie byli większością: najwięcej było ich w marcu 2007 r. (37%), najmniej w lutym 2012 r. (19%). Obie linie biegną niemal równolegle od ćwierć wieku, a odstęp między nimi nigdy nie spadł poniżej 21 pkt proc.
+
+<Figure title="Od 2001 r. linie zadowolonych i niezadowolonych ani razu się nie przecięły" note="Odsetki odpowiedzi „zdecydowanie” i „raczej” zadowolony(a) oraz niezadowolony(a). Kropka to jeden pomiar; odstępy między pomiarami nie są równe." source={{ label: 'CBOS, komunikat nr 86/2025, s. 6', href: LINKS.cbos }}>
+  <IndexChart {...CBOS_LINES} animate />
+</Figure>
+
+Ogólna ocena składa się z bardzo różnych ocen cząstkowych. Najgorzej wypada dostępność lekarzy specjalistów: źle ocenia ją **82%** badanych. Możliwość umówienia wizyty w dogodnym terminie źle ocenia 63%. Najlepiej oceniane są kompetencje lekarzy, które docenia **73%** badanych.[^cbos] Niezadowolenie dotyczy więc głównie dostępu do leczenia, a nie tego, jak leczą lekarze. 
+
+<Figure title="Lekarzy badani oceniają dobrze, dostęp do nich źle" note="Odpowiedzi na pytanie, czy badany zgadza się ze stwierdzeniem o świadczeniach w ramach NFZ: „zdecydowanie” i „raczej” tak albo nie. Reszta do 100% to „trudno powiedzieć”. Stwierdzenia skrócone." source={{ label: 'CBOS, komunikat nr 86/2025, rys. 2', href: LINKS.cbos }}>
+  <DivergingBars rows={CBOS_OPINIONS} max={85} noLabel="nie zgadza się" yesLabel="zgadza się"
+    caption={`Oceny świadczeń w ramach NFZ według CBOS, odsetek zgadzających się i niezgadzających się ze stwierdzeniem: ${CBOS_OPINIONS.map((r) => `${r.label}: tak ${r.yes}%, nie ${r.no}%`).join('; ')}.`} />
+</Figure>
+
+Skąd biorą się kolejki, opisujemy w analizach [Dlaczego brakuje lekarzy](/analizy/dlaczego-brakuje-lekarzy/) i [Wizyty prywatne: im dłuższa kolejka, tym drożej](/analizy/wizyty-prywatne-kolejka-cena/).
+
+Ocena zależy też od wieku. Wśród osób w wieku 65 lat i starszych zadowolonych jest 36%, czyli o 11 pkt proc. więcej niż w całej próbie.[^cbos]
+
+## Polska na tle innych krajów
+
+W badaniu IRIS Network Polska zajmuje 19. miejsce na 20 krajów. Niższy wynik ma tylko Turcja (15%), a średnia wszystkich krajów to 45%.[^iris] Raport podaje też, co badani uważają za główną przyczynę problemów: w Polsce 70% wskazuje nieefektywne zarządzanie, a 30% zbyt małe finansowanie.
+
+<Figure title="IRIS Network: Polska 19. na 20 krajów" note="Odsetek odpowiedzi „doskonały” i „zasadniczo dobry”. Badanie z IV kwartału 2025 r., 14 742 osoby w 20 krajach." source={{ label: 'IRIS Network, Health Care Confidence Report 2025, s. 11', href: LINKS.iris }}>
+  <BarChart rows={countryRows(IRIS_COUNTRIES)} max={100} unit="%" average={study('iris').average}
+    caption={`Odsetek ocen „doskonały” i „zasadniczo dobry” w badaniu IRIS Network 2025, średnia 45%: ${countryCaption(IRIS_COUNTRIES)}.`} />
+</Figure>
+
+W indeksie Ipsos Polska ma 35% i jest 30. na 32 kraje, przed Peru (33%) i Węgrami (28%). Na czele jest Malezja z wynikiem 72%.[^ipsos] Raport nie podaje średniej indeksu ani wyniku Polski w samym pytaniu o jakość opieki, więc pokazujemy tylko kolejność krajów.
+
+<Figure title="Ipsos: Polska 30. na 32 kraje" note="Indeks postrzegania jakości opieki: średni odsetek pozytywnych odpowiedzi na pięć pytań. Badanie z 13 lipca – 7 sierpnia 2026 r., 22 528 osób w 32 krajach." source={{ label: 'Ipsos Health Service Report 2026, s. 5–6', href: LINKS.ipsos }}>
+  <BarChart rows={countryRows(IPSOS_COUNTRIES)} max={100} unit="%"
+    caption={`Indeks postrzegania jakości opieki Ipsos 2026: ${countryCaption(IPSOS_COUNTRIES)}.`} />
+</Figure>
+
+W badaniu STADA zadowolonych z publicznego systemu jest w Polsce 38% przy średniej 56%. Rok wcześniej średnia wynosiła 58%.[^stada] Międzynarodowy raport nie zawiera pełnej tabeli: podaje wyniki 15 z 20 krajów, a ten sam wynik co Polska ma Słowacja. Siedemnaste miejsce Polski podaje tylko polska informacja prasowa firmy.[^stadapl]
+
+W tym samym badaniu pytano, co badani zmieniliby najpierw, gdyby byli ministrem zdrowia. W Polsce 66% wskazało skrócenie czasu oczekiwania i zwiększenie liczby personelu, a 57% łatwiejszy dostęp do podstawowej opieki zdrowotnej.[^stada] To ten sam obraz co w ocenach cząstkowych CBOS.
+
+<Aside title="Granice tych danych" variant="note">
+- Wynik IRIS dla Polski bierzemy z raportu sieci: **19%**. Omówienie w „Rzeczpospolitej” podaje 22%, a jako składowe 4% i 16%, czyli razem 20%.[^rp] Żadnej z tych liczb nie ma w raporcie, więc ich nie używamy.
+- Badania mierzą opinie, a nie jakość leczenia. Odpowiada także ten, kto w ostatnim roku nie korzystał z ochrony zdrowia.
+- Porównania między krajami zależą od oczekiwań badanych, nie tylko od działania systemu. Skład krajów w badaniu IRIS zmienia się między falami, więc średnich z kolejnych lat nie da się wprost porównać.
+- STADA to firma farmaceutyczna, a jej raport jest materiałem promocyjnym; Ipsos i STADA badają panele internetowe, a nie próby losowe.
+</Aside>
+
+[^iris]: IRIS Network, [Global Public Confidence Study 2025 – Health Care Confidence Report](https://www.irisnetwork.org/IRIS---Global-Public-confidence_Healthcare_Q4-2025_20260320.pdf), marzec 2026; wyniki krajów na s. 11, przyczyny problemów na s. 13, metoda na s. 2.
+[^cbos]: CBOS, [Opinie na temat funkcjonowania systemu opieki zdrowotnej, komunikat z badań nr 86/2025](https://www.cbos.pl/SPISKOM.POL/2025/K_086_25.PDF), wrzesień 2025; badanie z 5–15 czerwca 2025 r.
+[^ipsos]: Ipsos, [Ipsos Health Service Report 2026](https://resources.ipsos.com/rs/297-CXJ-795/images/IpsosHealthServiceReport2026.pdf?version=0), październik 2026; indeks na s. 5–6, metoda na s. 34.
+[^stada]: STADA, [STADA Health Report 2026](https://07.cdn.stada.com/media/y5rfptro/stada_health_report_2026_ai_is_transforming_healthcare.pdf), czerwiec 2026; zadowolenie na s. 6–7, oczekiwane zmiany na s. 9–10, metoda na s. 5.
+[^stadapl]: STADA Poland, [informacja prasowa o STADA Health Report 2026](https://11.cdn.stada.com/media/vvfpss4u/stada_health-report_informacja-prasowa_2026.pdf), 21 października 2026.
+[^rp]: „Rzeczpospolita”, [Polska w ogonie zaufania mieszkańców do systemu ochrony zdrowia](https://www.rp.pl/ochrona-zdrowia/art44131661-polska-w-ogonie-zaufania-mieszkancow-do-systemu-ochrony-zdrowia), 10 kwietnia 2026.

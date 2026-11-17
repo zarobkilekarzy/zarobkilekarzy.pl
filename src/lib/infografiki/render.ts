@@ -323,6 +323,8 @@ export interface Infographic {
   measure: string;
   /** jednostka za każdą liczbą, mniejszym stopniem (np. „%”) */
   unit?: string;
+  /** wartość odpowiadająca pełnej długości paska w wierszach (np. 100 dla odsetków); domyślnie najwyższa wartość */
+  max?: number;
   /** wiersze porównania (styl podstawowy); grafika z `chart`, `split`, `table`, `map`, `dots`, `views` albo `timeline` ich nie ma */
   rows?: ComparisonRow[];
   /** jedna linia stopki: źródła + najważniejsze zastrzeżenie */
@@ -416,7 +418,7 @@ function layout(set: InfographicSet, i: Infographic, rows: ComparisonRow[], f: F
   // luźny pion: nazwa nad liczbą; poza tym nazwa | liczba | pasek w jednej linii
   const stacked = pion && !dense;
   const inner = width - 2 * g.padX;
-  const max = Math.max(...rows.map((r) => r.value));
+  const max = i.max ?? Math.max(...rows.map((r) => r.value));
   // kolumna liczb: domyślna szerokość albo szersza, gdy liczby z jednostką się w niej nie mieszczą
   const unitW = i.unit ? textWidth(i.unit, g.num * UNIT_SCALE) + 8 : 0;
   const numW = Math.max(g.numW, Math.ceil(Math.max(...rows.map((r) => textWidth(r.display, g.num))) + unitW + g.num * 0.3));

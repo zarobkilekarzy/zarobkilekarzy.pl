@@ -23,6 +23,7 @@ import { BEAN, NORI } from '@/data/ai-w-medycynie-2026';
 import { SELF_GOVERNMENT_STANCES, SURPLUS_YEAR } from '@/data/reglamentacja-dostepu';
 import { DOBA_MODEL } from '@/data/film';
 import { OVER_60_GROUPS, REGISTER_BY_AGE, over60Share } from '@/data/dlaczego-brakuje-lekarzy';
+import { STUDIES_EN } from '@/data/en/zadowolenie-z-ochrony-zdrowia';
 import { formatDateIn, formatEN } from '@/lib/format';
 import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment, TableSeries, ViewPart } from './render';
 
@@ -682,6 +683,27 @@ const shortOfDoctors: InfographicSet = {
   ],
 };
 
+/* ---------- Zadowolenie z ochrony zdrowia: wynik Polski w czterech badaniach ---------- */
+
+const satisfaction: InfographicSet = {
+  route: '/en/analysis/satisfaction-with-healthcare-in-poland/',
+  page: 'Analysis: Satisfaction with healthcare in Poland',
+  filePrefix: 'zarobkilekarzy-en',
+  locale: 'en',
+  items: [
+    {
+      id: 'four-surveys',
+      title: 'How many Poles rate their healthcare well',
+      measure: 'Poland’s result in four surveys · 2025–2026',
+      unit: '%',
+      max: 100,
+      rows: STUDIES_EN.map((s) => ({ label: s.headline, sub: `${s.name} · ${s.when}`, value: s.poland, display: String(s.poland) })),
+      sources: 'Sources: IRIS Network 2025, CBOS 86/2025, Ipsos 2026, STADA 2026 · each survey asks a different question',
+      alt: `Infographic: how many Poles rate their healthcare well, Poland’s result in four surveys from 2025–2026. ${STUDIES_EN.map((s) => `${s.name}, ${s.measure} (${s.when}): ${s.poland}%${s.average !== undefined ? `, survey average ${s.average}%` : s.rank ? `, ${s.rank.place}th of ${s.rank.of} countries` : ', Poland only'}`).join('. ')}. Each survey asks a different question.`,
+    },
+  ],
+};
+
 export const infographicSetsEn: Record<string, InfographicSet> = {
   'studia-lekarskie': studiaLekarskie,
   'specjalizacja-lekarska': specjalizacja,
@@ -697,4 +719,5 @@ export const infographicSetsEn: Record<string, InfographicSet> = {
   'ai-w-medycynie-2026': ai,
   'reglamentacja-dostepu': reglamentacja,
   'dlaczego-brakuje-lekarzy': shortOfDoctors,
+  'zadowolenie-z-ochrony-zdrowia': satisfaction,
 };

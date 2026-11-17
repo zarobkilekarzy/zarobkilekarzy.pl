@@ -358,7 +358,7 @@ function map(m: Extract<OgMedia, { kind: 'map' }>) {
 
 /** Wiersze z paskami we wspólnej skali od zera, jak w infografikach: wyróżniony wiersz w kobalcie, reszta w łupku. */
 function bars(b: Extract<OgMedia, { kind: 'bars' }>) {
-  const max = Math.max(...b.rows.map((r) => r.value));
+  const max = b.max ?? Math.max(...b.rows.map((r) => r.value));
   // przy 5–6 wierszach układ gęsty (jak GD w infografikach); do 4 wierszy bez zmian
   const dense = b.rows.length > 4;
   const [gap, labelSize, valueSize, barH] = dense ? [18, 18, 42, 10] : [26, 20, 56, 14];

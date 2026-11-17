@@ -112,6 +112,7 @@ export const cards: Record<string, CardEn> = {
   'lekarze-radni': { stat: { of: '632,6', value: '632.6', unit: 'PLN thousand — median income from work for 2025 (113 checked declarations)' } },
   'dyzur-w-szpitalu-powiatowym': { stat: { of: '8 760', value: '8,760', unit: 'hours a year for one on-call post' } },
   'dlaczego-brakuje-lekarzy': { stat: { of: '62%', value: '62%', unit: 'of specialist training places empty in autumn 2025' } },
+  'zadowolenie-z-ochrony-zdrowia': { stat: { of: '19–38%', value: '19–38%', unit: 'of Poles rate their healthcare well, depending on the survey and the question' } },
   'ciecie-limitow-na-medycyne': { stat: { of: '2 090', value: '2,090', unit: 'full-time places in medical school in 2003, against more than 6,000 in 1987' } },
   'odsiew-na-medycynie': { stat: { of: '1 na 5', value: '1 in 5', unit: 'students who start do not finish on time' } },
   'studia-lekarskie': {

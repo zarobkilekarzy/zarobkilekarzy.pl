@@ -21,6 +21,7 @@ import { SELF_GOVERNMENT_STANCES, SURPLUS_YEAR } from '@/data/reglamentacja-dost
 import { DOBA_MODEL } from '@/data/film';
 import { uwQueueRows } from '@/data/studia-lekarskie';
 import { OVER_60_GROUPS, REGISTER_BY_AGE, over60Share } from '@/data/dlaczego-brakuje-lekarzy';
+import { STUDIES } from '@/data/zadowolenie-z-ochrony-zdrowia';
 import { formatPL } from '@/lib/format';
 import { monitoring } from '@/lib/monitoring';
 import { monitoringMap, opennessP } from '@/lib/monitoring/map';
@@ -760,6 +761,29 @@ const brakujeLekarzy: InfographicSet = {
   ],
 };
 
+// wynik Polski w każdym z czterech badań; paski w skali 0–100%, żeby 38% nie wyglądało jak całość
+const satisfactionNote = (s: (typeof STUDIES)[number]) =>
+  s.average !== undefined ? `średnia ${s.average}%` : s.rank ? `${s.rank.place}. z ${s.rank.of} krajów` : 'tylko Polska';
+const satisfactionRows: ComparisonRow[] = STUDIES.map((s) => ({ label: s.headline, sub: `${s.name} · ${s.when}`, value: s.poland, display: String(s.poland) }));
+
+const zadowolenie: InfographicSet = {
+  route: '/analizy/zadowolenie-z-ochrony-zdrowia/',
+  page: 'Analiza: Zadowolenie z ochrony zdrowia',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'cztery-badania',
+      title: 'Ilu Polaków dobrze ocenia ochronę zdrowia',
+      measure: 'wynik Polski w czterech badaniach · 2025–2026',
+      unit: '%',
+      max: 100,
+      rows: satisfactionRows,
+      sources: 'Źródła: IRIS Network 2025, CBOS 86/2025, Ipsos 2026, STADA 2026 · każde badanie zadaje inne pytanie',
+      alt: `Infografika: ilu Polaków dobrze ocenia ochronę zdrowia, wynik Polski w czterech badaniach z lat 2025–2026. ${STUDIES.map((s) => `${s.name}, ${s.measure} (${s.when}): ${s.poland}%, ${satisfactionNote(s)}`).join('. ')}. Każde badanie zadaje inne pytanie.`,
+    },
+  ],
+};
+
 export const infographicSets: Record<string, InfographicSet> = {
   'studia-lekarskie': studiaLekarskie,
   'specjalizacja-lekarska': specjalizacja,
@@ -778,4 +802,5 @@ export const infographicSets: Record<string, InfographicSet> = {
   'ai-w-medycynie-2026': ai,
   'reglamentacja-dostepu': reglamentacja,
   'dlaczego-brakuje-lekarzy': brakujeLekarzy,
+  'zadowolenie-z-ochrony-zdrowia': zadowolenie,
 };

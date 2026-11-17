@@ -1,0 +1,157 @@
+---
+title: "Satisfaction with healthcare in Poland: four surveys, from 19% to 38%"
+seoTitle: Satisfaction with healthcare in Poland
+summary: "Between 19% and 38% of Poles rate their healthcare well, depending on the survey. Four surveys ask four different questions, but in every international comparison Poland is near the bottom of the list."
+description: "How many Poles are satisfied with their healthcare: results from CBOS, Ipsos, STADA and IRIS Network for 2025–2026, the questions, the samples and where Poland stands among other countries."
+keyPoints:
+  - "In four surveys from 2025–2026, between 19% and 38% of Poles rate their healthcare well."
+  - "In the CBOS survey 25% are satisfied and 70% dissatisfied. Since 2001 the satisfied have never been a majority."
+  - "Poland is 19th of 20 countries in the IRIS survey, 30th of 32 in the Ipsos index and 17th of 20 in the STADA survey."
+  - "Access to specialists is rated worst (82% negative), doctors’ competence best (73% positive)."
+translation:
+  of: zadowolenie-z-ochrony-zdrowia
+  files: [src/data/zadowolenie-z-ochrony-zdrowia.ts]
+  hash: "6f590cfc092b"
+  date: 2026-11-17
+---
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import DivergingBars from '@/components/blocks/DivergingBars.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import SpreadRows from '@/components/blocks/SpreadRows.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import UnitChart from '@/components/blocks/UnitChart.astro';
+import IndexChart from '@/components/budzet/IndexChart.astro';
+import { CBOS_OPINIONS_EN, CBOS_SERIES_EN, IPSOS_COUNTRIES_EN, IRIS_COUNTRIES_EN, LINKS, STADA_COUNTRIES_EN, STUDIES_EN, study } from '@/data/en/zadowolenie-z-ochrony-zdrowia';
+
+{/* Tłumaczenie src/content/articles/zadowolenie-z-ochrony-zdrowia.mdx; liczby z modułu polskiego, napisy z src/data/en/zadowolenie-z-ochrony-zdrowia.ts */}
+
+export const countryRows = (rows) => rows.map(([label, value]) => ({ label, value, display: `${value}%`, highlight: label === 'Poland' }));
+export const countryCaption = (rows) => rows.map(([label, value]) => `${label} ${value}%`).join('; ');
+
+export const COUNTRIES = { iris: IRIS_COUNTRIES_EN, ipsos: IPSOS_COUNTRIES_EN, stada: STADA_COUNTRIES_EN };
+export const SPREAD_ROWS = STUDIES_EN.map((s) => ({
+  label: s.name,
+  note: `${s.measure}, ${s.when}`,
+  value: s.poland,
+  average: s.average,
+  dots: COUNTRIES[s.key]?.filter(([label]) => label !== 'Poland').map(([label, value]) => ({ label, value })),
+  empty: s.key === 'cbos' ? 'survey in Poland only' : undefined,
+}));
+
+export const CBOS_NOW = CBOS_SERIES_EN.at(-1);
+export const cbosPoints = (key, note) => CBOS_SERIES_EN.map((r) => ({ x: r.x, v: r[key], label: r.label, tip: `${r[key]}%`, note }));
+export const CBOS_LINES = {
+  xMin: 2000, xMax: 2028, yMin: 0, yMax: 100, ticks: [0, 25, 50, 75, 100], years: [2001, 2005, 2010, 2015, 2020, 2025], unit: '%',
+  series: [
+    { id: 'no', label: 'Dissatisfied', tone: 'data', end: `${CBOS_NOW.dissatisfied}%`, markers: true, points: cbosPoints('dissatisfied', 'dissatisfied') },
+    { id: 'yes', label: 'Satisfied', tone: 'accent', end: `${CBOS_NOW.satisfied}%`, markers: true, points: cbosPoints('satisfied', 'satisfied') },
+  ],
+  caption: `Satisfied and dissatisfied with the way healthcare works, according to CBOS: ${CBOS_SERIES_EN.map((r) => `${r.label} ${r.satisfied}% and ${r.dissatisfied}%`).join('; ')}.`,
+};
+
+export const METHOD_TABLE = {
+  caption: 'Four surveys: what was asked, of whom and how',
+  columns: ['', 'What the number measures', 'Sample in Poland', 'Survey mode'],
+  rows: [
+    { cells: ['IRIS Network', 'share choosing “excellent” or “basically good” from four descriptions of the system', '500–1,000 adults', 'mixed mode: online, face-to-face and telephone interviews'] },
+    { cells: ['CBOS', 'share satisfied with the way healthcare currently works in the country', '971 adults drawn from the national population register (PESEL)', 'face-to-face (63%), telephone (24%) and online (13%) interviews'] },
+    { cells: ['Ipsos', 'average of five questions: quality of care, trust in the system, ease of getting an appointment, access to a pharmacy, the same standard of care for everyone', '500 people aged 16–74', 'online panel'] },
+    { cells: ['STADA', 'share satisfied with the public healthcare system', '500–2,000 people aged 18–99', 'online questionnaire'] },
+  ],
+};
+
+There is no single answer to the question of how many Poles are satisfied with their healthcare. Four surveys from 2025–2026 give **19%, 25%, 35% and 38%**.[^iris][^cbos][^ipsos][^stada] The differences arise because each survey asks a different question of a different group of people. The conclusion is nevertheless shared: clearly fewer than half of respondents give a good rating, and in international comparisons Poland is near the bottom of the list.
+
+<StatRow label="Poland’s result in four surveys" items={[
+  { value: study('iris').poland, unit: '%', desc: 'rate the system as “excellent” or “basically good”; the average of 20 countries is 45%', accuracy: 'exact', source: 'IRIS Network, 2025', href: LINKS.iris },
+  { value: study('cbos').poland, unit: '%', desc: 'are satisfied with the way healthcare works; 70% are dissatisfied', accuracy: 'exact', source: 'CBOS, 86/2025', href: LINKS.cbos },
+  { value: study('ipsos').poland, unit: '%', desc: 'is the quality of care perception index, an average of five questions', accuracy: 'exact', source: 'Ipsos, 2026', href: LINKS.ipsos },
+  { value: study('stada').poland, unit: '%', desc: 'are satisfied with the public healthcare system; the average of 20 countries is 56%', accuracy: 'exact', source: 'STADA, 2026', href: LINKS.stada },
+]} />
+
+## Four questions, four numbers
+
+The lowest result comes from the most sharply worded question. IRIS Network, a network of research agencies, asks respondents to choose one of four descriptions of the system: “excellent”, “basically good”, “deteriorating” or “in a state of crisis”. In Poland 19% choose one of the first two.[^iris] CBOS simply asks about satisfaction with the way healthcare currently works in the country and gets 25%.[^cbos]
+
+The highest results come from online surveys. The Ipsos index is an average of five questions, one of which concerns easy access to a pharmacy, which is usually rated better than access to a doctor.[^ipsos] STADA asks about satisfaction with the public healthcare system; the report does not quote the exact wording of the question.[^stada]
+
+<Figure title="In every survey Poland is in the lower part of the field" note="Each row is a different question and a different sample, so numbers from different rows should not be averaged or subtracted from one another. Ipsos does not give an average for its index, and the STADA report names the results of 15 of 20 countries." source={[
+  { label: 'IRIS Network, Health Care Confidence Report 2025', href: LINKS.iris },
+  { label: 'CBOS, research report no. 86/2025', href: LINKS.cbos },
+  { label: 'Ipsos Health Service Report 2026', href: LINKS.ipsos },
+  { label: 'STADA Health Report 2026', href: LINKS.stada },
+]}>
+  <SpreadRows rows={SPREAD_ROWS} subject="Poland" dotLabel="another country" averageLabel="survey average"
+    caption={`Poland’s result among other countries in four surveys. ${STUDIES_EN.map((s) => `${s.name}, ${s.measure}, ${s.when}: Poland ${s.poland}%${s.average ? `, average ${s.average}%` : ''}${COUNTRIES[s.key] ? `; countries: ${countryCaption(COUNTRIES[s.key])}` : '; survey in Poland only'}`).join('. ')}.`} />
+</Figure>
+
+How to read this chart: the cobalt dot is Poland, the grey dots are the other countries, and the vertical line is the average given in the report. Below is a summary of what was asked and of whom.
+
+<Comparison table={METHOD_TABLE} />
+
+The online samples number a few hundred people, so a single result has a wide margin. For a sample of 500 Ipsos gives a credibility interval of ±5 percentage points.[^ipsos] The difference between 35% and 38% falls within that margin; the difference between Poland and a survey’s average does not.
+
+## CBOS: the satisfied have been a minority since 2001
+
+CBOS has been asking the same question for a quarter of a century, so only this survey shows change over time. In June 2025, 25% of respondents were satisfied and 70% dissatisfied. Two years earlier it was 27% and 70%.[^cbos]
+
+<UnitChart title="Out of 100 respondents, 25 are satisfied and 70 dissatisfied" unit={1} unitLabel="respondent in 100" cols={20} exact
+  groups={[
+    { value: CBOS_NOW.satisfied, kind: 'on', label: 'satisfied' },
+    { value: 100 - CBOS_NOW.satisfied - CBOS_NOW.dissatisfied, kind: 'mid', label: 'hard to say' },
+    { value: CBOS_NOW.dissatisfied, kind: 'off', label: 'dissatisfied' },
+  ]}
+  source="CBOS, research report no. 86/2025, June 2025" href={LINKS.cbos} />
+
+In fourteen measurements since 2001 the satisfied have never been a majority: there were most of them in March 2007 (37%) and fewest in February 2012 (19%). The two lines have run almost parallel for a quarter of a century, and the gap between them has never fallen below 21 percentage points.
+
+<Figure title="Since 2001 the lines of the satisfied and the dissatisfied have never crossed" note="Shares of the answers “definitely” and “rather” satisfied and dissatisfied. A dot is one measurement; the intervals between measurements are not equal." source={{ label: 'CBOS, research report no. 86/2025, p. 6', href: LINKS.cbos }}>
+  <IndexChart {...CBOS_LINES} animate />
+</Figure>
+
+The overall rating is made up of very different partial ratings. Access to specialist doctors comes out worst: **82%** of respondents rate it badly. The possibility of booking an appointment at a convenient time is rated badly by 63%. Doctors’ competence is rated best, appreciated by **73%** of respondents.[^cbos] The dissatisfaction therefore concerns mainly access to treatment, not the way doctors treat.
+
+<Figure title="Respondents rate doctors well and access to them badly" note="Answers to the question whether the respondent agrees with a statement about services provided under the National Health Fund (NHF): “definitely” and “rather” yes or no. The remainder up to 100% is “hard to say”. Statements shortened." source={{ label: 'CBOS, research report no. 86/2025, fig. 2', href: LINKS.cbos }}>
+  <DivergingBars rows={CBOS_OPINIONS_EN} max={85} noLabel="disagree" yesLabel="agree"
+    caption={`Ratings of services under the NHF according to CBOS, share agreeing and disagreeing with the statement: ${CBOS_OPINIONS_EN.map((r) => `${r.label}: yes ${r.yes}%, no ${r.no}%`).join('; ')}.`} />
+</Figure>
+
+Where the waiting lists come from is described in our analyses [Why Poland is short of doctors](/en/analysis/why-poland-is-short-of-doctors/) and [Private visits: the longer the queue, the higher the price](/en/analysis/private-visits-queues-and-prices/).
+
+The rating also depends on age. Among people aged 65 and over, 36% are satisfied, 11 percentage points more than in the whole sample.[^cbos]
+
+## Poland among other countries
+
+In the IRIS Network survey Poland ranks 19th of 20 countries. Only Turkey has a lower result (15%), and the average of all countries is 45%.[^iris] The report also gives what respondents consider the main cause of the problems: in Poland 70% point to inefficient management and 30% to insufficient funding.
+
+<Figure title="IRIS Network: Poland 19th of 20 countries" note="Share of the answers “excellent” and “basically good”. Survey from the fourth quarter of 2025, 14,742 people in 20 countries." source={{ label: 'IRIS Network, Health Care Confidence Report 2025, p. 11', href: LINKS.iris }}>
+  <BarChart rows={countryRows(IRIS_COUNTRIES_EN)} max={100} unit="%" average={study('iris').average}
+    caption={`Share of “excellent” and “basically good” ratings in the IRIS Network 2025 survey, average 45%: ${countryCaption(IRIS_COUNTRIES_EN)}.`} />
+</Figure>
+
+In the Ipsos index Poland has 35% and is 30th of 32 countries, ahead of Peru (33%) and Hungary (28%). Malaysia leads with 72%.[^ipsos] The report gives neither an average for the index nor Poland’s result for the quality of care question alone, so we show only the order of countries.
+
+<Figure title="Ipsos: Poland 30th of 32 countries" note="Quality of care perception index: the average share of positive answers to five questions. Survey from 13 July – 7 August 2026, 22,528 people in 32 countries." source={{ label: 'Ipsos Health Service Report 2026, pp. 5–6', href: LINKS.ipsos }}>
+  <BarChart rows={countryRows(IPSOS_COUNTRIES_EN)} max={100} unit="%"
+    caption={`Ipsos quality of care perception index 2026: ${countryCaption(IPSOS_COUNTRIES_EN)}.`} />
+</Figure>
+
+In the STADA survey 38% of people in Poland are satisfied with the public system, against an average of 56%. A year earlier the average was 58%.[^stada] The international report does not contain a full table: it gives the results of 15 of 20 countries, and Slovakia has the same result as Poland. Poland’s seventeenth place is given only in the company’s Polish press release.[^stadapl]
+
+The same survey asked what respondents would change first if they were health minister. In Poland 66% pointed to shorter waiting times and more staff, and 57% to easier access to primary care.[^stada] It is the same picture as in the partial ratings from CBOS.
+
+<Aside title="The limits of these data" variant="note">
+- We take the IRIS result for Poland from the network’s report: **19%**. A summary in the daily Rzeczpospolita gives 22%, with components of 4% and 16%, which add up to 20%.[^rp] None of those numbers is in the report, so we do not use them.
+- The surveys measure opinions, not the quality of treatment. People who did not use healthcare in the past year also answer.
+- Comparisons between countries depend on respondents’ expectations, not only on how the system works. The set of countries in the IRIS survey changes between waves, so the averages from successive years cannot be compared directly.
+- STADA is a pharmaceutical company and its report is promotional material; Ipsos and STADA survey online panels, not random samples.
+</Aside>
+
+[^iris]: IRIS Network, [Global Public Confidence Study 2025 – Health Care Confidence Report](https://www.irisnetwork.org/IRIS---Global-Public-confidence_Healthcare_Q4-2025_20260320.pdf), March 2026; country results on p. 11, causes of the problems on p. 13, method on p. 2.
+[^cbos]: CBOS (Public Opinion Research Center), [research report no. 86/2025 on opinions about the functioning of the healthcare system](https://www.cbos.pl/SPISKOM.POL/2025/K_086_25.PDF) (in Polish), September 2025; survey of 5–15 June 2025.
+[^ipsos]: Ipsos, [Ipsos Health Service Report 2026](https://resources.ipsos.com/rs/297-CXJ-795/images/IpsosHealthServiceReport2026.pdf?version=0), October 2026; index on pp. 5–6, method on p. 34.
+[^stada]: STADA, [STADA Health Report 2026](https://07.cdn.stada.com/media/y5rfptro/stada_health_report_2026_ai_is_transforming_healthcare.pdf), June 2026; satisfaction on pp. 6–7, expected changes on pp. 9–10, method on p. 5.
+[^stadapl]: STADA Poland, [press release on the STADA Health Report 2026](https://11.cdn.stada.com/media/vvfpss4u/stada_health-report_informacja-prasowa_2026.pdf) (in Polish), 21 October 2026.
+[^rp]: Rzeczpospolita, [article on the IRIS Network report](https://www.rp.pl/ochrona-zdrowia/art44131661-polska-w-ogonie-zaufania-mieszkancow-do-systemu-ochrony-zdrowia) (in Polish), 10 April 2026.

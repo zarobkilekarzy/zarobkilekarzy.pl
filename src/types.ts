@@ -299,6 +299,8 @@ export interface OgPage extends OgOverride {
     head?: string;
     /** jednostka przy każdej liczbie, mniejszym stopniem (np. „%”) */
     unit?: string;
+    /** wartość odpowiadająca pełnej szerokości paska (np. 100 dla odsetków); domyślnie najwyższa wartość */
+    max?: number;
     /** `display` = liczba na obrazku, gdy nie całkowita (np. „55,6”); skala pasków zawsze z `value` */
     rows: { label: string; value: number; display?: string; sub?: string; marked?: boolean }[];
   };

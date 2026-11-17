@@ -35,6 +35,7 @@ import { EXAMS_2025, passRate } from '@/data/zdawalnosc-egzaminow';
 import { COUNTRIES, WINDOW, ratePer100k, type CountryKey } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
 import { pseudonymDemo } from '@/data/postulat';
 import { createHmac } from 'node:crypto';
+import { STUDIES } from '@/data/zadowolenie-z-ochrony-zdrowia';
 import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
 import { frameLines } from '@/lib/siatka';
 import { PICTOGRAMS } from '@/lib/siatka/piktogramy';
@@ -241,6 +242,20 @@ export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'do
     bars: {
       head: `Odebrania prawa do zawodu na 100 tys. lekarzy rocznie, ${WINDOW.from}–${WINDOW.to}`,
       rows: (['no', 'se', 'uk', 'pl'] as const).map(country),
+    },
+  },
+  // cztery wyniki Polski; dopisek = punkt odniesienia z tego samego badania (średnia, miejsce albo odsetek niezadowolonych)
+  '/analizy/zadowolenie-z-ochrony-zdrowia/': {
+    bars: {
+      head: 'Dobrze ocenia ochronę zdrowia — Polska',
+      unit: '%',
+      max: 100,
+      rows: STUDIES.map((s) => ({
+        label: s.name,
+        sub: s.average !== undefined ? `średnia badania ${s.average}%` : s.rank ? `${s.rank.place}. miejsce na ${s.rank.of} krajów` : '70% niezadowolonych',
+        value: s.poland,
+        marked: true,
+      })),
     },
   },
 };

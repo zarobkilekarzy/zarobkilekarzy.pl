@@ -1,0 +1,56 @@
+---
+/**
+ * Słupki rozchodzące się od wspólnej osi: po lewej odpowiedzi „nie”, po prawej „tak” na to samo
+ * stwierdzenie. Obie strony w jednej skali (od zera do `max`), wartości przy końcach słupków.
+ * Reszta do 100% (np. „trudno powiedzieć”) nie jest rysowana — podaj ją w `note` ramki albo w `caption`.
+ */
+import { typo } from '@/lib/format';
+
+interface Row { label: string; no: number; yes: number }
+
+interface Props {
+  rows: Row[];
+  /** wartość odpowiadająca pełnej długości jednej strony */
+  max?: number;
+  unit?: string;
+  noLabel: string;
+  yesLabel: string;
+  /** pełny opis danych dla czytników ekranu */
+  caption: string;
+}
+
+const { rows, max = 100, unit = '%', noLabel, yesLabel, caption } = Astro.props;
+---
+<figure class="dvg" style={`--max: ${max}`}>
+  <p class="dvg__head" aria-hidden="true"><span>{typo(noLabel)}</span><span>{typo(yesLabel)}</span></p>
+  <ol class="dvg__rows" aria-hidden="true">
+    {rows.map((r) => (
+      <li class="dvg__row">
+        <span class="dvg__label">{typo(r.label)}</span>
+        <span class="dvg__pair">
+          <span class="dvg__side dvg__side--no" style={`--v: ${r.no}`}><b>{r.no}{unit}</b><i></i></span>
+          <span class="dvg__side dvg__side--yes" style={`--v: ${r.yes}`}><i></i><b>{r.yes}{unit}</b></span>
+        </span>
+      </li>
+    ))}
+  </ol>
+  <figcaption class="sr-only">{caption}</figcaption>
+</figure>
+
+<style>
+  .dvg { --val: 3.25rem; }
+  .dvg__head { display: grid; grid-template-columns: 1fr 1fr; margin: 0 0 14px; font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .dvg__head span:first-child { text-align: right; padding-right: 10px; }
+  .dvg__head span:last-child { padding-left: 10px; color: var(--blue); }
+  .dvg__rows { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+  .dvg__row { display: grid; gap: 6px; margin: 0; padding: 0; }
+  .dvg__row::before { content: none; }
+  .dvg__label { font-size: 0.90625rem; line-height: 1.3; color: var(--ink); text-align: center; text-wrap: balance; }
+  .dvg__pair { display: grid; grid-template-columns: 1fr 1fr; }
+  .dvg__side { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .dvg__side--no { justify-content: flex-end; border-right: 1px solid var(--ink); }
+  .dvg__side i { flex: none; height: 12px; width: calc(var(--v) / var(--max) * (100% - var(--val))); }
+  .dvg__side--no i { background: var(--chart); }
+  .dvg__side--yes i { background: var(--blue); }
+  .dvg__side b { font: 400 1rem/1 var(--f-display); letter-spacing: -0.02em; color: var(--ink); white-space: nowrap; }
+</style>

@@ -1,0 +1,104 @@
+---
+/**
+ * Rozrzut na wspólnej skali: każdy wiersz to jedno badanie albo miara, każda kropka to jeden podmiot
+ * (np. kraj). Wyróżniony podmiot (`value`) jest w kobalcie z liczbą nad kropką, średnia to włoskowa
+ * kreska z podpisem, a skrajne kropki są podpisane pod osią. Wiersz bez `dots` pokazuje sam wynik
+ * (badanie bez porównania). Skala wspólna dla wszystkich wierszy, od zera do `max`.
+ */
+import { typo } from '@/lib/format';
+
+interface Row {
+  label: string;
+  /** dopisek za nazwą, np. co mierzy liczba */
+  note?: string;
+  /** wynik wyróżnionego podmiotu */
+  value: number;
+  /** pozostałe podmioty: nazwa i wynik */
+  dots?: { label: string; value: number }[];
+  average?: number;
+  /** podpis pod osią, gdy wiersz nie ma kropek (np. „badanie tylko w Polsce”) */
+  empty?: string;
+}
+
+interface Props {
+  rows: Row[];
+  max?: number;
+  unit?: string;
+  /** nazwa wyróżnionego podmiotu, do legendy */
+  subject: string;
+  /** co oznacza zwykła kropka, do legendy */
+  dotLabel: string;
+  averageLabel: string;
+  ticks?: number[];
+  /** pełny opis danych dla czytników ekranu */
+  caption: string;
+}
+
+const { rows, max = 100, unit = '%', subject, dotLabel, averageLabel, ticks = [0, 25, 50, 75, 100], caption } = Astro.props;
+const pos = (v: number) => `${((v / max) * 100).toFixed(2)}%`;
+const ends = (r: Row) => {
+  const all = [...(r.dots ?? [])].sort((a, b) => a.value - b.value);
+  return all.length ? { lo: all[0], hi: all.at(-1)! } : undefined;
+};
+---
+<figure class="spread">
+  <p class="spread__legend" aria-hidden="true">
+    <span><i class="spread__key spread__key--hi"></i>{subject}</span>
+    <span><i class="spread__key"></i>{dotLabel}</span>
+    <span><i class="spread__key spread__key--avg"></i>{averageLabel}</span>
+  </p>
+  <ol class="spread__rows" aria-hidden="true">
+    {rows.map((r) => {
+      const e = ends(r);
+      return (
+        <li class="spread__row">
+          <span class="spread__label">{typo(r.label)}{r.note && <em> {typo(r.note)}</em>}</span>
+          <span class="spread__track">
+            {(r.dots ?? []).map((d) => <i class="spread__dot" style={`left: ${pos(d.value)}`} title={`${d.label}: ${d.value}${unit}`}></i>)}
+            {r.average !== undefined && <i class="spread__avg" style={`left: ${pos(r.average)}`}><b>{r.average}{unit}</b></i>}
+            <i class="spread__dot spread__dot--hi" style={`left: ${pos(r.value)}`}><b>{r.value}{unit}</b></i>
+            {e && e.lo.value < r.value && <span class="spread__end spread__end--lo" style={`left: ${pos(e.lo.value)}`}>{typo(`${e.lo.label} ${e.lo.value}${unit}`)}</span>}
+            {e && <span class="spread__end spread__end--hi" style={`left: ${pos(e.hi.value)}`}>{typo(`${e.hi.label} ${e.hi.value}${unit}`)}</span>}
+            {!e && r.empty && <span class="spread__end spread__end--lo" style={`left: ${pos(r.value)}`}>{typo(r.empty)}</span>}
+          </span>
+        </li>
+      );
+    })}
+  </ol>
+  <p class="spread__axis" aria-hidden="true">
+    {ticks.map((t, i) => <span style={`left: ${pos(t)}`} class:list={{ 'is-first': i === 0, 'is-last': i === ticks.length - 1 }}>{t}{i === ticks.length - 1 ? unit : ''}</span>)}
+  </p>
+  <figcaption class="sr-only">{caption}</figcaption>
+</figure>
+
+<style>
+  .spread { --dot: 9px; --hi: 15px; }
+  .spread__legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 0 0 22px; font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .spread__legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .spread__key { flex: none; width: var(--dot); height: var(--dot); border-radius: 50%; background: var(--chart); }
+  .spread__key--hi { width: 12px; height: 12px; background: var(--blue); }
+  .spread__key--avg { width: 1px; height: 14px; border-radius: 0; background: var(--ink); }
+
+  .spread__rows { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+  .spread__row { display: grid; gap: 0; margin: 0; padding: 0; }
+  .spread__row::before { content: none; }
+  .spread__label { font-size: 0.90625rem; line-height: 1.3; color: var(--ink); }
+  .spread__label em { font-style: normal; color: var(--muted); }
+
+  /* tor: miejsce na liczbę nad kropką i podpisy skrajnych kropek pod osią */
+  .spread__track { position: relative; display: block; height: 78px; margin: 0 8px; }
+  .spread__track::before { content: ""; position: absolute; left: -8px; right: -8px; top: 42px; height: 1px; background: var(--line); }
+  .spread__dot { position: absolute; top: 42px; width: var(--dot); height: var(--dot); margin: calc(var(--dot) / -2) 0 0 calc(var(--dot) / -2); border-radius: 50%; background: var(--chart); opacity: .8; }
+  .spread__dot--hi { z-index: 2; width: var(--hi); height: var(--hi); margin: calc(var(--hi) / -2) 0 0 calc(var(--hi) / -2); background: var(--blue); opacity: 1; box-shadow: 0 0 0 3px var(--under, var(--bg)); }
+  .spread__dot--hi b { position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); font: 400 1.5rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
+  .spread__avg { position: absolute; top: 20px; height: 34px; width: 1px; background: var(--ink); z-index: 1; }
+  .spread__avg b { position: absolute; bottom: 100%; left: 6px; font: 500 0.65625rem/1.6 var(--f-mono); letter-spacing: .06em; color: var(--ink); white-space: nowrap; }
+  .spread__end { position: absolute; top: 54px; font: 400 0.75rem/1.3 var(--f-body); color: var(--muted); white-space: nowrap; }
+  .spread__end--lo { transform: translateX(-4px); }
+  .spread__end--hi { transform: translateX(calc(-100% + 4px)); }
+
+  .spread__axis { position: relative; height: 18px; margin: 4px 8px 0; padding-top: 6px; border-top: 1px solid var(--line); font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+  .spread__axis span { position: absolute; transform: translateX(-50%); }
+  .spread__axis .is-first { transform: none; }
+  .spread__axis .is-last { transform: translateX(-100%); }
+</style>

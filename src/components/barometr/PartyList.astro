@@ -1,7 +1,7 @@
 ---
 /**
  * /barometr-polityczny/ — karty partii: logo, nazwa, klub albo koło w Sejmie, stan opisu.
- * Za partiami (barometrOthers) — partie spoza Sejmu (etykieta „Poza Sejmem”) i uczestnicy sporu, którzy nie są
+ * Na początku ci, którzy odpowiedzieli. Za partiami (barometrOthers) — partie spoza Sejmu (etykieta „Poza Sejmem”) i uczestnicy sporu, którzy nie są
  * partiami (etykieta „Nie partia”).
  * Na karcie stan kontaktu (statusLabel): pytania niewysłane → wysłane → odpowiedź albo „Bez odpowiedzi”;
  * partia, która odpowiedziała, ma na karcie link do swojej podstrony; nad listą legenda stanów i link do wzoru podstrony partii.
@@ -27,7 +27,14 @@ const AREA = 11000;
 const MAX_W = 230;
 const MAX_H = 92;
 
-const parties = [...barometrParties, ...barometrOthers].map((party) => {
+// Najpierw wszyscy, którzy odpowiedzieli (alfabetycznie, także spoza Sejmu), potem reszta w dotychczasowej kolejności:
+// partie w Sejmie alfabetycznie, za nimi pozostali (decyzja redakcji 18.11.2026). Sortowanie jest stabilne.
+const answered = (party: (typeof barometrParties)[number]) => party.status?.stage === 'odpowiedz';
+const ordered = [...barometrParties, ...barometrOthers].sort((a, b) =>
+  answered(a) && answered(b) ? a.name.localeCompare(b.name, 'pl') : Number(answered(b)) - Number(answered(a)),
+);
+
+const parties = ordered.map((party) => {
   const { width, height } = raw(party.logo);
   const ratio = width / height;
   let w = Math.sqrt(AREA * ratio);

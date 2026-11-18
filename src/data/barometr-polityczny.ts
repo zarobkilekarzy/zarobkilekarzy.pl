@@ -344,7 +344,10 @@ const RAZEM_STATUS: Extract<BarometrStatus, { stage: 'odpowiedz' }> = { stage: '
 /** Stan kontaktu z Lewicą — ten sam na karcie i na podstronie. */
 const LEWICA_STATUS: Extract<BarometrStatus, { stage: 'odpowiedz' }> = { stage: 'odpowiedz', sent: barometrSchedule.sendOn, answered: new Date('2026-11-03') };
 
-/** Partie z klubem albo kołem w Sejmie — na stronie alfabetycznie (zasada „te same pytania dla wszystkich”). */
+/**
+ * Partie z klubem albo kołem w Sejmie. Na stronie najpierw te, które odpowiedziały, potem pozostałe —
+ * w obu grupach alfabetycznie (decyzja redakcji 18.11.2026; wcześniej cała lista alfabetycznie).
+ */
 export const barometrParties: BarometrParty[] = (
   [
     { id: 'centrum', name: 'Centrum', club: 'Klub Parlamentarny Centrum', logo: centrumLogo, status: SENT },
@@ -359,7 +362,10 @@ export const barometrParties: BarometrParty[] = (
     { id: 'razem', name: 'Razem', club: 'Koło Poselskie Razem', logo: razemLogo, status: RAZEM_STATUS },
     { id: 'rozwoj-plus', name: 'Rozwój Plus', club: 'Klub Parlamentarny Rozwój Plus', logo: rozwojLogo, status: SENT },
   ] satisfies BarometrParty[]
-).sort((a, b) => a.name.localeCompare(b.name, 'pl'));
+).sort(
+  (a, b) =>
+    Number(b.status.stage === 'odpowiedz') - Number(a.status.stage === 'odpowiedz') || a.name.localeCompare(b.name, 'pl'),
+);
 
 /** Stan kontaktu z KORWiN — ten sam na karcie i na podstronie. Pytania poszły dzień po klubach i kołach (decyzja redakcji 19.10.2026); termin ten sam. */
 const KORWIN_STATUS: Extract<BarometrStatus, { stage: 'odpowiedz' }> = { stage: 'odpowiedz', sent: new Date('2026-10-19'), answered: new Date('2026-11-02') };

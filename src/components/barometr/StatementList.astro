@@ -4,7 +4,7 @@
  * Karta jak karta partii: zdjęcie (opcjonalne), nazwisko, funkcja, nazwa partii, krótko kim jest i czym się zajmuje,
  * link do podstrony. Logo partii, profil w mediach społecznościowych i odpowiedzi w obszarach są dopiero
  * na podstronie — karta na liście ma tylko przedstawić osobę i prowadzić do wypowiedzi (decyzja redakcji 26.10.2026).
- * Wzór na fikcyjnej osobie: przerywana ramka i etykieta „Wzór · osoba fikcyjna”.
+ * Wzory na fikcyjnych osobach nie trafiają na listę (decyzja redakcji 18.11.2026); wzór podstrony zostaje pod własnym adresem.
  */
 import { Image } from 'astro:assets';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
@@ -12,9 +12,8 @@ import { barometrPoliticians } from '@/data/barometr-polityczny';
 import { typo } from '@/lib/format';
 ---
 <ul class="st-list">
-  {barometrPoliticians.map((p) => (
-    <li id={`polityk-${p.id}`} class:list={['st', { 'st--example': p.example }]}>
-      {p.example && <p class="st__tag">Wzór · osoba fikcyjna</p>}
+  {barometrPoliticians.filter((p) => !p.example).map((p) => (
+    <li id={`polityk-${p.id}`} class="st">
       <div class:list={['st__head', { 'st__head--photo': p.photo }]}>
         {p.photo && <Image class="st__photo" src={p.photo} width={72} height={72} densities={[1, 2]} alt="" />}
         <div>
@@ -32,9 +31,7 @@ import { typo } from '@/lib/format';
 <style>
   .st-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
   .st { display: flex; flex-direction: column; padding: 20px 20px 22px; border: 1px solid var(--line-2); background: var(--surface); }
-  .st--example { border-style: dashed; }
 
-  .st__tag { align-self: flex-start; margin-bottom: 14px; padding: 3px 8px; border: 1px solid var(--line-2); font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
   .st__head--photo { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 14px; align-items: center; }
   .st__photo { display: block; width: 72px; height: 72px; object-fit: cover; background: var(--bg-soft); }
   .st__name { font: 500 1.1875rem/1.3 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }

@@ -1,44 +1,194 @@
 ---
 /**
- * /ustawy/ — ustawy i projekty ustaw opisane na stronie, pogrupowane według stanu (układ „Katalog”,
- * jak /analizy/). Lista i stany: src/data/serie.ts — ta sama, co ramka article/Series w każdym tekście.
+ * /ustawy/ — tablica stanu prawa: jeden wiersz na akt (etap, co z jawnością, ostatnia zmiana opisu, tekst aktu),
+ * nad nią najnowsza zmiana każdego aktu. Zastąpiła katalog kafelków i ramkę serii w artykułach (18.11.2026).
+ * Dane: src/data/serie.ts (pola openness, act, stages), historia zmian z artykułów i z projektu ustawy.
  */
 import IndexLayout from '@/layouts/IndexLayout.astro';
 import Section from '@/components/layout/Section.astro';
-import TopicCatalog from '@/components/blocks/TopicCatalog.astro';
-import { series, seriesStates } from '@/data/serie';
-import { getArticle } from '@/lib/content';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import { series, type SeriesItem } from '@/data/serie';
+import { history as projektHistory, projekt } from '@/data/projekt-ustawy';
+import { articleHref, getArticle } from '@/lib/content';
+import { formatDateIn, isoDate, typo } from '@/lib/format';
 
 const laws = series.find((s) => s.href === '/ustawy/');
 if (!laws) throw new Error('Brak serii z adresem /ustawy/ w src/data/serie.ts');
 
-const groups = await Promise.all(
-  (Object.keys(seriesStates) as (keyof typeof seriesStates)[]).map(async (state) => ({
-    topic: state,
-    info: seriesStates[state],
-    articles: await Promise.all(laws.items.filter((item) => item.state === state).map((item) => getArticle(item.ref))),
-  })),
+/** Wpis historii zmian jako zwykły tekst: bez linków Markdown, skrócony na granicy słowa. */
+const plain = (text: string, max = 170) => {
+  const flat = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\*\*/g, '');
+  if (flat.length <= max) return flat;
+  return `${flat.slice(0, flat.lastIndexOf(' ', max)).replace(/[,;:(–—-]$/, '')}…`;
+};
+
+/** W toku najpierw, potem obowiązujące, na końcu projekt spoza Sejmu. */
+const ORDER: SeriesItem['state'][] = ['bill', 'law', 'proposal'];
+const KIND: Record<SeriesItem['state'], string> = { bill: 'W Sejmie', law: 'Obowiązuje', proposal: 'Projekt obywatelski' };
+
+const rows = await Promise.all(
+  [...laws.items]
+    .sort((a, b) => ORDER.indexOf(a.state) - ORDER.indexOf(b.state))
+    .map(async (item) => {
+      const article = await getArticle(item.ref);
+      const href = articleHref(article);
+      const own = item.state === 'proposal';
+      const changes = own
+        ? projektHistory.map((h) => ({ date: h.date, text: `Wersja ${h.version}. ${h.text}` }))
+        : [...(article.data.changelog ?? [])].map((c) => ({ date: c.date, text: c.text }));
+      changes.sort((a, b) => b.date.getTime() - a.date.getTime());
+      const current = item.stages?.findIndex((s) => s.state === 'current') ?? -1;
+      return { item, article, href: own ? projekt.href : href, changes, current };
+    }),
 );
-const count = (state: keyof typeof seriesStates) => groups.find((g) => g.topic === state)?.articles.length ?? 0;
+
+// Najnowsza zmiana każdego aktu (jedna na akt — inaczej trzy pozycje zajmuje ten, nad którym trwają prace)
+const recent = rows
+  .filter((row) => row.changes.length > 0)
+  .map((row) => ({ ...row.changes[0], title: row.item.title, href: `${row.href}#historia-zmian` }))
+  .sort((a, b) => b.date.getTime() - a.date.getTime())
+  .slice(0, 3);
+
+const count = (state: SeriesItem['state']) => laws.items.filter((item) => item.state === state).length;
+const date = (d: Date) => formatDateIn(d, 'pl');
 ---
 <IndexLayout
   title={laws.title}
   docTitle="Ustawy o płacach i jawności w ochronie zdrowia"
-  lead="Ustawy i projekty ustaw opisane na stronie, według etapu: obowiązujące, w Sejmie i projekt obywatelski tej strony. Każdy opis opiera się na tekście aktu, nie na omówieniach."
+  lead="Ustawy i projekty ustaw opisane na stronie: na jakim są etapie, co mówią o jawności i co się w nich ostatnio zmieniło. Każdy opis opiera się na tekście aktu, nie na omówieniach."
   eyebrow="Przepisy"
   meta={[
-    { label: 'Teksty', value: laws.items.length },
-    { label: 'Obowiązujące', value: count('law') },
+    { label: 'Akty', value: laws.items.length },
     { label: 'W Sejmie', value: count('bill') },
+    { label: 'Obowiązujące', value: count('law') },
+    { label: 'Ostatnia zmiana', value: recent[0]?.date },
   ]}
-  jump={{ title: 'Etapy', items: groups.map((g) => ({ label: g.info.label, href: `#${g.topic}`, count: g.articles.length })) }}
-  articles={groups.flatMap((g) => g.articles)}
+  jump={{ title: 'Na stronie', items: [
+    { label: 'Co się ostatnio zmieniło', href: '#zmiany', count: recent.length },
+    { label: 'Tablica aktów', href: '#akty', count: rows.length },
+  ] }}
+  articles={rows.map((row) => row.article)}
 >
-  <Section space="bottom" class="catalog">
-    <TopicCatalog groups={groups} noun={['tekst', 'teksty', 'tekstów']} format={false} />
+  <Section space="bottom" class="laws">
+    <section class="news" id="zmiany" aria-labelledby="zmiany-title">
+      <h2 class="laws__title" id="zmiany-title">Co się ostatnio zmieniło</h2>
+      <ol class="news__list">
+        {recent.map((change) => (
+          <li class="news__item">
+            <p class="news__meta"><time datetime={isoDate(change.date)}>{date(change.date)}</time> · {change.title}</p>
+            <p class="news__text">{typo(plain(change.text, 240))}</p>
+            <LinkArrow href={change.href}>Historia zmian</LinkArrow>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="board" id="akty" aria-labelledby="akty-title">
+      <h2 class="laws__title" id="akty-title">Tablica aktów</h2>
+      <div class="board__head" aria-hidden="true">
+        <span>Akt</span><span>Etap</span><span>Co z jawnością</span><span>Ostatnia zmiana opisu</span>
+      </div>
+      <ul class="board__rows">
+        {rows.map(({ item, href, changes, current }) => (
+          <li class:list={['law', `law--${item.state}`]}>
+            <div class="law__cell law__cell--act">
+              <p class="law__kind">{KIND[item.state]}</p>
+              <h3 class="law__title"><a href={href}>{typo(item.title)}</a></h3>
+              <p class="law__note">{typo(item.note)}</p>
+              {item.act && <p class="law__source"><a href={item.act.href} target="_blank" rel="noopener">{typo(item.act.label)}</a></p>}
+            </div>
+
+            <div class="law__cell">
+              <p class="law__label">Etap</p>
+              {item.stages ? (
+                <>
+                  <ol class="steps" aria-label={`Etapy: ${item.title}`}>
+                    {item.stages.map((s) => (
+                      <li class:list={['steps__mark', `steps__mark--${s.state}`]} aria-current={s.state === 'current' ? 'step' : undefined}>
+                        <span class="sr-only">{s.label}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  <p class="law__stage">{typo(item.stages[current]?.label ?? item.status)}</p>
+                  <p class="law__sub">etap {current + 1} z {item.stages.length}{item.stages[current + 1] && <> · potem: {typo(item.stages[current + 1].label.toLowerCase())}</>}</p>
+                </>
+              ) : (
+                <>
+                  <ol class="steps" aria-hidden="true"><li class="steps__mark steps__mark--done"></li></ol>
+                  <p class="law__stage">Obowiązuje</p>
+                  <p class="law__sub">{typo(item.status.replace(/^Obowiązuje( · | )/, ''))}</p>
+                </>
+              )}
+            </div>
+
+            <div class="law__cell">
+              <p class="law__label">Co z jawnością</p>
+              <p class="law__text">{item.openness && typo(item.openness)}</p>
+            </div>
+
+            <div class="law__cell">
+              <p class="law__label">Ostatnia zmiana opisu</p>
+              {changes[0] ? (
+                <>
+                  <p class="law__date"><time datetime={isoDate(changes[0].date)}>{date(changes[0].date)}</time></p>
+                  <p class="law__sub">{typo(plain(changes[0].text, 150))}</p>
+                </>
+              ) : <p class="law__sub">Bez zmian od publikacji.</p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
   </Section>
 </IndexLayout>
 
 <style>
-  .catalog { padding-top: 48px; }
+  .laws { padding-top: 48px; }
+  .laws__title { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-bottom: 14px; border-bottom: 1px solid var(--ink); }
+
+  .news { margin-bottom: clamp(48px, 6vw, 80px); }
+  .news__list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 clamp(24px, 3vw, 48px); }
+  .news__item { padding: 20px 0 0; display: grid; align-content: start; justify-items: start; gap: 8px; }
+  .news__meta { font: 500 0.6875rem/1.4 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--blue); }
+  .news__text { font-size: 0.9375rem; line-height: 1.55; color: var(--text); }
+
+  .board__head, .law { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.15fr); column-gap: clamp(20px, 2.5vw, 40px); }
+  .board__head { padding: 12px 0; border-bottom: 1px solid var(--line-2); font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .law { padding: 28px 0; border-bottom: 1px solid var(--line); }
+  .law--bill { box-shadow: inset 3px 0 0 var(--blue); padding-left: 20px; margin-left: -20px; }
+
+  .law__label { display: none; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .law__kind { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .law--bill .law__kind { color: var(--blue); }
+  .law__title { margin-top: 6px; font: 500 1.25rem/1.25 var(--f-display); letter-spacing: -0.015em; color: var(--ink); }
+  .law__title a { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 4px; transition: color .2s, text-decoration-color .2s; }
+  .law__title a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .law__note { margin-top: 6px; font-size: 0.875rem; line-height: 1.5; color: var(--muted); }
+  .law__source { margin-top: 10px; font: 400 0.75rem/1.4 var(--f-mono); }
+  .law__source a { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .law__source a:hover { color: var(--blue); }
+
+  .steps { display: flex; align-items: center; gap: 0; height: 12px; }
+  .steps__mark { position: relative; flex: none; width: 12px; height: 12px; margin-right: 18px; background: var(--surface); border: 2px solid var(--line-2); }
+  .steps__mark::after { content: ""; position: absolute; top: 3px; left: 10px; width: 18px; height: 2px; background: var(--line-2); }
+  .steps__mark:last-child { margin-right: 0; }
+  .steps__mark:last-child::after { display: none; }
+  .steps__mark--done { background: var(--blue); border-color: var(--blue); }
+  .steps__mark--done::after { background: var(--blue); }
+  .steps__mark--current { border-color: var(--blue); box-shadow: 0 0 0 4px var(--blue-100); }
+  .law__stage { margin-top: 12px; font: 500 1rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .law__date { font: 500 1rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+  .law__sub { margin-top: 4px; font-size: 0.84375rem; line-height: 1.5; color: var(--muted); }
+  .law__text { font-size: 0.9375rem; line-height: 1.55; color: var(--text); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  @media (max-width: 900px) {
+    .news__list { grid-template-columns: minmax(0, 1fr); }
+    .news__item { padding: 20px 0; border-bottom: 1px solid var(--line); }
+    .board__head { display: none; }
+    .law { grid-template-columns: minmax(0, 1fr); row-gap: 20px; }
+    .law--bill { margin-left: 0; padding-left: 16px; }
+    .law__label { display: block; }
+  }
 </style>

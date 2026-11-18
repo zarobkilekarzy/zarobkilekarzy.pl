@@ -2,7 +2,8 @@
 /**
  * Spis treści z nagłówków h2 artykułu. Na szerokim ekranie przyklejony z boku,
  * podświetla bieżącą sekcję, a linia po lewej wypełnia się płynnie za przewijaniem;
- * na wąskim — rozwijany (<details>) nad treścią.
+ * na wąskim — rozwijany (<details>) nad treścią. Spis wyższy niż ekran przewija się we własnej
+ * ramce i sam podąża za bieżącą sekcją.
  */
 import type { MarkdownHeading } from 'astro';
 import { uiOf } from '@/i18n/ui';
@@ -41,6 +42,18 @@ const items = headings.filter((h) => h.depth === 2);
       const list = this.querySelector('ol')!;
       const content = targets[targets.length - 1].parentElement!;
 
+      let shown = -1;
+      // Spis wyższy niż ekran: bieżąca pozycja ma być widoczna w jego ramce (tylko gdy sekcja się zmienia,
+      // żeby nie walczyć z ręcznym przewijaniem spisu)
+      const follow = (link: HTMLElement) => {
+        if (this.scrollHeight <= this.clientHeight) return;
+        const frame = this.getBoundingClientRect();
+        const item = link.getBoundingClientRect();
+        const margin = 48;
+        if (item.top < frame.top + margin) this.scrollTop -= frame.top + margin - item.top;
+        else if (item.bottom > frame.bottom - margin) this.scrollTop += item.bottom - (frame.bottom - margin);
+      };
+
       const update = () => {
         const offset = window.innerHeight * 0.25;
         const tops = targets.map((el) => el.getBoundingClientRect().top);
@@ -49,6 +62,10 @@ const items = headings.filter((h) => h.depth === 2);
           if (top <= offset) current = i;
         });
         links.forEach((a, i) => a.toggleAttribute('aria-current', i === current));
+        if (current !== shown) {
+          shown = current;
+          follow(links[current]);
+        }
 
         // Ostatnia sekcja kończy się z treścią, a gdy strona jest za krótka, by treść doszła do progu — z końcem strony
         const scrollLeft = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
@@ -110,6 +127,15 @@ const items = headings.filter((h) => h.depth === 2);
   a:hover { color: var(--blue); }
   a[aria-current] { color: var(--ink); font-weight: 500; }
   a[aria-current]::before { color: var(--blue); }
+
+  /* Przyklejony spis nie może być wyższy niż ekran: przewija się sam. Lewy margines mieści linię postępu (left: -16px) */
+  @media (min-width: 1025px) {
+    .toc {
+      max-height: calc(100dvh - var(--header-h) - 56px);
+      overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+      margin-left: -18px; padding-left: 18px;
+    }
+  }
 
   @media (max-width: 1024px) {
     .toc { border: 1px solid var(--line-2); padding: 14px 18px; }

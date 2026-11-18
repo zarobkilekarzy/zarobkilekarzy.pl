@@ -13,7 +13,7 @@ import { MEDIANS } from '@/data/rozklad-wynagrodzen';
 import { pseudonymDemo } from '@/data/en/postulat';
 import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
-import { columnChart, svg, visitList } from '@/lib/og/charts';
+import { columnChart, FAULT_CARD_H, faultCard, svg, visitList } from '@/lib/og/charts';
 import { STUDIES_EN } from '@/data/en/zadowolenie-z-ochrony-zdrowia';
 import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
 import { globeOgBody } from '@/lib/swiat/og';
@@ -91,6 +91,7 @@ export const ogArticleMediaEn: Record<string, Pick<OgPage, 'bars' | 'panels' | '
   '/aktualnosci/limity-plac-medykow-w-sejmie/': { bars: LIMITY_BARS },
   '/aktualnosci/sejm-uchwalil-limity-plac-medykow/': { panels: VOTE_PANEL },
   // artykuły
+  '/mechanizmy/no-fault/': { panels: [{ head: 'A system that does not rule on fault', height: FAULT_CARD_H, svg: svg(MEDIA_W, FAULT_CARD_H, faultCard([['Harm', 'established'], ['Money', 'paid to the patient']], ['Fault', 'not determined'], MEDIA_W)) }] },
   '/analizy/kanada-lekarze-ustawa-specjalna/': {
     dots: {
       mask: KANADA,

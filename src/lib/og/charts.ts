@@ -264,6 +264,37 @@ export function visitList(added: string, width: number): string {
   return s;
 }
 
+/* ---------- No-fault: co system ustala, a czego nie ---------- */
+
+export const FAULT_CARD_H = 412;
+
+/**
+ * Karta z trzema wierszami: dwa odhaczone (`done`: nazwa i stan), trzeci w kobalcie z pustym kółkiem i polem,
+ * w którym zamiast wskazania stoi `open[1]`. Wiersze na wspólnej osi: znak pośrodku wiersza, blok tekstu
+ * wyśrodkowany na tej samej wysokości. Wysokość: FAULT_CARD_H.
+ */
+export function faultCard(done: [string, string][], open: [string, string], width: number): string {
+  const inset = 4, rowH = 120, gap = 16, openH = 148, markX = 40, textX = 78, r = 17, pad = markX - r - inset;
+  let y = inset, s = '';
+  done.forEach(([name, state], i) => {
+    const cy = y + rowH / 2;
+    s += `<circle cx="${markX}" cy="${cy}" r="${r}" fill="${c('ink')}"/>`
+      + `<path d="M${markX - 8.5} ${cy + 0.5}l6 6 11 -13" stroke="#fff" stroke-width="3.5" fill="none"/>`;
+    s += label(textX, cy - 2, name, ['big', 'strong']) + label(textX, cy + 21, state);
+    y += rowH;
+    if (i < done.length - 1) s += `<line x1="${inset}" x2="${width - inset}" y1="${y}" y2="${y}" stroke="${c('line')}"/>`;
+  });
+  y += gap;
+  const cy = y + openH / 2;
+  s += `<rect x="${inset}" y="${y}" width="${width - 2 * inset}" height="${openH}" fill="${c('blue-50')}" stroke="${c('blue')}" stroke-width="2" stroke-dasharray="9 7"/>`;
+  s += `<rect x="0" y="${y - inset}" width="9" height="9" fill="${c('blue')}"/><rect x="${width - 9}" y="${y + openH - 5}" width="9" height="9" fill="${c('blue')}"/>`;
+  s += `<circle cx="${markX}" cy="${cy}" r="${r - 1.5}" fill="#fff" stroke="${c('blue')}" stroke-width="3"/>`;
+  s += label(textX, cy - 20, open[0], ['big', 'blue']);
+  s += `<rect x="${textX}" y="${cy + 2}" width="${width - inset - pad - textX}" height="36" fill="#fff" stroke="${c('blue')}" stroke-width="2"/>`;
+  s += label(textX + 13, cy + 25, open[1], ['blue']);
+  return s;
+}
+
 /**
  * Ilustracja „Znajdź lekarza”: lupa z kropek na polu plusów (siatka 21 kolumn, geometria lib/siatka).
  * Plus tła czyta się jak krzyż medyczny — w soczewce plusy są powiększone, a środkowy staje się pełnym

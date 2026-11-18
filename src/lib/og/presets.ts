@@ -211,7 +211,7 @@ export function articleOgEn({ article, source }: Translated, media: Pick<OgPage,
     .filter(Boolean)
     .join(' · ');
   const pl = source.data.og ?? {};
-  const visual = { photo: pl.photo, illustration: pl.illustration, position: pl.position, pictogram: pl.pictogram, ...(pl.media === 'none' && { media: pl.media }) };
+  const visual = { photo: pl.photo, illustration: pl.illustration, position: pl.position, pictogram: pl.pictogram, ...((pl.media === 'none' || pl.media === 'panels') && { media: pl.media }) };
 
   return compose(
     enHref({ article, source }),

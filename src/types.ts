@@ -247,7 +247,7 @@ export interface OgOverride {
   /** lead pod tytułem; false = bez leadu */
   lead?: string | false;
   /** auto: stat → zdjęcie → … → grafika z kropek; none = sam tytuł na całą szerokość */
-  media?: 'auto' | 'photo' | 'stat' | 'none';
+  media?: 'auto' | 'photo' | 'stat' | 'panels' | 'none';
   /** piktogram z kropek (lib/siatka/piktogramy.ts) albo uderzenie EKG, gdy obrazek nie ma innej grafiki */
   pictogram?: PictogramName | 'ekg';
   stat?: OgStat;

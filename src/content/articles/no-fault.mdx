@@ -1,0 +1,254 @@
+---
+title: "No-fault: odszkodowanie bez winy, a odpowiedzialność lekarza"
+seoTitle: "No-fault w medycynie: co to jest i jak działa"
+category: Mechanizm
+topic: jawnosc
+order: 4
+date: 2026-11-18
+cover: ../../assets/img/no-fault-koperta.jpg
+coverAlt: "Koperta na szpitalnej szafce, z pustym miejscem na nadawcę; obok rozpięta opaska pacjenta"
+# okładka zostaje na stronie; na obrazku OG stoi karta z src/data/og.ts
+og:
+  media: panels
+summary: "Słowo no-fault oznacza trzy różne rozwiązania. Za granicą to wypłata dla pacjenta bez wskazywania winnego. W Polsce samorząd lekarski nazywa tak też wyłączenie odpowiedzialności karnej za nieumyślny błąd."
+description: "Co to jest no-fault, jak działa w Szwecji, Danii, Norwegii i Nowej Zelandii, co proponuje się w Polsce i co zostaje z odpowiedzialności lekarza."
+keyPoints:
+  - "No-fault to trzy różne rzeczy: wypłata bez orzekania o winie, ograniczenie odpowiedzialności karnej i ochrona osoby zgłaszającej błąd."
+  - "W Danii i Norwegii odszkodowanie dostaje mniej niż co czwarty wnioskodawca, a nadzór nad zawodem prowadzi tam państwo."
+  - "Polski Fundusz Kompensacyjny przyznał w 2025 r. 586 świadczeń; nie ustala, kto zawinił, i nikomu sprawy nie przekazuje."
+  - "Po wyłączeniu odpowiedzialności karnej lekarza oceniałyby sądy lekarskie, w których 86% kar to upomnienie, nagana albo kara pieniężna."
+related:
+  - odpowiedzialnosc-zawodowa-lekarzy
+  - jak-dzialaja-sady-lekarskie
+  - prawa-pacjenta
+  - brak-jawnosci
+---
+import Figure from '@/components/blocks/Figure.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Aside from '@/components/blocks/Aside.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import {
+  FIRST_YEAR, LAST_YEAR, PENALTIES, PENALTIES_MILD, PENALTIES_TOTAL, RATIO_ROUNDED, RATIO_UK, WINDOW, total,
+} from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
+import { formatPL } from '@/lib/format';
+import MonitorPhoto from '@/components/ui/MonitorPhoto.astro';
+import dockPhoto from '@/assets/articles/no-fault/krzeslo-oskarzonego.jpg';
+
+{/* Adresy źródeł dla bloków; wszystkie sprawdzone 17.11.2026 w tekstach dokumentów */}
+export const LINKS = {
+  fundusz: 'https://api.sejm.gov.pl/eli/acts/DU/2023/1675/text.pdf',
+  rpp2025: 'https://api.sejm.gov.pl/sejm/term10/prints/3042/3042.pdf',
+  lof: 'https://wp.lof.se/wp-content/uploads/Skadestatistik-2025-Hela-Sverige.pdf',
+  dk: 'https://cdn1.gopublic.dk/patienterstatningen/Media/638846335484600869/%C3%85rstal%202024%20-%20Behandlingsskader%20-%20Hele%20landet.pdf',
+  npe: 'https://www.npe.no/globalassets/dokumenter/pdf-publikasjoner-fra-npe/arsrapporter/2025/arsrapport-2025.pdf',
+  nz: 'https://jhmhp.amegroups.org/article/view/9767/html',
+};
+
+{/* liczby kar i porównanie krajów — te same dane co analiza odpowiedzialnosc-zawodowa-lekarzy */}
+export const mildPct = Math.round((PENALTIES_MILD / PENALTIES_TOTAL) * 100);
+export const plTotal = total('pl');
+export const allYears = `${FIRST_YEAR}–${LAST_YEAR}`;
+export const span = `${WINDOW.from}–${WINDOW.to}`;
+
+{/* Prokuratura Krajowa, komunikat z 5.04.2018: decyzje merytoryczne w sprawach o błędy medyczne w 2017 r. */}
+export const PK_2017 = { cases: 5678, decisions: 2002, indictments: 139, pleas: 2, refusals: 248, discontinued: 1613 };
+
+{/* Ministerstwo Sprawiedliwości, załącznik do odpowiedzi na interpelację nr 9798 (12.06.2025): sprawy o odszkodowania za szkody wyrządzone przez służbę zdrowia w 2024 r., pierwsza instancja — sądy rejonowe + sądy okręgowe */}
+export const CIVIL_2024 = { filed: 130 + 555, closed: 119 + 524, granted: 32 + 152, dismissed: 27 + 142, settled: 4 + 12, pending: 249 + 2053 };
+export const civilGrantedPct = Math.round((CIVIL_2024.granted / CIVIL_2024.closed) * 100);
+export const pkClosedPct = Math.round(((PK_2017.refusals + PK_2017.discontinued) / PK_2017.decisions) * 100);
+
+Pacjent, któremu w szpitalu stała się krzywda, może dziś pójść czterema drogami: złożyć wniosek do Funduszu Kompensacyjnego, pozwać szpital, zawiadomić prokuraturę albo poskarżyć się rzecznikowi odpowiedzialności zawodowej w izbie lekarskiej. Hasło **no-fault** pojawia się w sporach o każdą z tych dróg, ale za każdym razem znaczy co innego.
+
+Poniżej: co to słowo oznacza, jak takie systemy działają w krajach, które mają je od dziesięcioleci, co uchwalono i co proponuje się w Polsce — oraz co zostałoby z odpowiedzialności lekarza, gdyby wyłączyć odpowiedzialność karną za nieumyślny błąd.
+
+## Trzy znaczenia jednego słowa
+
+No-fault to po angielsku „bez winy”. W ochronie zdrowia nazywa się tak trzy osobne rozwiązania. Można wprowadzić każde z nich bez pozostałych.
+
+<Figure
+  title="W Polsce działa tylko pierwsze z trzech rozwiązań, a spór toczy się o drugie"
+  source={[
+    { label: 'Ustawa z 16 czerwca 2023 r. o zmianie ustawy o prawach pacjenta (Fundusz Kompensacyjny)', href: LINKS.fundusz },
+    { label: 'Rządowy projekt ustawy o jakości, druk sejmowy nr 2898', href: 'https://api.sejm.gov.pl/sejm/term9/prints/2898/2898.pdf' },
+  ]}
+>
+  <Comparison
+    table={{
+      columns: ['', 'Na czym polega', 'Stan w Polsce'],
+      rows: [
+        { cells: ['Kompensacja bez orzekania o winie', 'pacjent dostaje pieniądze z funduszu albo ubezpieczenia i nie musi wskazać, kto zawinił', 'działa od 6 września 2023 r.: Fundusz Kompensacyjny Zdarzeń Medycznych, tylko dla szkód w szpitalu'] },
+        { cells: ['Ograniczenie odpowiedzialności karnej', 'za nieumyślny błąd przy leczeniu personel nie odpowiada karnie albo odpowiada łagodniej', 'nie obowiązuje; postulat samorządu lekarskiego pod nazwą „klauzula wyższego dobra”'], marked: true },
+        { cells: ['Ochrona zgłaszającego', 'kto sam zgłosi błąd do rejestru zdarzeń niepożądanych, nie ponosi za to zgłoszenie konsekwencji', 'była w projekcie rządowym z 2022 r.; w uchwalonej ustawie o jakości jej nie ma'] },
+      ],
+    }}
+    markLabel="o to toczy się spór"
+  />
+</Figure>
+
+Za granicą no-fault oznacza zwykle pierwsze rozwiązanie, czasem razem z trzecim. W polskiej debacie samorząd lekarski używa tego słowa przede wszystkim dla drugiego.
+
+## Jak to działa w innych krajach
+
+Najstarsze systemy mają kraje nordyckie i Nowa Zelandia. Łączy je jedno: pacjent składa wniosek do instytucji, która ocenia **szkodę**, a nie osobę. Różni je to, kiedy płacą.
+
+<Figure
+  title="„Bez winy” nie znaczy „za każdą szkodę”: w Danii i Norwegii odszkodowanie dostaje mniej niż co czwarty wnioskodawca"
+  note="Odsetki liczone są w każdym kraju inaczej (od decyzji, od wniosków), więc pokazują rząd wielkości, a nie ranking."
+  source={[
+    { label: 'Löf, Skadestatistik 2025', href: LINKS.lof },
+    { label: 'Patienterstatningen, Årstal 2024', href: LINKS.dk },
+    { label: 'Norsk pasientskadeerstatning, Årsrapport 2025', href: LINKS.npe },
+    { label: 'Andrew, Journal of Hospital Management and Health Policy, 2025', href: LINKS.nz },
+  ]}
+>
+  <Comparison
+    table={{
+      columns: ['', 'Kiedy pacjent dostaje pieniądze', 'Ile wniosków kończy się wypłatą', 'Skala'],
+      rows: [
+        { cells: ['Szwecja', 'gdy szkody dałoby się uniknąć, gdyby leczył doświadczony specjalista', 'nieco ponad 40% spraw rozstrzygniętych w 2025 r.', '22 800 zgłoszeń, niespełna 740 mln koron wypłat w 2025 r.'] },
+        { cells: ['Dania', 'gdy doświadczony specjalista postąpiłby inaczej, a także przy rzadkich i ciężkich powikłaniach, choć wszyscy postąpili prawidłowo', '22,3% decyzji w 2024 r.', '13 327 zgłoszeń, 838,53 mln koron wypłat w 2024 r.'] },
+        { cells: ['Norwegia', 'gdy zawiodło udzielanie pomocy, „nawet jeśli nikogo nie można obwinić”', '24% w 2025 r. (30% w 2020 r.)', '8382 wnioski, 1063 mln koron wypłat w 2025 r.; średnio 225 dni do decyzji'] },
+        { cells: ['Nowa Zelandia', 'gdy uraz jest skutkiem leczenia; winy ani zaniedbania nie trzeba dowodzić', 'ok. 37% wniosków jest odrzucanych', 'system obejmuje wszystkie urazy; zwykłego odszkodowania przed sądem dochodzić nie można'] },
+      ],
+    }}
+  />
+</Figure>
+
+Szwedzki ubezpieczyciel Löf, który należy do regionów, opisuje zasadę tak: odszkodowanie przysługuje, jeśli szkody dałoby się uniknąć przy leczeniu przez doświadczonego specjalistę, a nie tylko dlatego, że leczenie nie przyniosło oczekiwanego wyniku.[^lof] Podobny test stosuje Dania, która dodatkowo płaci za rzadkie i ciężkie powikłania, nawet gdy nikt nie popełnił błędu.[^dk] Norweska ustawa przyznaje odszkodowanie, gdy szkoda wynika z zawodności świadczenia, „nawet jeśli nikogo nie można obwinić”.[^no-lov]
+
+Instytucje te nie wiążą liczby wniosków z liczbą błędów. Norweski fundusz zanotował w 2025 r. rekordowe 8382 wnioski i zaznaczył, że nie ma podstaw sądzić, by przybywało błędów w leczeniu.[^npe]
+
+W Nowej Zelandii system zastąpił proces cywilny: poszkodowany nie może pozwać o zwykłe odszkodowanie, zostało mu tylko rzadko używane roszczenie o odszkodowanie karne. Autor przeglądu z 2025 r. podaje, że ok. 37% wniosków o uznanie urazu związanego z leczeniem jest odrzucanych.[^nz]
+
+Systemy te bywają krytykowane we własnych krajach. Francuski fundusz ONIAM, który od 2002 r. płaci za ciężkie wypadki medyczne bez winy, ocenił w 2017 r. tamtejszy Trybunał Obrachunkowy: wyniki uznał za „bardzo dalekie od celów”, komisje odrzuciły z powodu progu ciężkości trzy czwarte wniosków, a postępowanie z udziałem funduszu trwało średnio 2 lata i 9 miesięcy.[^cdc]
+
+## Co w tych krajach zostaje z odpowiedzialności
+
+W żadnym z opisanych krajów system wypłat nie zastąpił odpowiedzialności osoby. Zostały dwa tory: karny i nadzór nad zawodem.
+
+**Tor karny.** W Szwecji lekarz albo pielęgniarka mogą odpowiadać za spowodowanie uszczerbku na zdrowiu lub śmierci pacjenta. Zarzuty są rzadkie, ale się zdarzają i kończyły się skazaniami — pisze szwedzka badaczka prawa medycznego.[^wahlberg] W Wielkiej Brytanii, która no-fault nie wprowadziła, od 1994 r. do 2018 r. za nieumyślne spowodowanie śmierci przez rażące niedbalstwo oskarżono 47 pracowników ochrony zdrowia, w tym 37 lekarzy; skazano 23, a 4 wyroki uchylono w apelacji.[^williams]
+
+**Nadzór nad zawodem.** W Szwecji i Norwegii o prawie do zawodu decydują organy państwa, w Danii skargi na personel rozpatruje państwowa komisja dyscyplinarna, niezależna od zarządzających ochroną zdrowia.[^dk-disc] W Nowej Zelandii skargi przyjmuje niezależny komisarz ds. zdrowia i niepełnosprawności, który w roku 2024/25 dostał ich 3477.[^hdc]
+
+Ten nadzór jest używany. W latach {span} urzędy w Norwegii i Szwecji odbierały prawo do zawodu **ok. {RATIO_ROUNDED} razy częściej** niż polskie sądy lekarskie w przeliczeniu na liczbę lekarzy, a brytyjski trybunał — ok. {Math.round(RATIO_UK)} razy częściej. Systemy różnią się zakresem spraw, więc to rząd wielkości, a nie dokładna miara; rachunek i zastrzeżenia są w analizie [Najwyższa kara, której prawie się nie orzeka](/analizy/odpowiedzialnosc-zawodowa-lekarzy/).
+
+## Polska: komisje, ustawa o jakości, Fundusz
+
+**Komisje wojewódzkie.** Od 2012 r. o tym, czy doszło do zdarzenia medycznego, orzekały wojewódzkie komisje. Najwyższa Izba Kontroli sprawdziła osiem z nich i w 2018 r. oceniła, że postępowanie przed komisją „nie stało się faktyczną alternatywą dla postępowania sądowego”. Wnioskodawcy odrzucili 71,9% propozycji odszkodowań złożonych przez szpitale, a średni czas postępowania w pierwszej instancji wynosił, zależnie od komisji, od 4 do 10,2 miesiąca.[^nik] Komisje zlikwidowano w 2024 r.[^rpp2024]
+
+**Ustawa o jakości.** Rządowy projekt z grudnia 2022 r. zawierał dwa elementy no-fault. Zakazywał działań represyjnych wobec osoby, która zgłosiła zdarzenie niepożądane. Pozwalał też sądowi nadzwyczajnie złagodzić karę lekarzowi, pielęgniarce, położnej, ratownikowi lub diagnoście za nieumyślne narażenie pacjenta albo nieumyślny uszczerbek na zdrowiu — jeśli sprawca sam zgłosił zdarzenie, zanim dowiedziały się o nim organy ścigania, nie był pod wpływem alkoholu i nie naruszył reguł ostrożności umyślnie lub rażąco.[^druk2898] Ta ustawa upadła: Senat ją odrzucił, a Sejm 14 kwietnia 2023 r. nie zebrał większości potrzebnej do odrzucenia jego uchwały.[^sejm2898] Uchwalona w czerwcu 2023 r. ustawa z projektu poselskiego nie ma przepisów o złagodzeniu kary ani o zakazie represji wobec zgłaszającego.[^ustawa-jakosc]
+
+**Fundusz Kompensacyjny Zdarzeń Medycznych.** Działa przy Rzeczniku Praw Pacjenta od 6 września 2023 r. i jest polską wersją pierwszego znaczenia no-fault. Płaci, gdy zakażenia, uszczerbku albo śmierci pacjenta „z wysokim prawdopodobieństwem można było uniknąć”, i tylko wtedy, gdy do szkody doszło w szpitalu przy świadczeniach finansowanych ze środków publicznych. Ustawa wyznacza kwoty od 2 tys. do 200 tys. zł dla pacjenta i od 20 tys. do 100 tys. zł dla osoby bliskiej po śmierci pacjenta, co roku waloryzowane.[^fundusz]
+
+W 2025 r. do Funduszu wpłynęło **2577 wniosków**. Rzecznik wydał 586 decyzji o przyznaniu świadczenia i 707 odmownych. Wypłacił 34,3 mln zł, średnio 58 tys. zł.[^rpp2025] O tym, jak złożyć wniosek, pisze przewodnik [Prawa pacjenta](/prawa-pacjenta/).
+
+Trzy cechy Funduszu mają znaczenie dla odpowiedzialności:
+
+<NumberedList
+  items={[
+    { title: 'Nie ustala winnego.', text: 'Sprawozdanie Rzecznika podaje wprost: „Uzyskanie świadczenia nie wymaga udowodnienia winy podmiotu leczniczego”. Ustawa nie przewiduje przekazania sprawy rzecznikowi odpowiedzialności zawodowej ani prokuratorowi.' },
+    { title: 'Zamyka drogę cywilną.', text: 'Przyjęcie świadczenia jest równoznaczne ze zrzeczeniem się roszczeń o odszkodowanie, rentę i zadośćuczynienie za szkody ujawnione do dnia złożenia wniosku.' },
+    { title: 'Wnioski zostają w szpitalu.', text: 'Po wypłacie szpital ma przeanalizować przyczyny zdarzenia i wdrożyć zalecenia. Ustawa nie każe mu nikomu tej analizy przedstawić.' },
+  ]}
+/>
+
+Wnioski opiniuje zespół, w którym na co najmniej 20 członków co najmniej 15 musi być lekarzami.[^fundusz]
+
+## Czego chce samorząd lekarski
+
+W lutym 2024 r. prezydia Naczelnej Rady Lekarskiej oraz Naczelnej Rady Pielęgniarek i Położnych przyjęły wspólne stanowisko: „Należy zdjąć z osób wykonujących zawody medyczne ryzyko odpowiedzialności karnej za czyny nieumyślne wynikające z udzielania świadczeń zdrowotnych. Pacjentowi należy zapewnić natomiast mechanizmy pozwalające na efektywne, szybkie i pozasądowe uzyskanie odpowiedniej rekompensaty za poniesione szkody”.[^nrl] Samorząd nazywa ten postulat klauzulą wyższego dobra.
+
+<MonitorPhoto
+  src={dockPhoto}
+  alt="Krzesło oskarżonego, na którym zamiast człowieka leży stos segregatorów z młotkiem sędziowskim; w tle wisi lekarski fartuch"
+  effect="scan"
+  ratio="3/2"
+  sizes="(min-width: 1025px) 720px, calc(100vw - 32px)"
+  frame
+/>
+
+Stanowisko dotyczy odpowiedzialności karnej; o cywilnej i zawodowej nie mówi. Według opisu serwisu Prawo.pl propozycja środowiska lekarskiego polega na dodaniu przepisu do Kodeksu karnego: osoba wykonująca zawód medyczny nie odpowiadałaby za nieumyślne przestępstwo, chyba że była pod wpływem alkoholu lub środków odurzających albo skutek wynikał z rażącego niezachowania ostrożności.[^prawo] Pełnego brzmienia przepisu samorząd nie opublikował w dokumentach, do których dotarliśmy.
+
+Podobny przepis już obowiązywał. Ustawa z 28 października 2020 r. wyłączyła przestępność nieumyślnych czynów popełnionych przy rozpoznawaniu i leczeniu COVID-19 w czasie stanu epidemii, „chyba że spowodowany skutek był wynikiem rażącego niezachowania ostrożności wymaganej w danych okolicznościach”.[^covid]
+
+Minister zdrowia powołał 2 czerwca 2025 r. zespół, który po miesiącu dostał nazwę Zespołu do spraw Rozwiązań Prawnych w Zakresie Odpowiedzialności Cywilnej i Karnej Lekarzy i Lekarzy Dentystów. Ma opracować koncepcję przepisów „służących wzmocnieniu bezpieczeństwa pacjenta” i ograniczeniu zdarzeń niepożądanych. Zarządzenie nie wyznacza terminu, a członków zobowiązuje do poufności.[^zespol] Do 17 listopada 2026 r. nie znaleźliśmy opublikowanego raportu zespołu ani projektu ustawy z taką klauzulą.
+
+## Co zostaje, gdy zniknie odpowiedzialność karna
+
+Dziś lekarza, który popełnił błąd, mogą ocenić trzy niezależne od siebie instytucje. Klauzula zmienia jedną z nich.
+
+<Figure
+  title="Po wyłączeniu odpowiedzialności karnej jedyną instytucją, która ocenia osobę lekarza, zostaje sąd jego własnego samorządu"
+  source={[
+    { label: 'Ustawa o Funduszu Kompensacyjnym, art. 67q–67zi', href: LINKS.fundusz },
+    { label: 'Ustawa o izbach lekarskich', href: 'https://api.sejm.gov.pl/eli/acts/DU/2021/1342/text.pdf' },
+  ]}
+>
+  <Comparison
+    table={{
+      columns: ['', 'Kto ocenia', 'Kogo ocenia', 'Po wprowadzeniu klauzuli'],
+      rows: [
+        { cells: ['Droga karna', 'prokurator i sąd powszechny', 'osobę', 'tylko rażące niezachowanie ostrożności, alkohol i środki odurzające'], marked: true },
+        { cells: ['Fundusz Kompensacyjny', 'Rzecznik Praw Pacjenta', 'zdarzenie, nie osobę', 'bez zmian'] },
+        { cells: ['Proces cywilny', 'sąd powszechny', 'najczęściej szpital i jego ubezpieczyciela', 'bez zmian; zamknięty dla tych, którzy przyjęli świadczenie z Funduszu'] },
+        { cells: ['Odpowiedzialność zawodowa', 'rzecznik i sąd lekarski w izbie lekarskiej', 'osobę', 'bez zmian'] },
+      ],
+    }}
+    markLabel="to zmienia klauzula"
+  />
+</Figure>
+
+Sądy lekarskie orzekły w latach {PENALTIES.period} w pierwszej instancji {formatPL(PENALTIES_TOTAL)} kar. **{mildPct}% z nich to upomnienie, nagana albo kara pieniężna.** Prawo do zawodu w latach {allYears} prawomocnie straciło {plTotal} lekarzy.[^nil-sady] Lekarzy sądzą tam lekarze wybrani przez zjazdy lekarzy, a poza samorząd sprawa wychodzi dopiero z kasacją do Sądu Najwyższego — opisuje to tekst [Jak działają sądy lekarskie](/mechanizmy/jak-dzialaja-sady-lekarskie/).
+
+Proces cywilny dotyczy placówki, nie osoby. Ministerstwo Sprawiedliwości prowadzi ewidencję spraw o odszkodowania „za szkody wyrządzone przez służbę zdrowia” i dzieli je według pozwanego: publiczny zakład opieki zdrowotnej, Skarb Państwa albo samorząd, zakład niepubliczny. W 2024 r. do sądów rejonowych i okręgowych wpłynęło **{CIVIL_2024.filed} takich spraw**. Sądy pierwszej instancji załatwiły {CIVIL_2024.closed}: w {CIVIL_2024.granted} ({civilGrantedPct}%) uwzględniły powództwo w całości lub części, {CIVIL_2024.dismissed} oddaliły, a {CIVIL_2024.settled} skończyło się ugodą. Na koniec roku czekały {formatPL(CIVIL_2024.pending)} sprawy — ponad trzy razy więcej, niż sądy załatwiły w ciągu roku.[^ms-cywilne]
+
+Z tego zestawienia wynikają cztery słabe punkty polskiej wersji no-fault:
+
+<NumberedList
+  items={[
+    { title: 'Znika tor niezależny od zawodu.', text: 'W Szwecji, Norwegii i Danii obok wypłat bez winy działa państwowy nadzór nad zawodem. W Polsce osobę lekarza poza sądem karnym ocenia tylko samorząd.' },
+    { title: 'Wypłata nie uruchamia żadnej oceny.', text: 'Fundusz nie wskazuje, co i kto zawiódł, a przyjęcie świadczenia zamyka proces cywilny, w którym mogłoby to zostać ustalone.' },
+    { title: 'Brakuje części, która no-fault uzasadnia.', text: 'Wyłączenie karalności ma zachęcać do zgłaszania błędów. Obowiązku zgłaszania, ochrony zgłaszającego i krajowego rejestru zdarzeń w uchwalonej ustawie nie ma.' },
+    { title: 'Skutków nie da się zmierzyć.', text: 'Na pytanie posłów, ile spraw o błędy medyczne kończy się prawomocnym skazaniem, Ministerstwo Sprawiedliwości odpowiedziało w 2025 r., że formularze statystyczne sądów nie pozwalają wyodrębnić takich informacji.' },
+  ]}
+/>
+
+## Argumenty za
+
+Odpowiedzialność karna za błąd jest już dziś rzadka, a postępowania długie. W 2017 r. prokuratury prowadziły {formatPL(PK_2017.cases)} postępowań o błędy medyczne. Decyzją merytoryczną zakończyły {formatPL(PK_2017.decisions)}: {PK_2017.indictments} aktem oskarżenia, {PK_2017.pleas} wnioskiem o dobrowolne poddanie się karze, {formatPL(PK_2017.discontinued)} umorzeniem i {PK_2017.refusals} odmową wszczęcia. Umorzenia i odmowy to **{pkClosedPct}% decyzji merytorycznych**.[^pk] Nowszych danych Prokuratura Krajowa w tej postaci nie opublikowała.
+
+Samorząd lekarski wyciąga z tego wniosek, że postępowanie karne obciąża wielu lekarzy, a rzadko kończy się wyrokiem, i że strach przed nim zniechęca do ujawniania błędów. Szwedzka analiza prawna dochodzi do podobnej oceny: kara za pomyłkę słabo zapobiega kolejnym, a ryzyko oskarżenia obniża gotowość do zgłaszania zdarzeń.[^wahlberg] Postulat samorządu zostawia też karalność rażącego niezachowania ostrożności.
+
+Nie znaleźliśmy badania, które pokazywałoby, że wypłaty bez orzekania o winie pogarszają bezpieczeństwo pacjentów.
+
+<Aside title="Czego w tym tekście nie ma">
+
+Nie podajemy, ilu lekarzy sądy skazały za błąd medyczny, bo statystyka sądowa tego nie wyodrębnia — tak Ministerstwo Sprawiedliwości odpowiedziało posłom w czerwcu 2025 r.[^ms-cywilne] Dane prokuratury, które cytujemy, kończą się na 2017 r.; nowsze liczby znamy tylko z doniesień prasowych. Tabele ministerstwa o zasądzonych kwotach obejmują po kilka–kilkadziesiąt spraw rocznie, więc ich nie przytaczamy. Opisu krajów nie należy czytać jako rankingu — przesłanki wypłaty i sposób liczenia odsetków różnią się między nimi.
+
+</Aside>
+
+[^lof]: Löf (regionernas ömsesidiga försäkringsbolag), [Skadestatistik 2025 — Hela Sverige](https://wp.lof.se/wp-content/uploads/Skadestatistik-2025-Hela-Sverige.pdf) (PDF), 13 marca 2026 r.: zasada odszkodowania, 22 800 zgłoszeń, wypłata w nieco ponad 40% spraw rozstrzygniętych, niespełna 740 mln koron.
+[^dk]: Patienterstatningen, [Årstal 2024 — Behandlingsskader, hele landet](https://cdn1.gopublic.dk/patienterstatningen/Media/638846335484600869/%C3%85rstal%202024%20-%20Behandlingsskader%20-%20Hele%20landet.pdf) (PDF), 2025: 13 327 zgłoszeń, 12 683 decyzje o prawie do odszkodowania, 22,3% uznanych, 838,53 mln koron; opis reguł „specialistreglen” i „rimelighedsreglen”.
+[^no-lov]: [Lov om erstatning ved pasientskader mv. (pasientskadeloven)](https://lovdata.no/dokument/NL/lov/2001-06-15-53), ustawa z 15 czerwca 2001 r. nr 53, § 2.
+[^npe]: Norsk pasientskadeerstatning, [Årsrapport 2025](https://www.npe.no/globalassets/dokumenter/pdf-publikasjoner-fra-npe/arsrapporter/2025/arsrapport-2025.pdf) (PDF): 8382 wnioski, 24% uznanych (30% w 2020 r.), 1063 mln koron wypłat, 225 dni do decyzji.
+[^nz]: Andrew A., [A no-fault approach to medical error: a New Zealand perspective](https://jhmhp.amegroups.org/article/view/9767/html), Journal of Hospital Management and Health Policy, 2025.
+[^cdc]: Cour des comptes, [L’indemnisation amiable des victimes d’accidents médicaux](https://www.ccomptes.fr/sites/default/files/EzPublish/02-indemnisation-amiable-accidents-medicaux-Tome-1.pdf) (PDF), raport roczny 2017, t. 1.
+[^wahlberg]: Wahlberg L., [Skäligt straffansvar för misstag inom medicin](https://lup.lub.lu.se/search/files/68829186/skaligt_straffansvar_for_misstag_inom_medicin.pdf) (PDF), Nordisk socialrättslig tidskrift nr 19–20, 2019.
+[^williams]: [Gross negligence manslaughter in healthcare. The report of a rapid policy review](https://assets.publishing.service.gov.uk/media/5b2a3634ed915d2cc8317662/Williams_Report.pdf) (PDF), przegląd pod kierunkiem prof. Normana Williamsa dla rządu Wielkiej Brytanii, czerwiec 2018 r., pkt 4.5.
+[^dk-disc]: Sundhedsvæsenets Disciplinærnævn, [Årsberetning 2024](https://www.stpk.dk/media/abulqx4b/aarsberetning-2024-sundhedsvaesenets-disciplinaernaevn.pdf) (PDF). O Szwecji i Norwegii: źródła w analizie „Najwyższa kara, której prawie się nie orzeka”.
+[^hdc]: Health and Disability Commissioner, [Annual Report 2024/25](https://www.hdc.org.nz/media/ha5ntqul/hdc-annual-report-2025.pdf) (PDF).
+[^nik]: Najwyższa Izba Kontroli, [Pozasądowe dochodzenie roszczeń przez pacjentów](https://www.nik.gov.pl/plik/id,18515,vp,21114.pdf) (PDF), informacja o wynikach kontroli P/18/057, 2018 r.
+[^rpp2024]: Rzecznik Praw Pacjenta, [sprawozdanie za 2024 r.](https://api.sejm.gov.pl/sejm/term10/prints/1733/1733.pdf), druk sejmowy nr 1733 (PDF).
+[^druk2898]: [Rządowy projekt ustawy o jakości w opiece zdrowotnej i bezpieczeństwie pacjenta](https://api.sejm.gov.pl/sejm/term9/prints/2898/2898.pdf), druk sejmowy nr 2898 z 21 grudnia 2022 r. (PDF): art. 21 (zakaz działań represyjnych), art. 62 (nadzwyczajne złagodzenie kary i odstąpienie od jej wymierzenia).
+[^sejm2898]: Sejm RP, [przebieg procesu legislacyjnego, druk nr 2898](https://www.sejm.gov.pl/Sejm9.nsf/PrzebiegProc.xsp?nr=2898): uchwalenie 9 marca 2023 r., uchwała Senatu o odrzuceniu z 30 marca 2023 r., głosowanie Sejmu z 14 kwietnia 2023 r.
+[^ustawa-jakosc]: [Ustawa z 16 czerwca 2023 r. o jakości w opiece zdrowotnej i bezpieczeństwie pacjenta](https://api.sejm.gov.pl/eli/acts/DU/2023/1692/text.pdf), Dz.U. 2023 poz. 1692 (PDF).
+[^fundusz]: [Ustawa z 16 czerwca 2023 r. o zmianie ustawy o prawach pacjenta i Rzeczniku Praw Pacjenta oraz niektórych innych ustaw](https://api.sejm.gov.pl/eli/acts/DU/2023/1675/text.pdf), Dz.U. 2023 poz. 1675 (PDF): definicja zdarzenia medycznego, rozdział 13b — art. 67q (zakres), art. 67s (kwoty i waloryzacja), art. 67x ust. 4 (skład zespołu), art. 67zc ust. 2 (zrzeczenie się roszczeń), art. 67zd ust. 3 (analiza przyczyn w szpitalu).
+[^rpp2025]: Rzecznik Praw Pacjenta, [sprawozdanie za 2025 r.](https://api.sejm.gov.pl/sejm/term10/prints/3042/3042.pdf), druk sejmowy nr 3042 (PDF), rozdział o Funduszu Kompensacyjnym Zdarzeń Medycznych.
+[^nrl]: [Stanowisko nr 1 Prezydium Naczelnej Rady Lekarskiej i Prezydium Naczelnej Rady Pielęgniarek i Położnych z 14 lutego 2024 r.](https://nil.org.pl/articleToPdf/8439) (PDF), Naczelna Izba Lekarska.
+[^prawo]: Prawo.pl, [Klauzula no-fault dla lekarzy — za i przeciw](https://www.prawo.pl/zdrowie/klauzula-no-fault-dla-lekarzy-za-i-przeciw,530381.html), 9 grudnia 2024 r.
+[^covid]: [Ustawa z 28 października 2020 r. o zmianie niektórych ustaw w związku z przeciwdziałaniem sytuacjom kryzysowym związanym z wystąpieniem COVID-19](https://api.sejm.gov.pl/eli/acts/DU/2020/2112/text.pdf), Dz.U. 2020 poz. 2112 (PDF), art. 24.
+[^zespol]: Minister Zdrowia, [zarządzenie z 2 czerwca 2025 r.](https://dziennikmz.mz.gov.pl/DUM_MZ/2025/34/akt.pdf), Dz. Urz. Min. Zdrow. 2025 poz. 34 (PDF), oraz [zarządzenie zmieniające z 2 lipca 2025 r.](https://dziennikmz.mz.gov.pl/DUM_MZ/2025/45/akt.pdf), poz. 45 (PDF).
+[^nil-sady]: Naczelna Izba Lekarska, [Dane liczbowe dotyczące sądów lekarskich](https://nil.org.pl/izba/naczelny-sad-lekarski/sprawozdania/dane-liczbowe-dotyczace-sadow-lekarskich): roczne sprawozdania okręgowych sądów lekarskich i Naczelnego Sądu Lekarskiego; sumy — zestawienie własne opisane w analizie „Najwyższa kara, której prawie się nie orzeka”.
+[^ms-cywilne]: Ministerstwo Sprawiedliwości, [odpowiedź z 12 czerwca 2025 r. na interpelację nr 9798](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDHLJ2T/i09798-o1_1.pdf) (PDF) oraz [zestawienie statystyczne](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDHLJ2T/i09798-o1_2.pdf) (PDF): ewidencja spraw o odszkodowania za szkody wyrządzone przez służbę zdrowia w latach 2023–2024; sumy sądów rejonowych i okręgowych w pierwszej instancji — obliczenie własne.
+[^pk]: Prokuratura Krajowa, [Prokuratura prowadzi coraz więcej spraw dotyczących błędów medycznych](https://www.gov.pl/web/prokuratura-krajowa/prokuratura-prowadzi-coraz-wiecej-spraw-dotyczacych-bledow-medycznych), komunikat z 5 kwietnia 2018 r.; udział umorzeń i odmów — obliczenie własne.

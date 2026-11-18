@@ -13,7 +13,7 @@ export const ogSchema = ({ image }: SchemaContext) =>
       title: z.string().optional(),
       eyebrow: z.string().optional(),
       lead: z.union([z.string(), z.literal(false)]).optional(),
-      media: z.enum(['auto', 'photo', 'stat', 'none']).optional(),
+      media: z.enum(['auto', 'photo', 'stat', 'panels', 'none']).optional(),
       stat: z
         .strictObject({
           value: z.string(),

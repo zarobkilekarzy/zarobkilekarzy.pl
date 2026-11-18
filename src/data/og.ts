@@ -20,7 +20,7 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { simulatorOgPanels } from '@/lib/podaz/og';
 import { nurseSimulatorOgPanels } from '@/lib/podaz/pielegniarki/og';
-import { columnChart, label, magnifier, monthGrid, stageTrack, svg, virus, visitList } from '@/lib/og/charts';
+import { columnChart, FAULT_CARD_H, faultCard, label, magnifier, monthGrid, stageTrack, svg, virus, visitList } from '@/lib/og/charts';
 import { hemicycle, tallyClubs } from '@/lib/sejm/hemicycle';
 import { tokenColor } from '@/lib/tokens';
 import { CLUBS_LAST, limityVoting } from '@/data/glosowania';
@@ -179,6 +179,7 @@ export function hemicyclePanel(text: typeof HEMICYCLE_PL = HEMICYCLE_PL): string
 export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps' | 'illustration' | 'position'>> = {
   '/mechanizmy/kontrola-nfz/': { panels: controlPanels() },
   '/mechanizmy/fikcyjne-wizyty/': { panels: [{ head: 'Historia wizyt w IKP', height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, visitList('Dopisana wizyta', MEDIA_W)) }] },
+  '/mechanizmy/no-fault/': { panels: [{ head: 'System bez orzekania o winie', height: FAULT_CARD_H, svg: svg(MEDIA_W, FAULT_CARD_H, faultCard([['Szkoda', 'stwierdzona'], ['Pieniądze', 'wypłacone pacjentowi']], ['Wina', 'tego się nie ustala'], MEDIA_W)) }] },
   '/analizy/covid-pieniadz-publiczny/': { panels: [{ height: MEDIA_W, svg: svg(MEDIA_W, MEDIA_W, virus(MEDIA_W)) }] },
   // wpis w aktualnościach: pieczątki jak na obrazku katalogu (okładka wpisu przycięta pokazałaby tylko tytuł)
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },

@@ -34,7 +34,7 @@ export const barometrPage = {
   seoTitle: 'Barometr: polityka zdrowotna partii',
   lead: 'Co partie proponują w ochronie zdrowia — według tych samych pytań dla każdej z nich i ze źródłem przy każdej tezie. Zaczynamy od zaproszenia: każda partia może przedstawić nam swój program.',
   description: 'Polityka zdrowotna partii według tych samych pytań i ze źródłami. Zaproszenie dla partii do przesłania programu w ochronie zdrowia.',
-  updated: new Date('2026-11-13'),
+  updated: new Date('2026-11-18'),
   /** true = szkic: noindex (także podstron partii). Opublikowane 17.10.2026; wzór opisu zostaje noindex zawsze. */
   draft: false,
 };
@@ -44,6 +44,10 @@ export const barometrPage = {
  * i układzie, nie każda poprawka. Zapis wpisu: lib/inline (**b**, [a](href)). Nowy wpis = też `barometrPage.updated`.
  */
 export const barometrChangelog: { date: Date; text: string }[] = [
+  {
+    date: new Date('2026-11-18'),
+    text: 'Odpowiedź [Polski 2050](/barometr-polityczny/polska-2050/) — stanowisko partii w nadesłanym brzmieniu. To skrócona wersja odpowiedzi z 12.11.2026, która przekraczała limit znaków.',
+  },
   {
     date: new Date('2026-11-13'),
     text: 'Polska 2050 odpowiedziała 12.11.2026, ale odpowiedź przekracza dopuszczalny limit znaków, więc nie mogliśmy jej opublikować. 13.11.2026 wysłaliśmy partii prośbę o skrócenie.',
@@ -119,7 +123,14 @@ export const ANSWER_LIMIT = 1500;
 /** „1 500 znaków ze spacjami” */
 export const answerLimitLabel = `${formatPL(ANSWER_LIMIT)} ${plural(ANSWER_LIMIT, ['znak', 'znaki', 'znaków'])} ze spacjami`;
 /** długość odpowiedzi tą samą miarą co limit */
-export const answerLength = (answer: string[]) => answer.join('').length;
+export const answerLength = (answer: BarometrAnswerBlock[]) =>
+  answer.map((b) => (typeof b === 'string' ? b : b.table.flat().join(''))).join('').length;
+
+/**
+ * Część odpowiedzi: akapit albo tabela, jeśli partia przysłała tabelę (pierwszy wiersz = nagłówki kolumn).
+ * Do limitu liczy się tekst komórek, tak jak tekst akapitów.
+ */
+export type BarometrAnswerBlock = string | { table: string[][] };
 
 /**
  * Pytania pomocnicze: podpowiedź, co ująć w odpowiedzi — nie obowiązek, ten sam limit znaków.
@@ -324,6 +335,9 @@ export const barometrSejm = {
   asOf: new Date('2026-10-17'),
 };
 
+/** Stan kontaktu z Polską 2050 — ten sam na karcie i na podstronie. */
+const POLSKA2050_STATUS: Extract<BarometrStatus, { stage: 'odpowiedz' }> = { stage: 'odpowiedz', sent: barometrSchedule.sendOn, answered: new Date('2026-11-18') };
+
 /** Stan kontaktu z Razem — ten sam na karcie i na podstronie. */
 const RAZEM_STATUS: Extract<BarometrStatus, { stage: 'odpowiedz' }> = { stage: 'odpowiedz', sent: barometrSchedule.sendOn, answered: new Date('2026-11-06') };
 
@@ -339,7 +353,7 @@ export const barometrParties: BarometrParty[] = (
     { id: 'konfederacja', name: 'Konfederacja Wolność i Niepodległość', club: 'Klub Poselski Konfederacja', logo: konfederacjaLogo, status: SENT },
     { id: 'konfederacja-korony-polskiej', name: 'Konfederacja Korony Polskiej', club: 'Koło Poselskie Konfederacja Korony Polskiej', logo: kkpLogo, status: SENT },
     { id: 'lewica', name: 'Lewica', club: 'Koalicyjny Klub Parlamentarny Lewicy (Nowa Lewica, PPS, Unia Pracy)', logo: lewicaLogo, status: LEWICA_STATUS },
-    { id: 'polska-2050', name: 'Polska 2050', club: 'Klub Parlamentarny Polska 2050', logo: polska2050Logo, status: SENT },
+    { id: 'polska-2050', name: 'Polska 2050', club: 'Klub Parlamentarny Polska 2050', logo: polska2050Logo, status: POLSKA2050_STATUS },
     { id: 'psl', name: 'Polskie Stronnictwo Ludowe', club: 'Klub Parlamentarny Polskie Stronnictwo Ludowe – Trzecia Droga', logo: pslLogo, status: SENT },
     { id: 'pis', name: 'Prawo i Sprawiedliwość', club: 'Klub Parlamentarny Prawo i Sprawiedliwość', logo: pisLogo, status: SENT },
     { id: 'razem', name: 'Razem', club: 'Koło Poselskie Razem', logo: razemLogo, status: RAZEM_STATUS },
@@ -406,8 +420,8 @@ export interface BarometrAreaEntry {
   area: string;
   /** id części obszaru (kadry: lekarze, pielegniarki, inne-zawody); brak = obszar bez części */
   part?: string;
-  /** odpowiedź partii w nadesłanym brzmieniu (akapity); brak = partia nie odniosła się do obszaru */
-  answer?: string[];
+  /** odpowiedź partii w nadesłanym brzmieniu (akapity i tabele); brak = partia nie odniosła się do obszaru */
+  answer?: BarometrAnswerBlock[];
   /** dokumenty wskazane przez partię; puste = partia żadnego nie wskazała */
   documents: BarometrDocument[];
   /** czy przy propozycjach podano koszt, źródło pieniędzy i termin — nie oceniamy, czy propozycja jest dobra;
@@ -897,8 +911,159 @@ export const barometrExample2: BarometrProfile = {
   changes: [{ date: new Date('2026-10-20'), text: 'Wzór porównania — pierwsza wersja.' }],
 };
 
+/**
+ * Polska 2050: druga wersja odpowiedzi (18.11.2026) — pierwsza, z 12.11.2026, przekraczała limit i wróciła do skrócenia.
+ * Tabela terminów w „Dostępie” jest tabelą, jak w nadesłanym pliku; wyliczenie w „Wynagrodzeniach” akapitami.
+ */
+const barometrPolska2050: BarometrProfile = {
+  id: 'polska-2050',
+  href: profileHref('polska-2050'),
+  name: 'Polska 2050',
+  club: 'Klub Parlamentarny Polska 2050',
+  logo: polska2050Logo,
+  status: POLSKA2050_STATUS,
+  updated: new Date('2026-11-18'),
+  areas: [
+    {
+      area: 'finansowanie',
+      answer: [
+        'Opowiadamy się za utrzymaniem solidarnościowego modelu finansowania ochrony zdrowia, opartego na składce zdrowotnej i środkach z budżetu państwa.',
+        'Proponujemy osiągnięcie rzeczywistych wydatków publicznych na min. poziomie 8% aktualnego PKB do 2030 r.',
+        'Świadczenia gwarantowane powinny być finansowane ze środków publicznych. Celem jest zwiększenie udziału finansowania publicznego do ok. 85% całkowitych wydatków, przy ograniczeniu prywatnych wydatków do ok. 15% do 2030 r.',
+        'Nie popieramy zwiększania udziału sektora prywatnego w finansowaniu świadczeń publicznych bez oceny skutków zdrowotnych, ekonomicznych i społecznych. Ubezpieczenia prywatne mogą funkcjonować jako uzupełnienie, a nie jedyna możliwość terminowego dostępu do leczenia.',
+        'Dopuszczamy po wprowadzeniu systemu e-rejestracji symboliczne opłaty za nieodwołanie wizyty.',
+        'Należy uporządkować naliczanie składki, ograniczyć nieuzasadnione preferencje i zapewnić proporcjonalny udział grup dochodowych. Dla przedsiębiorców proponujemy uwzględnienie rzeczywistego dochodu, z ochroną najmniejszych firm i mechanizmami ograniczającymi obciążenia przy niskich dochodach. Ustawowe obniżenie wpływów ze składki zdrowotnej musi być zrekompensowane z budżetu państwa. Nie można finansować ulg podatkowych kosztem pacjentów.',
+        'Fundamentalna jest również racjonalizacja wydatków:ograniczenie niepotrzebnych hospitalizacji, diagnostyki i procedur, centralne negocjowanie cen, rozwój opieki ambulatoryjnej i koordynowanej oraz poprawa zarządzania szpitalami.',
+      ],
+      documents: [],
+      checks: { cost: true, funding: true, deadline: true },
+    },
+    {
+      area: 'kadry',
+      part: 'lekarze',
+      answer: [
+        'Opowiadamy się za stabilizacją liczby miejsc na kierunkach lekarskich, z możliwością korekt wynikających z rzeczywistych potrzeb zdrowotnych i prognoz demograficznych.',
+        'Sprzeciwiamy się obniżaniu kryteriów rekrutacji na kierunki lekarskie. Należy wprowadzić odpowiednio wysokie minimalne progi rekrutacyjne, obowiązujące wszystkie uczelnie prowadzące kierunek lekarski.',
+        'Największym problemem pozostają nierównomierne rozmieszczenie kadr, niewłaściwa struktura specjalizacji oraz nieefektywne wykorzystanie czasu pracy lekarzy.Należy nie tylko zwiększać dostępność miejsc specjalizacyjnych w dziedzinach deficytowych, ale również wprowadzać dodatkowe zachęty do wyboru tych specjalizacji. Liczbę miejsc należy ustalać na podstawie regionalnych map potrzeb zdrowotnych. Postulujemy wprowadzenie zachęt do wyboru miejsca specjalizacji, gdzie istnieje niedobór specjalistów. Należy rozważyć dobrowolny model rezydentury połączonej z dodatkowym stypendium, mieszkaniem służbowym, w zamian za zobowiązanie do pracy przez 3–5 lat w publicznym systemie.',
+        'Popieramy utworzenie centralnego systemu ewidencji czasu pracy personelu medycznego we wszystkich placówkach finansowanych ze środków publicznych. System powinien umożliwiać wykrywanie nakładających się godzin pracy, nadmiernego obciążenia dyżurami.',
+        'W przypadku lekarzy rozpoczynających pracę na podstawie ograniczonych uprawnień konieczny jest nadzór kompetentnego specjalisty, jasno określony zakres odpowiedzialności i system oceny postępów.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'pielegniarki',
+      answer: [
+        'W przeciwieństwie do sytuacji dotyczącej lekarzy, niedobór pielęgniarek jest jednym z najbardziej istotnych zagrożeń dla funkcjonowania polskich szpitali. Jednakże należy wziąć pod uwagę sytuację lokalną. We wschodnich województwa kształci się za dużo pielęgniarek spośród których część nie może znaleźć zatrudnienia, odwrotna sytuacja jest w centralnej i zachodniej części Polski.',
+        'Należy zwiększyć liczbę miejsc na studiach, rozbudować bazę dydaktyczną i zapewnić odpowiednie wynagrodzenia oraz atrakcyjne warunki zatrudnienia absolwentom.',
+        'Konieczne jest też wprowadzenie realnych zachęt do pracy w regionach deficytowych, poprawa organizacji pracy oraz rozwój zawodów wspierających pielęgniarki w czynnościach opiekuńczych i organizacyjnych.',
+        'Czy zwiększać samodzielność zawodową pielęgniarek?',
+        'Jesteśmy zwolenniczkami rozwijania zaawansowanej praktyki pielęgniarskiej, przy odpowiednim przygotowaniu i jasnym określeniu kompetencji.',
+        'Pielęgniarki posiadające odpowiednie kwalifikacje powinny mieć szersze możliwości samodzielnego monitorowania pacjentów z chorobami przewlekłymi, prowadzenia edukacji terapeutycznej, wykonywania określonych procedur, kontynuacji farmakoterapii i realizacji wybranych porad.',
+        'Należy rozwijać model pielęgniarki zaawansowanej praktyki, funkcjonujący w wielu krajach europejskich.',
+        'Nie chodzi o zastępowanie lekarzy, lecz o właściwy podział kompetencji w zespole terapeutycznym.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'kadry',
+      part: 'inne-zawody',
+      answer: [
+        'Konieczne jest planowanie kształcenia innych zawodów medycznych na podstawie rzeczywistych potrzeb systemu.',
+        'Farmaceuci mogą rozszerzać opiekę farmaceutyczną, prowadzić przeglądy lekowe, identyfikować interakcje, wspierać pacjentów w prawidłowym stosowaniu leków i kontynuacji leczenia w ustawowo określonym zakresie.',
+        'Fizjoterapeuci powinni mieć większą samodzielność w zakresie rehabilitacji i profilaktyki zaburzeń narządu ruchu.',
+        'Ratownicy medyczni mogą uzyskać szersze kompetencje w jasno zdefiniowanych obszarach opieki przedszpitalnej, bez zastępowania lekarzy w sytuacjach wymagających rozpoznania specjalistycznego.',
+        'Szczególnie ważne jest wzmocnienie roli diagnostów laboratoryjnych. Współczesna diagnostyka jest podstawą większości ścieżek decyzyjnych w medycynie, a rosnąca złożoność badań immunologicznych, genetycznych i molekularnych wymaga specjalistycznej interpretacji.',
+        'Popieramy wprowadzenie finansowanej publicznie porady diagnostycznej, by diagnosta wsparł lekarza w doborze dalszych badań laboratoryjnych.',
+        'Należy również zwiększyć liczbę miejsc specjalizacyjnych w diagnostyce laboratoryjnej, mikrobiologii medycznej, genetyce laboratoryjnej i laboratoryjnej transfuzjologii medycznej.',
+        'Racjonalny podział kompetencji może poprawić jakość leczenia, skrócić kolejki i ograniczyć koszty wynikające z nieuzasadnionego wykonywania badań.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'wynagrodzenia',
+      answer: [
+        'Etat powinien pozostać podstawową i preferowaną formą zatrudnienia personelu wykonującego stałe obowiązki w szpitalach publicznych przy możliwości zatrudnienia kontraktowego.',
+        'Kontrakty mogą być uzasadnione w przypadku określonych usług specjalistycznych, dodatkowych dyżurów czy świadczeń o nieregularnym charakterze.',
+        'Różnice podatkowe i składkowe między etatem a kontraktem powinny zostać ograniczone tam, gdzie obie formy służą wykonywaniu identycznej, podporządkowanej pracy.',
+        'Minimalne wynagrodzenia pracowników medycznych muszą zapewniać godne życie i odzwierciedlać kwalifikacje, odpowiedzialność oraz charakter pracy. Automatyczny wzrost wynagrodzeń, niezależny od możliwości finansowych placówek, prowadzi do narastania deficytów w szpitalach.',
+        'W przypadku kontraktów finansowanych ze środków publicznych należy ograniczać nieuzasadnione dysproporcje płacowe i patologie wynikające z uzależniania wynagrodzenia wyłącznie od liczby wykonanych procedur.',
+        'Uważamy, że jawność wydatkowania środków publicznych jest potrzebna i powinna uwzględniać:',
+        'Publikowanie kwoty wynagrodzenia oraz także rzeczywistej liczby godzin pracy, liczby dyżurów i charakteru świadczonych usług.',
+        'Odróżnienie wynagrodzenia za pracę od tego za dodatkowe dyżury i procedury.',
+        'Ochronę danych osobowych.',
+        'Objęcie zasadami sprawozdawczości wszystkich odpowiednich grup korzystających ze środków publicznych.',
+        'Rozróżnienie kwoty faktury kontraktowej od osobistego dochodu lekarza.',
+        'Konieczna jest zmiana wyceny świadczeń.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'dostep',
+      answer: [
+        'Proponujemy ustanowienie maksymalnych terminów dostępu do wybranych kategorii świadczeń określanych na podstawie pilności.',
+        {
+          table: [
+            ['Rodzaj świadczenia', 'Proponowany termin'],
+            ['Podejrzenie nowotworu wymagające pilnej diagnostyki', 'Rozpoczęcie diagnostyki do 7 dni'],
+            ['Pilna konsultacja specjalistyczna', 'Do 14 dni'],
+            ['Stabilny pacjent wymagający pierwszej konsultacji AOS', 'Do 60 dni'],
+            ['Planowa diagnostyka obrazowa', 'Do 30 dni'],
+            ['Pilna pomoc psychiatryczna', 'Do 72 godzin, a w stanie nagłego zagrożenia natychmiast'],
+          ],
+        },
+        'Wprowadzenie terminów powinno zostać poprzedzone analizą.',
+        'Jeśli termin zostanie przekroczony, NFZ powinien mieć obowiązek wskazania pacjentowi innego świadczeniodawcy.',
+        'Najważniejsze działania to wzmocnienie POZ, opieki koordynowanej i przenoszenie świadczeń ze szpitali do opieki ambulatoryjnej.',
+        'Problemem pozostaje brak odpowiedniego ogniwa pomiędzy POZ a szpitalem.',
+        'Dlatego postulujemy rozwój ambulatoryjnych punktów pomocy, dostępnych poza godzinami pracy POZ.',
+        'Refundacja powinna sprzyjać wyborowi terapii efektywnych kosztowo.',
+        'Pacjent powinien otrzymywać rzetelną informację o możliwości zamiany leku.',
+        'Zdrowie psychiczne powinno stać się jednym z priorytetów polityki zdrowotnej. Proponujemy zwiększenie finansowania opieki środowiskowej, rozwój centrów zdrowia psych., wsparcie psych. w szkołach oraz lepszą koordynację ochrony zdrowia z edukacją i pomocą społeczną.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'szpitale',
+      answer: [
+        'Trzon systemu szpitalnego powinien pozostać publiczny, szczególnie w zakresie ratownictwa, leczenia specjalistycznego i zabezpieczenia zdrowotnego regionów.',
+        'Prywatne podmioty mogą uzupełniać system, ale nie powinny przejmować jedynie najbardziej rentownych zakresów świadczeń.',
+        'Kontroli wymagają podmioty prywatne prowadzące działalność na terenie szpitala publicznego. Umowy takie powinny być przejrzyste, uwzględniać wszystkie koszty i zapewniać publicznemu szpitalowi udział w przychodach.',
+        'Nie popieramy prywatyzacji szpitali jako sposobu rozwiązywania problemów finansowych.',
+        'Konieczna jest reforma finansowania i zarządzania szpitalami, oparta na analizie przyczyn zadłużenia.',
+        'Należy odróżnić deficyty wynikające z błędów zarządczych od deficytów strukturalnych.',
+        'Proponujemy trzy kierunki zmian.',
+        '1. rzeczywista wycena świadczeń.',
+        '2. restrukturyzacja związana z funkcją szpitala w regionie. Nie wszystkie szpitale muszą realizować identyczne zakresy świadczeń.',
+        '3. oddłużenie warunkowe. Państwo powinno rozważyć mechanizm restrukturyzacji historycznego zadłużenia, ale wyłącznie w połączeniu z wiarygodnym programem naprawczym.',
+        'W przypadku szpitali powiatowych konieczne jest uwzględnienie potrzeb demograficznych i geograficznych.',
+        'Osobnym problemem jest finansowanie szpitali klinicznych, które ponoszą dodatkowe koszty leczenia najcięższych pacjentów, kształcenia kadr i wdrażania innowacyjnych metod diagnostycznych i terapeutycznych.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+    {
+      area: 'pacjent',
+      answer: [
+        'Opowiadamy się za utrzymaniem systemu odpowiedzialności zawodowej opartego na samorządzie lekarskim, ale ze wzmocnieniem jego niezależności, przejrzystości i udziału pacjentów.',
+        'Rozważylibyśmy wprowadzenie udziału przedstawicieli pacjentów lub ekspertów prawnych w składach orzekających albo w organach nadzorujących przejrzystość. Należy wzmocnić jawność zagregowanych wyników postępowań, określić terminy ich prowadzenia i zwiększyć dostępność informacji dla pacjentów.',
+        'Trzeba odróżniać niepożądane zdarzenie medyczne od błędu wynikającego z naruszenia zasad wiedzy i należytej staranności. Popieramy rozwój pozasądowych systemów rekompensaty za szkody oraz rozwiązań opartych na zasadzie no-fault. Konieczne jest rozwijanie kultury bezpieczeństwa pacjenta, w której personel medyczny może zgłaszać zdarzenia niepożądane, a placówki analizują ich przyczyny i podejmują działania. Przewidujemy aktywną rolę pacjenta w procesie terapeutycznym tzw. adherence.',
+        'AI może przynieść poprawę jakości i efektywności ochrony zdrowia, szczególnie w diagnostyce obrazowej, laboratoryjnej, patomorfologii, genetyce i analizie dokumentacji medycznej. Może wspierać interpretację wyników, identyfikację pacjentów wysokiego ryzyka, planowanie diagnostyki i organizację pracy. AI powinna być narzędziem wspomagającym personel medyczny, a nie niekontrolowanym substytutem odpowiedzialności zawodowej.',
+      ],
+      documents: [],
+      checks: { cost: false, funding: false, deadline: false },
+    },
+  ],
+  changes: [{ date: new Date('2026-11-18'), text: 'Opis opublikowany: odpowiedź partii z 18.11.2026 w nadesłanym brzmieniu — skrócona wersja odpowiedzi z 12.11.2026, która przekraczała limit znaków.' }],
+};
+
 /** Opisy z własną podstroną. Prawdziwy opis: id = id karty partii, dane partii z barometrParties. */
-export const barometrProfiles: BarometrProfile[] = [barometrExample, barometrKorwin, barometrLewica, barometrRazem];
+export const barometrProfiles: BarometrProfile[] = [barometrExample, barometrKorwin, barometrLewica, barometrRazem, barometrPolska2050];
 
 /* ---------- Porównanie dwóch partii (/barometr-polityczny/porownanie/<a>/<b>/) ---------- */
 

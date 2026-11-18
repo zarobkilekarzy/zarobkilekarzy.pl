@@ -6,7 +6,7 @@
  * `stacked` — kolumna porównania: warstwy jedna pod drugą, wiersze wyrównane z kolumną obok (subgrid rodzica).
  */
 import Icon from '@/components/ui/Icon.astro';
-import { answerLength, barometrChecks, type BarometrAreaEntry } from '@/data/barometr-polityczny';
+import { answerLength, barometrChecks, type BarometrAnswerBlock, type BarometrAreaEntry } from '@/data/barometr-polityczny';
 import { formatDate, formatPL, isoDate, plural, typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
 
@@ -20,7 +20,7 @@ interface Props {
 const { entry, missing, stacked = false } = Astro.props;
 
 /** długość odpowiedzi w znakach ze spacjami (bez podziałów akapitów) — ta sama miara co limit */
-const length = (answer: string[]) => {
+const length = (answer: BarometrAnswerBlock[]) => {
   const n = answerLength(answer);
   return `${formatPL(n)} ${plural(n, ['znak', 'znaki', 'znaków'])} ze spacjami`;
 };
@@ -29,7 +29,18 @@ const length = (answer: string[]) => {
   <div class:list={['bp-area', { 'bp-area--stacked': stacked }]}>
     <div class="bp-answer">
       <p class="mono-label bp-label">Stanowisko partii</p>
-      <blockquote class="bp-quote">{entry.answer.map((p) => <p>{typo(p)}</p>)}</blockquote>
+      <blockquote class="bp-quote">
+        {entry.answer.map((block) =>
+          typeof block === 'string' ? (
+            <p>{typo(block)}</p>
+          ) : (
+            <table class="bp-table">
+              <thead><tr>{block.table[0].map((h) => <th scope="col">{typo(h)}</th>)}</tr></thead>
+              <tbody>{block.table.slice(1).map((row) => <tr>{row.map((cell) => <td>{typo(cell)}</td>)}</tr>)}</tbody>
+            </table>
+          ),
+        )}
+      </blockquote>
       <p class="bp-note">Odpowiedź w nadesłanym brzmieniu, bez zmian w treści · {length(entry.answer)}</p>
     </div>
 
@@ -79,7 +90,12 @@ const length = (answer: string[]) => {
 
   .bp-quote { margin: 0; padding-left: 24px; border-left: 2px solid var(--blue); } /* margin: 0 — bez domyślnego wcięcia <blockquote> (40 px) */
   .bp-quote p { font: 400 1.1875rem/1.55 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
-  .bp-quote p + p { margin-top: 14px; }
+  .bp-quote > * + * { margin-top: 14px; }
+  /* tabela nadesłana przez partię: zwykła siatka z liniami, bez wyróżnień — to wciąż cytat */
+  .bp-table { width: 100%; border-collapse: collapse; border-top: 1px solid var(--line-2); font-size: 0.9375rem; line-height: 1.45; color: var(--ink); }
+  .bp-table th, .bp-table td { padding: 10px 16px 10px 0; border-bottom: 1px solid var(--line-2); text-align: left; vertical-align: top; }
+  .bp-table th:last-child, .bp-table td:last-child { padding-right: 0; }
+  .bp-table th { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .bp-note { margin-top: 14px; padding-left: 26px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
   .bp-missing--area { max-width: 72ch; }
   .bp-missing { padding: 16px 20px; border: 1px dashed var(--line-2); font-size: 0.9375rem; line-height: 1.55; color: var(--ink-2); }
@@ -112,7 +128,8 @@ const length = (answer: string[]) => {
   @media (max-width: 720px) {
     .bp-quote { padding-left: 16px; }
     .bp-quote p { font-size: 1.03125rem; line-height: 1.55; }
-    .bp-quote p + p { margin-top: 12px; }
+    .bp-quote > * + * { margin-top: 12px; }
+    .bp-table { font-size: 0.875rem; }
     .bp-note { padding-left: 18px; }
   }
 </style>

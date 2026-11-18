@@ -3,6 +3,8 @@
  * Oś etapów (np. droga projektu ustawy do Sejmu): zakończone, bieżący, przed nami.
  * Poziomo w szerokim kontenerze, pionowo w wąskim (container queries) — działa i na całą
  * szerokość strony, i w kolumnie nagłówka. `compact` — bez dopowiedzeń, mniejsze odstępy.
+ * Długa oś (ponad 6 etapów, albo `layout="rows"`) w szerokim kontenerze układa się w wiersze:
+ * stan i data z lewej, etap z dopowiedzeniem z prawej — kolumny poziomej osi byłyby za wąskie.
  */
 import type { HTMLAttributes } from 'astro/types';
 import type { Stage } from '@/types';
@@ -15,15 +17,18 @@ interface Props extends HTMLAttributes<'div'> {
   /** nazwa listy dla czytników ekranu */
   label: string;
   compact?: boolean;
+  /** `auto`: poziomo do 6 etapów, wiersze powyżej; `rows`: zawsze wiersze */
+  layout?: 'auto' | 'rows';
 }
 
 const STATE: Record<Stage['state'], string> = uiOf(Astro.url).blocks.stage;
 const locale = localeOf(Astro.url.pathname);
 
-const { stages, label, compact = false, class: className, ...rest } = Astro.props;
+const { stages, label, compact = false, layout = 'auto', class: className, ...rest } = Astro.props;
+const rows = layout === 'rows' || stages.length > 6;
 ---
 <div class:list={['track-wrap', { 'track-wrap--compact': compact }, className]} {...rest}>
-  <ol class="track" style={`--n: ${stages.length}`} aria-label={label}>
+  <ol class:list={['track', { 'track--rows': rows }]} style={`--n: ${stages.length}`} aria-label={label}>
     {stages.map((s) => (
       <li class:list={['track__step', `track__step--${s.state}`]} aria-current={s.state === 'current' ? 'step' : undefined}>
         <span class="track__mark" aria-hidden="true"></span>
@@ -62,6 +67,19 @@ const { stages, label, compact = false, class: className, ...rest } = Astro.prop
 
   .track-wrap--compact .track__step { padding: 24px 16px 0 0; }
   .track-wrap--compact .track__label { margin-top: 4px; font-size: 0.9375rem; }
+
+  /* Długa oś w szerokim kontenerze: wiersze — stan i data z lewej, etap z dopowiedzeniem z prawej */
+  @container (width > 720px) {
+    .track--rows { grid-template-columns: minmax(0, 1fr); }
+    .track--rows .track__step { display: grid; grid-template-columns: 11.5rem minmax(0, 1fr); column-gap: 16px; padding: 0 0 18px 30px; }
+    .track--rows .track__step:last-child { padding-bottom: 0; }
+    .track--rows .track__step::before { top: 17px; bottom: 0; left: 5px; right: auto; width: 2px; height: auto; }
+    .track--rows .track__mark { top: 5px; }
+    .track--rows .track__state { grid-column: 1; grid-row: 1 / span 2; line-height: 1.40625rem; }
+    .track--rows .track__label, .track--rows .track__note { grid-column: 2; }
+    .track--rows .track__label { margin-top: 0; }
+    .track--rows .track__note { margin-top: 2px; }
+  }
 
   /* Wąski kontener: oś pionowa, znacznik z lewej */
   @container (max-width: 720px) {

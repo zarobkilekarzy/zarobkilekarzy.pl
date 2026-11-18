@@ -4,9 +4,9 @@
  * Brak tłumaczenia nowego wiersza z modułu polskiego wywraca build (funkcja `en`).
  * Treść artykułu: src/content/en/articles/satisfaction-with-healthcare-in-poland.mdx.
  */
-import { CBOS_OPINIONS, CBOS_SERIES, IPSOS_COUNTRIES, IRIS_COUNTRIES, STADA_COUNTRIES, STUDIES, type CountryRow, type Study } from '@/data/zadowolenie-z-ochrony-zdrowia';
+import { CBOS_OPINIONS, CBOS_SERIES, IPSOS_COUNTRIES, IRIS_COUNTRIES, OECD, OECD_COUNTRIES, STADA_COUNTRIES, STUDIES, type CountryRow, type Study } from '@/data/zadowolenie-z-ochrony-zdrowia';
 
-export { LINKS, study } from '@/data/zadowolenie-z-ochrony-zdrowia';
+export { LINKS, OECD_2014, study } from '@/data/zadowolenie-z-ochrony-zdrowia';
 
 const en = (map: Record<string, string>, pl: string, what: string) => {
   const value = map[pl];
@@ -18,25 +18,29 @@ const STUDY_TEXT: Record<Study['key'], { headline: string; measure: string; when
   iris: { headline: 'System “excellent” or “basically good”', measure: 'system “excellent” or “basically good”', when: 'Q4 2025' },
   cbos: { headline: 'Satisfied with healthcare', measure: 'satisfied with healthcare', when: 'June 2025' },
   ipsos: { headline: 'Quality of care index, five questions', measure: 'index of five questions', when: 'July–August 2026' },
+  oecd: { headline: 'Satisfied with availability of care locally', measure: 'satisfied with the availability of care where they live', when: '2024' },
   stada: { headline: 'Satisfied with the public system', measure: 'satisfied with the public system', when: 'February–March 2026' },
 };
 
 export const STUDIES_EN: Study[] = STUDIES.map((s) => ({ ...s, ...STUDY_TEXT[s.key] }));
+export const OECD_EN: Study = { ...OECD, ...STUDY_TEXT.oecd };
 
 const COUNTRY: Record<string, string> = {
   'Korea Płd.': 'South Korea', Malezja: 'Malaysia', Japonia: 'Japan', Hiszpania: 'Spain', Indonezja: 'Indonesia', Australia: 'Australia',
-  Szwajcaria: 'Switzerland', Niemcy: 'Germany', USA: 'USA', Austria: 'Austria', Kanada: 'Canada', Irlandia: 'Ireland', Finlandia: 'Finland',
+  Szwajcaria: 'Switzerland', Czechy: 'Czechia', Niemcy: 'Germany', USA: 'USA', Austria: 'Austria', Kanada: 'Canada', Irlandia: 'Ireland', Finlandia: 'Finland',
   Włochy: 'Italy', Dominikana: 'Dominican Republic', Rumunia: 'Romania', Bułgaria: 'Bulgaria', Grecja: 'Greece', Polska: 'Poland', Turcja: 'Turkey',
   Singapur: 'Singapore', Indie: 'India', Wietnam: 'Vietnam', Holandia: 'Netherlands', Tajlandia: 'Thailand', RPA: 'South Africa', Belgia: 'Belgium',
   Szwecja: 'Sweden', Argentyna: 'Argentina', 'Nowa Zelandia': 'New Zealand', Francja: 'France', 'Wielka Brytania': 'Great Britain', Meksyk: 'Mexico',
   Brazylia: 'Brazil', Chile: 'Chile', Kolumbia: 'Colombia', Peru: 'Peru', Węgry: 'Hungary', Uzbekistan: 'Uzbekistan', Litwa: 'Lithuania',
-  Portugalia: 'Portugal', Kazachstan: 'Kazakhstan', Słowacja: 'Slovakia', Serbia: 'Serbia',
+  Portugalia: 'Portugal', Dania: 'Denmark', Luksemburg: 'Luxembourg', Norwegia: 'Norway', Izrael: 'Israel', Słowenia: 'Slovenia',
+  Kostaryka: 'Costa Rica', Estonia: 'Estonia', Islandia: 'Iceland', Łotwa: 'Latvia', Kazachstan: 'Kazakhstan', Słowacja: 'Slovakia', Serbia: 'Serbia',
 };
 const countries = (rows: CountryRow[]): CountryRow[] => rows.map(([name, value]) => [en(COUNTRY, name, 'kraj'), value]);
 
 export const IRIS_COUNTRIES_EN = countries(IRIS_COUNTRIES);
 export const IPSOS_COUNTRIES_EN = countries(IPSOS_COUNTRIES);
 export const STADA_COUNTRIES_EN = countries(STADA_COUNTRIES);
+export const OECD_COUNTRIES_EN = countries(OECD_COUNTRIES);
 
 const MONTH: Record<string, string> = { I: 'Jan', II: 'Feb', III: 'Mar', VI: 'Jun', VII: 'Jul', VIII: 'Aug', IX: 'Sep' };
 export const CBOS_SERIES_EN = CBOS_SERIES.map((r) => {

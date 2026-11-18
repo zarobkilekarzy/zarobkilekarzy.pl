@@ -17,12 +17,18 @@ export const LINKS = {
   stada: 'https://07.cdn.stada.com/media/y5rfptro/stada_health_report_2026_ai_is_transforming_healthcare.pdf',
   /** STADA Poland, informacja prasowa z 21.10.2026 — jedyne miejsce, które podaje pozycję Polski (17. z 20) */
   stadaPl: 'https://11.cdn.stada.com/media/vvfpss4u/stada_health-report_informacja-prasowa_2026.pdf',
+  /** STADA, czeska broszura do raportu 2026 — wyniki Czech (74%) i Austrii (67%), których raport międzynarodowy nie podaje */
+  stadaCz: 'https://08.cdn.stada.com/media/gvyfuah1/stada_health-report-26-cz_v06-1.pdf',
+  /** OECD, „Health at a Glance 2025”, rozdział „Population coverage for healthcare” — wykres 5.2 i brzmienie pytania Gallupa */
+  oecd: 'https://www.oecd.org/en/publications/health-at-a-glance-2025_8f9e3f98-en/full-report/population-coverage-for-healthcare_5c968b73.html',
+  /** dane wykresu 5.2 (xlsx, wersja z 13.11.2025) */
+  oecdData: 'https://stat.link/pv9eib',
   /** „Rzeczpospolita”, 10.04.2026 — omówienie raportu IRIS z liczbami innymi niż w raporcie */
   rp: 'https://www.rp.pl/ochrona-zdrowia/art44131661-polska-w-ogonie-zaufania-mieszkancow-do-systemu-ochrony-zdrowia',
 };
 
 export interface Study {
-  key: 'iris' | 'cbos' | 'ipsos' | 'stada';
+  key: 'iris' | 'cbos' | 'ipsos' | 'stada' | 'oecd';
   name: string;
   /** co mierzy liczba — krótko, do podpisu słupka i infografiki */
   measure: string;
@@ -68,11 +74,12 @@ export const IPSOS_COUNTRIES: CountryRow[] = [
 ];
 
 /**
- * STADA 2026: zadowoleni z publicznego systemu ochrony zdrowia — 15 z 20 krajów, których wynik raport
- * podaje w tekście (bez Austrii, Bułgarii, Czech, Irlandii i Włoch).
+ * STADA 2026: zadowoleni z publicznego systemu ochrony zdrowia — 17 z 20 krajów: 15 z tekstu raportu
+ * międzynarodowego, Czechy i Austria z czeskiej broszury STADA (LINKS.stadaCz, sekcja o spokojenosti; broszura
+ * powtarza też Niemcy 63, Słowację 38, Polskę 38 i Węgry 27). Bez Bułgarii, Irlandii i Włoch — oficjalnego źródła brak.
  */
 export const STADA_COUNTRIES: CountryRow[] = [
-  ['Belgia', 86], ['Uzbekistan', 82], ['Szwajcaria', 77], ['Francja', 71], ['Wielka Brytania', 65], ['Niemcy', 63], ['Hiszpania', 62],
+  ['Belgia', 86], ['Uzbekistan', 82], ['Szwajcaria', 77], ['Czechy', 74], ['Francja', 71], ['Austria', 67], ['Wielka Brytania', 65], ['Niemcy', 63], ['Hiszpania', 62],
   ['Litwa', 60], ['Portugalia', 54], ['Rumunia', 48], ['Kazachstan', 43], ['Polska', 38], ['Słowacja', 38], ['Serbia', 36], ['Węgry', 27],
 ];
 
@@ -119,3 +126,25 @@ export const CBOS_OPINIONS: { label: string; yes: number; no: number }[] = [
   { label: 'Personelu w szpitalach jest wystarczająco dużo', yes: 17, no: 65 },
   { label: 'Łatwo dostać się do specjalisty', yes: 14, no: 82 },
 ];
+
+/**
+ * OECD, „Health at a Glance 2025”, wykres 5.2 (LINKS.oecdData): zadowoleni z dostępności dobrej jakościowo opieki
+ * zdrowotnej w miejscu zamieszkania, 2024 r., sondaż Gallup World Poll (co najmniej 1000 osób 15+ w kraju), %.
+ * 38 krajów OECD; Luksemburg — dane z 2023 r. Średnia OECD38: 64,3 (2024) i 68,8 (2014); Polska w 2014 r.: 43.
+ * Starszy o rok pomiar i inne pytanie niż w czterech badaniach z STUDIES — dlatego osobno: nie wchodzi do
+ * zakresu „19–38%”, infografiki ani obrazka OG, tylko do wykresu rozrzutu, tabeli badań i własnej sekcji.
+ */
+export const OECD_COUNTRIES: CountryRow[] = [
+  ['Szwajcaria', 89], ['Belgia', 86], ['Dania', 86], ['Luksemburg', 86], ['Holandia', 83], ['Niemcy', 81], ['Japonia', 80], ['Norwegia', 80],
+  ['Austria', 78], ['Czechy', 75], ['Szwecja', 75], ['USA', 75], ['Izrael', 73], ['Australia', 71], ['Słowenia', 71], ['Kostaryka', 70],
+  ['Korea Płd.', 69], ['Irlandia', 65], ['Nowa Zelandia', 63], ['Estonia', 62], ['Islandia', 62], ['Hiszpania', 62], ['Finlandia', 61],
+  ['Wielka Brytania', 61], ['Francja', 60], ['Portugalia', 58], ['Meksyk', 56], ['Słowacja', 56], ['Łotwa', 54], ['Litwa', 53], ['Polska', 51],
+  ['Kanada', 50], ['Kolumbia', 46], ['Chile', 44], ['Włochy', 44], ['Węgry', 41], ['Turcja', 41], ['Grecja', 27],
+];
+
+export const OECD: Study = {
+  key: 'oecd', name: 'OECD (Gallup)', headline: 'Zadowoleni z dostępności opieki w okolicy', measure: 'zadowoleni z dostępności opieki w okolicy',
+  when: '2024', poland: 51, average: 64, rank: { place: 31, of: 38 }, href: LINKS.oecd,
+};
+/** Polska i średnia OECD dziesięć lat wcześniej (ten sam wykres, seria 2014), %. */
+export const OECD_2014 = { poland: 43, average: 69 };

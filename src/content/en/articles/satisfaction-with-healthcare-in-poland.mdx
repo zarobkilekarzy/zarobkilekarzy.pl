@@ -8,11 +8,14 @@ keyPoints:
   - "In the CBOS survey 25% are satisfied and 70% dissatisfied. Since 2001 the satisfied have never been a majority."
   - "Poland is 19th of 20 countries in the IRIS survey, 30th of 32 in the Ipsos index and 17th of 20 in the STADA survey."
   - "Access to specialists is rated worst (82% negative), doctors’ competence best (73% positive)."
+changelog:
+  - date: 2026-11-18
+    text: "Added the OECD indicator from the Gallup poll (Poland 51%, 31st of 38 countries) as a separate section and a row in the comparison of surveys. Czechia (74%) and Austria (67%) were added to the STADA results from the company’s Czech brochure. A list above the spread chart lets you pick a country to compare with Poland."
 translation:
   of: zadowolenie-z-ochrony-zdrowia
   files: [src/data/zadowolenie-z-ochrony-zdrowia.ts]
-  hash: "f7a4288974a1"
-  date: 2026-11-17
+  hash: "4e885f6bbe5f"
+  date: 2026-11-18
 ---
 import Aside from '@/components/blocks/Aside.astro';
 import BarChart from '@/components/blocks/BarChart.astro';
@@ -23,15 +26,16 @@ import SpreadRows from '@/components/blocks/SpreadRows.astro';
 import StatRow from '@/components/blocks/StatRow.astro';
 import UnitChart from '@/components/blocks/UnitChart.astro';
 import IndexChart from '@/components/budzet/IndexChart.astro';
-import { CBOS_OPINIONS_EN, CBOS_SERIES_EN, IPSOS_COUNTRIES_EN, IRIS_COUNTRIES_EN, LINKS, STADA_COUNTRIES_EN, STUDIES_EN, study } from '@/data/en/zadowolenie-z-ochrony-zdrowia';
+import { CBOS_OPINIONS_EN, CBOS_SERIES_EN, IPSOS_COUNTRIES_EN, IRIS_COUNTRIES_EN, LINKS, OECD_2014, OECD_COUNTRIES_EN, OECD_EN, STADA_COUNTRIES_EN, STUDIES_EN, study } from '@/data/en/zadowolenie-z-ochrony-zdrowia';
 
 {/* Tłumaczenie src/content/articles/zadowolenie-z-ochrony-zdrowia.mdx; liczby z modułu polskiego, napisy z src/data/en/zadowolenie-z-ochrony-zdrowia.ts */}
 
 export const countryRows = (rows) => rows.map(([label, value]) => ({ label, value, display: `${value}%`, highlight: label === 'Poland' }));
 export const countryCaption = (rows) => rows.map(([label, value]) => `${label} ${value}%`).join('; ');
 
-export const COUNTRIES = { iris: IRIS_COUNTRIES_EN, ipsos: IPSOS_COUNTRIES_EN, stada: STADA_COUNTRIES_EN };
-export const SPREAD_ROWS = STUDIES_EN.map((s) => ({
+export const COUNTRIES = { iris: IRIS_COUNTRIES_EN, ipsos: IPSOS_COUNTRIES_EN, stada: STADA_COUNTRIES_EN, oecd: OECD_COUNTRIES_EN };
+export const ALL_STUDIES = [...STUDIES_EN, OECD_EN];
+export const SPREAD_ROWS = ALL_STUDIES.map((s) => ({
   label: s.name,
   note: `${s.measure}, ${s.when}`,
   value: s.poland,
@@ -52,13 +56,14 @@ export const CBOS_LINES = {
 };
 
 export const METHOD_TABLE = {
-  caption: 'Four surveys: what was asked, of whom and how',
+  caption: 'Four surveys and the OECD indicator: what was asked, of whom and how',
   columns: ['', 'What the number measures', 'Sample in Poland', 'Survey mode'],
   rows: [
     { cells: ['IRIS Network', 'share choosing “excellent” or “basically good” from four descriptions of the system', '500–1,000 adults', 'mixed mode: online, face-to-face and telephone interviews'] },
     { cells: ['CBOS', 'share satisfied with the way healthcare currently works in the country', '971 adults drawn from the national population register (PESEL)', 'face-to-face (63%), telephone (24%) and online (13%) interviews'] },
     { cells: ['Ipsos', 'average of five questions: quality of care, trust in the system, ease of getting an appointment, access to a pharmacy, the same standard of care for everyone', '500 people aged 16–74', 'online panel'] },
     { cells: ['STADA', 'share satisfied with the public healthcare system', '500–2,000 people aged 18–99', 'online questionnaire'] },
+    { cells: ['OECD (Gallup World Poll)', 'share satisfied with the availability of quality healthcare in the city or area where they live', 'at least 1,000 people aged 15 and over', 'Gallup poll, the same questionnaire in every country'] },
   ],
 };
 
@@ -77,17 +82,21 @@ The lowest result comes from the most sharply worded question. IRIS Network, a n
 
 The highest results come from online surveys. The Ipsos index is an average of five questions, one of which concerns easy access to a pharmacy, which is usually rated better than access to a doctor.[^ipsos] STADA asks about satisfaction with the public healthcare system; the report does not quote the exact wording of the question.[^stada]
 
-<Figure title="In every survey Poland is in the lower part of the field" note="Each row is a different question and a different sample, so numbers from different rows should not be averaged or subtracted from one another. Ipsos does not give an average for its index, and the STADA report names the results of 15 of 20 countries." source={[
+Alongside these four surveys we show the indicator used by the OECD: the share of people satisfied with the availability of quality healthcare where they live, from the Gallup World Poll. In 2024 it was **51%** in Poland.[^oecd] The question concerns the availability of care locally, not a rating of the whole system, and the measurement is a year older, so we do not include it in the 19–38% range.
+
+<Figure title="In every survey Poland is in the lower part of the field" note="Each row is a different question and a different sample, so numbers from different rows should not be averaged or subtracted from one another. Ipsos does not give an average for its index, and for the STADA survey we know the results of 17 of 20 countries." source={[
   { label: 'IRIS Network, Health Care Confidence Report 2025', href: LINKS.iris },
   { label: 'CBOS, research report no. 86/2025', href: LINKS.cbos },
   { label: 'Ipsos Health Service Report 2026', href: LINKS.ipsos },
   { label: 'STADA Health Report 2026', href: LINKS.stada },
+  { label: 'STADA Health Report 2026, Czech brochure (Czechia and Austria)', href: LINKS.stadaCz },
+  { label: 'OECD, Health at a Glance 2025, Figure 5.2', href: LINKS.oecdData },
 ]}>
-  <SpreadRows rows={SPREAD_ROWS} subject="Poland" dotLabel="another country" averageLabel="survey average"
-    caption={`Poland’s result among other countries in four surveys. ${STUDIES_EN.map((s) => `${s.name}, ${s.measure}, ${s.when}: Poland ${s.poland}%${s.average ? `, average ${s.average}%` : ''}${COUNTRIES[s.key] ? `; countries: ${countryCaption(COUNTRIES[s.key])}` : '; survey in Poland only'}`).join('. ')}.`} />
+  <SpreadRows rows={SPREAD_ROWS} pick={{ label: 'Compare with:', none: 'choose a country', absent: 'this country is not in the survey' }} subject="Poland" dotLabel="another country" averageLabel="survey average"
+    caption={`Poland’s result among other countries in four surveys and in the OECD indicator. ${ALL_STUDIES.map((s) => `${s.name}, ${s.measure}, ${s.when}: Poland ${s.poland}%${s.average ? `, average ${s.average}%` : ''}${COUNTRIES[s.key] ? `; countries: ${countryCaption(COUNTRIES[s.key])}` : '; survey in Poland only'}`).join('. ')}.`} />
 </Figure>
 
-How to read this chart: the cobalt dot is Poland, the grey dots are the other countries, and the vertical line is the average given in the report. Hover over a dot or tap it to see the country and its result. Below is a summary of what was asked and of whom.
+How to read this chart: the cobalt dot is Poland, the grey dots are the other countries, and the vertical line is the average given in the report. Hover over a dot or tap it to see the country and its result. Use the list above the chart to pick a country; it will be labelled next to Poland in every survey it takes part in. Below is a summary of what was asked and of whom.
 
 <Comparison table={METHOD_TABLE} />
 
@@ -138,14 +147,26 @@ In the Ipsos index Poland has 35% and is 30th of 32 countries, ahead of Peru (33
     caption={`Ipsos quality of care perception index 2026: ${countryCaption(IPSOS_COUNTRIES_EN)}.`} />
 </Figure>
 
-In the STADA survey 38% of people in Poland are satisfied with the public system, against an average of 56%. A year earlier the average was 58%.[^stada] The international report does not contain a full table: it gives the results of 15 of 20 countries, and Slovakia has the same result as Poland. Poland’s seventeenth place is given only in the company’s Polish press release.[^stadapl]
+In the STADA survey 38% of people in Poland are satisfied with the public system, against an average of 56%. A year earlier the average was 58%.[^stada] The international report does not contain a full table: it gives the results of 15 of 20 countries, and Slovakia has the same result as Poland. The results for Czechia (74%) and Austria (67%) come from the company’s Czech brochure for the same survey;[^stadacz] we did not find results for Bulgaria, Ireland and Italy in STADA’s materials. Poland’s seventeenth place is given only in the company’s Polish press release.[^stadapl]
 
 The same survey asked what respondents would change first if they were health minister. In Poland 66% pointed to shorter waiting times and more staff, and 57% to easier access to primary care.[^stada] It is the same picture as in the partial ratings from CBOS.
+
+## OECD: availability of care where people live
+
+In Health at a Glance 2025 the OECD uses the Gallup World Poll, which asks the same question in every country: in the city or area where you live, are you satisfied or dissatisfied with the availability of quality healthcare? In 2024, **51%** were satisfied in Poland, against an average of 64% across the 38 OECD countries.[^oecd] Poland is 31st of 38 countries. Canada, Colombia, Chile, Italy, Hungary, Turkey and Greece have lower results, and Switzerland the highest (89%).
+
+<Figure title="OECD: Poland 31st of 38 countries" note="Share satisfied with the availability of quality healthcare where they live, 2024; Luxembourg — data from 2023. Gallup World Poll, at least 1,000 people aged 15 and over in each country." source={{ label: 'OECD, Health at a Glance 2025, Figure 5.2', href: LINKS.oecdData }}>
+  <BarChart rows={countryRows(OECD_COUNTRIES_EN)} max={100} unit="%" average={OECD_EN.average}
+    caption={`Satisfied with the availability of healthcare where they live according to the OECD, 2024, average 64%: ${countryCaption(OECD_COUNTRIES_EN)}.`} />
+</Figure>
+
+It is the only one of the five comparisons in which Poland’s result rose over the past decade against the average: from {OECD_2014.poland}% in 2014 to {OECD_EN.poland}% in 2024, while the OECD average fell from {OECD_2014.average}% to {OECD_EN.average}%.[^oecd] The result is higher than in the other four surveys because the question is narrower: it asks whether care is available locally, not how the whole system works.
 
 <Aside title="The limits of these data" variant="note">
 - We take the IRIS result for Poland from the network’s report: **19%**. A summary in the daily Rzeczpospolita gives 22%, with components of 4% and 16%, which add up to 20%.[^rp] None of those numbers is in the report, so we do not use them.
 - The surveys measure opinions, not the quality of treatment. People who did not use healthcare in the past year also answer.
 - Comparisons between countries depend on respondents’ expectations, not only on how the system works. The set of countries in the IRIS survey changes between waves, so the averages from successive years cannot be compared directly.
+- In the OECD report the text and the figure title refer to data for 2024, while the source line refers to the “Gallup World Poll 2023” database. We give the year from the figure title.
 - STADA is a pharmaceutical company and its report is promotional material; Ipsos and STADA survey online panels, not random samples.
 </Aside>
 
@@ -154,4 +175,6 @@ The same survey asked what respondents would change first if they were health mi
 [^ipsos]: Ipsos, [Ipsos Health Service Report 2026](https://resources.ipsos.com/rs/297-CXJ-795/images/IpsosHealthServiceReport2026.pdf?version=0), October 2026; index on pp. 5–6, method on p. 34.
 [^stada]: STADA, [STADA Health Report 2026](https://07.cdn.stada.com/media/y5rfptro/stada_health_report_2026_ai_is_transforming_healthcare.pdf), June 2026; satisfaction on pp. 6–7, expected changes on pp. 9–10, method on p. 5.
 [^stadapl]: STADA Poland, [press release on the STADA Health Report 2026](https://11.cdn.stada.com/media/vvfpss4u/stada_health-report_informacja-prasowa_2026.pdf) (in Polish), 21 October 2026.
+[^stadacz]: STADA, [STADA Health Report 2026 — Czech brochure](https://08.cdn.stada.com/media/gvyfuah1/stada_health-report-26-cz_v06-1.pdf) (in Czech), 2026; the brochure refers to 19 European countries and 18,514 respondents.
+[^oecd]: OECD, [Health at a Glance 2025, chapter “Population coverage for healthcare”](https://www.oecd.org/en/publications/health-at-a-glance-2025_8f9e3f98-en/full-report/population-coverage-for-healthcare_5c968b73.html), November 2025; Figure 5.2, [figure data](https://stat.link/pv9eib).
 [^rp]: Rzeczpospolita, [article on the IRIS Network report](https://www.rp.pl/ochrona-zdrowia/art44131661-polska-w-ogonie-zaufania-mieszkancow-do-systemu-ochrony-zdrowia) (in Polish), 10 April 2026.

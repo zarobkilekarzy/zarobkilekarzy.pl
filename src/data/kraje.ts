@@ -103,11 +103,13 @@ export interface Country {
   text?: { href: string; label: string; kind: 'profil' | 'porównanie'; draft?: boolean };
   eurostat: Record<EurostatKey, number | null>;
   /**
-   * Kraj spoza Eurostatu: te same miary z noty krajowej OECD (Health at a Glance 2025). Inne źródło i nieco inne
-   * definicje — wartość dostaje gwiazdkę (formatMetric), a strona hubu objaśnia ją w metodzie. Lekarze: OECD podaje
-   * na 1000 mieszkańców, tu ×100. `publicShare` = udział obowiązkowych źródeł (mandatory prepayment).
+   * Kraj spoza Eurostatu: te same miary z innego źródła. Wartość dostaje gwiazdkę (formatMetric), szacunek — także „ok.”,
+   * a strona hubu objaśnia źródła w metodzie (`note`). Wydatki (% PKB, udział źródeł publicznych, z kieszeni): OECD,
+   * System of Health Accounts — ta sama metoda co w Eurostacie (Polska ma w obu identyczne wartości). Lekarze, długość
+   * życia, zgony uleczalne, rezygnacja z wizyty: noty krajowe OECD (lekarze ×100, bo OECD podaje na 1000 mieszkańców).
+   * Tajwan: dane tajwańskich urzędów.
    */
-  oecd?: { href: string; values: Partial<Record<EurostatKey, number>> };
+  alt?: { sources: { label: string; href: string }[]; values: Partial<Record<EurostatKey, number>>; estimates?: EurostatKey[]; note: string };
   facts?: Fact[];
 }
 
@@ -115,7 +117,9 @@ const OECD_NOTE = (file: string) => `https://www.oecd.org/en/publications/health
 /** Polska i średnia OECD w tych samych notach — do objaśnienia gwiazdek na stronie hubu. */
 export const OECD_NOTE_PL = { href: OECD_NOTE('poland_c3917772-en.html'), healthGdp: 8.1, publicShare: 78, doctors: 390, lifeExp: 78.4, treatable: 114 };
 /** dokładność not OECD (miejsca po przecinku) */
-const OECD_DECIMALS: Partial<Record<EurostatKey, number>> = { healthGdp: 1, publicShare: 0, doctors: 0, lifeExp: 1, treatable: 0 };
+const ALT_DECIMALS: Partial<Record<EurostatKey, number>> = { healthGdp: 2, publicShare: 1, oopShare: 1, doctors: 0, unmet: 1, lifeExp: 1, treatable: 0 };
+/** OECD, System of Health Accounts (API SDMX): % PKB oraz udział schematów finansowania w bieżących wydatkach, 2024 r. */
+const OECD_SHA = { label: 'OECD, System of Health Accounts (2024)', href: 'https://sdmx.oecd.org/public/rest/data/OECD.ELS.HD,DSD_SHA@DF_SHA/GBR+CAN+USA+POL.A.EXP_HEALTH.PT_B1GQ+PT_EXP_HLTH.HF1+HF11+HF121+HF122+HF3+_T._Z._T._T._T._Z._Z._Z?startPeriod=2024&endPeriod=2024&format=csvfile' };
 
 const HPR = (file: string) => `https://www.belgiqueenbonnesante.be/images/INAMI/Rapports/HealthcareProviders/HPR2024-${file}.pdf`;
 const HCAAM = 'https://www.strategie-plan.gouv.fr/files/files/Publications/2025/2025-10-02%20-%20HCAAM%20-%20D%C3%A9passement%20d%27honoraires/Annexe%202%20Evolution%20secteur%202%20Rapport%20Hcaam.pdf';
@@ -229,7 +233,11 @@ export const COUNTRIES: Country[] = [
     text: { href: '/analizy/wielka-brytania-ochrona-zdrowia/', label: 'Jak działa brytyjska ochrona zdrowia', kind: 'profil' },
     // poza Eurostatem (po brexicie); wspólne miary OECD do ręcznego odczytu — research/kraje/wielka-brytania.md
     eurostat: { healthGdp: null, perCapitaPps: null, perCapitaEur: null, publicShare: null, oopShare: null, doctors: null, unmet: null, unmetCost: null, unmetWait: null, lifeExp: null, treatable: null },
-    oecd: { href: OECD_NOTE('united-kingdom_82034050-en.html'), values: { healthGdp: 11.1, publicShare: 82, doctors: 340, lifeExp: 81, treatable: 71 } },
+    alt: {
+      sources: [OECD_SHA, { label: 'OECD, nota krajowa: Wielka Brytania', href: OECD_NOTE('united-kingdom_82034050-en.html') }],
+      values: { healthGdp: 11.08, publicShare: 81.0, oopShare: 14.2, doctors: 340, unmet: 4.5, lifeExp: 81, treatable: 71 },
+      note: 'Wielka Brytania: wydatki według rachunków zdrowia OECD za 2024 r.; lekarze, rezygnacja z wizyty, długość życia i zgony z przyczyn uleczalnych z noty krajowej OECD.',
+    },
   },
   {
     code: 'CA', iso: '124', name: 'Kanada', flag: 'ca', locative: 'w Kanadzie',
@@ -238,7 +246,11 @@ export const COUNTRIES: Country[] = [
     text: { href: '/analizy/kanada-ochrona-zdrowia/', label: 'Jak działa kanadyjska ochrona zdrowia', kind: 'profil' },
     // poza Eurostatem; wspólne miary z not OECD — research/kraje/oecd-noty-ca-us.md
     eurostat: { healthGdp: null, perCapitaPps: null, perCapitaEur: null, publicShare: null, oopShare: null, doctors: null, unmet: null, unmetCost: null, unmetWait: null, lifeExp: null, treatable: null },
-    oecd: { href: OECD_NOTE('canada_41ea57c7-en.html'), values: { healthGdp: 11.3, publicShare: 70, doctors: 270, lifeExp: 81.7, treatable: 58 } },
+    alt: {
+      sources: [OECD_SHA, { label: 'OECD, nota krajowa: Kanada', href: OECD_NOTE('canada_41ea57c7-en.html') }],
+      values: { healthGdp: 11.52, publicShare: 70.6, oopShare: 15.0, doctors: 270, unmet: 9.1, lifeExp: 81.7, treatable: 58 },
+      note: 'Kanada: wydatki według rachunków zdrowia OECD za 2024 r.; pozostałe miary z noty krajowej OECD.',
+    },
   },
   {
     code: 'US', iso: '840', name: 'USA', flag: 'us', locative: 'w USA',
@@ -247,15 +259,29 @@ export const COUNTRIES: Country[] = [
     text: { href: '/analizy/usa-ochrona-zdrowia/', label: 'Jak działa amerykańska ochrona zdrowia', kind: 'profil' },
     // poza Eurostatem; wspólne miary z not OECD — research/kraje/oecd-noty-ca-us.md
     eurostat: { healthGdp: null, perCapitaPps: null, perCapitaEur: null, publicShare: null, oopShare: null, doctors: null, unmet: null, unmetCost: null, unmetWait: null, lifeExp: null, treatable: null },
-    oecd: { href: OECD_NOTE('united-states_3517f35e-en.html'), values: { healthGdp: 17.2, doctors: 270, lifeExp: 78.4, treatable: 95 } },
+    alt: {
+      sources: [OECD_SHA, { label: 'OECD, nota krajowa: USA', href: OECD_NOTE('united-states_3517f35e-en.html') }],
+      values: { healthGdp: 17.20, publicShare: 50.5, oopShare: 11.0, doctors: 270, lifeExp: 78.4, treatable: 95 },
+      estimates: ['publicShare'],
+      note: 'USA: wydatki według rachunków zdrowia OECD za 2024 r. Udział źródeł publicznych to szacunek: suma programów rządowych (27,4%) i obowiązkowych ubezpieczeń publicznych (23,1%). OECD podaje dla USA 83,1%, bo dolicza obowiązkowe ubezpieczenia prywatne (32,6%), czyli polisy od pracodawców — w Europie taka kategoria prawie nie istnieje. Porównywalnego pomiaru rezygnacji z wizyt dla USA nie ma.',
+    },
   },
   {
     code: 'TW', iso: '158', name: 'Tajwan', flag: 'tw', locative: 'na Tajwanie',
     model: 'Jeden publiczny płatnik, budżet globalny i punktowa wycena świadczeń.',
     openness: 'Pacjent dostaje rachunek z każdej wizyty, sprawozdania szpitali są jawne. Zarobków pojedynczych lekarzy Tajwan nie publikuje.',
     text: { href: '/analizy/tajwan-ochrona-zdrowia/', label: 'Jak działa tajwańska ochrona zdrowia', kind: 'profil' },
-    // poza Eurostatem i OECD — wspólnych miar brak
+    // poza Eurostatem i OECD — dane tajwańskich urzędów (research/kraje/luki-hub.md)
     eurostat: { healthGdp: null, perCapitaPps: null, perCapitaEur: null, publicShare: null, oopShare: null, doctors: null, unmet: null, unmetCost: null, unmetWait: null, lifeExp: null, treatable: null },
+    alt: {
+      sources: [
+        { label: 'Ministerstwo zdrowia Tajwanu, National Health Expenditure 2024', href: 'https://www.mohw.gov.tw/dl-99631-cfe880cf-a90b-4eba-b240-351bf8abfd75.html' },
+        { label: 'Ministerstwo zdrowia Tajwanu, statystyka personelu medycznego', href: 'https://www.mohw.gov.tw/dl-63140-2b5ec371-267a-4872-90d9-04ddf7f75bfe.html' },
+        { label: 'Ministerstwo spraw wewnętrznych Tajwanu, tablice trwania życia', href: 'https://www.moi.gov.tw/News_Content.aspx?n=4&s=340439' },
+      ],
+      values: { healthGdp: 6.85, publicShare: 59.2, oopShare: 39.9, doctors: 236, lifeExp: 81.3 },
+      note: 'Tajwan: dane tajwańskich urzędów — wydatki bieżące za 2024 r. (bez inwestycji), lekarze medycyny zachodniej z prawem praktyki w 2024 r., długość życia w 2025 r. Wydatki z kieszeni są liczone szerzej niż w Europie (m.in. leki bez recepty i suplementy), więc udział 39,9% jest zawyżony względem pozostałych krajów. Zgonów z przyczyn uleczalnych Tajwan nie publikuje.',
+    },
   },
   {
     code: 'EU', name: 'UE-27', flag: 'eu', locative: 'w Unii',
@@ -278,13 +304,13 @@ const SATISFACTION: Partial<Record<MetricKey, CountryRow[]>> = { satOecd: OECD_C
 const isEurostat = (key: MetricKey): key is EurostatKey => key in country('PL').eurostat;
 
 /** Wartość miary dla kraju; `year` tylko wtedy, gdy różni się między krajami (OECD). */
-export function metricValue(code: CountryCode, key: MetricKey): { value: number; year?: number; oecd?: boolean; decimals?: number } | null {
+export function metricValue(code: CountryCode, key: MetricKey): { value: number; year?: number; alt?: boolean; estimate?: boolean; decimals?: number } | null {
   const c = country(code);
   if (isEurostat(key)) {
     const value = c.eurostat[key];
     if (value !== null) return { value };
-    const alt = c.oecd?.values[key];
-    return alt === undefined ? null : { value: alt, oecd: true, decimals: OECD_DECIMALS[key] };
+    const alt = c.alt?.values[key];
+    return alt === undefined ? null : { value: alt, alt: true, estimate: c.alt!.estimates?.includes(key), decimals: ALT_DECIMALS[key] };
   }
   const group = PAY_GROUP[key];
   if (group) {
@@ -295,12 +321,12 @@ export function metricValue(code: CountryCode, key: MetricKey): { value: number;
   return row ? { value: row[1] } : null;
 }
 
-/** Tekst komórki: „11,07%”, „5,32× (2024)”, „11,1%*” (gwiazdka = nota OECD zamiast Eurostatu), „brak danych”. */
+/** Tekst komórki: „11,07%”, „5,32× (2024)”, „11,08%*” (gwiazdka = inne źródło niż Eurostat), „ok. 50,5%*” (szacunek), „brak danych”. */
 export function formatMetric(code: CountryCode, key: MetricKey, withYear = true): string {
   const m = METRICS[key];
   const v = metricValue(code, key);
   if (!v) return 'brak danych';
-  const text = `${formatPL(v.value, v.decimals ?? m.decimals)}${m.unit}${v.oecd ? '*' : ''}`;
+  const text = `${v.estimate ? 'ok. ' : ''}${formatPL(v.value, v.decimals ?? m.decimals)}${m.unit}${v.alt ? '*' : ''}`;
   return withYear && v.year ? `${text} (${v.year})` : text;
 }
 

@@ -19,7 +19,7 @@ import CountryGrid from '@/components/kraje/CountryGrid.astro';
 import { COUNTRIES, METRICS, OECD_NOTE_PL, TOPIC_TEXTS, countryTable, formatMetric, metricValue, opennessOf, spreadRow, type CountryCode, type MetricKey } from '@/data/kraje';
 import type { Entry } from '@/i18n/entries';
 import type { Crumb, SeoInput } from '@/lib/seo';
-import { formatPL, typo } from '@/lib/format';
+import { typo } from '@/lib/format';
 
 const title = 'Ochrona zdrowia w innych krajach';
 const lead = 'Jak inne kraje płacą za leczenie, ile to kosztuje, ile zarabiają lekarze i co o tych pieniądzach wiadomo publicznie. Każdy kraj opisujemy według tego samego schematu i tych samych miar — obok Polski.';
@@ -65,22 +65,25 @@ const spreadRows = SPREAD.map(({ key, bucket }) => {
   return { ...row, label: `${bucket} — ${METRICS[key].label.replace(/ \((OECD|STADA|Ipsos|Eurostat).*\)$/, '')}`, note: row.note ?? 'lata 2022–2024' };
 });
 const spreadKeys = SPREAD.map((m) => m.key);
+// tabela ma o jedną miarę więcej niż wykres: udział źródeł publicznych (dla USA szacunek)
+const tableKeys: MetricKey[] = ['healthGdp', 'publicShare', ...spreadKeys.filter((k) => k !== 'healthGdp')];
 const spreadCaption = `Polska na tle ${measured.length - 1} krajów w ${SPREAD.length} miarach. ${spreadKeys
   .map((k) => `${METRICS[k].label}: ${measured.map((c) => `${c.name} ${formatMetric(c.code, k)}`).join('; ')}`)
   .join('. ')}.`;
 
 const sourcesOf = (keys: MetricKey[]) => [...new Map(keys.map((k) => [METRICS[k].source.href, { ...METRICS[k].source, label: METRICS[k].source.label.replace(/ \(HF\d\)$/, '') }])).values()];
-const oecdCountries = COUNTRIES.filter((c) => c.oecd);
-const oecdNames = oecdCountries.map((c) => c.name).join(', ').replace(/, ([^,]+)$/, ' i $1');
-const STAR = `* ${oecdNames}: według not krajowych OECD, bo Eurostat tych krajów nie obejmuje.`;
+const altCountries = COUNTRIES.filter((c) => c.alt);
+const altNames = altCountries.map((c) => c.name).join(', ').replace(/, ([^,]+)$/, ' i $1');
+const STAR = `* ${altNames}: inne źródło niż Eurostat (OECD albo urzędy krajowe); „ok.” oznacza szacunek. Szczegóły w części „Jak czytać te liczby”.`;
 const guardrails = [
   ...spreadKeys.filter((k) => METRICS[k].guardrail).map((k) => ({ label: METRICS[k].short, text: METRICS[k].guardrail! })),
   {
     label: 'Kraje spoza Eurostatu (gwiazdka)',
-    text: `${oecdNames} nie występują w Eurostacie. Wydatki, liczbę lekarzy i zgony z przyczyn uleczalnych podajemy dla nich według not krajowych OECD (Health at a Glance 2025). To inne źródło i nieco inne definicje, więc wartości z gwiazdką są tylko przybliżonym porównaniem. Polska według OECD: ${formatPL(OECD_NOTE_PL.healthGdp, 1)}% PKB, ${OECD_NOTE_PL.doctors} lekarzy na 100 tys. mieszkańców i ${OECD_NOTE_PL.treatable} zgonów z przyczyn uleczalnych — wobec ${formatMetric('PL', 'healthGdp')}, ${formatMetric('PL', 'doctors')} i ${formatMetric('PL', 'treatable')} w Eurostacie.`,
+    text: `${altNames} nie występują w Eurostacie. Wydatki trzech pierwszych bierzemy z rachunków zdrowia OECD, liczonych tą samą metodą co w Eurostacie — Polska ma w obu źródłach te same wartości. Lekarzy, rezygnację z wizyty, długość życia i zgony z przyczyn uleczalnych podajemy według not krajowych OECD (Health at a Glance 2025), które liczą je nieco inaczej: Polska ma tam ${OECD_NOTE_PL.doctors} lekarzy na 100 tys. mieszkańców i ${OECD_NOTE_PL.treatable} zgonów z przyczyn uleczalnych, wobec ${formatMetric('PL', 'doctors')} i ${formatMetric('PL', 'treatable')} w Eurostacie. Wartości z gwiazdką są więc przybliżonym porównaniem.`,
   },
+  ...altCountries.map((c) => ({ label: `${c.name} (gwiazdka)`, text: c.alt!.note })),
 ];
-const oecdSources = oecdCountries.map((c) => ({ label: `OECD, nota: ${c.name}`, href: c.oecd!.href }));
+const altSources = [...new Map(altCountries.flatMap((c) => c.alt!.sources).map((x) => [x.href, x])).values()];
 
 const openness = {
   caption: 'Model systemu i jawność pieniędzy w krajach z tej strony',
@@ -123,15 +126,15 @@ const seo: SeoInput = { title, description: 'Systemy ochrony zdrowia innych kraj
 
   <Section id="porownanie" tone="soft" aria-labelledby="porownanie-title">
     <SectionHead eyebrow="Porównanie" title="Polska na tle innych krajów" id="porownanie-title" aside="Każdy wiersz to jedna miara, każda kropka to jeden kraj. Z listy nad wykresem wybierz kraj, który chcesz zobaczyć obok Polski." />
-    <Figure note={`Każdy wiersz ma własną skalę, zawsze od zera. Kreska to średnia Unii Europejskiej, jeśli źródło ją podaje. ${oecdNames}: koszt, lekarze i zgony według not OECD, bo Eurostat tych krajów nie obejmuje.`} source={[...sourcesOf(spreadKeys), ...oecdSources]}>
+    <Figure note={`Każdy wiersz ma własną skalę, zawsze od zera. Kreska to średnia Unii Europejskiej, jeśli źródło ją podaje. ${altNames}: dane z OECD albo urzędów krajowych, bo Eurostat tych krajów nie obejmuje.`} source={[...sourcesOf(spreadKeys), ...altSources]}>
       <SpreadRows rows={spreadRows} unit="" subject="Polska" dotLabel="inny kraj" averageLabel="średnia UE"
         pick={{ label: 'Porównaj z krajem:', none: 'wybierz kraj', absent: 'brak danych dla tego kraju' }} caption={spreadCaption} />
     </Figure>
   </Section>
 
   <Section id="tabela" aria-labelledby="tabela-title">
-    <SectionHead eyebrow="Dane" title="Liczby w tabeli" id="tabela-title" aside="Te same miary co na wykresie, kraj w wierszu. Przy zarobkach rok danych stoi obok wartości, bo OECD podaje różne lata." />
-    <Comparison table={countryTable('Kraje i wspólne miary', TABLE, spreadKeys)} style="--cmp-th: 12%" />
+    <SectionHead eyebrow="Dane" title="Liczby w tabeli" id="tabela-title" aside="Te same miary co na wykresie i udział źródeł publicznych, kraj w wierszu. Przy zarobkach rok danych stoi obok wartości, bo OECD podaje różne lata." />
+    <Comparison table={countryTable('Kraje i wspólne miary', TABLE, tableKeys)} style="--cmp-th: 12%" />
     <p class="kr-star">{typo(STAR)}</p>
   </Section>
 

@@ -22,7 +22,8 @@ interface Row {
   /** wynik wyróżnionego podmiotu */
   value: number;
   /** pozostałe podmioty: nazwa i wynik */
-  dots?: { label: string; value: number }[];
+  /** `display` — gotowy tekst wartości, gdy różni się od domyślnego formatu (np. „ok. 50,5%*”) */
+  dots?: { label: string; value: number; display?: string }[];
   average?: number;
   /** podpis pod osią, gdy wiersz nie ma kropek (np. „badanie tylko w Polsce”) */
   empty?: string;
@@ -53,13 +54,18 @@ const locale = localeOf(Astro.url.pathname);
 const options = [...new Set(rows.flatMap((r) => (r.dots ?? []).map((d) => d.label)))].sort((a, b) => a.localeCompare(b, locale));
 const pos = (v: number, r?: Row) => `${((v / (r?.max ?? max)) * 100).toFixed(2)}%`;
 const show = (r: Row, v: number) => `${r.decimals === undefined ? v : formatNumber(v, r.decimals, locale)}${r.unit ?? unit}`;
+const disp = (r: Row, d: { value: number; display?: string }) => d.display ?? show(r, d.value);
 /** wiersze mają własne skale — wspólna oś nic by nie znaczyła */
 const ownScales = rows.some((r) => r.max !== undefined);
 /** Kropki o tej samej wartości leżą na sobie — jeden dymek wymienia wszystkie podmioty. */
 const groups = (r: Row) => {
-  const by = new Map<number, string[]>();
-  for (const d of r.dots ?? []) by.set(d.value, [...(by.get(d.value) ?? []), d.label]);
-  return [...by].map(([value, labels]) => ({ value, label: labels.join(', ') }));
+  const by = new Map<string, { value: number; display: string; labels: string[] }>();
+  for (const d of r.dots ?? []) {
+    const display = disp(r, d);
+    const key = `${d.value}|${display}`;
+    by.set(key, { value: d.value, display, labels: [...(by.get(key)?.labels ?? []), d.label] });
+  }
+  return [...by.values()].map((g) => ({ value: g.value, display: g.display, label: g.labels.join(', ') }));
 };
 const ends = (r: Row) => {
   const all = [...(r.dots ?? [])].sort((a, b) => a.value - b.value);
@@ -88,15 +94,15 @@ const ends = (r: Row) => {
         <li class="spread__row">
           <span class="spread__label">{typo(r.label)}{r.note && <em> {typo(r.note)}</em>}{pick && <span class="spread__absent" hidden> · {pick.absent}</span>}</span>
           <span class="spread__track">
-            {(r.dots ?? []).map((d) => <i class="spread__dot" aria-hidden="true" data-label={d.label} data-value={d.value} data-display={show(r, d.value)} style={`left: ${pos(d.value, r)}`}></i>)}
+            {(r.dots ?? []).map((d) => <i class="spread__dot" aria-hidden="true" data-label={d.label} data-value={d.value} data-display={disp(r, d)} style={`left: ${pos(d.value, r)}`}></i>)}
             {r.average !== undefined && <i class="spread__avg" aria-hidden="true" style={`left: ${pos(r.average, r)}`}><b>{show(r, r.average)}</b></i>}
             <i class="spread__dot spread__dot--hi" aria-hidden="true" style={`left: ${pos(r.value, r)}`}><b>{show(r, r.value)}</b></i>
-            {e && e.lo.value < r.value && <span class="spread__end spread__end--lo" aria-hidden="true" style={`left: ${pos(e.lo.value, r)}`}>{typo(`${e.lo.label} ${show(r, e.lo.value)}`)}</span>}
-            {e && <span class="spread__end spread__end--hi" aria-hidden="true" style={`left: ${pos(e.hi.value, r)}`}>{typo(`${e.hi.label} ${show(r, e.hi.value)}`)}</span>}
+            {e && e.lo.value < r.value && <span class="spread__end spread__end--lo" aria-hidden="true" style={`left: ${pos(e.lo.value, r)}`}>{typo(`${e.lo.label} ${disp(r, e.lo)}`)}</span>}
+            {e && <span class="spread__end spread__end--hi" aria-hidden="true" style={`left: ${pos(e.hi.value, r)}`}>{typo(`${e.hi.label} ${disp(r, e.hi)}`)}</span>}
             {!e && r.empty && <span class="spread__end spread__end--lo" aria-hidden="true" style={`left: ${pos(r.value, r)}`}>{typo(r.empty)}</span>}
             {pick && <span class="spread__mark" hidden></span>}
             {groups(r).map((d) => (
-              <Popover variant="cell" class="spread__hit" style={`left: ${pos(d.value, r)}`} label={`${r.label}, ${d.label}: ${show(r, d.value)}`} heading={show(r, d.value)}>
+              <Popover variant="cell" class="spread__hit" style={`left: ${pos(d.value, r)}`} label={`${r.label}, ${d.label}: ${d.display}`} heading={d.display}>
                 {d.label}
               </Popover>
             ))}

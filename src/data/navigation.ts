@@ -24,6 +24,7 @@ export const mainNav: Link[] = [
   { label: 'Dane', href: '/dane/', match: '/dane/' },
   { label: 'Mechanizmy', href: '/mechanizmy/', match: '/mechanizmy/' },
   { label: 'Analizy', href: '/analizy/', match: '/analizy/' },
+  { label: 'Kraje', href: '/kraje/', match: '/kraje/' },
   { label: 'Dla pacjenta', href: '/dla-pacjenta/', match: '/dla-pacjenta/', also: '/prawa-pacjenta/' },
   { label: 'Konstelacja', href: '/konstelacja/', match: '/konstelacja/' },
   { label: 'Postulat', href: '/postulat/', match: '/postulat/' },

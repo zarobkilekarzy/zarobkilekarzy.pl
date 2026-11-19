@@ -13,6 +13,7 @@ import {
   NBP_CAD,
   ONTARIO as ONTARIO_PL,
   PAYMENTS,
+  PAYMENTS_RATE_YEAR,
   PENALTIES,
   QUEBEC as QUEBEC_PL,
   SPECIALISTS_BUDGET,
@@ -56,7 +57,7 @@ function pln(cad: Amount, year: RateYear): string {
 /** 4000 → „CAD 4,000”; [4000, 20000] → „CAD 4,000–20,000” */
 const cad = (v: Amount) => (typeof v === 'number' ? money(v, 'CAD') : `CAD${NBSP}${formatEN(v[0])}–${formatEN(v[1])}`);
 
-/* ---------- Average gross clinical payment per physician, 2023–24 (CIHI, NPDB, tables A.1.1–A.1.3, A.3.1) ---------- */
+/* ---------- Average gross clinical payment per physician, 2024–25 (CIHI, NPDB, tables A.1.1–A.1.3, A.3.1) ---------- */
 
 const PROVINCE: Record<string, string> = {
   Kanada: 'Canada',
@@ -75,7 +76,7 @@ export const PAYMENTS_TABLE: CompareTable = {
   rows: PAYMENTS.map((p) => ({
     cells: [
       province(p.name),
-      `${p.floor ? 'at least ' : ''}${cad(p.avg)} (${pln(p.avg, 2023)})`,
+      `${p.floor ? 'at least ' : ''}${cad(p.avg)} (${pln(p.avg, PAYMENTS_RATE_YEAR)})`,
       `${formatEN(p.ffs, 1)}%`,
     ],
     marked: p.name === 'Quebec',

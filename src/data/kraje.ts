@@ -344,7 +344,9 @@ export function countryTable(caption: string, codes: CountryCode[], keys: Metric
   return {
     caption,
     columns: ['', ...keys.map((key) => METRICS[key].short)],
-    rows: codes.map((c) => ({ cells: [country(c).name, ...keys.map((key) => formatMetric(c, key))], marked: marked.includes(c) })),
+    // dymek przy nagłówku: pełna nazwa miary, rok, zastrzeżenie i źródło; przy kraju spoza Eurostatu — skąd liczby
+    hints: [undefined, ...keys.map((key) => { const m = METRICS[key]; return `${m.label}${m.year && !m.label.includes(String(m.year)) ? ` (${m.year})` : ''}. ${m.guardrail ? `${m.guardrail} ` : ''}Źródło: ${m.source.label}.`; })],
+    rows: codes.map((c) => ({ cells: [country(c).name, ...keys.map((key) => formatMetric(c, key))], marked: marked.includes(c), hint: country(c).alt?.note })),
   };
 }
 
@@ -361,8 +363,12 @@ export const opennessOf = (code: CountryCode): string | undefined => {
 export function spreadRow(key: MetricKey, max: number, subject: CountryCode = 'PL') {
   const m = METRICS[key];
   const others = COUNTRIES.filter((c) => c.code !== subject && c.code !== 'EU')
-    .map((c) => ({ label: c.name, value: metricValue(c.code, key)?.value }))
-    .filter((d): d is { label: string; value: number } => d.value !== undefined);
+    .map((c) => {
+      const v = metricValue(c.code, key);
+      // wartość z innego źródła niż Eurostat pokazujemy tak jak w tabeli: z gwiazdką, szacunek z „ok.”
+      return { label: c.name, value: v?.value, display: v?.alt ? formatMetric(c.code, key, false) : undefined };
+    })
+    .filter((d): d is { label: string; value: number; display: string | undefined } => d.value !== undefined);
   return {
     label: m.label,
     note: m.year ? `${m.year} r.` : undefined,

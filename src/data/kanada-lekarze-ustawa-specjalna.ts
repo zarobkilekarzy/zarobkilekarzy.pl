@@ -60,27 +60,31 @@ export const cad = (v: Amount) =>
 
 /** Publikacje, na które powołują się podpisy tabel (w treści — przypisy). */
 export const LINKS = {
-  cihiPayments: 'https://www.cihi.ca/sites/default/files/document/npdb-payments-data-tables-2023-en.xlsx',
+  cihiPayments: 'https://www.cihi.ca/sites/default/files/document/npdb-payments-data-tables-2024-en.xlsx',
   loi2: 'https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2025/2025C25F.PDF',
   loi16: 'https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2025/2025C39F.PDF',
   loi19: 'https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2026/2026C2F.PDF',
   loi114: 'https://www.publicationsduquebec.gouv.qc.ca/fileadmin/Fichiers_client/lois_et_reglements/LoisAnnuelles/fr/2002/2002C39F.PDF',
 } as const;
 
-/* ---------- Średnia płatność kliniczna brutto na lekarza, 2023–24 (CIHI, NPDB, tab. A.1.1–A.1.3, A.3.1) ---------- */
+/* ---------- Średnia płatność kliniczna brutto na lekarza, 2024–25 (CIHI, NPDB, wydanie z danymi do 2024–2025,
+   tab. A.1.1–A.1.3, A.3.1). W tym wydaniu CIHI zrewidował dane Ontario od 2023 r. (doszły płatności, których
+   brakowało w pierwotnym zgłoszeniu), więc zastrzeżenie o dolnej granicy już nie obowiązuje. ---------- */
 
-export const PAYMENTS = [
-  { name: 'Kanada', avg: 383_497, ffs: 71.8 },
-  { name: 'Alberta', avg: 429_362, ffs: 87.4 },
-  /** CIHI: dane Ontario za ten rok są niepełne (m.in. bez wypłat wyrównawczych) — dolna granica */
-  { name: 'Ontario', avg: 390_588, ffs: 66.1, floor: true },
-  { name: 'Quebec', avg: 353_385, ffs: 79.3 },
+/** rok kursu NBP dla tabeli płatności (rok budżetowy 2024–25) */
+export const PAYMENTS_RATE_YEAR: RateYear = 2024;
+
+export const PAYMENTS: { name: string; avg: number; ffs: number; floor?: boolean }[] = [
+  { name: 'Kanada', avg: 429_267, ffs: 70.4 },
+  { name: 'Alberta', avg: 441_894, ffs: 88.9 },
+  { name: 'Ontario', avg: 469_212, ffs: 65.1 },
+  { name: 'Quebec', avg: 353_454, ffs: 80.5 },
 ];
 
 export const PAYMENTS_TABLE: CompareTable = {
   columns: ['', 'Średnia płatność na lekarza', 'Udział opłaty za usługę'],
   rows: PAYMENTS.map((p) => ({
-    cells: [p.name, `${p.floor ? 'co najmniej ' : ''}${cad(p.avg)} (${zl(p.avg, 2023)})`, `${formatPL(p.ffs, 1)}%`],
+    cells: [p.name, `${p.floor ? 'co najmniej ' : ''}${cad(p.avg)} (${zl(p.avg, PAYMENTS_RATE_YEAR)})`, `${formatPL(p.ffs, 1)}%`],
     marked: p.name === 'Quebec',
   })),
 };

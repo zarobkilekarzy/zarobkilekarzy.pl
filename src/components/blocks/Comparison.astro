@@ -3,10 +3,12 @@
  * Tabela porównania (stan obecny / projektowany, tekst ujednolicony). Wiersz `marked` jest wyróżniony.
  * W wąskim kontenerze każdy wiersz staje się kartą: komórki z etykietą kolumny nad treścią.
  * Pierwsza kolumna z pustym nagłówkiem to nazwa wiersza (nagłówek karty).
+ * `hints` (kolumny) i `hint` (wiersz) dodają przy nazwie dymek „?” z objaśnieniem (ui/Popover, wariant `hint`).
  * Wiersz z polem `more` ma pod sobą zwinięty dodatek (<details>): małą tabelę, np. głosy klubów pod wynikiem głosowania.
  */
 import type { HTMLAttributes } from 'astro/types';
 import type { CompareTable } from '@/types';
+import Popover from '@/components/ui/Popover.astro';
 import { typo } from '@/lib/format';
 
 interface Props extends HTMLAttributes<'div'> {
@@ -24,7 +26,7 @@ const hasMarks = table.rows.some((row) => row.marked);
   <table class:list={['cmp', { 'cmp--marks': hasMarks }]}>
     {table.caption && <caption>{typo(table.caption)}</caption>}
     <thead>
-      <tr>{table.columns.map((c) => <th scope="col">{typo(c)}</th>)}</tr>
+      <tr>{table.columns.map((c, i) => <th scope="col">{typo(c)}{table.hints?.[i] && <Popover variant="hint" placement="bottom" class="cmp__hint" label={`${c}: jak czytać`} heading={c}>{typo(table.hints[i]!)}</Popover>}</th>)}</tr>
     </thead>
     <tbody>
       {table.rows.map((row) => (
@@ -32,7 +34,7 @@ const hasMarks = table.rows.some((row) => row.marked);
           <tr class:list={{ 'is-marked': row.marked, 'has-more': row.more }}>
             {row.cells.map((cell, i) =>
               i === 0 && rowHeader ? (
-                <th scope="row" data-label={table.columns[0]}>{typo(cell)}</th>
+                <th scope="row" data-label={table.columns[0]}>{typo(cell)}{row.hint && <Popover variant="hint" class="cmp__hint" label={`${cell}: skąd te liczby`} heading={cell}>{typo(row.hint)}</Popover>}</th>
               ) : (
                 <td data-label={table.columns[i]}>
                   {row.marked && markLabel && cell !== '—' && <span class="cmp__mark">{markLabel}</span>}
@@ -81,6 +83,7 @@ const hasMarks = table.rows.some((row) => row.marked);
   .cmp tbody th { font: 500 0.9375rem/1.45 var(--f-display); letter-spacing: -0.01em; text-transform: none; color: var(--ink); width: var(--cmp-th, 22%); }
   .cmp td { color: var(--ink-2); }
 
+  .cmp :global(.cmp__hint) { margin-left: 6px; vertical-align: 1px; text-transform: none; letter-spacing: 0; font-weight: 400; }
   .cmp .is-marked > * { background: var(--blue-50); }
   .cmp .is-marked > :first-child { box-shadow: inset 3px 0 0 var(--blue); padding-left: 14px; }
   .cmp--marks tr > :first-child { padding-left: 14px; }

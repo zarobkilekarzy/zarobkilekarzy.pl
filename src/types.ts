@@ -370,7 +370,10 @@ export interface FaqItem {
 export interface CompareTable {
   caption?: string;
   columns: string[];
-  rows: { cells: string[]; marked?: boolean; more?: CompareMore }[];
+  /** objaśnienia kolumn (ta sama kolejność co `columns`) — dymek „?” przy nagłówku */
+  hints?: (string | undefined)[];
+  /** `hint` — objaśnienie wiersza, dymek „?” przy jego nazwie */
+  rows: { cells: string[]; marked?: boolean; more?: CompareMore; hint?: string }[];
 }
 
 /** Rozwijany dodatek pod wierszem tabeli porównania (np. głosy klubów pod wynikiem głosowania): mała tabela i link do źródła. */

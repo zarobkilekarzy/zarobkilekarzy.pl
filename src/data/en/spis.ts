@@ -113,6 +113,10 @@ export const cards: Record<string, CardEn> = {
   'dyzur-w-szpitalu-powiatowym': { stat: { of: '8 760', value: '8,760', unit: 'hours a year for one on-call post' } },
   'dlaczego-brakuje-lekarzy': { stat: { of: '62%', value: '62%', unit: 'of specialist training places empty in autumn 2025' } },
   'zadowolenie-z-ochrony-zdrowia': { stat: { of: '19–38%', value: '19–38%', unit: 'of Poles rate their healthcare well, depending on the survey and the question' } },
+  'programy-lekowe-kolejki': {
+    stat: { of: '9–12 tys.', value: '9,000–12,000', unit: 'people were waiting for treatment in drug programmes at the end of September 2026' },
+    coverAlt: 'Five identical drip stands in a row; only the nearest one holds an infusion bag, the hooks of the others are empty',
+  },
   'ciecie-limitow-na-medycyne': { stat: { of: '2 090', value: '2,090', unit: 'full-time places in medical school in 2003, against more than 6,000 in 1987' } },
   'odsiew-na-medycynie': { stat: { of: '1 na 5', value: '1 in 5', unit: 'students who start do not finish on time' } },
   'studia-lekarskie': {

@@ -1,0 +1,247 @@
+---
+title: "Waiting lists for drug programmes: weeks on average, but not everywhere"
+seoTitle: "Waiting lists for drug programmes in Poland"
+summary: "At the end of September 2026, between 9,000 and 12,000 people were waiting for treatment in drug programmes. Usually a few weeks, but in some programmes and hospitals the list barely moves, and the ministry and the National Health Fund (NFZ) do not know how many patients are waiting because a hospital’s contract has run out."
+description: "How many patients wait for treatment in NFZ drug programmes in Poland, for how long and why: NFZ data for September 2026, contract limits and the data nobody collects."
+keyPoints:
+  - "At the end of September 2026, between 9,137 and 11,935 people were on waiting lists for drug programmes."
+  - "In rheumatology, from 1% to 57% of qualified patients are waiting for their first dose, depending on the voivodeship."
+  - "The Ministry of Health and the NFZ have no data on how many patients are waiting because a hospital’s contract has run out."
+editorial:
+  - >-
+    Drug programmes cost PLN 15.53 billion of public money in 2025. A hospital’s contract with the NFZ has a limit,
+    so who starts treatment this month and who starts next month is decided inside the hospital, outside
+    public data. We do not claim that waiting lists are too long everywhere. We claim that without data it is impossible
+    to check where the money and the needs part ways.
+  - >-
+    That is why we call for transparency: for each programme and hospital, the number of qualified people waiting for
+    their first dose, the reason for waiting, the value of the contract and how much of it has been used, as well as data
+    for previous months, because the NFZ publishes only the current one.
+changelog:
+  - date: 2026-11-19
+    text: "On 19 November the Sejm passed an amendment to the Reimbursement Act (417 in favour, 0 against, 17 abstentions). Added in the section on stages: for new drug programmes the NFZ is to sign contracts with hospitals so that treatment can start on the first day of reimbursement. The change does not affect contract limits or waiting lists in programmes that are already running. The act now goes to the Senate."
+translation:
+  of: programy-lekowe-kolejki
+  files: [src/data/programy-lekowe-kolejki.ts]
+  hash: "afaa5b15ca01"
+  date: 2026-11-19
+---
+import Aside from '@/components/blocks/Aside.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import ColumnChart from '@/components/blocks/ColumnChart.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import Button from '@/components/ui/Button.astro';
+import Actions from '@/components/layout/Actions.astro';
+import NumberedList from '@/components/blocks/NumberedList.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import Money from '@/components/ui/Money.astro';
+import { formatEN } from '@/lib/format';
+import { LINKS, PROGRAMS as PROGRAMS_DATA, SPENDING as SPENDING_DATA, RHEUMA as RHEUMA_DATA, RHEUMA_AVERAGE } from '@/data/programy-lekowe-kolejki';
+
+{/* Tłumaczenie src/content/articles/programy-lekowe-kolejki.mdx; liczby z modułu polskiego, tu tylko napisy */}
+export const PROGRAM_EN = {
+  siatkowka: 'Retinal diseases',
+  'rzs-mizs': 'Rheumatoid arthritis and juvenile idiopathic arthritis',
+  lipidy: 'Lipid disorders',
+  'wzw-c': 'Chronic hepatitis C',
+  sm: 'Multiple sclerosis',
+  prostata: 'Prostate cancer',
+  spastycznosc: 'Limb spasticity',
+  dystonie: 'Dystonias',
+  'polipy-nosa': 'Nasal polyps',
+  'wzw-b': 'Chronic hepatitis B',
+};
+export const REGION_EN = {
+  dolnośląskie: 'Lower Silesian',
+  'kujawsko-pomorskie': 'Kuyavian-Pomeranian',
+  wielkopolskie: 'Greater Poland',
+  świętokrzyskie: 'Świętokrzyskie',
+  małopolskie: 'Lesser Poland',
+  pomorskie: 'Pomeranian',
+  lubuskie: 'Lubusz',
+  łódzkie: 'Łódź',
+  opolskie: 'Opole',
+  podkarpackie: 'Subcarpathian',
+  mazowieckie: 'Masovian',
+  śląskie: 'Silesian',
+  zachodniopomorskie: 'West Pomeranian',
+  podlaskie: 'Podlaskie',
+  'warmińsko-mazurskie': 'Warmian-Masurian',
+  lubelskie: 'Lublin',
+};
+export const en = (map, key) => {
+  if (!map[key]) throw new Error(`[en] drug-programme-waiting-lists: brak tłumaczenia „${key}”`);
+  return map[key];
+};
+export const PROGRAMS = PROGRAMS_DATA.map((p) => ({ ...p, label: en(PROGRAM_EN, p.id) }));
+export const SPENDING = SPENDING_DATA.map((s) => ({ label: String(s.year), value: s.refund / 1e9, display: formatEN(s.refund / 1e9, 2), patients: s.patients }));
+export const RHEUMA = RHEUMA_DATA.map((r) => ({ label: en(REGION_EN, r.region), value: r.share, display: `${r.share}%`, highlight: r.share >= 50 }));
+
+A drug programme (*program lekowy*) is treatment with an expensive medicine, usually a biological or cancer drug, which the National Health Fund (NFZ) finances in a hospital under strictly defined criteria. In 2025 the NFZ settled **<Money value={15530000000} scale="billion" decimals={2} />** in drug programmes, and 337,571 people were treated in them.[^mz19050] At the end of September 2026 hospitals reported to the NFZ **11,935 people** on waiting lists for 141 programmes.[^nfz-pliki]
+
+<StatRow
+  label="Drug programmes, September 2026"
+  items={[
+    { value: 11935, unit: 'people', desc: 'on waiting lists, all hospital reports', accuracy: 'exact', source: 'NFZ, data files', href: LINKS.nfzPliki },
+    { value: 9137, unit: 'people', desc: 'after excluding one hospital whose data need explaining', accuracy: 'exact', source: 'NFZ, data files', href: LINKS.nfzPliki },
+    { value: 33.2, decimals: 1, unit: 'days', desc: 'average wait of people admitted in September, without that hospital', accuracy: 'exact', source: 'NFZ, data files', href: LINKS.nfzPliki },
+    { value: 1.08, decimals: 2, unit: 'PLN bn', desc: 'of unsettled treatment above contract limits in programmes for the first half of 2026', accuracy: 'exact', source: 'Ministry of Health, reply to interpellation 19419', href: LINKS.mz19419 },
+  ]}
+/>
+
+## A right to treatment that has a limit
+
+A drug programme is a guaranteed service: anyone who meets the criteria has a right to treatment.[^ustawa] The Ministry of Health stresses that qualification is to be purely medical and that restrictions resulting from a hospital’s financial situation are unacceptable.[^mz19050] At the same time drug programmes “are classed as limited services” (our translation): a hospital is paid up to the value of its contract with the NFZ, and for treatment above it, known as overperformance (*nadwykonania*), the NFZ pays later, when it has the money.[^mz13697]
+
+The ministry explains that it cannot raise contract values to match current needs, because there must first be enough money for services without a limit and for the treatment of children.[^mz13697] And needs are growing fast. For the medicines alone the NFZ paid **<Money value={13950000000} scale="billion" decimals={2} />** in drug programmes in 2025, more than four times as much as in 2017, while the number of people treated almost tripled over that time.[^api-nfz]
+
+<Figure
+  title="NFZ spending on medicines in drug programmes has risen more than fourfold since 2017"
+  note="Reimbursement of the medicines alone in drug programmes, without the cost of hospital services, in PLN billion. People treated: 114,647 in 2017 and 329,248 in 2025."
+  source={{ label: 'NFZ, drug programme statistics (API)', href: LINKS.api }}
+>
+  <ColumnChart
+    columns={SPENDING}
+    max={15}
+    caption={`Reimbursement of medicines in drug programmes, PLN billion: ${SPENDING.map((s) => `${s.label} ${s.display} (${formatEN(s.patients)} treated)`).join('; ')}.`}
+  />
+</Figure>
+
+According to hospitals’ accounts cited by the Commissioner for Human Rights, an annual contract often runs out after about half a year, and from then on the hospital buys medicines on credit and waits for the NFZ to pay for overperformance.[^rpo] This is an account, not a measurement. The scale of the arrears is shown by the ministry’s data, described at the end of this text.
+
+In practice a patient goes through several stages and may wait at each of them.
+
+<NumberedList
+  layout="rows"
+  items={[
+    { title: 'Reimbursement decision.', text: 'The minister adds the medicine and the programme to the reimbursement list.' },
+    { title: 'Contract with the hospital.', text: 'The NFZ announces a procedure and signs contracts. In 2025 this took 104.8 days on average, and almost 185 in the Lower Silesian voivodeship, against an assumed maximum of 80 days.' },
+    { title: 'Qualification.', text: 'Doctors check whether the patient meets the programme’s criteria.' },
+    { title: 'Waiting list and first dose.', text: 'The qualified patient waits for treatment to start. This is the stage the NFZ data describe.' },
+  ]}
+/>
+
+The time needed to conclude contracts was given by the ministry at a meeting of a Sejm subcommittee.[^stenogram]
+
+For new programmes this second stage is to stop delaying treatment. On 19 November 2026 the Sejm passed an amendment to the Reimbursement Act: **417 deputies voted in favour, none against**, and 17 abstained.[^sejm-glosowanie] When a new drug programme is created for a medicine with no reimbursed equivalent, the minister will be able to announce it in the reimbursement list one edition earlier, and the president of the NFZ is to sign contracts with hospitals in that time so that treatment can start **on the first day the reimbursement decision applies**.[^nowela] According to the explanatory memorandum to the bill, that leaves about three months to conclude the contracts. The provision is to apply from 1 January 2027, and the act now goes to the Senate.
+
+The change concerns new programmes only. It does not change contract limits or waiting lists in programmes that are already running. The rest of this text is about the last stage, because it is the only one measured every month.
+
+## How many patients are waiting
+
+Every month the NFZ publishes files with the number of people on waiting lists in each hospital unit, that is, a ward or an outpatient clinic, and the average waiting time.[^nfz-pliki] The act requires it.[^ustawa] Every patient on a list has a medical category: stable or urgent. The list does not include people who are already being treated and are continuing therapy, or those the hospital did not enter at all.
+
+<Aside variant="warn" title="One hospital reports almost a quarter of the list">
+The Multi-Specialty Voivodeship Hospital in Gorzów Wielkopolski reported **2,798 people waiting** in September, including 866 in the programme for the treatment of uveitis. In the whole country **176 people** were treated in that programme in 2025,[^api-nfz] and this hospital’s contract for uveitis for 2026 is for symbolic amounts: <Money value={628.56} /> for services and <Money value={12} /> for medicines a year,[^umowy] and yet the hospital reported 61 people admitted in September. This may be a reporting error, or a waiting list with an almost empty contract. We do not know which version is true. It is a matter to be explained, not an allegation. That is why we give the figures with and without this hospital.
+</Aside>
+
+Without this hospital there were **9,137 people** on the list, including 1,966 in the urgent category. In September 4,531 people from the lists started treatment.[^nfz-pliki] Earlier estimates based on NFZ data spoke of “about 9,000” in March and more than 9,400 at the end of April 2026.[^rpo][^pap] We do not know whether they were counted in the same way, so we do not compare them directly.
+
+## A few weeks on average
+
+People admitted to programmes in September had waited **33.2 days** on average, or 39.8 days including the hospital in Gorzów.[^nfz-pliki] Without that hospital, half of those admitted went to units where the average wait did not exceed 17 days, and 90% to units where it did not exceed 79 days. Units with an average of more than half a year took 2.8% of those admitted.
+
+The average has one flaw: it counts only those who have already been admitted. A list may be long but move quickly, or shorter and stand still. That is why the number of people waiting has to be read alongside the number admitted.
+
+<Figure
+  title="The longest lists: in retinal diseases more people were admitted in September than are waiting, in rheumatology almost five times fewer"
+  note="Programmes with the largest number of people waiting at the end of September 2026, without the hospital in Gorzów Wielkopolski. Average wait: an average weighted by the number of people admitted in September."
+  source={{ label: 'NFZ, “Where to get treatment” service, data files; our calculations', href: LINKS.nfzPliki }}
+>
+  <BarChart
+    rows={PROGRAMS.map((p) => ({ label: p.label, value: p.waiting, display: formatEN(p.waiting), note: `admitted in September: ${formatEN(p.admitted)}, ${p.days} days on average`, highlight: p.highlight }))}
+    max={1100}
+    unit="people"
+    caption={`People waiting at the end of September 2026: ${PROGRAMS.map((p) => `${p.label} ${formatEN(p.waiting)} (${formatEN(p.admitted)} admitted, ${p.days} days on average)`).join('; ')}.`}
+  />
+</Figure>
+
+The list moves most slowly in rheumatology. In the rheumatology programmes (without the hospital in Gorzów) 1,531 people were waiting and 267 were admitted. In the Lower Silesian voivodeship 400 people were waiting and 15 were admitted.[^nfz-pliki]
+
+## The address matters
+
+A better picture than the NFZ list comes from the programmes’ own register (SMPT), which shows when a patient was qualified and whether they received their first dose. The Polish Society for Rheumatology (PTR) calculated from it that of 5,027 people qualified for treatment in rheumatology from January to September 2026, **1,166**, or 23%, had not received their first dose.[^ptr] The PTR considers this a minimum figure, because it does not include patients whom centres did not qualify because of financial difficulties.
+
+<Figure
+  title="In the Lower Silesian voivodeship more than half of qualified patients are waiting for their first dose, in the Lublin voivodeship 1%"
+  note="Rheumatology: people qualified for drug programmes from January to September 2026 who had not received their first dose by 19 October. Some of those qualified in September may still have been waiting for an appointed date."
+  source={{ label: 'Polish Society for Rheumatology, based on SMPT, 22.10.2026', href: LINKS.ptr }}
+>
+  <BarChart
+    rows={RHEUMA}
+    max={60}
+    unit="%"
+    average={RHEUMA_AVERAGE}
+    averageLabel={`national average ${RHEUMA_AVERAGE}%`}
+    caption={`Share of qualified patients without a first dose, by voivodeship: ${RHEUMA.map((r) => `${r.label} ${r.display}`).join('; ')}. National average ${RHEUMA_AVERAGE}%.`}
+  />
+</Figure>
+
+Among those qualified in January, 59 people had not received their first dose by 19 October, that is, for at least 261 days.[^ptr] Money is not always the reason: the ministry also points to clinical considerations and the decisions of patients themselves.[^mz19419]
+
+For a patient this is not only a statistic. According to the European EULAR recommendations, rheumatoid arthritis is treated first with methotrexate, and if it does not work well enough within 3–6 months, patients with poor prognostic factors are given a biological or similar drug in addition.[^eular] Months of waiting for the first dose lengthen the period in which, according to these recommendations, the treatment should already have been changed.
+
+Individual hospitals show how the limit works in practice. At University Hospital No. 2 in Bydgoszcz, qualification for biological treatment in rheumatology was suspended in February.[^medexpress] In the summer the hospital’s needs were estimated at <Money value={170000000} scale="million" decimals={0} /> against <Money value={127000000} scale="million" decimals={0} /> in the contract, and the NFZ branch replied that it could not raise the limit.[^money] By October the value of the hospital’s contracts for programmes had risen to about <Money value={149000000} scale="million" decimals={0} />,[^umowy] but in September the hospital still reported 126 people waiting and 5 admitted.[^nfz-pliki] At the Dietl Hospital in Kraków 166 people were waiting in September, 160 of them in the urgent category, and one was admitted.[^nfz-pliki] According to an account from July, 120 qualified patients were waiting there at the time, and for 8–9 months modern treatment had been restricted to cases where life was at risk.[^dietl]
+
+## Oncology and hospitals that say something else
+
+Of the 142 drug programmes, 41 are oncology programmes.[^mz19050] In July the daily <span lang="pl">Rzeczpospolita</span> described a letter in which the Central Clinical Hospital of the Medical University of Łódź set the start of treatment for a patient with breast cancer for the first quarter of 2027, because it had no means of financing it.[^rz-lodz] The hospital denied that it had suspended treatment, and the NFZ branch confirmed that it had received reports and was conducting explanatory proceedings.[^nfz-lodz] In September the hospital reported, across all programmes, 163 people waiting, 78 admitted and an average wait of 15 days.[^nfz-pliki]
+
+Hospitals asked about drug programmes in August answered in different ways. The National Institute of Oncology gave an assurance that it qualifies patients as they come and does not lengthen the wait for organisational or drug-related reasons. The University Clinical Centre in Gdańsk also qualifies patients as they come, and one of the university hospitals in Szczecin admitted that qualification may take longer.[^rynek-sierpien] Without data on how many patients wait after qualification and why, it is impossible to settle which of these pictures is typical.
+
+## Where records of a thousand days come from
+
+Reports about drug programmes often feature records: 2,356 days in ankylosing spondylitis, 875 days in cystic fibrosis.[^mzdrowie] They were given by the tool <span lang="pl">Obserwator</span>, prepared on the initiative of the AmCham Pharmaceutical Committee, which brings together pharmaceutical companies.[^pap] The records come from averages that hospitals report for single units, so they do not describe how long a particular patient waited.
+
+The value of 875 days comes from a unit in which nobody was waiting in September and nobody was admitted.[^nfz-pliki] In the files for September there are 663 such rows in drug programmes, with a waiting time and zero admitted. The value of 1,635 days from an NFZ analysis for the same programme[^rynek-1635] was described by the Fund in the Sejm as a reporting error. At the same meeting, however, the NFZ said that in the Lower Silesian voivodeship the first date in this programme visible on the Fund’s website fell in 2027–2028.[^stenogram] So the problem is real, but the record measures it badly. That is why in this text we give averages weighted by the number admitted and the number of people waiting.
+
+## Are the lists growing
+
+The NFZ does not make previous months available, so this cannot be checked on its website. This site has been saving the files since the data for September 2026, and May could be recovered because the NFZ server served it again.[^nfz-pliki] These two points show that the list without the hospital in Gorzów grew by 18%: from **7,727** to **9,137** people. Two points are a signal, not a trend.
+
+All months can be downloaded in a single CSV file that opens in a spreadsheet: a row is a month, programme, hospital and unit in which someone was waiting or was admitted, with the category, the number waiting, the number admitted and the average wait. The column headings and names are in Polish. Names of practices that may contain a first name and surname are merged into one item per voivodeship.
+
+<Actions>
+  <Button href="/media/dane/programy-lekowe-listy-oczekujacych.csv" download="zarobkilekarzy-programy-lekowe-listy-oczekujacych.csv" icon="db">CSV · all months (in Polish)</Button>
+  <Button href="/media/#dane" variant="ghost">Other data files (in Polish)</Button>
+</Actions>
+
+## What the ministry and the NFZ do not know
+
+The Ministry of Health wrote on 7 October 2026 that neither it nor the NFZ “have data” (our translation) on patients who meet the criteria of a programme but are waiting for reasons related to the value of the hospital’s contract.[^mz19419] What is known is how much hospitals treated above the limit: for the first half of 2026, **<Money value={1082118385.9} decimals={2} />** was waiting to be settled, of which <Money value={859960000} scale="million" decimals={2} /> for medicines.[^mz19419] In July the NFZ allocated <Money value={566100000} scale="million" decimals={1} /> to medicines in drug programmes and chemotherapy for the first quarter, and in October <Money value={3360000000} scale="billion" decimals={2} /> to overperformance for the second quarter, in other services as well. It did not say how much of that second amount went to drug programmes alone.[^nfz-srodki]
+
+The waiting list does not say everything either. The Commissioner for Human Rights described signals of “informal lists” and suspended qualification,[^rpo] and such patients are not in the NFZ data.
+
+<Aside variant="info" title="If you are waiting for treatment in a drug programme">
+- The hospital must inform you of your medical category and date, and at your request justify why it chose that date.[^art20] In an emergency the service is due without delay.[^art19]
+- In the NFZ search tool <span lang="pl">Gdzie się leczyć</span> (“Where to get treatment”) you can check which hospitals run a given programme.[^gsl]
+- If a hospital refuses qualification or postpones treatment for financial reasons, you can report it to the Patient Ombudsman (helpline 800 190 590) and to the voivodeship branch of the NFZ. The Ombudsman has already intervened in such a case.[^rpp] More in the guide [Patient rights](/en/patient-rights/).
+</Aside>
+
+[^nfz-pliki]: NFZ, <span lang="pl">Gdzie się leczyć</span>, [“<span lang="pl">Pliki z danymi</span>”](https://gsl.nfz.gov.pl/GSL/GSL/PlikiZDanymi) (“Data files”, in Polish), as at the end of September 2026 (files generated on 15.10.2026). Drug programmes are the rows with a service code beginning with 90. Totals, weighted averages and the distribution of waiting times are our calculations.
+[^mz19050]: Ministry of Health, [reply to interpellation No. 19050](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDXWJCG/i19050-o1.pdf) (in Polish).
+[^ustawa]: [Act of 27 August 2004 on healthcare services financed from public funds](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (in Polish), Journal of Laws (Dz.U.) 2025, item 1461: Article 15(2)(15) (drug programmes), Article 20 (waiting lists), Article 23(2) (publication by the NFZ).
+[^mz13697]: Ministry of Health, [reply to interpellation No. 13697](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDPMJTS/i13697-o1.pdf) (in Polish); the same in the [reply to interpellation No. 14842](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDS3K98/i14842-o1.pdf) (in Polish).
+[^stenogram]: Sejm, Health Committee, [Standing Subcommittee on the Organisation of Healthcare, meeting of 16.04.2026](https://api.sejm.gov.pl/sejm/term10/committees/ZDR01S/sittings/27/html) (in Polish), record of proceedings.
+[^sejm-glosowanie]: Sejm, [69th sitting, vote No. 39](https://api.sejm.gov.pl/sejm/term10/votings/69/39/pdf) (in Polish), 19.11.2026: vote on the whole bill amending the Act on the reimbursement of medicines, foodstuffs intended for particular nutritional uses and medical devices, and certain other acts.
+[^nowela]: Sejm, [report of the Health Committee, print No. 3328](https://api.sejm.gov.pl/sejm/term10/prints/3328/3328.pdf) (in Polish): Article 1(7)(c) (new paragraphs 3b and 3c in Article 11 of the Reimbursement Act) and Article 22 (entry into force). The amendments from the second reading ([print No. 3328-A](https://api.sejm.gov.pl/sejm/term10/prints/3328-A/3328-A.pdf), in Polish) did not change these provisions. Three months: explanatory memorandum to the bill, [print No. 3281](https://api.sejm.gov.pl/sejm/term10/prints/3281/3281.pdf) (in Polish).
+[^api-nfz]: NFZ, [drug programme statistics (API)](https://api.nfz.gov.pl/app-stat-api-pl/) (in Polish): reimbursement of medicines and number of people treated in 2017–2025, retrieved on 30.10.2026.
+[^umowy]: NFZ, [contracts API](https://api.nfz.gov.pl/app-umw-api/) (in Polish), hospital contracts for 2026, as at October 2026.
+[^rpo]: Commissioner for Human Rights, [“<span lang="pl">Posiedzenie Komisji Ekspertów do spraw Zdrowia o programach lekowych</span>”](https://bip.brpo.gov.pl/pl/content/posiedzenie-komisji-ekspertow-zdrowie-programy-lekowe) (“Meeting of the Expert Committee on Health on drug programmes”, in Polish), 10.06.2026, NFZ data.
+[^pap]: PAP, [“<span lang="pl">Obserwator — platforma, która skróci kolejkę do programów lekowych</span>”](https://zdrowie.pap.pl/leczenie/obserwator-platforma-ktora-skroci-kolejke-do-programow-lekowych) (“Obserwator: a platform that will shorten the queue for drug programmes”, in Polish), data from a tool prepared on the initiative of pharmaceutical companies.
+[^ptr]: Polish Society for Rheumatology, [material for the meeting of a parliamentary group on 22.10.2026](https://ptr.info.pl/wp-content/uploads/2026/10/PTR_Sejm_22.10.2026_Marcin-Stajszczyk_Zespol-Parlamentarny_Reumatologia.pdf) (in Polish), SMPT data as at 19.10.2026. The number of days is our calculation.
+[^mz19419]: Ministry of Health, [reply to interpellation No. 19419](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDYSHTJ/i19419-o1.pdf) (in Polish), 7.10.2026; the amount of overperformance as at 2.09.2026.
+[^medexpress]: MedExpress, [“<span lang="pl">Programy lekowe: już w lutym zabrakło pieniędzy na włączanie nowych pacjentów</span>”](https://www.medexpress.pl/leki-technologie-medyczne/programy-lekowe-juz-w-lutym-zabraklo-pieniedzy-na-wlaczanie-nowych-pacjentow/) (“Drug programmes: money for including new patients ran out as early as February”, in Polish), 27.02.2026.
+[^money]: money.pl, [“<span lang="pl">Leki są na liście, pieniędzy brak</span>”](https://www.money.pl/finanse/leki-sa-na-liscie-pieniedzy-brak-pacjenci-utkneli-w-kolejce-7302692137203968a.html) (“The medicines are on the list, the money is not”, in Polish), 1.07.2026.
+[^dietl]: Rynek Zdrowia, [“<span lang="pl">Nadwykonania w programach lekowych wydłużają kolejki do leczenia</span>”](https://www.rynekzdrowia.pl/Neurologia/Nadwykonania-w-programach-lekowych-wydluzaja-kolejki-do-leczenia-Pacjenci-musza-czekac,287167,208.html) (“Overperformance in drug programmes lengthens queues for treatment”, in Polish), 29.07.2026 (account of a meeting); figures for September from the NFZ files.
+[^mzdrowie]: mZdrowie, [“<span lang="pl">Najdłuższe kolejki do programów lekowych sięgają kilku lat</span>”](https://www.mzdrowie.pl/trendy/najdluzsze-kolejki-do-programow-lekowych-siegaja-kilku-lat/) (“The longest queues for drug programmes reach several years”, in Polish), 5.10.2026, after the Obserwator tool.
+[^rynek-1635]: Rynek Zdrowia, [“<span lang="pl">Miał zesztywniające zapalenie, czekał 1635 dni</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Mial-zesztywniajace-zapalenie-czekal-1635-dni-Paradoksy-w-programach-lekowych-resort-i-NFZ-tlumacza,283341,1.html) (“He had ankylosing spondylitis and waited 1,635 days”, in Polish), 17.04.2026.
+[^nfz-srodki]: NFZ, [“<span lang="pl">NFZ uruchamia dodatkowe 600 mln zł na leki w programach lekowych i w chemioterapii</span>”](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/nfz-uruchamia-dodatkowe-600-mln-zl-na-leki-w-programach-lekowych-i-w-chemioterapii,8984.html) (“The NFZ releases an additional PLN 600 million for medicines in drug programmes and chemotherapy”, in Polish), 23.07.2026; [“<span lang="pl">NFZ uruchomił 3,3 mld zł na nadwykonania po zwiększeniu dotacji z budżetu państwa</span>”](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/nfz-uruchomil-3-3-mld-zl-na-nadwykonania-po-zwiekszeniu-dotacji-z-budzetu-panstwa,9039.html) (“The NFZ released PLN 3.3 billion for overperformance after the state budget subsidy was increased”, in Polish), 23.10.2026.
+[^eular]: Smolen J.S. et al., [EULAR recommendations for the management of rheumatoid arthritis with synthetic and biological disease-modifying antirheumatic drugs: 2022 update](https://doi.org/10.1136/ard-2022-223356), Annals of the Rheumatic Diseases 2023;82:3–18.
+[^rz-lodz]: Rzeczpospolita, [“<span lang="pl">Szpital w Łodzi odsyła chorych na raka</span>”](https://www.rp.pl/ochrona-zdrowia/art44852461-szpital-w-lodzi-odsyla-chorych-na-raka-brak-mozliwosci-finansowania) (“A hospital in Łódź sends cancer patients away”, in Polish), 20.07.2026.
+[^nfz-lodz]: Łódź Voivodeship Branch of the NFZ, [reply to a request for access to public information](https://alivia.org.pl/wp-content/uploads/sites/10/2026/08/Odpowiedz-na-wniosek-o-udostepnienie-informacji-publicznej.pdf) (in Polish), 4.08.2026.
+[^rynek-sierpien]: Rynek Zdrowia, [“<span lang="pl">Zadyszka w programach lekowych. Szpitale mają niezapłacone nadwykonania, pacjenci czekają na terapie</span>”](https://www.rynekzdrowia.pl/Finanse-i-zarzadzanie/Zadyszka-w-programach-lekowych-Szpitale-maja-niezaplacone-nadwykonania-pacjenci-czekaja-na-terapie,287652,1.html) (“Drug programmes out of breath: hospitals have unpaid overperformance, patients wait for therapy”, in Polish), 18.08.2026.
+[^art20]: [Act on healthcare services financed from public funds](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (in Polish), Article 20(2)(2).
+[^art19]: [Act on healthcare services financed from public funds](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (in Polish), Article 19(1).
+[^gsl]: NFZ, [“<span lang="pl">Gdzie się leczyć: programy lekowe</span>”](https://gsl.nfz.gov.pl/GSL/GSL/ProgramyLekowe) (“Where to get treatment: drug programmes”, in Polish).
+[^rpp]: Patient Ombudsman, [letter to the NFZ on refusals of qualification for drug programmes in Szczecin](https://j-elita.org.pl/wp-content/uploads/2026/06/Zobacz-pismo-Rzecznika-Praw-Pacjenta.pdf) (in Polish), 12.06.2026, ref. RzPP-DWS.071.49.2026.

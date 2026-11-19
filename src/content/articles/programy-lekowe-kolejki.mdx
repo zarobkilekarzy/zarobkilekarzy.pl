@@ -5,6 +5,9 @@ category: Analiza
 topic: pieniadz
 stat: { value: "9–12 tys.", unit: "osób czekało na leczenie w programach lekowych na koniec września 2026 r." }
 date: 2026-11-09
+changelog:
+  - date: 2026-11-19
+    text: "Sejm uchwalił 19 listopada nowelizację ustawy refundacyjnej (417 za, 0 przeciw, 17 wstrzymało się). Dopisane w sekcji o etapach: przy nowych programach lekowych NFZ ma podpisać umowy ze szpitalami tak, by leczenie mogło ruszyć od pierwszego dnia refundacji. Zmiana nie dotyczy limitów w umowach ani list oczekujących w działających programach. Ustawa trafi do Senatu."
 cover: ../../assets/img/programy-lekowe-stojaki-kroplowki.jpg
 coverPosition: "15% 50%"
 coverAlt: "Pięć jednakowych stojaków na kroplówki w rzędzie; tylko na najbliższym wisi worek z płynem, haki pozostałych są puste"
@@ -40,43 +43,11 @@ import NumberedList from '@/components/blocks/NumberedList.astro';
 import StatRow from '@/components/blocks/StatRow.astro';
 import { formatPL } from '@/lib/format';
 
-export const LINKS = {
-  nfzPliki: 'https://gsl.nfz.gov.pl/GSL/GSL/PlikiZDanymi',
-  mz19419: 'https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDYSHTJ/i19419-o1.pdf',
-  mz19050: 'https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDXWJCG/i19050-o1.pdf',
-  api: 'https://api.nfz.gov.pl/app-stat-api-pl/',
-  ptr: 'https://ptr.info.pl/wp-content/uploads/2026/10/PTR_Sejm_22.10.2026_Marcin-Stajszczyk_Zespol-Parlamentarny_Reumatologia.pdf',
-};
+import { LINKS, PROGRAMS, SPENDING as SPENDING_DATA, RHEUMA as RHEUMA_DATA, RHEUMA_AVERAGE } from '@/data/programy-lekowe-kolejki';
 
-{/* Pliki NFZ „Gdzie się leczyć”, stan na koniec 09.2026 (wygenerowane 15.10.2026), wiersze z kodem świadczenia 90*,
-    bez Wielospecjalistycznego Szpitala Wojewódzkiego w Gorzowie Wlkp. Średni czas ważony liczbą przyjętych. */}
-export const PROGRAMS = [
-  { label: 'Choroby siatkówki', waiting: 1009, admitted: 1428, days: 16 },
-  { label: 'Reumatoidalne i młodzieńcze idiopatyczne zapalenie stawów', waiting: 749, admitted: 152, days: 64, highlight: true },
-  { label: 'Zaburzenia lipidowe', waiting: 559, admitted: 211, days: 31 },
-  { label: 'Przewlekłe wirusowe zapalenie wątroby typu C', waiting: 545, admitted: 218, days: 42 },
-  { label: 'Stwardnienie rozsiane', waiting: 466, admitted: 216, days: 50 },
-  { label: 'Rak gruczołu krokowego', waiting: 439, admitted: 142, days: 57 },
-  { label: 'Spastyczność kończyn', waiting: 359, admitted: 98, days: 68 },
-  { label: 'Dystonie', waiting: 277, admitted: 47, days: 60 },
-  { label: 'Polipy nosa', waiting: 267, admitted: 67, days: 54 },
-  { label: 'Przewlekłe wirusowe zapalenie wątroby typu B', waiting: 264, admitted: 82, days: 61 },
-];
-
-{/* API NFZ, statystyka programów lekowych: refundacja leków w programach (zł) i liczba leczonych, pobrane 30.10.2026 */}
-export const SPENDING = [
-  [2017, 3_225_731_401, 114_647], [2018, 3_478_321_951, 127_571], [2019, 3_934_971_176, 146_438],
-  [2020, 4_436_372_198, 154_900], [2021, 5_140_241_880, 170_268], [2022, 6_484_738_288, 203_294],
-  [2023, 9_034_109_079, 243_930], [2024, 11_561_851_558, 285_795], [2025, 13_954_245_588, 329_248],
-].map(([year, refund, patients]) => ({ label: String(year), value: refund / 1e9, display: formatPL(refund / 1e9, 2), patients }));
-
-{/* PTR na podstawie SMPT, stan na 19.10.2026: zakwalifikowani w I–IX 2026, którzy nie dostali pierwszej dawki (%) */}
-export const RHEUMA = [
-  ['dolnośląskie', 57], ['kujawsko-pomorskie', 51], ['wielkopolskie', 44], ['świętokrzyskie', 38],
-  ['małopolskie', 32], ['pomorskie', 31], ['lubuskie', 23], ['łódzkie', 16], ['opolskie', 16],
-  ['podkarpackie', 12], ['mazowieckie', 11], ['śląskie', 10], ['zachodniopomorskie', 9], ['podlaskie', 7],
-  ['warmińsko-mazurskie', 3], ['lubelskie', 1],
-].map(([label, value]) => ({ label, value, display: `${value}%`, highlight: value >= 50 }));
+{/* Liczby i adresy źródeł: src/data/programy-lekowe-kolejki.ts (wspólne z tłumaczeniem) */}
+export const SPENDING = SPENDING_DATA.map((s) => ({ label: String(s.year), value: s.refund / 1e9, display: formatPL(s.refund / 1e9, 2), patients: s.patients }));
+export const RHEUMA = RHEUMA_DATA.map((r) => ({ label: r.region, value: r.share, display: `${r.share}%`, highlight: r.share >= 50 }));
 
 Program lekowy to leczenie drogim lekiem, zwykle biologicznym albo onkologicznym, które NFZ finansuje w szpitalu według ściśle opisanych kryteriów. W 2025 r. NFZ rozliczył w programach lekowych **15,53 mld zł**, a leczyło się w nich 337 571 osób.[^mz19050] Na koniec września 2026 r. szpitale zgłosiły NFZ **11 935 osób** na listach oczekujących do 141 programów.[^nfz-pliki]
 
@@ -122,7 +93,11 @@ W praktyce chory przechodzi kilka etapów, a na każdym może czekać.
   ]}
 />
 
-Czas na zawarcie umów podało ministerstwo na posiedzeniu sejmowej podkomisji.[^stenogram] Dalej w tekście chodzi o ostatni etap, bo tylko on jest mierzony co miesiąc.
+Czas na zawarcie umów podało ministerstwo na posiedzeniu sejmowej podkomisji.[^stenogram]
+
+Przy nowych programach ten drugi etap ma przestać opóźniać leczenie. 19 listopada 2026 r. Sejm uchwalił nowelizację ustawy refundacyjnej: **417 posłów było za, nikt przeciw**, 17 wstrzymało się.[^sejm-glosowanie] Gdy dla leku bez refundowanego odpowiednika tworzy się nowy program lekowy, minister będzie mógł zapowiedzieć go w wykazie refundacyjnym o jedno wydanie wcześniej, a Prezes NFZ ma w tym czasie podpisać umowy ze szpitalami tak, by leczenie mogło ruszyć **od pierwszego dnia obowiązywania decyzji o refundacji**.[^nowela] Według uzasadnienia projektu to około trzech miesięcy na zawarcie umów. Przepis ma obowiązywać od 1 stycznia 2027 r., a ustawa trafi teraz do Senatu.
+
+Zmiana dotyczy tylko nowych programów. Nie zmienia limitów w umowach ani list oczekujących w programach, które już działają. Dalej w tekście chodzi o ostatni etap, bo tylko on jest mierzony co miesiąc.
 
 ## Ilu chorych czeka
 
@@ -168,8 +143,8 @@ Lepszy obraz niż lista NFZ daje rejestr samych programów (SMPT), w którym wid
     rows={RHEUMA}
     max={60}
     unit="%"
-    average={23}
-    averageLabel="średnio w kraju 23%"
+    average={RHEUMA_AVERAGE}
+    averageLabel={`średnio w kraju ${RHEUMA_AVERAGE}%`}
     caption={`Odsetek zakwalifikowanych bez pierwszej dawki według województw: ${RHEUMA.map((r) => `${r.label} ${r.display}`).join('; ')}. Średnio w kraju 23%.`}
   />
 </Figure>
@@ -220,6 +195,8 @@ Lista oczekujących też nie mówi wszystkiego. Rzecznik Praw Obywatelskich opis
 [^ustawa]: [Ustawa z dnia 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf), Dz.U. 2025 poz. 1461: art. 15 ust. 2 pkt 15 (programy lekowe), art. 20 (listy oczekujących), art. 23 ust. 2 (publikacja przez NFZ).
 [^mz13697]: Ministerstwo Zdrowia, [odpowiedź na interpelację nr 13697](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDPMJTS/i13697-o1.pdf); to samo w [odpowiedzi na interpelację nr 14842](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDS3K98/i14842-o1.pdf).
 [^stenogram]: Sejm, Komisja Zdrowia, [Podkomisja stała do spraw organizacji ochrony zdrowia, posiedzenie 16.04.2026](https://api.sejm.gov.pl/sejm/term10/committees/ZDR01S/sittings/27/html), zapis przebiegu.
+[^sejm-glosowanie]: Sejm, [69. posiedzenie, głosowanie nr 39](https://api.sejm.gov.pl/sejm/term10/votings/69/39/pdf), 19.11.2026: głosowanie nad całością projektu ustawy o zmianie ustawy o refundacji leków, środków spożywczych specjalnego przeznaczenia żywieniowego oraz wyrobów medycznych oraz niektórych innych ustaw.
+[^nowela]: Sejm, [sprawozdanie Komisji Zdrowia, druk nr 3328](https://api.sejm.gov.pl/sejm/term10/prints/3328/3328.pdf): art. 1 pkt 7 lit. c (nowe ust. 3b i 3c w art. 11 ustawy o refundacji) i art. 22 (wejście w życie). Poprawki z drugiego czytania ([druk nr 3328-A](https://api.sejm.gov.pl/sejm/term10/prints/3328-A/3328-A.pdf)) nie zmieniły tych przepisów. Trzy miesiące: uzasadnienie projektu, [druk nr 3281](https://api.sejm.gov.pl/sejm/term10/prints/3281/3281.pdf).
 [^api-nfz]: NFZ, [statystyka programów lekowych (API)](https://api.nfz.gov.pl/app-stat-api-pl/): refundacja leków i liczba leczonych w latach 2017–2025, pobrane 30.10.2026.
 [^umowy]: NFZ, [API umów](https://api.nfz.gov.pl/app-umw-api/), umowy szpitali na 2026 r., stan na październik 2026 r.
 [^rpo]: Rzecznik Praw Obywatelskich, [posiedzenie Komisji Ekspertów do spraw Zdrowia o programach lekowych](https://bip.brpo.gov.pl/pl/content/posiedzenie-komisji-ekspertow-zdrowie-programy-lekowe), 10.06.2026, dane NFZ.

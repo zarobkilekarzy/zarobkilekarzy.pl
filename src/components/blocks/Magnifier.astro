@@ -1,0 +1,250 @@
+---
+/**
+ * Siatka „1 pole = 1 jednostka” z lupą: kilka wyróżnionych pól ginie w tysiącach pozostałych
+ * i widać je dopiero w powiększeniu. Lupę przeciąga się myszą albo palcem (mysz prowadzi ją też
+ * nad siatką), po kliknięciu przesuwa strzałkami, a przycisk sam przenosi ją na wyróżnione pola.
+ * Położenie wyróżnionych pól jest umowne — trzeba to napisać w `note` ramki Figure.
+ * Sens niesie tekst: tytuł ramki, `description` dla czytnika ekranu i legenda z dokładnymi kwotami.
+ *
+ *   <Figure title="…8 zł…" note="…Położenie 8 pól jest umowne." source={…}>
+ *     <Magnifier hit={8} legendHit="8 zł — …" legendRest="9 992 zł — …" description="…" />
+ *   </Figure>
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { typo } from '@/lib/format';
+
+interface Props extends HTMLAttributes<'div'> {
+  /** ile pól wyróżnić */
+  hit: number;
+  /** wymiary siatki; domyślnie 125 × 80 = 10 000 pól */
+  cols?: number;
+  rows?: number;
+  /** powiększenie lupy */
+  zoom?: number;
+  /** podpis nad siatką: lewa i prawa strona (np. „10 000 pól = …”, „1 pole = 1 zł”) */
+  scale: [string, string];
+  legendHit: string;
+  legendRest: string;
+  /** zachęta przed znalezieniem i komunikat po; HTML dozwolony (<strong>) */
+  prompt: string;
+  found: string;
+  button: string;
+  /** tekst lupy dla czytnika ekranu: nad wyróżnionymi polami i poza nimi */
+  lensHit: string;
+  lensRest: string;
+  lensLabel: string;
+  /** pełny opis danych dla czytnika ekranu (siatka jest obrazem) */
+  description: string;
+}
+
+const {
+  hit, cols = 125, rows = 80, zoom = 6, scale, legendHit, legendRest, prompt, found, button,
+  lensHit, lensRest, lensLabel, description, class: className, ...rest
+} = Astro.props;
+---
+<div
+  class:list={['lupa', className]}
+  data-lupa
+  data-hit={hit}
+  data-cols={cols}
+  data-rows={rows}
+  data-zoom={zoom}
+  data-lens-hit={lensHit}
+  data-lens-rest={lensRest}
+  {...rest}
+>
+  <div class="lupa__scale"><span>{typo(scale[0])}</span><span>{typo(scale[1])}</span></div>
+  <div class="lupa__stage" data-stage>
+    <canvas data-grid aria-hidden="true"></canvas>
+    <div class="lupa__handle" data-handle aria-hidden="true"></div>
+    <div class="lupa__lens" data-lens tabindex="0" role="slider" aria-label={lensLabel} aria-valuetext={lensRest}>
+      <canvas data-zoom-canvas aria-hidden="true"></canvas>
+    </div>
+    <div class="lupa__tag" data-tag aria-hidden="true">×{zoom}</div>
+  </div>
+  <div class="lupa__bar">
+    <p class="lupa__status" aria-live="polite">
+      <span data-idle set:html={typo(prompt)} />
+      <span data-found hidden set:html={typo(found)} />
+    </p>
+    <button type="button" class="lupa__btn" data-find>{typo(button)}</button>
+  </div>
+  <div class="lupa__legend">
+    <span><i class="is-hit"></i>{typo(legendHit)}</span>
+    <span><i class="is-rest"></i>{typo(legendRest)}</span>
+  </div>
+  <p class="sr-only">{typo(description)}</p>
+</div>
+
+<style>
+  /* lupa przy krawędzi wystaje poza siatkę — tniemy w poziomie, żeby telefon nie dostał przewijania w bok */
+  .lupa { container-type: inline-size; overflow-x: clip; }
+  .lupa__scale {
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 10px;
+    font: 400 0.71875rem/1.4 var(--f-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .lupa__stage { position: relative; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  .lupa__stage canvas { display: block; width: 100%; height: auto; }
+  .lupa__lens {
+    --d: 168px;
+    position: absolute; left: 0; top: 0; width: var(--d); height: var(--d);
+    margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+    border: 1px solid var(--ink); border-radius: 50%; background: var(--bg); overflow: hidden;
+    box-shadow: 0 0 0 4px var(--bg), 0 0 0 5px var(--line);
+    cursor: grab; touch-action: none; outline: none;
+  }
+  .lupa__lens:focus-visible { box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px var(--blue); }
+  .lupa__lens.is-drag { cursor: grabbing; }
+  .lupa__lens canvas { display: block; width: 100%; height: 100%; }
+  .lupa__handle {
+    position: absolute; left: 0; top: 0; width: 1px; height: 46px; background: var(--ink);
+    transform-origin: top center; pointer-events: none;
+  }
+  .lupa__tag {
+    position: absolute; left: 0; top: 0; padding: 2px 4px; background: var(--bg); pointer-events: none; white-space: nowrap;
+    font: 500 0.71875rem/1.2 var(--f-mono); color: var(--ink); text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .lupa__bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .lupa__status { margin: 0; font: 400 0.9375rem/1.5 var(--f-body); color: var(--text); }
+  .lupa__status :global(strong) { color: var(--ink); font-weight: 500; }
+  .lupa__btn {
+    padding: 8px 14px; border: 1px solid var(--ink); background: none; cursor: pointer;
+    font: 500 0.8125rem var(--f-body); color: var(--ink); transition: color .2s, border-color .2s;
+  }
+  .lupa__btn:hover { border-color: var(--blue); color: var(--blue); }
+  .lupa__legend { display: flex; gap: 8px 20px; flex-wrap: wrap; margin-top: 14px; font: 400 0.8125rem/1.4 var(--f-body); color: var(--text); }
+  .lupa__legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .lupa__legend i { display: inline-block; flex: none; width: 9px; height: 9px; }
+  .lupa__legend .is-hit { border-radius: 50%; background: var(--blue); }
+  .lupa__legend .is-rest {
+    background:
+      linear-gradient(var(--chart), var(--chart)) center / 9px 1px no-repeat,
+      linear-gradient(var(--chart), var(--chart)) center / 1px 9px no-repeat;
+  }
+  @container (max-width: 520px) { .lupa__lens { --d: 128px; } }
+</style>
+
+<script>
+  // Wyróżnione pola: prostokąt ok. 2:1 w umownym miejscu, z dala od startowej pozycji lupy.
+  const AT = { x: 0.78, y: 0.71 };
+  const HANDLE = 46;
+
+  // light-dark() nie działa w canvas — kolor odczytujemy z elementu próbnego
+  const probe = document.createElement('span');
+  probe.hidden = true;
+  document.body.append(probe);
+  const color = (token: string) => { probe.style.color = `var(${token})`; return getComputedStyle(probe).color; };
+
+  function setup(root: HTMLElement) {
+    const n = Number(root.dataset.hit), COLS = Number(root.dataset.cols), ROWS = Number(root.dataset.rows);
+    const ZOOM = Number(root.dataset.zoom);
+    const stage = root.querySelector<HTMLElement>('[data-stage]')!;
+    const grid = root.querySelector<HTMLCanvasElement>('[data-grid]')!;
+    const lens = root.querySelector<HTMLElement>('[data-lens]')!;
+    const zoom = root.querySelector<HTMLCanvasElement>('[data-zoom-canvas]')!;
+    const handle = root.querySelector<HTMLElement>('[data-handle]')!;
+    const tag = root.querySelector<HTMLElement>('[data-tag]')!;
+    const idle = root.querySelector<HTMLElement>('[data-idle]')!;
+    const done = root.querySelector<HTMLElement>('[data-found]')!;
+
+    const h = Math.max(1, Math.floor(Math.sqrt(n / 2))), w = Math.ceil(n / h);
+    const hc = Math.round((COLS - w) * AT.x), hr = Math.round((ROWS - h) * AT.y);
+    const isHit = (c: number, r: number) => {
+      const i = (r - hr) * w + (c - hc);
+      return c >= hc && c < hc + w && r >= hr && r < hr + h && i < n;
+    };
+
+    let W = 0, H = 0, cell = 0, dpr = 1, pos = { x: 0, y: 0 }, placed = false, found = false;
+
+    // fragment siatki od (ox, oy) w pikselach siatki, w skali `scale`
+    function draw(ctx: CanvasRenderingContext2D, scale: number, ox: number, oy: number, cw: number, ch: number) {
+      const off = color('--chart'), on = color('--blue');
+      const c0 = Math.max(0, Math.floor(ox / cell) - 1), c1 = Math.min(COLS, Math.ceil((ox + cw / scale) / cell) + 1);
+      const r0 = Math.max(0, Math.floor(oy / cell) - 1), r1 = Math.min(ROWS, Math.ceil((oy + ch / scale) / cell) + 1);
+      const s = cell * scale * dpr;
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.lineWidth = (scale > 1 ? 1.2 : 1) * dpr;
+      for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) {
+        const x = ((c + 0.5) * cell - ox) * scale * dpr, y = ((r + 0.5) * cell - oy) * scale * dpr;
+        if (isHit(c, r)) {
+          ctx.fillStyle = on;
+          ctx.beginPath(); ctx.arc(x, y, s * 0.36, 0, Math.PI * 2); ctx.fill();
+        } else {
+          const a = s * 0.22;
+          ctx.strokeStyle = off; ctx.globalAlpha = 0.55;
+          ctx.beginPath(); ctx.moveTo(x - a, y); ctx.lineTo(x + a, y); ctx.moveTo(x, y - a); ctx.lineTo(x, y + a); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+
+    function place(x: number, y: number) {
+      const d = lens.offsetWidth, rad = d / 2;
+      pos = { x: Math.min(Math.max(x, 0), W), y: Math.min(Math.max(y, 0), H) };
+      lens.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+      // rączka ukośnie w dół w prawo; przy dolnej krawędzi — w górę
+      const ang = pos.y + rad + HANDLE > H + 40 ? -135 : -45;
+      const rot = ((ang + 90) * Math.PI) / 180;
+      handle.style.transform = `translate(${pos.x + Math.cos(rot) * rad}px, ${pos.y + Math.sin(rot) * rad}px) rotate(${ang}deg)`;
+      tag.style.transform = `translate(${pos.x - rad}px, ${pos.y - rad - 22}px)`;
+      draw(zoom.getContext('2d')!, ZOOM, pos.x - rad / ZOOM, pos.y - rad / ZOOM, d, d);
+      const cx = (hc + w / 2) * cell, cy = (hr + h / 2) * cell;
+      const inside = Math.hypot(pos.x - cx, pos.y - cy) < (rad / ZOOM) * 0.9;
+      lens.setAttribute('aria-valuetext', (inside ? root.dataset.lensHit : root.dataset.lensRest) ?? '');
+      if (inside && !found) { found = true; idle.hidden = true; done.hidden = false; }
+    }
+
+    function layout() {
+      dpr = window.devicePixelRatio || 1;
+      W = stage.clientWidth; cell = W / COLS; H = cell * ROWS;
+      if (!W) return;
+      grid.width = W * dpr; grid.height = H * dpr; grid.style.height = `${H}px`;
+      draw(grid.getContext('2d')!, 1, 0, 0, W, H);
+      const d = lens.offsetWidth;
+      zoom.width = d * dpr; zoom.height = d * dpr;
+      if (!placed) { pos = { x: W * 0.3, y: H * 0.45 }; placed = true; }
+      place(pos.x, pos.y);
+    }
+
+    let drag: { dx: number; dy: number } | null = null;
+    lens.addEventListener('pointerdown', (e) => {
+      lens.setPointerCapture(e.pointerId); lens.classList.add('is-drag');
+      drag = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
+      e.preventDefault();
+    });
+    lens.addEventListener('pointermove', (e) => { if (drag) place(e.clientX - drag.dx, e.clientY - drag.dy); });
+    const stop = () => { drag = null; lens.classList.remove('is-drag'); };
+    lens.addEventListener('pointerup', stop);
+    lens.addEventListener('pointercancel', stop);
+    // na komputerze lupa idzie też za kursorem nad siatką
+    stage.addEventListener('pointermove', (e) => {
+      if (drag || e.pointerType !== 'mouse') return;
+      const r = stage.getBoundingClientRect();
+      place(e.clientX - r.left, e.clientY - r.top);
+    });
+    lens.addEventListener('keydown', (e) => {
+      const step = cell * (e.shiftKey ? 10 : 2);
+      const k = ({ ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] } as Record<string, number[]>)[e.key];
+      if (k) { e.preventDefault(); place(pos.x + k[0], pos.y + k[1]); }
+    });
+    root.querySelector('[data-find]')!.addEventListener('click', () => {
+      const tx = (hc + w / 2) * cell, ty = (hr + h / 2) * cell;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return place(tx, ty);
+      const sx = pos.x, sy = pos.y, t0 = performance.now();
+      const step = (t: number) => {
+        const k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 3);
+        place(sx + (tx - sx) * e, sy + (ty - sy) * e);
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+
+    new ResizeObserver(layout).observe(stage);
+    // przełącznik trybu nocnego zmienia <html data-theme>; system — prefers-color-scheme
+    new MutationObserver(layout).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', layout);
+    document.fonts?.ready.then(layout);
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-lupa]').forEach(setup);
+</script>

@@ -3,6 +3,9 @@
  * Rząd dużych liczb z opisem, etykietą dokładności i źródłem.
  * Liczba kolumn zależy od szerokości KONTENERA (container queries), więc ten sam
  * blok działa na całą szerokość strony i w wąskiej kolumnie artykułu.
+ * Wiersze zawsze są pełne: 3 liczby idą w 3 kolumny albo jedna pod drugą, nigdy 2 + 1
+ * (sierota z pustą komórką i urwaną linią). Etykieta dokładności stoi nad źródłem,
+ * a strzałka linku jest sklejona z ostatnim słowem, więc nie odjeżdża przy zawijaniu.
  * Źródło z `href` jest linkiem do publikacji.
  */
 import type { HTMLAttributes } from 'astro/types';
@@ -19,9 +22,15 @@ interface Props extends HTMLAttributes<'div'> {
 }
 
 const { items, label, class: className, ...rest } = Astro.props;
+
+/** Ostatnie słowo osobno, żeby strzałka linku nie zawijała się sama do nowej linii. */
+const splitLast = (text: string) => {
+  const i = text.lastIndexOf(' ');
+  return i < 0 ? ['', text] : [text.slice(0, i + 1), text.slice(i + 1)];
+};
 ---
 <div class:list={['stats-wrap', className]} {...rest}>
-  <div class="stats" style={`--n: ${items.length}`} aria-label={label}>
+  <div class="stats" style={`--n: ${items.length}`} data-n={items.length} aria-label={label}>
     {items.map((s) => (
       <div class="stat">
         <p class="stat__value">
@@ -30,12 +39,15 @@ const { items, label, class: className, ...rest } = Astro.props;
           <small>{typo(s.unit)}</small>
         </p>
         <p class="stat__desc">{typo(s.desc)}</p>
-        <p class="stat__src">
+        <div class="stat__src">
           <Flag accuracy={s.accuracy} />
           {s.href
-            ? <a {...linkAttrs(s.href)}>{typo(s.source)}<Icon name="arrow-ne" size={10} /></a>
-            : typo(s.source)}
-        </p>
+            ? (() => {
+                const [head, last] = splitLast(typo(s.source));
+                return <a {...linkAttrs(s.href)}>{head}<span class="stat__last">{last}<Icon name="arrow-ne" size={10} /></span></a>;
+              })()
+            : <span>{typo(s.source)}</span>}
+        </div>
       </div>
     ))}
   </div>
@@ -44,7 +56,7 @@ const { items, label, class: className, ...rest } = Astro.props;
 <style>
   .stats-wrap { container-type: inline-size; }
   .stats { display: grid; grid-template-columns: repeat(var(--n), 1fr); border-top: 1px solid var(--line); }
-  .stat { padding: 32px 28px 8px; border-left: 1px solid var(--line); }
+  .stat { display: flex; flex-direction: column; padding: 32px 28px 8px; border-left: 1px solid var(--line); }
   .stat:first-child { border-left: 0; padding-left: 0; }
   .stat__value {
     display: flex; align-items: baseline; gap: 6px;
@@ -56,20 +68,36 @@ const { items, label, class: className, ...rest } = Astro.props;
   .stat__prefix { color: var(--muted); margin-right: -4px; }
   .stat__value small { font: 400 1rem/1 var(--f-body); letter-spacing: 0; color: var(--text); }
   .stat__desc { margin-top: 16px; font-size: 0.90625rem; line-height: 1.55; max-width: 28ch; }
-  .stat__src { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 18px; font: 400 0.71875rem/1.3 var(--f-mono); color: var(--muted); }
-  .stat__src a { display: inline-flex; align-items: center; gap: 4px; color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s; }
+  /* Źródło na dole karty: w jednym wierszu źródła stoją na tej samej wysokości. */
+  .stat__src { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: auto; padding-top: 18px; font: 400 0.71875rem/1.45 var(--f-mono); color: var(--muted); }
+  .stat__src a { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; transition: color .2s, text-decoration-color .2s; }
   .stat__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .stat__last { white-space: nowrap; }
+  /* Icon ma domyślnie display: block — w linku musi płynąć z tekstem. */
+  .stat__last :global(.icon) { display: inline-block; margin-left: 4px; vertical-align: 0; }
 
+  /* 4 → 2 × 2. Trzech nie dzielimy na 2 + 1: zostają w trzech kolumnach. */
   @container (max-width: 980px) {
-    .stats { grid-template-columns: repeat(2, 1fr); }
-    .stat:nth-child(odd) { border-left: 0; padding-left: 0; }
-    .stat:nth-child(n+3) { border-top: 1px solid var(--line); }
-    .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .stats:not([data-n="3"]) { grid-template-columns: repeat(2, 1fr); }
+    .stats:not([data-n="3"]) .stat:nth-child(odd) { border-left: 0; padding-left: 0; }
+    .stats:not([data-n="3"]) .stat:nth-child(n+3) { border-top: 1px solid var(--line); }
+    /* nieparzysta liczba > 3: ostatnia karta na całą szerokość zamiast pustej komórki */
+    .stats:not([data-n="3"]) .stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .stats[data-n="3"] .stat { padding-right: 20px; padding-left: 20px; }
+    .stats[data-n="3"] .stat:first-child { padding-left: 0; }
+    .stats[data-n="3"] .stat:last-child { padding-right: 0; }
+  }
+
+  /* Za wąsko na trzy kolumny: jedna pod drugą. */
+  @container (max-width: 680px) {
+    .stats[data-n="3"] { grid-template-columns: 1fr; }
+    .stats[data-n="3"] .stat { border-left: 0; padding: 26px 0 6px; }
+    .stats[data-n="3"] .stat + .stat { border-top: 1px solid var(--line); }
   }
 
   @container (max-width: 520px) {
-    .stats { grid-template-columns: 1fr; }
-    .stat, .stat:nth-child(n) { border-left: 0; padding: 26px 0 6px; }
+    .stats, .stats[data-n] { grid-template-columns: 1fr; }
+    .stat, .stat:nth-child(n), .stats[data-n] .stat { border-left: 0; padding: 26px 0 6px; grid-column: auto; }
     .stat + .stat { border-top: 1px solid var(--line); }
   }
 </style>

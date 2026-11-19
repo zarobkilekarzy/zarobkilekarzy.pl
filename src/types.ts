@@ -323,6 +323,8 @@ export interface OgPage extends OgOverride {
   cover?: OgCover;
   /** pieczątki w miejscu zdjęcia, jak ui/Stamp (np. kary sądów lekarskich): jedna duża albo kilka jedna pod drugą */
   stamps?: OgStamp[];
+  /** siatka flag w miejscu zdjęcia (hub krajów): kody plików z components/ui/flags, najwyżej 15 (3 × 5) */
+  flags?: string[];
   /** ostatnie słowo tytułu zaczernione, na pasku podany identyfikator (postulat: pseudonim zamiast nazwiska); tytuł na całą szerokość */
   redact?: string;
   /**

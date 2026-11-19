@@ -417,6 +417,27 @@ const panels = (m: Extract<OgMedia, { kind: 'panels' }>) =>
  */
 const LOGO_AREA = 63000;
 const LOGO_MAX_W = 380;
+/* Flagi krajów (hub /kraje/): siatka 3 × 5 w kolumnie mediów, każda 4:3 z cienkim obrysem jak ui/CountryFlag. */
+const FLAG_FILES = import.meta.glob<string>('/src/components/ui/flags/*.svg', { query: '?raw', import: 'default', eager: true });
+const FLAG_W = 120;
+const FLAG_H = 90;
+const FLAG_GAP = 16;
+
+async function flags(m: Extract<OgMedia, { kind: 'flags' }>) {
+  const tiles = await Promise.all(
+    m.flags.slice(0, 15).map(async (code) => {
+      const svg = FLAG_FILES[`/src/components/ui/flags/${code}.svg`];
+      if (!svg) throw new Error(`[og] brak flagi src/components/ui/flags/${code}.svg`);
+      // SVG rasteryzujemy dwa razy gęściej niż kafel, żeby krawędzie pasów były ostre
+      const buf = await sharp(Buffer.from(svg), { density: 300 }).resize((FLAG_W - 2) * 2, (FLAG_H - 2) * 2, { fit: 'fill' }).png().toBuffer();
+      return h('div', { style: { width: FLAG_W, height: FLAG_H, border: `1px solid ${C.line}` } },
+        h('img', { src: `data:image/png;base64,${buf.toString('base64')}`, width: FLAG_W - 2, height: FLAG_H - 2 }));
+    }),
+  );
+  return h('div', { style: { flexShrink: 0, width: MEDIA_W, height: MEDIA_H, alignItems: 'center', justifyContent: 'center' } },
+    h('div', { style: { flexWrap: 'wrap', width: 3 * FLAG_W + 2 * FLAG_GAP, gap: FLAG_GAP } }, ...tiles));
+}
+
 const LOGO_MAX_H = 220;
 
 /** Logo partii o zadanej powierzchni, w ramce maxW × maxH. */
@@ -612,7 +633,7 @@ async function layout(spec: OgSpec, route: string): Promise<Node> {
           ...titleLines(title.includes('\n') ? title : breakTitle(title, size, wide ? WIDE_W : TEXT_W), spec.redact)),
         showLead && h('div', { style: { marginTop: 24, maxWidth: wide ? 820 : '100%', fontSize: 21, lineHeight: 1.5 } }, noWidow(typo(spec.lead!)))),
       spec.footer && footer(spec.footer, wide, spec.locale)),
-    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat, spec.locale) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : spec.media.kind === 'dots' ? dots(spec.media) : spec.media.kind === 'stamps' ? stamps(spec.media) : null);
+    spec.media.kind === 'photo' ? await photo(spec.media) : spec.media.kind === 'stat' ? stat(spec.media.stat, spec.locale) : spec.media.kind === 'map' ? map(spec.media) : spec.media.kind === 'bars' ? bars(spec.media) : spec.media.kind === 'panels' ? panels(spec.media) : spec.media.kind === 'logo' ? await partyLogo(spec.media) : spec.media.kind === 'dots' ? dots(spec.media) : spec.media.kind === 'stamps' ? stamps(spec.media) : spec.media.kind === 'flags' ? await flags(spec.media) : null);
 }
 
 /** PNG 1200×630 z paletą 8-bit: zdjęcia B&W + kolory marki mieszczą się w niej bez widocznej straty. */

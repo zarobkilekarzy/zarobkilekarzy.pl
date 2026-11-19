@@ -325,6 +325,8 @@ export const ogPages: Record<string, OgPage> = {
     title: 'Ochrona zdrowia\nw innych krajach',
     lead: 'Koszt, model ubezpieczenia, zarobki lekarzy, dostęp i jawność — tymi samymi miarami, obok Polski.',
     footer: { text: 'Eurostat, OECD i źródła krajowe' },
+    // Polska i 14 krajów z opisem w hubie, alfabetycznie po polsku (siatka 3 × 5)
+    flags: ['pl', 'at', 'be', 'cz', 'dk', 'fr', 'es', 'nl', 'ca', 'de', 'se', 'us', 'hu', 'gb', 'it'],
   },
   '/ustawy/': {
     eyebrow: 'Przepisy',

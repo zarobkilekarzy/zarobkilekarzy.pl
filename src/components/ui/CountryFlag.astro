@@ -1,0 +1,27 @@
+---
+/**
+ * Flaga kraju (proporcje 4:3) z plików SVG leżących obok komponentu (`ui/flags/<kod>.svg`, źródło i licencja:
+ * `flags/README.md`), wstawiana jako obrazek `data:` — bez sieci i bez kolizji identyfikatorów wewnątrz SVG,
+ * gdy ta sama flaga stoi na stronie kilka razy. Pliki są małe (do kilku KB); ciężką flagę trzeba uprościć.
+ * Dekoracja (`alt=""`): nazwa kraju zawsze stoi obok. `code` = kod ISO 3166-1 alfa-2 („be”, „fr”; Unia: „eu”).
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'img'> {
+  code: string;
+  /** szerokość w px; wysokość wynika z proporcji 4:3 */
+  size?: number;
+}
+
+const flags = import.meta.glob<string>('./flags/*.svg', { query: '?raw', import: 'default', eager: true });
+const { code, size = 20, class: className, ...rest } = Astro.props;
+const svg = flags[`./flags/${code.toLowerCase()}.svg`];
+if (!svg) throw new Error(`CountryFlag: brak pliku src/components/ui/flags/${code.toLowerCase()}.svg`);
+const src = `data:image/svg+xml,${encodeURIComponent(svg.replace(/\s+/g, ' ').trim())}`;
+---
+<img class:list={['cflag', className]} src={src} alt="" width={size} height={Math.round(size * 0.75)} decoding="async" {...rest} />
+
+<style>
+  /* obrys, żeby białe pola flagi nie zlewały się z jasnym tłem */
+  .cflag { display: inline-block; flex: none; border-radius: 2px; box-shadow: 0 0 0 1px var(--line-2); vertical-align: -0.12em; }
+</style>

@@ -161,6 +161,8 @@ export function plainText(article: Text): string {
     .replace(FOOTNOTE_DEF, ' ')
     .replace(/\[\^[^\]]+\]/g, '')
     .replace(/^(?:import|export)\s.*$/gm, ' ')
+    // przeliczenie na złote (ui/Pln) nie ma tekstu w źródle — jego atrybut to kod waluty, nie treść
+    .replace(/<Pln\b[^>]*\/>/g, ' ')
     .replace(/<\/?[A-Za-z][^>]*>/g, (tag) => (tag.match(/"[^"]*"/g) ?? []).join(' '))
     .replace(/\]\([^)]*\)/g, ']')
     .replace(/https?:\/\/\S+/g, ' ');

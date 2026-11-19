@@ -1,0 +1,69 @@
+---
+/**
+ * Siatka krajów na stronie /kraje/: kafel = flaga, nazwa, rodzaj tekstu, jedno zdanie o systemie i dwie liczby.
+ * Układ sam dobiera liczbę kolumn, więc kolejny kraj to kolejny kafel, a nie kolejny ekran przewijania.
+ * Cały kafel jest linkiem do tekstu o kraju.
+ */
+import CountryFlag from '@/components/ui/CountryFlag.astro';
+import Icon from '@/components/ui/Icon.astro';
+import Tag from '@/components/ui/Tag.astro';
+import { typo } from '@/lib/format';
+
+interface Item {
+  flag: string;
+  name: string;
+  href: string;
+  /** rodzaj tekstu: „Opis systemu”, „Szkic”, „W porównaniu płac” */
+  tag: string;
+  text: string;
+  /** najwyżej dwie liczby; kraj bez wspólnych miar nie ma żadnej */
+  stats: { value: string; label: string }[];
+}
+
+interface Props {
+  items: Item[];
+}
+
+const { items } = Astro.props;
+---
+<ul class="cgrid">
+  {items.map((c) => (
+    <li>
+      <a class="ctile" href={c.href}>
+        <span class="ctile__head">
+          <CountryFlag code={c.flag} size={28} />
+          <h3 class="ctile__name">{c.name}</h3>
+          <Icon name="arrow-ne" class="ctile__arrow" />
+        </span>
+        <Tag>{c.tag}</Tag>
+        <span class="ctile__text">{typo(c.text)}</span>
+        {c.stats.length > 0 && (
+          <span class="ctile__stats">
+            {c.stats.map((s) => (
+              <span><b>{s.value}</b><small>{typo(s.label)}</small></span>
+            ))}
+          </span>
+        )}
+      </a>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ink); border-left: 1px solid var(--line); }
+  .cgrid > li { margin: 0; padding: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .cgrid > li::before { content: none; }
+  .ctile { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; height: 100%; padding: 22px 22px 20px; color: inherit; text-decoration: none; transition: background-color .2s; }
+  .ctile:hover { background: var(--surface); }
+  .ctile:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .ctile__head { display: flex; align-items: center; gap: 12px; width: 100%; }
+  .ctile__name { flex: 1; font: 500 1.3125rem/1.2 var(--f-display); letter-spacing: -0.02em; color: var(--ink); transition: color .2s; }
+  .ctile__arrow { color: var(--line-2); transition: color .2s, transform .3s var(--ease); }
+  .ctile:hover .ctile__name { color: var(--blue); }
+  .ctile:hover .ctile__arrow { color: var(--blue); transform: translate(2px, -2px); }
+  .ctile__text { font-size: 0.90625rem; line-height: 1.5; color: var(--text); }
+  .ctile__stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
+  .ctile__stats span { display: grid; gap: 4px; }
+  .ctile__stats b { font: 300 1.5rem/1 var(--f-display); letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .ctile__stats small { font: 400 0.6875rem/1.35 var(--f-mono); color: var(--muted); }
+</style>

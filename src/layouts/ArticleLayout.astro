@@ -27,6 +27,7 @@ import PostulatCta from '@/components/site/PostulatCta.astro';
 import { articleHref, getFootnotes, getRelated, readingMinutes, sectionOf, type Article } from '@/lib/content';
 import { datasetFiles } from '@/lib/media/dane';
 import { mainNav } from '@/data/navigation';
+import { hubOf } from '@/lib/hubs';
 import { formatDateIn, typo } from '@/lib/format';
 import { infographicSets } from '@/lib/infografiki/zestawy';
 import { infographicSetsEn } from '@/lib/infografiki/zestawy-en';
@@ -72,7 +73,9 @@ const url = new URL(Astro.url.pathname, Astro.site).href;
 // zawsze — o tym, czy jest, decyduje dopiero wyrenderowana treść.
 const aside = Astro.slots.has('aside') ? (await Astro.slots.render('aside')).trim() : '';
 
-const crumbs: Crumb[] = [{ label: t.nav.home, href: t.nav.homeHref }, { label: section.label, href: sectionHref }, { label: title }];
+// Artykuł z hubu (kraje, ustawy) wraca okruszkiem do hubu, nie do działu; huby są polskie, więc tłumaczenie zostaje przy dziale
+const hub = en ? undefined : hubOf(source.id, source.data.noindex);
+const crumbs: Crumb[] = [{ label: t.nav.home, href: t.nav.homeHref }, hub ? { label: hub.label, href: hub.href } : { label: section.label, href: sectionHref }, { label: title }];
 const citations = footnotes.urls;
 
 // Zestawienia działu Dane to zarazem zbiory danych (schema.org/Dataset) — jak na dotychczasowej stronie. Strona,

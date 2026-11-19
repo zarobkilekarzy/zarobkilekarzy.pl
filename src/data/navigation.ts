@@ -60,6 +60,7 @@ export const footerNav: NavGroup[] = [
       { label: 'Dla pacjenta', href: '/dla-pacjenta/' },
       { label: 'Ile i za co płacimy', href: '/ile-placimy/' },
       { label: 'Droga do zawodu', href: '/droga-do-zawodu/' },
+      { label: 'Inne kraje', href: '/kraje/' },
       { label: 'Słownik pojęć', href: '/slownik/' },
     ],
   },

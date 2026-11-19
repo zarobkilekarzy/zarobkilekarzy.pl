@@ -1,0 +1,146 @@
+---
+/**
+ * /kraje/ — hub „Ochrona zdrowia w innych krajach” (przygotowany do publikacji 19.11.2026; link w stopce, bez pozycji w menu głównym).
+ * Wszystkie liczby z src/data/kraje.ts (jedna definicja, jeden zbiór i rok dla wszystkich krajów).
+ * Układ pod wiele krajów: siatka kafli (kraj = kafel), jeden wykres rozrzutu (kraj = kropka) i jedna tabela (kraj = wiersz).
+ * Przy publikacji: `index` do usunięcia, menu i `searchExtras` w src/data/navigation.ts, obrazek OG w src/data/og.ts.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import JumpList from '@/components/blocks/JumpList.astro';
+import ArticleTable from '@/components/blocks/ArticleTable.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import SpreadRows from '@/components/blocks/SpreadRows.astro';
+import CountryGrid from '@/components/kraje/CountryGrid.astro';
+import { COUNTRIES, METRICS, TOPIC_TEXTS, countryTable, formatMetric, metricValue, opennessOf, spreadRow, type CountryCode, type MetricKey } from '@/data/kraje';
+import type { Entry } from '@/i18n/entries';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { typo } from '@/lib/format';
+
+const title = 'Ochrona zdrowia w innych krajach';
+const lead = 'Jak inne kraje płacą za leczenie, ile to kosztuje, ile zarabiają lekarze i co o tych pieniądzach wiadomo publicznie. Każdy kraj opisujemy według tego samego schematu i tych samych miar — obok Polski.';
+
+// kraje z tekstem (kafle) i kraje z liczbami (wykres, tabela); Polska jest punktem odniesienia, Unia — średnią
+const described = COUNTRIES.filter((c) => c.text);
+const measured = COUNTRIES.filter((c) => c.code !== 'EU' && metricValue(c.code, 'healthGdp'));
+const TABLE: CountryCode[] = [...measured.map((c) => c.code), 'EU'];
+
+const TAG = { profil: 'Opis systemu', porównanie: 'W porównaniu płac' } as const;
+const tiles = described.map((c) => ({
+  flag: c.flag,
+  name: c.name,
+  href: c.text!.href,
+  tag: c.text!.draft ? 'Szkic' : TAG[c.text!.kind],
+  text: c.model ?? '',
+  stats: metricValue(c.code, 'healthGdp')
+    ? [
+        { value: formatMetric(c.code, 'healthGdp'), label: 'PKB na zdrowie' },
+        { value: formatMetric(c.code, 'oopShare'), label: 'z kieszeni pacjenta' },
+      ]
+    : [],
+}));
+const topics: Entry[] = TOPIC_TEXTS.map((t) => ({ id: t.href, href: t.href, title: t.title, summary: t.summary, category: 'Analiza', format: t.name }));
+
+// wykres: po jednej–dwóch miarach z każdego koszyka; koniec skali dobrany do najwyższej wartości (skala od zera)
+const SPREAD: { key: MetricKey; bucket: string }[] = [
+  { key: 'healthGdp', bucket: 'Koszt' },
+  { key: 'oopShare', bucket: 'Koszt' },
+  { key: 'doctors', bucket: 'Kadry' },
+  { key: 'paySpecialistSalaried', bucket: 'Zarobki' },
+  { key: 'unmet', bucket: 'Dostęp' },
+  { key: 'satOecd', bucket: 'Zadowolenie' },
+  { key: 'treatable', bucket: 'Skuteczność leczenia' },
+];
+const spreadRows = SPREAD.map(({ key, bucket }) => {
+  const row = spreadRow(key, METRICS[key].max);
+  return { ...row, label: `${bucket} — ${METRICS[key].label.replace(/ \((OECD|STADA|Ipsos|Eurostat).*\)$/, '')}`, note: row.note ?? 'lata 2022–2024' };
+});
+const spreadKeys = SPREAD.map((m) => m.key);
+const spreadCaption = `Polska na tle ${measured.length - 1} krajów w ${SPREAD.length} miarach. ${spreadKeys
+  .map((k) => `${METRICS[k].label}: ${measured.map((c) => `${c.name} ${formatMetric(c.code, k)}`).join('; ')}`)
+  .join('. ')}.`;
+
+const sourcesOf = (keys: MetricKey[]) => [...new Map(keys.map((k) => [METRICS[k].source.href, { ...METRICS[k].source, label: METRICS[k].source.label.replace(/ \(HF\d\)$/, '') }])).values()];
+const guardrails = spreadKeys.filter((k) => METRICS[k].guardrail).map((k) => ({ label: METRICS[k].short, text: METRICS[k].guardrail! }));
+
+const openness = {
+  caption: 'Model systemu i jawność pieniędzy w krajach z tej strony',
+  columns: ['', 'Jak działa system', 'Co jest jawne'],
+  rows: COUNTRIES.filter((c) => c.code !== 'EU').map((c) => ({ cells: [c.name, c.model ?? '—', opennessOf(c.code) ?? '—'], marked: c.code === 'PL' })),
+};
+
+const jump = [
+  { label: 'Kraje', href: '#kraje', count: tiles.length },
+  { label: 'Polska na tle innych krajów', href: '#porownanie' },
+  { label: 'Liczby w tabeli', href: '#tabela' },
+  { label: 'Co jest jawne', href: '#jawnosc' },
+  { label: 'Jak czytać te liczby', href: '#metoda' },
+];
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Kraje' }];
+const seo: SeoInput = { title, description: 'Systemy ochrony zdrowia innych krajów obok Polski: koszt, model ubezpieczenia, zarobki lekarzy, dostęp i jawność — tymi samymi miarami.', breadcrumbs: crumbs };
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="kr-top">
+    <PageHeader title={title} lead={lead} eyebrow="Polska na tle innych krajów" crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Kraje', value: tiles.length },
+          { label: 'Wspólne miary', value: SPREAD.length },
+          { label: 'Dane za', value: '2023–2025' },
+        ]}
+      />
+      <JumpList slot="aside" title="Na tej stronie" items={jump} />
+    </PageHeader>
+  </Section>
+
+  <Section id="kraje" space="bottom" aria-labelledby="kraje-title">
+    <SectionHead eyebrow="Kraje" title="Wybierz kraj" id="kraje-title" aside="Opis systemu ma zawsze ten sam układ: płatnik, koszt, rozliczenia, dopłaty pacjenta, zarobki lekarzy, jawność, kadry, dostęp i wyniki." />
+    <CountryGrid items={tiles} />
+    <h3 class="kr-sub">Porównania i inne teksty</h3>
+    <ArticleTable articles={topics} />
+  </Section>
+
+  <Section id="porownanie" tone="soft" aria-labelledby="porownanie-title">
+    <SectionHead eyebrow="Porównanie" title="Polska na tle innych krajów" id="porownanie-title" aside="Każdy wiersz to jedna miara, każda kropka to jeden kraj. Z listy nad wykresem wybierz kraj, który chcesz zobaczyć obok Polski." />
+    <Figure note="Każdy wiersz ma własną skalę, zawsze od zera. Kreska to średnia Unii Europejskiej, jeśli źródło ją podaje." source={sourcesOf(spreadKeys)}>
+      <SpreadRows rows={spreadRows} unit="" subject="Polska" dotLabel="inny kraj" averageLabel="średnia UE"
+        pick={{ label: 'Porównaj z krajem:', none: 'wybierz kraj', absent: 'brak danych dla tego kraju' }} caption={spreadCaption} />
+    </Figure>
+  </Section>
+
+  <Section id="tabela" aria-labelledby="tabela-title">
+    <SectionHead eyebrow="Dane" title="Liczby w tabeli" id="tabela-title" aside="Te same miary co na wykresie, kraj w wierszu. Przy zarobkach rok danych stoi obok wartości, bo OECD podaje różne lata." />
+    <Comparison table={countryTable('Kraje i wspólne miary', TABLE, spreadKeys)} style="--cmp-th: 12%" />
+  </Section>
+
+  <Section id="jawnosc" tone="soft" aria-labelledby="jawnosc-title">
+    <SectionHead eyebrow="Jawność" title="Co wiadomo o pieniądzach" id="jawnosc-title" aside="Kraje różnią się tym, jak blisko podchodzą do odpowiedzi na pytanie, ile publicznych pieniędzy dostała łącznie jedna osoba." />
+    <Comparison table={openness} style="--cmp-th: 14%" />
+  </Section>
+
+  <Section id="metoda" aria-labelledby="metoda-title">
+    <SectionHead eyebrow="Metoda" title="Jak czytać te liczby" id="metoda-title" aside="Każda miara pochodzi z jednego zbioru i jednego roku dla wszystkich krajów. „Brak danych” znaczy, że źródło nie podaje wartości — nie zero." />
+    <dl class="kr-notes">
+      {guardrails.map((g) => (
+        <div>
+          <dt>{g.label}</dt>
+          <dd>{typo(g.text)}</dd>
+        </div>
+      ))}
+    </dl>
+  </Section>
+</BaseLayout>
+
+<style>
+  .kr-top { padding-top: clamp(32px, 4vw, 56px); }
+  .kr-sub { margin: clamp(48px, 5vw, 72px) 0 16px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .kr-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px 48px; }
+  .kr-notes div { padding-top: 14px; border-top: 1px solid var(--line-2); }
+  .kr-notes dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .kr-notes dd { margin-top: 8px; font-size: 0.9375rem; line-height: 1.6; color: var(--ink-2); }
+</style>

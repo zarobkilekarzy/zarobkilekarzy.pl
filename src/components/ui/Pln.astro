@@ -1,0 +1,21 @@
+---
+/**
+ * Przybliżenie w złotych kwoty w obcej walucie, po kursie średnim NBP z buildu (src/lib/pln.ts) — liczba idzie
+ * za kursem, nie jest wpisana na stałe. Kwotę w walucie źródła autor pisze sam (odmiana: „koron”, „forintów”).
+ *
+ *   275 koron (<Pln value={275} from="SEK" />)        → 275 koron (ok. 109 zł)
+ *   <Pln rate={['SEK', 'EUR']} />                      → zdanie o kursie do sekcji „Metoda”
+ */
+import { getRates } from '@/i18n/rates';
+import { plnApprox, rateLine } from '@/lib/pln';
+
+type Props = { value: number; from: string } | { rate: string[] };
+
+const props = Astro.props;
+const rates = await getRates();
+---
+{'rate' in props ? rateLine(props.rate, rates) : <span class="pln">{plnApprox(props.value, props.from, rates)}</span>}
+
+<style>
+  .pln { font-variant-numeric: tabular-nums; }
+</style>

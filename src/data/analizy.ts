@@ -28,6 +28,6 @@ export const analysisTopics: Record<(typeof ANALYSIS_TOPICS)[number], TopicInfo>
   },
   porownania: {
     label: 'Polska na tle innych krajów',
-    lead: 'Jak płacą lekarzom i co publikują inne systemy — sąsiedzi, Tajwan, Kanada — i co z tego wynika dla Polski.',
+    lead: 'Jak płacą lekarzom i co publikują inne systemy — i co z tego wynika dla Polski. Każdy kraj opisujemy według tego samego schematu.',
   },
 };

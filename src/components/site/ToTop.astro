@@ -1,0 +1,102 @@
+---
+/**
+ * „Przewiń do góry” — stały przycisk w prawym dolnym rogu każdej strony (BaseLayout).
+ * Pojawia się po przewinięciu o ponad 1,5 wysokości okna: pilnuje tego IntersectionObserver na wartowniku
+ * u góry dokumentu (rootMargin), nie nasłuch przewijania. Na telefonie widać go tylko przy przewijaniu
+ * w górę, żeby przy czytaniu nie zasłaniał tekstu — kierunek podaje pasywny nasłuch, włączony dopiero za progiem.
+ * Po kliknięciu fokus trafia na początek treści (<main>, cel linku „Przejdź do treści”). Bez JS przycisku nie ma.
+ */
+import Icon from '@/components/ui/Icon.astro';
+import { uiOf } from '@/i18n/ui';
+
+const t = uiOf(Astro.url);
+---
+<span class="totop-sentinel" data-totop-sentinel aria-hidden="true"></span>
+<zl-to-top>
+  <button type="button" class="totop" aria-label={t.nav.toTop} title={t.nav.toTop}>
+    <Icon name="arrow" size={20} class="totop__icon" />
+  </button>
+</zl-to-top>
+
+<script>
+  class ZlToTop extends HTMLElement {
+    #lastY = 0;
+
+    connectedCallback() {
+      const sentinel = document.querySelector<HTMLElement>('[data-totop-sentinel]');
+      if (!sentinel || !('IntersectionObserver' in window)) return;
+
+      // Kierunek przewijania (dla telefonu): porównanie dwóch liczb, z progiem 8 px przeciw drganiom
+      const onScroll = () => {
+        const y = scrollY;
+        if (Math.abs(y - this.#lastY) < 8) return;
+        this.toggleAttribute('data-up', y < this.#lastY);
+        this.#lastY = y;
+      };
+
+      // Wartownik stoi na samej górze dokumentu; okno obserwatora sięga 1,5 ekranu ponad widok
+      new IntersectionObserver(([entry]) => {
+        const shown = !entry.isIntersecting;
+        this.toggleAttribute('data-shown', shown);
+        if (shown) {
+          this.#lastY = scrollY;
+          addEventListener('scroll', onScroll, { passive: true });
+        } else {
+          removeEventListener('scroll', onScroll);
+          this.removeAttribute('data-up');
+        }
+      }, { rootMargin: '150% 0px 0px 0px' }).observe(sentinel);
+
+      this.querySelector('button')!.addEventListener('click', () => {
+        const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
+        // Fokus na początek treści — przycisk zaraz zniknie, a Tab ma prowadzić dalej od góry strony
+        const main = document.querySelector<HTMLElement>('main');
+        if (!main) return;
+        main.tabIndex = -1;
+        main.focus({ preventScroll: true });
+        main.addEventListener('blur', () => main.removeAttribute('tabindex'), { once: true });
+      });
+    }
+  }
+  if (!customElements.get('zl-to-top')) customElements.define('zl-to-top', ZlToTop);
+</script>
+
+<style>
+  /* Punkt 1×1 px na górze dokumentu, poza układem */
+  .totop-sentinel { position: absolute; top: 0; left: 0; width: 1px; height: 1px; pointer-events: none; }
+
+  /* Pod przyklejonym nagłówkiem (40) i paskiem zaznaczenia (60); position: fixed — bez wpływu na układ */
+  zl-to-top {
+    position: fixed; z-index: 30; right: 24px; bottom: max(24px, env(safe-area-inset-bottom));
+    visibility: hidden; opacity: 0; translate: 0 8px;
+    transition: opacity .2s var(--ease), translate .2s var(--ease), visibility 0s .2s;
+  }
+  zl-to-top[data-shown] { visibility: visible; opacity: 1; translate: 0 0; transition: opacity .2s var(--ease), translate .2s var(--ease); }
+
+  .totop {
+    display: grid; place-items: center; width: 44px; height: 44px;
+    background: var(--float-bg); color: var(--ink); box-shadow: var(--shadow-float);
+    border: 1px solid transparent; /* widoczny obrys w forced-colors */
+    transition: color .15s;
+  }
+  .totop:hover { color: var(--blue); }
+  .totop :global(.totop__icon) { rotate: -90deg; }
+
+  /* Programowy fokus na <main> po powrocie na górę — bez obrysu wokół całej treści */
+  :global(main[tabindex="-1"]:focus) { outline: none; }
+
+  @media (max-width: 720px) {
+    zl-to-top { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); }
+    /* Telefon: tylko przy przewijaniu w górę (albo gdy przycisk ma fokus) */
+    zl-to-top[data-shown]:not([data-up], :focus-within) { visibility: hidden; opacity: 0; translate: 0 8px; transition: opacity .2s var(--ease), translate .2s var(--ease), visibility 0s .2s; }
+    /* Nad numerem infolinii (pacjent/CallBar), który zajmuje ten sam róg */
+    :global(body:has(zl-callbar[data-shown])) zl-to-top { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 60px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    zl-to-top, zl-to-top[data-shown] { transition: none; translate: none; }
+  }
+
+  @media print { zl-to-top { display: none !important; } }
+</style>

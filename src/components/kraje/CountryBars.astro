@@ -1,0 +1,87 @@
+---
+/**
+ * Porównanie krajów w kilku miarach naraz (teksty o krajach): dla każdej miary grupa słupków — kraj z tekstu
+ * w kobalcie, obok Polska i średnia Unii. Liczby z src/data/kraje.ts (`keys`) albo własne (`custom`, np. noty OECD
+ * dla kraju spoza Eurostatu). Każda miara ma własną skalę od zera (METRICS[key].max), więc słupki porównuje się
+ * tylko w obrębie grupy. Kraj bez wartości w danej mierze nie dostaje słupka.
+ *
+ *   <CountryBars title="Wydatki bieżące na zdrowie w 2024 r." codes={['IT', 'PL', 'EU']} keys={['healthGdp', 'oopShare']} />
+ */
+import Figure from '@/components/blocks/Figure.astro';
+import BarChart from '@/components/blocks/BarChart.astro';
+import { METRICS, country, formatMetric, metricValue, type CountryCode, type MetricKey } from '@/data/kraje';
+import { formatPL } from '@/lib/format';
+import type { BarRow } from '@/types';
+
+interface CustomMetric {
+  label: string;
+  unit: string;
+  decimals: number;
+  max: number;
+  rows: { label: string; value: number; highlight?: boolean }[];
+}
+
+interface Props {
+  /** teza ilustracji — jedno zdanie nad wykresem */
+  title: string;
+  /** kraje w kolejności słupków; pierwszy jest wyróżniony */
+  codes?: CountryCode[];
+  keys?: MetricKey[];
+  custom?: CustomMetric[];
+  /** źródło dla miar `custom` (miary z modułu mają własne) */
+  source?: { label: string; href: string };
+  note?: string;
+}
+
+const { title, codes = [], keys = [], custom = [], source, note } = Astro.props;
+
+interface Chart { label: string; unit: string; max: number; rows: BarRow[] }
+
+const fromKeys: Chart[] = keys.map((key) => {
+  const m = METRICS[key];
+  const rows: BarRow[] = codes.flatMap((code, i) => {
+    const v = metricValue(code, key);
+    if (!v) return [];
+    return [{
+      label: code === 'EU' ? 'UE-27, średnia' : country(code).name,
+      note: v.year ? `${v.year} r.` : undefined,
+      value: v.value,
+      display: formatMetric(code, key, false),
+      highlight: i === 0,
+    }];
+  });
+  return { label: m.label, unit: m.unit, max: m.max, rows };
+});
+
+const fromCustom: Chart[] = custom.map((m) => ({
+  label: m.label,
+  unit: m.unit,
+  max: m.max,
+  rows: m.rows.map((r) => ({ label: r.label, value: r.value, display: `${formatPL(r.value, m.decimals)}${m.unit}`, highlight: r.highlight })),
+}));
+
+// koniec skali nie może być niższy od największej wartości — inaczej słupek wyszedłby poza wykres
+const charts = [...fromKeys, ...fromCustom]
+  .filter((c) => c.rows.length > 1)
+  .map((c) => ({ ...c, max: Math.max(c.max, ...c.rows.map((r) => r.value)) }));
+const sources = [
+  ...new Map(keys.map((k) => [METRICS[k].source.href, { ...METRICS[k].source, label: METRICS[k].source.label.replace(/ \(HF\d\)$/, '') }])).values(),
+  ...(source ? [source] : []),
+];
+---
+<Figure title={title} note={note ?? 'Każda miara ma własną skalę, zawsze od zera — słupki porównuje się w obrębie jednej miary.'} source={sources}>
+  <div class="cbars">
+    {charts.map((c) => (
+      <BarChart
+        rows={c.rows.map((r, i) => (i === 0 ? { ...r, group: c.label } : r))}
+        max={c.max}
+        unit={c.unit}
+        caption={`${c.label}: ${c.rows.map((r) => `${r.label} ${r.display}`).join('; ')}.`}
+      />
+    ))}
+  </div>
+</Figure>
+
+<style>
+  .cbars { display: grid; gap: 22px; }
+</style>

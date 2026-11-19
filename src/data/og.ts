@@ -320,6 +320,12 @@ export const ogPages: Record<string, OgPage> = {
     lead: 'Jawność i rejestr, pieniądz publiczny, kształcenie lekarzy i porównania międzynarodowe.',
     footer: { text: 'Każda teza ze źródłem' },
   },
+  '/kraje/': {
+    eyebrow: 'Polska na tle innych krajów',
+    title: 'Ochrona zdrowia\nw innych krajach',
+    lead: 'Koszt, model ubezpieczenia, zarobki lekarzy, dostęp i jawność — tymi samymi miarami, obok Polski.',
+    footer: { text: 'Eurostat, OECD i źródła krajowe' },
+  },
   '/ustawy/': {
     eyebrow: 'Przepisy',
     title: 'Ustawy\nna stronie',

@@ -22,6 +22,7 @@ const pl = {
     language: 'Wersja językowa',
     breadcrumbs: 'Okruszki',
     selection: 'Zaznaczony fragment',
+    toTop: 'Przewiń do góry',
     home: 'Start',
     /** strona startowa wersji językowej (logo, okruszek „Start”) */
     homeHref: '/',
@@ -161,6 +162,7 @@ const en: Ui = {
     language: 'Language',
     breadcrumbs: 'Breadcrumb',
     selection: 'Selected passage',
+    toTop: 'Back to top',
     home: 'Home',
     homeHref: '/en/',
     logo: 'zarobkilekarzy.pl — English home page',

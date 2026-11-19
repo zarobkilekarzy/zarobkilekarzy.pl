@@ -25,7 +25,7 @@ import { STUDIES } from '@/data/zadowolenie-z-ochrony-zdrowia';
 import { formatPL } from '@/lib/format';
 import { monitoring } from '@/lib/monitoring';
 import { monitoringMap, opennessP } from '@/lib/monitoring/map';
-import type { ComparisonRow, DataTable, InfographicSet, SplitBar, SplitSegment, TableSeries, ViewPart } from './render';
+import type { ComparisonRow, DataTable, InfographicSet, RosterMember, SplitBar, SplitSegment, TableSeries, ViewPart } from './render';
 
 const span = `${WINDOW.from}–${WINDOW.to}`;
 // na grafice liczby całkowite: to porównanie rzędu wielkości, nie co do przecinka
@@ -784,7 +784,37 @@ const zadowolenie: InfographicSet = {
   ],
 };
 
+// Skład i funkcje: zestawienie Senatu (stan na 12.11.2026); zawody z sylwetek senatorów; te same osoby i źródła
+// co w grafie /konstelacja/ (src/data/konstelacja/graf.json). Przy zmianie składu komisji poprawić oba miejsca.
+const SENATE_HEALTH: RosterMember[] = [
+  { name: 'Beata Małecka-Libera', role: 'przewodnicząca', party: 'KO', note: 'lekarka, laryngolog; dyrektorka szpitala w latach 2001–2005', marked: true },
+  { name: 'Agnieszka Gorgoń-Komor', role: 'zastępczyni przewodniczącej', party: 'KO', note: 'lekarka, kardiolog', marked: true, link: 'żona wiceprezesa Naczelnej Rady Lekarskiej' },
+  { name: 'Wojciech Konieczny', role: 'zastępca przewodniczącej', party: 'Lewica', note: 'lekarz, neurolog; były dyrektor szpitala w Częstochowie', marked: true },
+  { name: 'Waldemar Kraska', role: 'zastępca przewodniczącej', party: 'PiS', note: 'lekarz, chirurg', marked: true },
+  { name: 'Tomasz Grodzki', role: 'członek', party: 'KO', note: 'lekarz, torakochirurg; dyrektor szpitala w latach 1998–2016', marked: true },
+  { name: 'Andrzej Kalata', role: 'członek', party: 'PiS', note: 'starosta żywiecki w latach 2014–2023' },
+  { name: 'Ewa Matecka', role: 'członkini', party: 'KO', note: 'zastępczyni prezydenta Ostrowa Wielkopolskiego w latach 2014–2019' },
+];
+const senateDoctors = SENATE_HEALTH.filter((m) => m.marked).length;
+
+const konstelacja: InfographicSet = {
+  route: '/konstelacja/',
+  page: 'Konstelacja ochrony zdrowia',
+  filePrefix: 'zarobkilekarzy',
+  items: [
+    {
+      id: 'komisja-zdrowia-senatu',
+      title: `Komisja Zdrowia Senatu: ${senateDoctors} z ${SENATE_HEALTH.length} członków to lekarze`,
+      measure: 'Konstelacja ochrony zdrowia · Senat · stan na 12.11.2026',
+      roster: { members: SENATE_HEALTH, legend: ['lekarz', 'inny zawód'] },
+      sources: 'Źródła: Senat RP (skład komisji, sylwetki i oświadczenia senatorów), Naczelna Izba Lekarska, „Rzeczpospolita”.',
+      alt: `Skład senackiej Komisji Zdrowia, stan na 12.11.2026: ${SENATE_HEALTH.map((m) => `${m.name} (${m.party}, ${m.role}) — ${m.note}${m.link ? `, ${m.link}` : ''}`).join('; ')}. Lekarzami jest ${senateDoctors} z ${SENATE_HEALTH.length} członków.`,
+    },
+  ],
+};
+
 export const infographicSets: Record<string, InfographicSet> = {
+  konstelacja,
   'studia-lekarskie': studiaLekarskie,
   'specjalizacja-lekarska': specjalizacja,
   'film-doba': filmDoba,

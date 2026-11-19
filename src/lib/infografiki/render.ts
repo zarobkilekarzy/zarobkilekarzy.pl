@@ -27,6 +27,8 @@
  * po 100 pól, na każdej zapalone tylko pola jednej części; obok pełna plansza w kobalcie z sumą (zob. viewsLayout).
  * Dziesiąty, „kolejka” (pole `queue`): ile osób przypada na jedno miejsce — rząd pól siatki (kropka = miejsce,
  * plusy = reszta kolejki) z liczbą — i obok druga miara jako cienki pasek, np. próg (zob. queueLayout; na stronie blocks/QueueChart).
+ * Jedenasty, „skład” (pole `roster`): członkowie gremium osoba po osobie — gwiazda albo kropka jak węzły grafu
+ * Konstelacji, funkcja, zawód, klub; powiązanie w ramce pod wierszem (zob. rosterLayout).
  * Rama (nagłówek i stopka) wspólna dla wszystkich stylów.
  */
 import sharp from 'sharp';
@@ -294,6 +296,26 @@ export interface Timeline {
   figures: TimelineFigure[];
 }
 
+export interface RosterMember {
+  name: string;
+  /** funkcja w gremium, np. „przewodnicząca” */
+  role: string;
+  /** klub albo partia, do prawej krawędzi */
+  party: string;
+  /** zawód i najważniejsza funkcja, jedna linia */
+  note: string;
+  /** należy do grupy, o której mówi tytuł (np. lekarz): gwiazda zamiast kropki */
+  marked?: boolean;
+  /** powiązanie pokazane pod wierszem w ramce (np. z innym gremium) */
+  link?: string;
+}
+
+export interface Roster {
+  members: RosterMember[];
+  /** podpisy znaków: [gwiazda, kropka] */
+  legend: [string, string];
+}
+
 export interface Infographic {
   /** slug pliku */
   id: string;
@@ -319,6 +341,8 @@ export interface Infographic {
   queue?: Queue;
   /** zamiast wierszy: cytat */
   quote?: Quote;
+  /** zamiast wierszy: skład gremium osoba po osobie (znaki z grafu Konstelacji) */
+  roster?: Roster;
   /** miara i okres, np. „na 100 tys. lekarzy rocznie · 2020–2025”; przy cytacie — etykieta obok logo */
   measure: string;
   /** jednostka za każdą liczbą, mniejszym stopniem (np. „%”) */
@@ -1224,6 +1248,54 @@ function queueLayout(set: InfographicSet, i: Infographic, q: Queue, f: FormatKey
 }
 
 /** PNG z paletą 8-bit, jak obrazki OG. */
+/* ---------- Styl „skład”: członkowie gremium osoba po osobie, znaki z grafu Konstelacji ---------- */
+
+/** Geometria. Pion: jedna kolumna wierszy; poziom: dwie kolumny (wiersze dzielone po połowie, pierwsza dłuższa). */
+const RG = {
+  pion: { mark: 52, name: 31, role: 14, note: 19, party: 16, padY: 11, link: 20, legend: 14, cols: 1, gap: 0 },
+  poziom: { mark: 34, name: 21, role: 10, note: 13.5, party: 11, padY: 7, link: 14, legend: 11, cols: 2, gap: 48 },
+};
+
+/** Gwiazda (osoba z grupy z tytułu) albo mała kropka — te same znaki co węzły na /konstelacja/. */
+function rosterMark(marked: boolean, size: number, C: Palette, night: boolean): Node {
+  const svg = marked
+    ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100" width="${size}" height="${size}"><defs><radialGradient id="g"><stop offset="0" stop-color="${C.blue}" stop-opacity=".4"/><stop offset="1" stop-color="${C.blue}" stop-opacity="0"/></radialGradient></defs><circle r="50" fill="url(#g)"/><path d="M0-46 6-6 46 0 6 6 0 46-6 6-46 0-6-6Z" fill="${C.blue}"/><circle r="6" fill="${night ? '#fff' : C.bg}"/></svg>`
+    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100" width="${size}" height="${size}"><circle r="11" fill="${C.muted}"/></svg>`;
+  return h('img', { src: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`, width: size, height: size });
+}
+
+function rosterLayout(set: InfographicSet, i: Infographic, r: Roster, f: FormatKey, theme: ThemeKey): Node {
+  const C = THEMES[theme].colors;
+  const rg = RG[f];
+  const night = theme === 'ciemny';
+  const inner = FORMATS[f].width - 2 * G[f].padX;
+  const colW = (inner - (rg.cols - 1) * rg.gap) / rg.cols;
+  const mono = (size: number) => ({ fontFamily: MONO, fontSize: size, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted });
+  const row = (m: RosterMember) =>
+    h('div', { style: { flexDirection: 'column', width: colW, paddingTop: rg.padY, paddingBottom: rg.padY + (m.link ? 3 : 0), borderTop: `1px solid ${C.line}` } },
+      h('div', { style: { alignItems: 'center' } },
+        h('div', { style: { marginLeft: -rg.mark * 0.15, marginRight: rg.mark * 0.3 } }, rosterMark(!!m.marked, rg.mark, C, night)),
+        h('div', { style: { flexDirection: 'column', flex: 1 } },
+          h('div', { style: { alignItems: 'baseline' } },
+            h('span', { style: { fontFamily: DISPLAY, fontWeight: 400, fontSize: rg.name, letterSpacing: '-0.02em', color: m.marked ? C.ink : C.muted } }, m.name),
+            h('span', { style: { marginLeft: rg.name * 0.4, ...mono(rg.role) } }, m.role)),
+          h('span', { style: { marginTop: 3, fontFamily: BODY, fontSize: rg.note, color: C.muted } }, typo(m.note))),
+        h('span', { style: { ...mono(rg.party), fontWeight: 500 } }, m.party)),
+      m.link && h('div', { style: { marginTop: rg.padY * 0.8, marginLeft: rg.mark * 1.15, alignItems: 'center' } },
+        h('div', { style: { width: rg.mark * 0.6, height: 1, background: C.blue, marginRight: rg.mark * 0.22 } }),
+        h('span', { style: { padding: `${Math.round(rg.link * 0.4)}px ${Math.round(rg.link * 0.7)}px`, border: `1px solid ${C.blue}`, background: C.tint, fontFamily: BODY, fontSize: rg.link, color: C.ink } }, typo(m.link))));
+  const per = Math.ceil(r.members.length / rg.cols);
+  const columns = Array.from({ length: rg.cols }, (_, k) => r.members.slice(k * per, (k + 1) * per));
+  const legend = (marked: boolean, label: string, first: boolean) => [
+    h('div', { style: { marginLeft: first ? -rg.mark * 0.1 : rg.mark * 0.4, marginRight: marked ? rg.mark * 0.12 : 0 } }, rosterMark(marked, Math.round(rg.mark * 0.65), C, night)),
+    h('span', { style: mono(rg.legend) }, label),
+  ];
+  return frame(set, i, f, theme, h('div', { style: { flexDirection: 'column' } },
+    h('div', { style: { justifyContent: 'space-between', alignItems: 'flex-start' } },
+      ...columns.map((col) => h('div', { style: { flexDirection: 'column', width: colW, borderBottom: `1px solid ${C.line}` } }, ...col.map(row)))),
+    h('div', { style: { marginTop: rg.padY, alignItems: 'center' } }, ...legend(true, r.legend[0], true), ...legend(false, r.legend[1], false))));
+}
+
 export async function renderInfographic(set: InfographicSet, i: Infographic, f: FormatKey, theme: ThemeKey = 'jasny'): Promise<Buffer> {
   const { width, height } = FORMATS[f];
   const tree = i.quote
@@ -1244,6 +1316,8 @@ export async function renderInfographic(set: InfographicSet, i: Infographic, f: 
             ? queueLayout(set, i, i.queue, f, theme)
             : i.timeline
               ? timelineLayout(set, i, i.timeline, f, theme)
+              : i.roster
+              ? rosterLayout(set, i, i.roster, f, theme)
               : layout(set, i, i.rows ?? [], f, theme);
   const svg = await satori(tree as unknown as Parameters<typeof satori>[0], { width, height, fonts: await loadFonts() });
   return sharp(Buffer.from(svg)).png({ palette: true, quality: 90, compressionLevel: 9 }).toBuffer();

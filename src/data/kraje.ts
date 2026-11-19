@@ -60,13 +60,13 @@ export const METRICS: Record<MetricKey, Metric> = {
   perCapitaEur: { label: 'Na mieszkańca, w euro', short: 'Na mieszkańca (euro)', unit: '', decimals: 2, max: 7000, year: 2024, source: { label: 'Eurostat, hlth_sha11_hf', href: EUROSTAT('hlth_sha11_hf') } },
   publicShare: { label: 'Udział pieniędzy publicznych i obowiązkowych składek', short: 'Publiczne', unit: '%', decimals: 2, max: 100, year: 2024, source: { label: 'Eurostat, hlth_sha11_hf (HF1)', href: EUROSTAT('hlth_sha11_hf') } },
   oopShare: { label: 'Udział wydatków z kieszeni pacjenta', short: 'Z kieszeni pacjenta', unit: '%', decimals: 2, max: 30, year: 2024, source: { label: 'Eurostat, hlth_sha11_hf (HF3)', href: EUROSTAT('hlth_sha11_hf') }, guardrail: 'Bez składek na dobrowolne polisy (to osobna pozycja, HF2).' },
-  doctors: { label: 'Lekarze pracujący z pacjentami na 100 tys. mieszkańców', short: 'Lekarze na 100 tys.', unit: '', decimals: 0, max: 600, year: 2024, source: { label: 'Eurostat, hlth_rs_prs2', href: EUROSTAT('hlth_rs_prs2') }, guardrail: 'Osoby, nie etaty. „Practising” ≠ „licensed” (Belgia: 334 i 660). Austria wlicza lekarzy w trakcie szkolenia.' },
+  doctors: { label: 'Lekarze pracujący z pacjentami na 100 tys. mieszkańców', short: 'Lekarze na 100 tys.', unit: '', decimals: 0, max: 600, year: 2024, source: { label: 'Eurostat, hlth_rs_prs2', href: EUROSTAT('hlth_rs_prs2') }, guardrail: 'Osoby, nie etaty: lekarze pracujący z pacjentami, a nie wszyscy uprawnieni do zawodu.' },
   unmet: { label: 'Rezygnacja z wizyty z powodu kosztu, odległości lub kolejki', short: 'Rezygnacja z wizyty', unit: '%', decimals: 1, max: 5, year: 2025, source: { label: 'Eurostat, hlth_silc_08', href: EUROSTAT('hlth_silc_08') }, guardrail: 'Deklaracja w ankiecie EU-SILC (16+), nie pomiar kolejek.' },
   unmetCost: { label: 'Rezygnacja z wizyty z powodu kosztu', short: '…z powodu kosztu', unit: '%', decimals: 1, max: 3, year: 2025, source: { label: 'Eurostat, hlth_silc_08', href: EUROSTAT('hlth_silc_08') } },
   unmetWait: { label: 'Rezygnacja z wizyty z powodu kolejki', short: '…z powodu kolejki', unit: '%', decimals: 1, max: 3, year: 2025, source: { label: 'Eurostat, hlth_silc_08', href: EUROSTAT('hlth_silc_08') } },
   lifeExp: { label: 'Oczekiwana długość życia przy urodzeniu, w latach (Eurostat, 2024)', short: 'Długość życia', unit: '', decimals: 1, max: 90, year: 2024, source: { label: 'Eurostat, demo_mlexpec', href: EUROSTAT('demo_mlexpec') }, guardrail: 'Zależy od stylu życia i zamożności, nie tylko od ochrony zdrowia.' },
   treatable: { label: 'Zgony z przyczyn uleczalnych na 100 tys. mieszkańców', short: 'Zgony do uniknięcia leczeniem', unit: '', decimals: 1, max: 200, year: 2023, source: { label: 'Eurostat, hlth_cd_apr', href: EUROSTAT('hlth_cd_apr') }, guardrail: 'Zgony przed 75. rokiem życia, których przy dobrym leczeniu w porę dałoby się uniknąć; współczynnik wyrównany dla wieku. Im mniej, tym lepiej.' },
-  paySpecialistSalaried: { label: 'Specjalista na etacie wobec przeciętnej płacy', short: 'Specjalista, etat', unit: '×', decimals: 2, max: 6, source: { label: 'OECD Health Statistics 2025', href: OECD_REMUN_HREF }, guardrail: 'Polska: tylko etaty, bez kontraktów, na których pracuje większość specjalistów.' },
+  paySpecialistSalaried: { label: 'Specjalista na etacie wobec przeciętnej płacy', short: 'Specjalista, etat', unit: '×', decimals: 2, max: 6, source: { label: 'OECD Health Statistics 2025', href: OECD_REMUN_HREF }, guardrail: 'Płaca na etacie, bez dochodów z kontraktów i własnej praktyki.' },
   paySpecialistSelf: { label: 'Specjalista z własną praktyką wobec przeciętnej płacy', short: 'Specjalista, praktyka', unit: '×', decimals: 2, max: 6, source: { label: 'OECD Health Statistics 2025', href: OECD_REMUN_HREF }, guardrail: 'Dochód z działalności, nie pensja. Dla Polski OECD nie ma danych.' },
   payGpSelf: { label: 'Lekarz rodzinny z własną praktyką wobec przeciętnej płacy', short: 'Rodzinny, praktyka', unit: '×', decimals: 2, max: 6, source: { label: 'OECD Health Statistics 2025', href: OECD_REMUN_HREF } },
   satOecd: { label: 'Zadowoleni z dostępności dobrej opieki w miejscu zamieszkania (OECD / Gallup, 2024)', short: 'Zadowoleni z dostępności', unit: '%', decimals: 0, max: 100, year: 2024, source: { label: 'OECD / Gallup, Health at a Glance 2025', href: SAT_LINKS.oecd } },
@@ -115,7 +115,7 @@ export interface Country {
 
 const OECD_NOTE = (file: string) => `https://www.oecd.org/en/publications/health-at-a-glance-2025_15a55280-en/${file}`;
 /** Polska i średnia OECD w tych samych notach — do objaśnienia gwiazdek na stronie hubu. */
-export const OECD_NOTE_PL = { href: OECD_NOTE('poland_c3917772-en.html'), healthGdp: 8.1, publicShare: 78, doctors: 390, lifeExp: 78.4, treatable: 114 };
+export const OECD_NOTE_PL = { href: OECD_NOTE('poland_c3917772-en.html'), healthGdp: 8.1, publicShare: 78, doctors: 390, unmet: 3.8, lifeExp: 78.4, treatable: 114 };
 /** dokładność not OECD (miejsca po przecinku) */
 const ALT_DECIMALS: Partial<Record<EurostatKey, number>> = { healthGdp: 2, publicShare: 1, oopShare: 1, doctors: 0, unmet: 1, lifeExp: 1, treatable: 0 };
 /** OECD, System of Health Accounts (API SDMX): % PKB oraz udział schematów finansowania w bieżących wydatkach, 2024 r. */
@@ -339,6 +339,31 @@ export function compareTable(caption: string, codes: CountryCode[], keys: Metric
   };
 }
 
+/** Uwagi do pojedynczych liczb z Eurostatu i OECD — to, co dotyczy jednego kraju, a nie całej miary. */
+const CELL_NOTES: Partial<Record<`${CountryCode}:${MetricKey}`, string>> = {
+  'BE:doctors': 'Lekarze pracujący z pacjentami. Uprawnionych do zawodu jest w Belgii 660 na 100 tys. mieszkańców, czyli prawie dwa razy więcej.',
+  'AT:doctors': 'Austria wlicza do tej liczby lekarzy w trakcie szkolenia.',
+  'PL:paySpecialistSalaried': 'Tylko specjaliści na etacie — bez kontraktów, na których pracuje większość polskich specjalistów.',
+  'US:publicShare': 'Szacunek: suma programów rządowych (27,4%) i obowiązkowych ubezpieczeń publicznych (23,1%) według rachunków zdrowia OECD za 2024 r. OECD podaje dla USA 83,1%, bo dolicza obowiązkowe ubezpieczenia prywatne (32,6%), czyli polisy od pracodawców.',
+  'TW:healthGdp': 'Dane ministerstwa zdrowia Tajwanu za 2024 r.: wydatki bieżące, bez inwestycji. Tajwanu nie ma w Eurostacie ani w OECD.',
+  'TW:publicShare': 'Dane ministerstwa zdrowia Tajwanu za 2024 r.: budżet państwa i obowiązkowe ubezpieczenie zdrowotne.',
+  'TW:oopShare': 'Dane ministerstwa zdrowia Tajwanu za 2024 r. Liczone szerzej niż w Europie — m.in. z lekami bez recepty i suplementami — więc udział jest zawyżony względem pozostałych krajów.',
+  'TW:doctors': 'Dane ministerstwa zdrowia Tajwanu za 2024 r.: lekarze medycyny zachodniej z prawem praktyki.',
+  'TW:lifeExp': 'Dane ministerstwa spraw wewnętrznych Tajwanu za 2025 r. — o rok nowsze niż dla pozostałych krajów.',
+};
+const SHA_KEYS: MetricKey[] = ['healthGdp', 'publicShare', 'oopShare'];
+
+/** Objaśnienie pojedynczej liczby w tabeli hubu: uwaga własna kraju albo — dla wartości spoza Eurostatu — skąd pochodzi. */
+export function cellNote(code: CountryCode, key: MetricKey): string | undefined {
+  const own = CELL_NOTES[`${code}:${key}`];
+  if (own) return own;
+  if (!metricValue(code, key)?.alt) return undefined;
+  if (SHA_KEYS.includes(key)) return 'Według rachunków zdrowia OECD za 2024 r. — liczone tą samą metodą co w Eurostacie, w którym tego kraju nie ma.';
+  const pl = OECD_NOTE_PL[key as keyof typeof OECD_NOTE_PL];
+  const m = METRICS[key];
+  return `Według noty krajowej OECD (Health at a Glance 2025), która liczy tę miarę nieco inaczej niż Eurostat${typeof pl === 'number' ? `: Polska ma w niej ${formatPL(pl, ALT_DECIMALS[key as EurostatKey] ?? m.decimals)}${m.unit}, a w Eurostacie ${formatMetric('PL', key)}` : ''}.`;
+}
+
 /** Tabela „kraje w wierszach, miary w kolumnach” — na stronę hubu. */
 export function countryTable(caption: string, codes: CountryCode[], keys: MetricKey[], marked: CountryCode[] = ['PL']): CompareTable {
   return {
@@ -346,7 +371,7 @@ export function countryTable(caption: string, codes: CountryCode[], keys: Metric
     columns: ['', ...keys.map((key) => METRICS[key].short)],
     // dymek przy nagłówku: pełna nazwa miary, rok, zastrzeżenie i źródło; przy kraju spoza Eurostatu — skąd liczby
     hints: [undefined, ...keys.map((key) => { const m = METRICS[key]; return `${m.label}${m.year && !m.label.includes(String(m.year)) ? ` (${m.year})` : ''}. ${m.guardrail ? `${m.guardrail} ` : ''}Źródło: ${m.source.label}.`; })],
-    rows: codes.map((c) => ({ cells: [country(c).name, ...keys.map((key) => formatMetric(c, key))], marked: marked.includes(c), hint: country(c).alt?.note })),
+    rows: codes.map((c) => ({ cells: [country(c).name, ...keys.map((key) => formatMetric(c, key))], marked: marked.includes(c), cellHints: [undefined, ...keys.map((key) => cellNote(c, key))] })),
   };
 }
 

@@ -3,7 +3,9 @@
  * Tabela porównania (stan obecny / projektowany, tekst ujednolicony). Wiersz `marked` jest wyróżniony.
  * W wąskim kontenerze każdy wiersz staje się kartą: komórki z etykietą kolumny nad treścią.
  * Pierwsza kolumna z pustym nagłówkiem to nazwa wiersza (nagłówek karty).
- * `hints` (kolumny) i `hint` (wiersz) dodają przy nazwie dymek „?” z objaśnieniem (ui/Popover, wariant `hint`).
+ * `hints` (kolumny) i `hint` (wiersz) dodają przy nazwie dymek „?” z objaśnieniem (ui/Popover, wariant `hint`);
+ * `cellHints` — objaśnienie pojedynczej liczby: sama wartość jest wyzwalaczem dymka (wariant `term`).
+ * `sortable` — klik w nagłówek kolumny sortuje wiersze (bez JS tabela zostaje w układzie pierwotnym).
  * Wiersz z polem `more` ma pod sobą zwinięty dodatek (<details>): małą tabelę, np. głosy klubów pod wynikiem głosowania.
  */
 import type { HTMLAttributes } from 'astro/types';
@@ -15,18 +17,38 @@ interface Props extends HTMLAttributes<'div'> {
   table: CompareTable;
   /** tekst wyróżnionych wierszy, np. „nowy przepis” */
   markLabel?: string;
+  /** nagłówki kolumn sortują wiersze (klik: malejąco → rosnąco → układ pierwotny); komórki bez liczby idą na koniec */
+  sortable?: boolean;
+  /** nazwa pierwszej kolumny na przycisku sortowania, gdy jej nagłówek jest pusty (domyślnie „Nazwa”) */
+  sortLabel?: string;
 }
 
-const { table, markLabel, class: className, ...rest } = Astro.props;
+const { table, markLabel, sortable = false, sortLabel = 'Nazwa', class: className, ...rest } = Astro.props;
 const rowHeader = table.columns[0] === '' || table.columns.length > 2;
 // gdy choć jeden wiersz jest wyróżniony (pasek z lewej + wcięcie), wszystkie dostają to samo wcięcie — tekst w jednej linii
 const hasMarks = table.rows.some((row) => row.marked);
 ---
 <div class:list={['cmp-wrap', className]} {...rest}>
-  <table class:list={['cmp', { 'cmp--marks': hasMarks }]}>
+  <table class:list={['cmp', { 'cmp--marks': hasMarks }]} data-sortable={sortable ? '' : undefined}>
     {table.caption && <caption>{typo(table.caption)}</caption>}
     <thead>
-      <tr>{table.columns.map((c, i) => <th scope="col">{typo(c)}{table.hints?.[i] && <Popover variant="hint" placement="bottom" class="cmp__hint" label={`${c}: jak czytać`} heading={c}>{typo(table.hints[i]!)}</Popover>}</th>)}</tr>
+      <tr>
+        {table.columns.map((c, i) => {
+          const text = typo(c || sortLabel);
+          const cut = text.lastIndexOf(' ');
+          const hint = table.hints?.[i];
+          return (
+            <th scope="col">
+              <span class="cmp__head">
+                {sortable ? (
+                  <button type="button" class="cmp__sort" data-col={i}>{text.slice(0, cut + 1)}<span class="cmp__last">{text.slice(cut + 1)}<i class="cmp__sort-ind" aria-hidden="true"></i></span></button>
+                ) : typo(c)}
+                {hint && <Popover variant="hint" placement="bottom" class="cmp__hint" label={`${c}: jak czytać`} heading={c}>{typo(hint)}</Popover>}
+              </span>
+            </th>
+          );
+        })}
+      </tr>
     </thead>
     <tbody>
       {table.rows.map((row) => (
@@ -38,7 +60,7 @@ const hasMarks = table.rows.some((row) => row.marked);
               ) : (
                 <td data-label={table.columns[i]}>
                   {row.marked && markLabel && cell !== '—' && <span class="cmp__mark">{markLabel}</span>}
-                  {typo(cell)}
+                  {row.cellHints?.[i] ? <Popover variant="term" class="cmp__cell-hint" label={`${row.cells[0]}, ${table.columns[i]}: ${cell} — objaśnienie`} heading={`${row.cells[0]} — ${table.columns[i]}`}><Fragment slot="trigger">{typo(cell)}</Fragment>{typo(row.cellHints[i]!)}</Popover> : typo(cell)}
                 </td>
               ),
             )}
@@ -83,7 +105,16 @@ const hasMarks = table.rows.some((row) => row.marked);
   .cmp tbody th { font: 500 0.9375rem/1.45 var(--f-display); letter-spacing: -0.01em; text-transform: none; color: var(--ink); width: var(--cmp-th, 22%); }
   .cmp td { color: var(--ink-2); }
 
-  .cmp :global(.cmp__hint) { margin-left: 6px; vertical-align: 1px; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .cmp tbody th :global(.cmp__hint) { margin-left: 6px; vertical-align: 1px; }
+  .cmp :global(.cmp__hint) { flex: none; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  /* nagłówek: tekst może się łamać, a strzałka sortowania trzyma się ostatniego słowa; „?” stoi obok, przy dolnej linii */
+  .cmp__head { display: inline-flex; align-items: flex-end; gap: 6px; }
+  .cmp__last { white-space: nowrap; }
+  .cmp__sort { display: inline; padding: 0; border: 0; background: none; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; color: inherit; cursor: pointer; }
+  .cmp__sort:hover, .cmp__sort:focus-visible { color: var(--blue); }
+  .cmp__sort-ind { display: inline-block; width: 0; height: 0; margin-left: 5px; border: 4px solid transparent; border-top-color: var(--line-2); border-bottom-width: 0; vertical-align: 2px; }
+  th[aria-sort="descending"] .cmp__sort-ind { border-top-color: var(--ink); }
+  th[aria-sort="ascending"] .cmp__sort-ind { border-top-width: 0; border-bottom: 4px solid var(--ink); vertical-align: 3px; }
   .cmp .is-marked > * { background: var(--blue-50); }
   .cmp .is-marked > :first-child { box-shadow: inset 3px 0 0 var(--blue); padding-left: 14px; }
   .cmp--marks tr > :first-child { padding-left: 14px; }
@@ -138,3 +169,40 @@ const hasMarks = table.rows.some((row) => row.marked);
     .cmp .cmp__sub thead th:first-child { width: 35%; }
   }
 </style>
+
+<script>
+  // Sortowanie po nagłówku: liczba z tekstu komórki („ok. 50,5%*”, „2,86× (2024)”, „1 234”); komórka bez liczby na końcu.
+  const num = (text: string) => {
+    const m = text.replace(/\(\d{4}\)/g, '').replace(/[\s\u00a0\u202f]/g, '').replace(',', '.').match(/-?\d+(\.\d+)?/);
+    return m ? Number(m[0]) : null;
+  };
+  for (const table of document.querySelectorAll<HTMLTableElement>('table.cmp[data-sortable]')) {
+    const body = table.tBodies[0];
+    const original = [...body.rows];
+    const heads = [...table.tHead!.rows[0].cells];
+    table.tHead!.addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('.cmp__sort');
+      if (!button) return;
+      const col = Number(button.dataset.col);
+      const th = heads[col];
+      // liczby najpierw malejąco, nazwy najpierw alfabetycznie; trzeci klik wraca do układu pierwotnego
+      const order = col === 0 ? ['ascending', 'descending'] : ['descending', 'ascending'];
+      const next = order[order.indexOf(th.getAttribute('aria-sort') ?? '') + 1] ?? null;
+      heads.forEach((h) => h.removeAttribute('aria-sort'));
+      let rows = original;
+      if (next) {
+        th.setAttribute('aria-sort', next);
+        const dir = next === 'descending' ? -1 : 1;
+        const text = (r: HTMLTableRowElement) => r.cells[col]?.textContent?.trim() ?? '';
+        rows = [...original].sort((a, b) => {
+          if (col === 0) return dir * text(a).localeCompare(text(b), document.documentElement.lang || 'pl');
+          const x = num(text(a));
+          const y = num(text(b));
+          if (x === null || y === null) return x === null ? (y === null ? 0 : 1) : -1;
+          return dir * (x - y);
+        });
+      }
+      body.append(...rows);
+    });
+  }
+</script>

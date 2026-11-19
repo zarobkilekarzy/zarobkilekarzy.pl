@@ -16,7 +16,7 @@ import Comparison from '@/components/blocks/Comparison.astro';
 import Figure from '@/components/blocks/Figure.astro';
 import SpreadRows from '@/components/blocks/SpreadRows.astro';
 import CountryGrid from '@/components/kraje/CountryGrid.astro';
-import { COUNTRIES, METRICS, OECD_NOTE_PL, TOPIC_TEXTS, countryTable, formatMetric, metricValue, opennessOf, spreadRow, type CountryCode, type MetricKey } from '@/data/kraje';
+import { COUNTRIES, METRICS, TOPIC_TEXTS, countryTable, formatMetric, metricValue, opennessOf, spreadRow, type CountryCode, type MetricKey } from '@/data/kraje';
 import type { Entry } from '@/i18n/entries';
 import type { Crumb, SeoInput } from '@/lib/seo';
 import { typo } from '@/lib/format';
@@ -74,15 +74,7 @@ const spreadCaption = `Polska na tle ${measured.length - 1} krajów w ${SPREAD.l
 const sourcesOf = (keys: MetricKey[]) => [...new Map(keys.map((k) => [METRICS[k].source.href, { ...METRICS[k].source, label: METRICS[k].source.label.replace(/ \(HF\d\)$/, '') }])).values()];
 const altCountries = COUNTRIES.filter((c) => c.alt);
 const altNames = altCountries.map((c) => c.name).join(', ').replace(/, ([^,]+)$/, ' i $1');
-const STAR = `* ${altNames}: inne źródło niż Eurostat (OECD albo urzędy krajowe); „ok.” oznacza szacunek. Szczegóły w części „Jak czytać te liczby”.`;
-const guardrails = [
-  ...spreadKeys.filter((k) => METRICS[k].guardrail).map((k) => ({ label: METRICS[k].short, text: METRICS[k].guardrail! })),
-  {
-    label: 'Kraje spoza Eurostatu (gwiazdka)',
-    text: `${altNames} nie występują w Eurostacie. Wydatki trzech pierwszych bierzemy z rachunków zdrowia OECD, liczonych tą samą metodą co w Eurostacie — Polska ma w obu źródłach te same wartości. Lekarzy, rezygnację z wizyty, długość życia i zgony z przyczyn uleczalnych podajemy według not krajowych OECD (Health at a Glance 2025), które liczą je nieco inaczej: Polska ma tam ${OECD_NOTE_PL.doctors} lekarzy na 100 tys. mieszkańców i ${OECD_NOTE_PL.treatable} zgonów z przyczyn uleczalnych, wobec ${formatMetric('PL', 'doctors')} i ${formatMetric('PL', 'treatable')} w Eurostacie. Wartości z gwiazdką są więc przybliżonym porównaniem.`,
-  },
-  ...altCountries.map((c) => ({ label: `${c.name} (gwiazdka)`, text: c.alt!.note })),
-];
+const STAR = `* ${altNames}: inne źródło niż Eurostat (OECD albo urzędy krajowe); „ok.” oznacza szacunek.`;
 const altSources = [...new Map(altCountries.flatMap((c) => c.alt!.sources).map((x) => [x.href, x])).values()];
 
 const openness = {
@@ -96,7 +88,6 @@ const jump = [
   { label: 'Polska na tle innych krajów', href: '#porownanie' },
   { label: 'Liczby w tabeli', href: '#tabela' },
   { label: 'Co jest jawne', href: '#jawnosc' },
-  { label: 'Jak czytać te liczby', href: '#metoda' },
 ];
 
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Kraje' }];
@@ -119,7 +110,7 @@ const seo: SeoInput = { title, description: 'Systemy ochrony zdrowia innych kraj
   <Section id="kraje" space="bottom" aria-labelledby="kraje-title">
     <SectionHead eyebrow="Kraje" title="Wybierz kraj" id="kraje-title" aside="Opis systemu ma zawsze ten sam układ: płatnik, koszt, rozliczenia, dopłaty pacjenta, zarobki lekarzy, jawność, kadry, dostęp i wyniki." />
     <CountryGrid items={tiles} />
-    <p class="kr-star">{typo(STAR)}</p>
+    <p class="kr-star">{typo(STAR)} Skąd pochodzi każda z tych liczb, pokazuje <a href="#tabela">tabela niżej</a>.</p>
     <h3 class="kr-sub">Porównania i inne teksty</h3>
     <ArticleTable articles={topics} />
   </Section>
@@ -133,29 +124,17 @@ const seo: SeoInput = { title, description: 'Systemy ochrony zdrowia innych kraj
   </Section>
 
   <Section id="tabela" aria-labelledby="tabela-title">
-    <SectionHead eyebrow="Dane" title="Liczby w tabeli" id="tabela-title" aside="Te same miary co na wykresie i udział źródeł publicznych, kraj w wierszu. Znak „?” przy nagłówku i przy kraju objaśnia, jak czytać liczby. Przy zarobkach rok danych stoi obok wartości, bo OECD podaje różne lata." />
+    <SectionHead eyebrow="Dane" title="Liczby w tabeli" id="tabela-title" aside="Te same miary co na wykresie i udział źródeł publicznych, kraj w wierszu. Kliknij nagłówek, żeby posortować. Znak „?” objaśnia miarę, a podkreślona liczba ma własny komentarz. Przy zarobkach rok danych stoi obok wartości, bo OECD podaje różne lata." />
     {/* dziewięć kolumn nie mieści się na tablecie — tabela przewija się w ramce, strona nie */}
     <div class="kr-scroll">
-      <Comparison table={countryTable('Kraje i wspólne miary', TABLE, tableKeys)} style="--cmp-th: 12%" />
+      <Comparison table={countryTable('Kraje i wspólne miary', TABLE, tableKeys)} sortable sortLabel="Kraj" style="--cmp-th: 12%" />
     </div>
-    <p class="kr-star">{typo(STAR)}</p>
+    <p class="kr-star">{typo(STAR)} Najedź na podkreśloną liczbę albo ją kliknij, żeby zobaczyć, skąd pochodzi.</p>
   </Section>
 
   <Section id="jawnosc" tone="soft" aria-labelledby="jawnosc-title">
     <SectionHead eyebrow="Jawność" title="Co wiadomo o pieniądzach" id="jawnosc-title" aside="Kraje różnią się tym, jak blisko podchodzą do odpowiedzi na pytanie, ile publicznych pieniędzy dostała łącznie jedna osoba." />
     <Comparison table={openness} style="--cmp-th: 14%" />
-  </Section>
-
-  <Section id="metoda" aria-labelledby="metoda-title">
-    <SectionHead eyebrow="Metoda" title="Jak czytać te liczby" id="metoda-title" aside="Każda miara pochodzi z jednego zbioru i jednego roku dla wszystkich krajów; wyjątki mają gwiazdkę. „Brak danych” znaczy, że źródło nie podaje wartości — nie zero." />
-    <dl class="kr-notes">
-      {guardrails.map((g) => (
-        <div>
-          <dt>{g.label}</dt>
-          <dd>{typo(g.text)}</dd>
-        </div>
-      ))}
-    </dl>
   </Section>
 </BaseLayout>
 
@@ -164,10 +143,8 @@ const seo: SeoInput = { title, description: 'Systemy ochrony zdrowia innych kraj
   .kr-scroll { overflow-x: auto; }
   .kr-scroll > :global(.cmp-wrap) { min-width: min(100%, 100cqw); }
   @media (min-width: 700px) { .kr-scroll > :global(.cmp-wrap) { min-width: 840px; } }
+  .kr-star a { color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  .kr-star a:hover { color: var(--blue); }
   .kr-star { margin-top: 14px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
   .kr-sub { margin: clamp(48px, 5vw, 72px) 0 16px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-  .kr-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px 48px; }
-  .kr-notes div { padding-top: 14px; border-top: 1px solid var(--line-2); }
-  .kr-notes dt { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-  .kr-notes dd { margin-top: 8px; font-size: 0.9375rem; line-height: 1.6; color: var(--ink-2); }
 </style>

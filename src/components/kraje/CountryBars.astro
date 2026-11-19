@@ -4,13 +4,16 @@
  * w kobalcie, obok Polska i średnia Unii. Liczby z src/data/kraje.ts (`keys`) albo własne (`custom`, np. noty OECD
  * dla kraju spoza Eurostatu). Każda miara ma własną skalę od zera (METRICS[key].max), więc słupki porównuje się
  * tylko w obrębie grupy. Kraj bez wartości w danej mierze nie dostaje słupka.
+ * Na stronach /en/ nazwy krajów, miar i zapis liczb pochodzą z src/data/en/kraje.ts (język z adresu strony).
  *
  *   <CountryBars title="Wydatki bieżące na zdrowie w 2024 r." codes={['IT', 'PL', 'EU']} keys={['healthGdp', 'oopShare']} />
  */
 import Figure from '@/components/blocks/Figure.astro';
 import BarChart from '@/components/blocks/BarChart.astro';
 import { METRICS, country, formatMetric, metricValue, type CountryCode, type MetricKey } from '@/data/kraje';
-import { formatPL } from '@/lib/format';
+import { METRICS_EN, countryNameEn, formatMetricEn } from '@/data/en/kraje';
+import { localeOf } from '@/i18n/locales';
+import { formatNumber } from '@/lib/format';
 import type { BarRow } from '@/types';
 
 interface CustomMetric {
@@ -34,19 +37,22 @@ interface Props {
 }
 
 const { title, codes = [], keys = [], custom = [], source, note } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const en = locale === 'en';
+const metrics = en ? METRICS_EN : METRICS;
 
 interface Chart { label: string; unit: string; max: number; rows: BarRow[] }
 
 const fromKeys: Chart[] = keys.map((key) => {
-  const m = METRICS[key];
+  const m = metrics[key];
   const rows: BarRow[] = codes.flatMap((code, i) => {
     const v = metricValue(code, key);
     if (!v) return [];
     return [{
-      label: code === 'EU' ? 'UE-27, średnia' : country(code).name,
-      note: v.year ? `${v.year} r.` : undefined,
+      label: en ? countryNameEn(code) : code === 'EU' ? 'UE-27, średnia' : country(code).name,
+      note: v.year ? (en ? String(v.year) : `${v.year} r.`) : undefined,
       value: v.value,
-      display: formatMetric(code, key, false),
+      display: en ? formatMetricEn(code, key, false) : formatMetric(code, key, false),
       highlight: i === 0,
     }];
   });
@@ -57,19 +63,22 @@ const fromCustom: Chart[] = custom.map((m) => ({
   label: m.label,
   unit: m.unit,
   max: m.max,
-  rows: m.rows.map((r) => ({ label: r.label, value: r.value, display: `${formatPL(r.value, m.decimals)}${m.unit}`, highlight: r.highlight })),
+  rows: m.rows.map((r) => ({ label: r.label, value: r.value, display: `${formatNumber(r.value, m.decimals, locale)}${m.unit}`, highlight: r.highlight })),
 }));
 
 // koniec skali nie może być niższy od największej wartości — inaczej słupek wyszedłby poza wykres
 const charts = [...fromKeys, ...fromCustom]
   .filter((c) => c.rows.length > 1)
   .map((c) => ({ ...c, max: Math.max(c.max, ...c.rows.map((r) => r.value)) }));
+const defaultNote = en
+  ? 'Each measure has its own scale, always starting at zero — compare bars within one measure only.'
+  : 'Każda miara ma własną skalę, zawsze od zera — słupki porównuje się w obrębie jednej miary.';
 const sources = [
-  ...new Map(keys.map((k) => [METRICS[k].source.href, { ...METRICS[k].source, label: METRICS[k].source.label.replace(/ \(HF\d\)$/, '') }])).values(),
+  ...new Map(keys.map((k) => [metrics[k].source.href, { ...metrics[k].source, label: metrics[k].source.label.replace(/ \(HF\d\)$/, '') }])).values(),
   ...(source ? [source] : []),
 ];
 ---
-<Figure title={title} note={note ?? 'Każda miara ma własną skalę, zawsze od zera — słupki porównuje się w obrębie jednej miary.'} source={sources}>
+<Figure title={title} note={note ?? defaultNote} source={sources}>
   <div class="cbars">
     {charts.map((c) => (
       <BarChart

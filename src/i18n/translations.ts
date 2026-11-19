@@ -80,12 +80,12 @@ export function freshnessOf(t: Translated): Freshness {
 }
 
 /**
- * Czy tłumaczenie pokazuje kwoty przeliczone na euro — w treści (`<Money>`) albo w module danych z src/data/en/
+ * Czy tłumaczenie pokazuje kwoty przeliczone na euro — w treści (`<Money>`, `withEur()` w propsach) albo w module danych z src/data/en/
  * (`withEur`, `eurApprox`). Tylko wtedy pod treścią stoi linijka o kursie NBP.
  */
 export function usesEuro(article: ArticleEn): boolean {
   const body = article.body ?? '';
-  if (body.includes('<Money')) return true;
+  if (/<Money|\b(?:withEur|eurApprox)\(/.test(body)) return true;
   return [...body.matchAll(/from '@\/data\/en\/([^']+)'/g)].some(([, name]) =>
     /\b(withEur|eurApprox)\(/.test(readFileSync(`src/data/en/${name}.ts`, 'utf8')),
   );

@@ -11,6 +11,7 @@
 import type { HTMLAttributes } from 'astro/types';
 import type { CompareTable } from '@/types';
 import Popover from '@/components/ui/Popover.astro';
+import { localeOf } from '@/i18n/locales';
 import { typo } from '@/lib/format';
 
 interface Props extends HTMLAttributes<'div'> {
@@ -23,7 +24,12 @@ interface Props extends HTMLAttributes<'div'> {
   sortLabel?: string;
 }
 
-const { table, markLabel, sortable = false, sortLabel = 'Nazwa', class: className, ...rest } = Astro.props;
+// etykiety dostępności dymków w języku strony (język z adresu)
+const en = localeOf(Astro.url.pathname) === 'en';
+const a11y = en
+  ? { column: 'how to read it', row: 'where the figures come from', cell: 'explanation', name: 'Name' }
+  : { column: 'jak czytać', row: 'skąd te liczby', cell: 'objaśnienie', name: 'Nazwa' };
+const { table, markLabel, sortable = false, sortLabel = a11y.name, class: className, ...rest } = Astro.props;
 const rowHeader = table.columns[0] === '' || table.columns.length > 2;
 // gdy choć jeden wiersz jest wyróżniony (pasek z lewej + wcięcie), wszystkie dostają to samo wcięcie — tekst w jednej linii
 const hasMarks = table.rows.some((row) => row.marked);
@@ -43,7 +49,7 @@ const hasMarks = table.rows.some((row) => row.marked);
                 {sortable ? (
                   <button type="button" class="cmp__sort" data-col={i}>{text.slice(0, cut + 1)}<span class="cmp__last">{text.slice(cut + 1)}<i class="cmp__sort-ind" aria-hidden="true"></i></span></button>
                 ) : typo(c)}
-                {hint && <Popover variant="hint" placement="bottom" class="cmp__hint" label={`${c}: jak czytać`} heading={c}>{typo(hint)}</Popover>}
+                {hint && <Popover variant="hint" placement="bottom" class="cmp__hint" label={`${c}: ${a11y.column}`} heading={c}>{typo(hint)}</Popover>}
               </span>
             </th>
           );
@@ -56,11 +62,11 @@ const hasMarks = table.rows.some((row) => row.marked);
           <tr class:list={{ 'is-marked': row.marked, 'has-more': row.more }}>
             {row.cells.map((cell, i) =>
               i === 0 && rowHeader ? (
-                <th scope="row" data-label={table.columns[0]}>{typo(cell)}{row.hint && <Popover variant="hint" class="cmp__hint" label={`${cell}: skąd te liczby`} heading={cell}>{typo(row.hint)}</Popover>}</th>
+                <th scope="row" data-label={table.columns[0]}>{typo(cell)}{row.hint && <Popover variant="hint" class="cmp__hint" label={`${cell}: ${a11y.row}`} heading={cell}>{typo(row.hint)}</Popover>}</th>
               ) : (
                 <td data-label={table.columns[i]}>
                   {row.marked && markLabel && cell !== '—' && <span class="cmp__mark">{markLabel}</span>}
-                  {row.cellHints?.[i] ? <Popover variant="term" class="cmp__cell-hint" label={`${row.cells[0]}, ${table.columns[i]}: ${cell} — objaśnienie`} heading={`${row.cells[0]} — ${table.columns[i]}`}><Fragment slot="trigger">{typo(cell)}</Fragment>{typo(row.cellHints[i]!)}</Popover> : typo(cell)}
+                  {row.cellHints?.[i] ? <Popover variant="term" class="cmp__cell-hint" label={`${row.cells[0]}, ${table.columns[i]}: ${cell} — ${a11y.cell}`} heading={`${row.cells[0]} — ${table.columns[i]}`}><Fragment slot="trigger">{typo(cell)}</Fragment>{typo(row.cellHints[i]!)}</Popover> : typo(cell)}
                 </td>
               ),
             )}

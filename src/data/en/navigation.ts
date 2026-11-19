@@ -13,6 +13,7 @@ export const mainNav: Link[] = [
   { label: 'Data', href: '/en/data/', match: '/en/data/' },
   { label: 'Mechanisms', href: '/en/mechanisms/', match: '/en/mechanisms/' },
   { label: 'Analysis', href: '/en/analysis/', match: '/en/analysis/' },
+  { label: 'Countries', href: '/en/countries/', match: '/en/countries/' },
   { label: 'For patients', href: '/en/for-patients/', match: '/en/for-patients/', also: '/en/patient-rights/' },
 ];
 

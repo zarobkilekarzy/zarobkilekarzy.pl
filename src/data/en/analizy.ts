@@ -36,6 +36,6 @@ export const analysisTopics: Record<(typeof ANALYSIS_TOPICS)[number], TopicInfo>
   },
   porownania: {
     label: 'Poland compared with other countries',
-    lead: 'How other systems pay doctors and what they publish — the neighbours, Taiwan, Canada — and what follows for Poland.',
+    lead: 'How other systems pay doctors and what they publish — and what follows for Poland. We describe every country to the same template.',
   },
 };

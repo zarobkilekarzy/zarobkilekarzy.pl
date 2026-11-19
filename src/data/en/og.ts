@@ -248,6 +248,14 @@ export const ogPagesEn: Record<string, OgPage> = {
     footer: { text: 'In plain language, with sources' },
     pictogram: 'serce',
   },
+  '/en/countries/': {
+    eyebrow: 'Poland compared with other countries',
+    title: 'Healthcare\nin other countries',
+    lead: 'Cost, insurance model, doctors’ pay, access and transparency — with the same measures, next to Poland.',
+    footer: { text: 'Eurostat, the OECD and national sources' },
+    // Polska i 14 krajów z opisem w hubie, alfabetycznie po angielsku (siatka 3 × 5)
+    flags: ['pl', 'at', 'be', 'ca', 'cz', 'dk', 'fr', 'de', 'hu', 'it', 'nl', 'es', 'se', 'gb', 'us'],
+  },
   '/en/how-much-we-pay/': {
     eyebrow: 'Path · from contribution to pay',
     title: 'How much we pay\ndoctors, and for what',

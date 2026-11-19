@@ -12,6 +12,14 @@ import type { Rates } from '@/i18n/rates';
 
 const NBSP = ' ';
 
+/**
+ * Rejestr wygenerowanych przeliczeń („573 zł”, „38,5–58,1 tys. zł”, zdanie o kursie). Kontrola tłumaczeń po buildzie
+ * (integrations/i18n/qa.ts) pomija je w polskim tekście: strona angielska podaje euro, nie złote, a kwota zależy od
+ * kursu z dnia buildu. Rejestr jest w `globalThis`, bo strony renderuje kod zbudowany osobno od integracji.
+ */
+const made: Set<string> = ((globalThis as { __plnMade?: Set<string> }).__plnMade ??= new Set());
+const note = (text: string) => (made.add(text), text);
+
 function rateOf(currency: string, rates: Rates): number {
   const rate = rates.mid[currency];
   if (!rate) throw new Error(`[kursy] brak waluty ${currency} w tabeli ${rates.table}`);
@@ -40,13 +48,14 @@ function plnParts(pln: number): [string, string] {
 }
 
 /** „573 zł”, „38,7 tys. zł”, „293 mln zł”, „3,67 mld zł”, „1,06 bln zł”. */
-export const plnShort = (pln: number) => plnParts(pln).join(NBSP);
+export const plnShort = (pln: number) => note(plnParts(pln).join(NBSP));
 
 /** Zakres: „ok. 38,5–58,1 tys. zł” (wspólna jednostka raz), a przy różnych jednostkach „ok. 9 400 zł – 12,1 tys. zł”. */
 export function plnRange(from: number, to: number, currency: string, rates: Rates): string {
   const [a, ua] = plnParts(toPln(from, currency, rates));
   const [b, ub] = plnParts(toPln(to, currency, rates));
-  return ua === ub ? `ok.${NBSP}${a}–${b}${NBSP}${ub}` : `ok.${NBSP}${a}${NBSP}${ua}${NBSP}– ${b}${NBSP}${ub}`;
+  if (ua === ub) return `ok.${NBSP}${note(`${a}–${b}${NBSP}${ub}`)}`;
+  return `ok.${NBSP}${note(`${a}${NBSP}${ua}`)}${NBSP}– ${note(`${b}${NBSP}${ub}`)}`;
 }
 
 /** „ok. 38,7 tys. zł” — do nawiasu po kwocie w walucie źródła. */
@@ -55,5 +64,5 @@ export const plnApprox = (amount: number, currency: string, rates: Rates) => `ok
 /** Zdanie o kursie do sekcji „Metoda”: tabela, data i kursy użytych walut. */
 export function rateLine(currencies: string[], rates: Rates): string {
   const list = currencies.map((c) => `1${NBSP}${c}${NBSP}=${NBSP}${formatPL(rateOf(c, rates), rateOf(c, rates) < 0.1 ? 6 : 4)}${NBSP}zł`).join(', ');
-  return `Kwoty w obcych walutach przeliczamy na złote po kursie średnim NBP z ${formatDate(new Date(rates.date))} (tabela ${rates.table}): ${list}. Przeliczenia są przybliżone i zmieniają się razem z kursem.`;
+  return note(`Kwoty w obcych walutach przeliczamy na złote po kursie średnim NBP z ${formatDate(new Date(rates.date))} (tabela ${rates.table}): ${list}. Przeliczenia są przybliżone i zmieniają się razem z kursem.`);
 }

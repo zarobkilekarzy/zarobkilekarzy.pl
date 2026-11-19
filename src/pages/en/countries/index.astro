@@ -1,0 +1,175 @@
+---
+/**
+ * /en/countries/ — tłumaczenie /kraje/ (src/pages/kraje/index.astro): ten sam układ i te same liczby (src/data/kraje.ts),
+ * napisy z src/data/en/kraje.ts. Kafle i lista porównań prowadzą do tłumaczeń artykułów; kraj bez tłumaczenia
+ * dostaje link do polskiego tekstu z dopiskiem „(in Polish)”. Para i stempel w src/i18n/pages.json.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import PageTranslationNote from '@/components/article/PageTranslationNote.astro';
+import JumpList from '@/components/blocks/JumpList.astro';
+import ArticleTable from '@/components/blocks/ArticleTable.astro';
+import Comparison from '@/components/blocks/Comparison.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import SpreadRows from '@/components/blocks/SpreadRows.astro';
+import CountryGrid from '@/components/kraje/CountryGrid.astro';
+import { COUNTRIES, type CountryCode, type MetricKey } from '@/data/kraje';
+import { METRICS_EN, TOPIC_TEXTS_EN, altSourcesEn, countryEn, countryTableEn, formatMetricEn, metricValue, opennessOfEn, spreadRowEn } from '@/data/en/kraje';
+import type { Entry } from '@/i18n/entries';
+import { pagePairOf } from '@/i18n/pages';
+import { enHref, getTranslations } from '@/i18n/translations';
+import { ui } from '@/i18n/ui';
+import type { Crumb, SeoInput } from '@/lib/seo';
+import { typo } from '@/lib/format';
+
+const title = 'Healthcare in other countries';
+const lead = 'How other countries pay for treatment, what it costs, how much doctors earn and what is publicly known about that money. We describe every country to the same template and with the same measures — next to Poland.';
+
+// tłumaczenia artykułów po id polskiego oryginału (ostatni człon polskiego adresu)
+const translations = new Map((await getTranslations()).map((t) => [t.source.id, t]));
+const translationOf = (plHref: string) => translations.get(plHref.split('/').filter(Boolean).at(-1)!);
+
+// kraje z tekstem (kafle) i kraje z liczbami (wykres, tabela); Polska jest punktem odniesienia, Unia — średnią
+const described = COUNTRIES.filter((c) => c.text);
+const measured = COUNTRIES.filter((c) => c.code !== 'EU' && metricValue(c.code, 'healthGdp'));
+const TABLE: CountryCode[] = [...measured.map((c) => c.code), 'EU'];
+
+const TAG = { profil: 'System profile', porównanie: 'In the pay comparison' } as const;
+const tiles = described.map((c) => {
+  const translated = translationOf(c.text!.href);
+  return {
+    flag: c.flag,
+    name: countryEn(c.code).name,
+    href: translated ? enHref(translated) : c.text!.href,
+    tag: `${c.text!.draft ? 'Draft' : TAG[c.text!.kind]}${translated ? '' : ui.en.inPolish}`,
+    text: countryEn(c.code).model ?? '',
+    stats: metricValue(c.code, 'healthGdp')
+      ? [
+          { value: formatMetricEn(c.code, 'healthGdp'), label: 'of GDP on health' },
+          ...(metricValue(c.code, 'oopShare')
+            ? [{ value: formatMetricEn(c.code, 'oopShare'), label: 'out of pocket' }]
+            : metricValue(c.code, 'publicShare')
+              ? [{ value: formatMetricEn(c.code, 'publicShare'), label: 'from public sources' }]
+              : []),
+        ]
+      : [],
+  };
+});
+// teksty porównawcze: tylko przetłumaczone (tytuł i lead z tłumaczenia)
+const topics: Entry[] = TOPIC_TEXTS_EN.flatMap((t) => {
+  const translated = translationOf(t.href);
+  return translated ? [{ id: t.href, href: enHref(translated), title: translated.article.data.title, summary: translated.article.data.summary, category: 'Analiza' as const, label: 'Analysis', format: t.name }] : [];
+});
+
+// wykres: po jednej–dwóch miarach z każdego koszyka; koniec skali dobrany do najwyższej wartości (skala od zera)
+const SPREAD: { key: MetricKey; bucket: string }[] = [
+  { key: 'healthGdp', bucket: 'Cost' },
+  { key: 'oopShare', bucket: 'Cost' },
+  { key: 'doctors', bucket: 'Workforce' },
+  { key: 'paySpecialistSalaried', bucket: 'Pay' },
+  { key: 'unmet', bucket: 'Access' },
+  { key: 'satOecd', bucket: 'Satisfaction' },
+  { key: 'treatable', bucket: 'Treatment outcomes' },
+];
+const spreadRows = SPREAD.map(({ key, bucket }) => {
+  const row = spreadRowEn(key, METRICS_EN[key].max);
+  return { ...row, label: `${bucket} — ${METRICS_EN[key].label.replace(/ \((OECD|STADA|Ipsos|Eurostat).*\)$/, '')}`, note: row.note ?? '2022–2024' };
+});
+const spreadKeys = SPREAD.map((m) => m.key);
+// tabela ma o jedną miarę więcej niż wykres: udział źródeł publicznych (dla USA szacunek)
+const tableKeys: MetricKey[] = ['healthGdp', 'publicShare', ...spreadKeys.filter((k) => k !== 'healthGdp')];
+const spreadCaption = `Poland compared with ${measured.length - 1} countries on ${SPREAD.length} measures. ${spreadKeys
+  .map((k) => `${METRICS_EN[k].label}: ${measured.map((c) => `${countryEn(c.code).name} ${formatMetricEn(c.code, k)}`).join('; ')}`)
+  .join('. ')}.`;
+
+const sourcesOf = (keys: MetricKey[]) => [...new Map(keys.map((k) => [METRICS_EN[k].source.href, { ...METRICS_EN[k].source, label: METRICS_EN[k].source.label.replace(/ \(HF\d\)$/, '') }])).values()];
+const altCountries = COUNTRIES.filter((c) => c.alt);
+const altNames = altCountries.map((c) => countryEn(c.code).name).join(', ').replace(/, ([^,]+)$/, ' and $1');
+const STAR = `* ${altNames}: a source other than Eurostat (the OECD or national bodies); “approx.” marks an estimate.`;
+const altSources = [...new Map(altCountries.flatMap((c) => altSourcesEn(c.code)).map((x) => [x.href, x])).values()];
+
+const openness = {
+  caption: 'System model and transparency of money in the countries on this page',
+  columns: ['', 'How the system works', 'What is public'],
+  rows: COUNTRIES.filter((c) => c.code !== 'EU').map((c) => ({ cells: [countryEn(c.code).name, countryEn(c.code).model ?? '—', opennessOfEn(c.code) ?? '—'], marked: c.code === 'PL' })),
+};
+
+const jump = [
+  { label: 'Countries', href: '#kraje', count: tiles.length },
+  { label: 'Poland compared with other countries', href: '#porownanie' },
+  { label: 'The figures in a table', href: '#tabela' },
+  { label: 'What is public', href: '#jawnosc' },
+];
+
+const crumbs: Crumb[] = [{ label: 'Home', href: '/en/' }, { label: 'Countries' }];
+const seo: SeoInput = {
+  title,
+  description: 'Healthcare systems of other countries next to Poland: cost, insurance model, doctors’ pay, access and transparency — with the same measures.',
+  breadcrumbs: crumbs,
+  index: !pagePairOf(Astro.url.pathname)?.draft,
+};
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="kr-top">
+    <PageHeader title={title} lead={lead} eyebrow="Poland compared with other countries" crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Countries', value: tiles.length },
+          { label: 'Shared measures', value: SPREAD.length },
+          { label: 'Data for', value: '2023–2025' },
+        ]}
+      />
+      <JumpList slot="aside" title="On this page" items={jump} />
+    </PageHeader>
+    <div class="kr-note"><PageTranslationNote /></div>
+  </Section>
+
+  <Section id="kraje" space="bottom" aria-labelledby="kraje-title">
+    <SectionHead eyebrow="Countries" title="Choose a country" id="kraje-title" aside="A system profile always has the same layout: payer, cost, payment of providers, patient charges, doctors’ pay, transparency, workforce, access and outcomes." />
+    <CountryGrid items={tiles} />
+    <p class="kr-star">{typo(STAR)} Where each of these figures comes from is shown in <a href="#tabela">the table below</a>.</p>
+    {topics.length > 0 && (
+      <>
+        <h3 class="kr-sub">Comparisons and other texts</h3>
+        <ArticleTable articles={topics} />
+      </>
+    )}
+  </Section>
+
+  <Section id="porownanie" tone="soft" aria-labelledby="porownanie-title">
+    <SectionHead eyebrow="Comparison" title="Poland compared with other countries" id="porownanie-title" aside="Each row is one measure and each dot is one country. Use the list above the chart to pick a country to see next to Poland." />
+    <Figure note={`Each row has its own scale, always starting at zero. The line marks the European Union average where the source gives one. ${altNames}: data from the OECD or national bodies, because Eurostat does not cover these countries.`} source={[...sourcesOf(spreadKeys), ...altSources]}>
+      <SpreadRows rows={spreadRows} unit="" subject="Poland" dotLabel="another country" averageLabel="EU average"
+        pick={{ label: 'Compare with:', none: 'choose a country', absent: 'no data for this country' }} caption={spreadCaption} />
+    </Figure>
+  </Section>
+
+  <Section id="tabela" aria-labelledby="tabela-title">
+    <SectionHead eyebrow="Data" title="The figures in a table" id="tabela-title" aside="The same measures as on the chart plus the share of public sources, one country per row. Click a heading to sort. The “?” mark explains the measure, and an underlined figure has its own comment. For pay, the year of the data stands next to the value, because the OECD gives different years." />
+    {/* dziewięć kolumn nie mieści się na tablecie — tabela przewija się w ramce, strona nie */}
+    <div class="kr-scroll">
+      <Comparison table={countryTableEn('Countries and shared measures', TABLE, tableKeys)} sortable sortLabel="Country" style="--cmp-th: 12%" />
+    </div>
+    <p class="kr-star">{typo(STAR)} Hover over an underlined figure or click it to see where it comes from.</p>
+  </Section>
+
+  <Section id="jawnosc" tone="soft" aria-labelledby="jawnosc-title">
+    <SectionHead eyebrow="Transparency" title="What is known about the money" id="jawnosc-title" aside="Countries differ in how close they come to answering the question of how much public money one person received in total." />
+    <Comparison table={openness} style="--cmp-th: 14%" />
+  </Section>
+</BaseLayout>
+
+<style>
+  .kr-top { padding-top: clamp(32px, 4vw, 56px); }
+  .kr-scroll { overflow-x: auto; }
+  .kr-scroll > :global(.cmp-wrap) { min-width: min(100%, 100cqw); }
+  @media (min-width: 700px) { .kr-scroll > :global(.cmp-wrap) { min-width: 840px; } }
+  .kr-note { margin-top: 24px; max-width: 68ch; }
+  .kr-star a { color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  .kr-star a:hover { color: var(--blue); }
+  .kr-star { margin-top: 14px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .kr-sub { margin: clamp(48px, 5vw, 72px) 0 16px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+</style>

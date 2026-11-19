@@ -8,8 +8,8 @@
  * Porównywana jest treść: blok `.prose` artykułu i wpisu (bez list „Powiązane”, które po angielsku obejmują tylko
  * tłumaczenia), a na stronach spoza kolekcji cały <main>. Spisy działów i strona główna (HUBS) mają z założenia
  * inną zawartość, więc nie są porównywane. Fragment, który po angielsku celowo się różni (kalendarz zmian tylko po
- * polsku, demo pseudonimu z przetłumaczonym kluczem, przeliczenia obcych walut na złote), ma atrybut
- * `data-i18n-skip` i jest pomijany.
+ * polsku, demo pseudonimu z przetłumaczonym kluczem), ma atrybut `data-i18n-skip` i jest pomijany. Przeliczenia obcych
+ * walut na złote po kursie z buildu (`<Pln>`, `plnApprox()`) kontrola pomija sama — `withoutPlnApprox`.
  *
  * Reguły:
  * - liczby: każda wartość z polskiego tekstu występuje w angielskim. Zapis jest normalizowany („1 358” = „1,358”,
@@ -57,6 +57,8 @@ const HUBS = new Set(['/en/', '/en/analysis/', '/en/data/', '/en/mechanisms/', '
 const KNOWN_MISSING: Record<string, number[]> = {
   // przeliczenie na złote w opisie kafelka StatRow („(ok. 21,7 tys. zł)”) — wersja angielska podaje tylko TWD
   '/en/analysis/taiwan-healthcare-transparency/': [21_700],
+  // „w roku 2024–25 429 267 dolarów” — polski zapis zlewa koniec roku rozliczeniowego z kwotą; po angielsku jest „CAD 429,267”
+  '/en/analysis/canada-healthcare-system/': [25_429_267],
 };
 
 /** Słowa z polskimi literami, które w angielskim tekście są w porządku. */
@@ -81,7 +83,9 @@ function extract(html: string) {
     if (n.type === ELEMENT_NODE && classes(n).includes('prose')) prose = n;
     else n.children?.forEach(find);
   };
-  find(parse(html));
+  // dymek linku wewnętrznego (data-peek) to JSON w atrybucie; znak „>” w jego treści („>1 600”) urywa parserowi znacznik
+  // i reszta atrybutu trafia do tekstu strony — atrybut nie jest treścią, więc go pomijamy
+  find(parse(html.replace(/\sdata-peek="[^"]*"/g, '')));
 
   const text: string[] = [];
   const checked: string[] = [];
@@ -183,11 +187,26 @@ function present(v: number, en: Set<number>, all: EnNumber[]): boolean {
 
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : String(Number(n.toPrecision(6))));
 
+/**
+ * Polski tekst bez przeliczeń obcych walut na złote po kursie z buildu (src/lib/pln.ts zapisuje każde wygenerowane
+ * przeliczenie w `globalThis.__plnMade`): strona angielska podaje przy tych kwotach euro, więc złotych w niej nie ma.
+ * Dłuższe napisy najpierw; kwota nie może być końcówką większej liczby ani zakresu („19 zł” i „5–9 zł” to nie „9 zł”).
+ */
+function withoutPlnApprox(text: string): string {
+  const made = [...((globalThis as { __plnMade?: Set<string> }).__plnMade ?? [])].sort((a, b) => b.length - a.length);
+  // tylko strony, które same piszą o przeliczeniu (zdanie o kursie z `rateLine`) — rejestr jest wspólny dla całego buildu,
+  // a „25 tys. zł” wygenerowane na jednej stronie nie może wyciąć prawdziwej kwoty z innej
+  if (!made.length || !/przeliczamy na złote po kursie średnim NBP/.test(text)) return text;
+  // typografia strony mogła zamienić rodzaj spacji, więc spacja wzorca pasuje do dowolnej
+  const pattern = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '[\\s\\u00a0\\u202f]+');
+  return made.reduce((t, m) => t.replace(new RegExp(`(?<!\\d[\\s\\u00a0\\u202f]?|\\d[,–-])${pattern(m)}`, 'g'), ' '), text);
+}
+
 function compare(pl: ReturnType<typeof extract>, en: ReturnType<typeof extract>, knownMissing: number[] = []): QaIssue[] {
   const issues: QaIssue[] = [];
   const enValues = numbersEn(en.text);
   const enSet = new Set([...enValues.map((e) => e.value), ...knownMissing]);
-  const missing = [...new Set(numbersPl(pl.text).filter(({ value, raw }) => significant(value) && !present(value, enSet, enValues) && !(raw !== value && present(raw, enSet, enValues))).map((n) => n.value))];
+  const missing = [...new Set(numbersPl(withoutPlnApprox(pl.text)).filter(({ value, raw }) => significant(value) && !present(value, enSet, enValues) && !(raw !== value && present(raw, enSet, enValues))).map((n) => n.value))];
   if (missing.length) issues.push({ rule: 'numbers', detail: missing.map(fmt).join(', ') });
 
   const fnMissing = [...pl.footnotes].filter((f) => !en.footnotes.has(f));

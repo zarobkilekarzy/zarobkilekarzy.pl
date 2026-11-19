@@ -36,7 +36,8 @@ import { COUNTRIES, WINDOW, ratePer100k, type CountryKey } from '@/data/odpowied
 import { pseudonymDemo } from '@/data/postulat';
 import { createHmac } from 'node:crypto';
 import { STUDIES } from '@/data/zadowolenie-z-ochrony-zdrowia';
-import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
+import { KANADA } from '@/lib/siatka/kraje';
+import { COUNTRIES as HUB_COUNTRIES } from '@/data/kraje';
 import { frameLines } from '@/lib/siatka';
 import { PICTOGRAMS } from '@/lib/siatka/piktogramy';
 import { episodeHref, episodes } from '@/data/podcasty';
@@ -176,7 +177,9 @@ export function hemicyclePanel(text: typeof HEMICYCLE_PL = HEMICYCLE_PL): string
     + legend.join(''));
 }
 
-export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps' | 'illustration' | 'position'>> = {
+export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps' | 'flags' | 'illustration' | 'position'>> = {
+  // opisy krajów z hubu /kraje/: jedna duża flaga; wpis niżej ma pierwszeństwo
+  ...Object.fromEntries(HUB_COUNTRIES.filter((c) => c.text && !c.text.draft).map((c) => [c.text!.href, { flags: [c.flag] }])),
   '/mechanizmy/kontrola-nfz/': { panels: controlPanels() },
   '/mechanizmy/fikcyjne-wizyty/': { panels: [{ head: 'Historia wizyt w IKP', height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, visitList('Dopisana wizyta', MEDIA_W)) }] },
   '/mechanizmy/no-fault/': { panels: [{ head: 'System bez orzekania o winie', height: FAULT_CARD_H, svg: svg(MEDIA_W, FAULT_CARD_H, faultCard([['Szkoda', 'stwierdzona'], ['Pieniądze', 'wypłacone pacjentowi']], ['Wina', 'tego się nie ustala'], MEDIA_W)) }] },
@@ -202,13 +205,6 @@ export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'do
         { code: 'a', label: 'Ontario i Alberta — warunki narzucone wcześniej' },
         { code: 'j', label: 'Kolumbia Brytyjska i Nowy Brunszwik — jawne płatności' },
       ],
-    },
-  },
-  '/analizy/tajwan-ochrona-zdrowia/': {
-    dots: {
-      mask: TAJWAN,
-      codes: { '#': { size: 'on', color: 'blue' } },
-      legend: [{ code: '#', label: 'Jeden płatnik dla całego kraju' }],
     },
   },
   '/analizy/ciecie-limitow-na-medycyne/': {

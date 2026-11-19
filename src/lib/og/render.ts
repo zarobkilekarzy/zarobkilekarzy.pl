@@ -427,7 +427,19 @@ const FLAG_X0 = 19; // lewa krawędź ściany względem kolumny mediów
 const FLAG_TOPS = [-74, -130, -97]; // góra pierwszej flagi w kolumnie względem kolumny mediów (kadr zaczyna się na -PAD_Y)
 const FLAG_MARK = 5; // grubość ramki wyróżnionej flagi
 
+const FLAG_ONE_W = 440; // jedna flaga (opis kraju): 4:3 na środku kolumny mediów
+const FLAG_ONE_H = 330;
+
 async function flags(m: Extract<OgMedia, { kind: 'flags' }>) {
+  if (m.flags.length === 1) {
+    const svg = FLAG_FILES[`/src/components/ui/flags/${m.flags[0]}.svg`];
+    if (!svg) throw new Error(`[og] brak flagi src/components/ui/flags/${m.flags[0]}.svg`);
+    const w = FLAG_ONE_W - 2, hh = FLAG_ONE_H - 2;
+    const buf = await sharp(Buffer.from(svg), { density: 300 }).resize(w * 2, hh * 2, { fit: 'fill' }).png().toBuffer();
+    return h('div', { style: { flexShrink: 0, width: MEDIA_W, height: MEDIA_H, alignItems: 'center', justifyContent: 'center' } },
+      h('div', { style: { width: FLAG_ONE_W, height: FLAG_ONE_H, border: `1px solid ${C.line}`, boxShadow: SHADOW } },
+        h('img', { src: `data:image/png;base64,${buf.toString('base64')}`, width: w, height: hh })));
+  }
   const [marked, ...rest] = m.flags.slice(0, 15);
   const order = [...rest.slice(0, 7), marked, ...rest.slice(7)]; // 5 + 5 + 5, wyróżniona w środku środkowej kolumny
   const tiles = await Promise.all(

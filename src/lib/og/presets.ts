@@ -168,7 +168,7 @@ function compose(route: string, d: Defaults, o: OgOverride & { cover?: OgCover }
  * Artykuł: etykieta sekcji, lead = pierwsze zdanie, okładka, stopka z liczbą przypisów i datą.
  * `media` — wykres w miejscu zdjęcia (src/data/og.ts → ogArticleMedia); okładka ma pierwszeństwo.
  */
-export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps'> = {}): OgEntry {
+export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps' | 'flags'> = {}): OgEntry {
   const { title, summary, cover, coverPosition, badge, updated, date, og } = article.data;
   const when = updated ?? date;
   const notes = getFootnotes(article).count;
@@ -203,7 +203,7 @@ export function articleOg(article: Article, media: Pick<OgPage, 'bars' | 'panels
  * `media` — wykres z podpisami po angielsku (src/data/en/og.ts); z polskiego `og` przechodzi tylko grafika bez tekstu
  * (zdjęcie, ilustracja, kadr, piktogram), a tekst nadpisuje `og` tłumaczenia.
  */
-export function articleOgEn({ article, source }: Translated, media: Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps'> = {}): OgEntry {
+export function articleOgEn({ article, source }: Translated, media: Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps' | 'flags'> = {}): OgEntry {
   const { updated, date, cover, coverPosition, category } = source.data;
   const when = updated ?? date;
   const notes = getFootnotes(article).count;

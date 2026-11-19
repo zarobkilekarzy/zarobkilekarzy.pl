@@ -59,7 +59,7 @@ async function collectEn(): Promise<OgEntry[]> {
 
 /** Media polskiego artykułu, które nie mają napisów (np. wirus na obrazku COVID-19) — reszta wymaga wersji EN. */
 const textless = (media?: (typeof ogArticleMedia)[string]) =>
-  media?.panels?.every((p) => !p.head && !p.svg.includes('<text')) ? { panels: media.panels } : undefined;
+  media?.flags ? { flags: media.flags } : media?.panels?.every((p) => !p.head && !p.svg.includes('<text')) ? { panels: media.panels } : undefined;
 
 // W buildzie liczymy raz; w dev za każdym razem, żeby zmiana frontmattera była od razu widoczna
 let cached: Promise<OgEntry[]> | undefined;

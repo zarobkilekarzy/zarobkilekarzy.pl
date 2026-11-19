@@ -15,7 +15,7 @@ import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { columnChart, FAULT_CARD_H, faultCard, svg, visitList } from '@/lib/og/charts';
 import { STUDIES_EN } from '@/data/en/zadowolenie-z-ochrony-zdrowia';
-import { KANADA, TAJWAN } from '@/lib/siatka/kraje';
+import { KANADA } from '@/lib/siatka/kraje';
 import { globeOgBody } from '@/lib/swiat/og';
 import { newsIllustration } from '@/lib/news';
 import { controlPanels, dataUpdated, hemicyclePanel } from '@/data/og';
@@ -85,7 +85,7 @@ const aosCost = change(AOS_FIRST.cost, AOS_LAST.cost);
 const aosServices = change(AOS_FIRST.services, AOS_LAST.services);
 const queueGrowth = change(WHC_2022.single, WHC_2024.single);
 
-export const ogArticleMediaEn: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps' | 'illustration' | 'position'>> = {
+export const ogArticleMediaEn: Record<string, Pick<OgPage, 'bars' | 'panels' | 'dots' | 'stamps' | 'flags' | 'illustration' | 'position'>> = {
   // aktualności
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },
   '/aktualnosci/limity-plac-medykow-w-sejmie/': { bars: LIMITY_BARS },
@@ -102,9 +102,6 @@ export const ogArticleMediaEn: Record<string, Pick<OgPage, 'bars' | 'panels' | '
         { code: 'j', label: 'British Columbia and New Brunswick — public payments' },
       ],
     },
-  },
-  '/analizy/tajwan-ochrona-zdrowia/': {
-    dots: { mask: TAJWAN, codes: { '#': { size: 'on', color: 'blue' } }, legend: [{ code: '#', label: 'A single payer for the whole country' }] },
   },
   '/analizy/ciecie-limitow-na-medycyne/': {
     panels: [

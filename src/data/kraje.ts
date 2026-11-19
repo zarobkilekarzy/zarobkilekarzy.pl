@@ -102,8 +102,20 @@ export interface Country {
   /** tekst serwisu o tym kraju */
   text?: { href: string; label: string; kind: 'profil' | 'porównanie'; draft?: boolean };
   eurostat: Record<EurostatKey, number | null>;
+  /**
+   * Kraj spoza Eurostatu: te same miary z noty krajowej OECD (Health at a Glance 2025). Inne źródło i nieco inne
+   * definicje — wartość dostaje gwiazdkę (formatMetric), a strona hubu objaśnia ją w metodzie. Lekarze: OECD podaje
+   * na 1000 mieszkańców, tu ×100. `publicShare` = udział obowiązkowych źródeł (mandatory prepayment).
+   */
+  oecd?: { href: string; values: Partial<Record<EurostatKey, number>> };
   facts?: Fact[];
 }
+
+const OECD_NOTE = (file: string) => `https://www.oecd.org/en/publications/health-at-a-glance-2025_15a55280-en/${file}`;
+/** Polska i średnia OECD w tych samych notach — do objaśnienia gwiazdek na stronie hubu. */
+export const OECD_NOTE_PL = { href: OECD_NOTE('poland_c3917772-en.html'), healthGdp: 8.1, publicShare: 78, doctors: 390, lifeExp: 78.4, treatable: 114 };
+/** dokładność not OECD (miejsca po przecinku) */
+const OECD_DECIMALS: Partial<Record<EurostatKey, number>> = { healthGdp: 1, publicShare: 0, doctors: 0, lifeExp: 1, treatable: 0 };
 
 const HPR = (file: string) => `https://www.belgiqueenbonnesante.be/images/INAMI/Rapports/HealthcareProviders/HPR2024-${file}.pdf`;
 const HCAAM = 'https://www.strategie-plan.gouv.fr/files/files/Publications/2025/2025-10-02%20-%20HCAAM%20-%20D%C3%A9passement%20d%27honoraires/Annexe%202%20Evolution%20secteur%202%20Rapport%20Hcaam.pdf';
@@ -217,6 +229,7 @@ export const COUNTRIES: Country[] = [
     text: { href: '/analizy/wielka-brytania-ochrona-zdrowia/', label: 'Jak działa brytyjska ochrona zdrowia', kind: 'profil' },
     // poza Eurostatem (po brexicie); wspólne miary OECD do ręcznego odczytu — research/kraje/wielka-brytania.md
     eurostat: { healthGdp: null, perCapitaPps: null, perCapitaEur: null, publicShare: null, oopShare: null, doctors: null, unmet: null, unmetCost: null, unmetWait: null, lifeExp: null, treatable: null },
+    oecd: { href: OECD_NOTE('united-kingdom_82034050-en.html'), values: { healthGdp: 11.1, publicShare: 82, doctors: 340, lifeExp: 81, treatable: 71 } },
   },
   {
     code: 'CA', iso: '124', name: 'Kanada', flag: 'ca', locative: 'w Kanadzie',
@@ -225,6 +238,7 @@ export const COUNTRIES: Country[] = [
     text: { href: '/analizy/kanada-ochrona-zdrowia/', label: 'Jak działa kanadyjska ochrona zdrowia', kind: 'profil' },
     // poza Eurostatem; wspólne miary z not OECD — research/kraje/oecd-noty-ca-us.md
     eurostat: { healthGdp: null, perCapitaPps: null, perCapitaEur: null, publicShare: null, oopShare: null, doctors: null, unmet: null, unmetCost: null, unmetWait: null, lifeExp: null, treatable: null },
+    oecd: { href: OECD_NOTE('canada_41ea57c7-en.html'), values: { healthGdp: 11.3, publicShare: 70, doctors: 270, lifeExp: 81.7, treatable: 58 } },
   },
   {
     code: 'US', iso: '840', name: 'USA', flag: 'us', locative: 'w USA',
@@ -233,6 +247,7 @@ export const COUNTRIES: Country[] = [
     text: { href: '/analizy/usa-ochrona-zdrowia/', label: 'Jak działa amerykańska ochrona zdrowia', kind: 'profil' },
     // poza Eurostatem; wspólne miary z not OECD — research/kraje/oecd-noty-ca-us.md
     eurostat: { healthGdp: null, perCapitaPps: null, perCapitaEur: null, publicShare: null, oopShare: null, doctors: null, unmet: null, unmetCost: null, unmetWait: null, lifeExp: null, treatable: null },
+    oecd: { href: OECD_NOTE('united-states_3517f35e-en.html'), values: { healthGdp: 17.2, doctors: 270, lifeExp: 78.4, treatable: 95 } },
   },
   {
     code: 'TW', iso: '158', name: 'Tajwan', flag: 'tw', locative: 'na Tajwanie',
@@ -263,11 +278,13 @@ const SATISFACTION: Partial<Record<MetricKey, CountryRow[]>> = { satOecd: OECD_C
 const isEurostat = (key: MetricKey): key is EurostatKey => key in country('PL').eurostat;
 
 /** Wartość miary dla kraju; `year` tylko wtedy, gdy różni się między krajami (OECD). */
-export function metricValue(code: CountryCode, key: MetricKey): { value: number; year?: number } | null {
+export function metricValue(code: CountryCode, key: MetricKey): { value: number; year?: number; oecd?: boolean; decimals?: number } | null {
   const c = country(code);
   if (isEurostat(key)) {
     const value = c.eurostat[key];
-    return value === null ? null : { value };
+    if (value !== null) return { value };
+    const alt = c.oecd?.values[key];
+    return alt === undefined ? null : { value: alt, oecd: true, decimals: OECD_DECIMALS[key] };
   }
   const group = PAY_GROUP[key];
   if (group) {
@@ -278,12 +295,12 @@ export function metricValue(code: CountryCode, key: MetricKey): { value: number;
   return row ? { value: row[1] } : null;
 }
 
-/** Tekst komórki: „11,07%”, „5,32× (2024)”, „brak danych”. */
+/** Tekst komórki: „11,07%”, „5,32× (2024)”, „11,1%*” (gwiazdka = nota OECD zamiast Eurostatu), „brak danych”. */
 export function formatMetric(code: CountryCode, key: MetricKey, withYear = true): string {
   const m = METRICS[key];
   const v = metricValue(code, key);
   if (!v) return 'brak danych';
-  const text = `${formatPL(v.value, m.decimals)}${m.unit}`;
+  const text = `${formatPL(v.value, v.decimals ?? m.decimals)}${m.unit}${v.oecd ? '*' : ''}`;
   return withYear && v.year ? `${text} (${v.year})` : text;
 }
 

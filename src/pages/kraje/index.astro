@@ -16,10 +16,10 @@ import Comparison from '@/components/blocks/Comparison.astro';
 import Figure from '@/components/blocks/Figure.astro';
 import SpreadRows from '@/components/blocks/SpreadRows.astro';
 import CountryGrid from '@/components/kraje/CountryGrid.astro';
-import { COUNTRIES, METRICS, TOPIC_TEXTS, countryTable, formatMetric, metricValue, opennessOf, spreadRow, type CountryCode, type MetricKey } from '@/data/kraje';
+import { COUNTRIES, METRICS, OECD_NOTE_PL, TOPIC_TEXTS, countryTable, formatMetric, metricValue, opennessOf, spreadRow, type CountryCode, type MetricKey } from '@/data/kraje';
 import type { Entry } from '@/i18n/entries';
 import type { Crumb, SeoInput } from '@/lib/seo';
-import { typo } from '@/lib/format';
+import { formatPL, typo } from '@/lib/format';
 
 const title = 'Ochrona zdrowia w innych krajach';
 const lead = 'Jak inne kraje płacą za leczenie, ile to kosztuje, ile zarabiają lekarze i co o tych pieniądzach wiadomo publicznie. Każdy kraj opisujemy według tego samego schematu i tych samych miar — obok Polski.';
@@ -39,7 +39,12 @@ const tiles = described.map((c) => ({
   stats: metricValue(c.code, 'healthGdp')
     ? [
         { value: formatMetric(c.code, 'healthGdp'), label: 'PKB na zdrowie' },
-        { value: formatMetric(c.code, 'oopShare'), label: 'z kieszeni pacjenta' },
+        // kraj spoza Eurostatu nie ma udziału wydatków z kieszeni — pokazujemy udział źródeł publicznych, jeśli jest
+        ...(metricValue(c.code, 'oopShare')
+          ? [{ value: formatMetric(c.code, 'oopShare'), label: 'z kieszeni pacjenta' }]
+          : metricValue(c.code, 'publicShare')
+            ? [{ value: formatMetric(c.code, 'publicShare'), label: 'ze źródeł publicznych' }]
+            : []),
       ]
     : [],
 }));
@@ -65,7 +70,17 @@ const spreadCaption = `Polska na tle ${measured.length - 1} krajów w ${SPREAD.l
   .join('. ')}.`;
 
 const sourcesOf = (keys: MetricKey[]) => [...new Map(keys.map((k) => [METRICS[k].source.href, { ...METRICS[k].source, label: METRICS[k].source.label.replace(/ \(HF\d\)$/, '') }])).values()];
-const guardrails = spreadKeys.filter((k) => METRICS[k].guardrail).map((k) => ({ label: METRICS[k].short, text: METRICS[k].guardrail! }));
+const oecdCountries = COUNTRIES.filter((c) => c.oecd);
+const oecdNames = oecdCountries.map((c) => c.name).join(', ').replace(/, ([^,]+)$/, ' i $1');
+const STAR = `* ${oecdNames}: według not krajowych OECD, bo Eurostat tych krajów nie obejmuje.`;
+const guardrails = [
+  ...spreadKeys.filter((k) => METRICS[k].guardrail).map((k) => ({ label: METRICS[k].short, text: METRICS[k].guardrail! })),
+  {
+    label: 'Kraje spoza Eurostatu (gwiazdka)',
+    text: `${oecdNames} nie występują w Eurostacie. Wydatki, liczbę lekarzy i zgony z przyczyn uleczalnych podajemy dla nich według not krajowych OECD (Health at a Glance 2025). To inne źródło i nieco inne definicje, więc wartości z gwiazdką są tylko przybliżonym porównaniem. Polska według OECD: ${formatPL(OECD_NOTE_PL.healthGdp, 1)}% PKB, ${OECD_NOTE_PL.doctors} lekarzy na 100 tys. mieszkańców i ${OECD_NOTE_PL.treatable} zgonów z przyczyn uleczalnych — wobec ${formatMetric('PL', 'healthGdp')}, ${formatMetric('PL', 'doctors')} i ${formatMetric('PL', 'treatable')} w Eurostacie.`,
+  },
+];
+const oecdSources = oecdCountries.map((c) => ({ label: `OECD, nota: ${c.name}`, href: c.oecd!.href }));
 
 const openness = {
   caption: 'Model systemu i jawność pieniędzy w krajach z tej strony',
@@ -101,13 +116,14 @@ const seo: SeoInput = { title, description: 'Systemy ochrony zdrowia innych kraj
   <Section id="kraje" space="bottom" aria-labelledby="kraje-title">
     <SectionHead eyebrow="Kraje" title="Wybierz kraj" id="kraje-title" aside="Opis systemu ma zawsze ten sam układ: płatnik, koszt, rozliczenia, dopłaty pacjenta, zarobki lekarzy, jawność, kadry, dostęp i wyniki." />
     <CountryGrid items={tiles} />
+    <p class="kr-star">{typo(STAR)}</p>
     <h3 class="kr-sub">Porównania i inne teksty</h3>
     <ArticleTable articles={topics} />
   </Section>
 
   <Section id="porownanie" tone="soft" aria-labelledby="porownanie-title">
     <SectionHead eyebrow="Porównanie" title="Polska na tle innych krajów" id="porownanie-title" aside="Każdy wiersz to jedna miara, każda kropka to jeden kraj. Z listy nad wykresem wybierz kraj, który chcesz zobaczyć obok Polski." />
-    <Figure note="Każdy wiersz ma własną skalę, zawsze od zera. Kreska to średnia Unii Europejskiej, jeśli źródło ją podaje." source={sourcesOf(spreadKeys)}>
+    <Figure note={`Każdy wiersz ma własną skalę, zawsze od zera. Kreska to średnia Unii Europejskiej, jeśli źródło ją podaje. ${oecdNames}: koszt, lekarze i zgony według not OECD, bo Eurostat tych krajów nie obejmuje.`} source={[...sourcesOf(spreadKeys), ...oecdSources]}>
       <SpreadRows rows={spreadRows} unit="" subject="Polska" dotLabel="inny kraj" averageLabel="średnia UE"
         pick={{ label: 'Porównaj z krajem:', none: 'wybierz kraj', absent: 'brak danych dla tego kraju' }} caption={spreadCaption} />
     </Figure>
@@ -116,6 +132,7 @@ const seo: SeoInput = { title, description: 'Systemy ochrony zdrowia innych kraj
   <Section id="tabela" aria-labelledby="tabela-title">
     <SectionHead eyebrow="Dane" title="Liczby w tabeli" id="tabela-title" aside="Te same miary co na wykresie, kraj w wierszu. Przy zarobkach rok danych stoi obok wartości, bo OECD podaje różne lata." />
     <Comparison table={countryTable('Kraje i wspólne miary', TABLE, spreadKeys)} style="--cmp-th: 12%" />
+    <p class="kr-star">{typo(STAR)}</p>
   </Section>
 
   <Section id="jawnosc" tone="soft" aria-labelledby="jawnosc-title">
@@ -124,7 +141,7 @@ const seo: SeoInput = { title, description: 'Systemy ochrony zdrowia innych kraj
   </Section>
 
   <Section id="metoda" aria-labelledby="metoda-title">
-    <SectionHead eyebrow="Metoda" title="Jak czytać te liczby" id="metoda-title" aside="Każda miara pochodzi z jednego zbioru i jednego roku dla wszystkich krajów. „Brak danych” znaczy, że źródło nie podaje wartości — nie zero." />
+    <SectionHead eyebrow="Metoda" title="Jak czytać te liczby" id="metoda-title" aside="Każda miara pochodzi z jednego zbioru i jednego roku dla wszystkich krajów; wyjątki mają gwiazdkę. „Brak danych” znaczy, że źródło nie podaje wartości — nie zero." />
     <dl class="kr-notes">
       {guardrails.map((g) => (
         <div>
@@ -138,6 +155,7 @@ const seo: SeoInput = { title, description: 'Systemy ochrony zdrowia innych kraj
 
 <style>
   .kr-top { padding-top: clamp(32px, 4vw, 56px); }
+  .kr-star { margin-top: 14px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
   .kr-sub { margin: clamp(48px, 5vw, 72px) 0 16px; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .kr-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px 48px; }
   .kr-notes div { padding-top: 14px; border-top: 1px solid var(--line-2); }

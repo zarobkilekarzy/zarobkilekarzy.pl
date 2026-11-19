@@ -370,7 +370,16 @@ export interface FaqItem {
 export interface CompareTable {
   caption?: string;
   columns: string[];
-  rows: { cells: string[]; marked?: boolean }[];
+  rows: { cells: string[]; marked?: boolean; more?: CompareMore }[];
+}
+
+/** Rozwijany dodatek pod wierszem tabeli porównania (np. głosy klubów pod wynikiem głosowania): mała tabela i link do źródła. */
+export interface CompareMore {
+  /** napis na przycisku rozwijania, np. „Głosy klubów” */
+  label: string;
+  columns: string[];
+  rows: string[][];
+  link?: { label: string; href: string };
 }
 
 /**

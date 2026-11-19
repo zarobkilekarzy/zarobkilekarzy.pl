@@ -10,7 +10,7 @@ stat: { value: "16×", unit: płacy minimalnej miesięcznie — łączny pułap 
 date: 2026-10-20
 changelog:
   - date: 2026-11-19
-    text: "Sejm: 19 listopada rozpatrzył poprawki Senatu ([sprawozdanie komisji, druk nr 3389](https://api.sejm.gov.pl/sejm/term10/prints/3389/3389.pdf)). Odrzucił jedną — wyjątki od wymogu etatu ustalane rozporządzeniem (340 głosów za odrzuceniem). Pozostałych 30 nie odrzucił, więc weszły do ustawy: bez zakazu pracy na NFZ i rejestru zakazów, ćwierć etatu w szpitalu zamiast pół (za odrzuceniem 202 posłów przy wymaganych 213), wypowiedzenie bez okresu wypowiedzenia przy braku zgody na niższą płacę i dostosowanie umów tylko w niezbędnym zakresie. Zmienione w tekście: wymóg etatu w szpitalu, sekcja o zakazie, terminy, skrót i pasek stanu; dopisane [wyniki głosowań Sejmu](#sejm-o-poprawkach-senatu) i etap na osi. Ustawa trafia do prezydenta."
+    text: "Sejm: 19 listopada rozpatrzył poprawki Senatu ([sprawozdanie komisji, druk nr 3389](https://api.sejm.gov.pl/sejm/term10/prints/3389/3389.pdf)). Odrzucił jedną — wyjątki od wymogu etatu ustalane rozporządzeniem (340 głosów za odrzuceniem). Pozostałych 30 nie odrzucił, więc weszły do ustawy: bez zakazu pracy na NFZ i rejestru zakazów, ćwierć etatu w szpitalu zamiast pół (za odrzuceniem 202 posłów przy wymaganych 213), wypowiedzenie bez okresu wypowiedzenia przy braku zgody na niższą płacę i dostosowanie umów tylko w niezbędnym zakresie. Zmienione w tekście: wymóg etatu w szpitalu, sekcja o zakazie, terminy, skrót i pasek stanu; dopisane [wyniki głosowań Sejmu](#sejm-o-poprawkach-senatu) i etap na osi; pod wierszami tabel głosowań Sejmu i Senatu można rozwinąć głosy klubów. Ustawa trafia do prezydenta."
   - date: 2026-11-18
     text: "Sejm: 18 listopada Komisja Zdrowia zaopiniowała 31 poprawek Senatu ([druk nr 3337](https://api.sejm.gov.pl/sejm/term10/prints/3337/3337.pdf)). Zaleca przyjąć 28, w tym skreślenie zakazu pracy na NFZ i rejestru zakazów, a odrzucić trzy: ćwierć etatu w szpitalu, wyjątki od wymogu etatu w rozporządzeniu i ograniczenie zmian w umowach do niezbędnego zakresu. Dopisane: [sekcja o posiedzeniu komisji z tabelą stanowisk rządu i wyników głosowań](#komisja-zdrowia-sejmu-o-poprawkach-senatu) oraz etap na osi. Tekst przebudowany i skrócony: najpierw opis ustawy, potem etapy i głosowania od najnowszych, a przy przepisach dopiski „Poprawka Senatu” z opinią komisji. Usunięta tabela głosów klubów w Senacie (wyniki są pod linkiem w przypisie o głosowaniach Senatu). O poprawkach zdecyduje Sejm."
   - date: 2026-11-06
@@ -47,7 +47,7 @@ import Actions from '@/components/layout/Actions.astro';
 import Button from '@/components/ui/Button.astro';
 import LimitCalculator from '@/components/limity/LimitCalculator.astro';
 import Hemicycle from '@/components/sejm/Hemicycle.astro';
-import { limityVoting, SEJM_CLUBS, CLUBS_LAST } from '@/data/glosowania';
+import { limityVoting, limityAmendmentVotes, limitySejmVotes, limitySenatVotes, clubRows, SEJM_CLUBS, SENAT_CLUBS, CLUBS_LAST } from '@/data/glosowania';
 import { formatPL } from '@/lib/format';
 
 export const LINKS = {
@@ -65,6 +65,23 @@ export const LINKS = {
   min2026: 'https://api.sejm.gov.pl/eli/acts/DU/2025/1242/text.pdf',
   min2027: 'https://api.sejm.gov.pl/eli/acts/DU/2026/1213/text.pdf',
   przecietne: 'https://api.sejm.gov.pl/eli/acts/MP/2026/192/text.pdf',
+};
+
+export const vote69 = (nr) => `https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=glosowania&NrKadencji=10&NrPosiedzenia=69&NrGlosowania=${nr}`;
+
+export const more69 = (nr) => {
+  const v = limityAmendmentVotes.find((x) => x.nr === nr);
+  return { label: 'Głosy klubów', columns: ['Klub lub koło', 'Za odrzuceniem', 'Przeciw', 'Wstrzymało się', 'Nie głosowało'], rows: clubRows(v.clubs, (id) => SEJM_CLUBS[id]?.name ?? id), link: { label: `Wyniki imienne głosowania nr ${nr} na stronie Sejmu`, href: vote69(nr) } };
+};
+
+export const more67 = (nr) => {
+  const v = limitySejmVotes.find((x) => x.nr === nr);
+  return { label: 'Głosy klubów', columns: ['Klub lub koło', 'Za', 'Przeciw', 'Wstrzymało się', 'Nie głosowało'], rows: clubRows(v.clubs, (id) => SEJM_CLUBS[id]?.name ?? id), link: { label: `Wyniki imienne głosowania nr ${nr} na stronie Sejmu`, href: vote(nr) } };
+};
+
+export const moreSenat = (nr) => {
+  const v = limitySenatVotes.find((x) => x.nr === nr);
+  return { label: 'Głosy klubów', columns: ['Klub lub koło', 'Za', 'Przeciw', 'Wstrzymało się', 'Nie głosowało'], rows: clubRows(v.clubs, (id) => SENAT_CLUBS[id].pl), link: { label: `Głosowanie nr ${nr} na stronie Senatu`, href: `https://www.senat.gov.pl/sklad/senatorowie/szczegoly-glosowania,628,${nr},11.html` } };
 };
 
 export const vote = (nr) => `https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=glosowania&NrKadencji=10&NrPosiedzenia=67&NrGlosowania=${nr}`;
@@ -414,21 +431,23 @@ Cztery etapy, które zmieniały tekst ustawy albo o nim rozstrzygały: głosowan
 
 <Comparison
   table={{
-    caption: 'Głosowania Sejmu 19 listopada 2026 r. nad poprawkami Senatu do ustawy o limitach płac medyków, z numerami z uchwały Senatu (druk nr 3337); bez poprawek redakcyjnych i przepisów przejściowych. Głosy: za odrzuceniem / przeciw / wstrzymało się. Wyróżnione: rozstrzygnięcia inne niż zalecenie Komisji Zdrowia',
+    caption: 'Głosowania Sejmu 19 listopada 2026 r. nad poprawkami Senatu do ustawy o limitach płac medyków, z numerami z uchwały Senatu (druk nr 3337), w kolejności głosowań. Głosy: za odrzuceniem / przeciw / wstrzymało się. Pod każdym wierszem można rozwinąć głosy klubów. Wyróżnione: rozstrzygnięcia inne niż zalecenie Komisji Zdrowia',
     columns: ['Poprawka Senatu', 'Zalecenie komisji', 'Głosy', 'Większość potrzebna do odrzucenia', 'Wynik'],
     rows: [
-      { cells: ['Dyrektorzy oddziałów NFZ powoływani i odwoływani za zgodą ministra zdrowia (nr 1, 6 i 9)', 'Przyjąć', '51 / 369 / 7', '214', 'Weszła do ustawy'] },
-      { cells: ['Skreślenie zakazu udzielania świadczeń z NFZ i rejestru zakazów (nr 4, 21, 22 i 31)', 'Przyjąć', '45 / 228 / 156', '215', 'Weszła do ustawy'] },
-      { cells: ['Zakaz łączenia pracy w NFZ z mandatem posła, senatora lub eurodeputowanego i z członkostwem w organach samorządu (nr 5, 7, 8 i 10)', 'Przyjąć', '137 / 291 / 3', '216', 'Weszła do ustawy'] },
-      { cells: ['Ćwierć etatu zamiast pół jako najmniejszy wymiar pracy w szpitalu i poradni przyszpitalnej (nr 11)', 'Odrzucić', '202 / 198 / 25', '213', 'Weszła do ustawy'], marked: true },
-      { cells: ['Wyjątki od tego wymogu wskazane w rozporządzeniu ministra zdrowia zamiast listy w ustawie (nr 15)', 'Odrzucić', '340 / 61 / 30', '216', 'Odrzucona'] },
-      { cells: ['Wypowiedzenie bez zachowania okresu wypowiedzenia, gdy medyk nie zgodzi się na zmianę wysokości wynagrodzenia (nr 16)', 'Przyjąć', '176 / 247 / 3', '214', 'Weszła do ustawy'] },
-      { cells: ['Dostosowanie umów tylko w niezbędnym zakresie, bez obniżania grupy zawodowej i bez zmiany wymaganych kwalifikacji (nr 28)', 'Odrzucić', '29 / 370 / 22', '211', 'Weszła do ustawy'], marked: true },
+      { cells: ['Dyrektorzy oddziałów NFZ powoływani i odwoływani za zgodą ministra zdrowia (nr 1, 6 i 9)', 'Przyjąć', '51 / 369 / 7', '214', 'Weszła do ustawy'], more: more69(90) },
+      { cells: ['Poprawki redakcyjne i legislacyjne (nr 2, 3, 12–14, 19, 23, 24 i 29)', 'Przyjąć', '136 / 293 / 2', '216', 'Weszły do ustawy'], more: more69(91) },
+      { cells: ['Skreślenie zakazu udzielania świadczeń z NFZ i rejestru zakazów (nr 4, 21, 22 i 31)', 'Przyjąć', '45 / 228 / 156', '215', 'Weszła do ustawy'], more: more69(92) },
+      { cells: ['Zakaz łączenia pracy w NFZ z mandatem posła, senatora lub eurodeputowanego i z członkostwem w organach samorządu (nr 5, 7, 8 i 10)', 'Przyjąć', '137 / 291 / 3', '216', 'Weszła do ustawy'], more: more69(93) },
+      { cells: ['Ćwierć etatu zamiast pół jako najmniejszy wymiar pracy w szpitalu i poradni przyszpitalnej (nr 11)', 'Odrzucić', '202 / 198 / 25', '213', 'Weszła do ustawy'], marked: true, more: more69(94) },
+      { cells: ['Wyjątki od tego wymogu wskazane w rozporządzeniu ministra zdrowia zamiast listy w ustawie (nr 15)', 'Odrzucić', '340 / 61 / 30', '216', 'Odrzucona'], more: more69(95) },
+      { cells: ['Wypowiedzenie bez zachowania okresu wypowiedzenia, gdy medyk nie zgodzi się na zmianę wysokości wynagrodzenia (nr 16)', 'Przyjąć', '176 / 247 / 3', '214', 'Weszła do ustawy'], more: more69(96) },
+      { cells: ['Nowy układ przepisu o dokumentacji, której NFZ może żądać od świadczeniodawców (nr 17 i 20)', 'Przyjąć', '138 / 273 / 23', '218', 'Weszły do ustawy'], more: more69(97) },
+      { cells: ['Doprecyzowanie, do którego świadczeniodawcy NFZ kieruje wniosek o dokumentację (nr 18)', 'Przyjąć', '145 / 286 / 2', '217', 'Weszła do ustawy'], more: more69(98) },
+      { cells: ['Przepisy przejściowe (nr 25–27 i 30)', 'Przyjąć', '142 / 273 / 20', '218', 'Weszły do ustawy'], more: more69(99) },
+      { cells: ['Dostosowanie umów tylko w niezbędnym zakresie, bez obniżania grupy zawodowej i bez zmiany wymaganych kwalifikacji (nr 28)', 'Odrzucić', '29 / 370 / 22', '211', 'Weszła do ustawy'], marked: true, more: more69(100) },
     ],
   }}
 />
-
-Pozostałych 16 poprawek — redakcyjnych, legislacyjnych i przejściowych — Sejm także nie odrzucił; ich wyniki są w przypisie.[^sejm-glosowania]
 
 Za odrzuceniem ćwierć etatu głosowały KO, PSL, Centrum, Polska 2050 i Razem, przeciw PiS, Rozwój Plus i Lewica. Posłowie obu Konfederacji i Demokracji Bezpośredniej wstrzymali się. Przy skreśleniu zakazu pracy na NFZ odrzucenia poprawki chcieli posłowie Rozwoju Plus i Razem. Przeciw były KO, PSL, Lewica, Centrum i Polska 2050, a PiS, obie Konfederacje i Demokracja Bezpośrednia wstrzymały się.[^sejm-glosowania]
 
@@ -471,13 +490,13 @@ Przy poprawce nr 16 przedstawiciel rządu potwierdził na pytanie posłanki, że
     caption: 'Ustawa uchwalona przez Sejm (druk senacki nr 893) i poprawki przyjęte przez Senat 6 listopada, z numerami z zestawienia wniosków (druk nr 893 Z). Głosowanie: za / przeciw / wstrzymało się. Wyróżnione: najważniejsze zmiany',
     columns: ['', 'Ustawa uchwalona przez Sejm', 'Poprawka Senatu', 'Głosowanie w Senacie'],
     rows: [
-      { cells: ['Zakaz udzielania świadczeń z NFZ i jawny rejestr zakazów', 'Prezes NFZ orzeka zakaz na okres od miesiąca do 8 lat albo dożywotnio; rejestr w BIP z imieniem i nazwiskiem', 'Skreślone w całości, razem z wykroczeniami i zmianami w innych ustawach (nr 4, 27, 29 i 40)', '93 / 1 / 2'], marked: true },
-      { cells: ['Najmniejszy wymiar pracy w szpitalu i poradni przyszpitalnej', 'Pół etatu', 'Ćwierć etatu (nr 14)', '96 / 0 / 0'], marked: true },
-      { cells: ['Wyjątki od tego wymogu', 'Wpisane w ustawę: lekarze geriatrzy, patomorfolodzy i psychiatrzy', 'Zawody i specjalizacje wskaże minister zdrowia w rozporządzeniu, biorąc pod uwagę niedobory kadr, dostępność świadczeń i ciągłość ich udzielania (nr 18)', '64 / 0 / 32'] },
-      { cells: ['Medyk nie zgadza się na zmianę umowy, która mieści płacę w limicie', 'Wypowiedzenie z zachowaniem okresu wypowiedzenia', 'Wypowiedzenie bez zachowania okresu wypowiedzenia, ale tylko gdy medyk nie zgodzi się na zmianę wysokości wynagrodzenia (nr 19)', '63 / 0 / 32'], marked: true },
-      { cells: ['Dostosowanie umów w okresie przejściowym', 'Umowę niedostosowaną w 6 miesięcy kierownik rozwiązuje (umowę o pracę) albo wypowiada (kontrakt)', 'Zmiany tylko w zakresie niezbędnym, bez obniżania grupy zawodowej i bez zmiany wymaganych kwalifikacji; umowę o pracę zmienia się wypowiedzeniem zmieniającym (nr 36)', '64 / 0 / 32'], marked: true },
-      { cells: ['Dyrektorzy oddziałów NFZ', 'Powołuje i odwołuje prezes NFZ po opinii rady oddziału', 'Dodatkowo za zgodą ministra zdrowia (nr 1, 9 i 12)', '96 / 0 / 0'] },
-      { cells: ['Pracownik NFZ jako poseł, senator, eurodeputowany albo członek organu samorządu', 'Możliwe za zgodą prezesa NFZ', 'Zakazane bez wyjątków, jak dziś (nr 13)', '96 / 0 / 0'] },
+      { cells: ['Zakaz udzielania świadczeń z NFZ i jawny rejestr zakazów', 'Prezes NFZ orzeka zakaz na okres od miesiąca do 8 lat albo dożywotnio; rejestr w BIP z imieniem i nazwiskiem', 'Skreślone w całości, razem z wykroczeniami i zmianami w innych ustawach (nr 4, 27, 29 i 40)', '93 / 1 / 2'], marked: true, more: moreSenat(27) },
+      { cells: ['Najmniejszy wymiar pracy w szpitalu i poradni przyszpitalnej', 'Pół etatu', 'Ćwierć etatu (nr 14)', '96 / 0 / 0'], marked: true, more: moreSenat(29) },
+      { cells: ['Wyjątki od tego wymogu', 'Wpisane w ustawę: lekarze geriatrzy, patomorfolodzy i psychiatrzy', 'Zawody i specjalizacje wskaże minister zdrowia w rozporządzeniu, biorąc pod uwagę niedobory kadr, dostępność świadczeń i ciągłość ich udzielania (nr 18)', '64 / 0 / 32'], more: moreSenat(30) },
+      { cells: ['Medyk nie zgadza się na zmianę umowy, która mieści płacę w limicie', 'Wypowiedzenie z zachowaniem okresu wypowiedzenia', 'Wypowiedzenie bez zachowania okresu wypowiedzenia, ale tylko gdy medyk nie zgodzi się na zmianę wysokości wynagrodzenia (nr 19)', '63 / 0 / 32'], marked: true, more: moreSenat(31) },
+      { cells: ['Dostosowanie umów w okresie przejściowym', 'Umowę niedostosowaną w 6 miesięcy kierownik rozwiązuje (umowę o pracę) albo wypowiada (kontrakt)', 'Zmiany tylko w zakresie niezbędnym, bez obniżania grupy zawodowej i bez zmiany wymaganych kwalifikacji; umowę o pracę zmienia się wypowiedzeniem zmieniającym (nr 36)', '64 / 0 / 32'], marked: true, more: moreSenat(33) },
+      { cells: ['Dyrektorzy oddziałów NFZ', 'Powołuje i odwołuje prezes NFZ po opinii rady oddziału', 'Dodatkowo za zgodą ministra zdrowia (nr 1, 9 i 12)', '96 / 0 / 0'], more: moreSenat(25) },
+      { cells: ['Pracownik NFZ jako poseł, senator, eurodeputowany albo członek organu samorządu', 'Możliwe za zgodą prezesa NFZ', 'Zakazane bez wyjątków, jak dziś (nr 13)', '96 / 0 / 0'], more: moreSenat(28) },
     ],
   }}
 />
@@ -523,13 +542,13 @@ O kształcie ustawy zdecydowały też głosowania nad poprawkami i wnioskami mni
       caption: 'Wybrane głosowania nad poprawkami i wnioskami mniejszości do ustawy o limitach płac medyków',
       columns: ['', 'Wynik', 'Za', 'Przeciw lub wstrzymali się'],
       rows: [
-        { cells: ['Zakaz udzielania świadczeń z NFZ i jawny rejestr zakazów (wnioski mniejszości nr 1, 3–6, 8–9; poseł Rozwoju Plus)', 'Przyjęte, 416 / 20 / 0', 'Wszystkie kluby i koła poza obiema Konfederacjami', 'Przeciw: Konfederacja (16), Konfederacja Korony Polskiej (2)'] },
-        { cells: ['Oświadczenia o czasie pracy w systemie P1 (wnioski mniejszości nr 2 i 7; poseł Rozwoju Plus)', 'Odrzucone, 188 / 231 / 18', 'PiS, Rozwój Plus, Razem', 'Przeciw: KO, PSL, Lewica, Centrum, Polska 2050; Konfederacja się wstrzymała'] },
-        { cells: ['Skreślenie wymogu pół etatu w szpitalu i zgody pracodawcy (poprawka nr 7, PSL)', 'Odrzucona, 179 / 203 / 43', 'PiS, Konfederacja, 17 posłów PSL', 'Przeciw: KO, Lewica, Centrum, Polska 2050, 9 posłów PSL; Rozwój Plus się wstrzymał'] },
-        { cells: ['Niższe pułapy: 10× zamiast 12× i 13× zamiast 16× płacy minimalnej (poprawka nr 21, PiS)', 'Odrzucona, 187 / 246 / 0', 'PiS, Rozwój Plus, Razem', 'Przeciw: KO, PSL, Lewica, Konfederacja, Centrum, Polska 2050'] },
+        { cells: ['Zakaz udzielania świadczeń z NFZ i jawny rejestr zakazów (wnioski mniejszości nr 1, 3–6, 8–9; poseł Rozwoju Plus)', 'Przyjęte, 416 / 20 / 0', 'Wszystkie kluby i koła poza obiema Konfederacjami', 'Przeciw: Konfederacja (16), Konfederacja Korony Polskiej (2)'], more: more67(125) },
+        { cells: ['Oświadczenia o czasie pracy w systemie P1 (wnioski mniejszości nr 2 i 7; poseł Rozwoju Plus)', 'Odrzucone, 188 / 231 / 18', 'PiS, Rozwój Plus, Razem', 'Przeciw: KO, PSL, Lewica, Centrum, Polska 2050; Konfederacja się wstrzymała'], more: more67(126) },
+        { cells: ['Skreślenie wymogu pół etatu w szpitalu i zgody pracodawcy (poprawka nr 7, PSL)', 'Odrzucona, 179 / 203 / 43', 'PiS, Konfederacja, 17 posłów PSL', 'Przeciw: KO, Lewica, Centrum, Polska 2050, 9 posłów PSL; Rozwój Plus się wstrzymał'], more: more67(130) },
+        { cells: ['Niższe pułapy: 10× zamiast 12× i 13× zamiast 16× płacy minimalnej (poprawka nr 21, PiS)', 'Odrzucona, 187 / 246 / 0', 'PiS, Rozwój Plus, Razem', 'Przeciw: KO, PSL, Lewica, Konfederacja, Centrum, Polska 2050'], more: more67(142) },
         { cells: ['Limity liczone od przeciętnego wynagrodzenia, np. 3× i 6× miesięcznie (poprawki nr 12–14 i 16–19, Razem)', 'Odrzucone, za 5–7 posłów', 'Razem i część niezrzeszonych', 'Przeciw: pozostałe kluby'] },
-        { cells: ['Wypowiedzenie z zachowaniem okresu wypowiedzenia, gdy medyk nie zgodzi się na zmianę umowy mieszczącą płacę w limicie (poprawka nr 24, Lewica)', 'Przyjęta, 228 / 208 / 2', 'PiS, Rozwój Plus, Lewica, Konfederacja, Razem', 'Przeciw: KO, PSL, Centrum, Polska 2050'] },
-        { cells: ['Ochrona z kodeksu pracy przy wypowiedzeniach w okresie przejściowym (poprawka nr 27, KO i Lewica)', 'Przyjęta, 404 / 9 / 19', 'Wszystkie kluby i koła poza obiema Konfederacjami', 'Obie Konfederacje się wstrzymały; przeciw 7 posłów KO'] },
+        { cells: ['Wypowiedzenie z zachowaniem okresu wypowiedzenia, gdy medyk nie zgodzi się na zmianę umowy mieszczącą płacę w limicie (poprawka nr 24, Lewica)', 'Przyjęta, 228 / 208 / 2', 'PiS, Rozwój Plus, Lewica, Konfederacja, Razem', 'Przeciw: KO, PSL, Centrum, Polska 2050'], more: more67(145) },
+        { cells: ['Ochrona z kodeksu pracy przy wypowiedzeniach w okresie przejściowym (poprawka nr 27, KO i Lewica)', 'Przyjęta, 404 / 9 / 19', 'Wszystkie kluby i koła poza obiema Konfederacjami', 'Obie Konfederacje się wstrzymały; przeciw 7 posłów KO'], more: more67(147) },
       ],
     }}
   />

@@ -12,7 +12,7 @@ og:
   title: "Pay limits for health\nprofessionals in the act\npassed by the Sejm"
 changelog:
   - date: 2026-11-19
-    text: "Sejm: on 19 November it considered the Senate amendments ([committee report, print No. 3389](https://api.sejm.gov.pl/sejm/term10/prints/3389/3389.pdf), in Polish). It rejected one — exceptions to the working-time requirement set by regulation (340 votes for rejection). It did not reject the other 30, so they became part of the act: no ban on NFZ-funded work and no register of bans, a quarter-time instead of a half-time post in hospitals (202 MPs voted to reject it, with 213 needed), termination without notice when a person does not agree to lower pay, and contract changes limited to what is necessary. Changed in the text: the hospital working-time requirement, the section on the ban, the deadlines, the summary and the status box; added: [the results of the Sejm votes](#sejm-on-the-senate-amendments) and a stage on the timeline. The act now goes to the President."
+    text: "Sejm: on 19 November it considered the Senate amendments ([committee report, print No. 3389](https://api.sejm.gov.pl/sejm/term10/prints/3389/3389.pdf), in Polish). It rejected one — exceptions to the working-time requirement set by regulation (340 votes for rejection). It did not reject the other 30, so they became part of the act: no ban on NFZ-funded work and no register of bans, a quarter-time instead of a half-time post in hospitals (202 MPs voted to reject it, with 213 needed), termination without notice when a person does not agree to lower pay, and contract changes limited to what is necessary. Changed in the text: the hospital working-time requirement, the section on the ban, the deadlines, the summary and the status box; added: [the results of the Sejm votes](#sejm-on-the-senate-amendments) and a stage on the timeline; the votes by club can be expanded under the rows of the Sejm and Senate voting tables. The act now goes to the President."
   - date: 2026-11-18
     text: "Sejm: on 18 November the Health Committee gave its opinion on the Senate’s 31 amendments ([print No. 3337](https://api.sejm.gov.pl/sejm/term10/prints/3337/3337.pdf), in Polish). It recommends adopting 28, including deletion of the ban on NFZ-funded work and the register of bans, and rejecting three: the quarter-time post in hospitals, exceptions to the working-time requirement set by regulation, and limiting contract changes to what is necessary. Added: [a section on the committee sitting with a table of government positions and voting results](#sejm-health-committee-on-the-senate-amendments) and a stage on the timeline. The text has been restructured and shortened: first the description of the act, then the stages and the votes, newest first, with “Senate amendment” notes next to the provisions giving the committee’s opinion. The table of club votes in the Senate has been removed (the results are linked in the footnote on the Senate votes). The Sejm will decide on the amendments."
   - date: 2026-11-06
@@ -26,7 +26,7 @@ changelog:
 translation:
   of: limity-wynagrodzen-medykow
   files: [src/data/glosowania.ts]
-  hash: "5a8c726d43ec"
+  hash: "0e3dd8569a33"
   date: 2026-11-19
 ---
 import StatRow from '@/components/blocks/StatRow.astro';
@@ -55,6 +55,24 @@ import {
   SEJM_CLUBS_EN,
   CLUBS_LAST,
 } from '@/data/en/limity-wynagrodzen-medykow';
+import { limityAmendmentVotes, limitySejmVotes, limitySenatVotes, clubRows, SENAT_CLUBS } from '@/data/glosowania';
+
+export const vote69 = (nr) => `https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=glosowania&NrKadencji=10&NrPosiedzenia=69&NrGlosowania=${nr}`;
+
+export const more69 = (nr) => {
+  const v = limityAmendmentVotes.find((x) => x.nr === nr);
+  return { label: 'Votes by club', columns: ['Club or group', 'For rejection', 'Against', 'Abstained', 'Did not vote'], rows: clubRows(v.clubs, (id) => SEJM_CLUBS_EN[id]?.name ?? id), link: { label: `Roll-call results of vote No. ${nr} on the Sejm website (in Polish)`, href: vote69(nr) } };
+};
+
+export const more67 = (nr) => {
+  const v = limitySejmVotes.find((x) => x.nr === nr);
+  return { label: 'Votes by club', columns: ['Club or group', 'For', 'Against', 'Abstained', 'Did not vote'], rows: clubRows(v.clubs, (id) => SEJM_CLUBS_EN[id]?.name ?? id), link: { label: `Roll-call results of vote No. ${nr} on the Sejm website (in Polish)`, href: vote(nr) } };
+};
+
+export const moreSenat = (nr) => {
+  const v = limitySenatVotes.find((x) => x.nr === nr);
+  return { label: 'Votes by club', columns: ['Club or group', 'For', 'Against', 'Abstained', 'Did not vote'], rows: clubRows(v.clubs, (id) => SENAT_CLUBS[id].en), link: { label: `Vote No. ${nr} on the Senate website (in Polish)`, href: `https://www.senat.gov.pl/sklad/senatorowie/szczegoly-glosowania,628,${nr},11.html` } };
+};
 
 {/* Tłumaczenie src/content/articles/limity-wynagrodzen-medykow.mdx; wykres, kalkulator i nazwy klubów — src/data/en/limity-wynagrodzen-medykow.ts */}
 
@@ -368,21 +386,23 @@ On 19 November the Sejm voted on the Senate amendments in eleven votes.[^sejm-gl
 
 <Comparison
   table={{
-    caption: 'Votes of the Sejm on 19 November 2026 on the Senate amendments to the act on pay limits for health professionals, with the numbers from the Senate resolution (print No. 3337); without the drafting amendments and transitional provisions. Votes: for rejection / against / abstained. Highlighted: decisions that differ from the Health Committee’s recommendation',
+    caption: 'Votes of the Sejm on 19 November 2026 on the Senate amendments to the act on pay limits for health professionals, with the numbers from the Senate resolution (print No. 3337), in voting order. Votes: for rejection / against / abstained. The votes by club can be expanded under each row. Highlighted: decisions that differ from the Health Committee’s recommendation',
     columns: ['Senate amendment', 'Committee recommendation', 'Votes', 'Majority needed to reject', 'Result'],
     rows: [
-      { cells: ['Directors of NFZ regional branches appointed and dismissed with the consent of the minister of health (No. 1, 6 and 9)', 'Adopt', '51 / 369 / 7', '214', 'Part of the act'] },
-      { cells: ['Deletion of the ban on providing NFZ-funded services and the register of bans (No. 4, 21, 22 and 31)', 'Adopt', '45 / 228 / 156', '215', 'Part of the act'] },
-      { cells: ['A ban on combining work at the NFZ with a seat as an MP, senator or MEP and with membership of local government bodies (No. 5, 7, 8 and 10)', 'Adopt', '137 / 291 / 3', '216', 'Part of the act'] },
-      { cells: ['A quarter-time instead of a half-time post as the minimum working time in a hospital and a hospital-based clinic (No. 11)', 'Reject', '202 / 198 / 25', '213', 'Part of the act'], marked: true },
-      { cells: ['Exceptions to this requirement set by the minister of health in a regulation instead of a list in the act (No. 15)', 'Reject', '340 / 61 / 30', '216', 'Rejected'] },
-      { cells: ['Termination without notice when a health professional does not agree to a change in the amount of pay (No. 16)', 'Adopt', '176 / 247 / 3', '214', 'Part of the act'] },
-      { cells: ['Adjusting contracts only to the extent necessary, without lowering the professional group and without changing the required qualifications (No. 28)', 'Reject', '29 / 370 / 22', '211', 'Part of the act'], marked: true },
+      { cells: ['Directors of NFZ regional branches appointed and dismissed with the consent of the minister of health (No. 1, 6 and 9)', 'Adopt', '51 / 369 / 7', '214', 'Part of the act'], more: more69(90) },
+      { cells: ['Drafting and legislative amendments (No. 2, 3, 12–14, 19, 23, 24 and 29)', 'Adopt', '136 / 293 / 2', '216', 'Part of the act'], more: more69(91) },
+      { cells: ['Deletion of the ban on providing NFZ-funded services and the register of bans (No. 4, 21, 22 and 31)', 'Adopt', '45 / 228 / 156', '215', 'Part of the act'], more: more69(92) },
+      { cells: ['A ban on combining work at the NFZ with a seat as an MP, senator or MEP and with membership of local government bodies (No. 5, 7, 8 and 10)', 'Adopt', '137 / 291 / 3', '216', 'Part of the act'], more: more69(93) },
+      { cells: ['A quarter-time instead of a half-time post as the minimum working time in a hospital and a hospital-based clinic (No. 11)', 'Reject', '202 / 198 / 25', '213', 'Part of the act'], marked: true, more: more69(94) },
+      { cells: ['Exceptions to this requirement set by the minister of health in a regulation instead of a list in the act (No. 15)', 'Reject', '340 / 61 / 30', '216', 'Rejected'], more: more69(95) },
+      { cells: ['Termination without notice when a health professional does not agree to a change in the amount of pay (No. 16)', 'Adopt', '176 / 247 / 3', '214', 'Part of the act'], more: more69(96) },
+      { cells: ['A new layout of the provision on the documentation the NFZ may request from providers (No. 17 and 20)', 'Adopt', '138 / 273 / 23', '218', 'Part of the act'], more: more69(97) },
+      { cells: ['Clarification of which provider the NFZ addresses a request for documentation to (No. 18)', 'Adopt', '145 / 286 / 2', '217', 'Part of the act'], more: more69(98) },
+      { cells: ['Transitional provisions (No. 25–27 and 30)', 'Adopt', '142 / 273 / 20', '218', 'Part of the act'], more: more69(99) },
+      { cells: ['Adjusting contracts only to the extent necessary, without lowering the professional group and without changing the required qualifications (No. 28)', 'Reject', '29 / 370 / 22', '211', 'Part of the act'], marked: true, more: more69(100) },
     ],
   }}
 />
-
-The Sejm did not reject the remaining 16 amendments either — drafting, legislative and transitional ones; their results are in the footnote.[^sejm-glosowania]
 
 KO, PSL, Centrum, Polska 2050 and Razem voted to reject the quarter-time post; PiS, Rozwój Plus and Lewica voted against rejection. MPs of both Confederation parties and of Demokracja Bezpośrednia abstained. On deleting the ban on NFZ-funded work, MPs of Rozwój Plus and Razem wanted the amendment rejected. KO, PSL, Lewica, Centrum and Polska 2050 voted against rejection, while PiS, both Confederation parties and Demokracja Bezpośrednia abstained.[^sejm-glosowania]
 
@@ -425,13 +445,13 @@ On 6 November the Senate passed the act with 31 amendments from its Health Commi
     caption: 'The act passed by the Sejm (Senate print No. 893) and the amendments adopted by the Senate on 6 November, with the numbers from the list of motions (print No. 893 Z). Vote: for / against / abstained. Highlighted: the most important changes',
     columns: ['', 'Act passed by the Sejm', 'Senate amendment', 'Vote in the Senate'],
     rows: [
-      { cells: ['Ban on providing NFZ-funded services and the public register of bans', 'The president of the NFZ imposes a ban for one month to 8 years or for life; register in the BIP with first name and surname', 'Deleted in full, together with the petty offences and changes to other acts (No. 4, 27, 29 and 40)', '93 / 1 / 2'], marked: true },
-      { cells: ['Minimum working time in a hospital and a hospital-based clinic', 'Half-time post', 'Quarter-time post (No. 14)', '96 / 0 / 0'], marked: true },
-      { cells: ['Exceptions to this requirement', 'Written into the act: geriatricians, pathologists and psychiatrists', 'The professions and specialties will be set by the minister of health in a regulation, taking into account staff shortages, the availability of services and continuity of care (No. 18)', '64 / 0 / 32'] },
-      { cells: ['A health professional does not agree to a contract change that brings pay within the limit', 'Termination with the notice period observed', 'Termination without notice, but only when the person does not agree to a change in the amount of pay (No. 19)', '63 / 0 / 32'], marked: true },
-      { cells: ['Adjusting contracts during the transitional period', 'A contract not adjusted within 6 months is terminated by the head of the facility (employment contract) or given notice (civil-law contract)', 'Changes only to the extent necessary, without lowering the professional group and without changing the required qualifications; an employment contract is changed by a notice of change to its terms (No. 36)', '64 / 0 / 32'], marked: true },
-      { cells: ['Directors of NFZ regional branches', 'Appointed and dismissed by the president of the NFZ after consulting the branch council', 'In addition, with the consent of the minister of health (No. 1, 9 and 12)', '96 / 0 / 0'] },
-      { cells: ['An NFZ employee as an MP, senator, MEP or member of a local government body', 'Possible with the consent of the president of the NFZ', 'Prohibited without exception, as today (No. 13)', '96 / 0 / 0'] },
+      { cells: ['Ban on providing NFZ-funded services and the public register of bans', 'The president of the NFZ imposes a ban for one month to 8 years or for life; register in the BIP with first name and surname', 'Deleted in full, together with the petty offences and changes to other acts (No. 4, 27, 29 and 40)', '93 / 1 / 2'], marked: true, more: moreSenat(27) },
+      { cells: ['Minimum working time in a hospital and a hospital-based clinic', 'Half-time post', 'Quarter-time post (No. 14)', '96 / 0 / 0'], marked: true, more: moreSenat(29) },
+      { cells: ['Exceptions to this requirement', 'Written into the act: geriatricians, pathologists and psychiatrists', 'The professions and specialties will be set by the minister of health in a regulation, taking into account staff shortages, the availability of services and continuity of care (No. 18)', '64 / 0 / 32'], more: moreSenat(30) },
+      { cells: ['A health professional does not agree to a contract change that brings pay within the limit', 'Termination with the notice period observed', 'Termination without notice, but only when the person does not agree to a change in the amount of pay (No. 19)', '63 / 0 / 32'], marked: true, more: moreSenat(31) },
+      { cells: ['Adjusting contracts during the transitional period', 'A contract not adjusted within 6 months is terminated by the head of the facility (employment contract) or given notice (civil-law contract)', 'Changes only to the extent necessary, without lowering the professional group and without changing the required qualifications; an employment contract is changed by a notice of change to its terms (No. 36)', '64 / 0 / 32'], marked: true, more: moreSenat(33) },
+      { cells: ['Directors of NFZ regional branches', 'Appointed and dismissed by the president of the NFZ after consulting the branch council', 'In addition, with the consent of the minister of health (No. 1, 9 and 12)', '96 / 0 / 0'], more: moreSenat(25) },
+      { cells: ['An NFZ employee as an MP, senator, MEP or member of a local government body', 'Possible with the consent of the president of the NFZ', 'Prohibited without exception, as today (No. 13)', '96 / 0 / 0'], more: moreSenat(28) },
     ],
   }}
 />
@@ -476,13 +496,13 @@ The shape of the act was also decided by the votes on amendments and minority mo
       caption: 'Selected votes on amendments and minority motions to the act on pay limits for health professionals',
       columns: ['', 'Result', 'For', 'Against or abstained'],
       rows: [
-        { cells: ['Ban on providing NFZ-funded services and a public register of bans (minority motions No. 1, 3–6, 8–9; an MP of Rozwój Plus)', 'Adopted, 416 / 20 / 0', 'All clubs and groups except both Konfederacja groups', 'Against: Konfederacja (16), Konfederacja Korony Polskiej (2)'] },
-        { cells: ['Working-time declarations in the P1 system (minority motions No. 2 and 7; an MP of Rozwój Plus)', 'Rejected, 188 / 231 / 18', 'PiS, Rozwój Plus, Razem', 'Against: KO, PSL, Lewica, Centrum, Polska 2050; Konfederacja abstained'] },
-        { cells: ['Deleting the requirement of a half-time post in a hospital and the employer’s consent (amendment No. 7, PSL)', 'Rejected, 179 / 203 / 43', 'PiS, Konfederacja, 17 PSL MPs', 'Against: KO, Lewica, Centrum, Polska 2050, 9 PSL MPs; Rozwój Plus abstained'] },
-        { cells: ['Lower caps: 10× instead of 12× and 13× instead of 16× the minimum wage (amendment No. 21, PiS)', 'Rejected, 187 / 246 / 0', 'PiS, Rozwój Plus, Razem', 'Against: KO, PSL, Lewica, Konfederacja, Centrum, Polska 2050'] },
+        { cells: ['Ban on providing NFZ-funded services and a public register of bans (minority motions No. 1, 3–6, 8–9; an MP of Rozwój Plus)', 'Adopted, 416 / 20 / 0', 'All clubs and groups except both Konfederacja groups', 'Against: Konfederacja (16), Konfederacja Korony Polskiej (2)'], more: more67(125) },
+        { cells: ['Working-time declarations in the P1 system (minority motions No. 2 and 7; an MP of Rozwój Plus)', 'Rejected, 188 / 231 / 18', 'PiS, Rozwój Plus, Razem', 'Against: KO, PSL, Lewica, Centrum, Polska 2050; Konfederacja abstained'], more: more67(126) },
+        { cells: ['Deleting the requirement of a half-time post in a hospital and the employer’s consent (amendment No. 7, PSL)', 'Rejected, 179 / 203 / 43', 'PiS, Konfederacja, 17 PSL MPs', 'Against: KO, Lewica, Centrum, Polska 2050, 9 PSL MPs; Rozwój Plus abstained'], more: more67(130) },
+        { cells: ['Lower caps: 10× instead of 12× and 13× instead of 16× the minimum wage (amendment No. 21, PiS)', 'Rejected, 187 / 246 / 0', 'PiS, Rozwój Plus, Razem', 'Against: KO, PSL, Lewica, Konfederacja, Centrum, Polska 2050'], more: more67(142) },
         { cells: ['Limits calculated from the average wage, e.g. 3× and 6× a month (amendments No. 12–14 and 16–19, Razem)', 'Rejected, 5–7 MPs for', 'Razem and some unaffiliated MPs', 'Against: the other clubs'] },
-        { cells: ['Termination with the notice period observed when a health professional does not agree to a contract change that brings pay within the limit (amendment No. 24, Lewica)', 'Adopted, 228 / 208 / 2', 'PiS, Rozwój Plus, Lewica, Konfederacja, Razem', 'Against: KO, PSL, Centrum, Polska 2050'] },
-        { cells: ['Labour Code protection for terminations during the transitional period (amendment No. 27, KO and Lewica)', 'Adopted, 404 / 9 / 19', 'All clubs and groups except both Konfederacja groups', 'Both Konfederacja groups abstained; 7 KO MPs against'] },
+        { cells: ['Termination with the notice period observed when a health professional does not agree to a contract change that brings pay within the limit (amendment No. 24, Lewica)', 'Adopted, 228 / 208 / 2', 'PiS, Rozwój Plus, Lewica, Konfederacja, Razem', 'Against: KO, PSL, Centrum, Polska 2050'], more: more67(145) },
+        { cells: ['Labour Code protection for terminations during the transitional period (amendment No. 27, KO and Lewica)', 'Adopted, 404 / 9 / 19', 'All clubs and groups except both Konfederacja groups', 'Both Konfederacja groups abstained; 7 KO MPs against'], more: more67(147) },
       ],
     }}
   />

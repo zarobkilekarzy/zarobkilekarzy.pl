@@ -3,6 +3,7 @@
  * Tabela porównania (stan obecny / projektowany, tekst ujednolicony). Wiersz `marked` jest wyróżniony.
  * W wąskim kontenerze każdy wiersz staje się kartą: komórki z etykietą kolumny nad treścią.
  * Pierwsza kolumna z pustym nagłówkiem to nazwa wiersza (nagłówek karty).
+ * Wiersz z polem `more` ma pod sobą zwinięty dodatek (<details>): małą tabelę, np. głosy klubów pod wynikiem głosowania.
  */
 import type { HTMLAttributes } from 'astro/types';
 import type { CompareTable } from '@/types';
@@ -27,18 +28,40 @@ const hasMarks = table.rows.some((row) => row.marked);
     </thead>
     <tbody>
       {table.rows.map((row) => (
-        <tr class:list={{ 'is-marked': row.marked }}>
-          {row.cells.map((cell, i) =>
-            i === 0 && rowHeader ? (
-              <th scope="row" data-label={table.columns[0]}>{typo(cell)}</th>
-            ) : (
-              <td data-label={table.columns[i]}>
-                {row.marked && markLabel && cell !== '—' && <span class="cmp__mark">{markLabel}</span>}
-                {typo(cell)}
+        <>
+          <tr class:list={{ 'is-marked': row.marked, 'has-more': row.more }}>
+            {row.cells.map((cell, i) =>
+              i === 0 && rowHeader ? (
+                <th scope="row" data-label={table.columns[0]}>{typo(cell)}</th>
+              ) : (
+                <td data-label={table.columns[i]}>
+                  {row.marked && markLabel && cell !== '—' && <span class="cmp__mark">{markLabel}</span>}
+                  {typo(cell)}
+                </td>
+              ),
+            )}
+          </tr>
+          {row.more && (
+            <tr class:list={['cmp__more-row', { 'is-marked': row.marked }]}>
+              <td colspan={table.columns.length}>
+                <details class="cmp__more">
+                  <summary>{typo(row.more.label)}</summary>
+                  <table class="cmp__sub">
+                    <thead>
+                      <tr>{row.more.columns.map((c) => <th scope="col">{typo(c)}</th>)}</tr>
+                    </thead>
+                    <tbody>
+                      {row.more.rows.map((cells) => (
+                        <tr>{cells.map((cell, i) => (i === 0 ? <th scope="row">{typo(cell)}</th> : <td>{typo(cell)}</td>))}</tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {row.more.link && <p class="cmp__more-link"><a href={row.more.link.href}>{typo(row.more.link.label)}</a></p>}
+                </details>
               </td>
-            ),
+            </tr>
           )}
-        </tr>
+        </>
       ))}
     </tbody>
   </table>
@@ -66,6 +89,26 @@ const hasMarks = table.rows.some((row) => row.marked);
     font: 500 0.625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; background: var(--blue-fill); color: #fff;
   }
 
+  /* Zwinięty dodatek pod wierszem: wiersz i dodatek czytają się jako jedna pozycja (linia dopiero pod dodatkiem) */
+  .cmp tr.has-more > * { border-bottom: 0; padding-bottom: 6px; }
+  .cmp .cmp__more-row > td { padding: 0 0 14px; }
+  .cmp--marks .cmp__more-row > td, .cmp .cmp__more-row.is-marked > td { padding-left: 14px; }
+  .cmp__more > summary {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer; list-style: none;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--blue);
+  }
+  .cmp__more > summary::-webkit-details-marker { display: none; }
+  .cmp__more > summary::before { content: "+" / ""; font: 400 0.9375rem/1 var(--f-mono); }
+  .cmp__more[open] > summary::before { content: "–" / ""; }
+  .cmp__more > summary:hover { color: var(--ink); }
+  .cmp .cmp__sub { width: 100%; max-width: 640px; margin-top: 10px; border-collapse: collapse; font-size: 0.84375rem; line-height: 1.4; }
+  .cmp .cmp__sub thead th { padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line-2); background: none; box-shadow: none; font: 500 0.625rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .cmp .cmp__sub tbody th, .cmp .cmp__sub td { width: auto; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line); background: none; box-shadow: none; font: 400 0.84375rem/1.4 var(--f-body); letter-spacing: 0; color: var(--ink-2); }
+  .cmp .cmp__sub tbody th { color: var(--ink); }
+  .cmp__more-link { margin-top: 10px; font-size: 0.8125rem; }
+  .cmp__more-link a { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+  .cmp__more-link a:hover { color: var(--blue); }
+
   /* Wąsko: wiersz = karta, etykieta kolumny nad komórką */
   @container (max-width: 640px) {
     thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -78,5 +121,17 @@ const hasMarks = table.rows.some((row) => row.marked);
     .cmp .is-marked > *, .cmp .is-marked > :first-child { background: none; box-shadow: none; padding-left: 0; }
     .cmp--marks tr { padding-inline: 14px; }
     .cmp--marks tr > :first-child { padding-left: 0; }
+    /* dodatek domyka kartę wiersza; mała tabela zostaje tabelą */
+    .cmp tr.has-more { padding-bottom: 6px; border-bottom: 0; }
+    .cmp tr.cmp__more-row { padding-top: 0; }
+    .cmp .cmp__more-row > td { padding: 0; }
+    .cmp .cmp__sub { display: table; table-layout: fixed; width: 100%; max-width: none; }
+    .cmp .cmp__sub thead { display: table-header-group; position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+    .cmp .cmp__sub tbody { display: table-row-group; }
+    .cmp .cmp__sub tr { display: table-row; padding: 0; border: 0; }
+    .cmp .cmp__sub tbody th, .cmp .cmp__sub td, .cmp .cmp__sub thead th { display: table-cell; padding: 6px 6px 6px 0; border-bottom: 1px solid var(--line); font-size: 0.8125rem; }
+    /* cztery kolumny liczb muszą się zmieścić w karcie: nagłówki zwykłym pismem, z dzieleniem wyrazów */
+    .cmp .cmp__sub thead th { font: 400 0.625rem/1.25 var(--f-body); letter-spacing: 0; text-transform: none; hyphens: auto; overflow-wrap: break-word; vertical-align: bottom; }
+    .cmp .cmp__sub thead th:first-child { width: 35%; }
   }
 </style>

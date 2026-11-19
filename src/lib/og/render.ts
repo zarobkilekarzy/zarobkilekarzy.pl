@@ -417,25 +417,34 @@ const panels = (m: Extract<OgMedia, { kind: 'panels' }>) =>
  */
 const LOGO_AREA = 63000;
 const LOGO_MAX_W = 380;
-/* Flagi krajów (hub /kraje/): siatka 3 × 5 w kolumnie mediów, każda 4:3 z cienkim obrysem jak ui/CountryFlag. */
+/* Flagi krajów (hub /kraje/): ściana dużych flag — trzy przesunięte kolumny, które wychodzą poza kadr u góry,
+   na dole i z prawej. Pierwsza flaga z listy (Polska) stoi w środku w kobaltowej ramce, reszta wypełnia kolumny po kolei. */
 const FLAG_FILES = import.meta.glob<string>('/src/components/ui/flags/*.svg', { query: '?raw', import: 'default', eager: true });
-const FLAG_W = 120;
-const FLAG_H = 90;
+const FLAG_W = 170;
+const FLAG_H = 128;
 const FLAG_GAP = 16;
+const FLAG_X0 = 19; // lewa krawędź ściany względem kolumny mediów
+const FLAG_TOPS = [-74, -130, -97]; // góra pierwszej flagi w kolumnie względem kolumny mediów (kadr zaczyna się na -PAD_Y)
+const FLAG_MARK = 5; // grubość ramki wyróżnionej flagi
 
 async function flags(m: Extract<OgMedia, { kind: 'flags' }>) {
+  const [marked, ...rest] = m.flags.slice(0, 15);
+  const order = [...rest.slice(0, 7), marked, ...rest.slice(7)]; // 5 + 5 + 5, wyróżniona w środku środkowej kolumny
   const tiles = await Promise.all(
-    m.flags.slice(0, 15).map(async (code) => {
+    order.map(async (code, i) => {
       const svg = FLAG_FILES[`/src/components/ui/flags/${code}.svg`];
       if (!svg) throw new Error(`[og] brak flagi src/components/ui/flags/${code}.svg`);
+      const on = code === marked;
+      const edge = on ? FLAG_MARK : 1;
+      const w = FLAG_W - 2 * edge, hh = FLAG_H - 2 * edge;
       // SVG rasteryzujemy dwa razy gęściej niż kafel, żeby krawędzie pasów były ostre
-      const buf = await sharp(Buffer.from(svg), { density: 300 }).resize((FLAG_W - 2) * 2, (FLAG_H - 2) * 2, { fit: 'fill' }).png().toBuffer();
-      return h('div', { style: { width: FLAG_W, height: FLAG_H, border: `1px solid ${C.line}` } },
-        h('img', { src: `data:image/png;base64,${buf.toString('base64')}`, width: FLAG_W - 2, height: FLAG_H - 2 }));
+      const buf = await sharp(Buffer.from(svg), { density: 300 }).resize(w * 2, hh * 2, { fit: 'fill' }).png().toBuffer();
+      const col = Math.floor(i / 5), row = i % 5;
+      return h('div', { style: { position: 'absolute', left: FLAG_X0 + col * (FLAG_W + FLAG_GAP), top: FLAG_TOPS[col] + row * (FLAG_H + FLAG_GAP), width: FLAG_W, height: FLAG_H, border: `${edge}px solid ${on ? C.blue : C.line}` } },
+        h('img', { src: `data:image/png;base64,${buf.toString('base64')}`, width: w, height: hh }));
     }),
   );
-  return h('div', { style: { flexShrink: 0, width: MEDIA_W, height: MEDIA_H, alignItems: 'center', justifyContent: 'center' } },
-    h('div', { style: { flexWrap: 'wrap', width: 3 * FLAG_W + 2 * FLAG_GAP, gap: FLAG_GAP } }, ...tiles));
+  return h('div', { style: { position: 'relative', flexShrink: 0, width: MEDIA_W, height: MEDIA_H } }, ...tiles);
 }
 
 const LOGO_MAX_H = 220;

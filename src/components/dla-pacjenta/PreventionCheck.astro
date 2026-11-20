@@ -1,0 +1,146 @@
+---
+/**
+ * „Ile masz lat?”: programy profilaktyczne NFZ według wieku i płci. Lista programów stoi na stronie w całości;
+ * wybór wieku i płci tylko zaznacza, które przysługują (pełne pole), które pod warunkiem (kółko) i które nie (plus).
+ * Bez JS zostaje lista z kryteriami. Dane: `preventionRows` w data/dla-pacjenta (EN: data/en/dla-pacjenta).
+ */
+import { SHAPES } from '@/lib/siatka';
+import { localeOf } from '@/i18n/locales';
+import { linkAttrs } from '@/lib/links';
+import { typo } from '@/lib/format';
+
+const en = localeOf(Astro.url.pathname) === 'en';
+const { preventionBands, preventionGuide, preventionRows, preventionSource } = en ? await import('@/data/en/dla-pacjenta') : await import('@/data/dla-pacjenta');
+const T = en
+  ? {
+      ask: 'How old are you?', sexAsk: 'Sex', sexes: [['k', 'Woman'], ['m', 'Man']],
+      out: ['Pick your age and sex.', 'For you: {on}.', 'For you: {on}. On an additional condition: {mid}.'],
+      legend: ['available', 'on a condition given in the description', 'not at this age or for this sex'],
+      src: 'Age counts by year of birth. Current criteria are published by the National Health Fund:', more: 'Full guide:',
+    }
+  : {
+      ask: 'Ile masz lat?', sexAsk: 'Płeć', sexes: [['k', 'Kobieta'], ['m', 'Mężczyzna']],
+      out: ['Wybierz wiek i płeć.', 'Dla Ciebie: {on}.', 'Dla Ciebie: {on}. Pod dodatkowym warunkiem: {mid}.'],
+      legend: ['przysługuje', 'pod warunkiem z opisu', 'nie w tym wieku albo nie dla tej płci'],
+      src: 'Wiek liczy się według roku urodzenia. Aktualne kryteria publikuje NFZ:', more: 'Pełny przewodnik:',
+    };
+---
+<zl-prevention class="prev" data-out={JSON.stringify(T.out)}>
+  <p class="mono-label tool-head" id="prev-ask">{T.ask}</p>
+  <div class="prev__chips" role="group" aria-labelledby="prev-ask">
+    {preventionBands.map((b) => (
+      <button type="button" class="prev__chip" data-lo={b.range[0]} data-hi={b.range[1]} aria-pressed="false">{b.label}</button>
+    ))}
+  </div>
+  <p class="mono-label prev__sub" id="prev-sex">{T.sexAsk}</p>
+  <div class="prev__chips" role="group" aria-labelledby="prev-sex">
+    {T.sexes.map(([value, label]) => (
+      <button type="button" class="prev__chip" data-sex={value} aria-pressed="false">{label}</button>
+    ))}
+  </div>
+
+  <p class="prev__out" role="status" data-out-text>{T.out[0]}</p>
+
+  <ul class="prev__list">
+    {preventionRows.map((row) => (
+      <li
+        class="prev__row"
+        data-lo={row.ages[0]} data-hi={row.ages[1]}
+        data-if-lo={row.ifAges?.[0]} data-if-hi={row.ifAges?.[1]}
+        data-conditional={row.conditional ? '' : undefined} data-sex={row.sex}
+      >
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <g class="s-off" set:html={SHAPES.off} />
+          <g class="s-mid" set:html={SHAPES.mid} />
+          <g class="s-on" set:html={SHAPES.on} />
+        </svg>
+        <span><strong>{typo(row.name)}</strong> {typo(row.who)}</span>
+      </li>
+    ))}
+  </ul>
+
+  <p class="prev__legend" aria-hidden="true">
+    {(['on', 'mid', 'off'] as const).map((state, i) => (
+      <span><svg viewBox="0 0 12 12"><g set:html={SHAPES[state]} /></svg>{T.legend[i]}</span>
+    ))}
+  </p>
+  <p class="prev__src">{typo(T.src)} <a {...linkAttrs(preventionSource.href)}>{preventionSource.label}</a>. {T.more} <a href={preventionGuide.href} hreflang={en ? 'pl' : undefined}>{preventionGuide.label}</a>.</p>
+</zl-prevention>
+
+<script>
+  class Prevention extends HTMLElement {
+    connectedCallback() {
+      const ages = [...this.querySelectorAll<HTMLButtonElement>('.prev__chip[data-lo]')];
+      const sexes = [...this.querySelectorAll<HTMLButtonElement>('.prev__chip[data-sex]')];
+      const rows = [...this.querySelectorAll<HTMLElement>('.prev__row')];
+      const out = this.querySelector<HTMLElement>('[data-out-text]')!;
+      const text = JSON.parse(this.dataset.out ?? '[]') as string[];
+      let age: [number, number] | null = null;
+      let sex: string | null = null;
+
+      const overlaps = (lo?: string, hi?: string) => age !== null && lo !== undefined && hi !== undefined && age[0] <= Number(hi) && age[1] >= Number(lo);
+      const update = () => {
+        if (!age) return;
+        let on = 0, mid = 0;
+        rows.forEach((row) => {
+          const d = row.dataset;
+          const sexOk = !d.sex || !sex || d.sex === sex;
+          const inAge = overlaps(d.lo, d.hi);
+          const state = !sexOk ? 'off' : inAge ? (d.conditional !== undefined ? 'mid' : 'on') : overlaps(d.ifLo, d.ifHi) ? 'mid' : 'off';
+          row.dataset.state = state;
+          if (state === 'on') on++;
+          if (state === 'mid') mid++;
+        });
+        out.textContent = (mid ? text[2] : text[1]).replace('{on}', String(on)).replace('{mid}', String(mid));
+      };
+
+      ages.forEach((chip) => chip.addEventListener('click', () => {
+        ages.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+        age = [Number(chip.dataset.lo), Number(chip.dataset.hi)];
+        update();
+      }));
+      sexes.forEach((chip) => chip.addEventListener('click', () => {
+        const pressed = chip.getAttribute('aria-pressed') === 'true';
+        sexes.forEach((c) => c.setAttribute('aria-pressed', String(c === chip && !pressed)));
+        sex = pressed ? null : chip.dataset.sex ?? null;
+        update();
+      }));
+    }
+  }
+
+  if (!customElements.get('zl-prevention')) customElements.define('zl-prevention', Prevention);
+</script>
+
+<style>
+  .prev { display: block; }
+  /* bez JS zostaje sama lista z kryteriami */
+  zl-prevention:not(:defined) .prev__chips, zl-prevention:not(:defined) .prev__sub, zl-prevention:not(:defined) .tool-head,
+  zl-prevention:not(:defined) .prev__out, zl-prevention:not(:defined) .prev__legend { display: none; }
+  .prev__sub { margin-top: 16px; }
+  .prev__chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .prev__chip {
+    min-height: 40px; padding: 8px 12px; background: transparent; border: 1px solid var(--line-2); cursor: pointer;
+    color: var(--ink); font: 400 0.875rem/1.2 var(--f-body); transition: background .15s, border-color .15s, color .15s;
+  }
+  .prev__chip:hover { border-color: var(--ink); }
+  .prev__chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+
+  .prev__out { margin-top: 20px; font: 400 1.25rem/1.3 var(--f-display); letter-spacing: -0.01em; color: var(--ink); }
+
+  .prev__list { margin: 12px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+  .prev__row { display: grid; grid-template-columns: 20px 1fr; gap: 12px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.9375rem; line-height: 1.5; color: var(--text-strong); transition: opacity .15s; }
+  .prev__row strong { display: block; font-weight: 600; color: var(--ink); }
+  .prev__row svg { width: 20px; margin-top: 2px; color: var(--blue); }
+  .prev__row g { opacity: 0; }
+  /* przed wyborem wieku wszystkie programy wyglądają tak samo */
+  .prev__row:not([data-state]) .s-on { opacity: 1; }
+  .prev__row[data-state="on"] .s-on, .prev__row[data-state="mid"] .s-mid { opacity: 1; }
+  .prev__row[data-state="off"] .s-off { opacity: .55; }
+  .prev__row[data-state="off"] { opacity: .55; }
+
+  .prev__legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; font-size: 0.8125rem; color: var(--text); }
+  .prev__legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .prev__legend svg { width: 14px; color: var(--blue); }
+  .prev__src { margin-top: 10px; font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+  .prev__src a { color: var(--blue-700); text-underline-offset: 3px; }
+</style>

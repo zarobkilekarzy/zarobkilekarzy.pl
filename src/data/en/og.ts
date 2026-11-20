@@ -241,7 +241,7 @@ export const ogPagesEn: Record<string, OgPage> = {
   '/en/for-patients/': {
     eyebrow: 'Path · for patients',
     title: 'Rights, queues,\nyour account\nand complaints',
-    lead: 'Five situations in which it helps to know where you stand. Each one has something you can check straight away.',
+    lead: 'Six situations in which it helps to know where you stand. Each one has something you can check straight away.',
     footer: { text: 'In plain language, with sources' },
     pictogram: 'serce',
   },

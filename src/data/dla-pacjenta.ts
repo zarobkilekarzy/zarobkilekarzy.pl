@@ -16,13 +16,14 @@ import imgPilnie from '@/assets/img/temat-dyzury.jpg';
 import imgKonto from '@/assets/img/mechanizm-jawnosc.jpg';
 import imgKolejka from '@/assets/img/temat-kolejki.jpg';
 import imgSkarga from '@/assets/img/sad-lekarski-sala.jpg';
+import imgProfilaktyka from '@/assets/img/mechanizm-platnik.jpg';
 
 export const pathPage = {
   title: 'Dla pacjenta',
   docTitle: 'Dla pacjenta: prawa, kolejki, konto i skargi',
-  eyebrow: 'Ścieżka · pięć sytuacji',
-  description: 'Pięć sytuacji pacjenta: co Ci przysługuje, jak działa kolejka na SOR, jak sprawdzić IKP, dlaczego się czeka i dokąd iść, gdy coś poszło nie tak.',
-  lead: 'Pięć sytuacji, w których dobrze wiedzieć, na czym stoisz. Wybierz swoją albo przejdź je po kolei. Przy każdej jest coś do sprawdzenia od razu.',
+  eyebrow: 'Ścieżka · sześć sytuacji',
+  description: 'Sześć sytuacji pacjenta: prawa, kolejka na SOR, konto w IKP, czas oczekiwania, bezpłatne badania profilaktyczne i dokąd iść, gdy coś poszło nie tak.',
+  lead: 'Sześć sytuacji, w których dobrze wiedzieć, na czym stoisz. Wybierz swoją albo przejdź je po kolei. Przy każdej jest coś do sprawdzenia od razu.',
 };
 
 export interface StopLink {
@@ -109,6 +110,21 @@ export const stops: Stop[] = [
       { ref: 'publiczna-prywatna-ochrona-zdrowia' },
       { ref: 'poz-pieniadz-za-pacjenta' },
       { ref: 'apteka-pieniadz-publiczny' },
+    ],
+  },
+  {
+    id: 'profilaktyka',
+    short: 'Zanim zachoruję',
+    question: 'Jakie bezpłatne badania mi przysługują',
+    lead: 'NFZ finansuje kilka ogólnopolskich programów profilaktycznych, do większości można zgłosić się bez skierowania. O tym, które są dla Ciebie, decyduje głównie wiek, a przy trzech badaniach także płeć.',
+    entry: { icon: 'check', text: 'Wybierz wiek i płeć: zobacz, które programy są dla Ciebie.' },
+    image: imgProfilaktyka,
+    effect: 'scan',
+    badge: { value: '20+', label: 'od tego wieku przysługuje bilans „Moje Zdrowie”', note: 'rozporządzenie MZ, Dz.U. 2025 poz. 584' },
+    main: { ref: 'badania-profilaktyczne' },
+    more: [
+      { ref: 'movember-profilaktyka-mezczyzn' },
+      { ref: 'jak-zmienic-lekarza-poz' },
     ],
   },
   {
@@ -200,3 +216,40 @@ export const privateVisit = {
   year: 2025,
   source: { label: 'GUS, Bank Danych Lokalnych', href: 'https://bdl.stat.gov.pl/api/v1/data/by-variable/5076?unit-level=0&format=json' },
 };
+
+/**
+ * Narzędzie sekcji „profilaktyka”: przedziały wieku i programy z kryteriami NFZ (pełny opis: /przewodnik/badania-profilaktyczne/).
+ * `ages` = wiek, w którym program przysługuje; `ifAges` = wiek, w którym przysługuje pod dodatkowym warunkiem;
+ * `conditional` = w całym przedziale wieku tylko dla osób spełniających warunek z opisu (np. palących).
+ */
+export interface PreventionRow {
+  id: string;
+  name: string;
+  who: string;
+  ages: [number, number];
+  ifAges?: [number, number];
+  conditional?: boolean;
+  sex?: 'k' | 'm';
+}
+export const preventionBands: { label: string; range: [number, number] }[] = [
+  { label: '20–24', range: [20, 24] },
+  { label: '25–34', range: [25, 34] },
+  { label: '35–39', range: [35, 39] },
+  { label: '40–44', range: [40, 44] },
+  { label: '45–49', range: [45, 49] },
+  { label: '50–64', range: [50, 64] },
+  { label: '65–74', range: [65, 74] },
+  { label: '75+', range: [75, 130] },
+];
+export const preventionRows: PreventionRow[] = [
+  { id: 'moje-zdrowie', name: 'Bilans „Moje Zdrowie”', who: 'od 20 lat; co 5 lat, a od 50 lat co 3 lata', ages: [20, 130] },
+  { id: 'hpv', name: 'Test HPV HR (rak szyjki macicy)', who: 'kobiety 25–64 lata, co 5 lat', ages: [25, 64], sex: 'k' },
+  { id: 'chuk', name: 'Choroby układu krążenia (ChUK)', who: '35–65 lat, co 5 lat, u lekarza POZ', ages: [35, 65] },
+  { id: 'mammografia', name: 'Mammografia (rak piersi)', who: 'kobiety 45–74 lata, co 2 lata', ages: [45, 74], sex: 'k' },
+  { id: 'kolonoskopia', name: 'Kolonoskopia (rak jelita grubego)', who: '50–65 lat; od 40 lat, gdy krewny pierwszego stopnia chorował na raka jelita grubego', ages: [50, 65], ifAges: [40, 49] },
+  { id: 'psa', name: 'PSA w bilansie „Moje Zdrowie”', who: 'mężczyźni powyżej 50. roku życia, w pakiecie rozszerzonym', ages: [50, 130], sex: 'm' },
+  { id: 'pluco', name: 'Tomografia płuc (rak płuca)', who: '50–74 lata, dla wieloletnich palaczy', ages: [50, 74], conditional: true },
+  { id: 'tyton', name: 'Choroby odtytoniowe, w tym POChP', who: 'palący od 18 lat; spirometria w wieku 40–65 lat', ages: [18, 130], conditional: true },
+];
+export const preventionSource = { label: 'NFZ, Profilaktyka na NFZ', href: 'https://www.nfz.gov.pl/dla-pacjenta/programy-profilaktyczne/' };
+export const preventionGuide = { label: 'Kryteria i zapisy krok po kroku', href: '/przewodnik/badania-profilaktyczne/' };

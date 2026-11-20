@@ -184,6 +184,8 @@ export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'do
   '/mechanizmy/fikcyjne-wizyty/': { panels: [{ head: 'Historia wizyt w IKP', height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, visitList('Dopisana wizyta', MEDIA_W)) }] },
   '/mechanizmy/no-fault/': { panels: [{ head: 'System bez orzekania o winie', height: FAULT_CARD_H, svg: svg(MEDIA_W, FAULT_CARD_H, faultCard([['Szkoda', 'stwierdzona'], ['Pieniądze', 'wypłacone pacjentowi']], ['Wina', 'tego się nie ustala'], MEDIA_W)) }] },
   '/analizy/covid-pieniadz-publiczny/': { panels: [{ height: MEDIA_W, svg: svg(MEDIA_W, MEDIA_W, virus(MEDIA_W)) }] },
+  // Movember: same wąsy, bez pola pod spodem; kształt jak nad wstępem artykułu
+  '/przewodnik/movember-profilaktyka-mezczyzn/': { panels: [{ height: 120, svg: svg(MEDIA_W, 120, `<g transform="translate(${MEDIA_W / 2} 50) scale(${MEDIA_W / 380})" fill="${tokenColor('ink', false)}"><path d="M0,6 C18,-26 72,-34 112,-6 C136,10 160,6 174,-24 C182,18 146,50 102,42 C62,35 26,30 0,20 Z"/><path d="M0,6 C-18,-26 -72,-34 -112,-6 C-136,10 -160,6 -174,-24 C-182,18 -146,50 -102,42 C-62,35 -26,30 0,20 Z"/></g>`) }] },
   // wpis w aktualnościach: pieczątki jak na obrazku katalogu (okładka wpisu przycięta pokazałaby tylko tytuł)
   '/aktualnosci/gra-i-katalog-orzeczen/': { stamps: COURT_STAMPS },
   // wpis o filmie „Doba”: pionowy wariant miniatury w kolorze (miniatura 16:9 przycięta do panelu gubiłaby liczby)
@@ -509,7 +511,7 @@ export const ogPages: Record<string, OgPage> = {
   '/dla-pacjenta/': {
     eyebrow: 'Ścieżka · dla pacjenta',
     title: 'Prawa, kolejki,\nTwoje konto\ni skargi',
-    lead: 'Pięć sytuacji, w których dobrze wiedzieć, na czym stoisz. Przy każdej jest coś do sprawdzenia od razu.',
+    lead: 'Sześć sytuacji, w których dobrze wiedzieć, na czym stoisz. Przy każdej jest coś do sprawdzenia od razu.',
     footer: { text: 'Prostym językiem, ze źródłami' },
     pictogram: 'serce',
   },

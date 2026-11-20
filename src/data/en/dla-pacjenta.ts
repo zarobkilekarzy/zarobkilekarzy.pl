@@ -3,7 +3,7 @@
  * Zrzuty IKP są po polsku, więc polskie nazwy przycisków zostają w cudzysłowie z objaśnieniem.
  */
 import type { Stop } from '@/data/dla-pacjenta';
-import { ikpEnd as ikpEndPl, ikpSteps as ikpStepsPl, privateVisit as privateVisitPl, stops as stopsPl, triageBasis as triageBasisPl, waitSource as waitSourcePl, waitOptions as waitOptionsPl } from '@/data/dla-pacjenta';
+import { ikpEnd as ikpEndPl, ikpSteps as ikpStepsPl, privateVisit as privateVisitPl, stops as stopsPl, preventionRows as preventionRowsPl, preventionSource as preventionSourcePl, triageBasis as triageBasisPl, waitSource as waitSourcePl, waitOptions as waitOptionsPl } from '@/data/dla-pacjenta';
 import { SPECIALIST_ROWS } from '@/data/en/budzet-nfz';
 import { routes } from '@/data/en/prawa-pacjenta';
 import type { PathLinkEn } from '@/data/en/sciezki';
@@ -12,9 +12,9 @@ import { formatEN } from '@/lib/format';
 export const pathPage = {
   title: 'For patients',
   docTitle: 'For patients: rights, queues, your account',
-  eyebrow: 'Path · five situations',
-  description: 'Five patient situations: what you are entitled to, how the emergency queue works, how to check your IKP, why you wait and where to go when something goes wrong.',
-  lead: 'Five situations in which it helps to know where you stand. Choose yours or go through them in order. Each one has something you can check straight away.',
+  eyebrow: 'Path · six situations',
+  description: 'Six patient situations: your rights, the emergency queue, your IKP account, waiting times, free preventive check-ups and where to go when something goes wrong.',
+  lead: 'Six situations in which it helps to know where you stand. Choose yours or go through them in order. Each one has something you can check straight away.',
 };
 
 type StopText = Pick<Stop, 'short' | 'question' | 'lead' | 'badge'> & { entryText: string; main: PathLinkEn; more: PathLinkEn[] };
@@ -60,6 +60,18 @@ const TEXT: Record<string, StopText> = {
       { ref: 'publiczna-prywatna-ochrona-zdrowia' },
       { ref: 'poz-pieniadz-za-pacjenta' },
       { ref: 'apteka-pieniadz-publiczny' },
+    ],
+  },
+  profilaktyka: {
+    short: 'Before I get ill',
+    question: 'Which free check-ups am I entitled to',
+    lead: 'The National Health Fund (NFZ) pays for several nationwide prevention programmes, and most of them need no referral. Which ones are for you depends mainly on your age and, for three tests, on your sex.',
+    entryText: 'Pick your age and sex: see which programmes are for you.',
+    badge: { value: '20+', label: 'the age from which the “Moje Zdrowie” health check is available', note: 'Regulation of the Minister of Health, Journal of Laws 2025, item 584' },
+    main: { href: '/przewodnik/badania-profilaktyczne/', label: 'Free preventive check-ups: who they are for and how to sign up', polish: true },
+    more: [
+      { href: '/przewodnik/movember-profilaktyka-mezczyzn/', label: 'Movember: how to check your testicles yourself', polish: true },
+      { href: '/mechanizmy/jak-zmienic-lekarza-poz/', label: 'How to change your primary care doctor', polish: true },
     ],
   },
   skarga: {
@@ -140,3 +152,23 @@ export const privateVisit = {
   ...privateVisitPl,
   source: { label: 'Statistics Poland (GUS), Local Data Bank', href: privateVisitPl.source.href },
 };
+
+/** Programy z narzędzia sekcji „profilaktyka”: te same kryteria wieku i płci co po polsku, nazwy i opisy po angielsku. */
+const PREVENTION_TEXT: Record<string, { name: string; who: string }> = {
+  'moje-zdrowie': { name: '“Moje Zdrowie” adult health check', who: 'from age 20; every 5 years, and every 3 years from age 50' },
+  hpv: { name: 'HPV HR test (cervical cancer)', who: 'women aged 25–64, every 5 years' },
+  chuk: { name: 'Cardiovascular disease prevention (ChUK)', who: 'ages 35–65, every 5 years, at your primary care doctor' },
+  mammografia: { name: 'Mammography (breast cancer)', who: 'women aged 45–74, every 2 years' },
+  kolonoskopia: { name: 'Colonoscopy (colorectal cancer)', who: 'ages 50–65; from age 40 if a first-degree relative had colorectal cancer' },
+  psa: { name: 'PSA within the “Moje Zdrowie” health check', who: 'men over 50, in the extended package' },
+  pluco: { name: 'Low-dose chest CT (lung cancer)', who: 'ages 50–74, for long-term smokers' },
+  tyton: { name: 'Tobacco-related diseases, including COPD', who: 'smokers from age 18; spirometry at ages 40–65' },
+};
+export const preventionRows = preventionRowsPl.map((row) => {
+  const text = PREVENTION_TEXT[row.id];
+  if (!text) throw new Error(`[en] brak tłumaczenia programu „${row.id}”`);
+  return { ...row, ...text };
+});
+export { preventionBands } from '@/data/dla-pacjenta';
+export const preventionSource = { ...preventionSourcePl, label: 'NFZ, “Profilaktyka na NFZ” (in Polish)' };
+export const preventionGuide = { label: 'Criteria and how to sign up, step by step (in Polish)', href: '/przewodnik/badania-profilaktyczne/' };

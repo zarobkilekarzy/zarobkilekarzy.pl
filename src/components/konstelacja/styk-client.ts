@@ -55,6 +55,8 @@ function init(host: HTMLElement, g: GraphData) {
     if (!k) st.f.cases = []; else st.f.cases = st.f.cases.includes(k) ? st.f.cases.filter((x) => x !== k) : [...st.f.cases, k];
     host.querySelectorAll<HTMLButtonElement>('[data-case]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.case ? st.f.cases.includes(x.dataset.case) : !st.f.cases.length)));
     render();
+  let rz = 0;
+  addEventListener('resize', () => { clearTimeout(rz); rz = window.setTimeout(render, 200); });
   }));
   $<HTMLInputElement>('[data-el="media"]').addEventListener('change', (e) => { st.f.media = (e.target as HTMLInputElement).checked; render(); });
   $('[data-el="legend"]').addEventListener('change', (e) => {
@@ -135,6 +137,8 @@ function init(host: HTMLElement, g: GraphData) {
     });
   }
 
+  const LH = 26; // wysokość wiersza osi: podpis + pasek
+  const ctx = document.createElement('canvas').getContext('2d')!;
   function renderGantt(list: Score[]) {
     const G0 = st.f.full ? 2012 : Math.max(A0, st.f.y0 - 1), G1 = st.f.full ? A1 : Math.min(A1, Math.max(st.f.y1 + 1, G0 + 5));
     const X = (d: Date) => ((Math.min(Math.max(yearF(d), G0), G1) - G0) / (G1 - G0)) * 100;
@@ -142,27 +146,48 @@ function init(host: HTMLElement, g: GraphData) {
     const ticks: number[] = []; for (let y = G0; y <= G1; y += step) ticks.push(y);
     const pos = (y: number) => ((y - G0) / (G1 - G0)) * 100;
     const W0 = new Date(Date.UTC(st.f.y0, 0, 1)), W1 = new Date(Date.UTC(st.f.y1, 0, 1));
+    const box = $('[data-el="gantt"]');
+    const W = Math.max(400, (box.clientWidth || 980) - 222); // szerokość osi: wiersz minus kolumna z nazwiskiem (210 + 12)
+    ctx.font = `500 12px ${getComputedStyle(box).fontFamily}`;
     let h = `<div class="ga" aria-hidden="true"><span></span><div class="ga__t">${ticks.map((y) => `<span style="left:${pos(y)}%">${y}</span>`).join('')}</div></div>`;
     for (const s of list.slice(0, 15)) {
       const fns = s.person.fns.filter((f) => st.f.media || !f.media);
       const dated = fns.filter((f) => f.a).sort((a, b) => a.a!.getTime() - b.a!.getTime());
       const undated = fns.filter((f) => !f.a);
-      const lanes: number[] = []; const laneOf = new Map<typeof dated[number], number>();
-      for (const f of dated) {
-        let li = lanes.findIndex((end) => end <= f.a!.getTime());
+      // Podpis nad cienkim paskiem, nie w nim: krótka funkcja nie ucina nazwy. Wiersze układamy w pikselach tak,
+      // żeby ani paski, ani podpisy na siebie nie wchodziły; podpis przy prawej krawędzi przesuwa się w lewo.
+      const items = dated.map((f) => {
+        const ya = f.a!.getUTCFullYear(), yb = f.b!.getUTCFullYear();
+        const pre = yearF(f.b!) < G0 ? `${ya}${yb > ya ? `–${yb}` : ''} · ` : yearF(f.a!) < G0 ? `od ${ya} · ` : '';
+        const text = pre + f.org;
+        const x0 = (X(f.a!) / 100) * W, x1 = Math.max(x0 + 3, (X(f.b!) / 100) * W);
+        const lw = ctx.measureText(text).width + 4;
+        const lx = Math.max(0, Math.min(x0, W - lw));
+        return { f, text, x0, x1, lx, from: Math.min(x0, lx), to: Math.max(x1, lx + lw) + 10 };
+      }).sort((p, q) => p.from - q.from);
+      const lanes: number[] = [];
+      const laneOf = new Map<typeof items[number], number>();
+      for (const it of items) {
+        let li = lanes.findIndex((end) => end <= it.from);
         if (li < 0) { li = lanes.length; lanes.push(0); }
-        lanes[li] = f.b!.getTime() + 200 * 86_400_000; laneOf.set(f, li);
+        lanes[li] = it.to; laneOf.set(it, li);
       }
       const evs = s.person.events.filter((e) => st.f.media || !e.media);
       const money = fns.filter((f) => f.group === 'pieniadze' && f.a && !f.uncertain);
       const p = s.person.node.party;
       h += `<div class="gr"><div class="gr__who">${esc(s.person.node.name)}<span>${s.total} pkt${p ? ` · ${esc(p.name)}${p.former ? ' (dawniej)' : ''}` : ''}</span>${undated.length ? `<div class="gr__undated">bez dat: ${undated.map((f) => esc(f.org)).join(', ')}</div>` : ''}</div>
-        <div class="gr__lane" style="height:${Math.max(1, lanes.length) * 20 + 14}px">
+        <div class="gr__lane" style="height:${Math.max(1, lanes.length) * LH + 14}px">
           ${st.f.full ? '' : `<div class="gr__win" style="left:${X(W0)}%;width:${X(W1) - X(W0)}%"></div>`}
           ${ticks.map((y) => `<div class="gr__grid" style="left:${pos(y)}%"></div>`).join('')}
           ${s.pairs.filter((o) => !o.short).map((o) => `<div class="gr__ov" style="left:${X(o.a)}%;width:${Math.max(0.4, X(o.b) - X(o.a))}%" title="Dwie role naraz: ${esc(o.x.org)} + ${esc(o.y.org)} (${o.type}), ${dur(o.a, o.b)}"></div>`).join('')}
-          ${dated.map((f) => `<div class="gr__bar g-${f.group}${f.media ? ' is-media' : ''}${f.observed ? ' is-seen' : ''}${f.uncertain ? ' is-unc' : ''}${yearF(f.a!) < G0 ? ' is-clip' : ''}" style="top:${laneOf.get(f)! * 20}px;left:${X(f.a!)}%;width:${Math.max(0.5, X(f.b!) - X(f.a!))}%" title="${esc(f.org)}: ${esc(f.label)} (${f.observed ? `stan na ${f.a!.getUTCFullYear()}` : `${fmtDay(f.a!)}–${f.open ? 'nadal' : fmtDay(f.b!)}`})">${yearF(f.a!) < G0 ? `← ${f.a!.getUTCFullYear()} ` : ''}${esc(f.org)}</div>`).join('')}
-          ${evs.map((e) => { const hit = money.some((f) => e.d >= f.a! && e.d <= f.b!); return `<div class="gr__ev${hit ? ' is-hit' : ''}" style="left:${X(e.d)}%;top:${lanes.length * 20 + 1}px" title="${esc(e.label)} (${fmtDay(e.d)})${hit ? ' — w czasie pracy w podmiocie' : ''}"></div>`; }).join('')}
+          ${items.map((it) => {
+            const f = it.f, top = laneOf.get(it)! * LH;
+            const title = `${esc(f.org)}: ${esc(f.label)} (${f.observed ? `stan na ${f.a!.getUTCFullYear()}` : `${fmtDay(f.a!)}–${f.open ? 'nadal' : fmtDay(f.b!)}`})`;
+            const cls = `${f.media ? ' is-media' : ''}${f.observed ? ' is-seen' : ''}${f.uncertain ? ' is-unc' : ''}${yearF(f.a!) < G0 ? ' is-clip' : ''}`;
+            return `<span class="gr__lbl${cls}" style="top:${top}px;left:${(it.lx / W) * 100}%" title="${title}">${esc(it.text)}</span>`
+              + `<div class="gr__bar g-${f.group}${cls}" style="top:${top + 16}px;left:${(it.x0 / W) * 100}%;width:${((it.x1 - it.x0) / W) * 100}%" title="${title}"></div>`;
+          }).join('')}
+          ${evs.map((e) => { const hit = money.some((f) => e.d >= f.a! && e.d <= f.b!); return `<div class="gr__ev${hit ? ' is-hit' : ''}" style="left:${X(e.d)}%;top:${lanes.length * LH + 1}px" title="${esc(e.label)} (${fmtDay(e.d)})${hit ? ' — w czasie pracy w podmiocie' : ''}"></div>`; }).join('')}
         </div></div>`;
     }
     $('[data-el="gantt"]').innerHTML = h;

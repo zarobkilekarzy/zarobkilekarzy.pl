@@ -373,7 +373,8 @@ export interface CompareTable {
   /** objaśnienia kolumn (ta sama kolejność co `columns`) — dymek „?” przy nagłówku */
   hints?: (string | undefined)[];
   /** `hint` — objaśnienie wiersza, dymek „?” przy jego nazwie; `cellHints` — objaśnienia pojedynczych komórek (kolejność jak `cells`): wartość staje się wyzwalaczem dymka */
-  rows: { cells: string[]; marked?: boolean; more?: CompareMore; hint?: string; cellHints?: (string | undefined)[] }[];
+  /** `docs` — dokumenty, których wiersz dotyczy (np. druk, nad którym głosowano): linki pod nazwą wiersza */
+  rows: { cells: string[]; marked?: boolean; more?: CompareMore; hint?: string; cellHints?: (string | undefined)[]; docs?: { label: string; href: string }[] }[];
 }
 
 /** Rozwijany dodatek pod wierszem tabeli porównania (np. głosy klubów pod wynikiem głosowania): mała tabela i link do źródła. */

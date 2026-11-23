@@ -6,6 +6,8 @@
  */
 import type { ChronoEvent } from '@/data/kanada-lekarze-ustawa-specjalna';
 import type { CompareMore, CompareTable } from '@/types';
+import { BASE, minimum } from '@/data/personel-medyczny';
+import { formatPL } from '@/lib/format';
 
 const sejmVote = (term: 8 | 9, sitting: number, nr: number) =>
   `https://www.sejm.gov.pl/Sejm${term}.nsf/agent.xsp?symbol=glosowania&NrKadencji=${term}&NrPosiedzenia=${sitting}&NrGlosowania=${nr}`;
@@ -13,6 +15,7 @@ const senatVote = (przebieg: number, nr: number, kadencja: 9 | 10) =>
   `https://www.senat.gov.pl/sklad/senatorowie/szczegoly-glosowania,${przebieg},${nr},${kadencja}.html`;
 
 export const LINKS = {
+  nfz2025wariant: 'https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/rekomendacja-aotmit-i-35-tys-aneksow-do-podpisu-przez-nfz-jak-wchodza-w-zycie-podwyzki-i-nowe-stawki-w-ochronie-zdrowia,8804.html',
   druk1648: 'https://api.sejm.gov.pl/sejm/term8/prints/1648/1648.pdf',
   druk1583: 'https://api.sejm.gov.pl/sejm/term8/prints/1583/1583.pdf',
   proces1583: 'https://www.sejm.gov.pl/Sejm8.nsf/PrzebiegProc.xsp?nr=1583',
@@ -20,6 +23,9 @@ export const LINKS = {
   druk2268: 'https://api.sejm.gov.pl/sejm/term9/prints/2268/2268.pdf',
   proces2268: 'https://www.sejm.gov.pl/Sejm9.nsf/PrzebiegProc.xsp?nr=2268',
   druk2343: 'https://api.sejm.gov.pl/sejm/term9/prints/2343/2343.pdf',
+  druk2291: 'https://api.sejm.gov.pl/sejm/term9/prints/2291/2291.pdf',
+  ustawa2017: 'https://api.sejm.gov.pl/eli/acts/DU/2017/1473/text.pdf',
+  ustawa2022: 'https://api.sejm.gov.pl/eli/acts/DU/2022/1352/text.pdf',
   druk33: 'https://api.sejm.gov.pl/sejm/term10/prints/33/33.pdf',
   druk763: 'https://api.sejm.gov.pl/sejm/term9/prints/763/763.pdf',
   proces763: 'https://www.sejm.gov.pl/Sejm9.nsf/PrzebiegProc.xsp?nr=763',
@@ -89,6 +95,7 @@ export const VOTES: CompareTable = {
   rows: [
     {
       cells: ['Sejm, 8.06.2017 — ponowne skierowanie projektu rządowego do Komisji Zdrowia', '195 / 234 / 3', 'odrzucone'],
+      docs: [{ label: 'Projekt rządowy (druk 1583)', href: LINKS.druk1583 }],
       more: more([
         ['PiS', '3', '223', '0', '8'], ['PO', '118', '3', '1', '14'], ['Kukiz’15', '32', '0', '1', '0'], ['Nowoczesna', '24', '0', '0', '3'],
         ['PSL', '12', '1', '0', '3'], ['UED', '4', '0', '0', '0'], ['Republikanie', '0', '3', '0', '0'], ['Wolni i Solidarni', '0', '3', '0', '0'], ['niezrzeszeni', '2', '1', '1', '0'],
@@ -96,6 +103,7 @@ export const VOTES: CompareTable = {
     },
     {
       cells: ['Sejm, 8.06.2017 — ustawa z projektu rządowego', '282 / 142 / 2', 'uchwalona'], marked: true,
+      docs: [{ label: 'Projekt (druk 1583)', href: LINKS.druk1583 }, { label: 'Uchwalona ustawa (Dz.U. 2017 poz. 1473)', href: LINKS.ustawa2017 }],
       more: more([
         ['PiS', '227', '1', '0', '6'], ['PO', '18', '99', '0', '19'], ['Kukiz’15', '31', '1', '0', '1'], ['Nowoczesna', '0', '23', '0', '4'],
         ['PSL', '1', '12', '0', '3'], ['UED', '0', '3', '0', '1'], ['Republikanie', '0', '3', '0', '0'], ['Wolni i Solidarni', '3', '0', '0', '0'], ['niezrzeszeni', '2', '0', '2', '0'],
@@ -103,10 +111,12 @@ export const VOTES: CompareTable = {
     },
     {
       cells: ['Senat, 29.06.2017 — przyjęcie ustawy bez poprawek', '55 / 26 / 0', 'przyjęta'],
+      docs: [{ label: 'Ustawa (Dz.U. 2017 poz. 1473)', href: LINKS.ustawa2017 }],
       more: more([['PiS', '55', '0', '0', '9'], ['PO', '0', '25', '0', '8'], ['niezrzeszeni', '0', '1', '0', '2']], LINKS.senatGlos2017),
     },
     {
       cells: ['Sejm, 20.07.2017 — niezwłoczne drugie czytanie projektu obywatelskiego', '211 / 234 / 3', 'odrzucone'],
+      docs: [{ label: 'Projekt obywatelski (druk 1648)', href: LINKS.druk1648 }],
       more: more([
         ['PiS', '0', '231', '0', '3'], ['PO', '135', '0', '0', '1'], ['Kukiz’15', '30', '0', '0', '2'], ['Nowoczesna', '22', '2', '0', '3'],
         ['PSL', '15', '0', '0', '0'], ['UED', '2', '0', '0', '2'], ['Republikanie', '2', '0', '0', '1'], ['Wolni i Solidarni', '0', '0', '3', '0'], ['niezrzeszeni', '5', '1', '0', '0'],
@@ -114,6 +124,7 @@ export const VOTES: CompareTable = {
     },
     {
       cells: ['Sejm, 26.05.2022 — nowelizacja z projektu rządowego', '445 / 1 / 7', 'uchwalona'], marked: true,
+      docs: [{ label: 'Projekt (druk 2268)', href: LINKS.druk2268 }, { label: 'Sprawozdanie komisji (druk 2291)', href: LINKS.druk2291 }],
       more: more([
         ['PiS', '225', '0', '0', '3'], ['KO', '124', '1', '0', '1'], ['Lewica', '44', '0', '0', '0'], ['Koalicja Polska', '23', '0', '0', '1'],
         ['Konfederacja', '4', '0', '7', '0'], ['Polska 2050', '8', '0', '0', '0'], ['Porozumienie', '5', '0', '0', '0'], ['Polskie Sprawy', '3', '0', '0', '1'],
@@ -122,6 +133,7 @@ export const VOTES: CompareTable = {
     },
     {
       cells: ['Senat, 9.06.2022 — poprawki podnoszące wszystkie współczynniki o 0,25', '53 / 44 / 0', 'przyjęte'],
+      docs: [{ label: 'Uchwała Senatu z poprawkami (druk 2343)', href: LINKS.druk2343 }],
       more: more([
         ['PiS', '0', '44', '0', '2'], ['KO', '40', '0', '0', '1'], ['Koalicja Polska – PSL', '4', '0', '0', '0'], ['Koło Senatorów Niezależnych', '3', '0', '0', '0'],
         ['Lewica Demokratyczna', '2', '0', '0', '0'], ['Polska 2050', '1', '0', '0', '0'], ['Porozumienie', '1', '0', '0', '0'], ['niezrzeszeni', '2', '0', '0', '0'],
@@ -129,6 +141,7 @@ export const VOTES: CompareTable = {
     },
     {
       cells: ['Sejm, 23.06.2022 — odrzucenie tych poprawek (potrzebne 225 głosów)', '234 / 207 / 8', 'poprawki odrzucone'],
+      docs: [{ label: 'Uchwała Senatu (druk 2343)', href: LINKS.druk2343 }, { label: 'Ogłoszona nowelizacja (Dz.U. 2022 poz. 1352)', href: LINKS.ustawa2022 }],
       more: more([
         ['PiS', '226', '0', '0', '2'], ['KO', '0', '123', '0', '3'], ['Lewica', '1', '43', '0', '0'], ['Koalicja Polska', '0', '22', '0', '2'],
         ['Konfederacja', '1', '1', '8', '1'], ['Polska 2050', '0', '8', '0', '0'], ['Porozumienie', '0', '5', '0', '0'], ['Kukiz’15', '3', '0', '0', '1'],
@@ -241,6 +254,60 @@ export const FORECASTS: CompareTable = {
     { cells: ['Nowelizacja z 2021 r., ocena skutków (druk 1202)', 'koszt dla NFZ narastająco: 7,8 mld zł w 2022 r., 10,0 mld zł w 2023 r., 15,0 mld zł w 2024 r.', '26,3 mld zł w 2023 r., 41,6 mld zł w 2024 r. — licząc tylko waloryzacje od lipca 2022 r.'] },
     { cells: ['Nowelizacja z 2022 r., ocena skutków (druk 2268)', 'ok. 7,2 mld zł w II półroczu 2022 r., w 2023 r. „zbliżony do dwukrotności”; w tabeli skutków na 10 lat — wydatki tylko w pierwszym roku (610 mln zł z budżetu państwa), w latach 1–10 zera', '57,3 mld zł w 2025 r. (MZ), co najmniej 71 mld zł w 2026 r. (NFZ)'], marked: true },
   ],
+};
+
+/**
+ * Który wariant rekomendacji AOTMiT zatwierdzał co roku minister zdrowia. Źródła: NFZ 9.08.2022 (2022: dwa warianty, wybrany
+ * szerszy), NFZ 25.06.2025 („dotychczas, także w tym roku” — trzeci, najbardziej pojemny; 2023–2025), prezentacja MZ z czerwca
+ * 2025 r. (trzy warianty 72/2025), rekomendacja 84/2026 (dwa warianty: 9,25 i 7,69 mld zł) i pismo minister z 1.07.2026
+ * („Zatwierdzam wariant I”, cytowane przez money.pl). Koszt — z RAISES.
+ */
+export const VARIANTS: CompareTable = {
+  columns: ['Rok', 'Który wariant wybrał minister', 'Koszt w skali 12 miesięcy'],
+  rows: [
+    { cells: ['2022', 'szerszy z dwóch: oprócz skutków ustawy także podwyżki dla pracowników na kontraktach, personelu pomocniczego i administracyjnego oraz wyższe koszty działalności placówek', 'ponad 18,5 mld zł'] },
+    { cells: ['2023', 'najszerszy (według NFZ)', 'ponad 15,5 mld zł'] },
+    { cells: ['2024', 'najszerszy (według NFZ)', 'ok. 15,2 mld zł'] },
+    { cells: ['2025', 'najszerszy z trzech: skutki ustawy, inflacja z cenami energii, wyższe wyceny wybranych świadczeń i więcej świadczeń do rozliczenia', '16,9 mld zł'] },
+    { cells: ['2026', 'droższy z dwóch: skutki ustawy, inflacja i wyższe wyceny wybranych świadczeń; tańszy, bez inflacji, kosztowałby 7,69 mld zł. Żaden z dwóch nie obejmował kontraktów', '9,25 mld zł'], marked: true },
+  ],
+};
+
+/** Mediana płac w gospodarce narodowej (GUS, dane ZUS; płace z umowy o pracę razem z premiami i dodatkami), najnowszy miesiąc. */
+export const MEDIAN_LATEST = {
+  value: 7550.32,
+  month: 'maju 2026 r.',
+  label: 'GUS, Rozkład wynagrodzeń w gospodarce narodowej w maju 2026 r. (4.11.2026)',
+  href: 'https://stat.gov.pl/obszary-tematyczne/rynek-pracy/pracujacy-zatrudnieni-wynagrodzenia-koszty-pracy/rozklad-wynagrodzen-w-gospodarce-narodowej-w-maju-2026-r-,32,29.html',
+} as const;
+
+/** Współczynniki pracy z załącznika do ustawy w brzmieniu od 1.07.2022 (Dz.U. 2022 poz. 1352), opisy skrócone. */
+export const PAY_GROUPS: { group: number; who: string; coef: number }[] = [
+  { group: 1, who: 'Lekarz, lekarz dentysta ze specjalizacją', coef: 1.45 },
+  { group: 2, who: 'Magister ze specjalizacją: pielęgniarka, położna, farmaceuta, fizjoterapeuta, diagnosta laboratoryjny, psycholog kliniczny', coef: 1.29 },
+  { group: 3, who: 'Lekarz, lekarz dentysta bez specjalizacji', coef: 1.19 },
+  { group: 5, who: 'Magister bez specjalizacji (m.in. pielęgniarka, położna, farmaceuta, fizjoterapeuta); pielęgniarka, położna z licencjatem albo średnim wykształceniem i specjalizacją', coef: 1.02 },
+  { group: 8, who: 'Pracownik niemedyczny działalności podstawowej z wyższym wykształceniem', coef: 1 },
+  { group: 4, who: 'Stażysta', coef: 0.95 },
+  { group: 6, who: 'Licencjat (m.in. pielęgniarka, położna, ratownik, fizjoterapeuta); ratownik, fizjoterapeuta, technik analityki, elektroradiolog, pielęgniarka, położna ze średnim wykształceniem bez specjalizacji', coef: 0.94 },
+  { group: 7, who: 'Inny zawód medyczny ze średnim wykształceniem, opiekun medyczny', coef: 0.86 },
+  { group: 9, who: 'Pracownik niemedyczny działalności podstawowej ze średnim wykształceniem', coef: 0.78 },
+  { group: 10, who: 'Pracownik niemedyczny działalności podstawowej z wykształceniem poniżej średniego (np. salowa)', coef: 0.65 },
+];
+
+const pl = (v: number, d = 2) => formatPL(v, d);
+
+/** Liczba grup, których minimum przekracza medianę płac. */
+export const ABOVE_MEDIAN = PAY_GROUPS.filter((g) => minimum(g.coef) > MEDIAN_LATEST.value).length;
+
+/** Siatka minimów od 1.07.2026 do 30.06.2027 wobec mediany płac. */
+export const MINIMA_2026: CompareTable = {
+  columns: ['Grupa', 'Kto', 'Współczynnik', 'Minimum od 1.07.2026 r.', 'Wobec mediany'],
+  hints: [undefined, undefined, undefined, `Współczynnik × ${pl(BASE.amount)} zł (przeciętne wynagrodzenie w 2025 r.); płaca zasadnicza brutto, bez dodatków`, `Minimum jako procent mediany płac w gospodarce w ${MEDIAN_LATEST.month} (${pl(MEDIAN_LATEST.value)} zł brutto, z premiami i dodatkami)`],
+  rows: PAY_GROUPS.map((g) => ({
+    cells: [String(g.group), g.who, pl(g.coef, 2), `${pl(minimum(g.coef))} zł`, `${Math.round((minimum(g.coef) / MEDIAN_LATEST.value) * 100)}%`],
+    marked: minimum(g.coef) < MEDIAN_LATEST.value,
+  })),
 };
 
 /** Warianty prognozy: tempo wzrostu przeciętnego wynagrodzenia w gospodarce. */

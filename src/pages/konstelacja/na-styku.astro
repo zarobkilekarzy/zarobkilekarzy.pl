@@ -1,0 +1,91 @@
+---
+/**
+ * /konstelacja/na-styku/ — „Na styku polityki i ochrony zdrowia”: ranking powiązań, kariery i dwie role naraz
+ * z danych Konstelacji (graf.json). SZKIC (23.11.2026): `index: false`, bez linku w menu i z /konstelacja/.
+ * Teksty i wagi: src/data/konstelacja/styk.ts, logika: src/lib/konstelacja/styk.ts, widok: components/konstelacja/Styk.astro.
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Section from '@/components/layout/Section.astro';
+import PageHeader from '@/components/layout/PageHeader.astro';
+import PageMeta from '@/components/layout/PageMeta.astro';
+import SectionHead from '@/components/layout/SectionHead.astro';
+import LinkArrow from '@/components/ui/LinkArrow.astro';
+import Styk from '@/components/konstelacja/Styk.astro';
+import graf from '@/data/konstelacja/graf.json';
+import { COMPONENTS, stykPage as page } from '@/data/konstelacja/styk';
+import { fixNote } from '@/data/konstelacja';
+import { buildModel } from '@/lib/konstelacja/styk';
+import type { GraphData } from '@/lib/konstelacja/types';
+import { typo } from '@/lib/format';
+import type { Crumb, SeoInput } from '@/lib/seo';
+
+const data = graf as GraphData;
+const model = buildModel(data);
+const people = model.people.filter((p) => p.fns.length).length;
+const fns = model.people.reduce((s, p) => s + p.fns.length, 0);
+
+const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: 'Konstelacja', href: '/konstelacja/' }, { label: page.title }];
+const seo: SeoInput = { title: page.seoTitle, description: page.description, breadcrumbs: crumbs, index: false };
+
+const limits = [
+  'Wynik mówi, ile udokumentowanych funkcji i powiązań ma osoba, a nie, czy postępowała źle. Wysoka pozycja nie jest zarzutem.',
+  'Graf obejmuje osoby, które spełniają kryteria Konstelacji (funkcja w organie, rola w ustawie, głos z powiązaniem z ochroną zdrowia). Osoby spoza grafu nie mają wyniku, choć mogłyby mieć wysoki.',
+  'Kariery są niepełne tam, gdzie nie ma dokumentu. Dawna funkcja bez daty końca liczy się tylko od początku — nie zakładamy, że trwała.',
+  'Dwie role naraz to wynik z dat. Daty formalne (np. wpis w KRS) bywają późniejsze od faktycznych, więc krótkie nakładanie może być tylko przekazaniem funkcji.',
+];
+---
+<BaseLayout seo={seo}>
+  <Section space="bottom" class="sty-top">
+    <PageHeader title={page.title} lead={page.lead} eyebrow={page.eyebrow} crumbs={crumbs}>
+      <PageMeta
+        items={[
+          { label: 'Stan danych', value: new Date(data.asOf) },
+          { label: 'Osoby z funkcjami', value: people },
+          { label: 'Funkcje', value: fns },
+        ]}
+      />
+    </PageHeader>
+  </Section>
+
+  <Section space="bottom" aria-label="Ranking, kariery i dwie role naraz">
+    <Styk />
+  </Section>
+
+  <Section tone="soft" aria-labelledby="sty-method">
+    <SectionHead eyebrow="Metoda" title="Punkty za fakty, z jawnymi wagami" id="sty-method" />
+    <div class="sty-cols">
+      <div>
+        <p class="sty-p">{typo('Każdy punkt to funkcja, głos albo powiązanie z grafu Konstelacji, ze źródłem i stopniem pewności. Domyślnie liczą się tylko dokumenty i potwierdzenia osób lub instytucji; ustalenia mediów można włączyć w filtrze.')}</p>
+        <ul class="sty-weights">
+          {COMPONENTS.map((c) => <li><i style={`background:${c.color}`}></i><b>{c.label}</b> <span>{c.weight}</span></li>)}
+        </ul>
+        <p class="sty-p">{typo('Jedna instytucja liczy się raz, choćby osoba pełniła w niej kilka funkcji (Senat i jego komisja). Przejście to wejście do nowego sektora w kolejności dat. Daty z samym rokiem albo miesiącem liczymy ostrożnie: początek od końca okresu, koniec od jego początku.')}</p>
+      </div>
+      <div>
+        <h3 class="sty-h3" id="sty-limits">Czego ranking nie mówi</h3>
+        <ul class="sty-limits">
+          {limits.map((t) => <li>{typo(t)}</li>)}
+        </ul>
+        <p class="sty-p sty-p--after"><LinkArrow href="/konstelacja/">Graf powiązań</LinkArrow></p>
+        <p class="sty-p">{typo(fixNote.text)} <a href={fixNote.href}>{fixNote.link}</a></p>
+      </div>
+    </div>
+  </Section>
+</BaseLayout>
+
+<style>
+  .sty-top { padding-top: clamp(32px, 4vw, 56px); }
+  .sty-cols { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 48px clamp(40px, 6vw, 96px); align-items: start; }
+  .sty-p { max-width: 64ch; margin: 0 0 20px; line-height: 1.6; color: var(--text); }
+  .sty-p--after { margin-top: 24px; }
+  .sty-p a { color: var(--ink); }
+  .sty-weights { display: grid; gap: 8px; margin: 0 0 24px; padding: 0; list-style: none; }
+  .sty-weights li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; color: var(--text-strong); }
+  .sty-weights i { width: 12px; height: 12px; flex: none; }
+  .sty-weights b { font-weight: 600; color: var(--ink); }
+  .sty-weights span { font: 400 0.8125rem/1.3 var(--f-mono); color: var(--muted); }
+  .sty-h3 { margin: 0 0 16px; font: 600 1.25rem/1.3 var(--f-display); color: var(--ink); }
+  .sty-limits { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
+  .sty-limits li { padding-left: 16px; border-left: 2px solid var(--line-2); line-height: 1.6; color: var(--text-strong); }
+  @media (max-width: 1024px) { .sty-cols { grid-template-columns: minmax(0, 1fr); } }
+</style>

@@ -15,6 +15,9 @@ import NumberedList from '@/components/blocks/NumberedList.astro';
 import LinkArrow from '@/components/ui/LinkArrow.astro';
 import Konstelacja from '@/components/konstelacja/Konstelacja.astro';
 import InfographicsSection from '@/components/blocks/InfographicsSection.astro';
+import ToolCard from '@/components/blocks/ToolCard.astro';
+import { buildModel, ranking } from '@/lib/konstelacja/styk';
+import { WEIGHTS, type ComponentKey } from '@/data/konstelacja/styk';
 import graf from '@/data/konstelacja/graf.json';
 import { caveat, fixNote, howToRead, konstelacjaPage as page, limits, madeNote, method } from '@/data/konstelacja';
 import { wspolneOkresy } from '@/lib/konstelacja/okresy';
@@ -29,6 +32,16 @@ const used = new Set(edges.flatMap((e) => [e.from, e.to]));
 const people = data.nodes.filter((n) => n.type === 'person' && used.has(n.id)).length;
 const ties = edges.filter((e) => e.kind !== 'part').length;
 const sources = Object.keys(data.sources).length;
+
+// Baner do rankingu powiązań (/konstelacja/na-styku/): mini-wykres z wyników pierwszych 16 osób
+const top = ranking(buildModel(data), { y0: 2005, y1: 2027, full: true, cases: [], media: false, comps: Object.keys(WEIGHTS) as ComponentKey[] }).slice(0, 16);
+const stykTool = {
+  icon: 'chart' as const,
+  label: 'Ranking powiązań',
+  title: 'Na styku polityki i ochrony zdrowia',
+  desc: 'Kto łączy najwięcej funkcji w rządzie, parlamencie, samorządzie lekarskim i w podmiotach z pieniędzmi NFZ. Kariery na osi czasu, role pełnione naraz, każdy punkt ze źródłem.',
+  href: '/konstelacja/na-styku/',
+};
 
 const crumbs: Crumb[] = [{ label: 'Start', href: '/' }, { label: page.title }];
 const seo: SeoInput = { title: page.seoTitle, description: page.description, breadcrumbs: crumbs };
@@ -45,6 +58,10 @@ const seo: SeoInput = { title: page.seoTitle, description: page.description, bre
         ]}
       />
     </PageHeader>
+  </Section>
+
+  <Section space="none" class="kst-banner" aria-label="Ranking powiązań">
+    <ToolCard tool={stykTool} layout="banner" cta="Zobacz ranking" bars={{ values: top.map((t) => t.total) }} />
   </Section>
 
   <Section space="bottom" wrap={false} class="kst-full" aria-label="Graf powiązań">
@@ -91,6 +108,7 @@ const seo: SeoInput = { title: page.seoTitle, description: page.description, bre
 
 <style>
   .kst-top { padding-top: clamp(32px, 4vw, 56px); }
+  .kst-banner { margin-top: calc(var(--section) * -0.5); padding-bottom: clamp(32px, 4vw, 56px); }
   .kst-full { padding-inline: clamp(16px, 2.5vw, 40px); }
   .kst-caveat {
     max-width: 90ch; margin: 16px 0 0; padding-left: 12px; border-left: 2px solid var(--line-2);

@@ -20,7 +20,8 @@ const untilOf = (s: string) => (s.length === 4 ? `${s}-01-01` : s.length === 7 ?
 interface End { at: string; text: string }
 // Koniec funkcji: data odejścia albo `seen` (ostatni dokument, który potwierdza funkcję), jeśli jest późniejszy.
 const end = (e: GraphEdge, asOf: string): End => {
-  if (!e.until) return { at: asOf, text: 'obecnie' };
+  // bez daty odejścia, ale z `seen` — funkcja potwierdzona tylko do dnia dokumentu, nie trwająca
+  if (!e.until) return e.seen ? { at: e.seen, text: `co najmniej ${e.seen}` } : { at: asOf, text: 'obecnie' };
   const u = untilOf(e.until);
   return e.seen && e.seen > u ? { at: e.seen, text: `co najmniej ${e.seen}` } : { at: u, text: e.until };
 };
@@ -46,7 +47,7 @@ export function wspolneOkresy(edges: GraphEdge[], asOf: string): GraphEdge[] {
         const a = list[i], b = list[j];
         if (a.from === b.from) continue;
         // Obecny skład widać przez węzeł organu; linia ma sens dla okresów, które się skończyły.
-        if (!a.until && !b.until) continue;
+        if (!a.until && !a.seen && !b.until && !b.seen) continue;
         const later = startOf(a.since!) >= startOf(b.since!) ? a : b;
         const ea = end(a, asOf), eb = end(b, asOf);
         const first = ea.at <= eb.at ? ea : eb;

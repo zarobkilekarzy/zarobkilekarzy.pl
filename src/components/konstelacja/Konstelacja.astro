@@ -26,20 +26,57 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   <script type="application/json" class="kst-config" set:html={JSON.stringify({ logos })} />
 
   <div class="kst-bar" role="toolbar" aria-label="Filtry grafu">
-    <div class="group hist" role="group" aria-label="Historia">
-      <button class="btn" id="kst-hist-back" type="button" aria-label="Wstecz" title="Wstecz (Alt+←)" disabled>←</button>
-      <button class="btn" id="kst-hist-fwd" type="button" aria-label="Dalej" title="Dalej (Alt+→)" disabled>→</button>
+    <div class="kst-row">
+      <div class="group hist" role="group" aria-label="Historia">
+        <button class="btn" id="kst-hist-back" type="button" aria-label="Wstecz" title="Wstecz (Alt+←)" disabled>←</button>
+        <button class="btn" id="kst-hist-fwd" type="button" aria-label="Dalej" title="Dalej (Alt+→)" disabled>→</button>
+      </div>
+      <input type="search" id="kst-search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="kst-suggest" aria-expanded="false" placeholder="Szukaj osoby, instytucji albo faktu" aria-label="Szukaj osoby lub instytucji; Enter szuka też w treści faktów i w źródłach" title="Nazwa z listy otwiera węzeł. Enter przy innym tekście: wyniki w osobach, treści faktów i źródłach." />
+      <div class="picks">
+        <details class="pick" data-pick="mode">
+          <summary><span id="kst-mode-label">Rdzeń</span> <em id="kst-mode-n"></em></summary>
+          <div class="pop" role="group" aria-label="Kogo pokazać">
+            <button class="opt is-on" data-mode="core" type="button" aria-pressed="true"><b>Rdzeń</b><span>Osoby z funkcjami w co najmniej dwóch sektorach (np. rząd i szpital) albo powiązane z inną osobą. Reszta kryje się pod licznikami „+N”, a drobne miejsca z jedną osobą zbiera węzeł sektora.</span></button>
+            <button class="opt" data-mode="all" type="button" aria-pressed="false"><b>Wszyscy</b><span>Wszystkie osoby z grafu. Nazwiska mają osoby z rdzenia, reszta po najechaniu albo przybliżeniu.</span></button>
+            <p class="pop-h">Najwięcej powiązań</p>
+            <div class="names" id="kst-hubs"></div>
+          </div>
+        </details>
+        <details class="pick" data-pick="sectors">
+          <summary id="kst-sectors-label">Wszystkie sektory</summary>
+          <div class="pop" role="group" aria-label="Sektory">
+            <p class="pop-note">Pokaż tylko osoby z funkcją w wybranych sektorach. Liczba to osoby w całym grafie.</p>
+            <div class="optlist" id="kst-sectors"></div>
+            <button class="linkish" type="button" data-clear>Wszystkie sektory</button>
+          </div>
+        </details>
+        <details class="pick" data-pick="period">
+          <summary id="kst-period-label">Cały okres</summary>
+          <div class="pop period" role="group" aria-label="Okres">
+            <button class="opt" data-period="now" type="button" aria-pressed="false"><b>Teraz</b><span>Trwające funkcje i fakty z ostatnich 2 lat</span></button>
+            <button class="opt is-on" data-period="all" type="button" aria-pressed="true"><b>Cały okres</b><span>Wszystkie fakty, od 2005 r.</span></button>
+            <p class="pop-h">Wybrane lata <span id="kst-period-range"></span></p>
+            <span class="years">
+              <input type="range" id="kst-y0" min="2005" max="2027" step="1" value="2005" aria-label="Początek okresu (rok)" />
+              <input type="range" id="kst-y1" min="2005" max="2027" step="1" value="2027" aria-label="Koniec okresu (rok)" />
+            </span>
+            <span class="years-axis" aria-hidden="true"><span>2005</span><span>2015</span><span>2026</span></span>
+            <button class="btn" id="kst-play" type="button" aria-pressed="false">Rok po roku</button>
+          </div>
+        </details>
+        <details class="pick" data-pick="lines">
+          <summary>Linie i pewność</summary>
+          <div class="pop pop--wide"><div class="legend-body" id="kst-legend-body"></div><div id="kst-defs"></div></div>
+        </details>
+      </div>
     </div>
-    <input type="search" id="kst-search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="kst-suggest" aria-expanded="false" placeholder="Szukaj osoby, faktu, źródła…" aria-label="Szukaj osoby lub instytucji; Enter szuka też w treści faktów i w źródłach" title="Nazwa z listy otwiera węzeł. Enter przy innym tekście: wyniki w osobach, treści faktów i źródłach." />
-    <div class="group" role="group" aria-label="Analiza">
-      <button class="chip" id="kst-an-toggle" type="button" aria-pressed="false" title="Ścieżka, porównanie, otoczenie, indeks źródeł, mosty">Analiza</button>
+    <div class="asks" role="group" aria-label="Pytania do grafu">
+      <button class="ask" type="button" data-ask="path" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="3.5" cy="4" r="2"/><circle cx="14.5" cy="14" r="2"/><path d="M5.5 4h4a3 3 0 0 1 0 6h-2a2 2 0 0 0 0 4h5"/></svg><b>Jak są połączeni?</b><span>Najkrótsza ścieżka między dwiema osobami albo instytucjami</span></button>
+      <button class="ask" type="button" data-ask="cmp" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="6" cy="9" r="4.5"/><circle cx="12" cy="9" r="4.5"/></svg><b>Co ich łączy?</b><span>Porównanie dwóch osób: wspólne instytucje i lata</span></button>
+      <button class="ask" type="button" data-ask="bridges" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M1.5 13c3-6 12-6 15 0M5 9.6V13M9 8.5V13M13 9.6V13M1.5 13h15"/></svg><b>Kto łączy sektory?</b><span>Osoby i powiązania, które spinają odległe części grafu</span></button>
+      <button class="ask" type="button" data-ask="srcs" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2h7l3 3v11H4z"/><path d="M7 8h5M7 11h5M7 14h3"/></svg><b>Na czym to stoi?</b><span>Ile faktów stoi na każdym źródle i wydawcy</span></button>
     </div>
-    <div class="group" role="group" aria-label="Zakres osób">
-      <button class="chip is-on" data-mode="core" type="button" aria-pressed="true" title="Osoby łączące co najmniej dwie instytucje albo powiązane z inną osobą">Rdzeń</button>
-      <button class="chip" data-mode="all" type="button" aria-pressed="false">Wszyscy</button>
-    </div>
-    <div class="group" role="group" aria-label="Instytucje" id="kst-insts"><span class="mono-label">Tylko:</span></div>
-    <label class="chk"><input type="checkbox" id="kst-current" /> Tylko obecne funkcje</label>
+    <div class="theses" id="kst-theses" role="group" aria-label="Widoki: jedna teza, kilkanaście węzłów"></div>
   </div>
 
   <div class="kst-layout">
@@ -64,8 +101,8 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
       <noscript><p class="kst-noscript">Graf działa z włączonym JavaScriptem. Metoda i granice danych są opisane niżej.</p></noscript>
     </section>
     <aside class="kst-panel" id="kst-panel" aria-label="Szczegóły">
-      <div class="detail" id="kst-detail" aria-live="polite"><p class="empty">Wczytywanie grafu…</p></div>
-      <details class="legend"><summary class="mono-label">Więcej filtrów: rodzaj, pewność, partie</summary><div class="legend-body" id="kst-legend-body"></div></details>
+      <button class="card-x" id="kst-card-close" type="button" aria-label="Zamknij szczegóły" title="Zamknij"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" /></svg></button>
+      <div class="detail" id="kst-detail" aria-live="polite"></div>
     </aside>
   </div>
 </zl-konstelacja>
@@ -85,7 +122,7 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   .kst button, .kst input, .kst select { font: inherit; color: inherit; }
   .kst .btn, .kst .chip {
     background: var(--surface); border: 1px solid var(--line-2); padding: 5px 10px; cursor: pointer; border-radius: 0;
-    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-strong);
+    font: 500 0.8125rem/1.3 var(--f-body); color: var(--text-strong);
   }
   .kst .btn:hover, .kst .chip:hover { border-color: var(--ink); color: var(--ink); }
   .kst .chip.is-on { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
@@ -104,28 +141,108 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   }
   .kst .kst-suggest li[aria-selected="true"], .kst .kst-suggest li:hover { background: var(--blue-fill); color: var(--ink); }
   .kst .kst-suggest mark { background: none; color: var(--blue); font-weight: 600; }
-  .kst .kst-suggest .tp { flex: none; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .kst .kst-suggest .tp { flex: none; font: 500 0.6875rem/1.3 var(--f-body); color: var(--muted); }
 
-  /* Pasek narzędzi nad grafem i panelem */
-  .kst-bar {
-    display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center;
-    padding: 8px 10px; background: var(--surface); border: 1px solid var(--line-2); border-bottom: 0;
-  }
+  /* Pasek nad grafem: wyszukiwarka i pigułki (kogo, sektory, okres, linie), pytania do grafu, pas tez */
+  .kst-bar { display: grid; gap: 12px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line-2); border-bottom: 0; }
+  .kst-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .kst-bar input[type="search"] {
-    width: 240px; max-width: 100%; padding: 5px 8px; border: 1px solid var(--line-2); background: var(--bg); border-radius: 0;
-    font-size: 0.875rem;
+    flex: 1 1 280px; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid var(--line-2); background: var(--bg); border-radius: 0;
+    font-size: 0.9375rem;
   }
   .kst-bar input[type="search"]:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+  .kst .hist .btn { height: 40px; width: 36px; padding: 0; }
+  .kst .picks { display: flex; flex-wrap: wrap; gap: 8px; }
+  .kst .pick { position: relative; }
+  .kst .pick > summary {
+    display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; list-style: none; cursor: pointer; white-space: nowrap;
+    border: 1px solid var(--line-2); background: var(--surface); font: 500 0.9375rem/1 var(--f-body); color: var(--ink);
+  }
+  .kst .pick > summary::-webkit-details-marker { display: none; }
+  .kst .pick > summary::after {
+    content: ''; width: 7px; height: 7px; margin-left: 2px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: translateY(-2px) rotate(45deg);
+  }
+  .kst .pick[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
+  .kst .pick > summary:hover, .kst .pick[open] > summary { border-color: var(--ink); }
+  .kst .pick > summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .kst .pick > summary em { font-style: normal; font-weight: 400; color: var(--muted); }
+  .kst .pick.is-set > summary { background: var(--blue-50); border-color: var(--blue); }
+  .kst .pop {
+    position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: 340px; max-width: calc(100vw - 32px);
+    display: grid; gap: 4px; padding: 12px; background: var(--surface); border: 1px solid var(--ink);
+    box-shadow: 0 20px 40px -16px rgb(4 11 27 / .45);
+  }
+  .kst .picks .pick:nth-last-child(-n+2) .pop { left: auto; right: 0; }
+  .kst .pop--wide { width: 460px; max-height: min(70vh, 560px); overflow: auto; }
+  .kst .opt {
+    display: grid; gap: 2px; text-align: left; padding: 8px 10px; background: none; border: 0; border-left: 2px solid transparent; cursor: pointer;
+  }
+  .kst .opt b { font: 600 0.9375rem/1.3 var(--f-body); color: var(--ink); }
+  .kst .opt span { font-size: 0.8125rem; line-height: 1.4; color: var(--muted); }
+  .kst .opt:hover { background: var(--bg-soft); }
+  .kst .opt.is-on { background: var(--blue-50); border-left-color: var(--blue); }
+  .kst .opt:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .kst .optlist { display: grid; }
+  .kst .optlist .opt { grid-template-columns: 16px 1fr auto; align-items: center; gap: 10px; padding: 7px 8px; }
+  .kst .optlist .opt::before { content: ''; width: 12px; height: 12px; border: 1.5px solid var(--line-2); background: var(--surface); }
+  .kst .optlist .opt.is-on::before { background: var(--blue-fill); border-color: var(--blue-fill); box-shadow: inset 0 0 0 2px var(--surface); }
+  .kst .optlist .opt b { font-weight: 500; }
+  .kst .optlist .opt span { font-variant-numeric: tabular-nums; }
+  .kst .pop-h { margin: 10px 0 4px; font: 600 0.8125rem/1.3 var(--f-body); color: var(--ink); }
+  .kst .pop-h span { font-weight: 400; color: var(--muted); margin-left: 6px; }
+  .kst .pop-note { margin: 0 0 6px; font-size: 0.8125rem; line-height: 1.4; color: var(--muted); }
+  .kst .pop .linkish { justify-self: start; margin-top: 6px; font-size: 0.875rem; }
+  .kst .pop .names { margin: 0; }
+  .kst .years-axis { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .kst .pop #kst-play { justify-self: start; margin-top: 8px; }
+  .kst .pop .legend-body { display: grid; gap: 12px; }
+  #kst-defs .defs-wrap { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+  #kst-defs summary { cursor: pointer; }
+  #kst-defs h3 { margin: 14px 0 8px; }
+
+  /* Pytania do grafu: zamiast jednego przełącznika „Analiza” — cztery nazwane narzędzia */
+  .kst .asks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .kst .ask {
+    display: grid; grid-template-columns: 20px 1fr; gap: 2px 10px; align-content: start; text-align: left; padding: 10px 12px;
+    background: var(--surface); border: 1px solid var(--line-2); cursor: pointer;
+  }
+  .kst .ask svg { grid-row: span 2; margin-top: 1px; fill: none; stroke: var(--blue); stroke-width: 1.6; }
+  .kst .ask b { font: 600 0.9375rem/1.3 var(--f-body); color: var(--ink); }
+  .kst .ask span { font-size: 0.8125rem; line-height: 1.4; color: var(--muted); }
+  .kst .ask:hover { border-color: var(--ink); }
+  .kst .ask.is-on { background: var(--ink); border-color: var(--ink); }
+  .kst .ask.is-on b, .kst .ask.is-on span { color: var(--on-ink); }
+  .kst .ask.is-on svg { stroke: var(--on-ink); }
+  .kst .ask:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+  /* Tezy (widoki): poziomy pas kart */
+  .kst .theses { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+  .kst .thesis {
+    flex: 0 0 248px; display: grid; gap: 2px; align-content: start; text-align: left; padding: 9px 12px; cursor: pointer;
+    background: var(--bg-soft); border: 1px solid var(--line);
+  }
+  .kst .thesis span { font-size: 0.8125rem; color: var(--muted); }
+  .kst .thesis b { font: 600 0.875rem/1.35 var(--f-display); color: var(--ink); }
+  .kst .thesis:hover { border-color: var(--ink); }
+  .kst .thesis.is-on { background: var(--blue-50); border-color: var(--blue); }
+  .kst .thesis:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
   .kst .group { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
   .kst .group .mono-label { margin: 0 2px 0 0; }
   .kst .chk { display: flex; gap: 6px; align-items: center; font-size: 0.8125rem; color: var(--text-strong); cursor: pointer; }
   .kst .chk input { margin: 0; accent-color: var(--blue-fill); }
-  .kst .mono-label { font-size: 0.6875rem; letter-spacing: .06em; color: var(--muted); margin: 0; }
+  /* Okres: dwa suwaki lat na jednej osi (uchwyty klikalne, tor nie) */
+  .kst .period .years { position: relative; display: block; width: 100%; height: 22px; }
+  .kst .period .years input { position: absolute; inset: 0; width: 100%; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+  .kst .period .years input::-webkit-slider-runnable-track { height: 2px; background: var(--line-2); }
+  .kst .period .years input::-webkit-slider-thumb { pointer-events: auto; -webkit-appearance: none; width: 10px; height: 18px; margin-top: -8px; background: var(--ink); border: 2px solid var(--surface); cursor: ew-resize; }
+  .kst .period .years input::-moz-range-track { height: 2px; background: var(--line-2); }
+  .kst .period .years input::-moz-range-thumb { pointer-events: auto; width: 8px; height: 16px; background: var(--ink); border: 2px solid var(--surface); border-radius: 0; cursor: ew-resize; }
+  .kst .period .years input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .kst .mono-label { font: 500 0.8125rem/1.35 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--muted); margin: 0; }
+  .kst h3.mono-label { font-weight: 600; color: var(--ink); }
 
-  .kst-layout {
-    display: grid; grid-template-columns: minmax(0, 1fr) clamp(320px, 30vw, 420px); height: var(--kst-h);
-    border: 1px solid var(--line-2);
-  }
+  .kst-layout { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); height: var(--kst-h); border: 1px solid var(--line-2); }
   .kst-stage {
     position: relative; min-height: 0; overflow: hidden;
     background-color: var(--bg-soft);
@@ -137,6 +254,7 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   .kst.is-full .kst-graph { touch-action: none; }
   .kst-graph:active { cursor: grabbing; }
   .kst .hint { position: absolute; left: 16px; right: 64px; bottom: 12px; pointer-events: none; }
+  .kst.has-card .hint { right: calc(min(420px, 42%) + 28px); }
   .kst .gesture-toast {
     position: absolute; left: 50%; top: 50%; z-index: 3; transform: translate(-50%, -50%); max-width: calc(100% - 48px);
     margin: 0; padding: 10px 16px; background: var(--ink); color: var(--on-ink); text-align: center; pointer-events: none;
@@ -185,19 +303,27 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   .kst .viewbar.is-on { display: flex; }
   .kst .viewbar b { font: 500 0.9375rem/1.3 var(--f-body); }
   .kst .viewbar .mono-label { color: var(--on-ink); opacity: .7; }
-  .kst .viewbar button { background: none; border: 0; color: var(--on-ink); cursor: pointer; font: 500 0.6875rem var(--f-mono); letter-spacing: .06em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
+  .kst .viewbar button { background: none; border: 0; color: var(--on-ink); cursor: pointer; font: 500 0.6875rem var(--f-body); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; }
 
-  .kst-panel { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
-  .kst .detail { flex: 1; overflow: auto; padding: 20px 24px 24px; overscroll-behavior: contain; }
-  .kst .legend { border-top: 1px solid var(--line); padding: 10px 24px 14px; }
-  .kst .legend summary { cursor: pointer; list-style: none; }
-  .kst .legend summary::-webkit-details-marker { display: none; }
-  .kst .legend summary::before { content: '+ '; }
-  .kst .legend[open] summary::before { content: '− '; }
-  .kst .legend-body { display: grid; gap: 12px; margin-top: 10px; max-height: 38vh; overflow: auto; }
+  /* Szczegóły: karta nad grafem (komputer), pod grafem (telefon); bez zaznaczenia, widoku i analizy — schowana */
+  .kst-panel {
+    position: absolute; z-index: 3; top: 12px; right: 12px; bottom: 12px; width: min(420px, 42%);
+    display: none; flex-direction: column; min-height: 0; background: var(--surface); border: 1px solid var(--line-2);
+    box-shadow: 0 20px 40px -16px rgb(4 11 27 / .45);
+  }
+  .kst.has-card .kst-panel { display: flex; }
+  .kst .detail { flex: 1; overflow: auto; padding: 18px 22px 22px; overscroll-behavior: contain; }
+  .kst .card-x {
+    position: absolute; top: 10px; right: 10px; z-index: 1; width: 32px; height: 32px; display: grid; place-items: center;
+    background: var(--surface); border: 1px solid transparent; cursor: pointer; color: var(--muted);
+  }
+  .kst .card-x svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
+  .kst .card-x:hover { border-color: var(--line-2); color: var(--ink); }
+  .kst .card-x:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .kst .detail > .back { margin-right: 40px; }
   .kst .legend-sub { margin-bottom: 6px; }
 
-  .kst .detail h2 { font: 400 1.75rem/1.15 var(--f-display); color: var(--ink); margin: 6px 0 10px; letter-spacing: -.01em; }
+  .kst .detail h2 { font: 600 1.625rem/1.15 var(--f-display); color: var(--ink); margin: 6px 0 10px; letter-spacing: -.01em; }
   .kst .detail h3 { margin: 22px 0 8px; }
   .kst .detail p { margin: 0 0 10px; color: var(--text-strong); }
   .kst .detail details { margin-top: 18px; }
@@ -206,7 +332,7 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   .kst .back {
     display: inline-flex; align-items: center; gap: 8px; margin-bottom: 16px; padding: 7px 12px 7px 8px; cursor: pointer;
     background: var(--surface); border: 1px solid var(--line-2); border-radius: 0; color: var(--ink);
-    font: 500 0.75rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase;
+    font: 500 0.75rem/1 var(--f-body);
   }
   .kst .back:hover, .kst .back:focus-visible { border-color: var(--blue); color: var(--blue); }
   .kst .back .back-ico { flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: square; }
@@ -235,21 +361,21 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   .kst .who { display: block; margin: 18px 0 2px; padding: 0; background: none; border: 0; cursor: pointer; text-align: left;
     font: 500 1rem/1.3 var(--f-body); color: var(--ink); }
   .kst .who:hover { color: var(--blue); }
-  .kst .who .count { font: 400 0.75rem var(--f-mono); color: var(--muted); margin-left: 6px; }
+  .kst .who .count { font: 400 0.75rem var(--f-body); color: var(--muted); margin-left: 6px; }
   .kst .who--title { display: inline; margin: 0; font: inherit; }
   .kst .names { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 4px 0 8px; }
   .kst .names .who { display: inline; margin: 0; font-size: 0.9375rem; }
   .kst .linkish { display: inline; background: none; border: 0; padding: 0; color: var(--blue); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
   .kst .empty { color: var(--muted); font-style: italic; }
 
-  .kst .flag { font: 500 0.625rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; padding: 3px 5px; border: 1px solid; white-space: nowrap; }
+  .kst .flag { font: 600 0.75rem/1 var(--f-body); padding: 3px 5px; border: 1px solid; white-space: nowrap; }
   .kst .flag--record { color: var(--blue-700); background: var(--blue-50); border-color: var(--blue-50); }
   .kst .flag--confirmed { color: var(--ink); border-color: var(--ink); }
   .kst .flag--media { color: var(--muted); border-color: var(--line-2); border-style: dotted; }
   .kst .flag--disputed { color: var(--amber); border-color: var(--amber); border-style: dashed; }
   .kst .flag--only { color: var(--amber); border-color: var(--amber); }
-  .kst .kind { font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
-  .kst .party { font: 500 0.6875rem/1 var(--f-mono); letter-spacing: .04em; padding: 3px 6px; border: 1px solid var(--line-2); color: var(--text-strong); background: var(--surface); cursor: pointer; }
+  .kst .kind { font: 400 0.75rem/1 var(--f-body); color: var(--muted); }
+  .kst .party { font: 500 0.6875rem/1 var(--f-body); padding: 3px 6px; border: 1px solid var(--line-2); color: var(--text-strong); background: var(--surface); cursor: pointer; }
   .kst .party--former { border-style: dashed; color: var(--muted); }
   .kst .party:hover, .kst .party.is-on { border-color: var(--ink); color: var(--ink); }
   .kst .party.is-on { background: var(--blue-50); }
@@ -280,12 +406,12 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   .kst .shape--person { fill: var(--blue-fill); }
   .kst .charge-ring { fill: none; stroke: var(--amber); stroke-width: 1.5; stroke-dasharray: 4 3; }
   .kst .t-short { font: 500 15px var(--f-display); fill: var(--on-ink); }
-  .kst .t-act { font: 500 12px var(--f-mono); letter-spacing: .04em; fill: #fff; /* kolor-stały: biały na stałym --blue-fill */ }
+  .kst .t-act { font: 500 12px var(--f-body); fill: #fff; /* kolor-stały: biały na stałym --blue-fill */ }
   .kst .t-label { font: 500 12.5px var(--f-body); fill: var(--text-strong); }
-  .kst .t-hub { font: 500 9.5px var(--f-mono); letter-spacing: .08em; fill: var(--blue); }
+  .kst .t-hub { font: 500 9.5px var(--f-body); fill: var(--blue); }
   .kst .t-init { font: 500 13px var(--f-display); fill: #fff; /* kolor-stały: biały na stałym --blue-fill */ }
   .kst .t-name { font: 500 13.5px var(--f-body); fill: var(--ink); }
-  .kst .t-party { font: 500 10px var(--f-mono); letter-spacing: .04em; fill: var(--muted); }
+  .kst .t-party { font: 500 10px var(--f-body); fill: var(--muted); }
   .kst .party-logo rect { fill: #fff; /* kolor-stały: logotypy partii są robione pod białe tło */ stroke: var(--line-2); }
   .kst .party-logo.is-former image { opacity: .45; }
   .kst .party-logo.is-former rect { stroke-dasharray: 2 2; }
@@ -306,7 +432,7 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   .kst .node.is-selected .ring, .kst .node:focus-visible .ring, .kst .node.is-end .ring { opacity: 1; }
   .kst .more { cursor: pointer; }
   .kst .more rect { fill: var(--blue-fill); }
-  .kst .more text { font: 500 10.5px var(--f-mono); fill: #fff; /* kolor-stały: biały na stałym --blue-fill */ }
+  .kst .more text { font: 500 10.5px var(--f-body); fill: #fff; /* kolor-stały: biały na stałym --blue-fill */ }
   .kst .more:hover rect { fill: var(--ink); }
   .kst .more:hover text { fill: var(--on-ink); }
   /* Mniej nazwisk: w trybie „wszyscy” podpisy mają tylko osoby z rdzenia, reszta po najechaniu albo przybliżeniu. */
@@ -320,7 +446,7 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   .kst .vote-no { fill: var(--bg-soft); stroke: var(--ink); stroke-width: 1.5; }
   .kst .vote-abstain { fill: var(--ink); }
   .kst .badge rect { fill: var(--surface); stroke: var(--line-2); }
-  .kst .badge text { font: 500 10px var(--f-mono); fill: var(--ink); }
+  .kst .badge text { font: 500 10px var(--f-body); fill: var(--ink); }
   .kst .dim { opacity: .12; }
   .kst .node, .kst .link { transition: opacity .15s; }
   .kst .link.is-hit .vis { stroke: var(--blue) !important; stroke-width: 3.5px !important; }
@@ -353,22 +479,22 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   .kst .chain .hop::before { content: ''; position: absolute; left: -23px; top: 10px; width: 12px; height: 12px; background: var(--blue-fill); }
   .kst .chain .hop .who { display: inline; margin: 0 6px 0 0; }
   .kst .chain .step { padding: 2px 0 6px; }
-  .kst .chain .step > .linkish { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; }
+  .kst .chain .step > .linkish { font: 500 0.6875rem/1.3 var(--f-body); }
   .kst .rank-wrap { overflow-x: auto; }
   .kst .rank { width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-top: 6px; }
   .kst .rank th { text-align: left; padding: 4px 8px 6px 0; font-weight: 500; vertical-align: bottom; }
-  .kst .rank th button { background: none; border: 0; padding: 0; cursor: pointer; font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: inherit; }
+  .kst .rank th button { background: none; border: 0; padding: 0; cursor: pointer; font: 500 0.6875rem/1.3 var(--f-body); color: var(--muted); text-align: inherit; }
   .kst .rank th button:hover, .kst .rank th button.is-on { color: var(--ink); }
   .kst .rank th button.is-on::after { content: ' ↓'; }
   .kst .rank td { padding: 7px 8px 7px 0; border-top: 1px solid var(--line); vertical-align: baseline; color: var(--text-strong); }
   .kst .rank .num { text-align: right; white-space: nowrap; }
-  .kst .rank td.num { font: 400 0.8125rem var(--f-mono); }
+  .kst .rank td.num { font: 400 0.8125rem var(--f-body); }
   .kst .rank th:last-child, .kst .rank td:last-child { padding-right: 0; }
   .kst .rank .who, .kst .rank .pairbtn { display: inline; margin: 0; font-size: 0.875rem; text-align: left; }
   .kst .rank .sub { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
   .kst .src-n {
     margin-left: 4px; padding: 0 4px; border: 1px solid var(--line-2); background: var(--surface); cursor: pointer;
-    font: 500 0.625rem/1.5 var(--f-mono); color: var(--muted); vertical-align: 1px;
+    font: 500 0.625rem/1.5 var(--f-body); color: var(--muted); vertical-align: 1px;
   }
   .kst .src-n:hover, .kst .src-n.is-on { border-color: var(--ink); color: var(--ink); }
   .kst .pairbtn { display: inline; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; font: inherit; color: var(--ink); }
@@ -384,16 +510,27 @@ const logos = Object.fromEntries(await Promise.all(Object.entries(LOGOS).map(asy
   @media (max-width: 1024px) {
     .kst.is-full .kst-layout { grid-template-rows: minmax(0, 60%) minmax(0, 40%); }
     .kst.is-full .kst-stage { height: auto; min-height: 0; }
-    .kst-layout { grid-template-columns: minmax(0, 1fr); height: auto; }
+    .kst-layout { height: auto; }
     .kst-stage { height: min(72svh, 620px); min-height: 420px; }
-    .kst-panel { border-left: 0; border-top: 1px solid var(--line); }
-    .kst .legend-body { max-height: none; }
+    .kst-panel { position: static; width: auto; box-shadow: none; border: 0; border-top: 1px solid var(--line); }
+    .kst.is-full .kst-panel { position: static; }
     .kst .detail { overflow: visible; }
+    .kst .asks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kst.has-card .hint { right: 64px; }
   }
   @media (max-width: 720px) {
-    .kst-bar { padding: 8px; }
-    .kst-bar input[type="search"] { width: auto; flex: 1 1 180px; min-width: 0; }
-    .kst .detail, .kst .legend { padding-left: 16px; padding-right: 16px; }
+    .kst-bar { padding: 10px; gap: 10px; }
+    .kst-bar input[type="search"] { flex: 1 1 180px; }
+    .kst .picks { width: 100%; }
+    .kst .pick { flex: 1 1 auto; }
+    .kst .pick > summary { justify-content: space-between; }
+    .kst .pop { position: fixed; left: 16px !important; right: 16px !important; top: auto; bottom: 16px; width: auto; max-height: 70vh; overflow: auto; }
+    .kst .asks { display: flex; overflow-x: auto; }
+    .kst .ask { flex: 0 0 auto; grid-template-columns: 18px auto; align-items: center; }
+    .kst .ask span { display: none; }
+    .kst .ask svg { grid-row: auto; }
+    .kst .thesis { flex-basis: 220px; }
+    .kst .detail { padding-left: 16px; padding-right: 16px; }
     .kst .viewbar { top: auto; bottom: 8px; left: 8px; max-width: calc(100% - 64px); flex-wrap: wrap; }
     .kst .viewbar.is-on ~ .hint { display: none; } /* pasek widoku albo analizy zajmuje miejsce podpowiedzi */
     .kst .hint { left: 8px; bottom: 8px; }

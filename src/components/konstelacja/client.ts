@@ -20,10 +20,13 @@ import { plural, typo as typoText } from '@/lib/format';
 import * as Analiza from '@/lib/konstelacja/analiza';
 import { fmtDate, TEAM_NAME, wspolneOkresy } from '@/lib/konstelacja/okresy';
 import type { EdgeKind, GraphData, GraphEdge, GraphNode, Party, Role, Status, View } from '@/lib/konstelacja/types';
+import { ORG_SECTOR, SECTORS, type Sector } from '@/data/konstelacja/styk';
 
 type CatKey = 'family' | 'ties' | 'money' | 'law' | 'structure';
-type E = GraphEdge & { i: number; status: Status; cat: CatKey };
-interface N extends GraphNode, SimulationNodeDatum { degree: number; r: number; hub?: boolean }
+// via — krawędź zastępcza do węzła zbiorczego sektora (oryginał: funkcja w drobnej instytucji `via`)
+type E = GraphEdge & { i: number; status: Status; cat: CatKey; via?: string };
+// cluster — węzeł zbiorczy sektora: drobne instytucje i podmioty, z którymi łączy się tylko jedna osoba
+interface N extends GraphNode, SimulationNodeDatum { degree: number; r: number; hub?: boolean; cluster?: boolean }
 interface L extends SimulationLinkDatum<N> { key: string; source: N | string; target: N | string; edges: E[]; visible: E[] }
 type Sel = { node: string } | { pair: string } | { party: string } | null;
 type An =
@@ -78,6 +81,9 @@ const AN_PARENT: Record<AnT, AnT | null> = { menu: null, search: null, path: 'me
 const AN_NAME: Record<AnT, string> = { menu: 'Analiza', path: 'Ścieżka', hood: 'Otoczenie', cmp: 'Porównanie', srcs: 'Indeks źródeł', src: 'Źródło', pub: 'Wydawca', bridges: 'Mosty', search: 'Wyszukiwanie' };
 const FACT: [string, string, string] = ['fakt', 'fakty', 'faktów'];
 const SRC: [string, string, string] = ['źródło', 'źródła', 'źródeł'];
+const SECTOR_KEYS = Object.keys(SECTORS) as Sector[];
+const Y0 = 2005, Y1 = 2027; // zakres paska okresu: [Y0, Y1)
+type Period = 'all' | 'now' | { y0: number; y1: number };
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 const typo = (s: unknown) => typoText(esc(s));
@@ -101,7 +107,7 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
   // an — otwarte narzędzie analizy, aopt — jego ustawienia: tylko pewne ogniwa, przez instytucje ogólne.
   const state = {
     mode: 'core' as 'core' | 'all', view: null as View | null, expanded: new Set<string>(), pinned: new Set<string>(),
-    inst: new Set<string>(), currentOnly: false, an: null as An | null, aopt: { pewne: false, przez: false },
+    sectors: new Set<Sector>(), period: 'all' as Period, overlaps: false, an: null as An | null, aopt: { pewne: false, przez: false },
   };
   let selected: Sel = null;
   // Kamera: „fit” — dopasowana do grafu, „center” — wyśrodkowana na węźle (target), „free” — ustawiona ręcznie.
@@ -122,8 +128,57 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
   const nodes: N[] = data.nodes.filter((n) => used.has(n.id)).map((n) => ({ ...n, degree: 0, r: 0 }));
   const byId = new Map(nodes.map((n) => [n.id, n]));
 
-  const pairs = new Map<string, L>();
+  // Sektor węzła (data/konstelacja/styk.ts): organ — po instytucji nadrzędnej, spółka i szpital — „podmioty”.
+  function sectorOf(id: string): Sector | null {
+    let n = byId.get(id);
+    if (n?.type === 'entity') return 'podmioty';
+    while (n) {
+      if (ORG_SECTOR[n.id]) return ORG_SECTOR[n.id];
+      n = n.type === 'body' && n.parent ? byId.get(n.parent) : undefined;
+    }
+    return null;
+  }
+  // Węzły zbiorcze: instytucja albo podmiot, z którym łączy się tylko jedna osoba (i nic więcej), zwija się do węzła
+  // sektora — gdy w sektorze są co najmniej dwa takie miejsca. Rozwinięcie („+”) przywraca osobne węzły.
+  const nbrs = new Map<string, Set<string>>();
   for (const e of edges) {
+    if (e.kind === 'part') continue;
+    (nbrs.get(e.from) ?? nbrs.set(e.from, new Set()).get(e.from)!).add(e.to);
+    (nbrs.get(e.to) ?? nbrs.set(e.to, new Set()).get(e.to)!).add(e.from);
+  }
+  const smallBySector = new Map<Sector, N[]>();
+  for (const n of nodes) {
+    if (n.type !== 'institution' && n.type !== 'entity') continue;
+    const nb = [...(nbrs.get(n.id) ?? [])];
+    const s = sectorOf(n.id);
+    if (!s || nb.length !== 1 || byId.get(nb[0])?.type !== 'person' || nodes.some((x) => x.parent === n.id)) continue;
+    (smallBySector.get(s) ?? smallBySector.set(s, []).get(s)!).push(n);
+  }
+  const clusterOf = new Map<string, string>(); // drobny węzeł → węzeł zbiorczy
+  const clusterEdges: E[] = [];
+  for (const [s, list] of smallBySector) {
+    if (list.length < 2) continue;
+    const cid = `sek:${s}`;
+    const cn: N = {
+      id: cid, type: 'institution', cluster: true, degree: 0, r: 0,
+      name: `${SECTORS[s].label} — ${list.length} ${plural(list.length, ['miejsce', 'miejsca', 'miejsc'])}`,
+      short: `Σ${list.length}`, // napis w kwadracie węzła; pełna nazwa pod spodem
+      note: `Węzeł zbiorczy: ${list.map((n) => n.short || n.name).join(', ').replace(/\.$/, '')}. Z każdym z tych miejsc łączy się w grafie tylko jedna osoba, więc graf pokazuje je razem. „Rozwiń” rozdziela je na osobne węzły.`,
+    };
+    nodes.push(cn);
+    byId.set(cid, cn);
+    for (const m of list) {
+      clusterOf.set(m.id, cid);
+      for (const e of edges) {
+        if (e.kind === 'part' || (e.from !== m.id && e.to !== m.id)) continue;
+        clusterEdges.push({ ...e, i: -1, from: e.from === m.id ? cid : e.from, to: e.to === m.id ? cid : e.to, label: `${m.name}: ${e.label}`, via: m.id });
+      }
+    }
+  }
+  const clusterIds = new Set(clusterOf.values());
+
+  const pairs = new Map<string, L>();
+  for (const e of [...edges, ...clusterEdges]) {
     const k = pairKey(e.from, e.to);
     if (!pairs.has(k)) pairs.set(k, { key: k, source: e.from, target: e.to, edges: [], visible: [] });
     pairs.get(k)!.edges.push(e);
@@ -133,14 +188,21 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
 
   // Huby wynikają z danych: liczba różnych sąsiadów.
   for (const l of links) { byId.get(idOf(l.source))!.degree++; byId.get(idOf(l.target))!.degree++; }
-  [...nodes].sort((a, b) => b.degree - a.degree).slice(0, HUBS).filter((n) => n.degree >= HUB_MIN).forEach((n) => { n.hub = true; });
+  [...nodes].filter((n) => !n.cluster).sort((a, b) => b.degree - a.degree).slice(0, HUBS).filter((n) => n.degree >= HUB_MIN).forEach((n) => { n.hub = true; });
   for (const n of nodes) n.r = radius(n);
-  const bridges = computeBridges();
+  let bridges = computeBridges();
+  // Sektory osoby (z jej funkcji) — do filtra sektorów
+  const personSectors = new Map<string, Set<Sector>>();
+  for (const e of edges) {
+    if (e.kind !== 'role' || byId.get(e.from)?.type !== 'person') continue;
+    const s = sectorOf(e.to);
+    if (s) (personSectors.get(e.from) ?? personSectors.set(e.from, new Set()).get(e.from)!).add(s);
+  }
   const srcIndex = Analiza.indeksZrodel(nodes, edges, data.sources);
   const nameOf = (id: string) => byId.get(id)?.name ?? id;
   const shortOf = (id: string) => byId.get(id)?.short || nameOf(id);
 
-  /* ---------- Rdzeń: osoby, które łączą co najmniej dwie instytucje albo mają powiązanie z inną osobą ---------- */
+  /* ---------- Instytucja nadrzędna i miejsca osoby (do analizy) ---------- */
   function instOf(id: string | undefined): string | null {
     let n = id ? byId.get(id) : undefined;
     while (n && n.type === 'body') n = n.parent ? byId.get(n.parent) : undefined;
@@ -158,20 +220,21 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     set.delete(null);
     return set;
   }
-  function computeBridges() {
+  // Rdzeń: osoba z funkcjami w co najmniej dwóch SEKTORACH (rząd, parlament, samorząd lekarski, podmioty…) albo z
+  // udokumentowanym powiązaniem z inną osobą. Kariera w obrębie jednego sektora (MZ → NFZ) nie wystarcza; wyliczone
+  // wspólne okresy się nie liczą. `ok` — filtr okresu (rdzeń „teraz” liczy się z obecnych funkcji).
+  function computeBridges(ok: (e: E) => boolean = () => true) {
     const out = new Set<string>();
     for (const p of nodes.filter((n) => n.type === 'person')) {
-      const insts = new Set<string | null>();
+      const secs = new Set<string>();
       let personTie = false;
       for (const e of edges) {
-        if (e.from !== p.id && e.to !== p.id) continue;
+        if ((e.from !== p.id && e.to !== p.id) || e.derived || !ok(e)) continue;
         const o = byId.get(e.from === p.id ? e.to : e.from)!;
         if (o.type === 'person') personTie = true;
-        else if (o.type === 'entity') insts.add(o.id); // spółka albo szpital to osobne miejsce
-        else if (o.type !== 'act') insts.add(instOf(o.id));
+        else if (o.type !== 'act') { const s = sectorOf(o.id); if (s) secs.add(s); }
       }
-      insts.delete(null);
-      if (personTie || insts.size >= 2) out.add(p.id);
+      if (personTie || secs.size >= 2) out.add(p.id);
     }
     return out;
   }
@@ -323,7 +386,7 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     square(hubs.filter((d) => d.type !== 'person'), 5, 'hub-mark');
     hubs.filter((d) => d.type === 'person').append('circle').attr('class', 'hub-mark').attr('r', (d) => d.r + 5);
     hubs.append('text').attr('class', 't-hub halo').attr('text-anchor', 'middle')
-      .attr('y', (d) => -d.r - 12).text((d) => `HUB · ${d.degree}`);
+      .attr('y', (d) => -d.r - 12).text((d) => `hub · ${d.degree}`);
 
     const inst = nodeSel.filter((d) => d.type === 'institution');
     square(inst, 6, 'ring');
@@ -416,20 +479,42 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
         if (state.expanded.has(e.from) && byId.get(e.to)?.type === 'person') set.add(e.to);
       }
     }
-    if (state.inst.size && !state.view) {
+    if (!state.view) {
+      // węzeł zbiorczy albo jego składniki — nigdy oba naraz
+      for (const [m, cid] of clusterOf) set.delete(state.expanded.has(cid) ? cid : m);
+      for (const cid of clusterIds) if (state.expanded.has(cid)) set.delete(cid);
+    } else for (const cid of clusterIds) set.delete(cid);
+    if (state.sectors.size && !state.view) {
       for (const id of [...set]) {
         const n = byId.get(id);
         if (!n || n.type === 'act') continue;
-        if (![...clustersOf(n)].some((x) => x && state.inst.has(x))) set.delete(id);
+        const secs = n.type === 'person' ? [...(personSectors.get(id) ?? [])] : [n.cluster ? id.slice(4) as Sector : sectorOf(id)];
+        if (!secs.some((x) => x && state.sectors.has(x))) set.delete(id);
       }
     }
     state.pinned.forEach((id) => set.add(id));
     return set;
   }
 
+  // Okres: „teraz” — trwające funkcje (bez daty odejścia i bez samego `seen`) i inne fakty z ostatnich 2 lat albo bez daty;
+  // zakres lat — fakt, którego czas (od–do albo dzień) przecina zakres; bez daty — tylko „cały okres”. Widoki pomijają okres.
+  const nowFrom = `${+data.asOf.slice(0, 4) - 2}${data.asOf.slice(4)}`;
+  function periodOk(e: GraphEdge) {
+    const p = state.period;
+    if (p === 'all' || e.kind === 'part' || state.view) return true;
+    const a = e.since || e.date;
+    if (p === 'now') {
+      if (e.kind === 'role') return !!e.since && !e.until && !e.seen;
+      return !a || (e.until || e.seen || a) >= nowFrom;
+    }
+    if (!a) return false;
+    const b = e.until || e.seen || (e.since ? data.asOf : a);
+    return a < String(p.y1) && b >= String(p.y0);
+  }
   const edgeOk = (e: E) => activeCat.has(e.cat)
     && (e.kind === 'part' || activeStatus.has(e.status))
-    && !(state.currentOnly && e.until && e.until < data.asOf);
+    && (!e.derived || state.overlaps)
+    && periodOk(e);
 
   function hiddenPeople(id: string) {
     const out = new Set<string>();
@@ -443,6 +528,8 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
   function applyFilter(layoutAgain = true) {
     // Wynik analizy (ścieżka, otoczenie, porównanie, źródło) dokłada swoje węzły — także spoza rdzenia i widoku.
     focus = computeFocus();
+    bridges = computeBridges(state.period === 'all' ? undefined : periodOk);
+    nodeSel.classed('is-bridge', (d) => bridges.has(d.id));
     let set = baseSet();
     if (focus?.hideRest) set = new Set([...focus.nodes, ...state.pinned]);
     else focus?.nodes.forEach((id) => set.add(id));
@@ -508,29 +595,92 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
 
   /* ---------- Pasek narzędzi ---------- */
   function setupToolbar() {
-    const insts = $('insts');
-    for (const n of nodes.filter((x) => x.type === 'institution')) {
-      insts.insertAdjacentHTML('beforeend', `<button class="chip" type="button" data-inst="${esc(n.id)}" title="${esc(n.name)}" aria-pressed="false">${esc(n.short)}</button>`);
+    const secBox = $('sectors');
+    for (const s of SECTOR_KEYS) {
+      const n = nodes.filter((x) => x.type === 'person' && personSectors.get(x.id)?.has(s)).length;
+      if (n) secBox.insertAdjacentHTML('beforeend', `<button class="opt" type="button" data-sector="${s}" aria-pressed="false" title="${n} ${plural(n, ['osoba', 'osoby', 'osób'])} z funkcją w tym sektorze"><b>${esc(SECTORS[s].label)}</b><span>${n}</span></button>`);
     }
-    insts.addEventListener('click', (e) => {
-      const b = (e.target as Element).closest<HTMLElement>('[data-inst]');
+    secBox.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest<HTMLElement>('[data-sector]');
       if (!b) return;
-      const id = b.dataset.inst!;
-      state.inst.has(id) ? state.inst.delete(id) : state.inst.add(id);
+      const s = b.dataset.sector as Sector;
+      state.sectors.has(s) ? state.sectors.delete(s) : state.sectors.add(s);
       state.view = null;
       applyFilter();
     });
+    // Okres: „Teraz”, „Cały okres” albo zakres lat z dwóch suwaków; „Rok po roku” przesuwa 3-letnie okno.
+    const y0 = $<HTMLInputElement>('y0'), y1 = $<HTMLInputElement>('y1');
+    const setRange = (src?: HTMLInputElement) => {
+      let a = +y0.value, b = +y1.value;
+      if (a >= b) { if (src === y0) a = b - 1; else b = a + 1; y0.value = String(a); y1.value = String(b); }
+      state.period = a === Y0 && b === Y1 ? 'all' : { y0: a, y1: b };
+      applyFilter();
+    };
+    y0.addEventListener('change', () => setRange(y0));
+    y1.addEventListener('change', () => setRange(y1));
+    y0.addEventListener('input', () => syncPeriodLabel(+y0.value, +y1.value));
+    y1.addEventListener('input', () => syncPeriodLabel(+y0.value, +y1.value));
+    let playTimer = 0;
+    const play = $<HTMLButtonElement>('play');
+    const stopPlay = () => { clearInterval(playTimer); playTimer = 0; play.setAttribute('aria-pressed', 'false'); play.textContent = 'Rok po roku'; };
+    host.querySelectorAll<HTMLElement>('[data-period]').forEach((b) => b.addEventListener('click', () => {
+      stopPlay();
+      closePicks();
+      state.period = b.dataset.period === 'now' ? 'now' : 'all';
+      state.view = null;
+      applyFilter();
+    }));
+    play.addEventListener('click', () => {
+      if (playTimer) return stopPlay();
+      let a = 2012;
+      play.setAttribute('aria-pressed', 'true'); play.textContent = 'Zatrzymaj';
+      const step = () => { state.period = { y0: a, y1: a + 3 }; state.view = null; applyFilter(); a++; if (a + 3 > Y1) stopPlay(); };
+      step(); playTimer = window.setInterval(step, 1800);
+    });
     host.querySelectorAll<HTMLElement>('[data-mode]').forEach((b) => b.addEventListener('click', () => {
+      closePicks();
       state.mode = b.dataset.mode as 'core' | 'all';
       state.view = null;
       applyFilter();
     }));
-    $<HTMLInputElement>('current').addEventListener('change', (e) => { state.currentOnly = (e.target as HTMLInputElement).checked; applyFilter(); });
     $('viewbar-close').addEventListener('click', () => {
       if (state.an && AN_GRAPH.has(state.an.t)) return setAnalysis(null);
       state.view = null; selected = null; applyFilter();
     });
-    $('an-toggle').addEventListener('click', () => setAnalysis(state.an ? null : { t: 'menu' }));
+    // Pigułki (details): naraz otwarta jedna; klik obok albo Escape zamyka.
+    const picks = [...host.querySelectorAll<HTMLDetailsElement>('.pick')];
+    picks.forEach((d) => d.addEventListener('toggle', () => { if (d.open) picks.forEach((o) => { if (o !== d) o.open = false; }); }));
+    document.addEventListener('click', (e) => { if (!(e.target as Element).closest?.('.pick')) closePicks(); });
+    host.addEventListener('keydown', (e) => {
+      const open = picks.find((d) => d.open);
+      if (e.key === 'Escape' && open) { open.open = false; open.querySelector('summary')!.focus(); }
+    });
+    // Pytania do grafu, tezy, huby i „wszystkie sektory” nad grafem.
+    const bar = host.querySelector<HTMLElement>('.kst-bar')!;
+    bar.addEventListener('click', (e) => {
+      const t = (e.target as Element).closest<HTMLElement>('[data-ask],[data-view],[data-node],[data-clear]');
+      if (!t) return;
+      const d = t.dataset;
+      if (d.ask) return ask(d.ask);
+      if (d.view) {
+        if (state.view?.id !== d.view) return openView(d.view);
+        state.view = null; selected = null; return applyFilter();
+      }
+      if (t.hasAttribute('data-clear')) { state.sectors.clear(); state.view = null; return applyFilter(); }
+      if (d.node) { closePicks(); const n = byId.get(d.node); if (n) goNode(n); }
+    });
+    $('card-close').addEventListener('click', () => {
+      selected = null;
+      state.view = null;
+      if (state.an) setAnalysis(null); else applyFilter();
+    });
+    $('theses').innerHTML = data.views.map((v) => {
+      const ppl = v.nodes.filter((id) => byId.get(id)?.type === 'person').length;
+      return `<button class="thesis" type="button" data-view="${esc(v.id)}" aria-pressed="false"><span>${ppl} ${plural(ppl, ['osoba', 'osoby', 'osób'])}</span><b>${typo(v.title)}</b></button>`;
+    }).join('');
+    $('hubs').innerHTML = nodes.filter((n) => n.hub).sort((a, b) => b.degree - a.degree)
+      .map((n) => `<button class="who" type="button" data-node="${esc(n.id)}">${esc(n.short || n.name)}<span class="count">${n.degree}</span></button>`).join('');
+    $('defs').innerHTML = legendDefs();
 
     const search = $<HTMLInputElement>('search');
     // Nazwa węzła (z podpowiedzi albo wpisana — bez względu na wielkość liter i polskie znaki) otwiera węzeł;
@@ -558,7 +708,7 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     box.setAttribute('role', 'listbox');
     box.hidden = true;
     host.append(box);
-    const index = nodes.map((n) => {
+    const index = nodes.filter((n) => !n.cluster).map((n) => {
       const f = Analiza.fold(`${n.name} ${n.short ?? ''}`);
       return { n, f, words: f.split(/[^\p{L}\p{N}]+/u).filter(Boolean) };
     });
@@ -656,29 +806,83 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     centerOn(n);
   }
 
+  function syncPeriodLabel(a: number, b: number) {
+    const per = state.period;
+    $('period-label').textContent = per === 'now' ? 'Teraz' : a === Y0 && b === Y1 ? 'Cały okres' : `${a}–${b - 1}`;
+    $('period-range').textContent = `${a}–${b - 1}`;
+  }
+  function closePicks() {
+    host.querySelectorAll<HTMLDetailsElement>('.pick[open]').forEach((d) => { d.open = false; });
+  }
+  // Pytanie z paska: ścieżka i porównanie otwierają formularz (zaznaczona osoba trafia w pierwsze pole), mosty i źródła — wynik.
+  function ask(k: string) {
+    closePicks();
+    const cur = selected && 'node' in selected ? selected.node : '';
+    if (k === 'bridges') return setAnalysis(state.an?.t === 'bridges' ? null : { t: 'bridges', tab: 'osoby', sort: '' });
+    if (k === 'srcs') return setAnalysis(state.an?.t === 'srcs' ? null : { t: 'srcs' });
+    if (k === 'path' && cur) draft.pathA = cur;
+    if (k === 'cmp' && cur && byId.get(cur)?.type === 'person') draft.cmpA = cur;
+    selected = null;
+    setAnalysis({ t: 'menu' });
+    const field = k === 'path' ? (draft.pathA ? 'b' : 'a') : (draft.cmpA ? 'b' : 'a');
+    const f = detail.querySelector<HTMLFormElement>(`form[data-form="${k}"]`);
+    f?.scrollIntoView({ block: 'nearest' });
+    focusField(k, field);
+  }
+
   function syncToolbar() {
     host.querySelectorAll<HTMLElement>('[data-mode]').forEach((b) => {
       const on = !state.view && b.dataset.mode === state.mode;
       b.classList.toggle('is-on', on);
       b.setAttribute('aria-pressed', String(on));
     });
-    host.querySelectorAll<HTMLElement>('[data-inst]').forEach((b) => {
-      const on = state.inst.has(b.dataset.inst!);
+    host.querySelectorAll<HTMLElement>('[data-sector]').forEach((b) => {
+      const on = state.sectors.has(b.dataset.sector as Sector);
       b.classList.toggle('is-on', on);
       b.setAttribute('aria-pressed', String(on));
     });
+    const per = state.period;
+    host.querySelectorAll<HTMLElement>('[data-period]').forEach((b) => {
+      const on = b.dataset.period === per;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    const [a, b] = typeof per === 'object' ? [per.y0, per.y1] : [Y0, Y1];
+    $<HTMLInputElement>('y0').value = String(a);
+    $<HTMLInputElement>('y1').value = String(b);
+    syncPeriodLabel(a, b);
     // Pasek nad grafem: wynik analizy ma pierwszeństwo przed widokiem (po zamknięciu wraca widok).
     const vb = $('viewbar');
     const anBar = state.an && AN_GRAPH.has(state.an.t) ? anTitle(state.an) : '';
     vb.classList.toggle('is-on', !!(anBar || state.view));
     vb.querySelector('.mono-label')!.textContent = anBar && state.an ? AN_NAME[state.an.t] : 'Widok';
     $('viewbar-title').textContent = anBar || (state.view?.title ?? '');
-    const at = $('an-toggle');
-    at.classList.toggle('is-on', !!state.an);
-    at.setAttribute('aria-pressed', String(!!state.an));
+    // Pigułki: stan w etykiecie, bo filtry są schowane w rozwijanych oknach.
+    const nP = [...shownSet].filter((id) => byId.get(id)?.type === 'person').length;
+    $('mode-label').textContent = state.view ? 'Widok' : state.mode === 'core' ? 'Rdzeń' : 'Wszyscy';
+    $('mode-n').textContent = `${nP} ${plural(nP, ['osoba', 'osoby', 'osób'])}`;
+    const secs = [...state.sectors];
+    $('sectors-label').textContent = !secs.length ? 'Wszystkie sektory' : secs.length === 1 ? SECTORS[secs[0]].label : `Sektory: ${secs.length}`;
+    const setPick = (k: string, on: boolean) => host.querySelector(`.pick[data-pick="${k}"]`)!.classList.toggle('is-set', on);
+    setPick('sectors', secs.length > 0);
+    setPick('period', per !== 'all');
+    setPick('mode', state.mode === 'all');
+    setPick('lines', activeCat.size < CAT_KEYS.length || activeStatus.size < STATUS_KEYS.length || state.overlaps);
+    const askOn = (k: string) => (k === 'path' ? state.an?.t === 'path' : k === 'cmp' ? state.an?.t === 'cmp'
+      : k === 'bridges' ? state.an?.t === 'bridges' : state.an?.t === 'srcs' || state.an?.t === 'src' || state.an?.t === 'pub');
+    host.querySelectorAll<HTMLElement>('[data-ask]').forEach((b) => {
+      const on = askOn(b.dataset.ask!);
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    host.querySelectorAll<HTMLElement>('.thesis').forEach((b) => {
+      const on = state.view?.id === b.dataset.view;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
     if (state.an?.t === 'search') $<HTMLInputElement>('search').value = state.an.q;
     // Po powrocie w historii pola muszą pokazać odtworzony stan.
-    $<HTMLInputElement>('current').checked = state.currentOnly;
+    legendBody.querySelector<HTMLInputElement>('[data-overlaps]')!.checked = state.overlaps;
     legendBody.querySelectorAll<HTMLInputElement>('[data-cat]').forEach((i) => { i.checked = activeCat.has(i.dataset.cat as CatKey); });
     legendBody.querySelectorAll<HTMLInputElement>('[data-status]').forEach((i) => { i.checked = activeStatus.has(i.dataset.status as Status); });
   }
@@ -736,7 +940,7 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
      history.pushState. Kilka wywołań select/applyFilter w jednym kliknięciu daje jeden wpis (mikrozadanie),
      ten sam stan nie daje nowego. Ruch kamery i przeciąganie węzłów nie są historią. */
   interface Snap {
-    view: string | null; sel: Sel; mode: 'core' | 'all'; inst: string[]; cur: boolean; exp: string[]; pin: string[]; off: string[];
+    view: string | null; sel: Sel; mode: 'core' | 'all'; sec: string[]; per: string; ovl: boolean; exp: string[]; pin: string[]; off: string[];
     an: An | null; aopt: { pewne: boolean; przez: boolean };
   }
   let histIdx = 0, histTop = 0, histHash = '', histReady = false, restoring = false, commitQueued = false;
@@ -747,8 +951,9 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
       view: state.view?.id ?? null,
       sel: selected,
       mode: state.mode,
-      inst: sorted(state.inst),
-      cur: state.currentOnly,
+      sec: [...state.sectors].sort(),
+      per: typeof state.period === 'object' ? `${state.period.y0}-${state.period.y1 - 1}` : state.period,
+      ovl: state.overlaps,
       exp: sorted(state.expanded),
       pin: sorted(state.pinned),
       off: [...CAT_KEYS.filter((k) => !activeCat.has(k)), ...STATUS_KEYS.filter((k) => !activeStatus.has(k))],
@@ -757,7 +962,7 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     };
   }
   // To, co decyduje o zbiorze węzłów na grafie (bez zaznaczenia) — zmiana wymaga nowego układu.
-  const filterKey = (s: Snap) => JSON.stringify([s.view, s.mode, s.inst, s.cur, s.exp, s.pin, s.off, anGraphKey(s.an, s.aopt)]);
+  const filterKey = (s: Snap) => JSON.stringify([s.view, s.mode, s.sec, s.per, s.ovl, s.exp, s.pin, s.off, anGraphKey(s.an, s.aopt)]);
 
   function encodeHash(s: Snap) {
     const enc = encodeURIComponent, list = (a: string[]) => a.map(enc).join(',');
@@ -770,8 +975,9 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     else if (s.sel && 'pair' in s.sel) parts.push(`p=${s.sel.pair.split('|').map(enc).join('|')}`);
     else if (s.sel && 'party' in s.sel) parts.push(`k=${enc(s.sel.party)}`);
     if (s.mode === 'all') parts.push('tryb=wszyscy');
-    if (s.inst.length) parts.push(`inst=${list(s.inst)}`);
-    if (s.cur) parts.push('obecne=1');
+    if (s.sec.length) parts.push(`sektor=${list(s.sec)}`);
+    if (s.per !== 'all') parts.push(`okres=${s.per === 'now' ? 'teraz' : s.per}`);
+    if (s.ovl) parts.push('okresy=1');
     if (s.exp.length) parts.push(`rozwin=${list(s.exp)}`);
     if (pin.length) parts.push(`dodane=${list(pin)}`);
     if (s.off.length) parts.push(`ukryj=${list(s.off)}`);
@@ -814,8 +1020,10 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
       view: q.get('v') || null,
       sel: q.get('n') ? { node: q.get('n')! } : q.get('p') ? { pair: q.get('p')! } : q.get('k') ? { party: q.get('k')! } : null,
       mode: q.get('tryb') === 'wszyscy' ? 'all' : 'core',
-      inst: list('inst'),
-      cur: q.get('obecne') === '1',
+      // stare adresy: `inst=` (instytucje) → ich sektory, `obecne=1` → okres „teraz”
+      sec: [...list('sektor'), ...list('inst').map((id) => sectorOf(id) ?? '')].filter(Boolean),
+      per: q.get('okres') === 'teraz' || q.get('obecne') === '1' ? 'now' : q.get('okres') || 'all',
+      ovl: q.get('okresy') === '1',
       exp: list('rozwin'),
       pin: list('dodane'),
       off: list('ukryj'),
@@ -855,8 +1063,10 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
       const before = filterKey(snapshot());
       state.view = data.views.find((v) => v.id === s.view) || null;
       state.mode = s.mode;
-      state.inst = new Set(s.inst.filter((id) => byId.get(id)?.type === 'institution'));
-      state.currentOnly = s.cur;
+      state.sectors = new Set(s.sec.filter((x): x is Sector => x in SECTORS));
+      const m = /^(\d{4})-(\d{4})$/.exec(s.per);
+      state.period = s.per === 'now' ? 'now' : m ? { y0: Math.max(Y0, +m[1]), y1: Math.min(Y1, +m[2] + 1) } : 'all';
+      state.overlaps = !!s.ovl;
       state.expanded = new Set(s.exp.filter((id) => byId.has(id)));
       state.pinned = new Set(s.pin.filter((id) => byId.has(id)));
       activeCat.clear();
@@ -953,6 +1163,11 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
   /* ---------- Panel ---------- */
   function render() {
     const sel = selected;
+    const card = !!(sel || state.an || state.view);
+    if (card !== host.classList.contains('has-card')) {
+      host.classList.toggle('has-card', card);
+      if (camera.mode === 'fit') requestAnimationFrame(() => fit(true)); // karta zasłania prawą część płótna
+    }
     if (sel && 'node' in sel) return renderNode(byId.get(sel.node)!);
     if (sel && 'party' in sel) return renderParty(sel.party);
     if (sel && 'pair' in sel) return renderPair(linkByKey(sel.pair)!);
@@ -1049,29 +1264,9 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
       </ul></details>`;
   }
 
+  // Bez zaznaczenia, widoku i analizy karta jest schowana: tezy, pytania i filtry stoją w pasku nad grafem.
   function renderHome() {
-    const people = nodes.filter((n) => n.type === 'person');
-    const core = people.filter((n) => bridges.has(n.id)).length;
-    const hubs = nodes.filter((n) => n.hub).sort((a, b) => b.degree - a.degree);
-    const filters = state.inst.size ? `<p class="src">Filtr instytucji: ${[...state.inst].map((i) => esc(byId.get(i)!.short)).join(', ')}. <button class="linkish" type="button" data-clear>Wyczyść</button></p>` : '';
-    const nE = edges.filter((e) => e.kind !== 'part').length, nS = Object.keys(data.sources).length;
-    detail.innerHTML = `
-      <p class="mono-label">${people.length} ${plural(people.length, ['osoba', 'osoby', 'osób'])} · ${nE} ${plural(nE, ['powiązanie', 'powiązania', 'powiązań'])} · ${nS} ${plural(nS, SRC)}</p>
-      <h2>Od czego zacząć<span class="dot">?</span></h2>
-      <p>${typo('Każdy widok to jedna teza, kilkanaście węzłów i fakty ze źródłami.')}</p>
-      <div class="views">${data.views.map((v) => {
-        const ppl = v.nodes.filter((id) => byId.get(id)?.type === 'person').length;
-        return `<button class="view-card" type="button" data-view="${esc(v.id)}"><span class="mono-label">${ppl} ${plural(ppl, ['osoba', 'osoby', 'osób'])}</span><b>${typo(v.title)}</b></button>`;
-      }).join('')}</div>
-      <p class="src mt"><button class="linkish" type="button" data-an="menu">Analiza</button>${typo(' — ścieżka między osobami, porównanie dwóch osób, otoczenie, indeks źródeł, mosty.')}</p>
-      <h3 class="mono-label">Na grafie: rdzeń</h3>
-      <p>${typo(state.mode === 'core'
-        ? `Widać ${core} z ${people.length} osób — te, które łączą co najmniej dwie instytucje albo mają powiązanie z inną osobą. Pozostałe mają tylko funkcję i głos; kryją się pod licznikami „+N” przy instytucjach. Przełącznik „Wszyscy” pokaże wszystkich.`
-        : `Widać wszystkie ${people.length} osób. Nazwiska mają tylko osoby z rdzenia; reszta po najechaniu albo przybliżeniu.`)}</p>
-      ${filters}
-      <h3 class="mono-label">Huby — najwięcej sąsiadów</h3>
-      <div class="names">${hubs.map((n) => `<button class="who" type="button" data-node="${esc(n.id)}">${esc(n.short || n.name)}<span class="count">${n.degree}</span></button>`).join('')}</div>
-      ${legendDefs()}`;
+    detail.innerHTML = '';
   }
 
   function factEdges(f: { from?: string; to?: string; kind?: string }) {
@@ -1096,7 +1291,7 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
       for (const e of factEdges(f)) if (edgeOk(e)) facts += relItem(e, true);
     }
     const people = v.nodes.map((id) => byId.get(id)).filter((n): n is N => n?.type === 'person');
-    detail.innerHTML = `<button class="back" type="button" data-home>${BACK_ICON}<span>Wszystkie widoki</span></button>
+    detail.innerHTML = `<button class="back" type="button" data-home>${BACK_ICON}<span>Cały graf</span></button>
       <p class="mono-label">Widok · ${people.length} ${plural(people.length, ['osoba', 'osoby', 'osób'])}</p>
       <h2>${typo(v.title)}</h2>
       <p>${typo(v.lead)}</p>
@@ -1111,12 +1306,13 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     const other = (l: L) => byId.get(idOf(l.source) === n.id ? idOf(l.target) : idOf(l.source))!;
     const hidden = n.type !== 'person' && state.mode === 'core' && !state.view ? hiddenPeople(n.id).size : 0;
     let html = `<button class="back" type="button" data-home>${BACK_ICON}<span>${backLabel()}</span></button>
-      <p class="mono-label">${TYPE_LABEL[n.type]}${n.hub ? ` · hub, ${n.degree} sąsiadów` : ''}${bridges.has(n.id) ? ' · rdzeń' : ''}</p>
+      <p class="mono-label">${n.cluster ? 'Węzeł zbiorczy sektora' : TYPE_LABEL[n.type]}${n.hub ? ` · hub, ${n.degree} sąsiadów` : ''}${bridges.has(n.id) ? ' · rdzeń' : ''}</p>
       <h2>${esc(n.name)}${n.name.endsWith('.') ? '' : '<span class="dot">.</span>'}</h2>
       ${n.party ? `<p>${partyChip(n.party)}${n.party.note ? ` <span class="src">${typo(n.party.note)}</span>` : ''}</p>${sourcesHtml(n.party.sources)}` : ''}
       ${n.note ? `<p>${typo(n.note)}</p>` : ''}
-      ${hidden || state.expanded.has(n.id) ? `<p><button class="linkish" type="button" data-expand="${esc(n.id)}">${state.expanded.has(n.id) ? 'Zwiń osoby spoza rdzenia' : `Pokaż ${hidden} ${plural(hidden, ['ukrytą osobę', 'ukryte osoby', 'ukrytych osób'])}`}</button></p>` : ''}
-      ${anRow(n)}`;
+      ${n.cluster ? `<p><button class="linkish" type="button" data-expand="${esc(n.id)}">${state.expanded.has(n.id) ? 'Zwiń do węzła sektora' : 'Rozwiń na osobne węzły'}</button></p>` : ''}
+      ${!n.cluster && (hidden || state.expanded.has(n.id)) ? `<p><button class="linkish" type="button" data-expand="${esc(n.id)}">${state.expanded.has(n.id) ? 'Zwiń osoby spoza rdzenia' : `Pokaż ${hidden} ${plural(hidden, ['ukrytą osobę', 'ukryte osoby', 'ukrytych osób'])}`}</button></p>` : ''}
+      ${n.cluster ? '' : anRow(n)}`;
 
     for (const c of n.charges ?? []) html += chargeHtml(c);
 
@@ -1196,7 +1392,7 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
       else { state.view = null; applyFilter(); }
     } else if (d.view) openView(d.view);
     else if (d.expand) toggleExpand(d.expand);
-    else if (t.hasAttribute('data-clear')) { state.inst.clear(); applyFilter(); }
+    else if (t.hasAttribute('data-clear')) { state.sectors.clear(); applyFilter(); }
     else if (d.party) select_(selected && 'party' in selected && selected.party === d.party ? null : { party: d.party });
     else if (d.src) setAnalysis({ t: 'src', id: d.src });
     else if (d.pub) setAnalysis({ t: 'pub', name: d.pub });
@@ -1632,7 +1828,7 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
   }
 
   function bridgesResult() {
-    const key = JSON.stringify([[...activeCat].sort(), [...activeStatus].sort(), state.currentOnly, state.aopt]);
+    const key = JSON.stringify([[...activeCat].sort(), [...activeStatus].sort(), state.period, state.overlaps, state.aopt]);
     if (bridgesCache.key !== key || !bridgesCache.r) bridgesCache = { key, r: Analiza.mosty(nodes, edges.filter(edgeOk), anOpts()) };
     return bridgesCache.r!;
   }
@@ -1725,12 +1921,14 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     legendBody.innerHTML = `
       <div class="legend-grid"><p class="mono-label">Rodzaj (kolor)</p>${cats}</div>
       <div class="legend-grid"><p class="mono-label">Pewność (kształt)</p>${filters}</div>
+      <div class="legend-grid"><p class="mono-label">Wyliczone</p><label class="filter" title="Pary osób, których funkcje w tym samym małym organie (kierownictwo MZ, zarząd NFZ, Prezydium NRL) nakładały się w czasie — liczone z dat, nie wpisane"><input type="checkbox" data-overlaps>${sample('var(--blue)', 1.4, '2 3')}<span>Wspólne okresy w małych organach</span></label></div>
       <div><p class="mono-label legend-sub">Kluby i partie — kliknij, by podświetlić</p><div class="parties">${parties}</div></div>`;
     legendBody.addEventListener('change', (e) => {
       const t = e.target as HTMLInputElement;
       const st = t.dataset.status as Status | undefined, cat = t.dataset.cat as CatKey | undefined;
       if (st) t.checked ? activeStatus.add(st) : activeStatus.delete(st);
       if (cat) t.checked ? activeCat.add(cat) : activeCat.delete(cat);
+      if (t.hasAttribute('data-overlaps')) state.overlaps = t.checked;
       applyFilter();
     });
   }
@@ -1756,7 +1954,8 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     camera = { mode: 'fit' };
     const ids = focus?.nodes.size ? [...focus.nodes].filter((id) => shownSet.has(id)) : null;
     const box = (ids?.length && nodesBox(ids)) || root.node()!.getBBox();
-    const { width, height } = svgEl.getBoundingClientRect();
+    const { width: fullW, height } = svgEl.getBoundingClientRect();
+    const width = fullW - cardW();
     if (!width || !height || !box.width) return;
     // Pasek widoku/analizy stoi u góry płótna, a na wąskim ekranie — na dole.
     const vb = $('viewbar');
@@ -1771,8 +1970,15 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
       .translate(width / 2 - k * (box.x + box.width / 2), top + (height - top - bottom) / 2 - k * (box.y + box.height / 2))
       .scale(k), animate);
   }
+  // Szerokość płótna zasłonięta kartą szczegółów (na komputerze karta leży nad grafem, z prawej).
+  function cardW() {
+    const p = $('panel');
+    if (!host.classList.contains('has-card') || getComputedStyle(p).position !== 'absolute') return 0;
+    return p.offsetWidth + 12;
+  }
   function centerOn(n: { x?: number; y?: number }, animate = true, k = 0.85) {
-    const { width, height } = svgEl.getBoundingClientRect();
+    const { height } = svgEl.getBoundingClientRect();
+    const width = svgEl.getBoundingClientRect().width - cardW();
     camTo(zoomIdentity.translate(width / 2 - k * (n.x ?? 0), height / 2 - k * (n.y ?? 0)).scale(k), animate);
     camera = { mode: 'center', target: n };
   }
@@ -1782,7 +1988,7 @@ export function initKonstelacja(host: HTMLElement, data: GraphData, config: Conf
     const t = zoomTransform(svgEl);
     const { width, height } = svgEl.getBoundingClientRect();
     const [x, y] = t.apply([p.x, p.y]);
-    if (x < 40 || x > width - 60 || y < 20 || y > height - 40) centerOn(p, true, Math.max(t.k, 0.9));
+    if (x < 40 || x > width - cardW() - 60 || y < 20 || y > height - 40) centerOn(p, true, Math.max(t.k, 0.9));
   }
 
   // Przybliżenie o czynnik wokół punktu (domyślnie środek płótna); wspólne dla dwukliku, przycisków i suwaka.

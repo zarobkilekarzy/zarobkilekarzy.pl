@@ -1,0 +1,233 @@
+---
+/**
+ * `<zl-styk>` — „Na styku polityki i ochrony zdrowia”: ranking powiązań z jawnymi wagami, mapa władza × interes,
+ * kariery na osi czasu i lista „dwie role naraz”. Jeden filtr (okres, sprawy, ustalenia mediów) dla wszystkich widoków.
+ * Logika: lib/konstelacja/styk.ts (ta sama na serwerze i w przeglądarce), dane i wagi: data/konstelacja/styk.ts.
+ * Bez JS: ranking pełnego okresu (pierwsze 20 osób) z rozbiciem na składniki; reszta widoków potrzebuje skryptu.
+ */
+import graf from '@/data/konstelacja/graf.json';
+import { CASES, COMPONENTS, SECTORS, WEIGHTS, type ComponentKey } from '@/data/konstelacja/styk';
+import { buildModel, ranking } from '@/lib/konstelacja/styk';
+import type { GraphData } from '@/lib/konstelacja/types';
+import { typo } from '@/lib/format';
+
+const model = buildModel(graf as GraphData);
+const comps = Object.keys(WEIGHTS) as ComponentKey[];
+const start = ranking(model, { y0: 2005, y1: 2027, full: true, cases: [], media: false, comps }).slice(0, 20);
+const max = start[0]?.total ?? 1;
+const subtitle = (s: (typeof start)[number]) => {
+  const now = s.person.fns.filter((f) => f.open && f.a && f.group !== 'pieniadze').sort((a, b) => b.a!.getTime() - a.a!.getTime())[0];
+  return [s.person.node.party && !s.person.node.party.former ? s.person.node.party.name : '', now?.org ?? ''].filter(Boolean).join(' · ');
+};
+---
+<zl-styk class="styk">
+  <div class="styk__bar" data-el="bar">
+    <div class="styk__brush">
+      <div>
+        <span class="styk__lbl" id="styk-okres">Okres — przeciągnij uchwyty</span>
+        <div class="styk__plot">
+          <svg data-el="hist" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <input type="range" data-el="t0" aria-label="Początek okresu" min="2005" max="2027" step="1" value="2005" />
+          <input type="range" data-el="t1" aria-label="Koniec okresu" min="2005" max="2027" step="1" value="2027" />
+          <div class="styk__years" aria-hidden="true"><span>2005</span><span>2010</span><span>2015</span><span>2020</span><span>2025</span></div>
+        </div>
+      </div>
+      <div class="styk__side">
+        <span class="styk__range" data-el="range" role="status">Cały okres</span>
+        <div class="styk__btns">
+          <button type="button" class="chip" data-el="all">Cały okres</button>
+          <button type="button" class="chip" data-el="play" aria-pressed="false">Rok po roku</button>
+        </div>
+      </div>
+    </div>
+    <div class="styk__row">
+      <span class="styk__lbl">Sprawy</span>
+      <button type="button" class="chip is-on" data-case="" aria-pressed="true">Wszystkie</button>
+      {CASES.map((c) => <button type="button" class="chip" data-case={c.id} aria-pressed="false">{c.label}</button>)}
+    </div>
+    <label class="styk__chk"><input type="checkbox" data-el="media" /> Także ustalenia mediów (bez potwierdzenia w dokumentach)</label>
+  </div>
+
+  <section class="styk__sec" aria-labelledby="styk-ranking">
+    <div class="styk__head">
+      <h2 id="styk-ranking">Ranking <small data-el="count">{start.length ? '' : ''}</small></h2>
+      <div class="styk__seg" role="group" aria-label="Widok rankingu">
+        <button type="button" data-view="list" aria-pressed="true">Lista</button>
+        <button type="button" data-view="map" aria-pressed="false">Mapa: władza × interes</button>
+      </div>
+    </div>
+    <p class="styk__sub">{typo('Punkty mają jawne wagi: najwięcej waży władza publiczna i dwie role pełnione naraz, mniej — funkcje w organizacjach, które reprezentują interes. Odznacz składnik, żeby zobaczyć ranking bez niego. Kliknij osobę, żeby zobaczyć każdy punkt z datą i źródłem.')}</p>
+    <div class="styk__legend" data-el="legend">
+      {COMPONENTS.map((c) => (
+        <label><input type="checkbox" data-comp={c.key} checked /><i class="styk__sw" style={`background:${c.color}`}></i>{c.label} <span>{c.weight}</span></label>
+      ))}
+    </div>
+    <div data-el="rank">
+      <ol class="styk__rank">
+        {start.map((s, i) => (
+          <li>
+            <div class="styk__line">
+              <span class="styk__n">{i + 1}</span>
+              <span class="styk__who"><b>{s.person.node.name}</b><span>{subtitle(s)}</span></span>
+              <span class="styk__stack" style={`width:${(s.total / max) * 100}%`}>
+                {COMPONENTS.filter((c) => s.parts[c.key]).map((c) => <i style={`flex:${s.parts[c.key]};background:${c.color}`} title={`${c.label}: ${s.parts[c.key]} pkt`}></i>)}
+              </span>
+              <span class="styk__t">{s.total}</span>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="styk__sec" aria-labelledby="styk-kariery">
+    <div class="styk__head"><h2 id="styk-kariery">Kariery <small>pierwsze 15 osób z rankingu</small></h2></div>
+    <p class="styk__sub">{typo('Pasek to funkcja, kolor — grupa sektorów. Pasek w ramce z kresek: znany tylko „stan na” (oświadczenie, BIP). Żółte pole: dwie role naraz. Romb: głos albo udział w pracach nad ustawą; żółty romb — w czasie pracy w podmiocie ochrony zdrowia.')}</p>
+    <div class="styk__legend styk__legend--static" aria-hidden="true">
+      <span><i class="styk__sw g-wladza"></i>Władza: rząd, agencje, parlament, prezydent</span>
+      <span><i class="styk__sw g-polityka"></i>Polityka lokalna</span>
+      <span><i class="styk__sw g-repr"></i>Samorząd lekarski, związki, pracodawcy</span>
+      <span><i class="styk__sw g-pieniadze"></i>Szpitale, przychodnie, firmy</span>
+      <span><i class="styk__sw styk__sw--naraz"></i>Dwie role naraz</span>
+    </div>
+    <div class="styk__gantt"><div class="styk__g" data-el="gantt"></div></div>
+  </section>
+
+  <section class="styk__sec" aria-labelledby="styk-naraz">
+    <div class="styk__head"><h2 id="styk-naraz">Dwie role naraz <small data-el="pcount"></small></h2></div>
+    <p class="styk__sub">{typo('Para powstaje z dat, gdy dwie funkcje w różnych grupach sektorów — urząd i podmiot, urząd i organizacja branżowa, organizacja branżowa i podmiot — nakładają się co najmniej o dzień. Nie oceniamy, czy łączenie było dozwolone: pokazujemy, że trwało, jak długo i w czym. Nakładanie do 3 miesięcy przy znanych datach podpisujemy jako okres przekazania funkcji, bez punktów.')}</p>
+    <div class="styk__tablewrap"><table class="styk__pairs" data-el="pairs"></table></div>
+  </section>
+  <noscript><p class="styk__noscript">Filtry, mapa, kariery i lista „dwie role naraz” działają z włączonym JavaScriptem. Wyżej — ranking za cały okres, bez ustaleń mediów.</p></noscript>
+</zl-styk>
+
+<script>
+  import data from '@/data/konstelacja/graf.json';
+  import type { GraphData } from '@/lib/konstelacja/types';
+  import { defineStyk } from './styk-client';
+
+  defineStyk(data as GraphData);
+</script>
+
+<style>
+  zl-styk { display: block; }
+  /* przyciski jak w konstelacji (Konstelacja.astro → .kst .chip) */
+  .styk :global(.chip) {
+    padding: 5px 10px; border: 1px solid var(--line-2); border-radius: 0; background: var(--surface); cursor: pointer;
+    font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-strong);
+  }
+  .styk :global(.chip:hover) { border-color: var(--ink); color: var(--ink); }
+  .styk :global(.chip[aria-pressed="true"]) { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .styk :global(.chip:focus-visible) { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .styk__bar { position: relative; z-index: 3; display: grid; gap: 12px; padding: 14px 0 12px; border-block: 1px solid var(--line-2); background: var(--bg); }
+  .styk__brush { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: end; }
+  .styk__lbl { font: 500 0.6875rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .styk__plot { position: relative; height: 58px; margin-top: 8px; }
+  .styk__plot svg { position: absolute; inset: 0 0 18px; width: 100%; height: 40px; }
+  .styk__plot input[type=range] { position: absolute; inset-inline: 0; bottom: 8px; width: 100%; margin: 0; height: 20px; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; }
+  .styk__plot input[type=range]::-webkit-slider-thumb { pointer-events: auto; -webkit-appearance: none; width: 14px; height: 22px; background: var(--ink); border: 2px solid var(--bg); cursor: ew-resize; }
+  .styk__plot input[type=range]::-moz-range-thumb { pointer-events: auto; width: 12px; height: 20px; background: var(--ink); border: 2px solid var(--bg); border-radius: 0; cursor: ew-resize; }
+  .styk__plot input[type=range]:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .styk__years { position: absolute; inset-inline: 0; bottom: -6px; display: flex; justify-content: space-between; font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+  .styk__side { display: grid; gap: 8px; justify-items: end; }
+  .styk__range { font: 600 1.125rem/1 var(--f-display); color: var(--ink); font-variant-numeric: tabular-nums; }
+  .styk__btns, .styk__row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .styk__chk { display: inline-flex; gap: 8px; align-items: center; font-size: 0.875rem; color: var(--text); }
+  .styk__chk input, .styk__legend input { accent-color: var(--blue); margin: 0; }
+
+  .styk__sec { margin-top: clamp(40px, 5vw, 64px); }
+  .styk__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--ink); }
+  .styk__head h2 { margin: 0; font: 600 clamp(1.25rem, 2.2vw, 1.5rem)/1.25 var(--f-display); color: var(--ink); }
+  .styk__head small { margin-left: 10px; font: 400 0.75rem/1 var(--f-mono); color: var(--muted); }
+  .styk :global(.styk__sub) { max-width: 75ch; margin: 8px 0 16px; line-height: 1.6; color: var(--text); }
+  .styk__seg { display: inline-flex; border: 1px solid var(--line-2); }
+  .styk__seg button { border: 0; padding: 7px 12px; background: var(--bg); color: var(--text); font: 400 0.8125rem/1.2 var(--f-body); cursor: pointer; }
+  .styk__seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+  .styk__seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .styk__legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 14px; font-size: 0.8125rem; color: var(--text); }
+  .styk__legend label, .styk__legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .styk__legend label { cursor: pointer; }
+  .styk__legend label span { font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+  .styk :global(.styk__sw) { display: inline-block; flex: none; width: 12px; height: 12px; }
+  .styk :global(.styk__sw--naraz) { background: linear-gradient(var(--amber-bg) 62%, var(--amber) 62%); }
+  .styk :global(.g-wladza) { background: var(--blue); }
+  .styk :global(.g-polityka) { background: var(--seq-0); }
+  .styk :global(.g-repr) { background: var(--chart); }
+  .styk :global(.g-pieniadze) { background: var(--ink); }
+
+  .styk :global(.styk__rank) { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+  .styk :global(.styk__rank > li) { border-bottom: 1px solid var(--line); }
+  .styk :global(.styk__line), .styk :global(.styk__rank .styk__row-btn) {
+    display: grid; grid-template-columns: 2.4ch minmax(150px, 240px) minmax(0, 1fr) 4ch; gap: 12px; align-items: center;
+    width: 100%; padding: 10px 4px; border: 0; background: none; color: inherit; text-align: left; font: inherit;
+  }
+  .styk :global(.styk__rank .styk__row-btn) { cursor: pointer; }
+  .styk :global(.styk__rank .styk__row-btn:hover) { background: var(--bg-soft); }
+  .styk :global(.styk__rank .styk__row-btn[aria-expanded="true"]) { background: var(--blue-50); }
+  .styk :global(.styk__rank .styk__row-btn:focus-visible) { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .styk :global(.styk__rank .styk__n) { font: 400 0.75rem/1 var(--f-mono); color: var(--muted); text-align: right; }
+  .styk :global(.styk__rank .styk__who b) { display: block; font: 600 0.9375rem/1.25 var(--f-display); color: var(--ink); }
+  .styk :global(.styk__rank .styk__who span) { display: block; margin-top: 2px; font-size: 0.75rem; line-height: 1.35; color: var(--muted); }
+  .styk :global(.styk__rank .styk__stack) { display: flex; height: 16px; background: var(--bg-soft); }
+  .styk :global(.styk__rank .styk__stack i) { display: block; height: 100%; border-right: 1px solid var(--bg); }
+  .styk :global(.styk__rank .styk__t) { font: 600 1rem/1 var(--f-display); color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+  .styk :global(.styk__rank .styk__why) { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; padding: 6px 4px 18px calc(2.4ch + 16px); }
+  .styk :global(.styk__rank .styk__why h3) { display: flex; gap: 7px; align-items: center; margin: 0 0 6px; font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .styk :global(.styk__rank .styk__why ul) { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .styk :global(.styk__rank .styk__why li) { font-size: 0.8125rem; line-height: 1.45; color: var(--text-strong); }
+  .styk :global(.styk__rank .styk__why em) { font: 400 0.75rem/1 var(--f-mono); font-style: normal; color: var(--muted); white-space: nowrap; }
+  .styk :global(.styk__rank .styk__why a) { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; font-size: 0.75rem; }
+  .styk :global(.styk__rank .styk__why a:hover) { color: var(--blue); }
+  :global(.styk__tag) { display: inline-block; white-space: nowrap; margin-left: 4px; padding: 2px 5px; border: 1px solid var(--line-2); font: 500 0.625rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); vertical-align: 1px; }
+  :global(.styk__tag--media) { border-style: dashed; }
+  :global(.styk__more) { margin-top: 12px; }
+
+  :global(.styk__map svg) { display: block; width: 100%; height: auto; overflow: visible; }
+  :global(.styk__map text) { font: 400 11px var(--f-body); fill: var(--text); }
+  :global(.styk__map .ax) { font: 400 11px var(--f-mono); fill: var(--muted); }
+  :global(.styk__map .nm) { font: 600 11.5px var(--f-display); fill: var(--ink); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+  :global(.styk__map circle) { cursor: pointer; }
+  :global(.styk__map circle:focus-visible) { outline: 2px solid var(--blue); }
+
+  .styk__gantt { overflow-x: auto; }
+  .styk__g { min-width: 760px; }
+  .styk__g :global(.ga) { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 210px 1fr; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line-2); background: var(--bg); font: 400 0.6875rem/1 var(--f-mono); color: var(--muted); }
+  .styk__g :global(.ga__t) { position: relative; height: 14px; }
+  .styk__g :global(.ga__t span) { position: absolute; translate: -50% 0; }
+  .styk__g :global(.gr) { display: grid; grid-template-columns: 210px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .styk__g :global(.gr__who) { align-self: start; padding-top: 2px; font: 600 0.875rem/1.25 var(--f-display); color: var(--ink); }
+  .styk__g :global(.gr__who span) { display: block; margin-top: 3px; font: 400 0.6875rem/1.35 var(--f-mono); color: var(--muted); }
+  .styk__g :global(.gr__lane) { position: relative; }
+  .styk__g :global(.gr__grid) { position: absolute; top: -8px; bottom: -8px; width: 1px; background: var(--line); }
+  .styk__g :global(.gr__win) { position: absolute; top: -8px; bottom: -8px; background: var(--blue-50); }
+  .styk__g :global(.gr__ov) { position: absolute; top: -4px; bottom: 12px; z-index: 1; background: var(--amber-bg); }
+  .styk__g :global(.gr__ov::after) { content: ''; position: absolute; inset-inline: 0; bottom: -6px; height: 4px; background: var(--amber); }
+  .styk__g :global(.gr__bar) { position: absolute; z-index: 2; height: 16px; padding: 0 4px; overflow: hidden; white-space: nowrap; font: 500 0.625rem/16px var(--f-mono); color: var(--on-ink); }
+  .styk__g :global(.gr__bar.g-polityka), .styk__g :global(.gr__bar.g-repr) { color: var(--ink); }
+  .styk__g :global(.gr__bar.is-media) { opacity: .7; }
+  .styk__g :global(.gr__bar.is-seen) { outline: 1px dashed var(--ink); outline-offset: 1px; }
+  .styk__g :global(.gr__bar.is-unc) { opacity: .45; }
+  .styk__g :global(.gr__bar.is-clip) { border-left: 2px dotted var(--bg); }
+  .styk__g :global(.gr__ev) { position: absolute; z-index: 3; width: 9px; height: 9px; rotate: 45deg; translate: -50% 0; background: var(--bg); border: 1.5px solid var(--text); }
+  .styk__g :global(.gr__ev.is-hit) { background: var(--amber); border-color: var(--amber); }
+  .styk__g :global(.gr__undated) { margin-top: 4px; font: 400 0.625rem/1.4 var(--f-mono); color: var(--muted); }
+
+  .styk__tablewrap { overflow-x: auto; }
+  .styk__pairs { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 0.8125rem; }
+  .styk__pairs :global(th) { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--ink); text-align: left; font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .styk__pairs :global(td) { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--text); }
+  .styk__pairs :global(td:first-child) { font: 600 0.875rem/1.3 var(--f-display); color: var(--ink); }
+  .styk__pairs :global(.dur) { font: 600 0.875rem/1 var(--f-display); color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .styk__pairs :global(.kind) { font: 500 0.6875rem/1.2 var(--f-mono); letter-spacing: .05em; text-transform: uppercase; color: var(--amber); }
+  .styk__pairs :global(.small) { display: block; margin-top: 3px; font: 400 0.6875rem/1.35 var(--f-mono); color: var(--muted); }
+  .styk__noscript { margin-top: 16px; color: var(--text-strong); }
+
+  @media (max-width: 640px) {
+    .styk__brush { grid-template-columns: minmax(0, 1fr); }
+    .styk__side { justify-items: start; }
+    .styk :global(.styk__line), .styk :global(.styk__rank .styk__row-btn) { grid-template-columns: 2.2ch minmax(0, 1fr) 4ch; }
+    .styk :global(.styk__rank .styk__stack) { grid-column: 2; grid-row: 2; }
+    .styk :global(.styk__rank .styk__why) { padding-left: 0; }
+  }
+</style>

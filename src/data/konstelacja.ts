@@ -34,7 +34,7 @@ export const howToRead = {
     },
     {
       title: 'Rdzeń, widoki, analiza.',
-      text: 'Domyślnie widać osoby, które łączą co najmniej dwie instytucje albo mają powiązanie z inną osobą; reszta kryje się pod licznikiem „+N”. Widok to jedna teza i kilkanaście węzłów z faktami. „Analiza” szuka ścieżki między osobami, porównuje dwie osoby i liczy, na czym stoją źródła.',
+      text: 'Domyślnie widać osoby z funkcjami w co najmniej dwóch sektorach (np. rząd i szpital) albo z powiązaniem z inną osobą; reszta kryje się pod licznikiem „+N”, a drobne miejsca z jedną osobą zbiera węzeł sektora. Sektory i okres („Teraz”, zakres lat) zawężają graf, nic z niego nie usuwając. Widok to jedna teza i kilkanaście węzłów z faktami. „Analiza” szuka ścieżki między osobami, porównuje dwie osoby i liczy, na czym stoją źródła.',
     },
   ] satisfies TextItem[],
 };

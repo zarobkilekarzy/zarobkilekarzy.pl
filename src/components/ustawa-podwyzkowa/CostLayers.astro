@@ -1,0 +1,180 @@
+---
+/**
+ * Koszt ustawy o najniższych płacach jako warstwy na tle budżetu NFZ (`<zl-cost-layers>`).
+ * Kolumna roku = koszty NFZ ogółem z planu (szare pole); w niej od dołu warstwy — kolejne lipcowe waloryzacje,
+ * które zostają w kosztach na stałe (znane: odcienie kobaltu, prognoza: blady kobalt z krawędzią). Nad warstwami suma,
+ * pod osią udział w kosztach NFZ. Suwak zmienia tempo wzrostu płac w gospodarce dla lat prognozy.
+ * Bez JS — stan dla wartości domyślnej; skrypt tylko przelicza (lib/ustawa-podwyzkowa/layers.ts, ta sama funkcja).
+ * HTML zamiast SVG, żeby podpisy nie malały na telefonie.
+ */
+import { formatPL, typo } from '@/lib/format';
+import { costLayers, type KnownRaise } from '@/lib/ustawa-podwyzkowa/layers';
+
+interface Props {
+  known: KnownRaise[];
+  /** pula płac objętych ustawą po ostatniej znanej waloryzacji, mld zł */
+  pool: number;
+  /** domyślne tempo wzrostu przeciętnego wynagrodzenia, np. 0.088 */
+  growth: number;
+  years: number[];
+  /** koszty NFZ ogółem, mld zł; `note` — np. „plan w toku”, „projekt planu” */
+  budget: Record<number, { value: number; note?: string }>;
+  /** pełna wysokość skali, mld zł */
+  max: number;
+  caption: string;
+}
+
+const { known, pool, growth, years, budget, max, caption } = Astro.props;
+const lastKnown = Math.max(...known.map((r) => r.year));
+const data = costLayers(known, pool, growth, years);
+const mld = (v: number) => formatPL(v, 1);
+const k = (v: number) => (v / max).toFixed(4);
+const shade = (from: number, proj: boolean) => (proj ? 'is-proj' : `is-k${Math.max(0, known.findIndex((r) => r.year === from))}`);
+const share = (y: number, total: number) => (budget[y] ? `${Math.round((total / budget[y].value) * 100)}%` : '');
+const last = data[data.length - 1];
+---
+<zl-cost-layers class="cl" data-known={JSON.stringify(known)} data-pool={pool} data-years={JSON.stringify(years)}
+  data-budget={JSON.stringify(budget)} data-max={max}>
+  <div class="cl__legend" aria-hidden="true">
+    <span><i class="cl__sw cl__sw--budget"></i>Koszty NFZ ogółem (plan)</span>
+    <span><i class="cl__sw cl__sw--layer"></i>Kolejne waloryzacje z ustawy</span>
+    <span><i class="cl__sw cl__sw--proj"></i>Prognoza</span>
+  </div>
+
+  <div class="cl__plot" aria-hidden="true" style={`--n: ${years.length}`}>
+    {data.map((d) => (
+      <div class="cl__col" data-year={d.year}>
+        {budget[d.year] && (
+          <div class:list={['cl__budget', { 'is-plan': budget[d.year].note }]} style={`--k: ${k(budget[d.year].value)}`}>
+            <span class="cl__bval">{formatPL(budget[d.year].value, 0)}</span>
+          </div>
+        )}
+        <div class="cl__stack" data-el="stack">
+          {d.layers.map((l) => <span class:list={['cl__layer', shade(l.from, l.proj)]} style={`--k: ${k(l.value)}`} title={`waloryzacja z 1.07.${l.from}: ${mld(l.value)} mld zł`}></span>)}
+          <span class="cl__total" data-el="total">{mld(d.total)}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+  <div class="cl__axis" aria-hidden="true" style={`--n: ${years.length}`}>
+    {data.map((d) => (
+      <span class:list={['cl__x', { 'is-proj': d.year > lastKnown }]}>
+        {d.year}
+        <b data-el="share" data-year={d.year}>{share(d.year, d.total)}</b>
+      </span>
+    ))}
+  </div>
+  <p class="cl__hint">Liczby nad warstwami — koszt ustawy w mld zł; pod rokiem — część kosztów NFZ{budget[last.year] ? '' : ' (na lata bez planu NFZ — bez udziału)'}.</p>
+
+  <div class="cl__ctrl">
+    <label class="cl__label" for="cl-g">Wzrost płac w gospodarce od {lastKnown + 1} r.</label>
+    <input id="cl-g" class="cl__range" type="range" min="0" max="10" step="0.1" value={(Math.round(growth * 1000) / 10).toFixed(1)} />
+    <output class="cl__out" for="cl-g" data-el="out">{formatPL(growth * 100, 1)}%</output>
+  </div>
+  <p class="cl__read" role="status" data-el="read">
+    Przy wzroście płac o <strong>{formatPL(growth * 100, 1)}%</strong> rocznie podwyżki z ustawy kosztowałyby NFZ <strong>{mld(last.total)} mld zł w {last.year} r.</strong>
+  </p>
+  <p class="sr-only" data-el="caption">{typo(caption)}</p>
+</zl-cost-layers>
+
+<script>
+  import { formatPL } from '@/lib/format';
+  import { costLayers, type KnownRaise } from '@/lib/ustawa-podwyzkowa/layers';
+
+  class ZlCostLayers extends HTMLElement {
+    connectedCallback() {
+      const known: KnownRaise[] = JSON.parse(this.dataset.known ?? '[]');
+      const pool = Number(this.dataset.pool);
+      const years: number[] = JSON.parse(this.dataset.years ?? '[]');
+      const budget: Record<number, { value: number }> = JSON.parse(this.dataset.budget ?? '{}');
+      const max = Number(this.dataset.max);
+      const lastKnown = Math.max(...known.map((r) => r.year));
+      const range = this.querySelector<HTMLInputElement>('.cl__range');
+      const out = this.querySelector<HTMLElement>('[data-el="out"]');
+      const read = this.querySelector<HTMLElement>('[data-el="read"]');
+      const mld = (v: number) => formatPL(v, 1);
+      const shade = (from: number, proj: boolean) => (proj ? 'is-proj' : `is-k${Math.max(0, known.findIndex((r) => r.year === from))}`);
+
+      const update = () => {
+        const g = Number(range?.value) / 100;
+        const data = costLayers(known, pool, g, years);
+        data.forEach((d) => {
+          const col = this.querySelector<HTMLElement>(`.cl__col[data-year="${d.year}"]`);
+          const stack = col?.querySelector<HTMLElement>('[data-el="stack"]');
+          if (!stack) return;
+          stack.innerHTML = d.layers.map((l) => `<span class="cl__layer ${shade(l.from, l.proj)}" style="--k: ${(l.value / max).toFixed(4)}" title="waloryzacja z 1.07.${l.from}: ${mld(l.value)} mld zł"></span>`).join('')
+            + `<span class="cl__total" data-el="total">${mld(d.total)}</span>`;
+          const sh = this.querySelector<HTMLElement>(`[data-el="share"][data-year="${d.year}"]`);
+          if (sh) sh.textContent = budget[d.year] ? `${Math.round((d.total / budget[d.year].value) * 100)}%` : '';
+        });
+        const last = data[data.length - 1];
+        if (out) out.textContent = `${formatPL(g * 100, 1)}%`;
+        if (read) read.innerHTML = `Przy wzroście płac o <strong>${formatPL(g * 100, 1)}%</strong> rocznie podwyżki z ustawy kosztowałyby NFZ <strong>${mld(last.total)} mld zł w ${last.year} r.</strong>`;
+      };
+      range?.addEventListener('input', update);
+      // atrybut klasy stanu: style warstw prognozy zależą od lat po ostatniej znanej waloryzacji
+      this.dataset.ready = String(lastKnown);
+    }
+  }
+
+  if (!customElements.get('zl-cost-layers')) customElements.define('zl-cost-layers', ZlCostLayers);
+</script>
+
+<style>
+  zl-cost-layers { display: block; container-type: inline-size; }
+  .cl__legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 12px; font: 400 0.75rem/1.3 var(--f-mono); color: var(--muted); }
+  .cl__legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .cl__sw { width: 10px; height: 10px; }
+  .cl__sw--budget { background: var(--chart-soft); }
+  .cl__sw--layer { background: var(--seq-3); }
+  .cl__sw--proj { background: var(--chart-proj); box-shadow: inset 0 0 0 1px var(--blue); }
+
+  .cl__plot {
+    --h: clamp(260px, 52cqi, 360px); --label: 1.5rem;
+    position: relative; height: var(--h); display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    border-bottom: 1px solid var(--line-2);
+  }
+  .cl__col { position: relative; }
+  .cl__budget {
+    position: absolute; bottom: 0; left: 50%; translate: -50% 0; width: min(78%, 64px);
+    height: calc(var(--k) * (100% - var(--label))); background: var(--chart-soft);
+  }
+  .cl__budget.is-plan { background: transparent; outline: 1px dashed var(--muted); outline-offset: -1px; }
+  .cl__bval {
+    position: absolute; bottom: calc(100% + 4px); left: 50%; translate: -50% 0;
+    font: 400 clamp(0.625rem, 2cqi, 0.75rem)/1 var(--f-mono); color: var(--muted); white-space: nowrap;
+  }
+  .cl__stack {
+    position: absolute; bottom: 0; left: 50%; translate: -50% 0; width: min(58%, 48px);
+    height: calc(100% - var(--label)); display: flex; flex-direction: column-reverse; justify-content: flex-start;
+  }
+  .cl__stack :global(.cl__layer) { display: block; flex: none; height: calc(var(--k) * 100%); border-top: 1px solid var(--bg); }
+  .cl__stack :global(.cl__layer.is-k0) { background: var(--seq-0); }
+  .cl__stack :global(.cl__layer.is-k1) { background: var(--seq-1); }
+  .cl__stack :global(.cl__layer.is-k2) { background: var(--seq-2); }
+  .cl__stack :global(.cl__layer.is-k3) { background: var(--seq-3); }
+  .cl__stack :global(.cl__layer.is-k4) { background: var(--seq-4); }
+  .cl__stack :global(.cl__layer.is-proj) { background: var(--chart-proj); box-shadow: inset 0 0 0 1px var(--blue); }
+  .cl__stack :global(.cl__total) {
+    display: block; flex: none; padding-bottom: 4px; text-align: center; white-space: nowrap;
+    font: 600 clamp(0.6875rem, 2.4cqi, 1rem)/1 var(--f-display); color: var(--ink); font-variant-numeric: tabular-nums;
+  }
+
+  .cl__axis { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); padding-top: 8px; }
+  .cl__x { display: grid; justify-items: center; gap: 3px; font: 400 clamp(0.625rem, 2cqi, 0.75rem)/1.2 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cl__x b { font: 600 clamp(0.6875rem, 2.2cqi, 0.875rem)/1 var(--f-display); color: var(--blue); }
+  .cl__hint { margin-top: 8px; font: 400 0.6875rem/1.5 var(--f-mono); color: var(--muted); }
+
+  .cl__ctrl { display: grid; grid-template-columns: auto minmax(0, 1fr) 4.5ch; gap: 12px; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .cl__label { font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .cl__range { width: 100%; accent-color: var(--blue); }
+  .cl__range:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+  .cl__out { font: 600 1.125rem/1 var(--f-display); color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+  .cl__read { margin-top: 10px; font: 400 0.9375rem/1.5 var(--f-body); color: var(--ink-2); }
+  .cl__read strong { color: var(--ink); }
+
+  @container (max-width: 520px) {
+    .cl__ctrl { grid-template-columns: minmax(0, 1fr) 4.5ch; }
+    .cl__label { grid-column: 1 / -1; }
+  }
+</style>

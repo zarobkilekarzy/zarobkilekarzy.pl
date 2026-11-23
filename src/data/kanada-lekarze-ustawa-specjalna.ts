@@ -159,7 +159,11 @@ export const PENALTIES_TABLE: CompareTable = {
 
 /* ---------- Osie zdarzeń: tylko kolejność i daty; kwoty i analiza są w tekście ---------- */
 
-export type ChronoKind = 'rzad' | 'lekarze' | 'sad' | 'porozumienie';
+/**
+ * `sejm`, `senat`, `parlament` i `obywatele` — dla osi spoza Kanady (np. ustawa o najniższych płacach). Rodzaj jest też torem
+ * w widoku osi (`Chronology lanes`).
+ */
+export type ChronoKind = 'rzad' | 'lekarze' | 'sad' | 'porozumienie' | 'parlament' | 'sejm' | 'senat' | 'obywatele';
 
 export interface ChronoEvent {
   /** ISO: '2025-10-25' albo sam miesiąc '2012-05' — atrybut datetime i domyślny zapis daty */

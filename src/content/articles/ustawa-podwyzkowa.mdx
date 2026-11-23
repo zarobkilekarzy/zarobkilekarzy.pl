@@ -1,0 +1,278 @@
+---
+title: "Ustawa podwyżkowa: ile kosztuje i dlaczego koszt rośnie sam"
+seoTitle: "Ustawa podwyżkowa: ile kosztuje NFZ"
+category: Mechanizm
+topic: finanse
+order: 3
+date: 2026-11-23
+summary: "Ustawa o najniższych płacach w ochronie zdrowia kosztuje NFZ coraz więcej: 58 mld zł w 2025 r., ponad 70 mld zł w 2026 r. Koszt rośnie automatycznie, bez górnej granicy i bez osobnego źródła finansowania, a rząd i posłowie, którzy go uchwalali, nie policzyli go na kolejne lata."
+description: "Ustawa podwyżkowa w ochronie zdrowia: koszt dla NFZ rok po roku, udział w budżecie, prognozy rządu wobec rzeczywistości, mechanizm waloryzacji i głosowania."
+keyPoints:
+  - "W 2025 r. podwyżki z ustawy kosztowały NFZ 58 mld zł, czyli ćwierć jego budżetu."
+  - "To ok. dwie trzecie całego przyrostu wydatków NFZ na świadczenia od 2021 r. (szacunek)."
+  - "Coroczną waloryzację dopisano w 2020 r. ustawą „covidową” z projektu poselskiego, bez oceny kosztów dla NFZ."
+  - "Przy obecnym tempie płac koszt przekroczy 100 mld zł rocznie w 2030 r. (prognoza)."
+related:
+  - budzet-nfz
+  - kontrakt-vs-etat
+  - personel-medyczny
+  - limity-wynagrodzen-medykow
+---
+import Comparison from '@/components/blocks/Comparison.astro';
+import Figure from '@/components/blocks/Figure.astro';
+import StatRow from '@/components/blocks/StatRow.astro';
+import ColumnChart from '@/components/blocks/ColumnChart.astro';
+import CostLayers from '@/components/ustawa-podwyzkowa/CostLayers.astro';
+import Chronology from '@/components/kanada/Chronology.astro';
+import Hemicycle from '@/components/sejm/Hemicycle.astro';
+import IndexChart from '@/components/budzet/IndexChart.astro';
+import { CLUBS_LAST, SEJM_CLUBS_IX, SEJM_CLUBS_VIII, podwyzkowa2017Voting, podwyzkowa2022Voting } from '@/data/glosowania';
+import { BASE, minimum } from '@/data/personel-medyczny';
+import { budget, DRAFT_2027 } from '@/data/budzet-nfz';
+import { CPI, MIN_WAGE, GROWTH as Q } from '@/data/kolejki';
+import { AVERAGE_WAGE, CHRONO, FORECASTS, LAST_GROWTH, LINKS, MEDIAN_OCT, MINIMUM_SERIES, OFFICIAL, PAY_POOL_2026, PROJECTS, RAISES, VOTES, WAGE_OCT_2024, cumulative, minimumIn, projected } from '@/data/ustawa-podwyzkowa';
+import { formatPL } from '@/lib/format';
+
+{/* Liczby: API Sejmu, strony głosowań Senatu, druki 763, 1202, 1583, 1648, 2268, 2291, 2343, 33, ELI, plany NFZ, GUS —
+    zob. src/data/ustawa-podwyzkowa.ts. Te same fakty są w konstelacji (widoki „podwyzki” i „podwyzki-naciski”). */}
+
+export const COST_YEARS = [2022, 2023, 2024, 2025, 2026];
+export const PROJ_YEARS = [2027, 2028, 2029, 2030];
+export const mld = (v) => formatPL(v, 1);
+export const pct = (a, b) => formatPL((a / b - 1) * 100, 0);
+export const sum2225 = COST_YEARS.filter((y) => y <= 2025).reduce((t, y) => t + cumulative(y), 0);
+export const cross100 = PROJ_YEARS.find((y) => projected(y, LAST_GROWTH) >= 100);
+// Przyrost wydatków NFZ na świadczenia (plan ostateczny; 2026 — plan w toku) wobec 2021 r. i skumulowany koszt ustawy
+export const B21 = budget(2021).benefits;
+export const growth = (y) => budget(y).benefits - B21;
+export const share = (y) => cumulative(y) / growth(y);
+export const S = WAGE_OCT_2024.structure;
+export const Z = WAGE_OCT_2024.zus;
+export const firstWage = AVERAGE_WAGE[0];
+export const lastWage = AVERAGE_WAGE[AVERAGE_WAGE.length - 1];
+export const spec = MINIMUM_SERIES.specialist.map((m) => ({ year: m.year, v: minimumIn(m.year, m.coef) }));
+export const nurse = MINIMUM_SERIES.nurse.map((m) => ({ year: m.year, v: minimumIn(m.year, m.coef) }));
+export const avg = AVERAGE_WAGE.filter((w) => w.year >= 2016);
+export const zl0 = (v) => `${formatPL(v, 0)} zł`;
+// Ceny 2021→2025 (GUS, średnioroczne) — do realnego wzrostu minimów
+export const prices2125 = [2022, 2023, 2024, 2025].reduce((p, y) => p * CPI[y] / 100, 1);
+export const real = (to, from) => formatPL((to / from / prices2125 - 1) * 100, 0);
+export const minWage2017 = MIN_WAGE.find((m) => m.year === 2017).value;
+export const PAY_CHART = {
+  xMin: 2016, xMax: 2027, yMin: 2000, yMax: 14000, ticks: [4000, 8000, 12000], unit: 'zł',
+  years: [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
+  series: [
+    { id: 'spec', label: 'Minimum: specjalista', tone: 'accent', end: zl0(spec.at(-1).v), markers: true, points: spec.map((p) => ({ x: p.year + 0.5, v: p.v, label: `od 1.07.${p.year}`, tip: `${formatPL(p.v, 2)} zł` })) },
+    { id: 'nurse', label: 'Minimum: pielęgniarka (średnie)', tone: 'accent', end: zl0(nurse.at(-1).v), labelShift: 1, markers: true, points: nurse.map((p) => ({ x: p.year + 0.5, v: p.v, label: `od 1.07.${p.year}`, tip: `${formatPL(p.v, 2)} zł` })) },
+    { id: 'avg', label: 'Przeciętne', tone: 'ref', end: zl0(avg.at(-1).amount), labelShift: -2, points: avg.map((w) => ({ x: w.year + 0.5, v: w.amount, tip: `${formatPL(w.amount, 2)} zł` })) },
+    { id: 'median', label: 'Mediana', tone: 'data', end: zl0(MEDIAN_OCT.at(-1).median), labelShift: 4, markers: true, points: MEDIAN_OCT.map((m) => ({ x: m.year + 0.79, v: m.median, label: `X ${m.year}`, tip: `${formatPL(m.median, 2)} zł`, note: 'mediana (GUS, firmy od 10 osób)' })) },
+  ],
+  caption:
+    `Wykres liniowy w zł. Najniższa płaca zasadnicza od 1 lipca: lekarz specjalista ${spec.map((p) => `${p.year} — ${formatPL(p.v, 2)}`).join(', ')}; ` +
+    `pielęgniarka albo ratownik ze średnim wykształceniem bez specjalizacji ${nurse.map((p) => `${p.year} — ${formatPL(p.v, 2)}`).join(', ')}. ` +
+    `Przeciętne wynagrodzenie w gospodarce: ${avg.map((w) => `${w.year} — ${formatPL(w.amount, 2)}`).join(', ')}. ` +
+    `Mediana płac w październiku: ${MEDIAN_OCT.map((m) => `${m.year} — ${formatPL(m.median, 2)}`).join(', ')}.`,
+};
+export const BUDGET_LAYERS = {
+  ...Object.fromEntries(COST_YEARS.map((y) => [y, { value: budget(y).costs, note: y === 2026 ? 'plan w toku' : undefined }])),
+  2027: { value: DRAFT_2027.total, note: 'projekt planu' },
+};
+
+Ustawa z 8 czerwca 2017 r. wyznacza najniższą płacę zasadniczą lekarzy, pielęgniarek, ratowników i innych pracowników szpitali i przychodni zatrudnionych na umowę o pracę. Co roku 1 lipca minimum każdej grupy rośnie razem z przeciętnym wynagrodzeniem w gospodarce.[^ustawa] W debacie publicznej mówi się o niej „ustawa podwyżkowa”.
+
+Podwyżki, które wymusza, kosztują NFZ z roku na rok więcej. Prezes NFZ podał, że w 2025 r. było to **{OFFICIAL.nfz2025.value} mld zł**, czyli ćwierć budżetu płatnika.[^nfz-prezes] Pokazujemy, skąd bierze się ten koszt, ile pochłania z budżetu NFZ, jak liczyli go ci, którzy ustawę pisali, i co płacom w ochronie zdrowia ustawa dała.
+
+<StatRow
+  label="Koszt ustawy"
+  items={[
+    { value: OFFICIAL.nfz2025.value, unit: 'mld zł', desc: 'kosztowały NFZ w 2025 r. podwyżki z ustawy — ćwierć budżetu płatnika', accuracy: 'exact', source: 'Prezes NFZ, 6.11.2025', href: OFFICIAL.nfz2025.href },
+    { prefix: '~', value: Math.round(share(2025) * 100), unit: '%', desc: 'przyrostu wydatków NFZ na świadczenia od 2021 r. to skumulowany koszt podwyżek z ustawy', accuracy: 'est', source: 'Plany finansowe NFZ; szacunek redakcji', href: budget(2025).href },
+    { value: budget(2025).subsidy, decimals: 1, unit: 'mld zł', desc: `dotacji z budżetu państwa dostał NFZ w 2025 r.; w 2022 r. — ${formatPL(budget(2022).subsidy, 1)} mld zł`, accuracy: 'exact', source: 'Plan finansowy NFZ na 2025 r.', href: budget(2025).href },
+  ]}
+/>
+
+## Ile kosztuje ustawa
+
+Za podwyżki płaci głównie NFZ. Po każdej lipcowej waloryzacji Agencja Oceny Technologii Medycznych i Taryfikacji wylicza, o ile podnieść wyceny świadczeń, a minister zatwierdza wariant tej wyceny.[^du2022] Koszt każdej waloryzacji w skali 12 miesięcy wynosił od {mld(Math.min(...RAISES.map((r) => r.cost)))} do {mld(Math.max(...RAISES.map((r) => r.cost)))} mld zł.[^nfz2022][^kos][^mz6853][^mz10388][^rek84] Zatwierdzane warianty obejmowały poza samą ustawą także inflację i zmiany niektórych wycen, więc to koszt całej lipcowej podwyżki wycen wywołanej ustawą.
+
+Każda podwyżka zostaje w kosztach na stałe, a następna dochodzi do poprzednich. Ministerstwo Zdrowia podało w czerwcu 2025 r., że skumulowany koszt w 2025 r. wynosi **{mld(OFFICIAL.mz2025.value)} mld zł**, a w latach 2022–2025 razem {mld(OFFICIAL.mz2025.total)} mld zł.[^mz-prezentacja] Wiceprezes NFZ mówił w kwietniu 2026 r., że w 2026 r. będzie to co najmniej **{OFFICIAL.nfz2026.value} mld zł**.[^tvn24] Sprawdziliśmy te liczby, sumując koszty kolejnych waloryzacji: nasz rachunek daje {mld(cumulative(2025))} mld zł w 2025 r., {mld(sum2225)} mld zł za lata 2022–2025 i {mld(cumulative(2026))} mld zł w 2026 r. Różnica wobec liczb MZ i NFZ nie przekracza 1%.
+
+<Figure title="Każda lipcowa podwyżka zostaje w kosztach NFZ na stałe" note={`Kolumna — koszty NFZ ogółem z planu finansowego (2022–2025 plan ostateczny, 2026 plan w toku, 2027 projekt planu; na lata 2028–2030 planu nie ma). Warstwy — kolejne waloryzacje: koszt w skali 12 miesięcy z dokumentów NFZ, MZ i AOTMiT, w roku wejścia połowa (od 1 lipca). Od 2027 r. prognoza redakcji: pula płac objętych ustawą rośnie w tempie z suwaka, koszt waloryzacji obejmuje tylko samą ustawę, bez inflacji. Szacunek redakcji dla 2025 r. (${mld(cumulative(2025))} mld zł) i 2026 r. (${mld(cumulative(2026))} mld zł) zgadza się z liczbami MZ i NFZ z dokładnością do 1%. Bez lat 2017–2021.`} source={{ label: 'Plany finansowe NFZ; NFZ, MZ (interpelacje 6853 i 10388, prezentacja z czerwca 2025), AOTMiT (rekomendacja 84/2026), stenogram podkomisji Sejmu', href: OFFICIAL.mz2025.href }}>
+  <CostLayers known={RAISES.map((r) => ({ year: r.year, cost: r.cost }))} pool={PAY_POOL_2026} growth={LAST_GROWTH} years={[...COST_YEARS, ...PROJ_YEARS]} budget={BUDGET_LAYERS} max={250}
+    caption={`Skumulowany koszt podwyżek z ustawy w mld zł na tle kosztów NFZ: ${[...COST_YEARS, ...PROJ_YEARS].map((y) => `${y} — ${mld(projected(y, LAST_GROWTH))}${BUDGET_LAYERS[y] ? ` z ${formatPL(BUDGET_LAYERS[y].value, 1)} (${formatPL(projected(y, LAST_GROWTH) / BUDGET_LAYERS[y].value * 100, 0)}%)` : ''}`).join('; ')}. Od 2027 r. prognoza przy wzroście płac o ${formatPL(LAST_GROWTH * 100, 1)}% rocznie.`} />
+</Figure>
+
+Dalszy koszt zależy od tempa wzrostu płac w gospodarce, bo od niego zależy każda kolejna waloryzacja. Z wariantu rekomendacji AOTMiT z 2026 r. bez inflacji wynika, że podwyżka minimów o 1% kosztuje ok. {mld(7.69 / (LAST_GROWTH * 100))} mld zł rocznie.[^rek84] Liczymy tylko ten skutek samej ustawy, więc to prognoza ostrożna: dotychczas zatwierdzane warianty obejmowały też inflację i kosztowały więcej. Przy wzroście płac takim jak w 2025 r. skumulowany koszt przekroczy **100 mld zł w {cross100} r.**; przy 5% rocznie w 2030 r. byłoby to ok. {mld(projected(2030, 0.05))} mld zł. Przesuń suwak pod wykresem, żeby sprawdzić inne tempo.
+
+Te liczby mówią, ile kosztują podwyżki wymuszone ustawą w porównaniu ze stanem sprzed lipca 2022 r. Nie mówią, ile płace wzrosłyby bez ustawy — część podwyżek placówki dałyby i tak, choćby z powodu inflacji i braków kadrowych. Wyżej niż MZ liczył koszt ekonomista Federacji Przedsiębiorców Polskich: ok. 73 mld zł już w 2025 r., bez opisu metody.[^fpp]
+
+## Ile to z budżetu NFZ
+
+W latach 2021–2025 wydatki NFZ na świadczenia wzrosły z {mld(B21)} do {mld(budget(2025).benefits)} mld zł, czyli o {mld(growth(2025))} mld zł.[^nfz-plany] Skumulowany koszt podwyżek z ustawy w 2025 r. to ok. **{formatPL(share(2025) * 100, 0)}% tego przyrostu**. To przybliżenie: przyrost liczymy od 2021 r., a koszt ustawy od lipca 2022 r., i część kosztu waloryzacji to inflacja. Reszta przyrostu przypada na wszystko inne — nowe leki i programy, więcej świadczeń, wyższe wyceny.
+
+<Figure title="Podwyżki z ustawy pochłaniają większość przyrostu wydatków NFZ na świadczenia" note="Przyrost kosztów świadczeń w planie finansowym NFZ wobec 2021 r. (plany ostateczne; 2026 — plan w toku) i skumulowany koszt podwyżek z ustawy (szacunek redakcji, jak wyżej), mld zł." source={{ label: 'Plany finansowe NFZ 2021–2026; szacunek redakcji', href: budget(2025).href }}>
+  <ColumnChart
+    columns={COST_YEARS.map((y) => ({ label: String(y), sub: `${formatPL(share(y) * 100, 0)}%`, value: growth(y), display: mld(growth(y)), pair: { value: cumulative(y), display: mld(cumulative(y)) } }))}
+    max={100}
+    series={['Przyrost wydatków na świadczenia od 2021 r.', 'W tym: koszt podwyżek z ustawy']}
+    caption={`Przyrost kosztów świadczeń w planie NFZ wobec 2021 r. i skumulowany koszt podwyżek z ustawy, mld zł: ${COST_YEARS.map((y) => `${y} — ${mld(growth(y))} i ${mld(cumulative(y))} (${formatPL(share(y) * 100, 0)}%)`).join('; ')}.`}
+  />
+</Figure>
+
+Składka zdrowotna nie nadąża za wydatkami. Dotacja z budżetu państwa do NFZ wzrosła z {formatPL(budget(2022).subsidy, 1)} mld zł w 2022 r. do **{formatPL(budget(2025).subsidy, 1)} mld zł** w 2025 r.[^nfz-plany] Prezes NFZ zapowiadał w listopadzie 2025 r., że do Funduszu trafią też środki ze sprzedaży obligacji skarbowych.[^nfz-prezes] Dotacja nie jest przypisana do konkretnego wydatku, więc nie da się powiedzieć, że idzie na podwyżki. Bez niej NFZ nie pokryłby jednak swoich kosztów, a za większość ich przyrostu odpowiadają podwyżki z ustawy (szacunek wyżej).
+
+Prezes NFZ ocenił, że ustawa „spełniła swoje zadanie”, bo „zatrzymała medyków w Polsce”, ale zapytał, czy tempo wzrostu płac „jest adekwatne do tempa wzrostu dostępności do leczenia”.[^nfz-prezes] Tego nikt nie zmierzył. W latach 2015–2025 koszty NFZ wzrosły {formatPL(Q.budget, 1)} raza, a średni czas oczekiwania na świadczenie według Barometru WHC wydłużył się o {formatPL(Q.queue, 0)}% (zob. [Budżet NFZ i kolejki](/dane/budzet-nfz/)). Związku przyczynowego między ustawą a kolejkami te dane nie dowodzą.
+
+## Rząd i posłowie liczyli inaczej
+
+Pierwotna ustawa z 2017 r. miała podnosić płace do końca 2021 r., a potem je zamrozić na osiągniętym poziomie.[^ustawa] Coroczną waloryzację dopisała do niej ustawa z 27 listopada 2020 r. „w celu zapewnienia w okresie (…) epidemii kadr medycznych”. Przepis wszedł w życie 1 stycznia 2022 r.[^du2020] Ustawa powstała z projektu poselskiego, który podpisało 23 posłów klubu PiS; wnioskodawców reprezentował poseł Tomasz Latos. Uzasadnienie zapowiadało „stały mechanizm waloryzacji” i jednym zdaniem stwierdzało, że projekt „nie spowoduje dodatkowych skutków finansowych dla budżetu państwa”. O kosztach dla NFZ nie było w nim ani słowa.[^druk763] Projekty poselskie nie muszą mieć oceny skutków regulacji ani przechodzić konsultacji, a ten Sejm uchwalił dziesięć dni po wpłynięciu: 232 za, 216 przeciw. Senat odrzucił ustawę w całości, Sejm odrzucił tę uchwałę 234 głosami do 220.[^proces763] Ustawa zmieniała wiele innych przepisów, m.in. o zatrudnianiu lekarzy spoza UE, więc z głosowania nie wynika, jak posłowie oceniali samą waloryzację.
+
+W Komisji Zdrowia, która 26 listopada 2020 r. przeprowadziła pierwsze czytanie, przepis o corocznej waloryzacji omówiono w kilku minutach, głównie od strony legislacyjnej. Poseł Lewicy upewniał się tylko, czy sprawę płac „załatwiamy od 1 stycznia 2022 r.”, a wiceminister zdrowia odpowiedział, że minimum „w każdym kolejnym [roku] się indeksuje” i że to „dla pracowników lepsze rozwiązanie, ponieważ będą mieli wyższe wynagrodzenia”. O koszcie dla NFZ nikt nie zapytał.[^kz2020] Poseł PiS Wojciech Maksymowicz, były wiceminister zdrowia, ocenił na tym samym posiedzeniu, że projekt przygotowano „na pewno niebezpośrednio” przez posłów, bo „na pewno była pomoc urzędnicza” ministerstwa.[^kz2020] Projekt rządowy musiałby mieć ocenę skutków regulacji i przejść konsultacje; poselski nie musi.
+
+Oceny skutków kolejnych nowelizacji przewidywały koszt wielokrotnie niższy niż ten, który wyszedł:
+
+<Figure title="Co przewidywały dokumenty, a ile wyszło" note="Liczby rządowe — narastająco, z ocen skutków regulacji i uzasadnień. „Ile wyszło” — skumulowany koszt waloryzacji od lipca 2022 r. (szacunek redakcji) i liczby MZ oraz NFZ; nie obejmuje podwyżek z lat 2017–2021, więc zaniża rzeczywisty koszt." source={{ label: 'Druki 763, 1202, 1583, 2268', href: LINKS.druk2268 }}>
+  <Comparison table={FORECASTS} />
+</Figure>
+
+Ocena skutków nowelizacji z 2022 r. pisała też, że wszystkie skutki „zostaną zabezpieczone w ramach corocznych limitów wydatków” na zdrowie, „bez możliwości ubiegania się o dodatkowe środki”.[^druk2268] Ustawa nie wskazuje więc osobnego źródła pieniędzy na podwyżki: płaci za nie NFZ z tej samej puli, z której finansuje leczenie.
+
+## Dlaczego koszt rośnie sam
+
+Mechanizm ma cztery cechy, które razem sprawiają, że koszt rośnie bez nowych decyzji:
+
+- **Jest automatyczny.** Minimum = współczynnik × przeciętne wynagrodzenie z poprzedniego roku. Nikt nie decyduje co roku o podwyżce, a ustawa nie ma górnej granicy.[^ustawa]
+- **Wiąże się ze średnią, nie z medianą.** Przeciętne wynagrodzenie, które ogłasza GUS, to średnia płac z umów o pracę we wszystkich firmach, z premiami, nadgodzinami i dyżurami, ale bez umów cywilnoprawnych.[^gus-metoda] Średnią podnoszą najlepiej zarabiający: w październiku 2024 r. wynosiła {formatPL(S.mean, 2)} zł, a mediana — płaca, od której połowa zarabia mniej — {formatPL(S.median, 2)} zł.[^gus-struktura] W danych z ZUS, z wszystkich firm, było to {formatPL(Z.mean, 2)} i {formatPL(Z.median, 2)} zł.[^gus-rozklad] Związek Powiatów Polskich, zrzeszający właścicieli szpitali powiatowych, kwestionował w 2025 r. przeciętne wynagrodzenie jako podstawę.[^zpp]
+- **Współczynniki skoczyły w 2022 r.** Dla lekarza specjalisty z 1,31 do 1,45, dla pielęgniarki ze średnim wykształceniem bez specjalizacji z 0,73 do 0,94.[^druk2268]
+- **Pieniądze idą przez wyceny.** NFZ nie przekazuje „znaczonych” środków na płace, tylko podnosi wyceny wszystkich świadczeń, a placówki same rozliczają podwyżki.[^du2022]
+
+Przychody NFZ też rosną razem z płacami, bo składka zdrowotna to 9% wynagrodzenia.[^usw-skladka] Problemem jest różnica tempa: składka rośnie w tempie całej gospodarki, a minima w ochronie zdrowia rosną od tej samej podstawy, ale z wyższymi współczynnikami i skokiem z 2022 r.
+
+<Figure title="Minima z ustawy rosną szybciej niż średnia i mediana płac w gospodarce" note="Minimum od 1 lipca danego roku = współczynnik × przeciętne wynagrodzenie z roku poprzedniego; od 2021 r., gdy minimum stało się w pełni obowiązkowe. Współczynniki: lekarz specjalista 1,31, od 1.07.2022 1,45; pielęgniarka, położna, ratownik ze średnim wykształceniem bez specjalizacji 0,73, od 1.07.2022 0,94. Przeciętne wynagrodzenie — średnia roczna; mediana — październik, co dwa lata, firmy od 10 osób." source={{ label: 'Druk 2268 (współczynniki do 30.06.2022), Dz.U. 2022 poz. 1352, komunikaty GUS w M.P., GUS „Struktura wynagrodzeń według zawodów” 2016–2024', href: LINKS.druk2268 }}>
+  <IndexChart {...PAY_CHART} animate />
+</Figure>
+
+Od lipca 2021 do lipca 2026 r. minimum lekarza specjalisty wzrosło o {pct(spec.at(-1).v, spec[0].v)}%, a pielęgniarki albo ratownika ze średnim wykształceniem bez specjalizacji — o {pct(nurse.at(-1).v, nurse[0].v)}%. Przeciętne wynagrodzenie, od którego liczone są te minima, wzrosło w tym czasie o {pct(avg.at(-1).amount, 5167.47)}% (z 2020 na 2025 r.), a mediana płac — o {pct(MEDIAN_OCT.at(-1).median, MEDIAN_OCT[2].median)}% (z października 2020 na październik 2024 r.).[^druk2268][^gus-seria][^gus-struktura]
+
+## Pieniądze idą przez wyceny, nie tam, gdzie jest koszt
+
+Do 30 czerwca 2022 r. pieniądze na podwyżki płynęły do placówek osobnym strumieniem. Od lipca 2022 r. są wliczane w wyceny świadczeń.[^mz2024] AOTMiT dzieli wszystkie zakresy świadczeń na 80 grup, dla każdej liczy średni udział płac z ankiet i o ten sam procent podnosi wartość umów **wszystkich** świadczeniodawców w danej grupie — szpitali, przychodni POZ, poradni specjalistycznych, rehabilitacji, stomatologii.[^aotmit2025] Placówka, która zatrudnia głównie na kontraktach, dostaje więc taki sam procentowy wzrost wyceny jak ta, która zatrudnia na etatach, choć ustawa nakłada na nią mniejszy obowiązek.
+
+Druga strona tego mechanizmu: od 2025 r. AOTMiT „nie rekomenduje się uwzględniania” w wycenach wzrostu płac z kontraktów i umów cywilnoprawnych, bo chce wspierać etaty. Kontrakty to tymczasem ponad 27% kosztów osobowych placówek, a w połowie szpitali, które przekazały dane, umowy o pracę to najwyżej 53% tych kosztów.[^aotmit2025] Sama Agencja przyznaje, że wyliczony wzrost „może nie skompensować w pełni realizacji przepisów” ustawy „we wszystkich podmiotach”; precyzyjne finansowanie wymagałoby wyliczenia kwot dla każdej placówki osobno, czego AOTMiT nie rekomenduje.[^aotmit2025]
+
+Skutki opisało samo Ministerstwo Zdrowia. W piśmie z kwietnia 2024 r. przyznało, że wprowadzona forma przekazywania środków „w przypadku szpitali realizujących świadczenia o niskiej wycenie, spowodowała narastanie zadłużenia”.[^mz2024] Związek Powiatów Polskich, zrzeszający samorządy — właścicieli szpitali powiatowych, razem z Ogólnopolskim Związkiem Pracodawców Szpitali Powiatowych pisał już w sierpniu 2022 r. do NIK, że co najmniej 130 szpitali miejskich i powiatowych nie sfinansuje obowiązkowych podwyżek z podwyżki wycen. W analizie z tego samego miesiąca Związek wskazywał, że są w systemie podmioty, które na podwyżce wycen „zyskają bardzo dużo”.[^zpp2022] W styczniu 2026 r. Związek ocenił, że koszty ustawy „przerzucane są na szpitale”, a według jego analizy za 2025 r. stratę operacyjną wykazało prawie 91% szpitali powiatowych.[^zpp2026] To stanowiska samorządów — właścicieli szpitali, więc strony sporu; liczby pochodzą z ich ankiet.
+
+### Kto pilnuje wypłat i kto płaci za spór o kwalifikacje
+
+Placówki nie zawsze wypłacają podwyżki zgodnie z ustawą. Państwowa Inspekcja Pracy stwierdziła naruszenia jej przepisów w 50% podmiotów leczniczych skontrolowanych w 2023 r. (w 2022 r. — w 39%), a jako główną przyczynę wskazała „stale pogarszającą się sytuację ekonomiczną podmiotów leczniczych”.[^pip2023]
+
+Od 2022 r. o grupie zawodowej decydują kwalifikacje „wymagane na zajmowanym stanowisku”, a nie posiadane przez pracownika.[^du2022] Ministerstwo Zdrowia wyjaśniało, że do wyższego współczynnika „niezbędne jest wprowadzenie” w regulaminie albo w umowie o pracę „wymogu posiadania określonego wykształcenia” na danym stanowisku.[^mz3011] Według tej wykładni szpital, który nie wpisze takiego wymogu, może płacić według niższego współczynnika także pielęgniarce z tytułem magistra i specjalizacją.
+
+Sąd Najwyższy ocenił to inaczej. W wyroku z 23 kwietnia 2025 r. rozpatrywał sprawę szpitala, który wszystkie pielęgniarki i położne specjalistki (zatrudnia ich ponad 500) zaliczył do grupy ze współczynnikiem 1,02, czyli 5776 zł, zamiast 1,29, czyli 7304,66 zł, bo regulamin nie wymagał na tych stanowiskach tytułu magistra. Według SN najniższa płaca „nie mogła więc podlegać arbitralnej decyzji pracodawcy” ani takiemu ustawieniu struktury, by żadna pielęgniarka nie mogła ubiegać się o wyższą grupę; o grupie decyduje przede wszystkim „adekwatne wykształcenie i specjalizacja”. Sąd dodał, że „zła sytuacja finansowa pracodawcy w służbie zdrowia” nie zwalnia go z wypłaty minimum z ustawy.[^sn-pskp-3-25] Obywatelski projekt z 2023 r. miał przyznawać wyższą grupę po zdobyciu kwalifikacji; wiceminister zdrowia szacował jego koszt na „niemal 7 mld zł” dla umów o pracę i 8,8 mld zł dla wszystkich umów.[^kos][^druk33]
+
+## Co ustawa naprawiała
+
+Ustawa powstała, bo płace w publicznej ochronie zdrowia były niskie. W 2017 r. docelowe minimum pielęgniarki bez specjalizacji wynosiło 0,64 × 3900 zł, czyli 2496 zł brutto, przy płacy minimalnej {formatPL(minWage2017, 0)} zł — i placówki miały do niego dochodzić do końca 2021 r.[^ustawa][^druk1583] Rząd szacował w 2017 r., że ustawa obejmie ok. 437,9 tys. osób wykonujących zawody medyczne na etatach.[^druk1583] Związki zawodowe z Porozumienia Zawodów Medycznych przygotowały wtedy własny, dużo hojniejszy projekt obywatelski, a rząd odrzucał ich postulaty, bo kosztowałyby „znacząco” ponad 30 mld zł.[^mp-pzm][^druk1583]
+
+Po odliczeniu inflacji wzrost jest mniejszy, niż wynika z liczb nominalnych. Ceny wzrosły w latach 2022–2025 o {formatPL((prices2125 - 1) * 100, 0)}%, więc realnie minimum pielęgniarki ze średnim wykształceniem wzrosło od lipca 2021 do lipca 2025 r. o ok. {real(nurse[4].v, nurse[0].v)}%, a lekarza specjalisty — o ok. {real(spec[4].v, spec[0].v)}%.[^gus-cpi] W październiku 2024 r. mediana płac pielęgniarek na etacie wynosiła {formatPL(S.nursesMedian, 2)} zł, a lekarzy {formatPL(S.doctorsMedian, 2)} zł — to tylko umowy o pracę w podmiotach od 10 osób, bez kontraktów.[^gus-struktura]
+
+## Jawność: obietnica i dane
+
+Trójstronny Zespół ds. Ochrony Zdrowia — rząd, centrale związkowe i organizacje pracodawców — zapisał w stanowisku z 5 listopada 2021 r., że w latach 2023–2027 połowa wzrostu nakładów na ochronę zdrowia ma iść na płace z tej ustawy, a „informacja o wysokości nakładów przeznaczonych na wzrost wynagrodzeń będzie podawana do publicznej wiadomości”.[^stanowisko][^druk2268] Liczby padają w komunikatach NFZ, rekomendacjach AOTMiT i odpowiedziach na interpelacje, a MZ pokazało skumulowany koszt na jednym slajdzie w 2025 r. Stałego zestawienia kosztu ustawy rok po roku nie znaleźliśmy (stan na 23.11.2026).
+
+Nowelizacja z 2022 r. dała jednak państwu narzędzie do policzenia płac. Placówka z umową z NFZ musi na wniosek AOTMiT przekazać dane o wymiarze zatrudnienia i składnikach wynagrodzenia **wszystkich** osób, które u niej pracują: na umowę o pracę, na umowach cywilnoprawnych i w ramach podwykonawstwa.[^du2022] W projekcie rządowym dane miały obejmować imię i nazwisko; sejmowa Komisja Zdrowia zastąpiła je stanowiskiem i **zanonimizowanymi** danymi o wynagrodzeniu.[^druk2268][^druk2291] Senat chciał ograniczyć obowiązek do etatów, Sejm tę poprawkę odrzucił.[^druk2343][^glos2022aotmit] Przepis obowiązuje do dziś.[^usw2025]
+
+Dane trafiają do Agencji, nie do publicznego rejestru. Pokazują jednak, że państwo może już zbierać płace osób z kontraktami bez nazwisk — to ten sam pomysł co w postulacie [jawnych kwot pod stałym identyfikatorem](/postulat/).
+
+## Kto zdecydował
+
+Nowelizację z 2022 r., która podniosła współczynniki, Sejm uchwalił niemal jednogłośnie: 445 za, 1 przeciw, 7 wstrzymało się.[^glos2022] Realizowała ona stanowisko Trójstronnego Zespołu z listopada 2021 r., uzgodnione po jesiennych protestach pracowników ochrony zdrowia („Białe Miasteczko 2.0”).[^druk2268][^komitet-1108] Ocena skutków przewidywała ok. 7,2 mld zł w II półroczu 2022 r.[^druk2268]
+
+<Figure title="Sejm, 26 maja 2022 r.: nowelizacja — 445 za, 1 przeciw" note="Kropka to poseł, kliny to kluby. Najedź na kropkę albo kartę klubu, żeby zobaczyć głos." source={{ label: 'Sejm, głosowanie nr 54 — wyniki imienne (API Sejmu)', href: LINKS.glos2022 }}>
+  <Hemicycle voting={podwyzkowa2022Voting} clubs={SEJM_CLUBS_IX} last={CLUBS_LAST} />
+</Figure>
+
+Senat, w którym większość miała wtedy opozycja, chciał podnieść wszystkie współczynniki jeszcze o 0,25, bo inflacja zdezaktualizowała uzgodnienia z 2021 r. Poprawki zgłosili w senackiej Komisji Zdrowia senatorowie Alicja Chybicka, Agnieszka Gorgoń-Komor i Wojciech Konieczny. 23 czerwca 2022 r. Sejm je odrzucił: 234 posłów za odrzuceniem, w tym 226 z PiS, przy wymaganych 225.[^druk2343][^senat-kz][^glos2022senat] Spór w parlamencie dotyczył więc tego, czy podwyżki mają być wyższe, a nie tego, ile będą kosztować w kolejnych latach.
+
+Pierwotną ustawę z 2017 r. Sejm uchwalił 282 głosami przy 142 przeciw. Za był PiS, przeciw — większość PO, Nowoczesna i PSL, które krytykowały pominięcie projektu obywatelskiego albo za niskie współczynniki dla pielęgniarek.[^glos2017][^sten-kluby]
+
+<Figure title="Sejm, 8 czerwca 2017 r.: ustawa z projektu rządowego — 282 za, 142 przeciw" note="Kropka to poseł, kliny to kluby. Najedź na kropkę albo kartę klubu, żeby zobaczyć głos." source={{ label: 'Sejm, głosowanie nr 66 — wyniki imienne (API Sejmu)', href: LINKS.glos2017 }}>
+  <Hemicycle voting={podwyzkowa2017Voting} clubs={SEJM_CLUBS_VIII} last={CLUBS_LAST} />
+</Figure>
+
+<Figure title="Pozostałe głosowania nad ustawą i nowelizacją z 2022 r." note="Wyróżnione wiersze to głosowania nad całością. Przy odrzucaniu poprawek Senatu Sejm potrzebuje bezwzględnej większości. Rozwiń wiersz, żeby zobaczyć głosy klubów." source={{ label: 'Sejm i Senat — wyniki głosowań według klubów', href: LINKS.glos2017 }}>
+  <Comparison table={VOTES} />
+</Figure>
+
+## Historia ustawy
+
+<Figure title="Od projektu obywatelskiego do nowelizacji z 2022 r." source={{ label: 'Sejm i Senat — przebiegi procesów, głosowania; druki 763, 1583, 1648, 2268, 33', href: LINKS.proces1583 }}>
+  <Chronology events={CHRONO} label="Ustawa o najniższych płacach w ochronie zdrowia: zdarzenia od 2016 do 2023 r." lanes />
+</Figure>
+
+W 2017 r. do Sejmu trafiły dwa projekty. Pierwszy, 15 maja, wniósł komitet obywatelski związków z Porozumienia Zawodów Medycznych, z ponad 100 tys. podpisów; dziewięć dni później wpłynął projekt rządowy.[^druk1648][^druk1583] Sejm uchwalił rządowy w dwa tygodnie, a obywatelski po pierwszym czytaniu trafił do komisji i nie wrócił.[^proces1583][^proces1648]
+
+<Figure title="Projekt obywatelski obejmował też umowy cywilnoprawne i dawał wyższe współczynniki" note="Wersje projektów wniesione do Sejmu. W projekcie obywatelskim współczynniki są przypisane do zawodów, w rządowym — do grup według kwalifikacji." source={{ label: 'Druki 1648 i 1583', href: LINKS.druk1648 }}>
+  <Comparison table={PROJECTS} />
+</Figure>
+
+W uzasadnieniach projektów z 2017 i 2022 r. rząd napisał, że nikt nie zgłosił zainteresowania pracami w trybie ustawy o działalności lobbingowej.[^druk1583][^druk2268] Wpływ na treść szedł przez konsultacje, Trójstronny Zespół i protesty: głodówkę rezydentów w 2017 r. zakończyło porozumienie z ministrem zdrowia z lutego 2018 r., a jesienią 2021 r. protestował komitet związków i samorządów zawodowych, którego komunikaty podpisywali m.in. przewodnicząca Ogólnopolskiego Związku Zawodowego Pielęgniarek i Położnych i wiceprezes Naczelnej Rady Lekarskiej.[^mz-rezydenci][^komitet-1012][^komitet-1108] W 2018 r. ustawę rozszerzono na pracowników niemedycznych, a w 2019 r. podniesiono kwotę bazową z 3900 do 4200 zł — obie zmiany prawie jednogłośnie.[^nowele-2018-2019]
+
+Od 2025 r. ministerstwo szukało oszczędności w ustawie. Na posiedzeniach Trójstronnego Zespołu w czerwcu i grudniu 2025 r. przedstawiało propozycje zmian, m.in. mechanizmu waloryzacji; strona związkowa je odrzuciła.[^fzz][^opzz] Ustawy nie zmieniono: waloryzacje 1 lipca 2025 i 2026 r. przeprowadzono według obowiązujących przepisów.[^mz10388][^rek84]
+
+## Czego ustawa nie pokazuje
+
+Ustawa mówi, ile co najmniej wynosi płaca zasadnicza na etacie. Nie mówi, ile zarabiają ludzie z dodatkami, dyżurami i umowami w kilku miejscach, ani ile publicznych pieniędzy trafia do lekarzy na kontraktach, których ustawa nie obejmuje (zob. [Kontrakt czy etat](/mechanizmy/kontrakt-vs-etat/)). Górne granice wprowadza dopiero ustawa o limitach płac uchwalona przez Sejm w 2026 r., na etacie i na kontrakcie (zob. [Limity płac medyków](/analizy/limity-wynagrodzen-medykow/)). Osoby i instytucje, które brały udział w pracach nad ustawą i w sporach o nią, pokazujemy w [Konstelacji ochrony zdrowia](/konstelacja/) — w widokach o ustawie podwyżkowej.
+
+[^ustawa]: [Ustawa z 8 czerwca 2017 r. o sposobie ustalania najniższego wynagrodzenia zasadniczego niektórych pracowników zatrudnionych w podmiotach leczniczych](https://api.sejm.gov.pl/eli/acts/DU/2017/1473/text.pdf) (Dz.U. 2017 poz. 1473), art. 3, art. 7 i załącznik; [tekst jednolity](https://api.sejm.gov.pl/eli/acts/DU/2022/2139/text.pdf) (Dz.U. 2022 poz. 2139), art. 3a.
+[^nfz-prezes]: NFZ, [Prezes NFZ: czy tempo wzrostu wynagrodzeń w ochronie zdrowia jest adekwatne do tempa wzrostu dostępności do leczenia?](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/prezes-nfz-czy-tempo-wzrostu-wynagrodzen-w-ochronie-zdrowia-jest-adekwatne-do-tempa-wzrostu-dostepnosci-do-leczenia,8849.html), 6.11.2025.
+[^du2022]: [Ustawa z 26 maja 2022 r. o zmianie ustawy o sposobie ustalania najniższego wynagrodzenia zasadniczego…](https://api.sejm.gov.pl/eli/acts/DU/2022/1352/text.pdf) (Dz.U. 2022 poz. 1352), art. 3 — art. 31ha i art. 31lc ustawy o świadczeniach opieki zdrowotnej.
+[^nfz2022]: NFZ, [Ponad 18 miliardów złotych m.in. na podwyżki wynagrodzeń minimalnych](https://www.nfz.gov.pl/aktualnosci/aktualnosci-centrali/ponad-18-miliardow-zlotych-m-in-na-podwyzki-wynagrodzen-minimalnych-dodatkowo-wzrost-ryczaltu-i-wyzsza-wycena-interny,8247.html), 9.08.2022.
+[^kos]: Sejm, [posiedzenie podkomisji nadzwyczajnej do projektu z druku 33, 11.04.2024](https://api.sejm.gov.pl/sejm/term10/committees/ZDR01N/sittings/3/html) — wypowiedź wiceministra zdrowia o kosztach waloryzacji z 1.07.2023 r.
+[^mz6853]: MZ, [odpowiedź na interpelację nr 6853](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDCFJXK/i06853-o1.pdf), 21.12.2024 — rekomendacja AOTMiT 48/2024, ok. 15,2 mld zł w skali 12 miesięcy; [odpowiedź na interpelację nr 4358](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTD8KHVS/i04358-o1.pdf) — 7 856 969 981,23 zł w II półroczu 2024 r.
+[^mz10388]: MZ, [odpowiedź na interpelację nr 10388](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDJMH6K/i10388-o1.pdf), 2025 — rekomendacja AOTMiT 72/2025, 16,9 mld zł w okresie 12 miesięcy.
+[^rek84]: AOTMiT, [obwieszczenie z 2.07.2026 w sprawie rekomendacji nr 84/2026](https://bip.aotm.gov.pl/assets/files/zlecenia_mz/2026/116/REK/2025%2007%2002%20Obwieszczenie%20Rekomendacja%2084%202026-sig.pdf) — 9,25 mld zł w okresie 12 miesięcy (wariant bez inflacji: 7,69 mld zł).
+[^mz-prezentacja]: Ministerstwo Zdrowia, [„Zwiększamy finansowanie podmiotów leczniczych — konkretne działania Ministerstwa Zdrowia”](https://www.gov.pl/attachment/8cf5ac6c-463c-47fd-b90f-a96433411322), czerwiec 2025, s. 13.
+[^tvn24]: TVN24, [Podwyżki płac minimalnych w ochronie zdrowia. Ile będą kosztowały?](https://tvn24.pl/zdrowie/podwyzki-plac-minimalnych-w-ochronie-zdrowia-ile-beda-kosztowaly-st9013918), 23.04.2026 — wypowiedź wiceprezesa NFZ na Europejskim Kongresie Gospodarczym.
+[^fpp]: Interia Biznes, [wywiad z głównym ekonomistą Federacji Przedsiębiorców Polskich](https://biznes.interia.pl/gospodarka/news-place-w-ochronie-zdrowia-wzrosna-o-blisko-9-proc-gigantyczna,nId,22598355), 2025.
+[^nfz-plany]: NFZ, ostateczne plany finansowe na [2021 r.](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2021/ostateczny_plan_finansowy_nfz_na_rok_2021..xlsx), [2022 r.](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2022/ostateczny_plan_finansowy_nfz_na_rok_2022..xlsx) i [2025 r.](https://www.nfz.gov.pl/gfx/nfz/userfiles/_public/bip/finanse_nfz/2025/ostateczny_plan_finansowy_nfz_na_rok_2025.xlsx) — koszty świadczeń opieki zdrowotnej i dotacja z budżetu państwa; seria w zestawieniu [Budżet NFZ](/dane/budzet-nfz/).
+[^du2020]: [Ustawa z 27 listopada 2020 r. o zmianie niektórych ustaw w celu zapewnienia w okresie ogłoszenia stanu zagrożenia epidemicznego lub stanu epidemii kadr medycznych](https://api.sejm.gov.pl/eli/acts/DU/2020/2401/text.pdf) (Dz.U. 2020 poz. 2401), art. 13 pkt 1 (dodany art. 3a) i przepis o wejściu w życie; zob. odnośnik w [tekście jednolitym z 2021 r.](https://api.sejm.gov.pl/eli/acts/DU/2021/1801/text.pdf).
+[^druk763]: [Poselski projekt ustawy o zmianie niektórych ustaw w celu zapewnienia w okresie ogłoszenia stanu zagrożenia epidemicznego lub stanu epidemii kadr medycznych (druk nr 763)](https://api.sejm.gov.pl/sejm/term9/prints/763/763.pdf), 17.11.2020 — lista wnioskodawców, uzasadnienie.
+[^proces763]: Sejm, [przebieg procesu legislacyjnego, druk 763](https://www.sejm.gov.pl/Sejm9.nsf/PrzebiegProc.xsp?nr=763); głosowania [nr 181 na 21. posiedzeniu](https://www.sejm.gov.pl/Sejm9.nsf/agent.xsp?symbol=glosowania&NrKadencji=9&NrPosiedzenia=21&NrGlosowania=181) (27.11.2020) i [nr 72 na 24. posiedzeniu](https://www.sejm.gov.pl/Sejm9.nsf/agent.xsp?symbol=glosowania&NrKadencji=9&NrPosiedzenia=24&NrGlosowania=72) (18.12.2020).
+[^druk2268]: [Rządowy projekt ustawy o zmianie ustawy o sposobie ustalania najniższego wynagrodzenia zasadniczego… (druk nr 2268)](https://api.sejm.gov.pl/sejm/term9/prints/2268/2268.pdf), 17.05.2022 — art. 3, uzasadnienie, tabela współczynników, ocena skutków regulacji (pkt 6) i tabela uwag z konsultacji.
+[^gus-metoda]: GUS, [Zeszyt metodologiczny „Wynagrodzenia w gospodarce narodowej”](https://stat.gov.pl/files/gfx/portalinformacyjny/pl/defaultaktualnosci/5818/6/1/1/zeszyt_metodologiczny_wynagrodzenia_w_gospodarce_narodowej.pdf), 2020 — zakres i definicja przeciętnego wynagrodzenia.
+[^gus-struktura]: GUS, [Struktura wynagrodzeń według zawodów w październiku 2024 r.](https://stat.gov.pl/obszary-tematyczne/rynek-pracy/pracujacy-zatrudnieni-wynagrodzenia-koszty-pracy/struktura-wynagrodzen-wedlug-zawodow-za-pazdziernik-2024-r-,4,12.html), tablice 2, 5 i 13 — podmioty od 10 osób, umowy o pracę, w przeliczeniu na pełny etat; mediany z lat 2016–2022 z publikacji z tej samej serii.
+[^gus-rozklad]: GUS, [Rozkład wynagrodzeń w gospodarce narodowej w październiku 2024 r.](https://stat.gov.pl/obszary-tematyczne/rynek-pracy/pracujacy-zatrudnieni-wynagrodzenia-koszty-pracy/rozklad-wynagrodzen-w-gospodarce-narodowej-w-pazdzierniku-2024-r-,32,10.html), 2.04.2025 — dane ZUS, wszystkie podmioty.
+[^zpp]: Związek Powiatów Polskich, [stanowisko XXXII Zgromadzenia Ogólnego](https://www.zpp.pl/storage/library/2025-06/63e6b0e4741f913708a8a784b96cf36c.pdf), 12.06.2025.
+[^usw-skladka]: [Ustawa o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (t.j. Dz.U. 2025 poz. 1461), art. 79 ust. 1.
+[^gus-seria]: Komunikaty Prezesa GUS w sprawie przeciętnego wynagrodzenia w gospodarce narodowej: [M.P. 2016 poz. 145](https://api.sejm.gov.pl/eli/acts/MP/2016/145/text.pdf) (za 2015 r.) i [M.P. 2026 poz. 192](https://api.sejm.gov.pl/eli/acts/MP/2026/192/text.pdf) (za 2025 r.); wartości z lat pośrednich — komunikaty z lutego każdego roku.
+[^druk1583]: [Rządowy projekt ustawy o sposobie ustalania najniższego wynagrodzenia zasadniczego pracowników wykonujących zawody medyczne… (druk nr 1583)](https://api.sejm.gov.pl/sejm/term8/prints/1583/1583.pdf), 30.05.2017 — art. 3, art. 7, załącznik, uzasadnienie, ocena skutków i raport z konsultacji.
+[^mp-pzm]: Medycyna Praktyczna, [Projekt ustawy o minimalnych płacach w ochronie zdrowia trafił do Sejmu](https://www.mp.pl/pacjent/aktualnosci/157432), 01.2017.
+[^gus-cpi]: GUS, [roczne wskaźniki cen towarów i usług konsumpcyjnych](https://stat.gov.pl/obszary-tematyczne/ceny-handel/wskazniki-cen/wskazniki-cen-towarow-i-uslug-konsumpcyjnych-pot-inflacja-/roczne-wskazniki-cen-towarow-i-uslug-konsumpcyjnych/) (2022–2025).
+[^stanowisko]: [Stanowisko Trójstronnego Zespołu do Spraw Ochrony Zdrowia z 5 listopada 2021 r.](https://termedia.pl/pobierz/27820b56a6018d384a90ea22f0250a3c), z załącznikiem ze współczynnikami (kopia dokumentu udostępniona przez Termedia). Zobowiązanie do jawności nakładów przytaczają też uwagi OPZZ w tabeli konsultacji druku 2268.
+[^druk2291]: Sejm, [sprawozdanie Komisji Zdrowia (druk nr 2291)](https://api.sejm.gov.pl/sejm/term9/prints/2291/2291.pdf), 25.05.2022, s. 5.
+[^druk2343]: [Uchwała Senatu w sprawie ustawy o zmianie ustawy o sposobie ustalania najniższego wynagrodzenia zasadniczego… (druk nr 2343)](https://api.sejm.gov.pl/sejm/term9/prints/2343/2343.pdf), z uzasadnieniem poprawek; Senat, [44. posiedzenie X kadencji](https://www.senat.gov.pl/prace/posiedzenia/tematy,578,1.html), 9.06.2022 (druki senackie 725, 725 A); głosowania [nr 42](https://www.senat.gov.pl/sklad/senatorowie/szczegoly-glosowania,482,42,10.html) i [nr 45](https://www.senat.gov.pl/sklad/senatorowie/szczegoly-glosowania,482,45,10.html).
+[^glos2022aotmit]: Sejm, [głosowanie nr 60 na 57. posiedzeniu IX kadencji](https://www.sejm.gov.pl/Sejm9.nsf/agent.xsp?symbol=glosowania&NrKadencji=9&NrPosiedzenia=57&NrGlosowania=60), 23.06.2022 — odrzucenie poprawki nr 5.
+[^usw2025]: [Ustawa o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych, tekst jednolity](https://api.sejm.gov.pl/eli/acts/DU/2025/1461/text.pdf) (Dz.U. 2025 poz. 1461), art. 31lc.
+[^glos2022]: Sejm, [głosowanie nr 54 na 55. posiedzeniu IX kadencji](https://www.sejm.gov.pl/Sejm9.nsf/agent.xsp?symbol=glosowania&NrKadencji=9&NrPosiedzenia=55&NrGlosowania=54), 26.05.2022 — wyniki według klubów.
+[^komitet-1012]: Ogólnopolski Komitet Protestacyjno-Strajkowy Pracowników Ochrony Zdrowia, [komunikat z 12.10.2021](https://nil.org.pl/uploaded_files/art_1634046973_komitet-komunikat-2021-10-12.pdf) (na stronie NIL).
+[^komitet-1108]: Ogólnopolski Komitet Protestacyjno-Strajkowy Pracowników Ochrony Zdrowia, [komunikat z 8.11.2021](https://kif.info.pl/wp-content/uploads/2021/11/KOMITET-komunikat-2021-11-08.pdf) (na stronie KIF).
+[^senat-kz]: Senat, [Prace w komisjach senackich 8 czerwca 2022 r.](https://www.senat.gov.pl/diariusz/posiedzenia-komisji/art,14818,prace-w-komisjach-senackich-8-czerwca-2022-r-.html)
+[^glos2022senat]: Sejm, [głosowanie nr 64 na 57. posiedzeniu IX kadencji](https://www.sejm.gov.pl/Sejm9.nsf/agent.xsp?symbol=glosowania&NrKadencji=9&NrPosiedzenia=57&NrGlosowania=64), 23.06.2022 — odrzucenie poprawek nr 10, 12–13, 15–16 oraz 18–22; [przebieg procesu, druk 2268](https://www.sejm.gov.pl/Sejm9.nsf/PrzebiegProc.xsp?nr=2268).
+[^glos2017]: Sejm, [głosowanie nr 66](https://www.sejm.gov.pl/Sejm8.nsf/agent.xsp?symbol=glosowania&NrKadencji=8&NrPosiedzenia=43&NrGlosowania=66) i [głosowanie nr 10](https://www.sejm.gov.pl/Sejm8.nsf/agent.xsp?symbol=glosowania&NrKadencji=8&NrPosiedzenia=43&NrGlosowania=10) na 43. posiedzeniu VIII kadencji, 8.06.2017 — wyniki według klubów.
+[^sten-kluby]: Sejm, stenogram 43. posiedzenia VIII kadencji, 8.06.2017, pkt 29 — stanowiska klubów: [PiS](https://api.sejm.gov.pl/sejm/term8/proceedings/43/2017-06-08/transcripts/239), [PO](https://api.sejm.gov.pl/sejm/term8/proceedings/43/2017-06-08/transcripts/240), [Kukiz’15](https://api.sejm.gov.pl/sejm/term8/proceedings/43/2017-06-08/transcripts/241), [Nowoczesna](https://api.sejm.gov.pl/sejm/term8/proceedings/43/2017-06-08/transcripts/242), [PSL](https://api.sejm.gov.pl/sejm/term8/proceedings/43/2017-06-08/transcripts/243).
+[^druk1648]: [Obywatelski projekt ustawy w sprawie warunków zatrudnienia w ochronie zdrowia (druk nr 1648)](https://api.sejm.gov.pl/sejm/term8/prints/1648/1648.pdf), z załącznikiem, oświadczeniem o powołaniu komitetu i protokołem sprawdzenia podpisów.
+[^proces1583]: Sejm, [przebieg procesu legislacyjnego, druk 1583](https://www.sejm.gov.pl/Sejm8.nsf/PrzebiegProc.xsp?nr=1583).
+[^proces1648]: Sejm, [przebieg procesu legislacyjnego, druk 1648](https://www.sejm.gov.pl/Sejm8.nsf/PrzebiegProc.xsp?nr=1648); [głosowanie nr 100 na 46. posiedzeniu](https://www.sejm.gov.pl/Sejm8.nsf/agent.xsp?symbol=glosowania&NrKadencji=8&NrPosiedzenia=46&NrGlosowania=100), 20.07.2017.
+[^mz-rezydenci]: Ministerstwo Zdrowia, [Jest porozumienie ministra zdrowia z lekarzami rezydentami](https://www.gov.pl/web/zdrowie/jest-porozumienie-ministra-zdrowia-z-lekarzami-rezydentami), 8.02.2018.
+[^nowele-2018-2019]: Sejm, przebieg procesu: [druk 2793](https://www.sejm.gov.pl/Sejm8.nsf/PrzebiegProc.xsp?nr=2793) (głosowanie 13.09.2018: 419 za, 0 przeciw, 1 wstrzymał się) i [druk 3618](https://www.sejm.gov.pl/Sejm8.nsf/PrzebiegProc.xsp?nr=3618) (19.07.2019: 417 za, 0 przeciw, 2 wstrzymało się).
+[^fzz]: Forum Związków Zawodowych, [komunikat po posiedzeniu Prezydium Trójstronnego Zespołu ds. Ochrony Zdrowia 25.06.2025](https://fzz.org.pl/wynagordzenia-ochrona-zdrowia/).
+[^opzz]: OPZZ, [Posiedzenie Trójstronnego Zespołu ds. Ochrony Zdrowia](https://www.opzz.org.pl/opinie-i-analizy/polityka-spoleczna/2025/xii/posiedzenie-trojstronnego-zespolu-ds-ochrony-zdrowia), 3.12.2025.
+[^kz2020]: Sejm, [zapis posiedzenia Komisji Zdrowia nr 45 IX kadencji, 26.11.2020](https://api.sejm.gov.pl/sejm/term9/committees/ZDR/sittings/45/html) — pierwsze czytanie projektu z druku 763, rozpatrzenie art. 11 (waloryzacja).
+[^mz2024]: Ministerstwo Zdrowia, [pismo do Związku Powiatów Polskich z 15.04.2024](https://www.zpp.pl/storage/files/2024-04//1ed76977466fb3ed66e8b271af6d08d27621.pdf) (DLF.054.19.2024.SK), s. 2.
+[^aotmit2025]: AOTMiT, [Raport w sprawie zmiany sposobu lub poziomu finansowania świadczeń opieki zdrowotnej, WT.543.4.2025](https://bip.aotm.gov.pl/assets/files/zlecenia_mz/2025/091/REK/Raport%20WT.543.4.2025.pdf), 24.06.2025 — s. 6 (grupowanie zakresów), 11–12 (struktura zatrudnienia), 22 (kontrakty), 34 (kompensacja).
+[^zpp2022]: Ogólnopolski Związek Pracodawców Szpitali Powiatowych i Związek Powiatów Polskich, [pismo do Prezesa NIK z 29.08.2022](https://zpp.pl/storage/library/2022-09/488d512a330011209e9c10ae7b92952e.pdf); ZPP, [Sytuacja w szpitalach powiatowych i miejskich — wyniki analizy](https://www.zpp.pl/storage/files/2022-08//56011f4bdf3635aaa2d3b957515ea4237044.pdf), 23.08.2022.
+[^zpp2026]: Związek Powiatów Polskich, [stanowisko Zarządu z 2.01.2026](https://zpp.pl/storage/library/2026-01/92ee8b382e9be4951f31fad7a812d0a4.pdf); [stanowisko XXXIII Zgromadzenia Ogólnego z 17.06.2026](https://www.zpp.pl/storage/files/2026-06//f82bcbc5a925e49b7436d94a6ea94a077397.pdf).
+[^pip2023]: Państwowa Inspekcja Pracy, [Sprawozdanie z działalności PIP w 2023 r.](https://api.sejm.gov.pl/sejm/term10/prints/482/482.pdf) (druk sejmowy nr 482), rozdz. 5 — kontrole w podmiotach leczniczych.
+[^mz3011]: MZ, [odpowiedź na interpelację nr 3011](https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTD6UHA8/i03011-o1.pdf), 28.06.2024.
+[^sn-pskp-3-25]: Sąd Najwyższy, [wyrok z 23.04.2025, I PSKP 3/25](https://www.sn.pl/pl/wyszukiwarka-orzeczen?orzeczenie=Q12SSJcBZvGrB8P_qrcj) (Izba Pracy i Ubezpieczeń Społecznych) — uzasadnienie.

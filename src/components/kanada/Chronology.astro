@@ -1,9 +1,15 @@
 ---
 /**
- * Zwięzła oś zdarzeń do analizy o Kanadzie (Quebec, Ontario, Alberta): data, kto działa
- * (rząd, lekarze, sąd lub arbiter, porozumienie), jedno zdanie i link do źródła przy każdym wpisie.
- * Statyczna lista bez JS. Oś pokazuje tylko kolejność zdarzeń — kwoty i analiza są w tekście,
- * żeby się nie powtarzać. W MDX zwykle w ramie `Figure` (tytuł nad osią).
+ * Oś zdarzeń: data, kto działa (rodzaj zdarzenia), jedno zdanie i link do źródła przy każdym wpisie.
+ * Oś pokazuje tylko kolejność zdarzeń — kwoty i analiza są w tekście, żeby się nie powtarzać.
+ * W MDX zwykle w ramie `Figure` (tytuł nad osią). Użycie: Kanada (Quebec, Ontario, Alberta), ustawa podwyżkowa.
+ *
+ * `lanes` — dodatkowy widok „Oś”: tory według rodzaju zdarzenia (kto działa) × lata, znacznik na dacie zdarzenia,
+ * a pod torami pełny wpis wybranego zdarzenia (klik, najechanie albo fokus). Przełącznik „Oś / Lista” nad wykresem.
+ * Widok osi pokazuje, kto działał i jak długie były przerwy — dobry przy kilku stronach i kilku latach; przy
+ * zdarzeniach gęsto w jednym roku znaczniki się zlewają (zostaw samą listę). Bez JS i w wąskim kontenerze zostaje lista
+ * (`<zl-chronology>` włącza oś dopiero po zdefiniowaniu), więc treść jest zawsze w HTML-u i czytnik dostaje listę.
+ * Kształt znacznika = rodzaj (kwadraty: rząd, lekarze, sąd, porozumienie; kółka: Sejm, Senat, parlament, obywatele).
  */
 import type { HTMLAttributes } from 'astro/types';
 import Icon from '@/components/ui/Icon.astro';
@@ -11,11 +17,14 @@ import type { ChronoEvent, ChronoKind } from '@/data/kanada-lekarze-ustawa-specj
 import { typo } from '@/lib/format';
 import { linkAttrs } from '@/lib/links';
 import { localeOf } from '@/i18n/locales';
+import { uid } from '@/lib/uid';
 
 interface Props extends HTMLAttributes<'div'> {
   events: ChronoEvent[];
   /** nazwa listy dla czytników ekranu */
   label: string;
+  /** widok osi z torami (rodzaj zdarzenia × lata) obok listy */
+  lanes?: boolean;
 }
 
 /* Na stronach angielskich (/en/…) napisy i daty po angielsku; teksty zdarzeń daje moduł danych EN. */
@@ -28,11 +37,16 @@ const TEXT = {
       lekarze: 'Lekarze',
       sad: 'Sąd lub arbiter',
       porozumienie: 'Porozumienie',
+      parlament: 'Parlament',
+      sejm: 'Sejm',
+      senat: 'Senat',
+      obywatele: 'Obywatele',
     },
     months: [
       'styczeń', 'luty', 'marzec', 'kwiecień', 'maj', 'czerwiec',
       'lipiec', 'sierpień', 'wrzesień', 'październik', 'listopad', 'grudzień',
     ],
+    view: 'Widok', lanes: 'Oś', list: 'Lista',
   },
   en: {
     kind: {
@@ -40,13 +54,18 @@ const TEXT = {
       lekarze: 'Doctors',
       sad: 'Court or arbitrator',
       porozumienie: 'Agreement',
+      parlament: 'Parliament',
+      sejm: 'Sejm',
+      senat: 'Senate',
+      obywatele: 'Citizens',
     },
     months: [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December',
     ],
+    view: 'View', lanes: 'Timeline', list: 'List',
   },
-} satisfies Record<'pl' | 'en', { kind: Record<ChronoKind, string>; months: string[] }>;
+} satisfies Record<'pl' | 'en', { kind: Record<ChronoKind, string>; months: string[]; view: string; lanes: string; list: string }>;
 
 const t = en ? TEXT.en : TEXT.pl;
 const KIND = t.kind;
@@ -60,9 +79,68 @@ function when(e: ChronoEvent): string {
   return en ? `${Number(d)} ${MONTHS[Number(m) - 1]} ${y}` : `${d}.${m}.${y}`;
 }
 
-const { events, label, class: className, ...rest } = Astro.props;
+const { events, label, lanes = false, class: className, ...rest } = Astro.props;
+
+/* Widok osi: tory w stałej kolejności (od inicjatywy do rozstrzygnięcia), tylko rodzaje obecne w zdarzeniach. */
+const ORDER: ChronoKind[] = ['obywatele', 'lekarze', 'rzad', 'porozumienie', 'sejm', 'senat', 'parlament', 'sad'];
+const kinds = ORDER.filter((k) => events.some((e) => e.kind === k));
+const time = (d: string) => { const [y, m, day] = d.split('-').map(Number); return Date.UTC(y, (m ?? 7) - 1, day ?? 15); };
+const firstYear = Math.min(...events.map((e) => Number(e.date.slice(0, 4))));
+const lastYear = Math.max(...events.map((e) => Number(e.date.slice(0, 4))));
+const t0 = Date.UTC(firstYear, 0, 1);
+const t1 = Date.UTC(lastYear + 1, 0, 1);
+const pos = (d: string) => (((time(d) - t0) / (t1 - t0)) * 100).toFixed(2);
+const years = Array.from({ length: lastYear - firstYear + 1 }, (_, i) => firstYear + i);
+const step = years.length > 12 ? 2 : 1;
+const id = uid('chron');
+/* Bliskie zdarzenia w jednym torze (poniżej ok. 2% szerokości) rozsuwamy w pionie: jedno wyżej, drugie niżej. */
+const dy = new Map<number, number>();
+for (const k of kinds) {
+  let prev: { i: number; x: number } | undefined;
+  events.forEach((e, i) => {
+    if (e.kind !== k) return;
+    const x = Number(pos(e.date));
+    if (prev && x - prev.x < 2) { dy.set(prev.i, dy.get(prev.i) || -1); dy.set(i, -(dy.get(prev.i) ?? -1)); }
+    prev = { i, x };
+  });
+}
 ---
-<div class:list={['chron-wrap', className]} {...rest}>
+<zl-chronology class:list={['chron-wrap', className]} data-lanes={lanes ? '' : undefined} {...rest}>
+  {lanes && (
+    <div class="chron__bar">
+      <div class="chron__seg" role="group" aria-label={t.view}>
+        <button type="button" data-v="lanes" aria-pressed="true">{t.lanes}</button>
+        <button type="button" data-v="list" aria-pressed="false">{t.list}</button>
+      </div>
+    </div>
+  )}
+  {lanes && (
+    <div class="chron-lanes" style={`--n: ${years.length}`}>
+      <div class="chron-lanes__plot">
+      <div class="chron-lanes__grid" aria-hidden="true">
+        {years.slice(1).map((y) => <b style={`left: ${pos(`${y}-01-01`)}%`}></b>)}
+      </div>
+      <div class="chron-lanes__years" aria-hidden="true">
+        <span></span>
+        <div class="chron-lanes__track">
+          {years.filter((_, i) => i % step === 0).map((y) => <span style={`left: ${pos(`${y}-07-02`)}%`}>{y}</span>)}
+        </div>
+      </div>
+      {kinds.map((k) => (
+        <div class="chron-lanes__lane">
+          <p class={`chron-lanes__name chron__item--${k}`}><span class="chron__kind">{KIND[k]}</span></p>
+          <div class="chron-lanes__track">
+            {events.map((e, i) => e.kind === k && (
+              <button type="button" class={`chron-lanes__mark chron-lanes__mark--${k}`} style={`left: ${pos(e.date)}%; --dy: ${dy.get(i) ?? 0}`} data-i={i}
+                aria-label={`${when(e)}, ${KIND[k]}: ${e.text}`} aria-controls={`${id}-detail`} aria-pressed="false"></button>
+            ))}
+          </div>
+        </div>
+      ))}
+      </div>
+      <div class="chron-lanes__detail" id={`${id}-detail`} aria-live="polite"></div>
+    </div>
+  )}
   <ol class="chron" aria-label={label}>
     {events.map((e) => (
       <li class:list={['chron__item', `chron__item--${e.kind}`]}>
@@ -77,10 +155,45 @@ const { events, label, class: className, ...rest } = Astro.props;
       </li>
     ))}
   </ol>
-</div>
+</zl-chronology>
+
+<script>
+  class ZlChronology extends HTMLElement {
+    connectedCallback() {
+      if (!this.hasAttribute('data-lanes')) return;
+      const items = [...this.querySelectorAll<HTMLLIElement>('.chron__item')];
+      const marks = [...this.querySelectorAll<HTMLButtonElement>('.chron-lanes__mark')];
+      const detail = this.querySelector<HTMLElement>('.chron-lanes__detail');
+      const seg = [...this.querySelectorAll<HTMLButtonElement>('.chron__seg button')];
+
+      const show = (i: number) => {
+        marks.forEach((m) => m.setAttribute('aria-pressed', String(Number(m.dataset.i) === i)));
+        const item = items[i];
+        if (!detail || !item) return;
+        detail.className = `chron-lanes__detail ${[...item.classList].filter((c) => c.startsWith('chron__item')).join(' ')}`;
+        detail.innerHTML = item.innerHTML;
+      };
+      const pick = (ev: Event) => {
+        const m = (ev.target as HTMLElement).closest<HTMLButtonElement>('.chron-lanes__mark');
+        if (m) show(Number(m.dataset.i));
+      };
+      ['click', 'mouseover', 'focusin'].forEach((type) => this.querySelector('.chron-lanes')?.addEventListener(type, pick));
+
+      const setView = (v: string) => {
+        this.dataset.view = v;
+        seg.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+      };
+      seg.forEach((b) => b.addEventListener('click', () => setView(b.dataset.v ?? 'lanes')));
+      setView('lanes');
+      show(0);
+    }
+  }
+
+  if (!customElements.get('zl-chronology')) customElements.define('zl-chronology', ZlChronology);
+</script>
 
 <style>
-  .chron-wrap { container-type: inline-size; }
+  .chron-wrap { display: block; container-type: inline-size; }
   .chron { border-top: 1px solid var(--ink); }
 
   .chron__item {
@@ -89,8 +202,9 @@ const { events, label, class: className, ...rest } = Astro.props;
   }
   .chron__when { padding-top: 1px; font: 400 0.75rem/1.4 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--text); }
 
-  /* rodzaj zdarzenia: etykieta i kwadrat — rząd wypełniony atramentem, lekarze pusty,
-     sąd lub arbiter w kolorze danych, porozumienie (rozstrzygnięcie sporu) jedynym akcentem */
+  /* rodzaj zdarzenia: etykieta i znacznik — kwadraty: rząd wypełniony atramentem, lekarze pusty, sąd lub arbiter
+     w kolorze danych, porozumienie (rozstrzygnięcie sporu) jedynym akcentem; kółka: parlament (Sejm pełne, Senat
+     w kolorze danych) i inicjatywa obywatelska (puste) — kształt, nie tylko kolor */
   .chron__kind {
     display: flex; align-items: center; gap: 8px;
     font: 500 0.6875rem/1.3 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
@@ -99,6 +213,13 @@ const { events, label, class: className, ...rest } = Astro.props;
   .chron__item--rzad .chron__kind::before { background: var(--ink); }
   .chron__item--sad .chron__kind::before { background: var(--chart); border-color: var(--chart); }
   .chron__item--porozumienie .chron__kind::before { background: var(--blue); border-color: var(--blue); }
+  .chron__item--parlament .chron__kind::before,
+  .chron__item--sejm .chron__kind::before,
+  .chron__item--senat .chron__kind::before,
+  .chron__item--obywatele .chron__kind::before { border-radius: 50%; }
+  .chron__item--parlament .chron__kind::before,
+  .chron__item--sejm .chron__kind::before { background: var(--ink); }
+  .chron__item--senat .chron__kind::before { background: var(--chart); border-color: var(--chart); }
 
   .chron__text { margin-top: 6px; font: 400 0.9375rem/1.55 var(--f-body); color: var(--ink-2); }
   .chron__src { margin-top: 6px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--muted); }
@@ -109,7 +230,59 @@ const { events, label, class: className, ...rest } = Astro.props;
   }
   .chron__src a:hover { color: var(--blue); text-decoration-color: currentColor; }
 
-  /* Wąsko: data i rodzaj w jednej linii, zdanie i źródło pod nimi na całą szerokość */
+  /* ---------- Widok osi (tory × lata) ---------- */
+  .chron__bar, .chron-lanes { display: none; }
+  zl-chronology[data-view] .chron__bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+  zl-chronology[data-view='lanes'] .chron-lanes { display: block; }
+  zl-chronology[data-view='lanes'] .chron { display: none; }
+
+  .chron__seg { display: inline-flex; border: 1px solid var(--line-2); }
+  .chron__seg button {
+    border: 0; background: none; padding: 7px 12px; cursor: pointer;
+    font: 500 0.6875rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text);
+  }
+  .chron__seg button[aria-pressed='true'] { background: var(--ink); color: var(--on-ink); }
+  .chron__seg button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .chron-lanes { border-top: 1px solid var(--ink); --name: 9.5rem; }
+  .chron-lanes__plot { position: relative; }
+  .chron-lanes__grid { position: absolute; top: 0; bottom: 0; left: var(--name); right: 0; pointer-events: none; }
+  .chron-lanes__grid b { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
+  .chron-lanes__years, .chron-lanes__lane { display: grid; grid-template-columns: var(--name) minmax(0, 1fr); }
+  .chron-lanes__years .chron-lanes__track { height: 30px; }
+  .chron-lanes__years span[style] {
+    position: absolute; top: 9px; translate: -50% 0;
+    font: 400 0.75rem/1 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--text);
+  }
+  .chron-lanes__lane { align-items: center; min-height: 44px; border-top: 1px solid var(--line); }
+  .chron-lanes__name { padding-right: 12px; }
+  .chron-lanes__track { position: relative; height: 44px; }
+
+  .chron-lanes__mark {
+    position: absolute; top: calc(50% + var(--dy, 0) * 8px); width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; padding: 0;
+    border: 1.5px solid var(--ink); background: var(--bg); cursor: pointer;
+  }
+  .chron-lanes__mark--rzad { background: var(--ink); }
+  .chron-lanes__mark--sad { background: var(--chart); border-color: var(--chart); }
+  .chron-lanes__mark--porozumienie { background: var(--blue); border-color: var(--blue); }
+  .chron-lanes__mark--parlament, .chron-lanes__mark--sejm, .chron-lanes__mark--senat, .chron-lanes__mark--obywatele { border-radius: 50%; }
+  .chron-lanes__mark--parlament, .chron-lanes__mark--sejm { background: var(--ink); }
+  .chron-lanes__mark--senat { background: var(--chart); border-color: var(--chart); }
+  .chron-lanes__mark:hover, .chron-lanes__mark:focus-visible, .chron-lanes__mark[aria-pressed='true'] {
+    outline: 2px solid var(--blue); outline-offset: 3px; z-index: 1;
+  }
+
+  /* wpis wybranego zdarzenia: ten sam układ co wiersz listy */
+  .chron-lanes__detail {
+    display: grid; grid-template-columns: var(--name) minmax(0, 1fr); gap: 6px 24px;
+    min-height: 96px; padding: 14px 0 16px; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--line);
+  }
+
+  /* Wąsko: tylko lista (oś byłaby nieczytelna), bez przełącznika */
+  @container (max-width: 640px) {
+    zl-chronology[data-view] .chron__bar, zl-chronology[data-view='lanes'] .chron-lanes { display: none; }
+    zl-chronology[data-view='lanes'] .chron { display: block; }
+  }
   @container (max-width: 520px) {
     .chron__item { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 12px; }
     .chron__when { padding-top: 0; }

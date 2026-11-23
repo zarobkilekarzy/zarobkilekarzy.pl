@@ -11,6 +11,8 @@
  * `dense` — w wąskim kontenerze podpisana jest co druga kolumna (np. 15 lat akademickich), żeby etykiety na siebie nie wchodziły.
  * `pair` przy kolumnie — druga miara obok, w akcencie (--blue), np. „pierwsze / kolejne podejście”; `series` = podpisy
  * obu miar w legendzie nad wykresem (pierwsza łupkiem, druga kobaltem).
+ * `proj` przy kolumnie — szacunek albo prognoza, nie dane: blady kobalt z kobaltową krawędzią (--chart-proj);
+ * `projLabel` dopisuje próbkę tego kształtu do legendy.
  */
 import { typo } from '@/lib/format';
 
@@ -23,6 +25,8 @@ interface Column {
   display: string;
   /** druga miara obok (kolumna w akcencie) */
   pair?: { value: number; display: string };
+  /** szacunek / prognoza zamiast danych */
+  proj?: boolean;
 }
 
 interface Props {
@@ -35,20 +39,23 @@ interface Props {
   dense?: boolean;
   /** legenda przy kolumnach z `pair`: [pierwsza miara, druga miara] */
   series?: [string, string];
+  /** podpis kolumn z `proj` w legendzie, np. „Prognoza” */
+  projLabel?: string;
   /** pełny opis danych dla czytników ekranu */
   caption: string;
 }
 
-const { columns, max, gap, ref, dense, series, caption } = Astro.props;
+const { columns, max, gap, ref, dense, series, projLabel, caption } = Astro.props;
 const n = columns.length;
 const k = (v: number) => (v / max).toFixed(4);
 const inGap = (i: number) => gap !== undefined && i >= gap.from && i <= gap.to;
 ---
 <figure class:list={['cc', { 'cc--dense': dense }]} data-reveal="grow" style={`--n: ${n}`}>
-  {series && (
+  {(series || projLabel) && (
     <div class="cc__legend" aria-hidden="true">
-      <span><i class="cc__sw"></i>{typo(series[0])}</span>
-      <span><i class="cc__sw cc__sw--pair"></i>{typo(series[1])}</span>
+      {series && <span><i class="cc__sw"></i>{typo(series[0])}</span>}
+      {series && <span><i class="cc__sw cc__sw--pair"></i>{typo(series[1])}</span>}
+      {projLabel && <span><i class="cc__sw cc__sw--proj"></i>{typo(projLabel)}</span>}
     </div>
   )}
   <div class="cc__plot" aria-hidden="true">
@@ -64,7 +71,7 @@ const inGap = (i: number) => gap !== undefined && i >= gap.from && i <= gap.to;
       </div>
     )}
     {columns.map((c, i) => (
-      <div class:list={['cc__col', { 'is-gap': inGap(i), 'has-pair': c.pair }]} style={`--i: ${i}`}>
+      <div class:list={['cc__col', { 'is-gap': inGap(i), 'has-pair': c.pair, 'is-proj': c.proj }]} style={`--i: ${i}`}>
         {[{ value: c.value, display: c.display }, ...(c.pair ? [c.pair] : [])].map((u, j) => (
           <div class:list={['cc__unit', { 'is-pair': j === 1 }]} style={`--k: ${k(u.value)}`}>
             <span class="cc__val">{u.display}</span>
@@ -134,6 +141,7 @@ const inGap = (i: number) => gap !== undefined && i >= gap.from && i <= gap.to;
   .cc__legend span { display: inline-flex; align-items: center; gap: 8px; }
   .cc__sw { width: 10px; height: 10px; background: var(--chart); }
   .cc__sw--pair { background: var(--blue); }
+  .cc__sw--proj { background: var(--chart-proj); box-shadow: inset 0 0 0 1px var(--blue); }
   .cc__bar {
     position: absolute; bottom: 0; left: 50%; translate: -50% 0;
     width: min(70%, 56px); height: calc(var(--k) * (100% - var(--label)));
@@ -141,6 +149,7 @@ const inGap = (i: number) => gap !== undefined && i >= gap.from && i <= gap.to;
     transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--i) * 50ms);
   }
   .cc__col.is-gap .cc__bar { background: var(--blue); }
+  .cc__col.is-proj .cc__unit:not(.is-pair) .cc__bar { background: var(--chart-proj); box-shadow: inset 0 0 0 1px var(--blue); }
   .cc__val {
     position: absolute; left: 50%; translate: -50% 0; bottom: calc(var(--k) * (100% - var(--label)) + 5px);
     white-space: nowrap; font: 600 clamp(0.75rem, 2.6cqi, 1.0625rem)/1 var(--f-display); letter-spacing: -0.01em;

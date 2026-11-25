@@ -24,8 +24,10 @@ interface Props {
   note?: string;
   /** pełny opis danych dla czytników ekranu */
   caption: string;
-  /** grube słupki i duże wartości — dla jednego, mocnego porównania */
-  size?: 'lg';
+  /** `lg` — grube słupki i duże wartości, dla jednego mocnego porównania;
+   *  `sm` — zwarty ranking: nazwa z lewej, słupek i wartość w tym samym wierszu (długie listy krajów).
+   *  Bez `size` wykres od COMPACT_FROM wierszy jest zwarty sam (decyzja usera 25.11.2026: długie rankingi za wysokie). */
+  size?: 'lg' | 'sm';
   /** liczba prowadząca nad wykresem (np. „2,3×”) z dopiskiem */
   lead?: { value: string; text: string };
 }
@@ -34,8 +36,15 @@ const { rows, max, unit, average, averageLabel, note, caption, size, lead } = As
 // miejsce na wartość za najdłuższym słupkiem: co najmniej 96px, a dla długich etykiet („243,8 mld zł”)
 // ok. 0,7rem na znak w foncie wartości + odstęp — w rem, więc rośnie razem z „Większym tekstem”
 const longest = Math.max(...rows.map((row) => row.display.length));
+/** od tylu wierszy wykres bez `size` przechodzi w zwarty ranking */
+const COMPACT_FROM = 11;
+const compact = size === 'sm' || (size === undefined && rows.length >= COMPACT_FROM);
+// szerokość kolumny nazw w zwartym rankingu: według najdłuższej nazwy (z dopiskiem), dłuższe się zawijają
+const labelChars = Math.max(...rows.map((row) => row.label.length + (row.note ? row.note.length + 1 : 0)));
+/** nazwy dłuższe niż tyle znaków na telefonie nie mieszczą się obok słupka — tam nazwa wraca nad słupek */
+const LONG_LABEL = 26;
 ---
-<figure class:list={['bars', { 'bars--lg': size === 'lg' }]} data-reveal="grow" style={`--max: ${max}; --chars: ${longest}${average !== undefined ? `; --avg: ${average}` : ''}`}>
+<figure class:list={['bars', { 'bars--lg': size === 'lg', 'bars--sm': compact, 'bars--long': compact && labelChars > LONG_LABEL }]} data-reveal="grow" style={`--max: ${max}; --chars: ${longest}; --lchars: ${labelChars}${average !== undefined ? `; --avg: ${average}` : ''}`}>
   {lead && <p class="bars__lead" aria-hidden="true"><span class="bars__lead-value">{lead.value}</span> <span>{typo(lead.text)}</span></p>}
   {average !== undefined && (
     <p class="bars__avg" aria-hidden="true"><span>{typo(averageLabel ?? uiOf(Astro.url).blocks.average(formatNumber(average, 1, localeOf(Astro.url.pathname)), unit))}</span></p>
@@ -110,6 +119,21 @@ const longest = Math.max(...rows.map((row) => row.display.length));
   /* Nazwa nad linią — na wąskim ekranie średnia wypada w jej końcówce, tło wycina linię */
   .has-avg .bars__label { position: relative; z-index: 1; justify-self: start; padding-right: 6px; background: var(--under); }
 
+  /* Wariant zwarty: kolumna nazw (--lw) i słupek w jednym wierszu; skala liczona od końca kolumny nazw,
+     więc linia średniej i jej podpis przesuwają się o --lw + odstęp */
+  .bars--sm { --bar: 10px; --lw: clamp(6rem, calc(var(--lchars) * 0.5rem + 8px), 42%); --col: 12px; --reserve: max(56px, calc(var(--chars) * 0.6rem + 10px)); --off: calc(var(--lw) + var(--col)); }
+  .bars--sm .bars__rows { --gap: 7px; }
+  .bars--sm .bars__row { grid-template-columns: var(--lw) 1fr; align-items: center; column-gap: var(--col); }
+  .bars--sm .bars__label { font-size: 0.84375rem; line-height: 1.25; }
+  .bars--sm .bars__row--hi .bars__label { font-weight: 600; }
+  .bars--sm .bars__track { gap: 8px; }
+  .bars--sm .bars__value { font: 400 0.8125rem/1 var(--f-mono); letter-spacing: 0; color: var(--text); }
+  .bars--sm .bars__row--hi .bars__value { font-weight: 600; color: var(--ink); }
+  .bars--sm .bars__avg span { margin-left: calc(var(--off) + var(--avg) / var(--max) * (100% - var(--off) - var(--reserve))); }
+  .bars--sm .has-avg .bars__row:not(.bars__row--secondary)::after { left: calc(var(--off) + var(--avg) / var(--max) * (100% - var(--off) - var(--reserve))); bottom: calc(-0.5 * var(--gap)); }
+  .bars--sm .has-avg .bars__row:first-child::after { top: -10px; }
+  .bars--sm .has-avg .bars__label { background: none; padding-right: 0; }
+
   .bars__note { margin-top: 24px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 0.875rem; line-height: 1.55; color: var(--text); }
 
   /* Animacja wzrostu */
@@ -125,5 +149,13 @@ const longest = Math.max(...rows.map((row) => row.display.length));
     .bars__value { font-size: 1.125rem; }
     .bars--lg { --bar: 26px; --reserve: max(96px, calc(var(--chars) * 1rem + 12px)); }
     .bars--lg .bars__value { font-size: 1.75rem; }
+    .bars--sm { --bar: 9px; --lw: clamp(5.5rem, calc(var(--lchars) * 0.47rem + 6px), 45%); --col: 10px; }
+    .bars--sm .bars__rows { --gap: 6px; }
+    .bars--sm .bars__label { font-size: 0.8125rem; }
+    .bars--sm .bars__value { font-size: 0.75rem; }
+    /* długie nazwy (uczelnie z dopiskiem): na telefonie nazwa nad słupkiem, słupek na całą szerokość */
+    .bars--sm.bars--long { --off: 0px; }
+    .bars--sm.bars--long .bars__rows { --gap: 12px; }
+    .bars--sm.bars--long .bars__row { grid-template-columns: 1fr; row-gap: 5px; }
   }
 </style>

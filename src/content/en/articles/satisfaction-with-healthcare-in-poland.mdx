@@ -9,13 +9,15 @@ keyPoints:
   - "Poland is 19th of 20 countries in the IRIS survey, 30th of 32 in the Ipsos index and 17th of 20 in the STADA survey."
   - "Access to specialists is rated worst (82% negative), doctors’ competence best (73% positive)."
 changelog:
+  - date: 2026-11-25
+    text: "Added the section “Satisfaction and life expectancy”: the results of four international surveys set against life expectancy in the same countries (World Bank, 2024), with a trend line and a correlation coefficient."
   - date: 2026-11-18
     text: "Added the OECD indicator from the Gallup poll (Poland 51%, 31st of 38 countries) as a separate section and a row in the comparison of surveys. Czechia (74%) and Austria (67%) were added to the STADA results from the company’s Czech brochure. A list above the spread chart lets you pick a country to compare with Poland."
 translation:
   of: zadowolenie-z-ochrony-zdrowia
-  files: [src/data/zadowolenie-z-ochrony-zdrowia.ts]
-  hash: "4e885f6bbe5f"
-  date: 2026-11-18
+  files: [src/data/zadowolenie-z-ochrony-zdrowia.ts, src/data/zadowolenie-dlugosc-zycia.ts]
+  hash: "26063b172888"
+  date: 2026-11-25
 ---
 import Aside from '@/components/blocks/Aside.astro';
 import BarChart from '@/components/blocks/BarChart.astro';
@@ -26,6 +28,8 @@ import SpreadRows from '@/components/blocks/SpreadRows.astro';
 import StatRow from '@/components/blocks/StatRow.astro';
 import UnitChart from '@/components/blocks/UnitChart.astro';
 import IndexChart from '@/components/budzet/IndexChart.astro';
+import LifePanels from '@/components/zadowolenie/LifePanels.astro';
+import { LIFE_PANELS_EN, LIFE_SOURCE_EN, PL_LIFE, ordinal, polandGap, polandRanks } from '@/data/en/zadowolenie-dlugosc-zycia';
 import { CBOS_OPINIONS_EN, CBOS_SERIES_EN, IPSOS_COUNTRIES_EN, IRIS_COUNTRIES_EN, LINKS, OECD_2014, OECD_COUNTRIES_EN, OECD_EN, STADA_COUNTRIES_EN, STUDIES_EN, study } from '@/data/en/zadowolenie-z-ochrony-zdrowia';
 
 {/* Tłumaczenie src/content/articles/zadowolenie-z-ochrony-zdrowia.mdx; liczby z modułu polskiego, napisy z src/data/en/zadowolenie-z-ochrony-zdrowia.ts */}
@@ -162,6 +166,24 @@ In Health at a Glance 2025 the OECD uses the Gallup World Poll, which asks the s
 
 It is the only one of the five comparisons in which Poland’s result rose over the past decade against the average: from {OECD_2014.poland}% in 2014 to {OECD_EN.poland}% in 2024, while the OECD average fell from {OECD_2014.average}% to {OECD_EN.average}%.[^oecd] The result is higher than in the other four surveys because the question is narrower: it asks whether care is available locally, not how the whole system works.
 
+## Satisfaction and life expectancy
+
+Are more people satisfied with healthcare where people live longer? In the charts below each dot is one country: life expectancy at birth in 2024 on the horizontal axis, the result in a given survey on the vertical axis.[^life] Life expectancy in Poland is **{PL_LIFE.toFixed(1)} years**, lower than in most countries in these comparisons.
+
+<Figure title="A shorter life does not always mean fewer satisfied people" note="A dot is one country; the cobalt one is Poland. The dashed line is the trend: the result one would expect at a given life expectancy (linear regression, our calculation). A correlation coefficient of 1 means full agreement, 0 no relationship. Hovering over or tapping a dot shows the country and both values." source={[
+  LIFE_SOURCE_EN,
+  { label: 'OECD, Health at a Glance 2025, Figure 5.2', href: LINKS.oecdData },
+  { label: 'STADA Health Report 2026', href: LINKS.stada },
+  { label: 'IRIS Network, Health Care Confidence Report 2025', href: LINKS.iris },
+  { label: 'Ipsos Health Service Report 2026', href: LINKS.ipsos },
+]}>
+  <LifePanels panels={LIFE_PANELS_EN} text={{ years: 'years', xTitle: 'life expectancy →', yTitle: '↑ survey result', correlation: 'correlation', caption: 'Countries: survey result and life expectancy in years' }} />
+</Figure>
+
+The clearest relationship is in the OECD data: Poland is **{ordinal(polandRanks('oecd').satisfaction)} of {polandRanks('oecd').of} countries in satisfaction and {ordinal(polandRanks('oecd').life)} in life expectancy**, and its result lies {polandGap('oecd')} percentage points below the trend line. In the STADA, IRIS and Ipsos surveys Poland does clearly worse than its life expectancy would suggest: by {polandGap('stada')}, {polandGap('iris')} and {polandGap('ipsos')} percentage points. In the Ipsos index there is no relationship at all: the top of the list includes Malaysia, India and Vietnam, where life is shorter than in Poland.
+
+The comparison does not show what causes what. Life expectancy also depends on wealth, lifestyle and prevention, not only on treatment, and the rating of the system depends on what respondents expect.
+
 <Aside title="The limits of these data" variant="note">
 - We take the IRIS result for Poland from the network’s report: **19%**. A summary in the daily Rzeczpospolita gives 22%, with components of 4% and 16%, which add up to 20%.[^rp] None of those numbers is in the report, so we do not use them.
 - The surveys measure opinions, not the quality of treatment. People who did not use healthcare in the past year also answer.
@@ -177,4 +199,5 @@ It is the only one of the five comparisons in which Poland’s result rose over 
 [^stadapl]: STADA Poland, [press release on the STADA Health Report 2026](https://11.cdn.stada.com/media/vvfpss4u/stada_health-report_informacja-prasowa_2026.pdf) (in Polish), 21 October 2026.
 [^stadacz]: STADA, [STADA Health Report 2026 — Czech brochure](https://08.cdn.stada.com/media/gvyfuah1/stada_health-report-26-cz_v06-1.pdf) (in Czech), 2026; the brochure refers to 19 European countries and 18,514 respondents.
 [^oecd]: OECD, [Health at a Glance 2025, chapter “Population coverage for healthcare”](https://www.oecd.org/en/publications/health-at-a-glance-2025_8f9e3f98-en/full-report/population-coverage-for-healthcare_5c968b73.html), November 2025; Figure 5.2, [figure data](https://stat.link/pv9eib).
+[^life]: World Bank, [Life expectancy at birth, total (years), SP.DYN.LE00.IN](https://data.worldbank.org/indicator/SP.DYN.LE00.IN), data for 2024 based on United Nations estimates (World Population Prospects), updated 11 November 2026. For Poland, Eurostat and the OECD give 78.5 years.
 [^rp]: Rzeczpospolita, [article on the IRIS Network report](https://www.rp.pl/ochrona-zdrowia/art44131661-polska-w-ogonie-zaufania-mieszkancow-do-systemu-ochrony-zdrowia) (in Polish), 10 April 2026.

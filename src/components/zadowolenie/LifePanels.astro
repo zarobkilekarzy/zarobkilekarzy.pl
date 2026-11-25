@@ -1,0 +1,64 @@
+---
+/**
+ * Zadowolenie z ochrony zdrowia a długość życia: po jednym wykresie rozrzutu na badanie (blocks/ScatterChart),
+ * w siatce najwyżej dwóch kolumn. Kraj = kropka, Polska w kobalcie, przerywana linia = trend, nad wykresem
+ * współczynnik korelacji. Podpisane są tylko: Polska oraz kraj z najwyższym i najniższym wynikiem badania.
+ * Dane: src/data/zadowolenie-dlugosc-zycia.ts (EN: src/data/en/…). Artykuł /analizy/zadowolenie-z-ochrony-zdrowia/.
+ */
+import ScatterChart from '@/components/blocks/ScatterChart.astro';
+import type { LifePanel } from '@/data/zadowolenie-dlugosc-zycia';
+import { formatNumber } from '@/lib/format';
+import { localeOf } from '@/i18n/locales';
+
+interface Props {
+  panels: LifePanel[];
+  /** napisy zależne od języka */
+  text: { years: string; xTitle: string; yTitle: string; correlation: string; caption: string };
+}
+
+const { panels, text } = Astro.props;
+const locale = localeOf(Astro.url.pathname);
+const MIN = 70;
+const MAX = 86;
+const num = (v: number, d: number) => formatNumber(v, d, locale).replace('-', '−');
+
+const chart = (panel: LifePanel) => {
+  const sorted = [...panel.points].sort((a, b) => b.satisfaction - a.satisfaction);
+  const top = sorted[0].name;
+  const bottom = sorted.at(-1)!.name;
+  return {
+    points: panel.points.map((p) => {
+      const isSubject = p.name === panel.subject;
+      const named = isSubject || p.name === top || p.name === bottom;
+      return {
+        x: p.life,
+        y: p.satisfaction,
+        highlight: isSubject,
+        label: named ? (isSubject ? `${p.name} ${p.satisfaction}%` : p.name) : undefined,
+        side: isSubject ? (p.life > 83 ? 'left' : 'right') : p.name === top ? 'above' : 'below',
+        tip: { heading: `${p.satisfaction}% · ${num(p.life, 1)} ${text.years}`, text: p.name },
+      } as const;
+    }),
+    x: { min: MIN, max: MAX, title: text.xTitle, ticks: [70, 74, 78, 82, 86].map((v) => ({ value: v, label: v === MAX ? `${v} ${text.years}` : String(v) })) },
+    y: { min: 0, max: 100, title: text.yTitle, ticks: [0, 25, 50, 75, 100].map((v) => ({ value: v, label: `${v}%` })) },
+    trend: { from: panel.fit(MIN), to: panel.fit(MAX) },
+    caption: `${panel.name}, ${panel.measure}; ${text.correlation} ${num(panel.r, 2)}. ${text.caption}: ${panel.points.map((p) => `${p.name} ${p.satisfaction}%, ${num(p.life, 1)}`).join('; ')}.`,
+  };
+};
+---
+<div class="lp">
+  {panels.map((panel) => (
+    <div class="lp__panel">
+      <p class="lp__name">{panel.name}</p>
+      <p class="lp__meta">{panel.measure} · {text.correlation} {num(panel.r, 2)}</p>
+      <ScatterChart {...chart(panel)} />
+    </div>
+  ))}
+</div>
+
+<style>
+  /* najwyżej dwie kolumny: przy czterech panelach nigdy 3 + 1 */
+  .lp { display: grid; grid-template-columns: repeat(auto-fit, minmax(max(260px, calc(50% - 17px)), 1fr)); gap: 36px 32px; }
+  .lp__name { margin: 0; font: 600 0.875rem/1.35 var(--f-body); color: var(--ink); }
+  .lp__meta { margin: 2px 0 22px; font: 400 0.75rem/1.35 var(--f-mono); color: var(--muted); }
+</style>

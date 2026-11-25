@@ -35,7 +35,9 @@ const COUNTRY: Record<string, string> = {
   Portugalia: 'Portugal', Dania: 'Denmark', Luksemburg: 'Luxembourg', Norwegia: 'Norway', Izrael: 'Israel', Słowenia: 'Slovenia',
   Kostaryka: 'Costa Rica', Estonia: 'Estonia', Islandia: 'Iceland', Łotwa: 'Latvia', Kazachstan: 'Kazakhstan', Słowacja: 'Slovakia', Serbia: 'Serbia',
 };
-const countries = (rows: CountryRow[]): CountryRow[] => rows.map(([name, value]) => [en(COUNTRY, name, 'kraj'), value]);
+/** angielska nazwa kraju z polskiej (brak tłumaczenia wywraca build) */
+export const countryEn = (name: string) => en(COUNTRY, name, 'kraj');
+const countries = (rows: CountryRow[]): CountryRow[] => rows.map(([name, value]) => [countryEn(name), value]);
 
 export const IRIS_COUNTRIES_EN = countries(IRIS_COUNTRIES);
 export const IPSOS_COUNTRIES_EN = countries(IPSOS_COUNTRIES);

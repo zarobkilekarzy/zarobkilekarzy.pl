@@ -4,7 +4,7 @@
  * (np. kraj). Wyróżniony podmiot (`value`) jest w kobalcie z liczbą nad kropką, średnia to włoskowa
  * kreska z podpisem, a skrajne kropki są podpisane pod osią. Wiersz bez `dots` pokazuje sam wynik
  * (badanie bez porównania). Skala wspólna dla wszystkich wierszy, od zera do `max`.
- * Wiersz może mieć własną skalę (`max`), jednostkę (`unit`) i liczbę miejsc po przecinku (`decimals`) — gdy miary
+ * Wiersz może mieć własną skalę (`max`, a gdy nie od zera — `min`), jednostkę (`unit`) i liczbę miejsc po przecinku (`decimals`) — gdy miary
  * mają różne jednostki (strona /kraje/); wspólnej osi pod wykresem wtedy nie ma, skalę pokazują podpisy skrajnych kropek.
  * `pick` — lista wyboru nad wykresem: wybrany podmiot dostaje ciemną kropkę i podpis w drugim wierszu pod osią
  * w każdym wierszu, w którym występuje; w pozostałych wierszach stoi dopisek `absent`. Bez JS lista jest ukryta.
@@ -29,6 +29,8 @@ interface Row {
   empty?: string;
   /** własna skala, jednostka i liczba miejsc po przecinku tego wiersza (domyślnie wspólne `max` i `unit`, liczba bez formatowania) */
   max?: number;
+  /** początek skali wiersza (domyślnie 0) — gdy wartości leżą wąsko daleko od zera, np. długość życia w latach */
+  min?: number;
   unit?: string;
   decimals?: number;
 }
@@ -52,7 +54,7 @@ interface Props {
 const { rows, max = 100, unit = '%', subject, dotLabel, averageLabel, ticks = [0, 25, 50, 75, 100], pick, caption } = Astro.props;
 const locale = localeOf(Astro.url.pathname);
 const options = [...new Set(rows.flatMap((r) => (r.dots ?? []).map((d) => d.label)))].sort((a, b) => a.localeCompare(b, locale));
-const pos = (v: number, r?: Row) => `${((v / (r?.max ?? max)) * 100).toFixed(2)}%`;
+const pos = (v: number, r?: Row) => `${(((v - (r?.min ?? 0)) / ((r?.max ?? max) - (r?.min ?? 0))) * 100).toFixed(2)}%`;
 const show = (r: Row, v: number) => `${r.decimals === undefined ? v : formatNumber(v, r.decimals, locale)}${r.unit ?? unit}`;
 const disp = (r: Row, d: { value: number; display?: string }) => d.display ?? show(r, d.value);
 /** wiersze mają własne skale — wspólna oś nic by nie znaczyła */
@@ -95,7 +97,7 @@ const ends = (r: Row) => {
           <span class="spread__label">{typo(r.label)}{r.note && <em> {typo(r.note)}</em>}{pick && <span class="spread__absent" hidden> · {pick.absent}</span>}</span>
           <span class="spread__track">
             {(r.dots ?? []).map((d) => <i class="spread__dot" aria-hidden="true" data-label={d.label} data-value={d.value} data-display={disp(r, d)} style={`left: ${pos(d.value, r)}`}></i>)}
-            {r.average !== undefined && <i class="spread__avg" aria-hidden="true" style={`left: ${pos(r.average, r)}`}><b>{show(r, r.average)}</b></i>}
+            {r.average !== undefined && <i class:list={['spread__avg', { 'spread__avg--left': r.average < r.value }]} aria-hidden="true" style={`left: ${pos(r.average, r)}`}><b>{show(r, r.average)}</b></i>}
             <i class="spread__dot spread__dot--hi" aria-hidden="true" style={`left: ${pos(r.value, r)}`}><b>{show(r, r.value)}</b></i>
             {e && e.lo.value < r.value && <span class="spread__end spread__end--lo" aria-hidden="true" style={`left: ${pos(e.lo.value, r)}`}>{typo(`${e.lo.label} ${disp(r, e.lo)}`)}</span>}
             {e && <span class="spread__end spread__end--hi" aria-hidden="true" style={`left: ${pos(e.hi.value, r)}`}>{typo(`${e.hi.label} ${disp(r, e.hi)}`)}</span>}
@@ -155,6 +157,10 @@ const ends = (r: Row) => {
   .spread__mark::before { content: ""; position: absolute; left: 50%; bottom: 100%; width: 1px; height: 22px; background: var(--ink); }
   .spread__avg { position: absolute; top: 20px; height: 34px; width: 1px; background: var(--ink); z-index: 1; }
   .spread__avg b { position: absolute; bottom: 100%; left: 6px; font: 500 0.65625rem/1.6 var(--f-mono); letter-spacing: .06em; color: var(--ink); white-space: nowrap; }
+  /* podpis średniej po stronie dalszej od wyniku podmiotu, żeby nie wchodził pod dużą liczbę */
+  .spread__avg--left b { left: auto; right: 6px; }
+  /* średnia tuż przy wyniku: podpis pod osią (ustawia skrypt, gdy mimo to podpisy się nakładają) */
+  .spread__avg.is-below b { bottom: auto; top: 100%; }
   .spread__end { position: absolute; top: 54px; font: 400 0.75rem/1.3 var(--f-body); color: var(--muted); white-space: nowrap; }
   .spread__end--lo { transform: translateX(-4px); }
   .spread__end--hi { transform: translateX(calc(-100% + 4px)); }
@@ -166,6 +172,29 @@ const ends = (r: Row) => {
 </style>
 
 <script>
+  // Podpis średniej, który mimo przeniesienia na dalszą stronę nachodzi na wynik podmiotu, odsuwa się w bok
+  // poza liczbę; dopiero gdy wyszedłby poza wykres, schodzi pod oś.
+  const hit = (a: DOMRect, b: DOMRect) => a.left < b.right + 4 && a.right > b.left - 4 && a.top < b.bottom && a.bottom > b.top;
+  const avgClear = () => document.querySelectorAll<HTMLElement>('.spread__row').forEach((row) => {
+    const avg = row.querySelector<HTMLElement>('.spread__avg');
+    const label = avg?.querySelector<HTMLElement>('b');
+    const value = row.querySelector<HTMLElement>('.spread__dot--hi b');
+    const track = row.querySelector<HTMLElement>('.spread__track');
+    if (!avg || !label || !value || !track) return;
+    avg.classList.remove('is-below');
+    label.style.translate = '';
+    const a = label.getBoundingClientRect();
+    const v = value.getBoundingClientRect();
+    if (!hit(a, v)) return;
+    const left = avg.classList.contains('spread__avg--left');
+    const dx = left ? v.left - 6 - a.right : v.right + 6 - a.left;
+    const t = track.getBoundingClientRect();
+    if (a.left + dx >= t.left - 8 && a.right + dx <= t.right + 8) label.style.translate = `${dx}px 0`;
+    else avg.classList.add('is-below');
+  });
+  avgClear();
+  addEventListener('resize', avgClear);
+
   // Wybór podmiotu z listy: ciemna kropka i podpis w każdym wierszu, w którym występuje.
   document.querySelectorAll<HTMLElement>('.spread').forEach((root) => {
     const field = root.querySelector<HTMLElement>('.spread__pick');

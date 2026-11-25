@@ -4,7 +4,8 @@
  * tytuł z tezą ilustracji, treść ze slotu i podpis — uwagi oraz źródło.
  * Źródło z `href` jest linkiem, więc liczby na ilustracji mają pokrycie tak jak w StatRow.
  * Kilka źródeł (tablica) — każde w osobnej linii. Źródło z `links` to podpis i po nim kilka linków
- * (np. kolejne roczniki jednego sprawozdania).
+ * (np. kolejne roczniki jednego sprawozdania). Więcej niż `SOURCES_OPEN` źródeł — lista zwinięta
+ * (blocks/Collapse, wariant `compact`), żeby długi spis nie odsuwał tekstu od ilustracji.
  *
  *   <Figure title="Dopłata rośnie z poziomem placówki" source={{ label: 'NHI Annual Report', href }}>
  *     …ilustracja…
@@ -12,6 +13,7 @@
  */
 import type { HTMLAttributes } from 'astro/types';
 import Icon from '@/components/ui/Icon.astro';
+import Collapse from '@/components/blocks/Collapse.astro';
 import { linkAttrs } from '@/lib/links';
 import { typo } from '@/lib/format';
 import { uiOf } from '@/i18n/ui';
@@ -28,6 +30,12 @@ interface Props extends HTMLAttributes<'figure'> {
 
 const { title, note, source, class: className, ...rest } = Astro.props;
 const sources = source ? [source].flat() : [];
+/** tyle źródeł widać od razu; dłuższa lista jest zwinięta */
+const SOURCES_OPEN = 3;
+const ui = uiOf(Astro.url);
+const folded = sources.length > SOURCES_OPEN;
+const Wrap = folded ? Collapse : Fragment;
+const wrapProps = folded ? { compact: true, title: ui.sources.title, note: String(sources.length) } : {};
 ---
 <figure class:list={['fig', className]} {...rest}>
   {title && <p class="fig__title">{typo(title)}</p>}
@@ -35,17 +43,19 @@ const sources = source ? [source].flat() : [];
   {(note || sources.length > 0) && (
     <figcaption class="fig__caption">
       {note && <span>{typo(note)}</span>}
-      {sources.map((source) => (
-        <span class="fig__source">
-          {uiOf(Astro.url).blocks.source}{' '}
-          {source.href
-            ? <a {...linkAttrs(source.href)}>{typo(source.label)}<Icon name="arrow-ne" size={10} /></a>
-            : typo(source.label)}
-          {source.links?.map((l, i) => (
-            <>{i === 0 ? ': ' : ', '}<a {...linkAttrs(l.href)}>{typo(l.label)}<Icon name="arrow-ne" size={10} /></a></>
-          ))}
-        </span>
-      ))}
+      <Wrap {...wrapProps}>
+        {sources.map((source) => (
+          <span class="fig__source">
+            {!folded && <>{ui.blocks.source}{' '}</>}
+            {source.href
+              ? <a {...linkAttrs(source.href)}>{typo(source.label)}<Icon name="arrow-ne" size={10} /></a>
+              : typo(source.label)}
+            {source.links?.map((l, i) => (
+              <>{i === 0 ? ': ' : ', '}<a {...linkAttrs(l.href)}>{typo(l.label)}<Icon name="arrow-ne" size={10} /></a></>
+            ))}
+          </span>
+        ))}
+      </Wrap>
     </figcaption>
   )}
 </figure>

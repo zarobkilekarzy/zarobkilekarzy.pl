@@ -4,6 +4,7 @@
  * szczegóły przepisu poza głównym wywodem. Tytuł mówi, co jest w środku; `note` to krótka zapowiedź
  * (np. „7 głosowań”). Link do kotwicy w środku rozwija blok przed przewinięciem (scripts/open-target).
  * Główny wywód zostaje poza blokiem: czytelnik nie może potrzebować kliknięcia, żeby zrozumieć tekst.
+ * `compact` — mały wariant w podpisie ilustracji (blocks/Figure zwija w nim długą listę źródeł).
  */
 import type { HTMLAttributes } from 'astro/types';
 import { typo } from '@/lib/format';
@@ -11,11 +12,13 @@ import { typo } from '@/lib/format';
 interface Props extends HTMLAttributes<'details'> {
   title: string;
   note?: string;
+  /** mały wariant: bez odstępów i grubej linii, tytuł krojem linii źródła */
+  compact?: boolean;
 }
 
-const { title, note, class: className, ...rest } = Astro.props;
+const { title, note, compact = false, class: className, ...rest } = Astro.props;
 ---
-<details class:list={['fold', className]} {...rest}>
+<details class:list={['fold', { 'fold--compact': compact }, className]} {...rest}>
   <summary class="fold__head">
     <span class="fold__title">{typo(title)}</span>
     {note && <span class="fold__note">{typo(note)}</span>}
@@ -45,7 +48,15 @@ const { title, note, class: className, ...rest } = Astro.props;
   .fold__body > :global(:first-child) { margin-top: 8px; }
   .fold__body > :global(:last-child) { margin-bottom: 0; }
 
+  /* wariant w podpisie ilustracji: wygląda jak linia źródła, z plusem po prawej */
+  .fold--compact { margin-block: 0; border-top: 1px solid var(--line); border-bottom: 0; }
+  .fold--compact .fold__head { gap: 10px; padding: 8px 0 2px; }
+  .fold--compact .fold__head::after { font-size: 0.875rem; }
+  .fold--compact .fold__title { font: 400 0.75rem/1.55 var(--f-mono); color: var(--muted); }
+  .fold--compact .fold__note { letter-spacing: 0; text-transform: none; }
+  .fold--compact .fold__body { display: grid; gap: 6px; padding-bottom: 0; }
+
   @media (max-width: 600px) {
-    .fold__note { display: none; }
+    .fold:not(.fold--compact) .fold__note { display: none; }
   }
 </style>

@@ -65,18 +65,20 @@ const topics: Entry[] = TOPIC_TEXTS_EN.flatMap((t) => {
 });
 
 // wykres: po jednej–dwóch miarach z każdego koszyka; koniec skali dobrany do najwyższej wartości (skala od zera)
-const SPREAD: { key: MetricKey; bucket: string }[] = [
+const SPREAD: { key: MetricKey; bucket: string; min?: number }[] = [
   { key: 'healthGdp', bucket: 'Cost' },
   { key: 'oopShare', bucket: 'Cost' },
   { key: 'doctors', bucket: 'Workforce' },
   { key: 'paySpecialistSalaried', bucket: 'Pay' },
   { key: 'unmet', bucket: 'Access' },
   { key: 'satOecd', bucket: 'Satisfaction' },
+  // długość życia mieści się w kilku latach — skala od 70 lat, inaczej wszystkie kropki leżą przy prawej krawędzi
+  { key: 'lifeExp', bucket: 'Health', min: 70 },
   { key: 'treatable', bucket: 'Treatment outcomes' },
 ];
-const spreadRows = SPREAD.map(({ key, bucket }) => {
+const spreadRows = SPREAD.map(({ key, bucket, min }) => {
   const row = spreadRowEn(key, METRICS_EN[key].max);
-  return { ...row, label: `${bucket} — ${METRICS_EN[key].label.replace(/ \((OECD|STADA|Ipsos|Eurostat).*\)$/, '')}`, note: row.note ?? '2022–2024' };
+  return { ...row, min, label: `${bucket} — ${METRICS_EN[key].label.replace(/ \((OECD|STADA|Ipsos|Eurostat).*\)$/, '')}`, note: row.note ?? '2022–2024' };
 });
 const spreadKeys = SPREAD.map((m) => m.key);
 // tabela ma o jedną miarę więcej niż wykres: udział źródeł publicznych (dla USA szacunek)
@@ -141,7 +143,7 @@ const seo: SeoInput = {
 
   <Section id="porownanie" tone="soft" aria-labelledby="porownanie-title">
     <SectionHead eyebrow="Comparison" title="Poland compared with other countries" id="porownanie-title" aside="Each row is one measure and each dot is one country. Use the list above the chart to pick a country to see next to Poland." />
-    <Figure note={`Each row has its own scale, always starting at zero. The line marks the European Union average where the source gives one. ${altNames}: data from the OECD or national bodies, because Eurostat does not cover these countries.`} source={[...sourcesOf(spreadKeys), ...altSources]}>
+    <Figure note={`Each row has its own scale starting at zero; only life expectancy starts at 70 years. The line marks the European Union average where the source gives one. ${altNames}: data from the OECD or national bodies, because Eurostat does not cover these countries.`} source={[...sourcesOf(spreadKeys), ...altSources]}>
       <SpreadRows rows={spreadRows} unit="" subject="Poland" dotLabel="another country" averageLabel="EU average"
         pick={{ label: 'Compare with:', none: 'choose a country', absent: 'no data for this country' }} caption={spreadCaption} />
     </Figure>
@@ -149,7 +151,7 @@ const seo: SeoInput = {
 
   <Section id="tabela" aria-labelledby="tabela-title">
     <SectionHead eyebrow="Data" title="The figures in a table" id="tabela-title" aside="The same measures as on the chart plus the share of public sources, one country per row. Click a heading to sort. The “?” mark explains the measure, and an underlined figure has its own comment. For pay, the year of the data stands next to the value, because the OECD gives different years." />
-    {/* dziewięć kolumn nie mieści się na tablecie — tabela przewija się w ramce, strona nie */}
+    {/* dziesięć kolumn nie mieści się na tablecie — tabela przewija się w ramce, strona nie */}
     <div class="kr-scroll">
       <Comparison table={countryTableEn('Countries and shared measures', TABLE, tableKeys)} sortable sortLabel="Country" style="--cmp-th: 12%" />
     </div>

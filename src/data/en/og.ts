@@ -14,7 +14,7 @@ import { pseudonymDemo } from '@/data/en/postulat';
 import sorOgSnapshot from '@/data/sor/migawka-og.json';
 import { frozenLayer } from '@/lib/sor/map';
 import { columnChart, FAULT_CARD_H, faultCard, svg, visitList } from '@/lib/og/charts';
-import { STUDIES_EN } from '@/data/en/zadowolenie-z-ochrony-zdrowia';
+import { gradeTwo } from '@/lib/og/ocena';
 import { KANADA } from '@/lib/siatka/kraje';
 import { globeOgBody } from '@/lib/swiat/og';
 import { newsIllustration } from '@/lib/news';
@@ -144,19 +144,8 @@ export const ogArticleMediaEn: Record<string, Pick<OgPage, 'bars' | 'panels' | '
       rows: (['no', 'se', 'uk', 'pl'] as const).map(country),
     },
   },
-  '/analizy/zadowolenie-z-ochrony-zdrowia/': {
-    bars: {
-      head: 'Rate their healthcare well — Poland',
-      unit: '%',
-      max: 100,
-      rows: STUDIES_EN.map((s) => ({
-        label: s.name,
-        sub: s.average !== undefined ? `survey average ${s.average}%` : s.rank ? `${s.rank.place}th of ${s.rank.of} countries` : '70% dissatisfied',
-        value: s.poland,
-        marked: true,
-      })),
-    },
-  },
+  // the Polish grade 2 circled in red, without the Polish word underneath (lib/og/ocena.ts)
+  '/analizy/zadowolenie-z-ochrony-zdrowia/': { panels: [{ height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, gradeTwo(MEDIA_W, PANEL_H, false)) }] },
 };
 
 /* ---------- Strony spoza kolekcji ---------- */

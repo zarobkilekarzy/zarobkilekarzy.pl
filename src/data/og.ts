@@ -35,7 +35,7 @@ import { EXAMS_2025, passRate } from '@/data/zdawalnosc-egzaminow';
 import { COUNTRIES, WINDOW, ratePer100k, type CountryKey } from '@/data/odpowiedzialnosc-zawodowa-lekarzy';
 import { pseudonymDemo } from '@/data/postulat';
 import { createHmac } from 'node:crypto';
-import { STUDIES } from '@/data/zadowolenie-z-ochrony-zdrowia';
+import { gradeTwo } from '@/lib/og/ocena';
 import { KANADA } from '@/lib/siatka/kraje';
 import { COUNTRIES as HUB_COUNTRIES } from '@/data/kraje';
 import { frameLines } from '@/lib/siatka';
@@ -243,20 +243,8 @@ export const ogArticleMedia: Record<string, Pick<OgPage, 'bars' | 'panels' | 'do
       rows: (['no', 'se', 'uk', 'pl'] as const).map(country),
     },
   },
-  // cztery wyniki Polski; dopisek = punkt odniesienia z tego samego badania (średnia, miejsce albo odsetek niezadowolonych)
-  '/analizy/zadowolenie-z-ochrony-zdrowia/': {
-    bars: {
-      head: 'Dobrze ocenia ochronę zdrowia — Polska',
-      unit: '%',
-      max: 100,
-      rows: STUDIES.map((s) => ({
-        label: s.name,
-        sub: s.average !== undefined ? `średnia badania ${s.average}%` : s.rank ? `${s.rank.place}. miejsce na ${s.rank.of} krajów` : '70% niezadowolonych',
-        value: s.poland,
-        marked: true,
-      })),
-    },
-  },
+  // ocena szkolna: dwójka (dopuszczający) w czerwonym kółku — lib/og/ocena.ts
+  '/analizy/zadowolenie-z-ochrony-zdrowia/': { panels: [{ height: PANEL_H, svg: svg(MEDIA_W, PANEL_H, gradeTwo(MEDIA_W, PANEL_H)) }] },
 };
 
 export const ogPages: Record<string, OgPage> = {

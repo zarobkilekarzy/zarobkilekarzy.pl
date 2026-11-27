@@ -83,7 +83,7 @@ function build(doc: MonitoringDoc) {
               teryt: f.teryt!,
               value: f.payroll.median,
               size: f.payroll.doctors,
-              tip: { title, meta, rows: [['Mediana roczna', money(f.payroll.median)], ['Najwyższa wypłata', money(f.payroll.max)], ['Pozycji na liście', formatPL(f.payroll.doctors)]] as [string, string][], ...link },
+              tip: { title, meta, rows: [['Mediana roczna', money(f.payroll.median)], ['Najwyższa wypłata', money(f.payroll.max)], ['Pozycji na liście', formatPL(f.payroll.doctors)], ['Ponad 500 tys. zł', formatPL(f.payroll.over500k)], ['Ponad 1 mln zł', formatPL(f.payroll.over1m)]] as [string, string][], ...link },
             }
           : { teryt: f.teryt!, value: null, tip: { title, meta, rows: [['Odpowiedź', f.aggregate ? AGGREGATE_LABEL : NO_LIST_LABEL[f.response]]] as [string, string][], ...link } };
       }),

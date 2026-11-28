@@ -24,12 +24,12 @@ export const SECTORS: Record<Sector, { label: string; group: Group }> = {
 /** Węzeł instytucji albo organu → sektor. Węzły `entity` (szpitale, spółki) są zawsze w sektorze „podmioty”. */
 export const ORG_SECTOR: Record<string, Sector> = {
   mz: 'rzad', nfz: 'rzad', aotmit: 'rzad', cmkp: 'rzad', 'rada-taryfikacji': 'rzad', 'rada-naukowa-mz': 'rzad',
-  mf: 'rzad', kprm: 'rzad', mc: 'rzad', mnisw: 'rzad', msz: 'rzad', gif: 'rzad', gis: 'rzad',
+  mf: 'rzad', kprm: 'rzad', zus: 'rzad', mc: 'rzad', mnisw: 'rzad', msz: 'rzad', gif: 'rzad', gis: 'rzad',
   muw: 'rzad', 'uw-suwalki': 'rzad', 'suw-kielce': 'rzad',
   'nizp-pzh': 'rzad', imid: 'rzad', ikard: 'rzad', nio: 'rzad', abm: 'rzad', mrkch: 'rzad', unuz: 'rzad',
   sejm: 'parlament', senat: 'parlament', 'sejm-zdr': 'parlament', 'senat-kz': 'parlament', pe: 'parlament',
   prezydent: 'prezydent', 'rada-zdrowia': 'prezydent',
-  nil: 'samorzad', nrl: 'samorzad', 'nrl-prezydium': 'samorzad', 'oil-warszawa': 'samorzad', 'oil-lublin': 'samorzad',
+  nil: 'samorzad', nrl: 'samorzad', 'nrl-prezydium': 'samorzad', 'oil-warszawa': 'samorzad', 'oil-lublin': 'samorzad', 'oil-wielkopolska': 'samorzad',
   'nil-in': 'samorzad', nsl: 'samorzad', nroz: 'samorzad', 'osl-warszawa': 'samorzad', cermed: 'samorzad',
   'fundacja-pro-seniore': 'samorzad', cpme: 'samorzad', ptp: 'samorzad', ptfe: 'samorzad',
   ozzl: 'zwiazki', 'pr-ozzl': 'zwiazki', ozzpip: 'zwiazki', 'komitet-protestacyjny-2021': 'zwiazki', 'zespol-trojstronny': 'zwiazki', pck: 'zwiazki',
